@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
+import 'package:pdd_app/presentation/widgets/result_stage.dart';
 
-/// Квадратная карточка результата экзамена для шеринга (1080×1080).
+/// Квадратная карточка результата для шеринга (1080×1080): экзамена, билета,
+/// темы.
 ///
 /// Зачем: раньше «Поделиться» отправляло голый текст, а текстом никто не
 /// делится. Картинку кидают в чат автошколы и в сторис — это единственный
 /// канал, где о приложении узнают бесплатно и без бэкенда.
 ///
+/// Оформление — как у завершающего экрана ([ResultStage]): синий фон с лучами
+/// при успехе, красный без лучей при неудаче, эмблема, белая плашка «19/20»,
+/// две метрики и готовность к экзамену.
+///
 /// Виджет НЕ показывается на экране: он рендерится офскрин в PNG
-/// (см. [ShareCardRenderer]), поэтому размеры здесь абсолютные, в пикселях
+/// (см. ShareCardRenderer), поэтому размеры здесь абсолютные, в пикселях
 /// итоговой картинки, а не в логических точках экрана.
 class ShareResultCard extends StatelessWidget {
   const ShareResultCard({
     super.key,
     required this.passed,
     required this.correct,
+    required this.total,
     required this.wrong,
     required this.readinessPercent,
     required this.title,
@@ -25,15 +31,16 @@ class ShareResultCard extends StatelessWidget {
     required this.siteUrl,
   });
 
-  /// Сдан ли экзамен — от этого зависит цвет и иконка.
+  /// Сдан ли экзамен (пройден ли набор) — от этого зависит фон и эмблема.
   final bool passed;
   final int correct;
+  final int total;
   final int wrong;
 
   /// Готовность к экзамену в процентах (нижняя плашка).
   final int readinessPercent;
 
-  /// Заголовок («Экзамен сдан» / «Экзамен не сдан»).
+  /// Заголовок: «Экзамен сдан!», «Билет 1», название темы.
   final String title;
   final String correctLabel;
   final String wrongLabel;
@@ -43,117 +50,162 @@ class ShareResultCard extends StatelessWidget {
   /// Сторона итоговой картинки в пикселях.
   static const double side = 1080;
 
-  // Геометрия макета. Отступ между карточками статистики по горизонтали и
-  // от них до плашки готовности по вертикали ОДИНАКОВЫЙ — 48; из-за этого
-  // ширина карточки 406, а не круглые 400: 406 + 48 + 406 = 860 = ширина
-  // за вычетом полей по 110.
-  static const double _margin = 110;
-  static const double _gap = 48;
-  static const double _statWidth = 406;
-  static const double _statHeight = 185;
+  static const double _margin = 96;
+  static const double _emblemTop = 196;
+  static const double _emblem = 320;
+  static const double _pillTop = 556;
+  static const double _pillHeight = 140;
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = passed ? AppColors.green : AppColors.red;
+    final background = passed ? ResultStage.success : ResultStage.failure;
+    const dim = Color(0xB3FFFFFF);
 
     // Шрифт задаём здесь явно, а не наследуем из темы: карточка рендерится
-    // офскрин (см. ShareCardRenderer), вне дерева MaterialApp, поэтому
-    // ThemeData.fontFamily до неё не доходит — без этого картинка уходила бы
-    // в системном шрифте вместо фирменного.
+    // офскрин, вне дерева MaterialApp, поэтому ThemeData.fontFamily до неё не
+    // доходит — без этого картинка уходила бы в системном шрифте.
     return DefaultTextStyle(
       style: const TextStyle(
         fontFamily: AppTheme.fontFamily,
-        color: AppColors.primaryText,
+        color: Colors.white,
         decoration: TextDecoration.none,
       ),
       child: SizedBox(
         width: side,
         height: side,
-        child: Container(
-          color: AppColors.background,
+        child: ColoredBox(
+          color: background,
           child: Stack(
             children: [
-              // Круг с галочкой / крестиком.
+              if (passed)
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: ResultRaysPainter(
+                      const Offset(side / 2, _pillTop + _pillHeight / 2),
+                      -0.1,
+                    ),
+                  ),
+                ),
+
+              // Заголовок в одну строку: длинное название темы ужимается.
               Positioned(
-                top: 128,
+                top: 72,
+                left: _margin,
+                right: _margin,
+                height: 96,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 72,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Эмблема со свечением.
+              Positioned(
+                top: _emblemTop - 60,
+                left: 0,
+                right: 0,
+                height: _emblem + 120,
+                child: const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      colors: [Color(0x40FFFFFF), Color(0x00FFFFFF)],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: _emblemTop,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: ResultVerdictEmblem(passed: passed, size: _emblem),
+                ),
+              ),
+
+              // Белая плашка «19/20».
+              Positioned(
+                top: _pillTop,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Container(
-                    width: 204,
-                    height: 204,
+                    height: _pillHeight,
+                    padding: const EdgeInsets.symmetric(horizontal: 64),
                     decoration: BoxDecoration(
-                      color: accentColor,
-                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(_pillHeight / 2),
                     ),
-                    child: Icon(
-                      passed ? Icons.check_rounded : Icons.close_rounded,
-                      // Скруглённая иконка размером примерно в 40% круга —
-                      // она не должна забивать собой всю плашку.
-                      size: 108,
-                      color: AppColors.white,
+                    child: Center(
+                      widthFactor: 1,
+                      child: Text(
+                        '$correct/$total',
+                        style: TextStyle(
+                          fontSize: 100,
+                          fontWeight: FontWeight.w800,
+                          height: 1.1,
+                          color: background,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
 
-              // Заголовок.
+              // Две метрики.
               Positioned(
-                top: 380,
+                top: 744,
                 left: _margin,
                 right: _margin,
-                child: Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 96,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primaryText,
-                    height: 1.1,
-                  ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _Stat(
+                        value: '$correct',
+                        label: correctLabel,
+                        dim: dim,
+                      ),
+                    ),
+                    Expanded(
+                      child: _Stat(
+                        value: '$wrong',
+                        label: wrongLabel,
+                        dim: dim,
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
-              // Две карточки статистики.
+              // Готовность — полупрозрачная плашка, как вторичная кнопка экрана.
               Positioned(
-                top: 575,
-                left: _margin,
-                child: _StatBox(
-                  value: '$correct',
-                  label: correctLabel,
-                  color: AppColors.green,
-                  background: AppColors.homeGreenSurface,
-                ),
-              ),
-              Positioned(
-                top: 575,
-                left: _margin + _statWidth + _gap,
-                child: _StatBox(
-                  value: '$wrong',
-                  label: wrongLabel,
-                  color: AppColors.red,
-                  background: AppColors.homeRedSurface,
-                ),
-              ),
-
-              // Плашка готовности — тот же зазор 48 от карточек выше.
-              Positioned(
-                top: 575 + _statHeight + _gap,
+                top: 900,
                 left: _margin,
                 right: _margin,
                 child: Container(
-                  height: 120,
+                  height: 88,
                   alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
                   decoration: BoxDecoration(
-                    color: AppColors.lightAccent,
-                    borderRadius: BorderRadius.circular(28),
+                    color: const Color(0x2EFFFFFF),
+                    borderRadius: BorderRadius.circular(24),
                   ),
-                  child: Text(
-                    '$readinessLabel — $readinessPercent%',
-                    style: const TextStyle(
-                      fontSize: 50,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.accent,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '$readinessLabel — $readinessPercent%',
+                      maxLines: 1,
+                      style: const TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -161,16 +213,16 @@ class ShareResultCard extends StatelessWidget {
 
               // Подпись сайта: тонкая, не спорит с содержимым.
               Positioned(
-                bottom: 60,
+                bottom: 30,
                 left: 0,
                 right: 0,
                 child: Text(
                   siteUrl,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 44,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.secondaryText,
+                    fontSize: 36,
+                    fontWeight: FontWeight.w500,
+                    color: dim,
                   ),
                 ),
               ),
@@ -182,52 +234,39 @@ class ShareResultCard extends StatelessWidget {
   }
 }
 
-class _StatBox extends StatelessWidget {
-  const _StatBox({
-    required this.value,
-    required this.label,
-    required this.color,
-    required this.background,
-  });
+class _Stat extends StatelessWidget {
+  const _Stat({required this.value, required this.label, required this.dim});
 
   final String value;
   final String label;
-  final Color color;
-  final Color background;
+  final Color dim;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: ShareResultCard._statWidth,
-      height: ShareResultCard._statHeight,
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 66,
-              fontWeight: FontWeight.w700,
-              color: color,
-              height: 1.1,
-            ),
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 76,
+            fontWeight: FontWeight.w800,
+            height: 1.1,
+            fontFeatures: [FontFeature.tabularFigures()],
           ),
-          const SizedBox(height: 4),
-          Text(
+        ),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
             label,
+            maxLines: 1,
             style: TextStyle(
               fontSize: 36,
-              // Подпись обычного начертания — жирный здесь только у цифры.
-              fontWeight: FontWeight.w400,
-              color: color,
+              fontWeight: FontWeight.w500,
+              color: dim,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

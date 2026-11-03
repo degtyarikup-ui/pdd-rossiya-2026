@@ -20,6 +20,7 @@ import 'package:pdd_app/presentation/screens/signs/signs_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
 import 'package:pdd_app/presentation/screens/training/training_result_screen.dart';
+import 'package:pdd_app/presentation/widgets/result_stage.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/question_content_layout.dart';
 import 'helpers/achievement_awards.dart';
@@ -333,7 +334,7 @@ void main() {
             scale: scale,
           );
           expect(tester.takeException(), isNull);
-          final done = find.widgetWithText(ElevatedButton, appL10n.done);
+          final done = find.widgetWithText(ResultButton, appL10n.done);
           await tester.ensureVisible(done);
           await tester.pumpAndSettle();
           expect(done.hitTestable(), findsOneWidget);

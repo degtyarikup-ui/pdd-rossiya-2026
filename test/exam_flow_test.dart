@@ -11,6 +11,7 @@ import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
+import 'package:pdd_app/presentation/widgets/result_stage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Немой TTS, чтобы тесты не трогали платформенный канал flutter_tts.
@@ -160,6 +161,10 @@ void main() {
     }
 
     expect(find.text('Экзамен сдан!'), findsOneWidget);
+    expect(
+      tester.widget<ResultStage>(find.byType(ResultStage)).background,
+      ResultStage.success,
+    );
   });
 
   testWidgets(
@@ -302,6 +307,10 @@ void main() {
     await answerCurrent(tester, correct: false);
 
     expect(find.text('Экзамен не сдан'), findsOneWidget);
+    expect(
+      tester.widget<ResultStage>(find.byType(ResultStage)).background,
+      ResultStage.failure,
+    );
     // Неотвеченные отдельной строкой не показываем: они уже учтены в
     // «неправильных», а лишняя карточка удлиняла экран результата.
     expect(find.text('Без ответа'), findsNothing);
@@ -325,28 +334,6 @@ void main() {
     expect(find.text('Экзамен не сдан'), findsOneWidget);
     expect(find.text('Без ответа'), findsNothing);
   });
-
-  testWidgets(
-    'провал по блоку объясняется по кнопке-иконке, а не полотном текста',
-    (tester) async {
-      await pumpExam(tester);
-
-      await answerCurrent(tester, correct: false);
-      await answerCurrent(tester, correct: false);
-
-      // Экран результата остаётся коротким: длинного объяснения на нём нет.
-      expect(find.textContaining('4 тематических блоков'), findsNothing);
-
-      // Но объяснение доступно — иначе «две ошибки, и не сдал» читается как баг.
-      await tester.tap(find.byIcon(Icons.info_outline_rounded));
-      await tester.pumpAndSettle();
-      expect(
-        find.textContaining('4 тематических блоков'),
-        findsOneWidget,
-        reason: 'кнопка есть, а объяснения по ней нет — хуже, чем ничего',
-      );
-    },
-  );
 
   testWidgets(
     'две ошибки на границе блоков (5-й и 6-й вопрос) — это РАЗНЫЕ блоки',

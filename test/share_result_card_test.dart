@@ -12,6 +12,7 @@ void main() {
   ShareResultCard buildCard({
     bool passed = true,
     int correct = 19,
+    int total = 20,
     int wrong = 1,
     int readiness = 94,
     String correctLabel = 'правильных',
@@ -20,13 +21,14 @@ void main() {
     return ShareResultCard(
       passed: passed,
       correct: correct,
+      total: total,
       wrong: wrong,
       readinessPercent: readiness,
       title: passed ? 'Экзамен сдан' : 'Экзамен не сдан',
       correctLabel: correctLabel,
       wrongLabel: wrongLabel,
       readinessLabel: 'Готовность к экзамену',
-      siteUrl: 'pdd-drive.ru',
+      siteUrl: 'pdd-drive.app',
     );
   }
 
@@ -66,6 +68,7 @@ void main() {
               child: buildCard(
                 passed: false,
                 correct: 35,
+                total: 41,
                 wrong: 6,
                 readiness: 100,
                 correctLabel: 'tačnih odgovora',
@@ -84,6 +87,7 @@ void main() {
     );
     expect(find.text('Экзамен не сдан'), findsOneWidget);
     expect(find.text('35'), findsOneWidget);
+    expect(find.text('35/41'), findsOneWidget);
     expect(find.text('Готовность к экзамену — 100%'), findsOneWidget);
   });
 }

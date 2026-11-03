@@ -6,14 +6,9 @@ import 'package:pdd_app/presentation/widgets/achievement_award_screen.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/config/country_config.dart';
@@ -26,16 +21,16 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/models/question_answer_source.dart';
 import 'package:pdd_app/data/models/exam_question_bank.dart';
-import 'package:pdd_app/data/services/share_card_renderer.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_review_screen.dart';
-import 'package:pdd_app/presentation/widgets/share_result_card.dart';
 import 'package:pdd_app/presentation/widgets/completion_review_prompt.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
 import 'package:pdd_app/presentation/widgets/question_number_chip.dart';
 import 'package:pdd_app/presentation/widgets/question_voice_toggle.dart';
+import 'package:pdd_app/presentation/widgets/result_share.dart';
+import 'package:pdd_app/presentation/widgets/result_stage.dart';
 
 class ExamScreen extends ConsumerStatefulWidget {
   final List<Map<String, dynamic>> allQuestions;
@@ -920,389 +915,91 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     );
   }
 
-  /// Делится результатом экзамена системным диалогом «Поделиться»
-  /// (share_plus: Android/iOS — нативный лист, web — Web Share API).
-  /// Собирает картинку результата и кладёт во временный файл.
-  ///
-  /// Возвращает null на вебе (там нет файловой системы под share_plus и
-  /// картинку всё равно не приложить) и при любой ошибке рендера — тогда
-  /// вызывающий код делится обычным текстом.
-  Future<XFile?> _buildShareImage() async {
-    if (kIsWeb) return null;
-    try {
-      // Готовность — тот же показатель, что на главной: доля верно решённых
-      // вопросов от всей базы категории.
-      final stats = await ref.read(statsProvider.future);
-      final correctTotal = stats['correctAnswers'] ?? 0;
-      final totalQuestions = stats['totalQuestions'] ?? 0;
-      final readiness = totalQuestions > 0
-          ? (correctTotal / totalQuestions * 100).round()
-          : 0;
+  /// Картинка и текст результата через общий «Поделиться» итоговых экранов.
+  Future<void> _shareResult() => shareStudyResult(
+    context,
+    passed: _examPassed,
+    title: _examPassed ? appL10n.examPassed : appL10n.examFailed,
+    correct: _correctAnswers.length,
+    total: _examQuestions.length,
+    wrong: _wrongAnswers.length + _unansweredTotal,
+  );
 
-      final correctCount = _correctAnswers.length;
-      final wrongCount = _wrongAnswers.length + _unansweredTotal;
-
-      final png = await ShareCardRenderer.renderToPng(
-        size: const Size(ShareResultCard.side, ShareResultCard.side),
-        widget: ShareResultCard(
-          passed: _examPassed,
-          correct: correctCount,
-          wrong: wrongCount,
-          readinessPercent: readiness,
-          title: _examPassed ? appL10n.examPassed : appL10n.examFailed,
-          // Короткие формы со склонением: на карточке подпись стоит прямо
-          // под числом, и «6 ошибка» из обычного ярлыка выглядело бы
-          // безграмотно — а картинку увидят посторонние люди.
-          correctLabel: appL10n.shareCardCorrectWord(correctCount),
-          wrongLabel: appL10n.shareCardWrongWord(wrongCount),
-          readinessLabel: appL10n.examReadiness,
-          siteUrl: CountryConfig.current.webUrl.replaceFirst(
-            RegExp(r'^https?://'),
-            '',
-          ),
-        ),
-      );
-      if (png == null) return null;
-
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/exam_result.png');
-      await file.writeAsBytes(png, flush: true);
-      return XFile(file.path, mimeType: 'image/png');
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> _shareResult() async {
-    final config = CountryConfig.current;
-    final resultLine = _examPassed ? appL10n.examPassed : appL10n.examFailed;
-    final text = appL10n.examShareText(
-      resultLine,
-      _correctAnswers.length,
-      _examQuestions.length,
-      config.appTitle,
-      config.webUrl,
-    );
-
-    // Сначала пробуем поделиться картинкой: текстом никто не делится, а
-    // квадрат 1080×1080 уходит в сторис и чаты автошкол. Если рендер или
-    // сохранение не удались — молча откатываемся на прежний текстовый путь.
-    final imageFile = await _buildShareImage();
-    if (imageFile != null) {
-      try {
-        final result = await SharePlus.instance.share(
-          ShareParams(text: text, files: [imageFile]),
-        );
-        if (result.status != ShareResultStatus.unavailable) return;
-      } catch (_) {
-        // Ниже — обычный текстовый шеринг.
-      }
-    }
-
-    try {
-      final result = await SharePlus.instance.share(ShareParams(text: text));
-      // На web системный «Поделиться» (navigator.share) есть не везде — на
-      // десктопе/без HTTPS он недоступен, и share_plus вернёт unavailable.
-      // Тогда — запасной путь: копируем текст в буфер и уведомляем.
-      if (result.status != ShareResultStatus.unavailable) return;
-    } catch (_) {
-      // navigator.share бросил (нет Web Share API) — идём в запасной путь.
-    }
-    await Clipboard.setData(ClipboardData(text: text));
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(appL10n.copiedToClipboard)));
-  }
-
+  /// Итог в общем формате завершающих экранов ([ResultStage]): сдан — синий
+  /// фон, не сдан — красный.
   Widget _buildResultsScreen() {
-    final colors = AppColors.of(context);
-    final totalWrong = _wrongAnswers.length;
     final totalQuestions = _examQuestions.length;
     final passed = _examPassed;
     final timeSpent = _totalTimeSeconds - _remainingTime;
+    final background = passed ? ResultStage.success : ResultStage.failure;
+    final correct = _correctAnswers.length;
 
-    const double kBarTop = AppDimensions.screenPadding;
-    const double kBarHeight = 40;
-    const double kFadeHeight = kBarTop + kBarHeight + 80;
+    void close() => Navigator.pop(context);
 
-    return AppContentFrame(
-      maxWidth: AppContentFrame.readingWidth,
-      child: Scaffold(
-        backgroundColor: colors.background,
-        body: SafeArea(
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimensions.screenPadding,
-                  kFadeHeight,
-                  AppDimensions.screenPadding,
-                  AppDimensions.screenPadding,
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: passed ? colors.green : colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        passed ? Icons.check_circle : Icons.cancel,
-                        size: 60,
-                        color: AppColors.white,
-                      ),
-                    ),
-                    const SizedBox(height: AppDimensions.spacingL),
-                    Text(
-                      passed ? appL10n.examPassed : appL10n.examFailed,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: passed ? colors.green : colors.red,
-                      ),
-                    ),
-                    const SizedBox(height: AppDimensions.spacingS),
-                    Text(
-                      // «Время вышло» показываем только когда таймаут привёл к
-                      // провалу. В балльной модели можно набрать проходной балл
-                      // и при истечении времени — тогда это сдача, не таймаут.
-                      (_timedOut && !passed)
-                          ? appL10n.examResultTimeout
-                          : passed
-                          ? appL10n.examResultPassed
-                          : appL10n.examResultFailed,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: colors.secondaryText,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: AppDimensions.spacingXXL),
-                    _buildResultCard(
-                      icon: Icons.check_circle_outline,
-                      label: appL10n.correctAnswers,
-                      value: appL10n.valueOfTotal(
-                        _correctAnswers.length,
-                        totalQuestions,
-                      ),
-                      color: colors.green,
-                    ),
-                    const SizedBox(height: AppDimensions.spacingM),
-                    _buildResultCard(
-                      icon: Icons.cancel_outlined,
-                      label: appL10n.wrongAnswers,
-                      value: '$totalWrong',
-                      color: colors.red,
-                    ),
-                    if (_additionalPhase) ...[
-                      const SizedBox(height: AppDimensions.spacingM),
-                      _buildResultCard(
-                        icon: Icons.help_outline,
-                        label: appL10n.examAdditionalBlock,
-                        value: appL10n.examAdditionalBlockValue(
-                          _additionalQuestionsCount,
-                          _additionalAnsweredWrongCount(),
-                        ),
-                        color: colors.gold,
-                      ),
-                    ],
-                    const SizedBox(height: AppDimensions.spacingM),
-                    _buildResultCard(
-                      icon: Icons.timer_outlined,
-                      label: appL10n.examTimeSpent,
-                      value: _formatTime(timeSpent),
-                      color: colors.accent,
-                    ),
-                    if (_additionalPhase) ...[
-                      const SizedBox(height: AppDimensions.spacingM),
-                      _buildResultCard(
-                        icon: Icons.rule_folder_outlined,
-                        label: appL10n.examMainBlockErrors,
-                        value: '$_initialWrongCount',
-                        color: colors.primaryText,
-                      ),
-                    ],
-                    const SizedBox(height: AppDimensions.spacingXXL),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          HapticFeedbackHelper.tap();
-                          Navigator.push<void>(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (ctx) => ExamReviewScreen(
-                                questions: List<Map<String, dynamic>>.from(
-                                  _examQuestions,
-                                ),
-                                savedAnswers: List<int?>.from(_savedAnswers),
-                              ),
-                            ),
-                          );
-                        },
-                        child: Text(appL10n.myMistakes),
-                      ),
-                    ),
-                    const SizedBox(height: AppDimensions.spacingM),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          HapticFeedbackHelper.tap();
-                          Navigator.pop(context);
-                        },
-                        child: Text(appL10n.backToTraining),
-                      ),
-                    ),
-                    const SizedBox(height: 100),
-                  ],
-                ),
-              ),
-              // Градиент затухания: фон (непрозрачный под кнопками) → прозрачный.
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: IgnorePointer(
-                  child: Container(
-                    height: kFadeHeight,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          colors.background,
-                          colors.background,
-                          colors.background.withValues(alpha: 0.0),
-                        ],
-                        stops: const [
-                          0.0,
-                          (kBarTop + kBarHeight) / kFadeHeight,
-                          1.0,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              // Закреплённая панель: закрыть + поделиться.
-              Positioned(
-                top: kBarTop,
-                left: AppDimensions.screenPadding,
-                right: AppDimensions.screenPadding,
-                child: Row(
-                  children: [
-                    AppChromeIconButton(
-                      icon: Icons.close_rounded,
-                      onTap: () {
-                        HapticFeedbackHelper.tap();
-                        Navigator.pop(context);
-                      },
-                    ),
-                    const Spacer(),
-                    if (_failedByBlock) ...[
-                      AppChromeIconButton(
-                        icon: Icons.info_outline_rounded,
-                        onTap: () {
-                          HapticFeedbackHelper.tap();
-                          _showBlockRuleExplanation();
-                        },
-                      ),
-                      const SizedBox(width: AppDimensions.spacingM),
-                    ],
-                    AppChromeIconButton(
-                      icon: Icons.ios_share_rounded,
-                      backgroundColor: colors.accent,
-                      iconColor: AppColors.white,
-                      onTap: () {
-                        HapticFeedbackHelper.tap();
-                        _shareResult();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    return Scaffold(
+      backgroundColor: background,
+      body: ResultStage(
+        background: background,
+        spinRays: false,
+        title: passed ? appL10n.examPassed : appL10n.examFailed,
+        emblem: ResultVerdictEmblem(passed: passed),
+        rays: passed,
+        badge: ResultBadge(
+          value: correct,
+          suffix: '/$totalQuestions',
+          color: AppColors.white,
+          foreground: background,
+          semanticsLabel:
+              '${appL10n.correctAnswers}: '
+              '${appL10n.valueOfTotal(correct, totalQuestions)}',
+        ),
+        stats: [
+          ResultStat(appL10n.wrongAnswers, '${_wrongAnswers.length}'),
+          ResultStat(
+            appL10n.examTimeSpent,
+            _formatTime(timeSpent),
+            counted: false,
           ),
-        ),
-      ),
-    );
-  }
-
-  /// Почему экзамен не сдан при двух ошибках — по кнопке-иконке, а не полотном
-  /// на экране результата.
-  Future<void> _showBlockRuleExplanation() {
-    final colors = AppColors.of(context);
-    return showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: colors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        ),
-        icon: Icon(Icons.info_outline_rounded, color: colors.red, size: 28),
-        title: Text(
-          appL10n.examFailed,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: colors.primaryText,
-          ),
-        ),
-        content: Text(
-          appL10n.examFailedByBlock(_rules.maxMistakesPerBlock),
-          style: TextStyle(
-            fontSize: 14,
-            height: 1.45,
-            color: colors.primaryText,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(appL10n.close),
+          if (_additionalPhase) ...[
+            ResultStat(appL10n.examMainBlockErrors, '$_initialWrongCount'),
+            ResultStat(
+              appL10n.examAdditionalBlock,
+              '${_additionalQuestionsCount - _additionalAnsweredWrongCount()}'
+              '/$_additionalQuestionsCount',
+            ),
+          ],
+        ],
+        leading: [
+          ResultHeaderButton(
+            icon: Icons.ios_share_rounded,
+            tooltip: appL10n.share,
+            onPressed: _shareResult,
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildResultCard({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    final colors = AppColors.of(context);
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.spacingL),
-      decoration: BoxDecoration(
-        color: colors.cardBackground,
-        borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(width: AppDimensions.spacingM),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(fontSize: 14, color: colors.secondaryText),
-            ),
+        closeTooltip: appL10n.close,
+        onClose: close,
+        actions: [
+          ResultButton(
+            label: appL10n.myMistakes,
+            icon: Icons.fact_check_outlined,
+            primary: false,
+            onPressed: () {
+              Navigator.push<void>(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (ctx) => ExamReviewScreen(
+                    questions: List<Map<String, dynamic>>.from(_examQuestions),
+                    savedAnswers: List<int?>.from(_savedAnswers),
+                  ),
+                ),
+              );
+            },
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
+          ResultButton(
+            label: appL10n.backToTraining,
+            primary: true,
+            accent: background,
+            onPressed: close,
           ),
         ],
       ),

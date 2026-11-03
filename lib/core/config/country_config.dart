@@ -89,6 +89,10 @@ class CountryConfig {
   /// Публичный веб-адрес приложения страны (для шеринга результата и т.п.).
   final String webUrl;
 
+  /// Адрес сайта, напечатанный на картинке результата для шеринга, — без
+  /// протокола. Отдельно от [webUrl]: на картинке уже новый домен.
+  final String shareCardHost;
+
   /// Published store identities; dev builds must also link to these listings.
   final String androidPackageName;
   final String appStoreId;
@@ -127,6 +131,7 @@ class CountryConfig {
     required this.hasCdCategory,
     required this.examRules,
     required this.webUrl,
+    required this.shareCardHost,
     this.androidPackageName = '',
     this.appStoreId = '',
     this.privacyUrl = '',
@@ -218,6 +223,7 @@ class CountryConfig {
     assetsRoot: 'assets/countries/ru',
     hasCdCategory: true,
     webUrl: 'https://pdd-drive.ru',
+    shareCardHost: 'pdd-drive.app',
     androidPackageName: 'ru.pdd.pdd_app',
     appStoreId: '6792369533',
     privacyUrl: 'https://pdd-drive.ru/privacy.html',

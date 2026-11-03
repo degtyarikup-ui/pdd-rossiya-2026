@@ -15,6 +15,7 @@ import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/presentation/screens/training/training_result_screen.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/continue_session_card.dart';
+import 'package:pdd_app/presentation/widgets/result_stage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _SilentTts implements TtsService {
@@ -228,15 +229,28 @@ void main() {
 
     expect(find.byType(TrainingResultScreen), findsOneWidget);
     expect(find.text('Билет 1'), findsOneWidget);
-    // 2 верных, 1 ошибка, 3 всего.
+    // 2 верных из 3 на плашке, метрики: 2 верных, 1 ошибка.
+    expect(find.text('2/3'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
-    expect(find.text('3'), findsOneWidget);
+    // Треть ошибок — больше экзаменационной нормы: красный экран.
+    expect(
+      tester.widget<ResultStage>(find.byType(ResultStage)).background,
+      ResultStage.failure,
+    );
+    // Поделиться можно и неудачным итогом — как на экзамене.
+    expect(find.byIcon(Icons.ios_share_rounded), findsOneWidget);
   });
 
-  testWidgets('без ошибок — итог хвалит и не предлагает повтор', (
-    tester,
-  ) async {
+  test('набор пройден, если ошибок не больше, чем допускает экзамен', () {
+    expect(TrainingResultScreen.passed(total: 20, wrong: 0), isTrue);
+    expect(TrainingResultScreen.passed(total: 20, wrong: 2), isTrue);
+    expect(TrainingResultScreen.passed(total: 20, wrong: 3), isFalse);
+    expect(TrainingResultScreen.passed(total: 50, wrong: 5), isTrue);
+    expect(TrainingResultScreen.passed(total: 3, wrong: 1), isFalse);
+  });
+
+  testWidgets('без ошибок — синий итог без повтора', (tester) async {
     await pumpTraining(tester, questions: 2);
 
     await answer(tester, correct: true);
@@ -245,11 +259,14 @@ void main() {
     await nextOrFinish(tester);
 
     expect(find.byType(TrainingResultScreen), findsOneWidget);
-    expect(find.textContaining('Ни одной ошибки'), findsOneWidget);
     expect(
       find.text('Повторить ошибки'),
       findsNothing,
       reason: 'повторять нечего, кнопка была бы обманом',
+    );
+    expect(
+      tester.widget<ResultStage>(find.byType(ResultStage)).background,
+      ResultStage.success,
     );
   });
 

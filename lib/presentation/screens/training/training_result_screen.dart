@@ -1,16 +1,18 @@
-import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:flutter/material.dart';
-import 'package:pdd_app/core/constants/app_colors.dart';
-import 'package:pdd_app/core/constants/app_dimensions.dart';
-import 'package:pdd_app/core/utils/haptic_feedback.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
+import 'package:pdd_app/presentation/widgets/result_share.dart';
+import 'package:pdd_app/presentation/widgets/result_stage.dart';
 
 /// Итог пройденного набора: билета, темы, избранного, работы над ошибками.
 ///
 /// Раньше «Завершить» просто закрывало экран, и человек оставался без ответа
 /// на вопрос «ну и как я прошёл?». Для экзамена результат был, а для билета —
 /// нет, хотя билет проходят ровно с тем же намерением.
+///
+/// Оформление — общий завершающий экран игр ([ResultStage]): синий, если
+/// набор пройден с долей ошибок не выше экзаменационной, иначе красный.
 class TrainingResultScreen extends StatelessWidget {
   const TrainingResultScreen({
     super.key,
@@ -29,187 +31,81 @@ class TrainingResultScreen extends StatelessWidget {
   /// Вопросы, где ошиблись: по ним предлагаем пройти ещё раз.
   final List<Map<String, dynamic>> wrongQuestions;
 
+  /// Пройден ли набор по мерке экзамена: на билете из 20 — не больше двух
+  /// ошибок, на теме из 50 — не больше пяти.
+  static bool passed({required int total, required int wrong}) {
+    final rules = CountryConfig.current.examRules;
+    return wrong * rules.mainCount <= rules.maxMistakes * total;
+  }
+
   @override
   Widget build(BuildContext context) {
     final wrong = wrongQuestions.length;
-    final perfect = wrong == 0;
-    final colors = AppColors.of(context);
+    final success = passed(total: total, wrong: wrong);
+    final background = success ? ResultStage.success : ResultStage.failure;
 
-    return AppContentFrame(
-      maxWidth: AppContentFrame.readingWidth,
-      child: Scaffold(
-        backgroundColor: colors.background,
-        body: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final children = <Widget>[
-                const Spacer(),
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    color: perfect ? colors.green : colors.gold,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    perfect ? Icons.check_rounded : Icons.school_outlined,
-                    size: 52,
-                    color: AppColors.white,
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.spacingL),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                    color: colors.primaryText,
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.spacingS),
-                Text(
-                  perfect
-                      ? appL10n.trainingResultPerfect
-                      : appL10n.trainingResultWithMistakes,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    height: 1.4,
-                    color: colors.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.spacingXXL),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ResultCell(
-                        value: '$correct',
-                        label: appL10n.progressCorrect,
-                        color: colors.green,
-                      ),
-                    ),
-                    const SizedBox(width: AppDimensions.spacingM),
-                    Expanded(
-                      child: _ResultCell(
-                        value: '$wrong',
-                        label: appL10n.progressWrong,
-                        color: wrong > 0 ? colors.red : colors.secondaryText,
-                      ),
-                    ),
-                    const SizedBox(width: AppDimensions.spacingM),
-                    Expanded(
-                      child: _ResultCell(
-                        value: '$total',
-                        label: appL10n.progressDone,
-                        color: colors.primaryText,
-                      ),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                if (wrong > 0) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        HapticFeedbackHelper.tap();
-                        // pushReplacement, а не push: возвращаться к итогу
-                        // старого прохода после нового незачем.
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => TrainingScreen(
-                              questions: wrongQuestions,
-                              title: appL10n.mistakes,
-                            ),
-                          ),
-                        );
-                      },
-                      child: Text(appL10n.trainingRepeatMistakes),
-                    ),
-                  ),
-                  const SizedBox(height: AppDimensions.spacingM),
-                ],
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      HapticFeedbackHelper.tap();
-                      Navigator.pop(context);
-                    },
-                    child: Text(appL10n.done),
-                  ),
-                ),
-              ];
-              final scroll =
-                  constraints.maxHeight < 480 ||
-                  MediaQuery.textScalerOf(context).scale(15) > 20;
-              if (scroll) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppDimensions.screenPadding),
-                  child: Column(
-                    children: [
-                      for (final child in children)
-                        if (child is Spacer)
-                          const SizedBox(height: 24)
-                        else
-                          child,
-                    ],
-                  ),
-                );
-              }
-              return Padding(
-                padding: const EdgeInsets.all(AppDimensions.screenPadding),
-                child: Column(children: children),
-              );
-            },
-          ),
+    void close() => Navigator.pop(context);
+
+    return Scaffold(
+      backgroundColor: background,
+      body: ResultStage(
+        background: background,
+        spinRays: false,
+        rays: success,
+        title: title,
+        emblem: ResultVerdictEmblem(passed: success),
+        badge: ResultBadge(
+          value: correct,
+          suffix: '/$total',
+          color: Colors.white,
+          foreground: background,
+          semanticsLabel: '${appL10n.correctAnswers}: $correct / $total',
         ),
-      ),
-    );
-  }
-}
-
-class _ResultCell extends StatelessWidget {
-  const _ResultCell({
-    required this.value,
-    required this.label,
-    required this.color,
-  });
-
-  final String value;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppDimensions.spacingL),
-      decoration: BoxDecoration(
-        color: colors.cardBackground,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5,
-              height: 1.1,
-              color: color,
+        stats: [
+          ResultStat(appL10n.correctAnswers, '$correct'),
+          ResultStat(appL10n.wrongAnswers, '$wrong'),
+        ],
+        leading: [
+          ResultHeaderButton(
+            icon: Icons.ios_share_rounded,
+            tooltip: appL10n.share,
+            onPressed: () => shareStudyResult(
+              context,
+              passed: success,
+              title: title,
+              correct: correct,
+              total: total,
+              wrong: wrong,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: colors.secondaryText),
+        ],
+        closeTooltip: appL10n.close,
+        onClose: close,
+        actions: [
+          if (wrong > 0)
+            ResultButton(
+              label: appL10n.trainingRepeatMistakes,
+              icon: Icons.replay_rounded,
+              primary: false,
+              onPressed: () {
+                // pushReplacement, а не push: возвращаться к итогу старого
+                // прохода после нового незачем.
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TrainingScreen(
+                      questions: wrongQuestions,
+                      title: appL10n.mistakes,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ResultButton(
+            label: appL10n.done,
+            primary: true,
+            accent: background,
+            onPressed: close,
           ),
         ],
       ),
