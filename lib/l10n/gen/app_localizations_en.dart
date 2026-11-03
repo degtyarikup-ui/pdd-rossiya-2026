@@ -608,6 +608,36 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String gameShareText(
+    String result,
+    String details,
+    String title,
+    String url,
+  ) {
+    return '$result\n$details\n\n$title\n$url';
+  }
+
+  @override
+  String gameShareScore(String game, int score) {
+    return 'My score in $game: $score';
+  }
+
+  @override
+  String gameShareDetails(int correct, int total, int combo) {
+    return 'Correct answers: $correct of $total · Best streak: ×$combo';
+  }
+
+  @override
+  String gameShareDetailsCity(String distance, int correct, int total) {
+    return 'Distance: $distance · Correct answers: $correct of $total';
+  }
+
+  @override
+  String gameShareDetailsScoreOnly(int score) {
+    return 'Score: $score';
+  }
+
+  @override
   String get notifStreakTitle1 => 'The series is under threat';
 
   @override

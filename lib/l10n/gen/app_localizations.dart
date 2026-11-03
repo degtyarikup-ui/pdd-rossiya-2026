@@ -1102,6 +1102,36 @@ abstract class AppLocalizations {
     String url,
   );
 
+  /// No description provided for @gameShareText.
+  ///
+  /// In ru, this message translates to:
+  /// **'{result}\n{details}\n\n{title}\n{url}'**
+  String gameShareText(String result, String details, String title, String url);
+
+  /// No description provided for @gameShareScore.
+  ///
+  /// In ru, this message translates to:
+  /// **'Мой результат в игре «{game}»: {score}'**
+  String gameShareScore(String game, int score);
+
+  /// No description provided for @gameShareDetails.
+  ///
+  /// In ru, this message translates to:
+  /// **'Верных ответов: {correct} из {total} · Лучшая серия: ×{combo}'**
+  String gameShareDetails(int correct, int total, int combo);
+
+  /// No description provided for @gameShareDetailsCity.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дистанция: {distance} · Верных ответов: {correct} из {total}'**
+  String gameShareDetailsCity(String distance, int correct, int total);
+
+  /// No description provided for @gameShareDetailsScoreOnly.
+  ///
+  /// In ru, this message translates to:
+  /// **'Счёт: {score}'**
+  String gameShareDetailsScoreOnly(int score);
+
   /// No description provided for @notifStreakTitle1.
   ///
   /// In ru, this message translates to:

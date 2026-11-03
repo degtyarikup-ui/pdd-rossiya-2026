@@ -339,6 +339,7 @@ static void HideGame(dispatch_block_t completion) {
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"usage.json"] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"report-request.json"] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"report-result.json"] error:nil];
+  [files removeItemAtPath:[folder stringByAppendingPathComponent:@"share-request.json"] error:nil];
   gLastLoadingState = nil;
   gLastUsageState = nil;
   NSMutableArray *gameArgs = [NSMutableArray arrayWithArray:args ? args : @[]];
@@ -367,6 +368,7 @@ static void HideGame(dispatch_block_t completion) {
   [self pollLoading];
   [self pollUsage];
   [self pollQuestionReport];
+  [self pollShare];
   NSString *path = [ExchangeFolder() stringByAppendingPathComponent:@"summary.json"];
   NSData *data = [NSData dataWithContentsOfFile:path];
   if (!data) {
@@ -436,6 +438,28 @@ static void HideGame(dispatch_block_t completion) {
     [reply writeToFile:[ExchangeFolder() stringByAppendingPathComponent:@"report-result.json"]
               options:NSDataWritingAtomic error:nil];
   }];
+}
+
+/// Native iOS share sheet triggered by the game's results screen.
+- (void)pollShare {
+  NSString *path = [ExchangeFolder() stringByAppendingPathComponent:@"share-request.json"];
+  NSData *data = [NSData dataWithContentsOfFile:path];
+  if (!data) return;
+  [NSFileManager.defaultManager removeItemAtPath:path error:nil];
+  id request = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+  if (![request isKindOfClass:NSDictionary.class]) return;
+  NSString *text = request[@"text"];
+  if (![text isKindOfClass:NSString.class] || text.length == 0) return;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    UIActivityViewController *activity = [[UIActivityViewController alloc] initWithActivityItems:@[text] applicationActivities:nil];
+    UIViewController *presenter = gGameWindow.rootViewController ?: UIApplication.sharedApplication.keyWindow.rootViewController;
+    if (activity.popoverPresentationController) {
+      activity.popoverPresentationController.sourceView = presenter.view;
+      activity.popoverPresentationController.sourceRect = CGRectMake(CGRectGetMidX(presenter.view.bounds), CGRectGetMidY(presenter.view.bounds), 0, 0);
+      activity.popoverPresentationController.permittedArrowDirections = 0;
+    }
+    [presenter presentViewController:activity animated:YES completion:nil];
+  });
 }
 
 /// Only explicit loading covers the game. Normal scene streaming remains playable.

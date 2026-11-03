@@ -43,6 +43,9 @@ class GameOverDialog extends StatefulWidget {
   /// confetti burst and the celebration sound.
   final bool isNewRecord;
 
+  /// Shares the ride result with friends or social media.
+  final VoidCallback? onShare;
+
   const GameOverDialog({
     super.key,
     required this.state,
@@ -58,6 +61,7 @@ class GameOverDialog extends StatefulWidget {
     this.onBuyPremium,
     this.bestScore,
     this.isNewRecord = false,
+    this.onShare,
   });
 
   @override
@@ -97,7 +101,8 @@ class _GameOverDialogState extends State<GameOverDialog> {
     final vehicleId = widget.vehicleId, vehiclePaint = widget.vehiclePaint;
     final thumbnail = widget.thumbnail, thumbnailCache = widget.thumbnailCache;
     final onLeaderboard = widget.onLeaderboard,
-        onBuyPremium = widget.onBuyPremium;
+        onBuyPremium = widget.onBuyPremium,
+        onShare = widget.onShare;
     final bestScore = widget.bestScore, isNewRecord = widget.isNewRecord;
     final distance = state.distanceM >= 1000
         ? '${(state.distanceM / 1000).toStringAsFixed(1)} ${appL10n.gameKilometers}'
@@ -272,13 +277,14 @@ class _GameOverDialogState extends State<GameOverDialog> {
                       ),
                     ),
                   // Secondary actions side by side: the run's mistakes (open
-                  // as ticket questions) and the weekly rating.
+                  // as ticket questions), sharing the result, and weekly rating.
                   if ((state.mistakes.isNotEmpty && onReview != null) ||
-                      onLeaderboard != null) ...[
+                      onLeaderboard != null ||
+                      onShare != null) ...[
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        if (state.mistakes.isNotEmpty && onReview != null)
+                        if (state.mistakes.isNotEmpty && onReview != null) ...[
                           Expanded(
                             child: GameSecondaryButton(
                               key: const ValueKey('game-over-mistakes'),
@@ -290,10 +296,20 @@ class _GameOverDialogState extends State<GameOverDialog> {
                               onPressed: () => onReview(state.mistakes),
                             ),
                           ),
-                        if (state.mistakes.isNotEmpty &&
-                            onReview != null &&
-                            onLeaderboard != null)
                           const SizedBox(width: 8),
+                        ],
+                        if (onShare != null) ...[
+                          Expanded(
+                            child: GameSecondaryButton(
+                              key: const ValueKey('game-over-share'),
+                              icon: Icons.share_rounded,
+                              label: appL10n.share,
+                              color: colors.accent,
+                              onPressed: onShare,
+                            ),
+                          ),
+                          if (onLeaderboard != null) const SizedBox(width: 8),
+                        ],
                         if (onLeaderboard != null)
                           Expanded(
                             child: GameSecondaryButton(

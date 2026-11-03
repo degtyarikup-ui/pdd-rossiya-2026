@@ -276,6 +276,7 @@ func show_results(score: int, solved: int, wrong: int, combo: int, record: bool,
 	if is_instance_valid(_toast_tween): _toast_tween.kill()
 	_toast.modulate.a = 0.0
 	results.set_vehicle(model, paint)
+	results.set_game_mode("parking")
 	results.mistakes_button.visible = false
 	results.show_results(score, solved, wrong, combo, record, best)
 	_layout()

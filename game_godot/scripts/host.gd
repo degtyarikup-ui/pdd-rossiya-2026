@@ -169,6 +169,40 @@ static func send(data: Dictionary) -> void:
 		_post_to_parent("send", JSON.stringify(data))
 
 
+## Triggers the host/platform native share sheet (Android, iOS, Web) or copies to clipboard (Desktop).
+static func share(text: String, title := "") -> void:
+	if embedded():
+		Engine.get_singleton("PddHost").send(JSON.stringify({
+			"event": "share",
+			"text": text,
+			"title": title
+		}))
+	elif io != "":
+		var path := io.path_join("share-request.json")
+		var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
+		if file != null:
+			file.store_string(JSON.stringify({"text": text, "title": title}))
+			file.close()
+			DirAccess.rename_absolute(path + ".tmp", path)
+	elif on_web():
+		JavaScriptBridge.eval("""
+		(function() {
+			if (navigator.share) {
+				navigator.share({title: %s, text: %s}).catch(function(){});
+			} else if (navigator.clipboard) {
+				navigator.clipboard.writeText(%s);
+			}
+		})();
+		""" % [JSON.stringify(title), JSON.stringify(text), JSON.stringify(text)], true)
+		_post_to_parent("send", JSON.stringify({
+			"event": "share",
+			"text": text,
+			"title": title
+		}))
+	else:
+		DisplayServer.clipboard_set(text)
+
+
 ## The native/page host plays the shared animated WebP independently of scene construction.
 ## `false` is a rendered-frame readiness signal, never a timeout or a guessed progress value.
 static func loading(visible: bool, phase: String = "loading") -> void:

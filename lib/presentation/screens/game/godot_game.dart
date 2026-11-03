@@ -33,6 +33,7 @@ import 'package:pdd_app/data/services/question_report_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
 import 'package:pdd_app/presentation/screens/game/godot_web_screen.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:pdd_app/presentation/screens/game/platform/godot_web_frame.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
@@ -1242,6 +1243,36 @@ class GodotGame {
             onExit: () => Navigator.of(ctx).pop(),
             onLeaderboard: () => GameLeaderboardSheet.show(context),
             onReviewMistakes: (list) => reviewMistakes(context, ref, list),
+            onShare: () async {
+              final config = CountryConfig.current;
+              final km = (state.distanceM / 1000.0).toStringAsFixed(1);
+              final details = appL10n.gameShareDetailsCity(
+                '$km ${appL10n.gameKilometers}',
+                state.totalCorrect,
+                state.totalAnswered,
+              );
+              final resultLine = appL10n.gameShareScore(
+                appL10n.gameCityTitle,
+                state.score,
+              );
+              final text = appL10n.gameShareText(
+                resultLine,
+                details,
+                config.appTitle,
+                config.webUrl,
+              );
+              try {
+                final result = await SharePlus.instance.share(
+                  ShareParams(text: text),
+                );
+                if (result.status != ShareResultStatus.unavailable) return;
+              } catch (_) {}
+              await Clipboard.setData(ClipboardData(text: text));
+              if (!ctx.mounted) return;
+              ScaffoldMessenger.of(ctx).showSnackBar(
+                SnackBar(content: Text(appL10n.copiedToClipboard)),
+              );
+            },
             fuelRefillAt: GameRunsService.instance.firstUnitAt,
             onBuyPremium: () => PremiumPaywallSheet.show(context),
             bestScore: record ? null : best,

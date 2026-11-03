@@ -147,6 +147,22 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
                 val summary = event.optJSONObject("summary")?.toString() ?: return
                 host.runOnUiThread { host.keepSummary(summary) }
             }
+            "share" -> {
+                val text = event.optString("text")
+                val title = event.optString("title")
+                host.runOnUiThread {
+                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_TEXT, text)
+                        if (title.isNotEmpty()) {
+                            putExtra(android.content.Intent.EXTRA_SUBJECT, title)
+                        }
+                    }
+                    val chooser = android.content.Intent.createChooser(shareIntent, title.ifEmpty { null })
+                    chooser.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    host.startActivity(chooser)
+                }
+            }
         }
     }
 

@@ -1157,6 +1157,7 @@ func show_game_results(score: int, solved: int, wrong: int, max_combo: int, is_r
 	_top_bar.visible = false
 
 	_results.visible = true
+	_results.set_game_mode("violator")
 	_results.stat_values[0].text = "%d" % solved
 	_results.stat_values[1].text = "×%d" % max_combo
 	_results.show_results(score, solved, wrong, max_combo, is_record, prev_best)

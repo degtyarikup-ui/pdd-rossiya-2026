@@ -332,6 +332,70 @@
       }
     }
   },
+  "gameShareText": "{result}\n{details}\n\n{title}\n{url}",
+  "@gameShareText": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      },
+      "details": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "gameShareScore": "Мой результат в игре «{game}»: {score}",
+  "@gameShareScore": {
+    "placeholders": {
+      "game": {
+        "type": "String"
+      },
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "gameShareDetails": "Верных ответов: {correct} из {total} · Лучшая серия: ×{combo}",
+  "@gameShareDetails": {
+    "placeholders": {
+      "correct": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "combo": {
+        "type": "int"
+      }
+    }
+  },
+  "gameShareDetailsCity": "Дистанция: {distance} · Верных ответов: {correct} из {total}",
+  "@gameShareDetailsCity": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "correct": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "gameShareDetailsScoreOnly": "Счёт: {score}",
+  "@gameShareDetailsScoreOnly": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
   "notifStreakTitle1": "Серия под угрозой",
   "notifStreakBody1": "Потренируйся и сохрани огонёк 🔥",
   "notifStreakTitle2": "Ты слишком близко, чтобы бросать",

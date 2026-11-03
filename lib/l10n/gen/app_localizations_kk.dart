@@ -610,6 +610,36 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String gameShareText(
+    String result,
+    String details,
+    String title,
+    String url,
+  ) {
+    return '$result\n$details\n\n$title\n$url';
+  }
+
+  @override
+  String gameShareScore(String game, int score) {
+    return '«$game» ойынындағы нәтижем: $score';
+  }
+
+  @override
+  String gameShareDetails(int correct, int total, int combo) {
+    return 'Дұрыс жауаптар: $total ішінен $correct · Үздік серия: ×$combo';
+  }
+
+  @override
+  String gameShareDetailsCity(String distance, int correct, int total) {
+    return 'Қашықтық: $distance · Дұрыс жауаптар: $total ішінен $correct';
+  }
+
+  @override
+  String gameShareDetailsScoreOnly(int score) {
+    return 'Ұпай: $score';
+  }
+
+  @override
   String get notifStreakTitle1 => 'Серия қауіп төніп тұр';
 
   @override

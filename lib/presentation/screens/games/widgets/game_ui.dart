@@ -1,10 +1,13 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:share_plus/share_plus.dart';
 
 /// Общие элементы мини-игр. Только токены темы, без обводок; лёгкая тень —
 /// лишь там, где белая карточка иначе теряется на светлом фоне.
@@ -387,6 +390,7 @@ class GameResultOverlay extends StatefulWidget {
     required this.onExit,
     this.mistakesCount = 0,
     this.onMistakes,
+    this.onShare,
   });
 
   final Widget emblem;
@@ -403,6 +407,7 @@ class GameResultOverlay extends StatefulWidget {
   final VoidCallback onExit;
   final int mistakesCount;
   final VoidCallback? onMistakes;
+  final VoidCallback? onShare;
 
   @override
   State<GameResultOverlay> createState() => _GameResultOverlayState();
@@ -709,6 +714,19 @@ class _GameResultOverlayState extends State<GameResultOverlay>
                         const SizedBox(height: 12),
                       ],
                       _ResultButton(
+                        label: appL10n.share,
+                        icon: Icons.share_rounded,
+                        primary: false,
+                        onPressed: () {
+                          if (widget.onShare != null) {
+                            widget.onShare!();
+                          } else {
+                            _defaultShare(context);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _ResultButton(
                         label: appL10n.gameRestart,
                         primary: true,
                         onPressed: widget.onRestart,
@@ -721,6 +739,32 @@ class _GameResultOverlayState extends State<GameResultOverlay>
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _defaultShare(BuildContext context) async {
+    final config = CountryConfig.current;
+    final statLines = widget.stats
+        .map((s) => '${s.label}: ${s.value}')
+        .join(' · ');
+    final details = statLines.isNotEmpty
+        ? statLines
+        : appL10n.gameShareDetailsScoreOnly(widget.score);
+    final resultLine = appL10n.gameShareScore(widget.title, widget.score);
+    final text = appL10n.gameShareText(
+      resultLine,
+      details,
+      config.appTitle,
+      config.webUrl,
+    );
+    try {
+      final result = await SharePlus.instance.share(ShareParams(text: text));
+      if (result.status != ShareResultStatus.unavailable) return;
+    } catch (_) {}
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(appL10n.copiedToClipboard)),
     );
   }
 

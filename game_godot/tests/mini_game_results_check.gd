@@ -65,8 +65,10 @@ func _run() -> void:
 				_expect(result.cover.size.y >= 150.0,
 					"vehicle keeps a readable preview " + context)
 				_expect(result.exit_button.size.is_equal_approx(Vector2(48, 48)), "close stays exactly square with wrapped headings " + context)
-				_expect(result.restart_button.size.y >= 48.0 and result.exit_button.size.y >= 48.0,
+				_expect(result.restart_button.size.y >= 48.0 and result.exit_button.size.y >= 48.0 and result.share_button.size.y >= 48.0,
 					"full-width actions keep comfortable tap targets " + context)
+				_expect(result.share_button.visible and (result.share_button.get_meta("caption") as Label).text == Ui.t("share"),
+					"share button visible and localised " + context)
 				result.scroll.scroll_vertical = 2147483647
 			await _settle(crossroads, regulator)
 			for result: MiniGameResults in [cross, reg]:

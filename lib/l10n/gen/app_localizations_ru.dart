@@ -623,6 +623,36 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String gameShareText(
+    String result,
+    String details,
+    String title,
+    String url,
+  ) {
+    return '$result\n$details\n\n$title\n$url';
+  }
+
+  @override
+  String gameShareScore(String game, int score) {
+    return 'Мой результат в игре «$game»: $score';
+  }
+
+  @override
+  String gameShareDetails(int correct, int total, int combo) {
+    return 'Верных ответов: $correct из $total · Лучшая серия: ×$combo';
+  }
+
+  @override
+  String gameShareDetailsCity(String distance, int correct, int total) {
+    return 'Дистанция: $distance · Верных ответов: $correct из $total';
+  }
+
+  @override
+  String gameShareDetailsScoreOnly(int score) {
+    return 'Счёт: $score';
+  }
+
+  @override
   String get notifStreakTitle1 => 'Серия под угрозой';
 
   @override

@@ -4,6 +4,7 @@ import 'dart:ui_web' as ui;
 
 import 'package:flutter/widgets.dart';
 import 'package:pdd_app/data/services/question_report_service.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:web/web.dart' as web;
 
 /// The Godot build of the game, in a frame on the same site: the folder
@@ -105,6 +106,12 @@ class GodotWebFrame {
           if (event is Map<String, dynamic> &&
               event['event'] == 'question_report') {
             _reportQuestion(event);
+          }
+          if (event is Map<String, dynamic> && event['event'] == 'share') {
+            final text = event['text'] as String? ?? '';
+            if (text.isNotEmpty) {
+              SharePlus.instance.share(ShareParams(text: text));
+            }
           }
           if (event is Map && event['event'] == 'loading') {
             _setLoading(

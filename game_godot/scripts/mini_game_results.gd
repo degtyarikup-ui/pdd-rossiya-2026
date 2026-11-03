@@ -6,6 +6,7 @@ extends Control
 signal restart_pressed()
 signal exit_pressed()
 signal mistakes_pressed()
+signal share_pressed()
 
 var card: PanelContainer
 var content: VBoxContainer
@@ -19,6 +20,8 @@ var stat_captions: Array[Label] = []
 var restart_button: Button
 var exit_button: Button
 var mistakes_button: Button
+var share_button: Button
+var game_mode := "city"
 var scroll: ScrollContainer
 var _bounds := Rect2()
 var _preview: SubViewport
@@ -163,6 +166,10 @@ func _init(_legacy_cover := "") -> void:
 	mistakes_button.pressed.connect(func(): mistakes_pressed.emit())
 	_action_icon(mistakes_button, 0xf712)
 	actions.add_child(mistakes_button)
+	share_button = _button(Ui.t("share"), false)
+	share_button.pressed.connect(_on_share)
+	_action_icon(share_button, 0xe593)
+	actions.add_child(share_button)
 	_footer.add_child(actions)
 	restart_button = _button(Ui.t("gameRestart"), true)
 	restart_button.pressed.connect(func(): restart_pressed.emit())
@@ -199,6 +206,7 @@ func _build_studio() -> void:
 
 func set_vehicle(id: String, paint: Color) -> void:
 	_subject = "vehicle"
+	game_mode = "city"
 	mistakes_button.visible = true
 	_actions.visible = true
 	_post.visible = false
@@ -216,6 +224,9 @@ func set_vehicle(id: String, paint: Color) -> void:
 		_wheel_starts.append({"node": wheel, "rotation": wheel.rotation})
 	_preview.render_target_update_mode = SubViewport.UPDATE_ONCE
 
+func set_game_mode(mode: String) -> void:
+	game_mode = mode
+
 ## Mini-games supply their own emblem while sharing counters, controls and motion.
 func set_subject(kind: String) -> void:
 	if kind not in ["regulator", "crossroads"]: return
@@ -224,8 +235,9 @@ func set_subject(kind: String) -> void:
 		_studio.remove_child(_car)
 		_car.queue_free()
 	_subject = kind
+	game_mode = kind
 	mistakes_button.visible = false
-	_actions.visible = false
+	_actions.visible = true
 	_actions.columns = 1
 	_post.visible = kind == "crossroads"
 	_wheel_starts.clear()
@@ -262,11 +274,13 @@ func layout(bounds: Rect2) -> void:
 	_fit_score(width)
 	card.position = Vector2(bounds.position.x + (bounds.size.x - width) / 2, bounds.position.y)
 	card.size = Vector2(width, bounds.size.y)
-	# The weekly rating lives only in the app's Games tab; the city keeps its mistakes button.
-	_actions.columns = 1
-	_actions.visible = mistakes_button.visible
+	if mistakes_button.visible:
+		_actions.columns = 2 if width >= 340 else 1
+	else:
+		_actions.columns = 1
+	_actions.visible = true
 	var button_height := maxf(48, roundf((22 if bounds.size.y < 320 else 32) * Ui.text_scale() + (12 if bounds.size.y < 320 else 16)))
-	for button in [mistakes_button, restart_button]:
+	for button in [mistakes_button, share_button, restart_button]:
 		button.custom_minimum_size.y = button_height
 	cover.custom_minimum_size.y = clampf(bounds.size.y * 0.36, 150, 300)
 
@@ -284,6 +298,7 @@ func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record
 	stat_values[1].text = "×%d" % max_combo
 	stat_captions[1].text = Ui.t("gameComboLabel")
 	(mistakes_button.get_meta("caption") as Label).text = Ui.t("gameRunMistakesButton", {"count": wrong})
+	(share_button.get_meta("caption") as Label).text = Ui.t("share")
 	mistakes_button.disabled = wrong == 0
 	visible = true
 	scroll.scroll_vertical = 0
@@ -428,13 +443,56 @@ func hide_results() -> void:
 	dismiss_review()
 	if is_instance_valid(_numbers): _numbers.kill()
 	_update_count(1.0)
-	for button in [exit_button, restart_button, mistakes_button]:
+	for button in [exit_button, restart_button, mistakes_button, share_button]:
 		_reset_button(button)
 	if is_instance_valid(_arrival): _arrival.kill()
 	if is_instance_valid(_reveal): _reveal.kill()
 	_preview.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	visible = false
 	modulate.a = 1
+
+func _game_title() -> String:
+	match game_mode:
+		"crossroads":
+			return Ui.t("gamesCrossroadsTitle")
+		"regulator":
+			return Ui.t("gameTrafficControllerTitle")
+		"parking":
+			return Ui.t("gamesParkingTitle")
+		"violator":
+			return Ui.t("gamesViolatorTitle")
+		_:
+			return Ui.t("gameCityTitle")
+
+func _on_share() -> void:
+	share_pressed.emit()
+	var game_title := _game_title()
+	var details := ""
+	if _distance_m >= 0.0:
+		details = Ui.t("gameShareDetailsCity", {
+			"distance": _distance_text(roundf(_distance_m / 100.0) / 10.0),
+			"correct": _solved_total,
+			"total": _answered_total
+		})
+	elif _answered_total > 0:
+		var combo_val := 0
+		if stat_values.size() > 1:
+			combo_val = int(stat_values[1].text.trim_prefix("×").trim_prefix("x"))
+		details = Ui.t("gameShareDetails", {
+			"correct": _solved_total,
+			"total": _answered_total,
+			"combo": combo_val
+		})
+	else:
+		details = Ui.t("gameShareDetailsScoreOnly", {"score": _score_total})
+	var result_line := Ui.t("gameShareScore", {"game": game_title, "score": _score_total})
+	var text := Ui.t("gameShareText", {
+		"result": result_line,
+		"details": details,
+		"title": "ПДД Россия 2026",
+		"url": "https://pdd-drive.ru"
+	})
+	Host.share(text, game_title)
 
 func _button(text: String, primary: bool) -> Button:
 	var button := Button.new()
