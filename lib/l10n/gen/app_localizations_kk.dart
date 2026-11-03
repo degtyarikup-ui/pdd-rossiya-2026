@@ -4499,4 +4499,8 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameParkingSignSchoolBuilding => 'МЕКТЕП';
+
+  @override
+  String get progressSyncDeferred =>
+      'Үлгеріміңіз осы құрылғыда сақталды. Сервер қолжетімді болғанда синхрондау жалғасады.';
 }

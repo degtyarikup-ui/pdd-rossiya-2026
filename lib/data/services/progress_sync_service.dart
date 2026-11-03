@@ -44,6 +44,9 @@ class ProgressSyncService with WidgetsBindingObserver {
   final double Function() _jitter;
   final Duration _retryBase, _retryCap;
   AuthService get _auth => _testAuth ?? AuthService.instance;
+  final _waitingForSync = ValueNotifier(false);
+  ValueListenable<bool> get waitingForSync => _waitingForSync;
+
   final _outboxes = <String, _ProgressOutbox>{};
   Future<void> _storageTail = Future<void>.value();
   ProgressDataSource? _dataSource;
@@ -102,6 +105,7 @@ class ProgressSyncService with WidgetsBindingObserver {
   /// its original account and is resumed when that account has a session again.
   void cancel() {
     _generation++;
+    _waitingForSync.value = false;
     _timer?.cancel();
     _timer = null;
     _timerAt = null;
@@ -265,7 +269,12 @@ class ProgressSyncService with WidgetsBindingObserver {
             stillCurrent: () => _current(context),
           );
         }
-        if (_current(context)) _restoredGeneration = context.generation;
+        if (_current(context)) {
+          _restoredGeneration = context.generation;
+          final restored = _outboxes[context.id]!;
+          _waitingForSync.value =
+              restored.pending && restored.failures > 0 && !restored.blocked;
+        }
       } finally {
         if (_restoringGeneration == context.generation) {
           _restoration = null;
@@ -395,6 +404,7 @@ class ProgressSyncService with WidgetsBindingObserver {
         latest.blocked = false;
         await _persist(context.id, latest);
         _outboxes[context.id] = latest;
+        if (_current(context)) _waitingForSync.value = false;
       });
     } catch (error) {
       if (_current(context)) {
@@ -447,6 +457,9 @@ class ProgressSyncService with WidgetsBindingObserver {
         .millisecondsSinceEpoch;
     await _persist(attempt.context.id, outbox);
     _outboxes[attempt.context.id] = outbox;
+    if (_current(attempt.context)) {
+      _waitingForSync.value = retryable && outbox.pending;
+    }
   });
 
   Duration _wait(_ProgressOutbox outbox, Duration minimum) {

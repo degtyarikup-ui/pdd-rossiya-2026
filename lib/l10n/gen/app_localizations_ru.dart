@@ -4518,4 +4518,8 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameParkingSignSchoolBuilding => 'ШКОЛА';
+
+  @override
+  String get progressSyncDeferred =>
+      'Прогресс сохранён на устройстве. Синхронизация продолжится, когда сервер станет доступен.';
 }

@@ -4498,4 +4498,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameParkingSignSchoolBuilding => 'SCHOOL';
+
+  @override
+  String get progressSyncDeferred =>
+      'Progress is saved on this device. Sync will resume when the server is available.';
 }

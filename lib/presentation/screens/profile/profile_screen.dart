@@ -10,6 +10,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/achievement.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/user_avatar.dart';
 import 'package:pdd_app/presentation/widgets/achievement_labels.dart';
@@ -206,6 +207,20 @@ class ProfileScreen extends ConsumerWidget {
               // Карточка аккаунта
               if (currentUser != null) ...[
                 _UserProfileCard(profile: currentUser),
+                ValueListenableBuilder<bool>(
+                  valueListenable: ProgressSyncService.instance.waitingForSync,
+                  builder: (context, waiting, _) => waiting
+                      ? Padding(
+                          padding: const EdgeInsets.only(
+                            top: AppDimensions.spacingS,
+                          ),
+                          child: Text(
+                            appL10n.progressSyncDeferred,
+                            style: TextStyle(color: colors.secondaryText),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
                 const SizedBox(height: AppDimensions.spacingM),
               ] else ...[
                 const _SignInCard(),

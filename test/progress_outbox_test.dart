@@ -282,6 +282,7 @@ void main() {
         () async {
           final service = _service(auth, source);
           await service.syncWithServer();
+          expect(service.waitingForSync.value, isTrue);
           await _answer(source, 'newer');
           service.scheduleSync(delay: Duration.zero);
           await _until(() async => (await _outbox())['revision'] == 2);
@@ -291,9 +292,11 @@ void main() {
           final restarted = _service(auth, restartedSource);
           await restarted.syncWithServer();
           await Future<void>.delayed(const Duration(milliseconds: 60));
+          expect(restarted.waitingForSync.value, isTrue);
           expect(requests.length, 1);
           expect((await _outbox())['acknowledgedRevision'], 0);
           await _until(_acknowledged);
+          expect(restarted.waitingForSync.value, isFalse);
           expect(requests.length, 2);
           expect(
             (_payload(requests.last)['progress'] as Map)['questionProgressAb'],

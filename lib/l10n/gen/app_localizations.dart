@@ -7539,6 +7539,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'ШКОЛА'**
   String get gameParkingSignSchoolBuilding;
+
+  /// No description provided for @progressSyncDeferred.
+  ///
+  /// In ru, this message translates to:
+  /// **'Прогресс сохранён на устройстве. Синхронизация продолжится, когда сервер станет доступен.'**
+  String get progressSyncDeferred;
 }
 
 class _AppLocalizationsDelegate

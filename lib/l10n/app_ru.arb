@@ -2207,5 +2207,6 @@
   "gameParkingSignExam": "АВТОДРОМ",
   "gameParkingSignExit": "ВЫХОД",
   "gameParkingSignMall": "ТОРГОВЫЙ ЦЕНТР",
-  "gameParkingSignSchoolBuilding": "ШКОЛА"
+  "gameParkingSignSchoolBuilding": "ШКОЛА",
+  "progressSyncDeferred": "Прогресс сохранён на устройстве. Синхронизация продолжится, когда сервер станет доступен."
 }

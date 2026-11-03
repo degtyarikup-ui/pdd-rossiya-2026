@@ -1527,5 +1527,6 @@
   "gameParkingSignExam": "АВТОДРОМ",
   "gameParkingSignExit": "ШЫҒУ",
   "gameParkingSignMall": "САУДА ОРТАЛЫҒЫ",
-  "gameParkingSignSchoolBuilding": "МЕКТЕП"
+  "gameParkingSignSchoolBuilding": "МЕКТЕП",
+  "progressSyncDeferred": "Үлгеріміңіз осы құрылғыда сақталды. Сервер қолжетімді болғанда синхрондау жалғасады."
 }

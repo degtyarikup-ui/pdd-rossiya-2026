@@ -1527,5 +1527,6 @@
   "gameParkingSignExam": "TEST GROUND",
   "gameParkingSignExit": "EXIT",
   "gameParkingSignMall": "SHOPPING CENTRE",
-  "gameParkingSignSchoolBuilding": "SCHOOL"
+  "gameParkingSignSchoolBuilding": "SCHOOL",
+  "progressSyncDeferred": "Progress is saved on this device. Sync will resume when the server is available."
 }
