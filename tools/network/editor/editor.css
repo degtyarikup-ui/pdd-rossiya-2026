@@ -428,11 +428,8 @@ body.framing .left, body.framing .right, body.framing .top-actions { visibility:
 .phone-camera { position: absolute; top: 20px; right: 20px; width: 252px; max-height: calc(100% - 100px); overflow: auto;
   display: grid; gap: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: #fff;
   box-shadow: var(--float); pointer-events: auto; }
-.phone-camera summary { display: flex; align-items: center; gap: 8px; margin-top: 0; color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; list-style: none; }
-.phone-camera summary::-webkit-details-marker { display: none; }
-.phone-camera summary::after { content: "−"; color: var(--ink-3); margin-left: auto; }
-.phone-camera:not([open]) summary::after { content: "+"; }
-.phone-camera-body { display: grid; gap: 16px; margin-top: 16px; }
+.phone-camera h2 { display: flex; align-items: center; gap: 7px; margin: 0; color: var(--ink); font-size: 14px; font-weight: 600; }
+.phone-camera-body { display: grid; gap: 9px; }
 .phone-camera .segments { width: 100%; }
 .phone-camera .segments button { flex: 1; }
 .phone-controls-grid { display: grid; gap: 16px; }
@@ -483,8 +480,6 @@ body.framing .left, body.framing .right, body.framing .top-actions { visibility:
 .dir-grid button.on { background: var(--accent); color: #fff; }
 
 .hint { display: none !important; }
-.info-help { position: relative; margin: 6px 0; }
-.info-help summary { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 1px solid var(--ink-2); border-radius: 50%; cursor: pointer; font-style: italic; }
 .refpic { top: 12px; max-width: calc(100% - 32px); max-height: calc(100% - 90px); overflow: auto; }
 .refpic-head { position: sticky; top: 0; background: white; z-index: 1; }
 .refpic-body { padding: 0 10px 10px; }
@@ -553,12 +548,6 @@ button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); 
 .selection-actions .btn { flex: 1; padding: 0 9px; font-size: 11px; }
 .selection-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-2); margin: 0 12px 10px; }
 .selection-section { margin-bottom: 14px; }
-.inspector-more { margin: 8px 10px; border-radius: 12px; border: 1px solid var(--line); background: #fff; overflow: hidden; }
-.inspector-more > summary { display: flex; justify-content: space-between; align-items: center; padding: 12px; color: var(--ink-2); cursor: pointer; font-size: 12px; font-weight: 500; list-style: none; }
-.inspector-more > summary::-webkit-details-marker { display: none; }
-.inspector-more > summary::after { content: '+'; font-size: 17px; color: var(--ink-3); }
-.inspector-more[open] > summary::after { content: '−'; }
-.inspector-more .card { border: 0; margin: 0; border-radius: 0; border-top: 1px solid var(--line); }
 .brush-toolbar { width: min(680px, calc(100% - 24px)); flex-direction: column; gap: 10px; padding: 12px; max-height: min(470px, calc(100% - 150px)); overflow-y: auto; }
 .brush-presets { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; }
 .brush-card { min-width: 0; display: flex; align-items: center; flex-direction: column; gap: 5px; background: var(--field); padding: 6px; border-radius: 10px; color: var(--ink-2); }
@@ -683,8 +672,6 @@ button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); 
 .bus-stop-summary > span { font-size: 12px; color: var(--ink-3); }
 .bus-stop-summary .btn { font-size: 12px; }
 .ibadge .bus-stop-mark-pic { width: 28px; height: 18px; }
-.bus-stop-type summary { cursor: pointer; color: var(--ink-2); font-size: 12px; }
-.bus-stop-type[open] summary { margin-bottom: 12px; }
 
 .signal-steady { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px; }
 .signal-flashing { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; margin-top: 7px; }

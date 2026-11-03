@@ -53,8 +53,8 @@ function selectedIndex(index) {change('routeIndex',index + 1);}
 function undoLast() {App.undo(); App.select({t:'route',id:state.sel[0].id});}
 for (const free of [false,true]) for (const kind of ['approach','manoeuvre']) {
   const route = setup(kind,free);
-  assert.match(pane.innerHTML,new RegExp(`Опорных точек: ${route().points.length}`));
-  assert.match(pane.innerHTML,/строится по дорогам/);
+  assert.match(pane.innerHTML,new RegExp(`<span>${route().points.length} (точка|точки|точек)</span>`));
+  assert.match(pane.innerHTML,/aria-pressed="true" disabled>.*?Авто/);
   assert.doesNotMatch(pane.innerHTML,/data-text="routeX"/,'automatic points are not silently editable');
   click('own-path');
   assert.ok(route().manual && !route().auto,'explicit manual mode uses Layout helper');
@@ -94,7 +94,7 @@ for (const free of [false,true]) for (const kind of ['approach','manoeuvre']) {
   });
   const dense = clone(route().points);
   selectedIndex(dense.length-2);
-  assert.match(pane.innerHTML,/Упростить точки/);
+  assert.match(pane.innerHTML,/data-act="route-compact"/);
   click('route-compact');
   assert.equal(compactSelection.v,undefined,'stale vertex cleared before simplification');
   assert.equal(state.sel[0].v,undefined);
@@ -128,7 +128,7 @@ for (const id of ['ticket_10_15','ticket_13_15','ticket_9_14']) {
   assert.ok(authored,`${id} has a route without either mode flag`);
   const route = () => state.S.routes.find(r => r.id === authored.id);
   App.select({t:'route',id:authored.id,v:1});
-  assert.match(pane.innerHTML,/ручной путь/);
+  assert.match(pane.innerHTML,/aria-pressed="true" disabled>.*?Вручную/);
   assert.match(pane.innerHTML,/data-text="routeX"/,'legacy controls are immediately available');
   const oldPoint = clone(route().points[1]);
   change('routeX',oldPoint[0]+0.125);
@@ -148,7 +148,7 @@ for (const id of ['ticket_10_15','ticket_13_15','ticket_9_14']) {
   state.id = state.S.id;
   const route = () => state.S.routes.find(r => r.kind === 'approach');
   App.select({t:'route',id:route().id,v:route().points.length-1});
-  assert.match(pane.innerHTML,/ручной путь/,'legacy approach uses the same inferred mode');
+  assert.match(pane.innerHTML,/aria-pressed="true" disabled>.*?Вручную/,'legacy approach uses the same inferred mode');
   assert.match(pane.innerHTML,/data-text="routeZ"/);
   assert.doesNotMatch(pane.innerHTML,/data-act="auto-path"/,'traced road has no constructor to regenerate an approach');
   const newZ = App.r3(route().points.at(-1)[1]+0.25);
@@ -182,8 +182,8 @@ for (const mode of ['auto','manual','traced','А/Б']) {
   deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),before,`${mode}: Delete preserves every route and point`);
   assert.ok(state.dirty,`${mode}: hide marks an unsaved change`);
   assert.equal(state.undo.length,1,`${mode}: hide is one undo step`);
-  assert.match(pane.innerHTML,/Скрыта в этой сцене/);
-  assert.match(pane.innerHTML,/Вернуть синюю стрелку/);
+  assert.match(pane.innerHTML,/Скрыта/);
+  assert.match(pane.innerHTML,/data-act="player-guide"[^>]*aria-pressed="false"/);
   assert.doesNotMatch(pane.innerHTML,/data-text="routeX"/,'hidden guide has no invisible point-edit controls');
   assert.doesNotMatch(pane.innerHTML,/data-act="own-path"/);
   App.undo();
@@ -205,7 +205,7 @@ for (const mode of ['auto','manual','traced','А/Б']) {
   // The common scene inspector can restore the flag without a route selection.
   App.setPlayerGuideVisible(false);
   App.select([]);
-  assert.match(pane.innerHTML,/Вернуть синюю стрелку/);
+  assert.match(pane.innerHTML,/data-act="player-guide"[^>]*aria-pressed="false"/);
   click('player-guide');
   assert.equal(Object.hasOwn(state.S.question,'showPlayerGuide'),false);
   deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),before);
@@ -237,7 +237,7 @@ for (const mode of ['street','free','traced']) {
   const paths=clone(state.S.routes);
   const main=state.S.routes.find(r => r.kind === 'manoeuvre' && r.exit === 'right');
   assert.ok(main,`${mode}: fixture has the current manoeuvre`);
-  assert.match(pane.innerHTML,/Вернуть синюю стрелку/,`${mode}: player inspector exposes a hidden guide`);
+  assert.match(pane.innerHTML,/data-act="player-guide"[^>]*aria-pressed="false"/,`${mode}: player inspector exposes a hidden guide`);
   assert.doesNotMatch(pane.innerHTML,/data-act="player-path"/,`${mode}: hidden guide has no path-edit shortcut`);
   click('player-guide');
   assert.equal(Object.hasOwn(state.S.question,'showPlayerGuide'),false,`${mode}: player inspector restores the guide`);
@@ -259,7 +259,7 @@ for (const mode of ['street','free','traced']) {
   for (const selection of [{t:'stop'},[],{t:'route',id:other.id}]) {
     App.select(selection);
     assert.match(pane.innerHTML,/data-act="player-path"/,`${mode}: enabled guide exposes its edit shortcut`);
-    assert.match(pane.innerHTML,/Редактировать стрелку/);
+    assert.match(pane.innerHTML,/Править форму/);
     click('player-path');
     deepEqual(state.sel,[{t:'route',id:'player_guide',v:2}],`${mode}: shortcut selects the editable arrow`);
     deepEqual(state.S,visible,`${mode}: opening the path never changes scene data`);
@@ -267,13 +267,13 @@ for (const mode of ['street','free','traced']) {
     assert.equal(state.undo.length,0,`${mode}: opening the path creates no undo step`);
   }
   App.select({t:'stop'});
-  assert.match(pane.innerHTML,/Убрать синюю стрелку/,`${mode}: player inspector can hide an enabled guide`);
+  assert.match(pane.innerHTML,/data-act="player-guide"[^>]*aria-pressed="true"/,`${mode}: player inspector can hide an enabled guide`);
   click('player-guide');
   assert.equal(state.S.question.showPlayerGuide,false,`${mode}: player inspector hides the guide`);
   deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),paths,`${mode}: hiding preserves every route`);
   assert.ok(state.dirty,`${mode}: hiding marks an unsaved scene edit`);
   assert.equal(state.undo.length,1,`${mode}: hiding is one undo step`);
-  assert.match(pane.innerHTML,/Вернуть синюю стрелку/);
+  assert.match(pane.innerHTML,/data-act="player-guide"[^>]*aria-pressed="false"/);
   App.undo();
   deepEqual(state.S,visible,`${mode}: undo restores the enabled guide`);
   assert.equal(state.dirty,false,`${mode}: undo restores the saved visible scene`);

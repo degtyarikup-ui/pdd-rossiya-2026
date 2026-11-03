@@ -4,10 +4,10 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const Layout = require('../editor/layout.js');
 const info = require('../../../game_godot/signs/catalog.json');
-const options = Object.entries(info).map(([code,item]) => ({dataset:{signOption:`${code} · ${item.title}`},hidden:false}));
+const results = {innerHTML:''};
 const listeners = {};
 const pane = {innerHTML:'',addEventListener:(name,fn) => {listeners[name] = fn;},
-  querySelectorAll:selector => selector === '[data-sign-option]' ? options : [],querySelector:() => null};
+  querySelectorAll:()=>[],querySelector:selector=>selector==='[data-sign-results]'?results:null};
 const node = {addEventListener:() => {},dataset:{},classList:{toggle:() => {}},textContent:''};
 const context = vm.createContext({Layout,
   document:{querySelector:selector => selector === '#inspector' ? pane : node},
@@ -25,12 +25,18 @@ state.S = {id:'sign-fixture',question:{},roads:[],routes:[],markings:[],lawns:[]
 state.id = state.S.id;
 state.savedJson = JSON.stringify(state.S);
 App.select({t:'sign',id:'sign1'});
-assert.match(pane.innerHTML,/aria-label="3.28 · Стоянка запрещена"/);
-assert.match(pane.innerHTML,/value="8.2.2"/,'all plates are available under the selected sign');
-listeners.input({target:{closest:s => s === '[data-sign-search]' ? {value:'3.28'} : null}});
-assert.equal(options.filter(o => !o.hidden).length,1,'inspector search filters without replacing the focused input');
+assert.equal((pane.innerHTML.match(/data-chip="code"/g)||[]).length,8,'only the visible page renders sign images');
+assert.doesNotMatch(pane.innerHTML,/<details/);
+const search = value => listeners.input({target:{closest:s => s === '[data-sign-search]' ? {value} : null}});
+search('стоянка 3.28');
+assert.equal((results.innerHTML.match(/data-chip="code"/g)||[]).length,1);
+assert.match(results.innerHTML,/aria-label="3.28 · Стоянка запрещена"/);
+search('8.2.2'); assert.match(results.innerHTML,/data-value="8.2.2"/);
+search('неизвестное название'); assert.match(results.innerHTML,/Знак не найден/);
 const chip = (name,value) => listeners.click({target:{closest:s => s === '[data-chip]' ? {dataset:{chip:name,value}} : null}});
 const change = (name,value) => listeners.change({target:{closest:s => s === '[data-text]' ? {dataset:{text:name},value} : null}});
+search(''); change('signGroup','8'); assert.match(results.innerHTML,/data-value="8.1.1"/); assert.doesNotMatch(results.innerHTML,/data-value="2.4"/);
+change('signGroup',''); search('3.28');
 chip('code','3.28');
 const sign = () => state.S.signs[0];
 assert.equal(sign().code,'3.28');

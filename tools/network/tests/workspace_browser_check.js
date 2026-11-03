@@ -58,6 +58,11 @@ const { chromium } = require("playwright");
     await page.locator("#home-back").click();
     await page.setViewportSize({width:390,height:844});
     await page.click("#frame-scene");
+    await page.waitForFunction(() => {
+      const frame = document.querySelector(".phone-frame")?.getBoundingClientRect();
+      const stage = document.querySelector("#stage").getBoundingClientRect();
+      return frame && Math.abs(frame.left + frame.width / 2 - stage.left - stage.width / 2) < 1;
+    });
     const frame = await page.locator(".phone-frame").boundingBox();
     const controls = await page.locator(".phone-camera").boundingBox();
     assert(frame.height > 300 && frame.y + frame.height <= controls.y);

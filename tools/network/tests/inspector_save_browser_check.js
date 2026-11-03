@@ -25,7 +25,7 @@ const { chromium } = require('playwright');
       App.select({t:'actor',id:App.S.actors[0].id});
     });
     writes.length = 0;
-    await page.locator('[data-fold="actor-model"] summary').click();
+    assert(await page.locator('[data-text="name"]').isVisible(), 'actor name is directly editable');
     const name = page.locator('[data-text="name"]'), save = page.locator('#save');
     await name.fill('Имя с клавиатуры');
     assert(await save.isEnabled(), 'a typed draft enables Save on a clean scene');

@@ -40,7 +40,7 @@ const annotation=()=>state.S.routes.find(r=>r.kind==='annotation');
 assert.equal(annotation().style,'line');assert.equal(annotation().colour,'#8b5cf6');
 assert.equal(annotation().label,undefined);assert.equal(annotation().labelPosition,undefined);
 assert.deepEqual(clone(annotation().points),before.routes.find(r=>r.kind==='choice').points);
-assert.match(pane.innerHTML,/без буквы/);assert.doesNotMatch(pane.innerHTML,/data-chip="label"/);
+assert.match(pane.innerHTML,/Обозначение/);assert.doesNotMatch(pane.innerHTML,/data-chip="label"/);
 App.undo();assert(state.S.routes.some(r=>r.label==='Б'));App.redo();
 App.select({t:'route',id:annotation().id});chip('annotation-style','both');
 assert.equal(annotation().style,'both');chip('annotation-colour','#20242b');assert.equal(annotation().colour,'#20242b');

@@ -1382,7 +1382,7 @@ const Scene3D = (() => {
   function phoneRect() {
     // Leave the controls and bottom actions outside the actual phone picture, including on laptops.
     if (width <= 575) {
-      const ph = Math.max(80, Math.min(height - 262, (width - 24) * PHONE_H / PHONE_W));
+      const ph = Math.max(80, Math.min(height - 272, (width - 24) * PHONE_H / PHONE_W));
       const pw = ph * PHONE_W / PHONE_H;
       return {x: (width - pw) / 2, y: 8, w: pw, h: ph};
     }

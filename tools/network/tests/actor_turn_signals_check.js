@@ -28,7 +28,7 @@ const chip = (key,value) => listeners.click({target:{closest:s => s === '[data-c
 const change = value => listeners.change({target:{closest:s => s === '[data-text]' ? {dataset:{text:'turnSignal'},value} : null}});
 const fixture = (name,side) => cases.push({name,side,scene:clone(state.S)});
 select();
-assert.match(pane.innerHTML,/<select data-text="turnSignal">/);
+assert.match(pane.innerHTML,/<select data-text="turnSignal"[^>]*>/);
 assert.match(pane.innerHTML,/<option value="auto" selected>/);
 for (const [way,side] of [['left','L'],['right','R'],['uturn','L'],['straight','']]) {
   chip('way',way);

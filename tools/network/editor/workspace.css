@@ -149,8 +149,8 @@ body.framing :is(.inspector-shell,.inspect-toggle,.workspace-status,.stage-tools
 #toast { position: fixed; top: calc(var(--header-h) + 54px); z-index: 45; }
 .loading-state { position: absolute; inset: var(--header-h) 0 0; z-index: 22; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px; background: var(--bg); color: var(--ink-2); text-align: center; }
 @media (max-width: 575px) {
-  .phone-camera { inset: auto 8px 53px; width: auto; max-height: 188px; padding: 10px 12px; border-radius: 8px; }
-  .phone-camera-body { margin-top: 10px; gap: 8px; }
+  .phone-camera { inset: auto 8px 53px; width: auto; max-height: 202px; padding: 8px 10px; border-radius: 8px; }
+  .phone-camera-body { gap: 6px; }
   .phone-controls-grid { grid-template-columns: 1fr 1fr; gap: 9px 16px; }
   .phone-presets .btn { min-height: 30px; flex-direction: row; gap: 3px; }
   .phone-presets .btn .i { width: 15px; height: 15px; }
@@ -181,7 +181,9 @@ body.framing :is(.inspector-shell,.inspect-toggle,.workspace-status,.stage-tools
 .selection-bar .selection-name { flex: 1 1 auto; min-width: 32px; max-width: 180px; gap: 7px; padding-inline: 7px; color: var(--accent); font-size: 12px; }
 .selection-name span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #selection-delete:hover { color: var(--red); }
-.inspector-shell { bottom: auto; height: fit-content; max-height: calc(100% - var(--header-h) - var(--footer-h) - 68px); display: flex; flex-direction: column; }
+.inspect-toggle[aria-expanded="true"] { visibility: hidden; }
+.inspector-shell { top: calc(var(--header-h) + 12px); bottom: auto; height: fit-content; max-height: calc(100% - var(--header-h) - var(--footer-h) - 24px); display: flex; flex-direction: column; }
+#close-inspector { top: 7px; right: 7px; }
 .inspector-shell .right { min-height: 0; height: auto; padding-bottom: 0; }
 .compass { display: grid; place-items: center; width: 32px; height: 28px; border-left: 1px solid var(--line); cursor: ew-resize; touch-action: none; }
 .compass svg { width: 27px; height: 27px; }

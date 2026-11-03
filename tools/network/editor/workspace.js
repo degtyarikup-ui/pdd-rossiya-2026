@@ -32,7 +32,10 @@
   App.showInspector = () => { autoInspect = true; properties(true); };
   function closeInspector() { autoInspect = false; properties(false); $("#inspect-toggle").focus(); }
   $("#close-inspector").onclick = closeInspector;
-  $("#inspect-toggle").onclick = () => inspector.hidden ? App.showInspector() : closeInspector();
+  $("#inspect-toggle").onclick = () => {
+    App.showInspector();
+    $("#close-inspector").focus({preventScroll:true});
+  };
   $("#close-left").onclick = () => { leftPanel(null); $(`[data-ltab="${App.state.ltab}"]`).focus(); };
   compact.addEventListener("change", () => {
     if (compact.matches && !drawer.hidden) properties(false);
@@ -86,7 +89,7 @@
       const panelWidth = parseFloat(getComputedStyle(app).getPropertyValue("--inspector-w"));
       const screen = point && Scene3D.screenOf(...point);
       // Keep the picked object under the pointer. Its name in the strip opens properties on demand.
-      if (!screen || screen.x < view.clientWidth - panelWidth - 20 || screen.y < 50) properties(true, true);
+      if (!screen || screen.x < view.clientWidth - panelWidth - 20 || screen.y < 8) properties(true, true);
     }
     if (!App.state.sel.length && inspectorForSelection) properties(false);
     App.updateWorkspaceStatus();

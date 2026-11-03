@@ -1,0 +1,37 @@
+#inspector .road-sheet { display: grid; gap: 6px; padding-block: 8px; }
+#inspector .road-sheet > h3 { margin: 0 0 2px; }
+#inspector .road-sheet .setting-title { margin: 0; }
+#inspector .road-sheet .road-row, #inspector .road-sheet .road-measure {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 4px 7px; min-height: 27px; margin: 0; font-size: 12px; color: var(--ink-2);
+}
+#inspector .road-sheet .road-row > .setting-title { display: inline-flex; gap: 3px; }
+#inspector .road-row select {
+  flex: 0 1 auto; min-width: 0; max-width: 72%; height: 28px;
+  padding: 2px 4px; font: inherit;
+}
+#inspector .road-sheet .seg-chips { display: flex; gap: 2px; flex-wrap: wrap; }
+#inspector .road-sheet .seg-chips button { min-height: 27px; min-width: 24px; padding: 3px 6px; gap: 4px; }
+#inspector .road-sheet .road-profiles {
+  display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 3px;
+}
+#inspector .road-sheet .road-profiles button { min-width: 0; min-height: 39px; padding: 2px; gap: 2px; }
+#inspector .road-sheet .road-profiles button span { font-size: 10.5px; }
+#inspector .road-sheet .road-profile { width: 44px; height: 20px; max-width: 100%; }
+#inspector .road-surfaces .surface-preview { width: 12px; height: 12px; border-radius: 2px; }
+#inspector .road-sheet .road-lines .mark-pic { width: 24px; height: 16px; }
+#inspector .road-sheet .road-lines .mark-pic::after { top: 7px; left: 2px; right: 2px; }
+#inspector .road-sheet .road-lines .m-double::after { top: 5px; }
+#inspector .road-sheet .road-switch { position: relative; }
+#inspector .road-switch > .mixed-badge { position: absolute; right: 36px; top: 4px; pointer-events: none; }
+#inspector .road-sheet .switch-row { min-height: 25px; margin: 0; }
+#inspector .road-entry { display: flex; flex-wrap: wrap; gap: 5px; }
+#inspector .road-entry .pick { display: inline-flex; align-items: center; flex: 1; justify-content: center; min-height: 26px; gap: 4px; }
+#inspector .road-sheet .road-measure { flex-wrap: nowrap; }
+#inspector .road-measure input[type=range] { flex: 1 1 32px; min-width: 20px; width: 0; margin: 0; }
+#inspector .road-measure label { display: inline-flex; align-items: center; gap: 3px; }
+#inspector .road-measure input[type=number] { width: 52px; min-height: 26px; font-variant-numeric: tabular-nums; }
+#inspector .road-measure .icon-btn { width: 25px; height: 26px; }
+#inspector .road-actions { flex-wrap: wrap; }
+#inspector .road-footer { align-items: center; }
+#inspector .road-footer .icon-btn { color: var(--red); width: 30px; height: 28px; margin-left: auto; }

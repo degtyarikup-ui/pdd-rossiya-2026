@@ -92,7 +92,7 @@ const Framing = (() => {
         <div class="phone-card" style="height:${phone.card * k}px;font-size:${Math.max(7, 13 * k)}px">
           <b>${esc(src ? src.question : q.text?.ru?.title || "")}</b>${answers.map((a, i) => `<span>${i + 1}. ${esc(a)}</span>`).join("")}</div>
       </div>
-      <details class="phone-camera" open><summary>${ic("video")}Камера вопроса</summary>
+      <section class="phone-camera" aria-label="Камера вопроса"><h2>${ic("video")}Камера вопроса</h2>
         <div class="phone-camera-body">
           <div class="phone-gestures segments"><button class="btn" data-camera-gesture="pan" aria-pressed="${gesture === "pan"}">${ic("hand")}Двигать</button>
             <button class="btn" data-camera-gesture="orbit" aria-pressed="${gesture === "orbit"}">${ic("rotr")}Вращать</button></div>
@@ -104,7 +104,7 @@ const Framing = (() => {
             ${control("elevation", "Высота цели", 0, 30, 0.1, displayed("elevation"), " м")}
           </div>
         </div>
-      </details>
+      </section>
       <div class="phone-bar">
         <button class="btn ghost" data-frame="auto">${ic("restart")}Сам подбирать</button>
         <button class="btn ghost" data-frame="cancel">Отмена</button>

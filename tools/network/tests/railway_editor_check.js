@@ -18,7 +18,7 @@ state.id=state.S.id;state.savedJson=JSON.stringify(state.S);
 App.renderPanels=()=>App.renderInspector();App.select({t:'track',id:'rail'});
 const chip=v=>listeners.click({target:{closest:s=>s==='[data-chip]'?{dataset:{chip:'rail-type',value:v}}:null}});
 assert.match(pane.innerHTML,/Трамвайные/);assert.match(pane.innerHTML,/Железнодорожные/);
-chip('railway');assert.equal(state.S.tracks[0].railType,'railway');assert.match(pane.innerHTML,/настил переезда/);
+chip('railway');assert.equal(state.S.tracks[0].railType,'railway');assert.match(pane.innerHTML,/data-toggle="render-track" checked/);
 assert.deepEqual(JSON.parse(JSON.stringify(state.S.tracks[0])).points,[[-30,0],[30,0]]);
 App.undo();assert.equal(state.S.tracks[0].railType,undefined);
 App.redo();assert.equal(state.S.tracks[0].railType,'railway');

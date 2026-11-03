@@ -1,61 +1,77 @@
 /* One property sheet. Separators follow settings groups rather than boxing every control. */
 #inspector .insp-head {
-  min-height: 62px; margin: 0; padding: 11px 42px 11px 14px; gap: 10px;
+  min-height: 43px; margin: 0; padding: 6px 41px 6px 12px; gap: 8px;
   background: var(--card); border-bottom: 1px solid var(--line);
 }
 #inspector .insp-head > div { min-width: 0; }
-#inspector .insp-head b { font-size: 14px; line-height: 1.28; overflow-wrap: anywhere; }
+#inspector .insp-head h2 { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.28; overflow-wrap: anywhere; }
 #inspector .insp-head small { font-size: 11px; color: var(--ink-2); }
 #inspector .insp-head .ibadge, #inspector .insp-head .thumb.big,
-#inspector .insp-head .tex-big { width: 40px; height: 40px; border-radius: 7px; }
-#inspector .insp-head .thumb.big { width: 54px; }
+#inspector .insp-head .tex-big { width: 30px; height: 30px; border-radius: 6px; }
+#inspector .insp-head .thumb.big { width: 36px; }
 #inspector .ibadge > svg { max-width: 100%; }
 #inspector .card {
-  margin: 0; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line);
+  margin: 0; padding: 8px 11px; border: 0; border-bottom: 1px solid var(--line);
   border-radius: 0; background: transparent;
 }
-#inspector h3 { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--ink); }
-#inspector h3 small, #inspector .insp-fold summary small {
+#inspector h3 { margin: 0 0 5px; font-size: 12px; font-weight: 600; color: var(--ink); }
+#inspector h3 small {
   margin-left: auto; font-size: 10.5px; color: var(--ink-3); font-weight: 500;
 }
 #inspector p { line-height: 1.45; }
 #inspector .selection-status { color: var(--ink-2); margin: 6px 0; }
 #inspector #checks { scroll-margin-top: 70px; }
 
-#inspector .insp-fold, #inspector .inspector-more {
-  margin: 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; border-radius: 0;
+#inspector .property-fields { display: grid; gap: 4px; }
+#inspector .property-row {
+  display: grid; grid-template-columns: minmax(64px,.85fr) minmax(0,2fr);
+  align-items: center; gap: 8px; min-height: 27px;
 }
-#inspector .insp-fold > summary, #inspector .inspector-more > summary {
-  display: flex; align-items: center; justify-content: flex-start; gap: 8px;
-  min-height: 42px; margin: 0; padding: 7px 14px; list-style: none;
-  color: var(--ink-2); font-size: 12px; font-weight: 500;
+#inspector .property-label { font-size: 12px; line-height: 1.25; color: var(--ink-2); }
+#inspector .property-control { min-width: 0; }
+#inspector .property-control > .insp-actions { margin: 0; }
+#inspector .property-control > .btn { width: 100%; }
+#inspector .property-control .seg-chips button { flex: 1 1 0; min-width: 0; }
+#inspector .property-control .seg-chips > button:only-child { flex: 0 1 auto; }
+#inspector .property-row .signs .speed-sign { border-width: 2px; width: 23px; height: 23px; }
+#inspector .property-row .arrows .i { width: 19px; height: 19px; }
+#inspector .yield-choices { display: flex; flex-wrap: wrap; gap: 3px; }
+#inspector .yield-choices .pick { min-height: 27px; padding: 2px 6px; gap: 4px; font-size: 11px; }
+#inspector .signal-sequence { display: flex; gap: 4px; align-items: center; font-size: 11px; }
+#inspector .signal-sequence .i { width: 12px; height: 12px; }
+#inspector .edges { gap: 6px; font-size: 11px; color: var(--ink-2); }
+#inspector .edge-box { width: 26px; height: 26px; border-radius: 4px; }
+#inspector .edge-box .i { width: 13px; height: 13px; }
+#inspector :is(.e-n,.e-s) { left: 8px; right: 8px; height: 2px; }
+#inspector :is(.e-w,.e-e) { top: 8px; bottom: 8px; width: 2px; }
+#inspector .texture-samples { display: grid; gap: 7px; }
+#inspector .texture-samples .tex-preview { border-radius: 5px; }
+#inspector .style-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 3px; }
+#inspector .style { flex-direction: row; gap: 4px; padding: 3px; color: var(--ink-2); font-size: 10.5px; }
+#inspector .style canvas { width: 24px; height: 24px; border-radius: 4px; }
+#inspector .texture-upload {
+  display: flex; gap: 6px; align-items: center; width: 100%; min-height: 31px; padding: 4px 8px;
+  border: 1px dashed var(--ink-3); border-radius: 5px; font-size: 12px;
 }
-#inspector .insp-fold > summary::-webkit-details-marker { display: none; }
-#inspector .insp-fold > summary > .i, #inspector .inspector-more > summary > .i { width: 16px; height: 16px; color: var(--ink-3); }
-#inspector .insp-fold > summary > .i:last-child { width: 13px; height: 13px; margin-left: auto; }
-#inspector .insp-fold > summary > small + .i:last-child { margin-left: 0; }
-#inspector .insp-fold[open] > summary > .i:last-child { transform: rotate(90deg); }
-#inspector .inspector-more > summary::after { margin-left: auto; }
-#inspector details > summary:hover, #inspector .insp-fold[open] > summary { color: var(--ink); background: var(--field); }
-#inspector .fold-body { padding: 10px 14px 13px; }
-#inspector .fold-body > .card { padding: 9px 0; }
-#inspector .fold-body > .card:last-child { padding-bottom: 0; border: 0; }
-#inspector .fold-body > :first-child { margin-top: 0; padding-top: 0; }
+#inspector .texture-upload small { margin-left: auto; color: var(--ink-3); }
+#inspector .slider-row { margin: 2px 0 6px; }
+#inspector .slider-row:last-child { margin-bottom: 0; }
+#inspector .slider-h { font-size: 12px; }
 
-#inspector .btn { min-width: 0; min-height: 32px; height: auto; padding: 5px 9px; gap: 5px; white-space: normal; font-size: 12px; line-height: 1.3; border-radius: 6px; }
+#inspector .btn { min-width: 0; min-height: 28px; height: auto; padding: 4px 7px; gap: 5px; white-space: normal; font-size: 12px; line-height: 1.3; border-radius: 6px; }
 #inspector .btn .i { width: 15px; height: 15px; }
 #inspector .btn.ghost { background: var(--field); border: 1px solid var(--line); }
 #inspector .btn.ghost:hover, #inspector .seg-chips button:not(.on):hover:not(:disabled),
 #inspector .variant:hover { background: color-mix(in srgb, var(--field) 87%, var(--ink)); }
 #inspector .btn.danger { color: var(--red); }
-#inspector .insp-actions:first-child, #inspector .card > h3 + .btn.wide { margin-top: 0; }
+#inspector .insp-actions:first-child, #inspector .card > h3 + .btn.wide, #inspector .card > .btn.wide:first-child { margin-top: 0; }
 #inspector .selection-actions { margin: 0; padding: 8px 14px; border-bottom: 1px solid var(--line); }
 #inspector .selection-actions .btn { padding-inline: 6px; font-size: 11px; }
 #inspector .seg-chips { gap: 4px; }
 #inspector .seg-chips button, #inspector .style, #inspector .gesture, #inspector .variant,
 #inspector .signal-choice, #inspector .pick, #inspector .sign-grid button { border-radius: 6px; }
-#inspector .seg-chips button { padding-inline: 7px; font-size: 11.5px; }
-#inspector .seg-chips.arrows button { min-height: 35px; }
+#inspector .seg-chips button { min-height: 28px; padding-inline: 6px; font-size: 11.5px; }
+#inspector .seg-chips.arrows button { min-height: 28px; }
 #inspector .seg-chips.tiles button { min-height: 42px; }
 #inspector .seg-chips.tiles button[data-chip="lane"] { min-height: 31px; }
 #inspector .speed-sign { color: #20242a; border-color: #d33535; }
@@ -65,7 +81,7 @@
 #inspector .switch::after { width: 12px; height: 12px; }
 #inspector .switch-row input:checked + .switch { background: var(--accent); }
 #inspector .switch-row input:checked + .switch::after { left: 16px; }
-#inspector :is(button, input, select, summary):focus-visible, #inspector .switch-row input:focus-visible + .switch {
+#inspector :is(button, input, select):focus-visible, #inspector .switch-row input:focus-visible + .switch {
   outline: 2px solid var(--accent); outline-offset: 2px;
 }
 #inspector input:not([type=range]):not([type=checkbox]), #inspector select {

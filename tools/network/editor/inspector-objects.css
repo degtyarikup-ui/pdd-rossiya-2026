@@ -1,0 +1,45 @@
+/* Object inspectors use the same small controls as the construction shelf. */
+#inspector .object-models { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:3px; }
+.object-models button, .object-sign-grid button, .mount-slots button, .picker-pages button { background:var(--field); color:var(--ink-2); border:1px solid transparent; border-radius:4px; }
+.object-models button:hover, .object-sign-grid button:hover, .mount-slots button:hover, .picker-pages button:hover:not(:disabled) { border-color:var(--ink-3); color:var(--ink); }
+.object-models button[aria-pressed=true], .mount-slots button[aria-pressed=true], .object-sign-grid button[aria-pressed=true] { background:var(--accent-soft); color:var(--accent); border-color:var(--accent); }
+.object-models .thumb { display:block; width:100%; height:31px; object-fit:contain; }
+.object-models + .property-row { margin-top:6px; }
+.object-turn { gap:6px; }
+.object-turn .dial { width:40px; height:40px; flex:none; }
+.object-turn .insp-actions { margin:0; gap:3px; }
+.object-turn .btn { padding:0 6px; }
+.object-actions, .object-coords { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
+.object-actions { margin:5px 0; }
+.object-actions .btn { min-height:26px; font-size:11px; padding:0 6px; }
+.object-actions .i { width:14px; height:14px; }
+#inspector .object-gestures { grid-template-columns:repeat(4,minmax(0,1fr)); gap:3px; }
+.object-gestures .gesture { padding:4px 2px; min-width:0; font-size:10px; line-height:1.15; }
+.object-gestures svg { width:32px; height:31px; }
+.object-coords label { flex:1; display:flex; align-items:center; gap:4px; }
+.object-coords input { width:0; min-width:0; flex:1; }
+.mount-slots { display:flex; gap:4px; margin:3px 0 6px; }
+.mount-slots button { flex:1; min-width:0; min-height:30px; padding:2px 4px; font-size:11px; display:flex; align-items:center; justify-content:center; gap:5px; }
+.mount-slots small { display:block; font-size:10px; }
+.mount-slots img { width:23px; height:23px; object-fit:contain; }
+.mount-slots button[data-chip=mountedSign] { flex:0 0 26px; }
+#inspector .sign-picker-controls { display:flex; align-items:stretch; gap:4px; margin:5px 0 4px; }
+.sign-picker-controls label { flex:1; min-width:0; }
+#inspector .sign-picker-controls input { margin:0; height:28px; font-size:11px; padding:0 3px 0 23px; }
+.sign-picker-controls .search .i { width:13px; height:13px; top:7px; left:6px; }
+#inspector .sign-picker-controls select { min-width:0; width:39%; height:28px; padding:0 3px; font-size:11px; }
+.object-sign-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:3px; }
+.object-sign-grid button { min-width:0; padding:3px 0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:1px; font-size:10px; line-height:1.2; font-variant-numeric:tabular-nums; }
+.object-sign-grid img { width:100%; height:25px; object-fit:contain; }
+.picker-pages { display:flex; align-items:center; justify-content:center; gap:6px; margin:4px 0 0; color:var(--ink-3); font:500 10px/1 Onest,sans-serif; }
+.picker-pages button { display:grid; place-items:center; width:25px; height:22px; }
+.picker-pages .i { width:13px; height:13px; }
+.picker-pages button:first-child { transform:rotate(180deg); }
+.picker-pages button:disabled { opacity:.35; }
+.picker-empty { display:block; padding:6px; color:var(--ink-3); text-align:center; font-size:11px; }
+#inspector .object-compass { display:grid; grid-template-columns:repeat(3,25px); gap:2px; justify-content:start; }
+#inspector .object-compass button { height:22px; font-size:13px; border-radius:3px; }
+#inspector .object-compass button.on { background:var(--accent-soft); color:var(--accent); outline:1px solid var(--accent); outline-offset:-1px; }
+#inspector .tram-signals { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:2px; }
+#inspector .tram-signals button { min-height:24px; }
+#inspector .property-control [data-chip=speed], #inspector .property-control [data-chip=driver-signal], #inspector .property-control [data-chip=laneCount] { padding-inline:2px; }

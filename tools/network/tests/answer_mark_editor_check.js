@@ -31,7 +31,7 @@ point('move',30,40);assert.equal(draft.label,'А');
 point('down',30,40);assert.equal(choices().length,1);assert.equal(choices()[0].display,'letter');
 assert.deepEqual(clone(choices()[0].points),[]);assert.deepEqual(clone(choices()[0].labelPosition),[30,40]);
 assert.equal(Tools.opts.answerLetter,'Б','advance to next free letter');
-assert.match(pane.innerHTML,/отдельная буква в кружке/);assert.doesNotMatch(pane.innerHTML,/data-act="mid"/);
+assert.match(pane.innerHTML,/data-chip="answer-display" data-value="letter" aria-label="Буква" aria-pressed="true"/);assert.doesNotMatch(pane.innerHTML,/data-act="mid"/);
 const before = JSON.stringify(App.state.S);
 App.undo();assert.equal(choices().length,0);App.redo();assert.equal(JSON.stringify(App.state.S),before);
 point('down',40,40);point('down',50,40);point('down',60,40);assert.equal(choices().length,4);

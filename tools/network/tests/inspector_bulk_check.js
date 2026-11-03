@@ -48,7 +48,7 @@ App.undo();
 assert.deepEqual(clone(state.S.layout.streets),original,'undo restores both roads together');
 App.redo();
 assert.equal(street(ids[0]).kind,'yard'); assert.equal(street(ids[1]).kind,'yard');
-for (const [field,value] of [['surface','sand'],['centre','double'],['walk',false],['edge',false]]) {
+for (const [field,value] of [['centre','double'],['walk',false],['edge',false],['surface','sand']]) {
   const previous = clone(state.S.layout.streets), count = state.undo.length;
   chip('bulk-road-'+field,value);
   assert.equal(state.undo.length,count+1);
@@ -64,6 +64,7 @@ for (const id of ids.slice(0,2)) {
   assert.equal(road.surface,'sand'); assert.equal(road.walk,false); assert.equal(road.edge,false);
 }
 
+assert.doesNotMatch(pane.innerHTML,/data-chip="bulk-road-centre"|data-toggle="bulk-road-(?:walk|edge)"/, "a dirt road only shows applicable settings");
 // A mixed selection exposes separate sections; applying road options leaves scenery untouched.
 select([ref(ids[0]),ref(ids[1]),{t:'decor',id:'tree1'},{t:'actor',id:'car1'}]);
 assert.match(pane.innerHTML,/Окружение · 1/); assert.match(pane.innerHTML,/Участники · 1/);
@@ -105,11 +106,12 @@ App.undo(); assert.equal(state.S.actors[0].behaviour.turnSignal,undefined);
 
 // Selecting all roads and clearing use the actual selection API and honour hidden/locked layers.
 select(ref(ids[0]));
-assert.match(pane.innerHTML,/data-chip="surface"/); assert.match(pane.innerHTML,/inspector-more/);
+assert.match(pane.innerHTML,/data-chip="surface"/); assert.doesNotMatch(pane.innerHTML,/<details|<summary|по ней едет игрок/);
+assert.match(pane.innerHTML,/data-text="player-end"/);
 chip('edge',true); assert.equal(street(ids[0]).edge,true);
 act('select-roads'); assert.deepEqual(clone(state.sel),ids.map(ref));
 act('clear-selection'); assert.equal(state.sel.length,0);
-assert.match(pane.innerHTML,/Выбрать все дороги/);
+assert.match(pane.innerHTML,/data-act="select-roads"/);
 state.hidden.add('roads'); act('select-roads'); assert.equal(state.sel.length,0);
 state.hidden.clear(); state.locked.add('roads'); act('select-roads'); assert.equal(state.sel.length,0);
 state.locked.clear(); act('select-roads'); assert.equal(state.sel.length,4);
@@ -123,11 +125,11 @@ street(ids[1]).kind = 'avenue'; street(ids[1]).median = 3; street(ids[2]).manual
 const authored = {id:'authored-marking',type:'solid',colour:'yellow',points:[[25,28],[31,37]]};
 state.S.markings.push(clone(authored));
 select(ids.slice(0,2).map(ref));
-assert.match(pane.innerHTML,/Грунт: без разметки и тротуаров/);
-assert.match(pane.innerHTML,/По центру — разделитель/);
-assert.match(pane.innerHTML,/Ручная разметка/);
+assert.doesNotMatch(pane.innerHTML,/data-chip="bulk-road-centre"/, "manual, unpaved and divided streets have no automatic centre line to set");
+const oldCentres = ids.slice(0,2).map(id => street(id).centre);
 assert.match(pane.innerHTML,/Вернуть авторазметку/);
 chip('bulk-road-centre','solid');
+assert.deepEqual(ids.slice(0,2).map(id => street(id).centre),oldCentres, 'an inapplicable bulk control leaves stored preferences intact');
 assert.equal(street(ids[0]).manualMarks,true,'ordinary centre choices do not silently discard manual mode');
 const beforeAuto = clone(state.S.layout.streets), autoHistory = state.undo.length;
 act('bulk-road-marks-auto');
@@ -150,4 +152,26 @@ const beforePaint = JSON.stringify(state.S), beforeSteps = state.undo.length;
 chip('paint','#C0392B');
 assert.equal(JSON.stringify(state.S),beforePaint);
 assert.equal(state.undo.length,beforeSteps,'inspecting a locked actor cannot create a history entry');
+// A through-highway offers the four possible end combinations in one control.
+state.locked.clear();
+state.S.layout = {
+  nodes:[{id:"west",x:-90,z:0},{id:"east",x:90,z:0}],
+  streets:[{id:"through",a:"west",b:"east",kind:"highway",ends:{}}],
+  player:{street:"through",toward:"west",lane:1,questionAt:48},
+};
+Layout.apply(state.S);
+select(ref("through"));
+const choose = (key,value) => listeners.change({target:{closest:s => s === "[data-text]" ? {dataset:{text:key},value} : null}});
+assert.match(pane.innerHTML, /data-text="highway-preset"/);
+assert.doesNotMatch(pane.innerHTML, /data-chip="port-/);
+const originalPlayer = clone(state.S.layout.player), beforeDirection = state.undo.length;
+choose("player-end","west");
+assert.deepEqual(clone(state.S.layout.player),originalPlayer,"choosing the current direction preserves authored lane and distance");
+assert.equal(state.undo.length,beforeDirection);
+for (const [preset,a,b] of [["entry","highway","avenue"],["both","avenue","avenue"],["exit","avenue","highway"],["through","highway","highway"]]) {
+  choose("highway-preset",preset);
+  assert.equal(Layout.highwayPort(street("through"),"a"),a);
+  assert.equal(Layout.highwayPort(street("through"),"b"),b);
+  assert.match(pane.innerHTML,new RegExp(`value="${preset}" selected`));
+}
 console.log('Inspector bulk editing: real handlers, mixed selection, locks, generated geometry and undo passed');
