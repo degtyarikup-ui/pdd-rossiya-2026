@@ -77,6 +77,56 @@ test('activity retains 90 days and never reconstructs past days from last seen',
 });
 
 
+test('same-minute comparison uses complete Moscow days and deduplicates returning accounts', async () => {
+ const {recordActivity, activitySnapshot}=await import('./analytics_activity.js');
+ const users=[{platform:'ios'},{platform:'android'}];
+ const visit=(user,date,time)=>{
+   const iso=date+'T'+time+':00+03:00';
+   user.createdAt??=iso;
+   user.lastSeenAt=iso;
+   recordActivity(user,Date.parse(iso));
+ };
+ visit(users[0],'2026-11-03','16:00'); // partial rollout day
+ visit(users[0],'2026-11-04','11:12');
+ visit(users[0],'2026-11-04','18:54');
+ visit(users[1],'2026-11-04','14:12'); // current minute is not complete yet
+ visit(users[1],'2026-11-05','00:01');
+ users[1].platform='ios';
+ visit(users[1],'2026-11-05','12:08');
+ visit(users[0],'2026-11-05','14:12');
+ const now=Date.parse('2026-11-05T14:12:45+03:00');
+ const stats=()=>activitySnapshot(users,['2026-11-05'],now);
+ assert.deepEqual(stats().comparison,{minute:852,today:1,days:1,average:1});
+ assert.equal(stats().days[0].total,2);
+ assert.deepEqual(users[0].activity.first,[852,672,960]);
+ // Rolling deployment / legacy metadata: if even one active account on a
+ // day lacks its first visit, the dashboard cannot give a number for it.
+ delete users[0].activity.first[1];
+ assert.deepEqual(stats().comparison,{minute:852,today:1,days:0,average:null});
+});
+
+test('reading legacy activity never fabricates a first visit, and timings stay small', async () => {
+ const {recordActivity, activitySnapshot}=await import('./analytics_activity.js');
+ const now=Date.parse('2026-11-03T14:12:20+03:00');
+ const legacy={...base,lastSeenAt:new Date(now).toISOString(),platform:'ios',activity:{date:'2026-11-03',ios:'1'}};
+ recordActivity(legacy,now);
+ assert.equal(legacy.activity.first,undefined);
+ const stats=activitySnapshot([legacy],['2026-11-03'],now);
+ assert.equal(stats.days[0].total,1);
+ assert.equal(stats.comparison.today,null);
+ const u={...legacy,id:'google_'+'.'.repeat(100),name:'Ш'.repeat(60),email:'я'.repeat(80),avatarUrl:'x'.repeat(300),
+   ipCity:'Ш'.repeat(60),ipRegion:'Ш'.repeat(60),activity:{...legacy.activity}};
+ for(let day=1;day<=140;day++) {
+   const visit=now+day*86400000;
+   u.lastSeenAt=new Date(visit).toISOString();
+   recordActivity(u,visit);
+ }
+ assert.deepEqual(u.activity.first,Array(8).fill(852));
+ const summary=userSummary(u);
+ assert.ok(Buffer.byteLength(JSON.stringify(summary))<=1024);
+ assert.deepEqual(summary.activity.first,u.activity.first);
+});
+
 test('auth provider shares use the same all-time account population as the headline',()=>{
  const users=[
   {...base,provider:'yandex',createdAt:'2020-01-01T00:00:00Z'},

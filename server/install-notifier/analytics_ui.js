@@ -372,13 +372,15 @@ function anRenderGeo() {
 }
 function anRenderActivity(data) {
  var activity=data.users&&data.users.activity, days=activity?activity.days:[], available=days.filter(function(d){return d.total!=null;}), bars=[];
- var latest=available[available.length-1], sum=available.reduce(function(n,d){return n+d.total;},0);
+ var latest=available[available.length-1], comparison=activity&&activity.comparison;
+ var time=comparison?String(Math.floor(comparison.minute/60)).padStart(2,'0')+':'+String(comparison.minute%60).padStart(2,'0'):'';
+ var comparable=comparison&&comparison.today!=null&&comparison.days>0;
  document.getElementById('an-activity-summary').innerHTML=latest?[
  ['Сегодня',latest.total],
  ['<span class="an-act-label">' + anSvgIcon('android') + 'Android</span>',latest.android],
  ['<span class="an-act-label">' + anSvgIcon('apple') + 'iOS</span>',latest.ios],
- ['Среднее за день',Math.round(sum/available.length)]
- ].map(function(m){return '<span>'+m[0]+'<b>'+anNum(m[1])+'</b></span>';}).join(''):'';
+ ['Среднее'+(time?' к '+time:''),comparable?comparison.average:null]
+ ].map(function(m){return '<span>'+m[0]+'<b>'+(m[1]==null?'—':anNum(m[1]))+'</b></span>';}).join(''):'';
  available.forEach(function(d){
   var tip='<b>'+anDayLabel(d.date,true)+'</b>' + [
     ['Активные аккаунты за день',d.total],
@@ -392,7 +394,8 @@ function anRenderActivity(data) {
  });
  var el=document.getElementById('an-activity-chart');
  if(bars.length)anBars(el,bars,205);else el.innerHTML='<div class="an-empty">Нет истории активности за выбранный период</div>';
- document.getElementById('an-activity-caption').textContent=activity?'История с '+anDayLabel(activity.from)+' · МСК':'';
+ var note=comparable?'К '+time+' МСК сегодня — '+anNum(comparison.today)+'. Полных дней для сравнения за последнюю неделю — '+comparison.days+'.':'Сравнение к одному времени появится, когда накопится история полных дней.';
+ document.getElementById('an-activity-caption').textContent=activity?note+' История по дням с '+anDayLabel(activity.from)+' · МСК':'';
  document.getElementById('an-activity-table').innerHTML=days.length?anTable(['День','Всего','<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('android') + 'Android</span>','<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('apple') + 'iOS</span>','<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('web') + 'Веб</span>','Неизвестно'],days.slice().reverse().map(function(d){return '<tr><td>'+anDayLabel(d.date)+'</td>'+['total','android','ios','web','unknown'].map(function(k){return '<td>'+(d[k]==null?'—':anNum(d[k]))+'</td>';}).join('')+'</tr>';})):'<div class="an-empty">Нет данных</div>';
 }
 var anUsageFeature = 'tickets';

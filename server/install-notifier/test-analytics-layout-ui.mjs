@@ -88,6 +88,22 @@ if(process.argv.includes('--serve')) {
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(app.url+'/admin#analytics');
   await page.waitForFunction(()=>document.querySelector('#an-now .an-big')?.textContent==='160');
+  // Previous-version cached data never substitutes full-day averages for
+  // missing intraday measurements. Render a measured zero and restore.
+  const comparisonCaption=page.locator('#an-activity-caption');
+  await page.evaluate(()=>{
+    const activity=window.__anData.users.activity;
+    anRenderActivity({users:{activity:{from:activity.from,days:activity.days}}});
+  });
+  assert.match(await comparisonCaption.innerText(),/накопится история/);
+  await page.evaluate(()=>{
+    const activity=window.__anData.users.activity;
+    anRenderActivity({users:{activity:{...activity,comparison:{minute:852,today:0,average:12,days:3}}}});
+  });
+  assert.match(await comparisonCaption.innerText(),/К 14:12 МСК сегодня — 0/);
+  assert.match(await page.locator('#an-activity-summary').innerText(),/Среднее к 14:12\s*12/);
+  await page.evaluate(()=>anRenderActivity(window.__anData));
+
   assert.equal(await page.locator('#an-auth-table tbody tr').count(),4);
   assert.equal(await page.locator('#an-versions tbody tr').count(),2);
   assert.match(await page.locator('#an-updates-summary').innerText(),/12/);
