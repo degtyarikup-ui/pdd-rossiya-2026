@@ -401,17 +401,13 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
                     child: SingleChildScrollView(
                       key: ValueKey('road-signs-prompt-$_currentIndex'),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           const SizedBox(height: 16),
-                          Text(
-                            question.prompt,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              height: 1.3,
-                              color: colors.primaryText,
-                            ),
+                          _RoadSignsPrompt(
+                            key: ValueKey('road-signs-question-$_currentIndex'),
+                            prompt: question.prompt,
+                            fontSize: 20,
                           ),
                           SizedBox(
                             height: 64 * scale,
@@ -452,20 +448,12 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
                   constraints: BoxConstraints(minHeight: questionHeight),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          question.prompt,
-                          style: TextStyle(
-                            fontSize: compact ? 20 : 22,
-                            fontWeight: FontWeight.w600,
-                            height: 1.3,
-                            color: colors.primaryText,
-                          ),
-                        ),
-                      ],
+                    child: Center(
+                      child: _RoadSignsPrompt(
+                        key: ValueKey('road-signs-question-$_currentIndex'),
+                        prompt: question.prompt,
+                        fontSize: compact ? 20 : 22,
+                      ),
                     ),
                   ),
                 ),
@@ -482,6 +470,8 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
 
   Widget _buildGrid(RoadSignQuizQuestion question) {
     return RoadSignsGrid(
+      // A new key per question: the four cells arrive again one by one.
+      key: ValueKey('road-signs-grid-$_currentIndex'),
       options: question.options,
       onSelectOption: _onOptionSelected,
       isEnabled: !_isProcessing && !_isGameOver,
@@ -492,40 +482,40 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
   }
 
   Widget _buildFeedback(AppThemeColors colors) {
-    final correct = _answeredCorrectly == true;
     final answered = _answeredCorrectly != null;
     if (!answered) return const SizedBox.shrink();
-    if (!correct) {
-      return Center(
-        child: GameLifeLossBadge(key: ValueKey('life-loss-$_currentIndex')),
-      );
-    }
-    final text = appL10n.roadSignsCorrectPoints(_lastPoints);
-    return Semantics(
-      liveRegion: answered,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (answered) ...[
-            Icon(
-              correct ? Icons.check_circle_rounded : Icons.cancel_rounded,
-              size: 18,
-              color: correct ? colors.green : colors.red,
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Text(
-              text,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: answered ? FontWeight.w600 : FontWeight.w400,
-                color: answered ? colors.primaryText : colors.secondaryText,
-              ),
-            ),
-          ),
-        ],
+    final correct = _answeredCorrectly == true;
+    return Center(
+      child: _FeedbackPill(
+        key: ValueKey('road-signs-feedback-$_currentIndex'),
+        color: correct ? colors.greenLight : colors.redLight,
+        child: correct
+            ? Semantics(
+                liveRegion: true,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.check_circle_rounded,
+                      size: 20,
+                      color: colors.green,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        appL10n.roadSignsCorrectPoints(_lastPoints),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: colors.primaryText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : GameLifeLossBadge(key: ValueKey('life-loss-$_currentIndex')),
       ),
     );
   }
@@ -584,6 +574,96 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
         onSelectMistake: (result) {
           RoadSignsModal.show(context, result: result, onContinue: () {});
         },
+      ),
+    );
+  }
+}
+
+/// Вопрос по центру: название знака в кавычках — жирным, вводная часть —
+/// обычным начертанием. Новый вопрос появляется коротким подъёмом.
+class _RoadSignsPrompt extends StatelessWidget {
+  const _RoadSignsPrompt({
+    super.key,
+    required this.prompt,
+    required this.fontSize,
+  });
+
+  final String prompt;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final start = prompt.indexOf('«');
+    final end = prompt.lastIndexOf('»');
+    final strong = TextStyle(
+      fontWeight: FontWeight.w800,
+      color: colors.primaryText,
+    );
+    final text = Text.rich(
+      start > 0 && end > start
+          ? TextSpan(
+              children: [
+                TextSpan(
+                  text: prompt.substring(0, start),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: colors.primaryText,
+                  ),
+                ),
+                TextSpan(text: prompt.substring(start), style: strong),
+              ],
+            )
+          : TextSpan(text: prompt, style: strong),
+      textAlign: TextAlign.center,
+      style: TextStyle(fontSize: fontSize, height: 1.3, letterSpacing: -0.2),
+    );
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      builder: (context, t, child) => Opacity(
+        opacity: t,
+        child: Transform.translate(
+          offset: Offset(0, 8 * (1 - t)),
+          child: child,
+        ),
+      ),
+      child: text,
+    );
+  }
+}
+
+/// Итог ответа под сеткой: мягкая плашка, появляется с лёгким отскоком.
+class _FeedbackPill extends StatelessWidget {
+  const _FeedbackPill({super.key, required this.color, required this.child});
+
+  final Color color;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 260),
+      builder: (context, t, child) => Opacity(
+        opacity: t.clamp(0.0, 1.0),
+        child: Transform.scale(
+          scale: 0.85 + 0.15 * Curves.easeOutBack.transform(t),
+          child: child,
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(100),
+        ),
+        child: child,
       ),
     );
   }

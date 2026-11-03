@@ -287,24 +287,28 @@ class GameActionButton extends StatelessWidget {
 }
 
 /// Круглая кнопка ответа с подписью: «нет» слева, «да» справа.
+///
+/// В покое — белый круг с цветным значком. [emphasis] (0…1) — насколько к ней
+/// отведена карточка: круг наливается цветом ответа и чуть растёт, так что
+/// направление свайпа видно без надписей поверх вопроса.
 class GameRoundButton extends StatefulWidget {
   const GameRoundButton({
     super.key,
     required this.icon,
     required this.color,
-    required this.surface,
     required this.onTap,
-    this.iconColor,
     this.label,
-    this.size = 76,
+    this.emphasis = 0,
+    this.size = 68,
   });
 
   final IconData icon;
   final String? label;
+
+  /// Цвет ответа: значок и подпись в покое, заливка при выделении.
   final Color color;
-  final Color surface;
-  final Color? iconColor;
   final VoidCallback onTap;
+  final double emphasis;
   final double size;
 
   @override
@@ -316,44 +320,60 @@ class _GameRoundButtonState extends State<GameRoundButton> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    final e = widget.emphasis.clamp(0.0, 1.0);
+    final fill = Color.lerp(colors.cardBackground, widget.color, e)!;
+    final glyph = Color.lerp(widget.color, Colors.white, e)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         AnimatedScale(
-          scale: _pressed ? 0.94 : 1,
-          duration: MediaQuery.disableAnimationsOf(context)
+          scale: _pressed ? 0.92 : 1,
+          duration: reduced
               ? Duration.zero
-              : const Duration(milliseconds: 110),
-          curve: Curves.easeOutCubic,
-          child: Material(
-            color: widget.surface,
-            shape: const CircleBorder(),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTapDown: (_) => setState(() => _pressed = true),
-              onTapUp: (_) => setState(() => _pressed = false),
-              onTapCancel: () => setState(() => _pressed = false),
-              onTap: widget.onTap,
-              child: SizedBox(
-                width: widget.size,
-                height: widget.size,
-                child: Icon(
-                  widget.icon,
-                  size: widget.size * 0.46,
-                  color: widget.iconColor ?? widget.color,
+              : Duration(milliseconds: _pressed ? 80 : 220),
+          curve: _pressed ? Curves.easeOut : Curves.easeOutBack,
+          child: Transform.scale(
+            scale: reduced ? 1 : 1 + 0.1 * e,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: fill,
+                shape: BoxShape.circle,
+                boxShadow: gameSoftShadow(colors),
+              ),
+              child: Material(
+                type: MaterialType.transparency,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  splashFactory: NoSplash.splashFactory,
+                  onTapDown: (_) => setState(() => _pressed = true),
+                  onTapUp: (_) => setState(() => _pressed = false),
+                  onTapCancel: () => setState(() => _pressed = false),
+                  onTap: widget.onTap,
+                  child: SizedBox(
+                    width: widget.size,
+                    height: widget.size,
+                    child: Icon(
+                      widget.icon,
+                      size: widget.size * 0.44,
+                      color: glyph,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
         ),
         if (widget.label != null) ...[
-          const SizedBox(height: AppDimensions.spacingS),
+          const SizedBox(height: 10),
           Text(
             widget.label!,
             style: TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.3,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.4,
               color: widget.color,
             ),
           ),

@@ -12,6 +12,7 @@ class SoundEffectsService {
   AudioPlayer? _streakPlayer;
   AudioPlayer? _tickPlayer;
   AudioPlayer? _messagePlayer;
+  AudioPlayer? _swipePlayer;
 
   bool _initialized = false;
   bool _enabled = true;
@@ -27,6 +28,7 @@ class SoundEffectsService {
   AudioPlayer _getStreakPlayer() => _streakPlayer ??= AudioPlayer();
   AudioPlayer _getTickPlayer() => _tickPlayer ??= AudioPlayer();
   AudioPlayer _getMessagePlayer() => _messagePlayer ??= AudioPlayer();
+  AudioPlayer _getSwipePlayer() => _swipePlayer ??= AudioPlayer();
 
   Future<void> init() async {
     if (_initialized) return;
@@ -69,6 +71,11 @@ class SoundEffectsService {
       await tick.setSource(AssetSource('audio/tick.wav'));
       await tick.setVolume(0.35);
 
+      final swipe = _getSwipePlayer();
+      await swipe.setReleaseMode(ReleaseMode.stop);
+      await swipe.setSource(AssetSource('audio/swipe.wav'));
+      await swipe.setVolume(0.28);
+
       _initialized = true;
     } catch (e) {
       debugPrint('SoundEffectsService: init error: $e');
@@ -88,6 +95,23 @@ class SoundEffectsService {
       );
     } catch (e) {
       debugPrint('SoundEffectsService: playTick error: $e');
+    }
+  }
+
+  /// A soft whoosh as a sign card leaves the deck («Это знак»):
+  /// tools/audio/make_swipe_sound.py.
+  Future<void> playSwipe({double volume = 0.28}) async {
+    if (!_enabled) return;
+    try {
+      final player = _getSwipePlayer();
+      await player.stop();
+      await player.setVolume(volume);
+      await player.play(
+        AssetSource('audio/swipe.wav'),
+        mode: PlayerMode.lowLatency,
+      );
+    } catch (e) {
+      debugPrint('SoundEffectsService: playSwipe error: $e');
     }
   }
 
@@ -175,5 +199,6 @@ class SoundEffectsService {
     _incorrectPlayer?.dispose().ignore();
     _streakPlayer?.dispose().ignore();
     _tickPlayer?.dispose().ignore();
+    _swipePlayer?.dispose().ignore();
   }
 }

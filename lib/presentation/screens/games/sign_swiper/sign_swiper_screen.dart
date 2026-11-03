@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,7 +56,9 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   int _previousBest = 0;
   final List<SignCardQuestion> _mistakes = [];
 
-  // A small bounded streak bonus, independent of the fixed round timer.
+  /// The swipe gesture is demonstrated once per app launch, on a first card.
+  static bool _gestureShown = false;
+  bool _teach = false;
 
   late final _awardService = ref.read(achievementAwardServiceProvider);
 
@@ -68,6 +71,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _cardController.dispose();
     super.dispose();
   }
 
@@ -100,6 +104,8 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     _isNewRecord = false;
     _timeUp = false;
     _mistakes.clear();
+    _teach = !_gestureShown;
+    _gestureShown = true;
     _deck = _engine?.generateDeck(count: 30) ?? [];
     if (_deck.isNotEmpty) unawaited(_awardService.startActivity());
   }
@@ -175,7 +181,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     _totalSwipedInRound++;
 
     if (isCorrect) {
-      HapticFeedbackHelper.tap();
+      HapticFeedbackHelper.softSuccess();
 
       _correctAnswers++;
       _combo++;
@@ -323,6 +329,9 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     }
 
     final topCard = _deck[_currentIndex];
+    final next = _currentIndex + 1 < _deck.length
+        ? _deck[_currentIndex + 1]
+        : null;
 
     return Center(
       child: ConstrainedBox(
@@ -330,55 +339,28 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Positioned.fill(
-              child: Transform.translate(
-                offset: const Offset(0, 27),
-                child: Transform.scale(
-                  scale: 0.92,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Color.lerp(
-                        colors.cardBackground,
-                        colors.accent,
-                        0.16,
-                      ),
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusExtraLarge,
-                      ),
-                    ),
-                  ),
+            // The real next card waits underneath and rises as this one goes.
+            if (next != null)
+              TweenAnimationBuilder<double>(
+                key: ValueKey('deck-${_currentIndex + 1}:${next.id}'),
+                tween: Tween(begin: 0, end: 1),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                builder: (context, t, child) => Opacity(
+                  opacity: t,
+                  child: Transform.scale(scale: 0.96 + 0.04 * t, child: child),
                 ),
+                child: SignDeckCard(card: next, reveal: _cardController.reveal),
               ),
-            ),
-            // Next card shows the physical edge of the deck.
-            Positioned.fill(
-              child: Transform.translate(
-                offset: const Offset(0, 15),
-                child: Transform.scale(
-                  scale: 0.96,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Color.lerp(
-                        colors.cardBackground,
-                        colors.accent,
-                        0.08,
-                      ),
-                      border: Border.all(
-                        color: colors.accent.withValues(alpha: 0.12),
-                      ),
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusExtraLarge,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
             SwipeCardView(
               key: ValueKey('$_currentIndex:${topCard.id}'),
               controller: _cardController,
               card: topCard,
               enabled: !_isGameOver,
+              animateIn: _currentIndex == 0,
+              teach: _teach && _currentIndex == 0,
               onAnswered: _onCardAnswered,
               onSwiped: _onCardSwiped,
             ),
@@ -390,6 +372,8 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
 
   Widget _buildAnswerButtons(AppThemeColors colors) {
     final card = _currentIndex < _deck.length ? _deck[_currentIndex] : null;
+    // A darker green keeps the white-state icon and label readable.
+    final yes = colors.isDark ? colors.green : const Color(0xFF15965C);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.screenPadding,
@@ -399,27 +383,28 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       ),
       child: IgnorePointer(
         ignoring: _isProcessingSwipe || _isGameOver,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GameRoundButton(
-              icon: Icons.close_rounded,
-              label: card?.leftActionLabel ?? appL10n.gameSignNo,
-              color: colors.red,
-              surface: colors.red,
-              iconColor: Colors.white,
-              onTap: _cardController.swipeLeft,
-            ),
-            GameRoundButton(
-              icon: Icons.check_rounded,
-              label: card?.rightActionLabel ?? appL10n.gameSignYes,
-              color: const Color(0xFF168A55),
-              surface: const Color(0xFF168A55),
-              iconColor: Colors.white,
-              onTap: _cardController.swipeRight,
-            ),
-          ],
+        child: ValueListenableBuilder<double>(
+          valueListenable: _cardController.lean,
+          builder: (context, lean, _) => Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GameRoundButton(
+                icon: Icons.close_rounded,
+                label: card?.leftActionLabel ?? appL10n.gameSignNo,
+                color: colors.red,
+                emphasis: math.max(0, -lean),
+                onTap: _cardController.swipeLeft,
+              ),
+              GameRoundButton(
+                icon: Icons.check_rounded,
+                label: card?.rightActionLabel ?? appL10n.gameSignYes,
+                color: yes,
+                emphasis: math.max(0, lean),
+                onTap: _cardController.swipeRight,
+              ),
+            ],
+          ),
         ),
       ),
     );
