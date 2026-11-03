@@ -2206,9 +2206,6 @@ class AppLocalizationsKk extends AppLocalizations {
       '«Белгі-свайпер» ойынында бір раундта 100, 200, 300 және 450 ұпай жинаңыз.';
 
   @override
-  String get gameSignQuestionScope => 'Басқа белгілер мен тыйымдар жоқ';
-
-  @override
   String get gameTrafficSignalQuestion => 'Сигнал нені рұқсат етеді?';
 
   @override

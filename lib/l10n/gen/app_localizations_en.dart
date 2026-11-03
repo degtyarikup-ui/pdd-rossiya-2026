@@ -2204,10 +2204,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Score 100, 200, 300 and 450 points in a single game of Sign-Swiper.';
 
   @override
-  String get gameSignQuestionScope =>
-      'There are no other signs or prohibitions';
-
-  @override
   String get gameTrafficSignalQuestion => 'What does the signal allow?';
 
   @override

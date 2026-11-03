@@ -614,8 +614,8 @@ class _CardSurface extends StatelessWidget {
   }
 }
 
-/// Содержимое карточки: знак на подложке, вопрос и нижняя строка (охват
-/// вопроса или итог ответа). Общая для верхней карточки и карточки колоды.
+/// Содержимое карточки: знак на подложке, вопрос и строка итога, которая
+/// раскрывается после ответа. Общая для верхней карточки и карточки колоды.
 class SignCardFace extends StatelessWidget {
   const SignCardFace({
     super.key,
@@ -652,11 +652,6 @@ class SignCardFace extends StatelessWidget {
       letterSpacing: -0.2,
       color: colors.primaryText,
     );
-    final scopeStyle = TextStyle(
-      fontSize: 12.5,
-      fontWeight: FontWeight.w500,
-      color: colors.secondaryText,
-    );
 
     return Padding(
       padding: const EdgeInsets.all(18),
@@ -680,115 +675,137 @@ class SignCardFace extends StatelessWidget {
             fontSize: 13,
             fontWeight: FontWeight.w600,
           );
+          // Room for the longer verdict (−1 and the right answer); it opens
+          // only once the card is answered, until then the sign takes it.
           final footerHeight =
               math.max(
-                textHeight(appL10n.gameSignQuestionScope, scopeStyle),
-                math.max(
-                      24.0,
-                      textHeight(
-                        '−1',
-                        const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                        ),
-                        width: math.max(1.0, constraints.maxWidth - 44),
-                      ),
-                    ) +
-                    math.max(
-                      textHeight(
-                        appL10n.signSwiperCorrectAnswer(card.rightActionLabel),
-                        answerStyle,
-                        width: math.max(1.0, constraints.maxWidth - 16),
-                      ),
-                      textHeight(
-                        appL10n.signSwiperCorrectAnswer(card.leftActionLabel),
-                        answerStyle,
-                        width: math.max(1.0, constraints.maxWidth - 16),
-                      ),
-                    ) +
-                    20,
+                24.0,
+                textHeight(
+                  '−1',
+                  const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                  width: math.max(1.0, constraints.maxWidth - 44),
+                ),
               ) +
+              math.max(
+                textHeight(
+                  appL10n.signSwiperCorrectAnswer(card.rightActionLabel),
+                  answerStyle,
+                  width: math.max(1.0, constraints.maxWidth - 16),
+                ),
+                textHeight(
+                  appL10n.signSwiperCorrectAnswer(card.leftActionLabel),
+                  answerStyle,
+                  width: math.max(1.0, constraints.maxWidth - 16),
+                ),
+              ) +
+              20 +
               8;
-          final remaining =
-              constraints.maxHeight -
-              textHeight(card.prompt, promptStyle) -
-              footerHeight -
-              16 -
-              12;
-          // На компактном экране сохраняем размер знака и весь вопрос;
-          // вертикальная прокрутка не конкурирует с горизонтальным жестом.
-          final plateHeight = remaining.clamp(150.0, 300.0);
-
-          final body = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                height: plateHeight,
-                child: _SignPlate(
-                  sign: card.sign,
-                  tint: tint,
-                  verdict: verdict,
-                  progress: progress,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                card.prompt,
-                textAlign: TextAlign.center,
-                style: promptStyle,
-              ),
-              const SizedBox(height: 12),
-            ],
-          );
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: scrollable
-                    ? SingleChildScrollView(primary: false, child: body)
-                    : ClipRect(
-                        child: OverflowBox(
-                          alignment: Alignment.topCenter,
-                          maxHeight: double.infinity,
-                          child: body,
-                        ),
-                      ),
-              ),
-              SizedBox(
-                height: footerHeight,
-                child: Center(
-                  child: AnimatedSwitcher(
-                    duration: MediaQuery.disableAnimationsOf(context)
-                        ? Duration.zero
-                        : const Duration(milliseconds: 220),
-                    switchInCurve: Curves.easeOutBack,
-                    switchOutCurve: Curves.easeIn,
-                    transitionBuilder: (child, animation) => FadeTransition(
-                      opacity: animation,
-                      child: ScaleTransition(
-                        scale: Tween<double>(
-                          begin: 0.88,
-                          end: 1,
-                        ).animate(animation),
-                        child: child,
-                      ),
-                    ),
-                    child:
-                        feedback ??
-                        Text(
-                          appL10n.gameSignQuestionScope,
-                          key: const ValueKey('sign-question-scope'),
-                          textAlign: TextAlign.center,
-                          style: scopeStyle,
-                        ),
-                  ),
-                ),
-              ),
-            ],
+          final promptHeight = textHeight(card.prompt, promptStyle);
+          return TweenAnimationBuilder<double>(
+            tween: Tween(end: feedback == null ? 0 : 1),
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            builder: (context, open, _) => _layout(
+              context,
+              constraints: constraints,
+              promptStyle: promptStyle,
+              promptHeight: promptHeight,
+              footerHeight: footerHeight,
+              open: open,
+            ),
           );
         },
       ),
+    );
+  }
+
+  Widget _layout(
+    BuildContext context, {
+    required BoxConstraints constraints,
+    required TextStyle promptStyle,
+    required double promptHeight,
+    required double footerHeight,
+    required double open,
+  }) {
+    final remaining =
+        constraints.maxHeight - promptHeight - footerHeight * open - 16 - 12;
+    // На компактном экране сохраняем размер знака и весь вопрос;
+    // вертикальная прокрутка не конкурирует с горизонтальным жестом.
+    final plateHeight = remaining.clamp(150.0, 320.0);
+    // On a tall card the sign and question sit in the middle, not at the top.
+    final slack =
+        constraints.maxHeight -
+        footerHeight * open -
+        (plateHeight + 16 + promptHeight + 12);
+
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (slack > 0) SizedBox(height: slack / 2),
+        SizedBox(
+          height: plateHeight,
+          child: _SignPlate(
+            sign: card.sign,
+            tint: tint,
+            verdict: verdict,
+            progress: progress,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(card.prompt, textAlign: TextAlign.center, style: promptStyle),
+        const SizedBox(height: 12),
+      ],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: scrollable
+              ? SingleChildScrollView(primary: false, child: body)
+              : ClipRect(
+                  child: OverflowBox(
+                    alignment: Alignment.topCenter,
+                    maxHeight: double.infinity,
+                    child: body,
+                  ),
+                ),
+        ),
+        // The verdict line grows in from the card's lower edge.
+        ClipRect(
+          child: Align(
+            alignment: Alignment.topCenter,
+            heightFactor: open,
+            child: SizedBox(
+              height: footerHeight,
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeOutBack,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: Tween<double>(
+                        begin: 0.88,
+                        end: 1,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  ),
+                  child:
+                      feedback ??
+                      const SizedBox.shrink(key: ValueKey('no-verdict')),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

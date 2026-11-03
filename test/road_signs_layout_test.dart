@@ -193,6 +193,48 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('Time and lives stay pinned while score, combo and time change', (
+    tester,
+  ) async {
+    viewport(tester, const Size(390, 844));
+    await tester.pumpWidget(
+      app(
+        RoadSignsScreen(
+          initialDeck: List.filled(30, question),
+          initialSeconds: 60,
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    final timer = find.byType(GameTimeBar);
+    final lives = find.byType(GameLives);
+    final timerRect = tester.getRect(timer);
+    final livesRect = tester.getRect(lives);
+    // Score grows and a combo badge appears; the seconds go down to one digit.
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pump();
+    }
+    expect(
+      tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).streak,
+      3,
+    );
+    expect(tester.getRect(timer), timerRect);
+    expect(tester.getRect(lives), livesRect);
+    await tester.pump(const Duration(seconds: 51));
+    expect(tester.widget<GameTimeBar>(timer).secondsLeft, lessThan(10));
+    expect(tester.getRect(timer), timerRect);
+    expect(tester.getRect(lives), livesRect);
+    // Lives sit at the right edge of the header card.
+    final card = tester.getRect(
+      find.ancestor(of: lives, matching: find.byType(Container)).first,
+    );
+    expect(card.right - livesRect.right, lessThanOrEqualTo(12.5));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('Accessible options expose tap actions, not answer names', (
     tester,
   ) async {

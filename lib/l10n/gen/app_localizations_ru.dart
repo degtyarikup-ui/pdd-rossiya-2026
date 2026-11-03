@@ -2220,9 +2220,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Наберите 100, 200, 300 и 450 очков за одну игру в «Знак-свайпер».';
 
   @override
-  String get gameSignQuestionScope => 'Других знаков и запретов нет';
-
-  @override
   String get gameTrafficSignalQuestion => 'Что разрешает сигнал?';
 
   @override

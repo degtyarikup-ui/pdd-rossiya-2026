@@ -3838,12 +3838,6 @@ abstract class AppLocalizations {
   /// **'Наберите 100, 200, 300 и 450 очков за одну игру в «Знак-свайпер».'**
   String get achievementDescSignSwiper;
 
-  /// No description provided for @gameSignQuestionScope.
-  ///
-  /// In ru, this message translates to:
-  /// **'Других знаков и запретов нет'**
-  String get gameSignQuestionScope;
-
   /// No description provided for @gameTrafficSignalQuestion.
   ///
   /// In ru, this message translates to:

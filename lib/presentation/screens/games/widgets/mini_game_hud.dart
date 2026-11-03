@@ -86,18 +86,14 @@ class MiniGameHud extends StatelessWidget {
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final scoreWidth =
-                        26 + width('$score', 18, FontWeight.w800);
+                    // Layout is decided once from typical round maxima — a
+                    // three-digit score with a combo badge and the full time —
+                    // so nothing reflows while the numbers change. A rarer,
+                    // longer score only shrinks within its own space on the left.
+                    final scoreWidth = 26 + width('888', 18, FontWeight.w800);
                     final timerWidth =
-                        24 +
-                        width(
-                          appL10n.gameSecondsLeft(secondsLeft),
-                          14,
-                          FontWeight.w700,
-                        );
-                    final comboWidth = combo > 1
-                        ? 18 + width('×$combo', 12, FontWeight.w800)
-                        : 0;
+                        24 + GameTimeBar.inlineTextWidth(context, totalSeconds);
+                    final comboWidth = 18 + width('×9', 12, FontWeight.w800);
                     final fullLivesWidth =
                         totalLives * 15.0 + math.max(0, totalLives - 1) * 3;
                     final compact =
@@ -142,15 +138,19 @@ class MiniGameHud extends StatelessWidget {
                           height: math.max(24, scaler.scale(20)),
                           child: Row(
                             children: [
-                              Flexible(
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
+                              // The score takes the free space; time and lives
+                              // stay pinned to the right edge.
+                              Expanded(
+                                child: Align(
                                   alignment: Alignment.centerLeft,
-                                  child: scoreLabel,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: scoreLabel,
+                                  ),
                                 ),
                               ),
                               if (!twoRows) ...[
-                                const Spacer(),
                                 timer,
                                 const SizedBox(width: 8),
                                 hearts,

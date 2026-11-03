@@ -152,12 +152,43 @@ class GameTimeBar extends StatelessWidget {
   final int totalSeconds;
   final bool inline;
 
+  /// Width of the longest inline time of a round («60 с»), so the label keeps
+  /// one size from the first second to the last.
+  static double inlineTextWidth(BuildContext context, int totalSeconds) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: appL10n.gameSecondsLeft(totalSeconds),
+        style: DefaultTextStyle.of(context).style.merge(
+          const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            fontFeatures: [FontFeature.tabularFigures()],
+          ),
+        ),
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final width = painter.width.ceilToDouble() + 1;
+    painter.dispose();
+    return width;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final fraction = (secondsLeft / totalSeconds).clamp(0.0, 1.0);
     final urgent = secondsLeft <= 10;
     if (inline) {
+      final style = DefaultTextStyle.of(context).style.merge(
+        TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: urgent ? colors.red : colors.primaryText,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      );
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -167,12 +198,14 @@ class GameTimeBar extends StatelessWidget {
             color: urgent ? colors.red : colors.secondaryText,
           ),
           const SizedBox(width: 6),
-          Text(
-            appL10n.gameSecondsLeft(secondsLeft),
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: urgent ? colors.red : colors.primaryText,
+          // Room for the full round's time: the seconds never push the lives.
+          SizedBox(
+            width: inlineTextWidth(context, totalSeconds),
+            child: Text(
+              appL10n.gameSecondsLeft(secondsLeft),
+              maxLines: 1,
+              softWrap: false,
+              style: style,
             ),
           ),
         ],
