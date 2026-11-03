@@ -346,3 +346,48 @@ test('a failed cron task is named in the incident code', async () => {
   const codes = incidents.filter(i => i.operation === 'cron.maintenance').map(i => i.code);
   assert.ok(codes.includes('operation_failed:notifications'), JSON.stringify(codes));
 });
+
+test('reconciliation reports the failing KV step without exposing cursor, account or exception text', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => { throw new TypeError('offline test'); };
+  try {
+    for (const scope of ['payments', 'subscriptions']) {
+      const cursorKey = 'reconcile:' + scope + ':cursor';
+      const prefix = scope === 'payments' ? 'pay_order:' : 'user:';
+      for (const failingStage of ['read_cursor', 'list', 'save_cursor', 'clear_cursor']) {
+        const privateMarker = 'PRIVATE_CURSOR_OR_USER_ID';
+        const fault = () => { throw Object.freeze(Object.assign(new Error(privateMarker), { retryable: true })); };
+        const kv = new Storage();
+        await kv.put(cursorKey, privateMarker);
+        const attempts = [];
+        const installs = {
+          get: key => key === cursorKey && failingStage === 'read_cursor' ? fault() : kv.get(key),
+          list: async options => {
+            if (options.prefix === prefix) {
+              assert.equal(options.cursor, privateMarker);
+              if (failingStage === 'list') fault();
+              if (failingStage === 'save_cursor') return { keys: [], list_complete: false, cursor: 'next' };
+            }
+            return { keys: [], list_complete: true };
+          },
+          put: (key, value) => key === cursorKey && failingStage === 'save_cursor' ? fault() : kv.put(key, value),
+          delete: key => key === cursorKey && failingStage === 'clear_cursor' ? fault() : kv.delete(key),
+        };
+        const env = { INSTALLS: installs, ACCOUNTS: {}, BOT_TOKEN: 'test', CHAT_ID: 'test',
+          TELEGRAM: { idFromName: s => s, get: () => ({ fetch: async (url, options) => {
+            if (String(url).endsWith('/incident')) attempts.push(JSON.parse(options.body).incident);
+            return Response.json({ ok: true });
+          } }) } };
+        const pending = [], ctx = { waitUntil: promise => pending.push(promise) };
+        await worker.scheduled({ cron: '*/5 * * * *' }, env, ctx);
+        while (pending.length) await Promise.all(pending.splice(0));
+        const incidents = attempts.filter(i => i.code.includes(':reconcile'));
+        assert.equal(incidents.length, 1);
+        assert.equal(incidents[0].code, 'durable_retryable:reconcile:' + scope + '.' + failingStage);
+        assert.equal(incidents[0].context.retryable, true);
+        assert.ok(!JSON.stringify(incidents).includes(privateMarker));
+        assert.equal(await kv.get(cursorKey), privateMarker);
+      }
+    }
+  } finally { globalThis.fetch = originalFetch; }
+});

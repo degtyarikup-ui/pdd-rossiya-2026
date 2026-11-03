@@ -48,7 +48,7 @@ export { AccountState } from './account_state.js';
 export { AiQuotaState } from './ai_quota.js';
 import { aiQuota } from './ai_quota.js';
 import { privatePushTopic } from './notification_identity.js';
-import { reconcileAccounts } from './account_maintenance.js';
+import { reconcileAccounts, ReconcilePageFailure } from './account_maintenance.js';
 import { handleStoreNotification, appleNotificationToken } from './store_notifications.js';
 import { handleTelegramAuthRequest, handleTelegramAuthCheck } from './telegram_auth.js';
 import { handleClientIncident, deferIncident, errorCode, isIncidentReported } from './diagnostics.js';
@@ -4402,9 +4402,14 @@ export default {
     }
   },
   async scheduled(event, env, ctx) {
-    // Six tasks share one cron: the incident code names the failed one
-    // (operation_failed:reconcile), otherwise the report says only "Error".
-    const notify = error => deferIncident(ctx, env, { category: 'infrastructure', operation: 'cron.' + (event.cron === HOURLY_CRON ? 'maintenance' : event.cron === WEEKLY_CRON ? 'game_week' : 'daily_report'), code: errorCode(error) + (CRON_TASKS.has(error?.cronTask) ? ':' + error.cronTask : ''), context: serverErrorContext(error) });
+    const notify = error => {
+      const reconcile = error instanceof ReconcilePageFailure;
+      const cause = reconcile ? error.cause : error;
+      const task = reconcile ? 'reconcile:' + error.stage : error?.cronTask;
+      const code = errorCode(cause) + (reconcile || CRON_TASKS.has(task) ? ':' + task : '');
+      const operation = event.cron === HOURLY_CRON ? 'maintenance' : event.cron === WEEKLY_CRON ? 'game_week' : 'daily_report';
+      return deferIncident(ctx, env, { category: 'infrastructure', operation: 'cron.' + operation, code, context: serverErrorContext(cause) });
+    };
     const guardedContext = { waitUntil: task => ctx.waitUntil(Promise.resolve(task).catch(notify)) };
     // Команды выгрузки журнала ошибок из Telegram (/export_day, /export_all).
     ctx.waitUntil(pollErrorCommands(env)
