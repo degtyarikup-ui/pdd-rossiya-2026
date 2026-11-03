@@ -161,3 +161,41 @@ body.framing :is(.inspector-shell,.inspect-toggle,.workspace-status,.stage-tools
 #view canvas, .tag.annotation-text { touch-action: none; }
 
 .at-home .inspector-shell { visibility: hidden; }
+#confirm .dialog-foot { flex-wrap: wrap; }
+#confirm .dialog-foot:has(#confirm-discard:not([hidden])) [data-answer="no"] { margin-right: auto; }
+@media (max-width: 450px) {
+  #confirm .dialog-foot:has(#confirm-discard:not([hidden])) { display: grid; grid-template-columns: 1fr 1fr; }
+  #confirm .dialog-foot:has(#confirm-discard:not([hidden])) [data-answer="no"] { margin-right: 0; }
+  #confirm .dialog-foot:has(#confirm-discard:not([hidden])) [data-answer="yes"] { grid-column: 1 / -1; }
+}
+
+/* The name doubles as the properties button, so the whole selection fits on a phone. */
+.selection-bar {
+  position: absolute; bottom: calc(var(--dock-pad) + 64px); left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; max-width: calc(100% - 16px); width: max-content; padding: 3px; gap: 2px;
+  border: 1px solid var(--dock-edge); border-radius: 8px; color: var(--ink); background: var(--dock-panel); box-shadow: var(--dock-shadow);
+}
+.selection-bar button { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 32px; height: 32px; border-radius: 5px; }
+.selection-bar .i { width: 16px; height: 16px; }
+.selection-bar button:hover { background: var(--dock-card); }
+.selection-bar .selection-name { flex: 1 1 auto; min-width: 32px; max-width: 180px; gap: 7px; padding-inline: 7px; color: var(--accent); font-size: 12px; }
+.selection-name span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#selection-delete:hover { color: var(--red); }
+.inspector-shell { bottom: auto; height: fit-content; max-height: calc(100% - var(--header-h) - var(--footer-h) - 68px); display: flex; flex-direction: column; }
+.inspector-shell .right { min-height: 0; height: auto; padding-bottom: 0; }
+.compass { display: grid; place-items: center; width: 32px; height: 28px; border-left: 1px solid var(--line); cursor: ew-resize; touch-action: none; }
+.compass svg { width: 27px; height: 27px; }
+.compass circle { fill: none; stroke: var(--ink-3); stroke-width: .8; }
+#compass-needle path:first-child { fill: var(--accent); }
+#compass-needle path:last-child { fill: #71828d; }
+@container (max-width: 560px) { .selection-bar { bottom: 70px; } }
+@media (max-width: 420px) {
+  .inspect-toggle { padding: 0 8px; gap: 4px; }
+  .compass { width: 28px; }
+}
+@media (max-width: 370px) { .inspect-toggle span { display: none; } }
+#rotation-overlay { position: absolute; inset: 0; pointer-events: none; }
+#rotation-overlay line { stroke: #b9edff; stroke-width: 2; paint-order: stroke; }
+#rotation-overlay circle { fill: #234a60; stroke: #c3eeff; stroke-width: 1.5; }
+#rotation-overlay path { fill: none; stroke: #fff; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.stage:has(.view:not([data-tool="select"]):not([data-tool="junction"])) #rotation-overlay { display: none; }

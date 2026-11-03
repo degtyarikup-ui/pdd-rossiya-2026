@@ -6,6 +6,7 @@
   state.ltab = "scenes";
   state.texSel = null;
   let query = "", filter = "all", libQuery = "", libraryCategory = "all", filtersCollapsed = false, open = { decor: false };
+  let signGroup = "";
   const COLLAPSE_STORAGE = "network-editor-scene-filters-collapsed";
   const LIBRARY_STORAGE = "network-editor-library-category";
   const LIBRARY_CATEGORIES = [["all", "Все"], ["traffic", "Транспорт"], ["signs", "Знаки"], ["decor", "Окружение"]];
@@ -18,16 +19,35 @@
   // ---- dispatch ----------------------------------------------------------------------------
   App.renderPanels = (o = {}) => {
     const only = o.only;
-    if (!only || only.includes("left") || only.includes("layers")) renderLeft();
+    if (!only || only.includes("left")) renderLeft();
+    else if (only.includes("layers") && App.leftPanelOpen?.() !== false) {
+      if (state.ltab === "layers") updateSelectedRows();
+      if (state.ltab === "textures" && !state.texSel) {
+        const tile = $("#left-body").querySelector(".tex-tile.on");
+        tile?.classList.remove("on");
+        tile?.setAttribute("aria-pressed", "false");
+      }
+    }
     if (!only || only.includes("inspector")) App.renderInspector?.();
     if (!only) Tools.renderBar();
   };
   App.setLeftTab = (name) => {
+    const switching = state.ltab !== name;
     state.ltab = name;
     App.showLeftPanel?.(name);
     if (name !== "textures") state.texSel = null;
+    if (name === "layers" && state.sel?.length === 1) {
+      const ref = state.sel[0];
+      open[App.layerOf(ref)] = true;
+      if (ref.t === "decor") open["decor:" + App.objectOf(ref).prop] = true;
+    }
     document.querySelectorAll("[data-ltab]").forEach((b) => b.classList.toggle("on", b.dataset.ltab === name));
     renderLeft();
+    if (switching) $("#left-body").scrollTop = 0;
+    if (name === "scenes" || name === "layers") {
+      const current = $("#left-body").querySelector(name === "scenes" ? ".scene-row.on" : ".lrow.on");
+      if (current) current.scrollIntoView({block:"center"});
+    }
     App.renderInspector?.();
   };
   document.querySelectorAll("[data-ltab]").forEach((b) => b.addEventListener("click", () => {
@@ -38,7 +58,7 @@
   App.setLibraryCategory = (category, { open: show = true, clearSearch = true } = {}) => {
     if (!LIBRARY_CATEGORIES.some(([key]) => key === category)) return;
     libraryCategory = category;
-    if (clearSearch) libQuery = "";
+    if (clearSearch) { libQuery = ""; signGroup = ""; }
     try { localStorage.setItem(LIBRARY_STORAGE, category); } catch (_) { /* Optional preference. */ }
     if (show) App.setLeftTab("library");
     else if (state.ltab === "library") renderLeft();
@@ -97,7 +117,9 @@
   }
   function filtered() {
     const q = query.trim().toLowerCase().replaceAll("ё", "е");
-    const ticket = q.match(/^(\d+)[\s.,·/_-]+(\d+)$/);
+    const ticket = q.match(/^(?:билет\s*№?\s*)?(\d+)[\s.,·/_-]+(?:вопрос\s*№?\s*)?(\d+)$/);
+    const singleTicket = !ticket && q.match(/^(?:билет\s*№?\s*)?(\d+)$/);
+    const words = q.split(/\s+/);
     return state.scenes.filter((s) => {
       if ((s.id === "mini_regulator") !== (state.section === "regulator")) return false;
       if (state.section === "regulator") return true;
@@ -106,7 +128,12 @@
       } else if (isAssistant(s) && pendingApproval(s)) return false;
       if (ticket) {
         if (!s.id.endsWith(`_${Number(ticket[1])}_${Number(ticket[2])}`)) return false;
-      } else if (q && ![s.id, App.sceneTitle(s.id), s.questionText].join(" ").toLowerCase().replaceAll("ё", "е").includes(q)) return false;
+      } else if (singleTicket) {
+        if (!s.id.startsWith(`ticket_${Number(singleTicket[1])}_`)) return false;
+      } else if (q) {
+        const text = [s.id, App.sceneTitle(s.id), s.questionText].join(" ").toLowerCase().replaceAll("ё", "е");
+        if (!words.every(word => text.includes(word))) return false;
+      }
       if (filter === "game") return s.playable;
       if (filter === "err") return s.errors > 0;
       return true;
@@ -189,8 +216,8 @@
   };
   App.approvalFilter = () => approvalFilter;
   App.showQuestions = (id) => {
-    state.section = "city";
-    App.setLeftTab("scenes");
+    if (!id) state.section = "city";
+    if (App.leftPanelOpen?.() && state.ltab !== "scenes") App.setLeftTab("scenes");
     App.setSceneFilter("questions");
     return QuestionPlan.open(id);
   };
@@ -202,15 +229,19 @@
       if (typeof QuestionPlan !== "undefined") QuestionPlan.setQuery(query);
       if (e.target.id === "home-q") { renderHome.focus = caret(); App.renderHome(); } else { renderLeft.focus = caret(); renderLeft(); }
     }
-    if (e.target.id === "lib-q") { libQuery = e.target.value; renderLeft.focus = caret(); renderLeft(); }
+    if (e.target.id === "lib-q") { libQuery = e.target.value; renderLeft.focus = caret(); renderLeft(); $("#left-body").scrollTop = 0; }
   });
   document.addEventListener("click", (e) => {
     if (e.target.closest("[data-toggle-scene-filters]")) { App.setSceneFiltersCollapsed(!filtersCollapsed); return; }
     const navigation = e.target.closest("[data-scene-section]");
     if (navigation) {
       const next = navigation.dataset.sceneSection;
+      const inDrawer = navigation.closest?.("#left-body");
       App.setSceneFilter(next === "scenes" ? sceneSubfilter : next);
-      if (next === "questions") QuestionPlan.open().catch(err => App.toast(err.message, "bad"));
+      if (next === "questions") {
+        const load = state.S && inDrawer ? QuestionPlan.load() : QuestionPlan.open();
+        load.catch(err => App.toast(err.message, "bad"));
+      }
       return;
     }
     const f = e.target.closest("[data-filter]");
@@ -224,6 +255,12 @@
     if (e.target.closest("#home-back")) App.showHome(false);
   });
   document.addEventListener("change", e => {
+    if (e.target.matches?.("[data-sign-group]")) {
+      signGroup = e.target.value;
+      renderLeft();
+      $("#left-body").scrollTop = 0;
+      return;
+    }
     if (!e.target.matches?.("[data-scene-status]")) return;
     if (filter === "assistant") App.setApprovalFilter(e.target.value);
     else App.setSceneFilter(e.target.value);
@@ -243,14 +280,16 @@
     const s = state.S;
     if (!s) return [];
     switch (layer) {
-      case "roads":
+      case "roads": {
+        const tracks = (s.tracks || []).map(track => ({ t: "track", id: track.id }));
         if (s.layout) {
           return [...s.layout.nodes.filter((n) => Layout.nodeKind(s.layout, n, s.crop || 90) === "junction" || n.ring).map((n) => ({ t: "node", id: n.id })),
             ...s.layout.streets.map((st) => ({ t: "street", id: st.id })), ...s.roads.filter((r) => !r.auto).map((r) => ({ t: "road", id: r.id, part: -1 })),
-            ...s.lawns.filter((l) => !l.auto).map((l) => ({ t: "lawn", id: l.id }))];
+            ...s.lawns.filter((l) => !l.auto).map((l) => ({ t: "lawn", id: l.id })), ...tracks];
         }
         return [...s.roads.flatMap((r) => [{ t: "road", id: r.id, part: -1 }, ...(r.holes || []).map((_, k) => ({ t: "road", id: r.id, part: k }))]),
-          ...s.lawns.map((l) => ({ t: "lawn", id: l.id }))];
+          ...s.lawns.map((l) => ({ t: "lawn", id: l.id })), ...tracks];
+      }
       case "marks": return s.markings.filter((m) => !m.auto).map((m) => ({ t: "marking", id: m.id }));
       case "routes": return s.routes.filter((r) => r.kind !== "actor").map((r) => ({ t: "route", id: r.id }));
       case "actors": return [{ t: "stop" }, ...s.actors.map((a) => ({ t: "actor", id: a.id })), ...(s.officers || []).map((o) => ({ t: "officer", id: o.id }))];
@@ -266,7 +305,17 @@
     if (ref.t === "sign") return `<img class="thumb mini" src="/asset/sign/${SignMount.textureCode(o)}.svg" alt="">`;
     if (ref.t === "actor") return Thumbs.img("actor", o.type, "mini");
     return ic({ node: o?.ring ? "ring" : "junction", street: "road", road: ref.part >= 0 ? "lawn" : "road", lawn: "lawn", marking: "marking",
-      route: "route", light: "light", stop: "flag", officer: "person" }[ref.t] || "info");
+      route: "route", track: "rails", light: "light", stop: "flag", officer: "person" }[ref.t] || "info");
+  }
+  function updateSelectedRows() {
+    const body = $("#left-body");
+    for (const row of body.querySelectorAll("[data-ref]")) {
+      const ref = JSON.parse(row.dataset.ref), selected = state.sel.some(item => App.sameRef(item, ref));
+      row.classList.toggle("on", selected);
+      row.setAttribute("aria-pressed", String(selected));
+    }
+    const props = new Set(state.sel.filter(item => item.t === "decor").map(item => App.objectOf(item)?.prop));
+    for (const row of body.querySelectorAll("[data-kind]")) row.classList.toggle("on-in", props.has(row.dataset.kind));
   }
   function layersPane() {
     if (!state.S) return `<p class="empty-note">Откройте сцену</p>`;
@@ -287,10 +336,10 @@
             return `<div class="lrow sub ${any ? "on-in" : ""}" data-kind="${esc(p)}">${Thumbs.img("prop", p, "mini")}<span>${esc(Catalog.propName(p))}</span><em>${list.length}</em>
               <button class="lbtn lselect" data-select-prop="${esc(p)}" aria-label="Выбрать все: ${esc(Catalog.propName(p))}" title="Выбрать все">${ic("cursor")}</button>
               <button class="lbtn" data-open="${esc(key)}" aria-expanded="${!!op}" aria-label="${op ? "Свернуть" : "Раскрыть"}: ${esc(Catalog.propName(p))}">${ic("chevron", op ? "rot" : "")}</button></div>`
-              + (op ? list.map((r, i) => `<button class="lrow sub2 ${isOn(r) ? "on" : ""}" aria-pressed="${isOn(r)}" data-ref='${esc(JSON.stringify(r))}'><span>${esc(Catalog.propName(p))} ${i + 1}</span></button>`).join("") : "");
+              + (op ? list.map((r, i) => `<button class="lrow sub2 ${isOn(r) ? "on" : ""}" aria-pressed="${isOn(r)}" data-ref="${esc(JSON.stringify(r))}"><span>${esc(Catalog.propName(p))} ${i + 1}</span></button>`).join("") : "");
           }).join("");
         } else {
-          body = rows.map((r) => `<button class="lrow ${isOn(r) ? "on" : ""}" aria-pressed="${isOn(r)}" data-ref='${esc(JSON.stringify(r))}'>${rowIcon(r)}<span>${esc(App.nameOf(r))}</span></button>`).join("");
+          body = rows.map((r) => `<button class="lrow ${isOn(r) ? "on" : ""}" aria-pressed="${isOn(r)}" data-ref="${esc(JSON.stringify(r))}">${rowIcon(r)}<span>${esc(App.nameOf(r))}</span></button>`).join("");
         }
       }
       return `<section class="lgroup ${hiddenL ? "off" : ""}">
@@ -316,7 +365,12 @@
       return App.select(state.S.decor.filter(item => item.prop === selectProp.dataset.selectProp).map(item => ({ t: "decor", id: item.id })).filter(App.pickable), { add: e.shiftKey });
     }
     const category = e.target.closest("[data-library-category]");
-    if (category) return App.setLibraryCategory(category.dataset.libraryCategory, { clearSearch: false });
+    if (category) {
+      if (category.hasAttribute?.("data-search-all")) signGroup = "";
+      App.setLibraryCategory(category.dataset.libraryCategory, { clearSearch: false });
+      $("#left-body").scrollTop = 0;
+      return;
+    }
     const eye = e.target.closest("[data-eye]");
     if (eye) { e.stopPropagation(); return App.toggleHidden(eye.dataset.eye); }
     const lock = e.target.closest("[data-lock]");
@@ -358,17 +412,31 @@
     const cat = state.catalog;
     if (!cat) return "";
     const q = libQuery.trim().toLowerCase().replaceAll("ё", "е");
-    const hit = (name) => !q || name.toLowerCase().replaceAll("ё", "е").includes(q);
+    const words = q.split(/\s+/);
+    const hit = (name) => {
+      const text = name.toLowerCase().replaceAll("ё", "е");
+      return words.every(word => text.includes(word));
+    };
     const regulator = state.id === "mini_regulator";
     const inCategory = category => regulator ? category === "decor" : libraryCategory === "all" || libraryCategory === category;
-    const tile = (item, name, pic, on) => `<button class="lib-tile ${on ? "on" : ""}" draggable="true" data-lib='${esc(JSON.stringify(item))}' data-tip="${esc(name)}" aria-label="Добавить: ${esc(name)}" aria-pressed="${!!on}">${pic}<span>${esc(name)}</span></button>`;
+    const tile = (item, name, pic, on, caption = `<span>${esc(name)}</span>`) => `<button class="lib-tile ${on ? "on" : ""}" draggable="true" data-lib="${esc(JSON.stringify(item))}" title="${esc(name)}" aria-label="Добавить: ${esc(name)}" aria-pressed="${!!on}">${pic}${caption}</button>`;
     const sections = [];
     const vehicles = Catalog.ACTOR_ORDER.filter((t) => cat.actorTypes[t] && hit(Catalog.ACTORS[t].name));
     if (inCategory("traffic") && vehicles.length) sections.push(`<h4>${ic("car")}Машины и люди</h4><div class="lib-grid">${vehicles.map((t) => tile({ kind: "actor", id: t }, Catalog.ACTORS[t].name, Thumbs.img("actor", t), Tools.current() === "actor" && Tools.opts.actorType === t)).join("")}</div>`);
-    const signs = (cat.signs || []).filter((c) => hit(`${c} ${Catalog.signName(c)} ${cat.signInfo?.[c]?.folkName || ""} ${cat.signInfo?.[c]?.group || ""}`));
+    const signCodes = cat.signs || [];
+    const groups = new Map();
+    for (const code of signCodes) {
+      const key = code.split(".")[0], group = cat.signInfo?.[code]?.group;
+      if (!group || groups.has(key)) continue;
+      const label = key === "8" ? "Таблички" : group.replace(/^Знаки | знаки$/g, "");
+      groups.set(key, label.charAt(0).toUpperCase() + label.slice(1));
+    }
+    const number = words.find(w => /^\d+([.]\d*)*$/.test(w));
+    const signs = signCodes.filter(code => (libraryCategory !== "signs" || !signGroup || code.startsWith(signGroup + "."))
+      && (!number || code.startsWith(number)) && hit(`знак ${code} ${Catalog.signName(code)} ${cat.signInfo?.[code]?.folkName || ""} ${cat.signInfo?.[code]?.group || ""}`));
     if (inCategory("signs") && signs.length) {
       const visible = libraryCategory === "all" && !q ? signs.slice(0, 6) : signs;
-      sections.push(`<h4>${ic("flag")}Знаки · ${signs.length}${visible.length < signs.length ? `<button class="lib-more" data-library-category="signs" aria-label="Все знаки">Все знаки ${ic("chevron")}</button>` : ""}</h4><div class="lib-grid signs">${visible.map((c) => tile({ kind: "sign", id: c }, `${c} · ${Catalog.signName(c)}`, `<img class="thumb sign-pic" src="/asset/sign/${c==='5.33'?'5.33_plain':c}.svg" alt="" loading="lazy">`, Tools.current() === "sign" && Tools.opts.sign === c)).join("")}</div>`);
+      sections.push(`<h4>${ic("flag")}Знаки · ${signs.length}${visible.length < signs.length ? `<button class="lib-more" data-library-category="signs" aria-label="Все знаки">Все знаки ${ic("chevron")}</button>` : ""}</h4><div class="lib-grid signs">${visible.map(c => tile({ kind: "sign", id: c }, `${c} · ${Catalog.signName(c)}`, `<img class="thumb sign-pic" src="/asset/sign/${c==='5.33'?'5.33_plain':c}.svg" alt="" loading="lazy">`, Tools.current() === "sign" && Tools.opts.sign === c, `<b>${esc(c)}</b><span>${esc(Catalog.signName(c))}</span>`)).join("")}</div>`);
     }
     if (inCategory("traffic") && hit("регулировщик")) sections.push(`<h4>${ic("person")}Регулировщик</h4><div class="lib-grid">${tile({ kind: "officer", id: "officer" }, "Регулировщик", `<span class="lib-icon">${ic("person")}</span>`, Tools.current() === "officer")}</div>`);
     if (inCategory("traffic") && cat.lightAsset && hit("светофор")) {
@@ -390,8 +458,10 @@
       signs: `<img class="thumb" src="/asset/sign/${cat.signs?.includes("2.1") ? "2.1" : cat.signs?.[0] || "2.4"}.svg" alt="">`,
       decor: Thumbs.img("prop", "buildings/home_0"),
     };
-    return `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="lib-q" aria-label="Поиск объектов" placeholder="Найти объект" value="${esc(libQuery)}"></label>${regulator ? "" : `<div class="library-categories" role="group" aria-label="Категории объектов">${LIBRARY_CATEGORIES.map(([key, label]) => `<button class="library-category ${libraryCategory === key ? "on" : ""}" data-library-category="${key}" aria-pressed="${libraryCategory === key}">${categoryPictures[key]}<span>${label}</span></button>`).join("")}</div>`}</div>
-      <div class="lib">${sections.join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`;
+    const groupFilter = !regulator && libraryCategory === "signs" && groups.size ? `<select class="sign-group-filter" data-sign-group aria-label="Группа знаков"><option value="">Все группы знаков</option>${Array.from(groups, ([key, name]) => `<option value="${esc(key)}" ${key === signGroup ? "selected" : ""}>${esc(key)} · ${esc(name)}</option>`).join("")}</select>` : "";
+    const empty = `<div class="empty-note">Ничего не нашлось${!regulator && libraryCategory !== "all" && q ? '<button class="lib-search-all" data-library-category="all" data-search-all>Искать во всех объектах</button>' : ""}</div>`;
+    return `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="lib-q" aria-label="Поиск объектов" placeholder="Найти объект" value="${esc(libQuery)}"></label>${regulator ? "" : `<div class="library-categories" role="group" aria-label="Категории объектов">${LIBRARY_CATEGORIES.map(([key, label]) => `<button class="library-category ${libraryCategory === key ? "on" : ""}" data-library-category="${key}" aria-pressed="${libraryCategory === key}">${categoryPictures[key]}<span>${label}</span></button>`).join("")}</div>`}${groupFilter}</div>
+      <div class="lib">${sections.join("") || empty}</div>`;
   }
   $("#left-body").addEventListener("dragstart", (e) => {
     const t = e.target.closest("[data-lib]");

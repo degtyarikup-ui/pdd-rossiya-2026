@@ -19,7 +19,7 @@ const context = vm.createContext({
   fetch(path, opts={}) {
     if (path === '/api/scenes') return Promise.resolve(response([]));
     if (path.startsWith('/api/thumb/')) { thumbnailWrites.push(path); return Promise.resolve(response({})); }
-    return new Promise(resolve => requests.push({path, body:opts.body && JSON.parse(opts.body), resolve:data=>resolve(response(data))}));
+    return new Promise((resolve,reject) => requests.push({path, body:opts.body && JSON.parse(opts.body), resolve:data=>resolve(response(data)),reject}));
   },
 });
 vm.runInContext(fs.readFileSync(require.resolve('../editor/app.js'),'utf8'),context);
@@ -79,5 +79,36 @@ const edit = value => App.edit(s=>{s.value=value;},{rebuild:false});
   assert.equal(approvedSave.body.reviewed,true,'a queued geometry save carries forward the published status');
   assert.equal(approvedSave.body.value,43); approvedSave.resolve({findings:[]}); await duringInclude;
   assert.equal(App.state.dirty,true); assert.equal(App.state.S.value,44);
-  console.log('Scene I/O: out-of-order opens, pending edits, save queue, promotion, thumbnail and play targeting PASS');
+
+  async function choose(sid,answer) {
+    const result = App.openScene(sid);
+    next('/api/scene/'+sid).resolve(scene(sid)); await tick();
+    assert.equal(dialog.hidden,false);
+    assert.equal(document.querySelector('#confirm-discard').hidden,false);
+    dialog.onclick({target:{closest:()=>({dataset:{answer}})}}); await tick();
+    return {result};
+  }
+  App.showHome(true);
+  const failed = await choose('ticket_4_4','yes');
+  assert.equal(App.isSaving,true); assert.equal(document.querySelector('#home-screen').hidden,true);
+  next('/api/scene/ticket_3_3').reject(new Error('offline')); await failed.result;
+  assert.equal(App.state.id,'ticket_3_3'); assert.equal(App.state.dirty,true); assert.equal(App.isSaving,false);
+
+  const changed = await choose('ticket_4_4','yes');
+  const oldSnapshot = next('/api/scene/ticket_3_3'); edit(45);
+  oldSnapshot.resolve({findings:[]}); await changed.result;
+  assert.equal(App.state.id,'ticket_3_3'); assert.equal(App.state.S.value,45);
+  assert.equal(App.state.dirty,true,'a newer edit stays open after saving the earlier snapshot');
+  const success = await choose('ticket_4_4','yes');
+  const latest = next('/api/scene/ticket_3_3'); assert.equal(latest.body.value,45);
+  latest.resolve({findings:[]}); await success.result;
+  assert.equal(App.state.id,'ticket_4_4'); assert.equal(App.state.dirty,false);
+
+  edit(1);
+  const discard = await choose('ticket_5_5','discard');
+  await discard.result; assert.equal(App.state.id,'ticket_5_5'); assert.equal(requests.length,0);
+  const slow = App.openScene('ticket_6_6'), slowGet = next('/api/scene/ticket_6_6');
+  App.showHome(true); slowGet.resolve(scene('ticket_6_6')); await slow;
+  assert.equal(App.state.id,'ticket_5_5'); assert.equal(document.querySelector('#home-screen').hidden,false);
+  console.log('Scene I/O: ordered opens, save/discard/cancel, failed save and new edits, library navigation, promotion and play targeting PASS');
 })().catch(error=>{console.error(error);process.exitCode=1});

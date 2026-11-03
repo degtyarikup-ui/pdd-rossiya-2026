@@ -32,10 +32,32 @@
   }
 
   let handlers = {}, signSearch = "";
+  const selectionLocked = () => state.sel.length === 1 && App.isLocked(state.sel[0])
+    && !(state.texSel && state.ltab === "textures");
+  let compositionField = null;
+  pane().addEventListener("compositionstart", e => { compositionField = e.target; });
+  pane().addEventListener("compositionend", () => { compositionField = null; });
+  App.hasPendingInspectorField = () => {
+    const field = document.activeElement;
+    return !!field?.matches?.("#inspector input[data-text]:enabled") && !selectionLocked()
+      && (field.value !== field.defaultValue || field.validity.badInput);
+  };
+  App.commitInspectorField = () => {
+    const field = document.activeElement;
+    if (field && field === compositionField) return false;
+    if (!App.hasPendingInspectorField()) return true;
+    if (!field.reportValidity()) return false;
+    const handler = handlers["text:" + field.dataset.text];
+    if (!handler || handler(field.value) === false) return false;
+    // A normalized no-op (for example, whitespace after an existing name) causes no rerender.
+    if (field.isConnected && field.value.trim() === field.defaultValue) field.value = field.defaultValue;
+    return true;
+  };
   function bind(h) {
     handlers = h;
   }
   pane().addEventListener("click", (e) => {
+    if (selectionLocked()) return;
     const c = e.target.closest("[data-chip]");
     if (c?.disabled) return;
     if (c && handlers["chip:" + c.dataset.chip]) return handlers["chip:" + c.dataset.chip](c.dataset.value, e);
@@ -43,6 +65,7 @@
     if (a && handlers[a.dataset.act]) return handlers[a.dataset.act](a.dataset, e);
   });
   pane().addEventListener("change", (e) => {
+    if (selectionLocked()) return;
     const t = e.target.closest("[data-toggle]");
     if (t && handlers["toggle:" + t.dataset.toggle]) return handlers["toggle:" + t.dataset.toggle](t.checked);
     const sl = e.target.closest("[data-slider]");
@@ -51,6 +74,8 @@
     if (tx && handlers["text:" + tx.dataset.text]) return handlers["text:" + tx.dataset.text](tx.value);
   });
   pane().addEventListener("input", (e) => {
+    if (selectionLocked()) return;
+    if (e.target.closest("input[data-text]")) App.renderTop();
     const search = e.target.closest("[data-sign-search]");
     if (search) {
       signSearch = search.value;
@@ -82,13 +107,17 @@
     const same = lastSelection === selection;
     const scroll = same ? p.scrollTop : 0;
     const active = document.activeElement;
+    if (same && active && active === compositionField) return;
     // Keep keyboard focus on the same field when an edit rebuilds the inspector.
     const focus = same && active && p.contains(active)
       ? Array.from(active.attributes).filter(a => a.name.startsWith("data-")) : [];
-    const draft = focus.length && active.matches('input[type="text"], input[type="search"]')
+    const draft = focus.length && active.matches('input[type="text"], input[type="search"], input[type="number"]')
       ? {value:active.value, initial:active.defaultValue, start:active.selectionStart, end:active.selectionEnd} : null;
     lastSelection = selection;
     render(p);
+    if (selectionLocked()) {
+      p.querySelectorAll("button, input, select").forEach(field => { field.disabled = true; });
+    }
     if (focus.length) {
       const selector = focus.map(a => `[${a.name}="${CSS.escape(a.value)}"]`).join("");
       const field = p.querySelector(selector);
@@ -96,7 +125,7 @@
       // A preview response can arrive while the author is still typing a name or a caption.
       if (field && draft && field.defaultValue === draft.initial) {
         field.value = draft.value;
-        field.setSelectionRange(draft.start, draft.end);
+        if (draft.start !== null) field.setSelectionRange(draft.start, draft.end);
       }
     }
     p.scrollTop = scroll;
@@ -122,7 +151,9 @@
     $("#checks")?.scrollIntoView({block:"nearest"});
   };
 
-  const head = (icon, title, sub = "") => `<div class="insp-head">${icon}<div><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</div></div>`;
+  const head = (icon, title, sub = "") => `<div class="insp-head">${icon}<div><b>${esc(title)}</b>${selectionLocked()
+    ? `<small class="insp-lock">${ic("lock")}Слой заблокирован</small>`
+    : sub ? `<small>${esc(sub)}</small>` : ""}</div></div>`;
   const deleteRow = (extra = "") => `<div class="insp-actions">${extra}${button("dup", "Копия", "copy", "ghost")}${button("del", "Удалить", "trash", "danger ghost")}</div>`;
   const common = { dup: () => App.duplicate(), del: () => App.remove() };
 
@@ -435,6 +466,7 @@
     const el = p.querySelector("[data-dial]");
     if (!el) return;
     el.addEventListener("pointerdown", (e) => {
+      if (selectionLocked()) return;
       el.setPointerCapture(e.pointerId);
       App.beginDrag();
       const move = (ev) => {
@@ -632,7 +664,7 @@
       "text:signNumber": value => {
         const number = Number(value.trim().replace(",", "."));
         if (App.isLocked(ref)) return;
-        if (!value.trim() || !SignMount.validNumber(number,face.code)) { App.toast("Введите допустимое положительное число (до двух знаков после запятой)", "warn"); App.renderInspector(); return; }
+        if (!value.trim() || !SignMount.validNumber(number,face.code)) { App.toast("Введите допустимое положительное число (до двух знаков после запятой)", "warn"); App.renderInspector(); return false; }
         App.edit(() => { face.number = number; });
       },
       "chip:signMode": (v) => App.edit(() => { if (v === "lanes") { face.code = "5.15.1"; delete face.number; face.laneDirections = LaneSign.normalize(face.laneDirections || LaneSign.DEFAULT_LANES); } else delete face.laneDirections; }),
@@ -984,40 +1016,36 @@
       });
       return;
     }
-    if (r.kind === "annotation" && r.style === "text") {
-      p.innerHTML = `${head(`<span class="ibadge">Тт</span>`, 'Текст', 'Свободная надпись')}
-        ${card('Содержание', `<input type="text" data-text="free-text" maxlength="120" aria-label="Текст надписи" value="${esc(r.text || '')}">${button('edit-text','Редактировать на сцене','','ghost wide')}`)}
-        ${card('Оформление', `${slider('text-size','Размер',r.textSize || 1,.4,4,.1,`${r.textSize || 1}×`)}${slider('text-angle','Поворот',r.textAngle || 0,-180,180,1,`${r.textAngle || 0}°`)}`)}
-        ${card('', `${button('reset-angle','Выровнять текст','','ghost wide')}${deleteRow()}`)}`;
-      bind({...common,
-        'edit-text':()=>Tools.editText(r),
-        'text:free-text':v=>{if(!App.isLocked(ref))App.edit(()=>{r.text=v.slice(0,120);});},
-        'slider:text-size':live((_sc,v)=>{if(!App.isLocked(ref))r.textSize=v;}),
-        'slider:text-angle':live((_sc,v)=>{if(!App.isLocked(ref))r.textAngle=v;}),
-        'reset-angle':()=>{if(!App.isLocked(ref))App.edit(()=>{r.textAngle=0;});},
-      });
-      return;
-    }
     if (r.kind === "annotation") {
-      const colours=[...AnnotationLine.colours];
-      if(r.colour && !colours.some(([value])=>value===r.colour))colours.push([r.colour,'Исходный']);
-      p.innerHTML=`${head(`<span class="ibadge">${ic('measure')}</span>`,'Линия-обозначение','без буквы')}
-        ${r.style === 'text' ? card('Надпись',`${button('edit-text','Редактировать на сцене','edit','ghost wide')}${slider('text-size','Размер',r.textSize || 1,.4,4,.1,`${r.textSize || 1}×`)}${slider('text-angle','Поворот',r.textAngle || 0,-180,180,1,`${r.textAngle || 0}°`)}`) : ''}
-        ${card('Текст',`<input type="text" data-text="annotation-text" aria-label="Свободный текст" placeholder="Например: 3 м" maxlength="120" value="${esc(r.text || '')}">`)}
-        ${card('Вид линии',chips('annotation-style',AnnotationLine.styles.map(([value,title])=>({value,title})),r.style || 'line'))}
-        ${card('Цвет',chips('annotation-colour',colours.map(([value,title])=>({value,title,html:`<span class="paint" style="background:${value}"></span>`})),r.colour || '#20242b'))}
-        ${card('Толщина',slider('annotation-width','Толщина линии',r.width ?? .16,.08,.6,.02,`${(r.width ?? .16).toFixed(2)} м`))}
-        ${card('',`<p>Тяните точки линии. Двойной клик добавляет точку. Линия не задаёт путь движения.</p><div class="insp-actions">${button('annotation-reverse','Поменять направление','rotr','ghost wide')}${button('rotl','−15°','rotl','ghost')}${button('rotr','+15°','rotr','ghost')}</div>${deleteRow()}`)}`;
+      const textOnly = r.style === "text", field = textOnly ? "free-text" : "annotation-text";
+      const colours = [...AnnotationLine.colours];
+      if (r.colour && !colours.some(([value]) => value === r.colour)) colours.push([r.colour,"Исходный"]);
+      const kind = chips("annotation-style", AnnotationLine.styles.map(([value,title]) => ({value,title})), r.style || "line");
+      const label = `<input type="text" data-text="${field}" aria-label="Текст надписи" placeholder="Например, 3 м" maxlength="120" value="${esc(r.text || "")}">`;
+      p.innerHTML = `${head(`<span class="ibadge">${textOnly ? "Тт" : ic("measure")}</span>`, textOnly ? "Текст" : "Линия-обозначение", textOnly ? "Свободная надпись" : "без буквы")}
+        ${card("Вид", kind)}
+        ${card("Текст", label + (textOnly ? button("edit-text", "Редактировать на сцене", "", "ghost wide") : ""))}
+        ${textOnly
+          ? card("Оформление", slider("text-size", "Размер", r.textSize || 1, .4, 4, .1, `${r.textSize || 1}×`)
+            + slider("text-angle", "Поворот", r.textAngle || 0, -180, 180, 1, `${r.textAngle || 0}°`)
+            + button("reset-angle", "Выровнять текст", "", "ghost wide"))
+          : card("Цвет", chips("annotation-colour", colours.map(([value,title]) => ({value,title,html:`<span class="paint" style="background:${value}"></span>`})), r.colour || "#20242b"))
+            + card("Толщина", slider("annotation-width", "Толщина линии", r.width ?? .16, .08, .6, .02, `${(r.width ?? .16).toFixed(2)} м`))}
+        ${card("", (textOnly ? "" : `<div class="insp-actions">${button("annotation-reverse","Поменять направление","rotr","ghost wide")}${button("rotl","−15°","rotl","ghost")}${button("rotr","+15°","rotr","ghost")}</div>`) + deleteRow())}`;
+      const shown = (name, value) => { const output = p.querySelector(`[data-shown="${name}"]`); if (output) output.textContent = value; };
       bind({...common,
-        'edit-text':()=>Tools.editText(r),
-        'slider:text-size':live((_sc,v)=>{if(!App.isLocked(ref))r.textSize=v;}),
-        'slider:text-angle':live((_sc,v)=>{if(!App.isLocked(ref))r.textAngle=v;}),
-        'text:annotation-text':value=>{if(!App.isLocked(ref))App.edit(()=>{r.text=value.slice(0,120);});},
-        'chip:annotation-style':value=>{if(!App.isLocked(ref)&&AnnotationLine.styles.some(([key])=>key===value))App.edit(()=>{r.style=value;});},
-        'chip:annotation-colour':value=>{if(!App.isLocked(ref)&&/^#[0-9a-f]{6}$/i.test(value))App.edit(()=>{r.colour=value;});},
-        'slider:annotation-width':live((_sc,value)=>{if(!App.isLocked(ref))r.width=value;},value=>{const label=p.querySelector('[data-shown="annotation-width"]');if(label)label.textContent=`${value.toFixed(2)} м`;}),
-        'annotation-reverse':()=>{if(!App.isLocked(ref))App.edit(()=>{r.points.reverse();});},
-        rotl:()=>App.rotate(-15),rotr:()=>App.rotate(15),
+        "edit-text": () => Tools.editText(r),
+        ["text:" + field]: value => App.edit(() => { r.text = value.slice(0,120); }, {rebuild:false}),
+        "chip:annotation-style": value => {
+          if (AnnotationLine.styles.some(([key]) => key === value)) App.edit(() => { r.style = value; }, {rebuild:false});
+        },
+        "chip:annotation-colour": value => { if (/^#[0-9a-f]{6}$/i.test(value)) App.edit(() => { r.colour = value; }, {rebuild:false}); },
+        "slider:text-size": live((_sc,v) => { r.textSize = v; }, v => shown("text-size", `${v}×`)),
+        "slider:text-angle": live((_sc,v) => { r.textAngle = v; }, v => shown("text-angle", `${v}°`)),
+        "slider:annotation-width": live((_sc,v) => { r.width = v; }, v => shown("annotation-width", `${v.toFixed(2)} м`)),
+        "reset-angle": () => App.edit(() => { r.textAngle = 0; }, {rebuild:false}),
+        "annotation-reverse": () => App.edit(() => { r.points.reverse(); }, {rebuild:false}),
+        rotl: () => App.rotate(-15), rotr: () => App.rotate(15),
       });
       return;
     }
@@ -1061,7 +1089,7 @@
         "text:letterX": v => { if (!App.isLocked(ref) && v.trim() && Number.isFinite(Number(v))) App.edit(() => {r.labelPosition[0] = r3(Number(v));}, {rebuild:false}); },
         "text:letterZ": v => { if (!App.isLocked(ref) && v.trim() && Number.isFinite(Number(v))) App.edit(() => {r.labelPosition[1] = r3(Number(v));}, {rebuild:false}); },
         "chip:copy": (v) => App.edit((sc) => { const w = sc.routes.find((x) => x.kind === "manoeuvre" && x.exit === v); r.points = JSON.parse(JSON.stringify(w.points)); const m = r.points[Math.floor(r.points.length * 0.6)]; r.labelPosition = [m[0], m[1]]; }),
-        mid: () => App.edit(() => { const m = r.points[Math.floor(r.points.length / 2)]; r.labelPosition = [m[0], m[1]]; }),
+        mid: () => App.edit(() => { r.labelPosition = Layout.along(r.points, Layout.polyLen(r.points) / 2).p.map(r3); }, {rebuild:false}),
       });
       return;
     }

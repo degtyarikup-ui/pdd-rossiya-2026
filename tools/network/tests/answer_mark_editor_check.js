@@ -48,6 +48,10 @@ const path=JSON.stringify(choices()[0].points);chip('answer-display','letter');a
 assert.deepEqual(clone(App.pointsOfRef({t:'route',id:'choice_А'})),[],'hidden remembered path has no edit handles');
 chip('answer-display','arrow');assert.equal(choices()[0].display,undefined);assert.equal(JSON.stringify(choices()[0].points),path);
 assert.equal(choices()[0].arrowhead,undefined,'restoring arrow restores old path');
+const placed = clone(choices()[0].labelPosition);
+click(pane,'[data-act]',{act:'mid'});
+assert.deepEqual(clone(choices()[0].labelPosition), [32.5,40], 'the middle of a two-point arrow lies between its ends');
+App.undo();assert.deepEqual(clone(choices()[0].labelPosition),placed);
 Tools.set('annotation');assert.equal(Tools.current(),'answer');assert.equal(Tools.opts.answerMode,'annotation');
 point('down',0,0);point('down',5,0);Tools.enter();assert.equal(App.state.S.routes.filter(r=>r.kind==='annotation').length,1);
 Tools.set('answer');mode('letter');App.state.locked.add('routes');App.select({t:'route',id:'choice_Г'});App.remove();

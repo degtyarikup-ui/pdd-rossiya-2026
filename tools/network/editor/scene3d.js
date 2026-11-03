@@ -1061,7 +1061,25 @@ const Scene3D = (() => {
     return [corner(-hx, -hz), corner(hx, -hz), corner(hx, hz), corner(-hx, hz), corner(-hx, -hz)];
   }
 
-  let turnHandle = null;
+  let turnHandle = null, turnOverlay = null;
+  function positionTurnGrip() {
+    if (turnOverlay) turnOverlay.hidden = !turnHandle || !!phone || simMode || !groups.selection?.visible;
+    if (!turnHandle || !camera) return;
+    const h = turnHandle;
+    const start = screenOf(h.frontX, h.frontZ, .2);
+    const ahead = screenOf(h.frontX + Math.sin(h.yaw), h.frontZ + Math.cos(h.yaw), .2);
+    const dx = ahead.x - start.x, dy = ahead.y - start.y;
+    const step = 24 / (Math.hypot(dx, dy) || 1);
+    h.x = h.frontX + Math.sin(h.yaw) * step;
+    h.z = h.frontZ + Math.cos(h.yaw) * step;
+    h.sx = start.x + dx * step;
+    h.sy = start.y + dy * step;
+    if (!turnOverlay || turnOverlay.hidden) return;
+    const line = turnOverlay.querySelector("line");
+    line.setAttribute("x1", start.x); line.setAttribute("y1", start.y);
+    line.setAttribute("x2", h.sx); line.setAttribute("y2", h.sy);
+    turnOverlay.querySelector("g").setAttribute("transform", `translate(${h.sx} ${h.sy})`);
+  }
   function rebuildSelection() {
     const g = setGroup("selection");
     turnHandle = null;
@@ -1083,11 +1101,10 @@ const Scene3D = (() => {
     for (const ref of sel) one = draw(ref, ACCENT, 2.5) || one;
     // One object with a heading: a handle in front of it turns it.
     if (sel.length === 1 && one && (sel[0].t !== "stop" || model.layout?.player?.mode === "free")) {
-      const reach = one.hz + 2.4;
-      const p = [one.x + Math.sin(one.yaw) * reach, one.z + Math.cos(one.yaw) * reach];
-      g.add(polyline([[one.x + Math.sin(one.yaw) * (one.hz + 0.35), one.z + Math.cos(one.yaw) * (one.hz + 0.35)], p], 0.2, ACCENT, 2));
-      g.add(handle(p, "circle", 0xffffff, ACCENT, 1.1));
-      turnHandle = { x: p[0], z: p[1], cx: one.x, cz: one.z };
+      const reach = one.hz + .35;
+      turnHandle = {cx:one.x, cz:one.z, yaw:one.yaw,
+        frontX:one.x + Math.sin(one.yaw) * reach, frontZ:one.z + Math.cos(one.yaw) * reach};
+      positionTurnGrip();
     }
     // The points of a drawn shape or route, when it is the one selected, or an actor with a route.
     let pointRef = (sel.length === 1 && ["route", "road", "lawn", "marking", "track"].includes(sel[0].t)) ? sel[0] : null;
@@ -1327,6 +1344,7 @@ const Scene3D = (() => {
     renderer.domElement.setAttribute("aria-label", "Холст сцены");
     el.appendChild(renderer.domElement);
     labelsEl = document.getElementById("labels");
+    turnOverlay = document.getElementById("rotation-overlay");
     scene = new THREE.Scene();
     scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f78, 0.9));
     const sun = new THREE.DirectionalLight(0xffffff, 0.55);
@@ -1452,6 +1470,7 @@ const Scene3D = (() => {
     }
     handles = handles.filter((h) => h.parent);
     renderer.render(scene, camera);
+    positionTurnGrip();
     placeLabels();
   }
 
@@ -1536,6 +1555,11 @@ const Scene3D = (() => {
 
   // ---- public: camera ----------------------------------------------------------------------
   function setMode(m) {
+    if (m !== mode && !phone) {
+      const focal = height / (2 * Math.tan(THREE.MathUtils.degToRad(perspCam.fov / 2)));
+      if (m === "plan") pxPerM = focal / orbitDist;
+      else orbitDist = focal / pxPerM;
+    }
     mode = m;
     applyCamera();
   }
@@ -1543,11 +1567,37 @@ const Scene3D = (() => {
   function fit(box) {
     const crop = (model && model.crop) || 90;
     const b = box || [-crop, -crop, crop, crop];
-    const cx = (b[0] + b[2]) / 2, cz = (b[1] + b[3]) / 2, span = Math.max(b[2] - b[0], b[3] - b[1], 12);
+    const cx = (b[0] + b[2]) / 2, cz = (b[1] + b[3]) / 2;
+    const halfX = Math.max(6, (b[2] - b[0]) / 2), halfZ = Math.max(6, (b[3] - b[1]) / 2);
+    const frame = App.mapFrame?.() || {x:0, y:0, width, height};
     target.set(cx, 0, cz);
-    pxPerM = Math.min(width, height) / (span * 1.08);
-    orbitDist = span * 1.25 + 20;
     if (!box) { orbitYaw = Math.PI; orbitPitch = 0.95; }
+    pxPerM = Math.min(frame.width / (2 * halfX), frame.height / (2 * halfZ)) / 1.10;
+    if (mode === "3d") {
+      const focal = height / (2 * Math.tan(THREE.MathUtils.degToRad(perspCam.fov / 2)));
+      const sin = Math.sin(orbitYaw), cos = Math.cos(orbitYaw);
+      const pitchSin = Math.sin(orbitPitch), pitchCos = Math.cos(orbitPitch);
+      // Place the centre of the box in the unobstructed frame. The sloped ground
+      // makes the nearest corner appear larger than the far one at the same zoom.
+      const u = (frame.x + frame.width / 2 - width / 2) / focal;
+      const v = Math.min((height / 2 - frame.y - frame.height / 2) / focal, Math.tan(orbitPitch) * .75);
+      const depthSlope = pitchSin - v * pitchCos;
+      let depth = 8;
+      for (const x of [-halfX, halfX]) for (const z of [-halfZ, halfZ]) {
+        const right = x * cos - z * sin, forward = x * sin + z * cos;
+        const nearer = forward * pitchCos;
+        const spanX = Math.abs(right + u * nearer) / frame.width;
+        const spanY = Math.abs(forward * depthSlope) / frame.height;
+        depth = Math.max(depth, nearer + 2.2 * focal * Math.max(spanX, spanY));
+      }
+      const right = u * depth, forward = -v * depth / pitchSin;
+      orbitDist = depth + forward * pitchCos;
+      target.x -= right * cos + forward * sin;
+      target.z -= -right * sin + forward * cos;
+    } else {
+      target.x += (frame.x + frame.width / 2 - width / 2) / pxPerM;
+      target.z += (frame.y + frame.height / 2 - height / 2) / pxPerM;
+    }
     applyCamera();
   }
   function focus(x, z) {
@@ -1556,8 +1606,8 @@ const Scene3D = (() => {
   }
   function zoomBy(f, at) {
     const before = at ? worldAt(at.x, at.y) : null;
-    if (mode === "plan") pxPerM = Math.max(0.8, Math.min(80, pxPerM * f));
-    else orbitDist = Math.max(8, Math.min(900, orbitDist / f));
+    if (mode === "plan") pxPerM = Math.max(Math.min(0.4, pxPerM), Math.min(Math.max(80, pxPerM), pxPerM * f));
+    else orbitDist = Math.max(Math.min(8, orbitDist), Math.min(Math.max(1200, orbitDist), orbitDist / f));
     applyCamera();
     if (before) {
       const after = worldAt(at.x, at.y);
@@ -1591,7 +1641,7 @@ const Scene3D = (() => {
   function hitAt(sx, sy, skip = () => false) {
     if (!model) return null;
     const near = (p, r = 12, y = 0.4) => { const s = screenOf(p[0], p[1], y); return Math.hypot(s.x - sx, s.y - sy) < r; };
-    if (turnHandle && near([turnHandle.x, turnHandle.z], 14)) return { t: "turn", ...sel[0] };
+    if (turnHandle && !skip(sel[0]) && Math.hypot(turnHandle.sx - sx, turnHandle.sy - sy) < 13) return { ...sel[0], t: "turn" };
     if (!hidden.has("routes")) {
       for (const r of model.routes) {
         if (r.kind !== "choice") continue;
@@ -1875,7 +1925,11 @@ const Scene3D = (() => {
       if (nav) { nav = null; el.classList.remove("grabbing"); return; }
       emit("pointer", pack("up", e, p));
     });
-    el.addEventListener("pointercancel", () => { nav = null; el.classList.remove("grabbing"); });
+    el.addEventListener("pointercancel", () => {
+      if (!nav) emit("pointer", {type:"cancel"});
+      nav = null;
+      el.classList.remove("grabbing");
+    });
     el.addEventListener("dblclick", (e) => { if (!phone) emit("pointer", pack("dblclick", e, local(e))); });
     el.addEventListener("pointerleave", () => emit("pointer", { type: "leave" }));
     // A trackpad scrolls to pan and pinches to zoom (as in Figma); a mouse wheel zooms.

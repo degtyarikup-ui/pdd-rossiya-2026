@@ -44,6 +44,11 @@ assert.match(pane.innerHTML,/без буквы/);assert.doesNotMatch(pane.innerH
 App.undo();assert(state.S.routes.some(r=>r.label==='Б'));App.redo();
 App.select({t:'route',id:annotation().id});chip('annotation-style','both');
 assert.equal(annotation().style,'both');chip('annotation-colour','#20242b');assert.equal(annotation().colour,'#20242b');
+const beforeText = clone(annotation());
+chip('annotation-style','text');
+assert.match(pane.innerHTML,/data-chip="annotation-style" data-value="both"/,'the text inspector can restore the line');
+chip('annotation-style','both');
+assert.deepEqual(clone(annotation()),beforeText,'the shape and colour survive the round trip');
 const routesBefore=clone(state.S.routes.filter(r=>r.kind!=='annotation'));
 App.nudge(1,2);assert.deepEqual(clone(annotation().points),[[1,7],[4,7]]);
 App.undo();App.rotate(90);assert(Math.abs(annotation().points[0][0]-annotation().points[1][0])<.001);

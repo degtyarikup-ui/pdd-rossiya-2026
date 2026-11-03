@@ -55,6 +55,8 @@ function mount() {
   assert.equal(ui.listeners.keydown, undefined, 'the plan has no decision shortcuts');
   ui.plan.setQuery('40 20');
   assert.equal(ui.plan.list().length, 1, 'search finds all original ticket references');
+  ui.plan.setQuery('4 20');
+  assert.equal(ui.plan.list().length, 0, 'a partial ticket number must not match a different ticket');
   ui.plan.setQuery('уступить');
   assert.equal(ui.plan.filterSummary().count, 1);
   ui.plan.setQuery('');

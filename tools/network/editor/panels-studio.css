@@ -92,6 +92,12 @@
 #left-body .lib-tile:hover, #left-body .tex-tile:hover { border-color: var(--ink-3); }
 #left-body .lib-tile.on, #left-body .tex-tile.on { background: var(--accent-soft); border-color: var(--accent); box-shadow: none; }
 #left-body .lib-tile span { color: var(--ink-2); }
+#left-body .sign-group-filter { width: 100%; min-width: 0; height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; background: var(--field); color: var(--ink); font: inherit; }
+#left-body .signs .lib-tile { gap: 3px; justify-content: flex-start; }
+#left-body .signs .sign-pic { width: 48px; height: 43px; object-fit: contain; }
+#left-body .signs .lib-tile b { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+#left-body .signs .lib-tile span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; overflow-wrap: anywhere; }
+.lib-search-all { display: block; color: var(--accent); margin: 7px auto 0; padding: 4px; }
 .tex-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tex-tile canvas { width: 100%; height: auto; aspect-ratio: 1; border-radius: 3px; }
 @media (max-width: 650px) {

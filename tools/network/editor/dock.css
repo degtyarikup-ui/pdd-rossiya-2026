@@ -163,6 +163,7 @@
   background: #233138e8; color: white; font: 500 11px/16px Onest, sans-serif;
   font-variant-numeric: tabular-nums; box-shadow: var(--dock-shadow);
 }
+.stage .hint[data-occupied="true"]:not([hidden]) { background: #763b36; }
 .stage .view[data-tool]:not([data-tool="select"]):not([data-tool="junction"]):not([data-tool="hand"]) canvas:not(.grab):not(.grabbing) { cursor: crosshair; }
 body.framing .stage .popover, body.testing .stage .popover,
 body.framing .stage .hint, body.testing .stage .hint { display: none !important; }

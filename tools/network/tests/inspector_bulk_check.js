@@ -143,4 +143,11 @@ assert.equal(street(ids[0]).manualMarks,true); assert.equal(state.undo.length,lo
 state.locked.clear(); select(ref(ids[0])); act('marks-auto');
 assert.equal(street(ids[0]).manualMarks,undefined,'the same explicit action works for a single road');
 assert.deepEqual(clone(state.S.markings.find(mark => mark.id === authored.id)),authored);
+state.locked.add('actors');
+select({t:'actor',id:'car1'}); // A related-object link can open a locked object.
+assert.match(pane.innerHTML,/Слой заблокирован/);
+const beforePaint = JSON.stringify(state.S), beforeSteps = state.undo.length;
+chip('paint','#C0392B');
+assert.equal(JSON.stringify(state.S),beforePaint);
+assert.equal(state.undo.length,beforeSteps,'inspecting a locked actor cannot create a history entry');
 console.log('Inspector bulk editing: real handlers, mixed selection, locks, generated geometry and undo passed');

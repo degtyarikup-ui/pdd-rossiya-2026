@@ -16,6 +16,7 @@ sys.path.insert(0, str(HERE.parent))
 import build
 import check
 import engine_sync
+from surface_support import SurfaceSupport
 
 
 def write(path, data):
@@ -111,7 +112,10 @@ with tempfile.TemporaryDirectory(prefix="tram-tracks-", dir=check.ROOT / "scratc
                 exported = json.loads((output / "scene.json").read_text())["actors"][0]
                 actor = scene["actors"][0]
                 route = next(r for r in scene["routes"] if r["id"] == actor["route"])
-                assert exported["path"] == [[x, 0, z] for x, z in route["points"]], fixture["name"]
+                # Export preserves every authored X/Z waypoint and follows its built surface.
+                # The service branch ends on a raised sidewalk in this scene.
+                support = SurfaceSupport(build.build(scene))
+                assert exported["path"] == [[x, support.height(x, z), z] for x, z in route["points"]], fixture["name"]
                 assert exported["staysPut"] is actor["behaviour"]["staysPut"], fixture["name"]
                 assert check.load("fixture") == scene, "export leaves author data intact"
             # The template's dimensions include its own scale (.75), so a new

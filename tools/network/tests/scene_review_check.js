@@ -75,6 +75,10 @@ assert.equal(ui.App.sceneFilter(), 'all', 'obsolete review deep links fall back 
 assert.deepEqual(ui.rows(ui.left()), ordinary);
 ui.dispatch('input', { id: 'scene-q', value: '10 14' });
 assert.deepEqual(ui.rows(ui.left()), ['ticket_10_14']);
+ui.dispatch('input', { id: 'scene-q', value: 'Билет №10 вопрос 14' });
+assert.deepEqual(ui.rows(ui.left()), ['ticket_10_14']);
+ui.dispatch('input', { id: 'scene-q', value: 'Билет 1' });
+assert.deepEqual(ui.rows(ui.left()), [], 'ticket 1 must not accidentally match tickets 10–19');
 ui.App.state.section = 'regulator';
 assert.deepEqual(ui.rows(ui.left()), ['mini_regulator'], 'city filters leave separate mini-game reachable');
 ui = mount();

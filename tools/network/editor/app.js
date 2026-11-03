@@ -28,19 +28,23 @@ const App = (() => {
     clearTimeout(toast.timer);
     toast.timer = setTimeout(() => (t.className = "toast"), 3200);
   }
-  function confirmBox(title, text, yes = "Да") {
+  let cancelConfirmation = null;
+  function confirmBox(title, text, yes = "Да", allowDiscard = false) {
+    cancelConfirmation?.();
     return new Promise((resolve) => {
       $("#confirm-title").textContent = title;
       $("#confirm-text").textContent = text;
       $("#confirm-yes").textContent = yes;
+      $("#confirm-discard").hidden = !allowDiscard;
       const box = $("#confirm");
       box.hidden = false;
-      const done = (v) => { box.hidden = true; box.onclick = null; document.removeEventListener("keydown", key, true); resolve(v); };
+      const done = (v) => { box.hidden = true; box.onclick = null; cancelConfirmation = null; document.removeEventListener("keydown", key, true); resolve(v); };
+      cancelConfirmation = () => done(false);
       const key = e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); done(false); } };
       document.addEventListener("keydown", key, true);
       box.onclick = (e) => {
         const a = e.target.closest("[data-answer]");
-        if (a) done(a.dataset.answer === "yes");
+        if (a) done(allowDiscard && a.dataset.answer === "discard" ? "discard" : a.dataset.answer === "yes");
         else if (e.target === box) done(false);
       };
     });
@@ -98,7 +102,7 @@ const App = (() => {
       case "sign": return Catalog.signName(o.code);
       case "track": return o.railType === "railway" ? "Железнодорожные рельсы" : o.depot ? "Рельсы в депо" : "Рельсы";
       case "route":
-        if (o.kind === "annotation") return "Линия-обозначение";
+        if (o.kind === "annotation") return o.style === "text" ? o.text || "Надпись" : "Линия-обозначение";
         if (o.kind === "guide") return "Синяя стрелка игрока";
         if (o.kind === "manoeuvre") return `Манёвр: ${Catalog.EXITS[o.exit]?.title.toLowerCase() || o.exit}`;
         if (o.kind === "choice") return o.display === "letter" ? `Буква ${o.label}` : `Ответ ${o.label}`;
@@ -130,6 +134,7 @@ const App = (() => {
     for (const key of ["undo", "redo"]) state[key] = state[key].map(text => JSON.stringify(apply(JSON.parse(text))));
   }
   // One undo step around fn (which changes state.S). The road plan rebuilds what it makes.
+  let lastMergedEdit = null;
   function edit(fn, opts = {}) {
     if (!state.S) return;
     const before = snapshotText();
@@ -141,7 +146,11 @@ const App = (() => {
     }
     const after = snapshotText();
     if (after === before) return result;
-    if (!opts.merge || !state.undo.length) state.undo.push(before);
+    const now = Date.now();
+    const merge = opts.merge && lastMergedEdit?.key === opts.merge && lastMergedEdit.after === before &&
+      lastMergedEdit.scene === state.S && now - lastMergedEdit.time < 600;
+    if (!merge || !state.undo.length) state.undo.push(before);
+    lastMergedEdit = opts.merge ? {key:opts.merge, after, scene:state.S, time:now} : null;
     if (state.undo.length > 400) state.undo.shift();
     state.redo = [];
     changed(opts);
@@ -149,7 +158,7 @@ const App = (() => {
   }
   // A drag: one undo step from its start, the view follows every move.
   let dragBase = null;
-  function beginDrag() { dragBase = snapshotText(); }
+  function beginDrag() { lastMergedEdit = null; dragBase = snapshotText(); }
   function dragMove(fn, opts = {}) {
     fn(state.S);
     if (opts.rebuild !== false) {
@@ -171,6 +180,7 @@ const App = (() => {
   }
   function cancelDrag() {
     if (dragBase === null) return;
+    if (snapshotText() === dragBase) { dragBase = null; return; }
     state.S = JSON.parse(dragBase);
     dragBase = null;
     afterHistory();
@@ -189,6 +199,7 @@ const App = (() => {
   }
   function afterHistory() {
     state.sel = state.sel.filter((r) => objectOf(r));
+    App.selectionChanged?.();
     changed();
   }
   function changed(opts = {}) {
@@ -224,17 +235,19 @@ const App = (() => {
   async function loadList() {
     state.scenes = await api("/api/scenes");
   }
-  let openRequest = 0, discardDialog = null, saving = null;
+  let openRequest = 0, saving = null;
   function queueWrite(text, write) {
     // Each caller reports its own failure. Later writes still get their turn.
     const done = (saving ? saving.done.then(write, write) : write()).finally(() => {
-      if (saving?.done === done) saving = null;
+      if (saving?.done === done) { saving = null; App.updateWorkspaceStatus?.(); }
     });
     saving = { text, done };
+    App.updateWorkspaceStatus?.();
     return done;
   }
   async function openScene(sid) {
     const request = ++openRequest;
+    cancelConfirmation?.();
     if (state.S && sid === state.id) {
       setSceneSection(sid);
       showHome(false);
@@ -249,8 +262,15 @@ const App = (() => {
     while (request === openRequest && saving) await saving.done.catch(() => {});
     if (request !== openRequest) return;
     if (state.dirty) {
-      discardDialog ??= confirmBox("Уйти без сохранения?", "В этой сцене есть несохранённые правки.", "Уйти").finally(() => { discardDialog = null; });
-      if (!(await discardDialog) || request !== openRequest) return;
+      const choice = await confirmBox("Сохранить изменения?", `${sceneTitle(state.id)} → ${sceneTitle(sid)}`, "Сохранить и открыть", true);
+      if (!choice || request !== openRequest) return;
+      if (choice === true) {
+        // The map stays available during the write. Its status and a retry are visible even
+        // when this scene switch was initiated from the library.
+        showHome(false, true);
+        const saved = await save();
+        if (!saved || request !== openRequest || state.dirty || state.virtual || saving) return;
+      }
     }
     state.S = r.scene;
     state.S.markings = state.S.markings || [];
@@ -312,7 +332,7 @@ const App = (() => {
 
   function save() {
     // Textures are not part of a scene: they reach the game by their own "Применить в игре".
-    if (!state.S || (!state.dirty && !state.virtual && !saving)) { toast("Всё сохранено"); renderTop(); return; }
+    if (!state.S || (!state.dirty && !state.virtual && !saving)) { toast("Всё сохранено"); renderTop(); return true; }
     const sid = state.id, text = snapshotText();
     if (saving?.text === text) return saving.done;
     const queued = !!saving;
@@ -343,10 +363,11 @@ const App = (() => {
       toast(errors ? `Сохранено, но есть ошибки: ${errors}.${gone}` : `Сохранено.${gone}`, errors ? "warn" : "good");
       if (!state.dirty) saveThumb(sid);
       loadList().then(async () => { if (typeof QuestionPlan !== "undefined") await QuestionPlan.load({refresh:true}); App.renderPanels?.(); });
+      return true;
     } catch (e) {
       toast(`Не сохранено: ${e.message}`, "bad");
-    }
-    renderTop();
+      return false;
+    } finally { renderTop(); }
   }
   // The card picture of the scene list: the view from above as it is now.
   function saveThumb(sid) {
@@ -404,6 +425,7 @@ const App = (() => {
   function select(list, opts = {}) {
     const arr = (Array.isArray(list) ? list : list ? [list] : []).filter((r) => r && (objectOf(r) || r.t === "stop"));
     state.sel = opts.add ? uniq([...state.sel, ...arr]) : arr;
+    lastMergedEdit = null;
     if (state.sel.length) state.texSel = null;   // the inspector shows what was picked, not the texture
     Scene3D.setSelection(state.sel);
     App.selectionChanged?.();
@@ -474,10 +496,8 @@ const App = (() => {
   function nudge(dx, dz) {
     const list = state.sel.filter(r => !isLocked(r) && movable(r));
     if (!list.length) return;
-    edit((s) => list.forEach((r) => moveRef(s, r, dx, dz)), { merge: Date.now() - nudge.last < 600 });
-    nudge.last = Date.now();
+    edit((s) => list.forEach((r) => moveRef(s, r, dx, dz)), {merge:"nudge"});
   }
-  nudge.last = 0;
   // Arrow keys move along the screen, whichever way the view is turned (snapped to the axes when close).
   function nudgeScreen(right, up, step) {
     const v = $("#view"), cx = v.clientWidth / 2, cy = v.clientHeight / 2;
@@ -496,14 +516,22 @@ const App = (() => {
   }
 
   // Turns the selection by `deg` degrees: each object about itself; a shape about its middle.
+  function canRotate(ref) {
+    const o = objectOf(ref);
+    if (!o || isLocked(ref)) return false;
+    if (ref.t === "stop") return Layout.isFreePlayer(state.S);
+    if (ref.t === "route") return o.kind === "annotation";
+    return ["decor","sign","actor","officer","light","marking","lawn","road"].includes(ref.t) && !o.auto;
+  }
   function rotate(deg) {
-    const list = state.sel.filter((r) => !isLocked(r) && (["decor", "sign", "actor", "officer", "light", "marking", "lawn", "road", "stop"].includes(r.t) || r.t === "route" && objectOf(r)?.kind === "annotation"));
+    const list = state.sel.filter(canRotate);
     if (!list.length) return;
     const a = (deg * Math.PI) / 180;
     edit((s) => {
       for (const ref of list) {
         const o = objectOf(ref);
         if (ref.t === "stop") { if (Layout.isFreePlayer(s)) Layout.rotatePlayer(s, (s.stop.yaw || 0) - a); continue; }
+        if (ref.t === "route" && o.style === "text") { o.textAngle = ((o.textAngle || 0) + deg + 540) % 360 - 180; continue; }
         if (o.pos) { o.yaw = r3(wrap((o.yaw || 0) - a)); continue; }
         const rings = ref.t === "route" ? [o.points] : ref.t === "marking" ? (o.points ? [o.points] : o.polygons.flatMap((p) => [p.outer, ...(p.holes || [])]))
           : ref.t === "road" && ref.part >= 0 ? [o.holes[ref.part]] : [o.outer, ...(o.holes || [])];
@@ -516,10 +544,8 @@ const App = (() => {
           p[1] = r3(cz + x * n + z * c);
         }));
       }
-    }, { merge: Date.now() - rotate.last < 600 });
-    rotate.last = Date.now();
+    }, {merge:"rotate"});
   }
-  rotate.last = 0;
   const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a <= -Math.PI) a += 2 * Math.PI; return a; };
 
   function uniqueId(prefix, taken) {
@@ -530,46 +556,57 @@ const App = (() => {
 
   // Copies of things: props, participants (with their path), lights, markings, lawns.
   const COPYABLE = ["decor", "sign", "actor", "officer", "light", "marking", "lawn"];
+  function canCopy(ref) {
+    const o = objectOf(ref);
+    return o && !isLocked(ref) && (COPYABLE.includes(ref.t) && !o.auto || ref.t === "route" && o.kind === "annotation");
+  }
+  function selectionCopies() {
+    return state.sel.filter(canCopy).map(ref => {
+      const o = objectOf(ref);
+      const route = ref.t === "actor" && state.S.routes.find(r => r.id === (o.route || `actor_${o.id}`));
+      return JSON.parse(JSON.stringify({t:ref.t, o, route:route && (route.manual || !o.way) ? route : null}));
+    });
+  }
   function copy() {
-    const list = state.sel.filter((r) => !isLocked(r) && (COPYABLE.includes(r.t) || r.t === "route" && objectOf(r)?.kind === "annotation"));
-    if (!list.length) return false;
-    state.clipboard = list.map((r) => {
-      const o = JSON.parse(JSON.stringify(objectOf(r)));
-      const route = r.t === "actor" && o.route && !o.way ? JSON.parse(JSON.stringify(state.S.routes.find((x) => x.id === o.route) || null)) : null;
-      return { t: r.t, o, route };
-    }).filter((c) => !(c.t === "marking" && c.o.auto));
-    toast(`Скопировано: ${state.clipboard.length}`);
+    const copies = selectionCopies();
+    if (!copies.length) return false;
+    state.clipboard = copies;
+    toast(`Скопировано: ${copies.length}`);
     return true;
   }
-  function paste(offset = 4) {
-    if (!state.clipboard || !state.clipboard.length) return;
-    const made = edit((s) => state.clipboard.map((c) => pasteOne(s, c, offset)));
-    select(made);
+  function insertCopies(copies, offset) {
+    if (!copies?.length || copies.some(isLocked)) return false;
+    select(edit(s => copies.map(c => pasteOne(s, c, offset))));
+    return true;
   }
+  function paste(offset = 4) { return insertCopies(state.clipboard, offset); }
   function pasteOne(s, c, offset) {
     const o = JSON.parse(JSON.stringify(c.o));
     const listKey = { decor: "decor", sign: "signs", actor: "actors", officer: "officers", light: "lights", marking: "markings", lawn: "lawns", route: "routes" }[c.t];
     const prefix = c.t === "actor" ? `${o.type}_` : { decor: "decor_", sign: "sign_", officer: "officer_", light: "light_", marking: "mark_", lawn: "lawn_", route: "annotation_" }[c.t];
     s[listKey] = s[listKey] || [];
-    o.id = uniqueId(prefix, s[listKey].map((x) => x.id));
+    const taken = s[listKey].map(x => x.id);
+    if (c.t === "actor") {
+      for (const r of s.routes) if (r.id.startsWith("actor_")) taken.push(r.id.slice(6));
+    }
+    o.id = uniqueId(prefix, taken);
     delete o.auto;
     const ref = { t: c.t, id: o.id };
     s[listKey].push(o);
-    moveRef(s, ref, offset, -offset);
     if (c.t === "actor") {
+      // Detach the clone from the original path before moveRef shifts its points.
+      o.route = null;
       if (c.route) {
         const r = { ...JSON.parse(JSON.stringify(c.route)), id: `actor_${o.id}` };
         delete r.auto;
-        r.points = r.points.map((p) => [r3(p[0] + offset), r3(p[1] - offset)]);
         s.routes.push(r);
         o.route = r.id;
-      } else if (!o.way) o.route = null;
+      }
     }
+    moveRef(s, ref, offset, -offset);
     return ref;
   }
-  function duplicate() {
-    if (copy()) paste(3);
-  }
+  function duplicate(offset = 3) { return insertCopies(selectionCopies(), offset); }
 
   // The blue arrow is a question visual, independent of its driving route and
   // the editor's local layer visibility. Hide/show is an ordinary undoable edit.
@@ -609,6 +646,12 @@ const App = (() => {
     if (visible) selectPlayerPath();
   }
 
+  function canRemoveObject(ref) {
+    const o = objectOf(ref);
+    return o && !isLocked(ref) && ref.t !== "stop" &&
+      !(ref.t === "route" && (o.auto || ["approach","manoeuvre","guide"].includes(o.kind))) &&
+      !(["marking","road","lawn"].includes(ref.t) && o.auto);
+  }
   async function remove() {
     const list = state.sel.filter(r => !isLocked(r));
     if (!list.length) return;
@@ -630,7 +673,7 @@ const App = (() => {
       return select({ ...ref, v: undefined });
     }
     const hidesPlayerGuide = state.S.id !== "mini_regulator" && list.some(r => r.t === "route" && ["manoeuvre", "guide"].includes(objectOf(r)?.kind));
-    const removable = list.filter((r) => r.t !== "stop" && !(r.t === "route" && (objectOf(r)?.auto || ["approach", "manoeuvre", "guide"].includes(objectOf(r)?.kind))) && !(r.t === "marking" && objectOf(r)?.auto));
+    const removable = list.filter(canRemoveObject);
     if (!removable.length && hidesPlayerGuide) return setPlayerGuideVisible(false);
     if (!removable.length) return toast("Это строится само по дорогам", "warn");
     if (hidesPlayerGuide) select([]);
@@ -644,8 +687,8 @@ const App = (() => {
         const o = objectOf(ref);
         if (!o) continue;
         s[key] = s[key].filter((x) => x !== o);
-        if (ref.t === "actor" && o.route) {
-          s.routes = s.routes.filter((r) => r.id !== o.route);
+        if (ref.t === "actor") {
+          if (o.route && !s.actors.some(a => a.route === o.route)) s.routes = s.routes.filter(r => r.id !== o.route);
           if (s.question?.yieldTo) s.question.yieldTo = s.question.yieldTo.filter((x) => x !== o.id);
         }
         if (ref.t === "route") s.actors.forEach((a) => { if (a.route === o.id || o.id === `actor_${a.id}`) { a.route = null; delete a.way; } });
@@ -658,6 +701,7 @@ const App = (() => {
   function toggleHidden(layer) {
     state.hidden.has(layer) ? state.hidden.delete(layer) : state.hidden.add(layer);
     state.sel = state.sel.filter(pickable);
+    App.selectionChanged?.();
     Scene3D.setHidden(state.hidden);
     Scene3D.setSelection(state.sel);
     App.renderPanels?.();
@@ -665,6 +709,7 @@ const App = (() => {
   function toggleLocked(layer) {
     state.locked.has(layer) ? state.locked.delete(layer) : state.locked.add(layer);
     state.sel = state.sel.filter(pickable);
+    App.selectionChanged?.();
     Scene3D.setSelection(state.sel);
     App.renderPanels?.();
   }
@@ -680,7 +725,7 @@ const App = (() => {
     chip.innerHTML = !s ? "" : err ? `${ic("error")}${err} ${plural(err, ["ошибка", "ошибки", "ошибок"])}` : state.playable ? `${ic("check-circle")}в игре` : "не в игре";
     if (state.id === "mini_regulator" && !err) chip.textContent = "мини-игра";
     chip.dataset.tip = err ? "Открыть проверку" : "";
-    $("#save").disabled = !state.dirty && !state.virtual;
+    $("#save").disabled = !state.dirty && !state.virtual && !App.hasPendingInspectorField?.();
     $("#save").classList.toggle("pulse", state.dirty || state.virtual);
     $("#undo").disabled = !state.undo.length;
     $("#redo").disabled = !state.redo.length;
@@ -696,7 +741,8 @@ const App = (() => {
     return forms[2];
   }
 
-  function showHome(on) {
+  function showHome(on, keepRequest = false) {
+    if (!keepRequest) { ++openRequest; cancelConfirmation?.(); }
     $("#home-screen").hidden = !on;
     $("#app").classList.toggle("at-home", on);
     if (on) App.renderHome?.();
@@ -756,7 +802,14 @@ const App = (() => {
 
   function bindKeys() {
     const G1 = "Общее", G2 = "Выбранное", G3 = "Инструменты", G4 = "Вид";
-    key(G1, "mod+s", "Сохранить", () => save(), { always: true, needScene: true });
+    const saveEditor = e => {
+      if (e.isComposing || App.commitInspectorField?.() === false) return;
+      return save();
+    };
+    $("#save").onclick = saveEditor;
+    // Keep a typed value focused until the click can validate and commit it.
+    $("#save").onpointerdown = e => { if (e.button === 0 && App.hasPendingInspectorField?.()) e.preventDefault(); };
+    key(G1, "mod+s", "Сохранить", saveEditor, { always: true, needScene: true });
     key(G1, "mod+z", "Отменить", () => undo(), { needScene: true });
     key(G1, "mod+shift+z", "Вернуть", () => redo(), { needScene: true });
     key(G1, "mod+y", "Вернуть", () => redo(), { needScene: true, hiddenInHelp: true });
@@ -810,7 +863,6 @@ const App = (() => {
     bindKeys();
     $("#undo").onclick = undo;
     $("#redo").onclick = redo;
-    $("#save").onclick = save;
     $("#play").onclick = () => runInGame(false);
     $("#help").onclick = () => { renderKeys(); $("#keys").hidden = false; };
     $("#keys").addEventListener("click", (e) => { if (e.target.id === "keys" || e.target.closest("[data-close]")) $("#keys").hidden = true; });
@@ -818,7 +870,7 @@ const App = (() => {
     document.querySelectorAll("[data-editor-section]").forEach(b => b.onclick = async () => {
       if (b.dataset.editorSection === "city" && !$("#home-screen").hidden) {
         setSceneSection(null);
-        App.renderHome?.();
+        showHome(true);
         return;
       }
       const sid = b.dataset.editorSection === "regulator" ? "mini_regulator" : state.lastTicket || state.scenes.find(s => s.id !== "mini_regulator")?.id;
@@ -865,8 +917,9 @@ const App = (() => {
   return {
     state, planScene, api, toast, confirm: confirmBox, esc, ic, r3, objectOf, pointsOfRef, isPaint, layerOf, catalogSize, sameRef, nameOf,
     edit, beginDrag, dragMove, endDrag, cancelDrag, undo, redo, changed, openScene, sceneTitle, save, setPlayable, runInGame,
-    select, toggle, pickable, isLocked, moveRef, nudge, rotate, copy, paste, duplicate, remove, setPlayerGuideVisible, selectPlayerPath, resetPlayerGuide, uniqueId, toggleHidden, toggleLocked,
+    select, toggle, pickable, isLocked, moveRef, nudge, canRotate, canCopy, canRemoveObject, rotate, copy, paste, duplicate, remove, setPlayerGuideVisible, selectPlayerPath, resetPlayerGuide, uniqueId, toggleHidden, toggleLocked,
     renderTop, showHome, setView, plural, thumbRev, boot, loadList,
     get S() { return state.S; },
+    get isSaving() { return !!saving; },
   };
 })();

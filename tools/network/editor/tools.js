@@ -41,7 +41,17 @@ const Tools = (() => {
 
   // Only the category row stays on the map. Each category remembers its last tool.
   function renderBar() {
-    if (draft?.owner && draft.owner !== S()) finishDraft(true);
+    if (draft?.owner && draft.owner !== S()) {
+      // History replaces S. Keep the drawing anchor on the end of the restored segment.
+      const snapshot = tool === "road" && draft.owner.id === S()?.id ? JSON.stringify(S()) : null;
+      const step = draft.roadSteps?.findIndex(entry => entry.snapshot === snapshot) ?? -1;
+      if (step < 0) finishDraft(true);
+      else {
+        draft.points = draft.roadSteps.slice(0, step + 1).map(entry => entry.point);
+        draft.owner = S();
+        Scene3D.setDraft({kind: "road", points: [draft.points.at(-1)], width: Layout.widthOf({kind: opts.roadKind})});
+      }
+    }
     const bar = $("#toolbar"), focused = document.activeElement?.dataset?.tool;
     const nav = (id, label, group) => {
       const t = definition(id), active = group ? group.tools.includes(tool) : tool === id;
@@ -170,8 +180,12 @@ const Tools = (() => {
     if (!draft) return "";
     const count = draft.points.length, twoClicks = tool === "marking" && ["arrow", "bus_stop", "stop", "zebra"].includes(opts.mark);
     const canFinish = !twoClicks && tool !== "road" && count >= (tool === "lawn" ? 3 : 2);
-    const undo = tool === "road" || opts.answerRoute && count === 1 ? "" : `<button data-draw="back" title="Убрать последнюю точку" aria-label="Убрать последнюю точку">${ic("undo")}</button>`;
-    return `<div class="drawing-actions"><span>${ic("points")}${count}</span>${undo}${canFinish ? `<button class="draw-done" data-draw="done">${ic("check-circle")}Готово</button>` : ""}<button data-draw="cancel">${tool === "road" && count > 1 ? "Закончить" : "Отмена"}</button></div>`;
+    const lastRoadStep = draft.roadSteps?.[count - 2];
+    const canGoBack = tool === "road" ? lastRoadStep && App.state.undo.at(-1) === lastRoadStep.snapshot : !(opts.answerRoute && count === 1);
+    const undo = canGoBack ? `<button data-draw="back" title="Убрать последний ${tool === "road" ? "участок" : "узел"}" aria-label="Убрать последний ${tool === "road" ? "участок" : "узел"}">${ic("undo")}</button>` : "";
+    const done = canFinish || tool === "road" && count > 1 ? `<button class="draw-done" data-draw="done">${ic("check-circle")}Готово</button>` : "";
+    const cancel = tool === "road" && count > 1 ? "" : '<button data-draw="cancel">Отмена</button>';
+    return `<div class="drawing-actions"><span>${ic("points")}${count}</span>${undo}${done}${cancel}</div>`;
   }
 
   function renderAnswerOptions() {
@@ -233,7 +247,7 @@ const Tools = (() => {
     return true;
   }
 
-  function showSegment(e, a, b, snapped) {
+  function showSegment(e, a, b, snapped, occupied = false) {
     const label = $("#hint"), dx = b[0] - a[0], dz = b[1] - a[1];
     const length = Math.hypot(dx, dz);
     if (length < .3) { label.hidden = true; return; }
@@ -245,7 +259,8 @@ const Tools = (() => {
       const turn = Math.atan2(dz, dx) - incoming;
       angle = ` · ${Math.round(Math.acos(Math.min(1, Math.max(-1, Math.cos(turn)))) * 180 / Math.PI)}°`;
     }
-    label.textContent = `${snapped ? "◎  " : ""}${metres} м${angle}`;
+    label.dataset.occupied = String(occupied);
+    label.textContent = occupied ? "Участок занят" : `${snapped ? "◎  " : ""}${metres} м${angle}`;
     label.style.left = `clamp(4px, ${e.sx + 15}px, calc(100% - 108px))`;
     label.style.top = `clamp(4px, ${e.sy + 15}px, calc(100% - 28px))`;
     label.hidden = false;
@@ -283,6 +298,12 @@ const Tools = (() => {
         if (d.draw === "done") return enter();
         if (d.draw === "cancel") return escape();
         if (!draft || opts.answerRoute && draft.points.length === 1) return;
+        if (tool === "road") {
+          const step = draft.points.length - 1;
+          if (step > 0 && App.state.undo.at(-1) === draft.roadSteps[step - 1].snapshot &&
+              JSON.stringify(S()) === draft.roadSteps[step].snapshot) App.undo();
+          return;
+        }
         draft.points.pop();
         if (!draft.points.length) return finishDraft(true);
         Scene3D.setDraft({kind:"line", points:draft.points, closed:tool === "lawn"});
@@ -417,6 +438,7 @@ const Tools = (() => {
       const h = e.labelRef && App.pickable(e.labelRef) ? e.labelRef : Scene3D.hitAt(e.sx, e.sy, skipLocked);
       if (!h) { drag = { kind: "marquee", x0: e.sx, y0: e.sy, add: e.shift }; return; }
       if (h.t === "turn") return startTurn(e);
+      if (e.alt && ["stop", "letter"].includes(h.t)) return;
       if (h.t === "letter") {
         App.select({t:"route",id:h.id}); App.beginDrag();
         const at = AnswerMark.position(App.objectOf({t:"route",id:h.id}));
@@ -438,9 +460,9 @@ const Tools = (() => {
       if (!already) App.select(h);
       if (!already && !thing) return;
       // Alt: drag a copy, the original stays.
-      if (e.alt && App.copy()) { App.paste(0); }
+      if (e.alt && !App.duplicate(0)) return;
       App.beginDrag();
-      drag = { kind: "move", start: e.world, last: e.world, moved: false, nodeRef: h.t === "node" ? h : null, street: h.t === "street" ? h.id : null };
+      drag = { kind: "move", start: e.world, last: e.world, moved: false, nodeRef: !e.alt && h.t === "node" ? h : null, street: !e.alt && h.t === "street" ? h.id : null };
     },
     move(e) {
       if (!drag) return setHover(Scene3D.hitAt(e.sx, e.sy, skipLocked));
@@ -630,20 +652,30 @@ const Tools = (() => {
       if (!e.world) return;
       const s = S();
       const snapped = Layout.snapPoint(s.layout ? s : { ...s, layout: { nodes: [], streets: [] } }, [e.world.x, e.world.z]);
-      const at = snapped.p;
-      Scene3D.setDraft({ kind: "road", points: draft ? [draft.points.at(-1)] : [], cursor: draft ? at : null, width: Layout.widthOf({kind:opts.roadKind}),
-        snap: snapped.node || snapped.port || snapped.street ? at : null, snapKind: snapped.port ? "port" : "node" });
+      const at = snapped.p, anchor = draft?.points.at(-1);
+      const target = snapped.node || snapped.port || snapped.street;
+      const occupied = anchor && s.layout && Layout.overlapsStreet(s.layout, anchor, at);
+      Scene3D.setDraft({
+        kind: occupied ? "line" : "road", colour: occupied ? 0xf77666 : undefined,
+        points: anchor ? [anchor] : target ? [] : [at], cursor: anchor ? at : null,
+        width: Layout.widthOf({kind:opts.roadKind}), snap: target ? at : null, snapKind: snapped.port ? "port" : "node",
+      });
       if (!draft) setHover(null);
-      else showSegment(e, draft.points.at(-1), at, snapped.node || snapped.port || snapped.street);
+      else showSegment(e, anchor, at, target, occupied);
     },
     async down(e) {
       if (!e.world) return;
       const s = S();
       const first = !s.layout;
       const snapped = Layout.snapPoint(s.layout ? s : { ...s, layout: { nodes: [], streets: [] } }, [e.world.x, e.world.z]);
-      if (!draft) { draft = { points: [snapped.p] }; road.move(e); return; }
+      if (!draft) {
+        draft = {points: [snapped.p], roadSteps: [{point: snapped.p, snapshot: JSON.stringify(s)}]};
+        road.move(e);
+        return;
+      }
       const a = draft.points.at(-1), b = snapped.p;
       if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 3) return finishDraft();
+      if (s.layout && Layout.overlapsStreet(s.layout, a, b)) return App.toast("Этот участок уже занят дорогой", "warn");
       if (first && (s.roads.length || s.markings.length || s.routes.some(r => !["choice","actor","guide","annotation"].includes(r.kind)))) {
         const drawing = draft, snapshot = JSON.stringify(s);
         const replace = await App.confirm("Заменить основу дороги?", "В этой сцене дорога нарисована вручную. Первый участок заменит её контуры и связанную с ними разметку.", "Построить");
@@ -660,6 +692,7 @@ const Tools = (() => {
         }
         Layout.addStreet(sc, a, b, opts.roadKind);
       });
+      draft.roadSteps.splice(draft.points.length, Infinity, {point: b, snapshot: JSON.stringify(s)});
       draft.points.push(b);
       renderPopover();
       road.move(e);
@@ -685,6 +718,7 @@ const Tools = (() => {
       const s = S(), p = [snapGrid(e.world.x, e), snapGrid(e.world.z, e)];
       if ((opts.mark === "stop" || opts.mark === "zebra") && s.layout) return toggleEnd(p, opts.mark);
       if (!draft) draft = { points: [] };
+      if (sameDraftPoint(p)) return;
       draft.points.push(p);
       if (opts.mark === "arrow" && draft.points.length === 2 && Math.hypot(p[0] - draft.points[0][0], p[1] - draft.points[0][1]) < 1) {
         draft.points.pop();
@@ -735,6 +769,7 @@ const Tools = (() => {
       const p = [snapGrid(e.world.x, e), snapGrid(e.world.z, e)];
       if (!draft) draft = { points: [] };
       if (draft.points.length >= 3 && Math.hypot(p[0] - draft.points[0][0], p[1] - draft.points[0][1]) < 2) return finishDraft();
+      if (sameDraftPoint(p)) return;
       draft.points.push(p);
       lawn.move(e);
     },
@@ -1018,7 +1053,9 @@ const Tools = (() => {
     down(e) {
       if (!e.world) return;
       if (!draft) draft = { points: [] };
-      draft.points.push(Tracks.snap(S(), [r3(e.world.x), r3(e.world.z)]));
+      const p = Tracks.snap(S(), [r3(e.world.x), r3(e.world.z)]);
+      if (sameDraftPoint(p)) return;
+      draft.points.push(p);
       track.move(e);
     },
     dblclick() { finishDraft(); },
@@ -1027,8 +1064,14 @@ const Tools = (() => {
   const HANDLERS = { select, hand, road, junction: select, marking, lawn, track, answer, actor: placer("actor"), light: placer("light"), officer: placer("officer"), sign: placer("sign"), prop: placer("prop"), brush };
 
   // ---- finishing a drawing ------------------------------------------------------------------------
+  function sameDraftPoint(p) {
+    const last = draft?.points.at(-1);
+    return last && Math.hypot(p[0] - last[0], p[1] - last[1]) < .05;
+  }
+
   function finishDraft(cancel = false) {
     const d = draft;
+    if (d && !cancel && tool !== "road" && d.points.length < (tool === "lawn" ? 3 : 2)) return;
     draft = null;
     Scene3D.setDraft(null);
     if (d) renderPopover();

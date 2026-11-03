@@ -1256,17 +1256,29 @@ const Layout = (() => {
   // Snaps a point the way a city builder does: to a node, onto a street, to the middle of a side, to the border.
   function snapPoint(scene, p, opts = {}) {
     const L = scene.layout, crop = Number(scene.crop || 90);
-    for (const n of L.nodes) if (n.id !== opts.except && dist(p, xy(n)) < NODE_SNAP) return { p: xy(n), node: n.id };
+    let node = null, nearest = NODE_SNAP;
+    for (const n of L.nodes) {
+      const d = dist(p, xy(n));
+      if (n.id !== opts.except && d < nearest) { node = n; nearest = d; }
+    }
+    if (node) return { p: xy(node), node: node.id };
     const ports = [[0, crop], [0, -crop], [crop, 0], [-crop, 0]];
     for (const q of ports) if (dist(p, q) < PORT_SNAP) return { p: q, port: true };
+    let street = null;
+    nearest = Infinity;
     for (const st of L.streets) {
       if (opts.exceptStreet && st.id === opts.exceptStreet) continue;
       const line = centreline(L, st);
       const at = projectOn(line, p);
       const q = along(line, at).p;
       const total = polyLen(line);
-      if (dist(p, q) < STREET_SNAP + widthOf(st) / 2 && at > 3 && at < total - 3) return { p: q, street: st.id, at };
+      const d = dist(p, q);
+      if (at > 3 && at < total - 3 && d < STREET_SNAP + widthOf(st) / 2 && d < nearest) {
+        nearest = d;
+        street = { p: q, street: st.id, at };
+      }
     }
+    if (street) return street;
     let q = [...p];
     if (Math.abs(Math.abs(q[0]) - crop) < 3) q[0] = Math.sign(q[0]) * crop;
     if (Math.abs(Math.abs(q[1]) - crop) < 3) q[1] = Math.sign(q[1]) * crop;
@@ -1274,28 +1286,58 @@ const Layout = (() => {
     return { p: q };
   }
 
+  // A segment laid over occupied centreline must be rejected before either endpoint splits the graph.
+  function overlapsStreet(L, a, b) {
+    const vector = sub(b, a), length = len(vector);
+    if (length < .05) return false;
+    const axis = mul(vector, 1 / length), normal = left(axis);
+    return L.streets.some(st => {
+      const points = centreline(L, st);
+      return points.slice(1).some((point, i) => {
+        const p = sub(points[i], a), q = sub(point, a);
+        if (Math.abs(dot(p, normal)) > .02 || Math.abs(dot(q, normal)) > .02) return false;
+        const start = dot(p, axis), end = dot(q, axis);
+        return Math.min(length, Math.max(start, end)) - Math.max(0, Math.min(start, end)) > .05;
+      });
+    });
+  }
+
   // Splits a street at distance `at` along it: a new node there, two streets in its place.
   function splitStreet(L, sid, at) {
     const st = streetOf(L, sid);
     const line = centreline(L, st);
-    const q = along(line, at).p;
+    let q = along(line, at).p, bendA = null, bendB = null;
+    if (st.bend) {
+      // The displayed polyline has equal parameter steps. Subdivide the original
+      // quadratic at that parameter so its two pieces still trace the same curve.
+      let i = 0, remaining = at;
+      while (i + 2 < line.length && remaining > dist(line[i], line[i + 1])) {
+        remaining -= dist(line[i], line[i + 1]);
+        i++;
+      }
+      const fraction = Math.min(1, remaining / (dist(line[i], line[i + 1]) || 1));
+      const t = (i + fraction) / (line.length - 1);
+      const lerp = (a, b) => add(a, mul(sub(b, a), t));
+      bendA = lerp(line[0], st.bend);
+      bendB = lerp(st.bend, line.at(-1));
+      q = lerp(bendA, bendB);
+    }
     const nid = newId(L, "n");
     L.nodes.push({ id: nid, x: r3(q[0]), z: r3(q[1]) });
-    const second = { ...JSON.parse(JSON.stringify(st)), id: newId(L, "s"), a: nid, b: st.b, bend: null };
+    const second = { ...JSON.parse(JSON.stringify(st)), id: newId(L, "s"), a: nid, b: st.b, bend: bendB && P(bendB) };
     st.b = nid;
-    st.bend = null;
+    st.bend = bendA && P(bendA);
     const ends = st.ends || {};
     st.ends = { a: ends.a || {} };
     second.ends = { b: ends.b || {} };
     L.streets.push(second);
-    if (L.player && L.player.street === st.id && L.player.toward === second.b) L.player = { street: second.id, toward: second.b };
+    if (L.player && L.player.street === st.id && L.player.toward === second.b) L.player.street = second.id;
     return nid;
   }
 
-  // A node at a snapped point (made, found, or split into a street).
+  // Use the junction already resolved for a stop, or create a new free endpoint.
   function nodeAt(L, snapped) {
     if (snapped.node) return snapped.node;
-    if (snapped.street) return splitStreet(L, snapped.street, snapped.at);
     const nid = newId(L, "n");
     L.nodes.push({ id: nid, x: r3(snapped.p[0]), z: r3(snapped.p[1]) });
     return nid;
@@ -1306,27 +1348,39 @@ const Layout = (() => {
     const L = scene.layout;
     const sa = snapPoint(scene, a), sb = snapPoint(scene, b);
     if (dist(sa.p, sb.p) < 3) return null;
-    // Crossings with straight streets along the new one (not at its ends).
-    const hits = [];
+    if (overlapsStreet(L, sa.p, sb.p)) return [];
+    const A = sa.p, B = sb.p, length = dist(A, B);
+    const stops = [{...sa, t: 0}, {...sb, t: 1}];
+    const addStop = stop => {
+      if (!stops.some(s => Math.abs(s.t - stop.t) * length < .05)) stops.push(stop);
+    };
+    // A line through an existing junction must use the junction, including when
+    // all its incident streets meet the drawing at their endpoints.
+    for (const n of L.nodes) {
+      const point = xy(n), at = projectOn([A, B], point);
+      if (dist(along([A, B], at).p, point) < .05) addStop({node: n.id, t: at / length});
+    }
     for (const st of L.streets) {
-      if (st.bend) continue;
-      const A = xy(nodeOf(L, st.a)), B = xy(nodeOf(L, st.b));
-      const x = segCross(sa.p, sb.p, A, B);
-      if (x && x.t > 0.04 && x.t < 0.96 && x.u > 0.02 && x.u < 0.98) hits.push({ st, t: x.t, u: x.u, len: dist(A, B) });
+      const points = centreline(L, st);
+      for (let i = 0; i + 1 < points.length; i++) {
+        const x = segCross(A, B, points[i], points[i + 1]);
+        if (!x) continue;
+        const p = add(A, mul(sub(B, A), x.t));
+        addStop({street: st.id, at: projectOn(points, p), p, t: x.t});
+      }
     }
-    const na = nodeAt(L, sa);
-    const nb = nodeAt(L, sb);
-    const chain = [na];
-    hits.sort((x, y) => x.t - y.t);
-    for (const h of hits) {
-      const cur = L.streets.find((s) => s.id === h.st.id);
-      chain.push(splitStreet(L, cur.id, h.u * h.len));
+    // Cut from b back to a. The original ID always belongs to the remaining
+    // a-side, even when this stroke intersects one curved street twice.
+    const cuts = stops.filter(stop => stop.street).sort((x, y) => y.at - x.at);
+    for (const stop of cuts) {
+      const line = centreline(L, streetOf(L, stop.street));
+      stop.node = splitStreet(L, stop.street, projectOn(line, stop.p));
     }
-    chain.push(nb);
+    const chain = stops.sort((x, y) => x.t - y.t).map(stop => nodeAt(L, stop));
     const made = [];
     for (let i = 0; i + 1 < chain.length; i++) {
       if (chain[i] === chain[i + 1]) continue;
-      const exists = L.streets.find((s) => (s.a === chain[i] && s.b === chain[i + 1]) || (s.b === chain[i] && s.a === chain[i + 1]));
+      const exists = L.streets.some(s => !s.bend && ((s.a === chain[i] && s.b === chain[i + 1]) || (s.b === chain[i] && s.a === chain[i + 1])));
       if (exists) continue;
       const st = { id: newId(L, "s"), a: chain[i], b: chain[i + 1], kind, ends: {} };
       L.streets.push(st);
@@ -1465,7 +1519,7 @@ const Layout = (() => {
 
   return {
     medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf, streetProfile, highwayPort, setHighwayPort,
-    applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, pavedEnd, setPavedEnd, PAVED_MAX, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
+    applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, pavedEnd, setPavedEnd, PAVED_MAX, snapPoint, overlapsStreet, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
     splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading, laneOffsets,
     isFreePlayer, playerPose, setPlayerMode, movePlayer, rotatePlayer, freePlayerSupported, resetPlayerGuide, editPlayerRoute, setPlayerRouteManual,
     compactRoutePoints, compactPlayerRoute, refreshPlayerRoutes,

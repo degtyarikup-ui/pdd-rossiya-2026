@@ -33,7 +33,9 @@ function mount(fullSigns = false) {
     const event = { target: target(attribute, value, { disabled }), shiftKey, stopPropagation() {} };
     (body ? bodyListeners.click : listeners.click).forEach(callback => callback(event));
   }
-  return { App, state, click, html: () => { App.renderPanels({ only: ['left'] }); return elements['#left-body'].innerHTML; }, input: (id, value) => listeners.input.forEach(callback => callback({ target: { id, value } })) };
+  return { App, state, click, body: elements['#left-body'],
+    changeGroup: value => listeners.change.forEach(callback => callback({target:{value, matches:selector=>selector==='[data-sign-group]'}})),
+    html: () => { App.renderPanels({ only: ['left'] }); return elements['#left-body'].innerHTML; }, input: (id, value) => listeners.input.forEach(callback => callback({ target: { id, value } })) };
 }
 let ui = mount();
 assert.equal(ui.App.sceneFiltersCollapsed(), false);
@@ -72,6 +74,8 @@ assert.match(ui.html(), /Уступите дорогу/, 'choosing a tool catego
 ui = mount();
 assert.equal(ui.App.libraryCategory(), 'signs', 'library category survives reload');
 ui.App.setLeftTab('layers');
+ui.state.S.tracks = [{id:'rail-a', railType:'railway'}];
+assert.match(ui.html(), /data-ref="[^"]*track[^"]*rail-a/, 'standalone tracks can be found and selected in the road layer');
 assert.match(ui.html(), /data-select-layer="roads" aria-label="Выбрать все: Дороги"/);
 ui.click('data-select-layer', 'roads', { body: true });
 assert.deepEqual(Array.from(ui.state.sel, item => item.id), ['a', 'b', 'manual'], 'bulk road selection excludes generated meshes, islands and junction handles');
@@ -100,4 +104,13 @@ assert.match(ui.html(),/3.28 · Стоянка запрещена/);
 assert.doesNotMatch(ui.html(),/data-lib=.*id.*2.4/,'number search removes unrelated signs');
 ui.input('lib-q','8.2.2'); assert.match(ui.html(),/8.2.2 · Зона действия/);
 ui.input('lib-q','таблички'); assert.match(ui.html(),/8.2.2 · Зона действия/,'category names are searchable');
+ui.input('lib-q',''); ui.changeGroup('2');
+assert.match(ui.html(), /Знаки · 13/);
+assert.doesNotMatch(ui.html(), /8.2.2 · Зона действия/);
+ui.input('lib-q','знак 2.4');
+assert.match(ui.html(), /Знаки · 1<\/h4>/);
+assert.match(ui.html(), /2.4 · Уступите дорогу/);
+ui.body.innerHTML = 'open catalogue';
+ui.App.renderPanels({only:['layers','inspector']});
+assert.equal(ui.body.innerHTML,'open catalogue','map selection leaves the visible catalogue intact');
 console.log('Sidebar UX: compact persistent filters, full searchable sign catalogue, clean question rows and bulk layer selection PASS');

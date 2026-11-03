@@ -21,6 +21,9 @@ const QuestionPlan = (() => {
   function matches(question, text) {
     const needle = normalized(text);
     if (!needle) return true;
+    const ticket = needle.match(/^(?:билет )?(\d+)(?: (?:вопрос )?(\d+))?$/);
+    if (ticket) return [question, ...(question.occurrences || [])].some(ref =>
+      ref.ticket === Number(ticket[1]) && (!ticket[2] || ref.number === Number(ticket[2])));
     const references = (question.occurrences || []).map(item => `${item.id} Билет ${item.ticket} вопрос ${item.number}`).join(' ');
     const haystack = normalized([question.id, title(question), category(question), question.question, references].join(' '));
     return needle.split(' ').every(word => haystack.includes(word));
@@ -28,9 +31,9 @@ const QuestionPlan = (() => {
   const list = (text = query) => kept().filter(question => matches(question, text) && question.status === filter);
   const count = key => kept().filter(question => question.status === key).length;
   function badge(question) {
-    if (question.status === 'game') return '<i class="badge good">В игре</i>';
+    if (question.status === 'game') return `<i class="badge good">${question.hasScene ? 'В игре' : 'В игре · без отдельной сцены'}</i>`;
     if (question.status === 'ai') return '<i class="badge ai">Реализовано ИИ</i>';
-    return '<i class="badge good">Реализуем</i>';
+    return `<i class="badge">${question.hasScene ? 'Черновик' : 'Запланирован'}</i>`;
   }
   function photo(question) {
     return question.imageUrl ? `<img src="${esc(question.imageUrl)}" alt="Иллюстрация к вопросу" loading="lazy">` : `<span class="question-no-photo">${ic('image')}</span>`;

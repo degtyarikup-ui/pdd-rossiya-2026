@@ -53,6 +53,7 @@
   <symbol id="i-zoomin" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M11 8.5v5M8.5 11h5"/></symbol>
   <symbol id="i-zoomout" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M8.5 11h5"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.8 12.2a1.5 1.5 0 0 0 1.5 1.3h6.4a1.5 1.5 0 0 0 1.5-1.3L17.5 7"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/></symbol>
@@ -124,10 +125,20 @@
 
   <main class="stage" id="stage">
     <div id="view" class="view"></div>
+    <div id="rotation-overlay" aria-hidden="true" hidden>
+      <svg width="100%" height="100%"><line/><g><circle r="10"/><path d="M-4.6 0a4.6 4.6 0 1 0 1.4-3.3M-4.6-5v3.4h3.4"/></g></svg>
+    </div>
     <div id="labels" class="labels"></div>
     <div id="marquee" class="marquee" hidden></div>
     <div id="hint" class="hint" hidden></div>
     <div class="stage-tools">
+      <div id="selection-bar" class="selection-bar" role="group" aria-label="Действия с выбранным" hidden>
+        <button id="selection-properties" class="selection-name" title="Открыть свойства"><svg class="i"><use href="#i-sliders"/></svg><span></span></button>
+        <button id="selection-rotl" title="Повернуть влево на 15° · Q" aria-label="Повернуть влево на 15°"><svg class="i"><use href="#i-rotl"/></svg></button>
+        <button id="selection-rotr" title="Повернуть вправо на 15° · E" aria-label="Повернуть вправо на 15°"><svg class="i"><use href="#i-rotr"/></svg></button>
+        <button id="selection-copy" title="Дублировать · ⌘D" aria-label="Дублировать"><svg class="i"><use href="#i-copy"/></svg></button>
+        <button id="selection-delete" title="Удалить · Delete" aria-label="Удалить выбранное"><svg class="i"><use href="#i-trash"/></svg></button>
+      </div>
       <nav id="toolbar" class="toolbar" aria-label="Инструменты"></nav>
       <div id="popover" class="popover" hidden></div>
     </div>
@@ -136,11 +147,14 @@
         <button id="v-plan" data-tip="Сверху  2">2D</button>
         <button id="v-3d" data-tip="Объём  3">3D</button>
       </div>
-      <button id="z-out" class="icon-btn" data-tip="Отдалить  −"><svg class="i"><use href="#i-zoomout"/></svg></button>
-      <button id="z-fit" class="icon-btn" data-tip="Показать всё  F"><svg class="i"><use href="#i-fit"/></svg></button>
-      <button id="z-in" class="icon-btn" data-tip="Приблизить  +"><svg class="i"><use href="#i-zoomin"/></svg></button>
+      <button id="z-out" class="icon-btn" data-tip="Отдалить  −"><svg class="i"><use href="#i-minus"/></svg></button>
+      <button id="z-in" class="icon-btn" data-tip="Приблизить  +"><svg class="i"><use href="#i-plus"/></svg></button>
+      <button id="z-fit" class="icon-btn" data-tip="Вписать в экран  F"><svg class="i"><use href="#i-fit"/></svg></button>
+      <button id="compass" class="compass" aria-label="Повернуть вид. Нажмите для исходного направления" title="Тяните для поворота · нажмите для исходного направления">
+        <svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="12"/><g id="compass-needle"><path d="m15 4 3.4 11-3.4-1.4-3.4 1.4Z"/><path d="m15 26 3.4-11-3.4 1.4-3.4-1.4Z"/></g></svg>
+      </button>
     </div>
-    <button id="inspect-toggle" class="inspect-toggle" aria-controls="inspector-shell" aria-expanded="false"><svg class="i"><use href="#i-sliders"/></svg><span>Свойства</span></button>
+    <button id="inspect-toggle" class="inspect-toggle" aria-label="Свойства" aria-controls="inspector-shell" aria-expanded="false"><svg class="i"><use href="#i-sliders"/></svg><span>Свойства</span></button>
     <div id="phone" class="phone" hidden></div>
     <div id="refpic" class="refpic" hidden><div class="refpic-head"><span>Фото билета</span><button class="icon-btn" data-big data-tip="Крупно"><svg class="i"><use href="#i-fit"/></svg></button><button class="icon-btn" data-unpin data-tip="Убрать"><svg class="i"><use href="#i-x"/></svg></button></div><img alt=""></div>
     <div id="drop" class="drop" hidden><div><svg class="i"><use href="#i-upload"/></svg><b>Отпустите PNG</b></div></div>
@@ -174,7 +188,7 @@
   <div class="dialog confirm-dialog">
     <h2 id="confirm-title"></h2>
     <p id="confirm-text"></p>
-    <div class="dialog-foot"><button class="btn ghost" data-answer="no">Отмена</button><button class="btn primary" data-answer="yes" id="confirm-yes">Да</button></div>
+    <div class="dialog-foot"><button class="btn ghost" data-answer="no">Отмена</button><button class="btn ghost" data-answer="discard" id="confirm-discard" hidden>Не сохранять</button><button class="btn primary" data-answer="yes" id="confirm-yes">Да</button></div>
   </div>
 </div>
 

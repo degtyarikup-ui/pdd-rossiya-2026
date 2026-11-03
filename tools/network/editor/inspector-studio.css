@@ -97,3 +97,6 @@
 #inspector .assistant-review-card { background: color-mix(in srgb, var(--accent) 7%, transparent); }
 #inspector .assistant-review-status { color: var(--ink); }
 #inspector .edge-box { background: var(--field); }
+#inspector .insp-head .insp-lock { display: flex; align-items: center; gap: 4px; color: var(--gold-ink); }
+#inspector .insp-lock .i { width: 12px; height: 12px; }
+#inspector:has(.insp-lock) .dial, #inspector:has(.insp-lock) .switch-row { cursor: default; }
