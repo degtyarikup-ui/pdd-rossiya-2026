@@ -26,6 +26,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+from http.client import HTTPException
 from pathlib import Path
 
 from cryptography.hazmat.primitives import hashes, serialization
@@ -145,12 +146,60 @@ class Play:
         finally:
             self.call('DELETE', f'/edits/{edit}')
 
+    def upload_resumable(self, url, path, chunk=8 << 20, attempts=8):
+        """Uploads in 8 MB pieces; a dropped connection resumes from the last stored byte.
+        A single 290 MB request was reset by the network twice in a row (2.2.8)."""
+        size = os.path.getsize(path)
+        start = urllib.request.Request(url + '?uploadType=resumable', data=b'', method='POST', headers={
+            **self.auth, 'X-Upload-Content-Type': 'application/octet-stream',
+            'X-Upload-Content-Length': str(size), 'Content-Length': '0'})
+        with urllib.request.urlopen(start, timeout=120) as response:
+            session = response.headers['Location']
+        offset, failures = 0, 0
+        with open(path, 'rb') as file:
+            while True:
+                file.seek(offset)
+                data = file.read(chunk)
+                end = offset + len(data) - 1
+                request = urllib.request.Request(session, data=data, method='PUT', headers={
+                    'Content-Length': str(len(data)), 'Content-Range': f'bytes {offset}-{end}/{size}'})
+                try:
+                    with urllib.request.urlopen(request, timeout=300) as response:
+                        return json.loads(response.read().decode())
+                except urllib.error.HTTPError as error:
+                    if error.code != 308:
+                        if error.code < 500:
+                            raise HttpError(error.code, f'upload → HTTP {error.code}: '
+                                            f'{error.read().decode(errors="replace")[:1500]}') from None
+                        failures += 1
+                    else:
+                        failures = 0
+                        stored = error.headers.get('Range')
+                        offset = int(stored.split('-')[1]) + 1 if stored else 0
+                        continue
+                except (OSError, HTTPException) as error:
+                    failures += 1
+                    print('Google Play: обрыв загрузки, продолжаю:', error)
+                if failures >= attempts:
+                    raise RuntimeError('Google Play: загрузка AAB не удалась')
+                time.sleep(min(30, 2 ** failures))
+                # Ask how much the server has stored before resending.
+                probe = urllib.request.Request(session, data=b'', method='PUT', headers={
+                    'Content-Length': '0', 'Content-Range': f'bytes */{size}'})
+                try:
+                    with urllib.request.urlopen(probe, timeout=120) as response:
+                        return json.loads(response.read().decode())
+                except urllib.error.HTTPError as error:
+                    if error.code == 308:
+                        stored = error.headers.get('Range')
+                        offset = int(stored.split('-')[1]) + 1 if stored else 0
+                except (OSError, HTTPException):
+                    pass
+
     def publish(self, aab, notes):
         edit = self.call('POST', '/edits')['id']
         try:
-            body = FileBody(aab)
-            bundle = http('POST', f'{self.UPLOAD}/edits/{edit}/bundles?uploadType=media',
-                          {**self.auth, 'Content-Type': 'application/octet-stream'}, body, timeout=1800)
+            bundle = self.upload_resumable(f'{self.UPLOAD}/edits/{edit}/bundles', aab)
             code = str(bundle['versionCode'])
             print('Google Play: загружен AAB, versionCode', code)
             self.call('PUT', f'/edits/{edit}/tracks/production', {
@@ -314,9 +363,18 @@ class RuStore:
         for v in self.versions()[:3]:
             print('RuStore:', v['versionName'], v['versionCode'], v['versionStatus'], v.get('publishType'))
 
+    def draft_has_apk(self, version_id, wait=180):
+        deadline = time.time() + wait
+        while time.time() < deadline:
+            time.sleep(15)
+            draft = next((v for v in self.versions() if v['versionId'] == version_id), None)
+            if draft and draft.get('versionCode', -1) > 0:
+                return True
+        return False
+
     def publish(self, apk, notes):
         app = f'/public/v1/application/{ANDROID_PACKAGE}/version'
-        for attempt in range(1, 4):
+        for attempt in range(1, 6):
             # A new draft replaces any earlier one; other fields copy from the
             # active version. A fresh draft per attempt matters: RuStore's proxy
             # can answer 503 although the APK did arrive, and a second main APK
@@ -333,9 +391,18 @@ class RuStore:
                           headers={'Content-Type': f'multipart/form-data; boundary={boundary}'}, timeout=3600)
                 break
             except HttpError as error:
-                if error.status < 500 or attempt == 3:
+                if error.status < 500 or attempt == 5:
                     raise
-                print(f'RuStore: загрузка APK оборвалась (HTTP {error.status}), повтор {attempt + 1}/3', flush=True)
+                print(f'RuStore: загрузка APK оборвалась (HTTP {error.status}), повтор {attempt + 1}/5', flush=True)
+            except (OSError, HTTPException) as error:
+                # RuStore's proxy resets the connection after receiving the whole APK
+                # (2.2.8): the draft gets the build a few seconds later.
+                if self.draft_has_apk(version_id):
+                    break
+                if attempt == 5:
+                    raise
+                print(f'RuStore: обрыв загрузки APK ({error}), повтор {attempt + 1}/5', flush=True)
+                time.sleep(10 * attempt)
         print('RuStore: APK загружен в черновик', version_id)
         self.call('POST', f'{app}/{version_id}/commit')
         print('RuStore: версия', notes['version'], 'отправлена на модерацию, публикация сразу после неё')
