@@ -16,6 +16,7 @@ func _init() -> void:
 		for i in ParkingLevels.COUNT:
 			_check_way(i, model, geo)
 	_check_rules_spots()
+	_check_prop_pools()
 	if ResourceLoader.exists("res://parking.tscn"): await _check_scene()
 	print("parking_check: %d passed, %d failed" % [passed, failed])
 	quit(1 if failed > 0 else 0)
@@ -28,6 +29,25 @@ func _check(desc: String, ok: bool) -> void:
 		failed += 1
 		push_error("FAIL: " + desc)
 		print("FAIL: " + desc)
+
+
+## Every prop of a level fits its pool in parking.gd (_build_props); extra ones are not drawn.
+func _check_prop_pools() -> void:
+	var cap: int = preload("res://scripts/parking.gd").PROP_POOL_CAP
+	for i in ParkingLevels.COUNT:
+		var level := ParkingLevels.build(i)
+		var counts := {}
+		var n := 0
+		for t in level.trees:
+			var kind := "trees/birch_0" if n % 3 == 1 else "trees/round_0"
+			counts[kind] = counts.get(kind, 0) + 1
+			n += 1
+		counts["trees/pine_0"] = level.pines.size()
+		counts["street/bush"] = level.bushes.size()
+		counts["street/lamp"] = level.lamps.size()
+		for b: Dictionary in level.buildings: counts[b.prop] = counts.get(b.prop, 0) + 1
+		for prop in counts:
+			_check("level %d: %d × %s fit the prop pool" % [i, counts[prop], prop], counts[prop] <= cap)
 
 
 func _check_geometry() -> void:

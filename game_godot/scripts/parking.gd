@@ -12,6 +12,8 @@ const ControlsScript := preload("res://scripts/controls.gd")
 const ParkingUiScript := preload("res://scripts/parking_ui.gd")
 const ParkingGuideScript := preload("res://scripts/parking_guide.gd")
 const FrameBudget := preload("res://scripts/frame_budget.gd")
+## Instances of one prop on a level: «camp» alone has 79 pines; a fuller pool dropped the rest.
+const PROP_POOL_CAP := 128
 
 const VMAX_D := 3.0
 const VMAX_R := 1.9
@@ -718,7 +720,7 @@ func _build_props() -> void:
 			var mesh := Models.mesh_of("res://scenery/%s.glb" % prop)
 			if mesh == null: return
 			var building := prop.begins_with("buildings/")
-			pools[prop] = Scenery.Pool.new(root3d, mesh, sc.building_material if building else sc.material, 1, 64, true)
+			pools[prop] = Scenery.Pool.new(root3d, mesh, sc.building_material if building else sc.material, 1, PROP_POOL_CAP, true)
 			pools[prop].begin(0)
 			if building:
 				# Houses between the camera and the car fade, like in the city.
