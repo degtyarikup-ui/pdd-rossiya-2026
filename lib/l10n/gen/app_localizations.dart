@@ -7093,7 +7093,7 @@ abstract class AppLocalizations {
   /// No description provided for @marathonProgress.
   ///
   /// In ru, this message translates to:
-  /// **'Пройдено {answered} из {total} вопросов'**
+  /// **'{answered} из {total}'**
   String marathonProgress(int answered, int total);
 
   /// No description provided for @marathonRestart.

@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -4233,7 +4234,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String marathonProgress(int answered, int total) {
-    return '$total сұрақтың $answered сұрағына жауап берілді';
+    return '$total ішінен $answered';
   }
 
   @override

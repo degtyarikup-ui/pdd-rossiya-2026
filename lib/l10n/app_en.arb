@@ -1443,7 +1443,7 @@
   "rateUsOpenFailed": "Could not open the store. Please try again.",
   "marathon": "Marathon",
   "marathonResumeTitle": "Continue the marathon?",
-  "marathonProgress": "{answered} of {total} questions answered",
+  "marathonProgress": "{answered} of {total}",
   "marathonRestart": "Reset and start again",
   "marathonCompleted": "Marathon complete!",
   "marathonViewResults": "View results",

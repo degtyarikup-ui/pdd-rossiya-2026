@@ -2085,7 +2085,7 @@
   "rateUsOpenFailed": "Не удалось открыть магазин. Попробуйте ещё раз.",
   "marathon": "Марафон",
   "marathonResumeTitle": "Продолжить марафон?",
-  "marathonProgress": "Пройдено {answered} из {total} вопросов",
+  "marathonProgress": "{answered} из {total}",
   "marathonRestart": "Сбросить и начать сначала",
   "marathonCompleted": "Марафон пройден!",
   "marathonViewResults": "Посмотреть результат",

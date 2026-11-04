@@ -290,7 +290,7 @@ void main() {
       await fresh.init();
       await pumpEntry(tester, data: fresh);
       await tap(tester, 'Открыть');
-      expect(find.text('Пройдено 1 из 3 вопросов'), findsOneWidget);
+      expect(find.text('1 из 3'), findsOneWidget);
       expect(find.widgetWithText(ElevatedButton, 'Продолжить'), findsOneWidget);
       Navigator.of(tester.element(find.byType(MarathonResumeDialog))).pop();
       await tester.pumpAndSettle();

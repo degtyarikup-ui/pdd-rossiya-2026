@@ -122,58 +122,131 @@ class MarathonResumeDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final complete = answered == total;
-    return AlertDialog(
-      scrollable: true,
+    final progressLabel = appL10n.marathonProgress(answered, total);
+    return Dialog(
       backgroundColor: colors.cardBackground,
-      icon: SvgPicture.asset(
-        'assets/images/home_icon_marathon.svg',
-        width: 36,
-        height: 36,
+      surfaceTintColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusExtraLarge),
       ),
-      title: Text(
-        complete ? appL10n.marathonCompleted : appL10n.marathonResumeTitle,
-      ),
-      content: SizedBox(
-        width: 320,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              appL10n.marathonProgress(answered, total),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: total == 0 ? 0 : answered / total,
-                minHeight: 6,
-                color: colors.accent,
-                backgroundColor: colors.accentSurface10,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colors.lightAccent,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/images/home_icon_marathon.svg',
+                      colorFilter: ColorFilter.mode(
+                        colors.accent,
+                        BlendMode.srcIn,
+                      ),
+                      excludeFromSemantics: true,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: appL10n.close,
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: IconButton.styleFrom(
+                      foregroundColor: colors.secondaryText,
+                      minimumSize: const Size(48, 48),
+                    ),
+                    icon: const Icon(Icons.close_rounded, size: 22),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(
-                complete ? appL10n.marathonViewResults : appL10n.continueButton,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: colors.secondaryText,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.buttonRadius,
+              const SizedBox(height: 20),
+              Semantics(
+                namesRoute: true,
+                header: true,
+                child: Text(
+                  complete
+                      ? appL10n.marathonCompleted
+                      : appL10n.marathonResumeTitle,
+                  style: TextStyle(
+                    fontSize: 22,
+                    height: 1.25,
+                    fontWeight: FontWeight.w600,
+                    color: colors.primaryText,
+                    letterSpacing: -0.5,
                   ),
                 ),
               ),
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(appL10n.marathonRestart, textAlign: TextAlign.center),
-            ),
-          ],
+              const SizedBox(height: 20),
+              Text(
+                progressLabel,
+                style: TextStyle(
+                  fontSize: 34,
+                  height: 1.2,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -1,
+                  color: colors.primaryText,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ExcludeSemantics(
+                child: LinearProgressIndicator(
+                  value: total == 0 ? 0 : (answered / total).clamp(0.0, 1.0),
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(6),
+                  color: colors.accent,
+                  backgroundColor: colors.gray,
+                ),
+              ),
+              const SizedBox(height: 28),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(
+                  complete
+                      ? appL10n.marathonViewResults
+                      : appL10n.continueButton,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: Color.lerp(
+                    colors.secondaryText,
+                    colors.primaryText,
+                    0.25,
+                  ),
+                  minimumSize: const Size.fromHeight(48),
+                  textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.buttonRadius,
+                    ),
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(
+                  appL10n.marathonRestart,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

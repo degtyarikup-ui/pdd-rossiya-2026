@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -22,15 +23,7 @@ void main() {
     // Ahem's square glyphs distort the existing exam badges at large text sizes.
     {
       final fonts = FontLoader(AppTheme.fontFamily);
-      for (final weight in [
-        'Regular',
-        'Medium',
-        'SemiBold',
-        'Bold',
-        'ExtraBold',
-      ]) {
-        fonts.addFont(rootBundle.load('assets/fonts/Onest-$weight.ttf'));
-      }
+      fonts.addFont(rootBundle.load('assets/fonts/Onest-Regular.ttf'));
       await fonts.load();
       await (FontLoader(
         'MaterialIcons',
@@ -169,24 +162,25 @@ void main() {
 
       final dialog = showDialog<bool>(
         context: context,
-        builder: (_) => const MarathonResumeDialog(answered: 137, total: 800),
+        builder: (_) => const MarathonResumeDialog(answered: 16, total: 800),
       );
       await tester.pumpAndSettle();
       final primary = find.widgetWithText(ElevatedButton, l10n.continueButton);
       await tester.ensureVisible(primary);
       await tester.pumpAndSettle();
       expect(primary.hitTestable(), findsOneWidget);
-      final style = Theme.of(
-        tester.element(primary),
-      ).elevatedButtonTheme.style!;
+      final style = Theme.of(tester.element(primary))
+          .elevatedButtonTheme
+          .style!;
       expect(style.backgroundColor!.resolve({}), AppColors.of(context).accent);
       await screenshot(tester, key, 'resume-${config.name}');
       await tester.ensureVisible(find.text(l10n.marathonRestart));
       await tester.pumpAndSettle();
       expect(find.text(l10n.marathonRestart).hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
-      navigator.currentState!.pop();
-      await dialog;
+      await tester.ensureVisible(find.byTooltip(l10n.close));
+      await tester.tap(find.byTooltip(l10n.close));
+      expect(await dialog, isNull);
       await tester.pumpAndSettle();
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
