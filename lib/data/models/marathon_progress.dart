@@ -1,10 +1,17 @@
 /// A local marathon run, independent of ordinary training and global statistics.
 /// IDs preserve answers across translations and content reordering.
 class MarathonProgress {
-  const MarathonProgress({this.answers = const {}, this.currentQuestionId});
+  const MarathonProgress({
+    this.answers = const {},
+    this.currentQuestionId,
+    this.questionOrder = const [],
+  });
 
   final Map<String, int> answers;
   final String? currentQuestionId;
+
+  /// Empty only for saves created before shuffled marathons were introduced.
+  final List<String> questionOrder;
 
   factory MarathonProgress.fromJson(Map<String, dynamic> json) {
     final raw = json['answers'];
@@ -18,6 +25,9 @@ class MarathonProgress {
             entry.key as String: entry.value as int,
       },
       currentQuestionId: json['currentQuestionId'] as String?,
+      questionOrder: List<String>.from(
+        json['questionOrder'] as List? ?? const [],
+      ),
     );
   }
 
@@ -25,6 +35,7 @@ class MarathonProgress {
     'version': 1,
     'answers': answers,
     'currentQuestionId': currentQuestionId,
+    'questionOrder': questionOrder,
   };
 
   /// Only a valid, contiguous prefix may be resumed: new/missing questions

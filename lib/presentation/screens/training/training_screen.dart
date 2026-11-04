@@ -6,6 +6,7 @@ import 'package:pdd_app/presentation/widgets/achievement_award_screen.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 
 import 'dart:async';
+
 import 'package:pdd_app/data/models/marathon_progress.dart';
 
 import 'package:flutter/material.dart';
@@ -154,6 +155,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     if (!_isMarathon || widget.questions.isEmpty) return;
     final source = ref.read(progressDataSourceProvider);
     final snapshot = MarathonProgress(
+      questionOrder: [
+        for (final question in widget.questions) question['id'] as String,
+      ],
       answers: {
         for (var i = 0; i < _savedChoices.length; i++)
           if (_savedChoices[i] != null)

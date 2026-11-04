@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,8 +13,12 @@ import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/presentation/screens/training/training_result_screen.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 
-/// All ticket positions, including illustration variants, in their printed order.
-List<Map<String, dynamic>> marathonQuestions(Iterable<Question> questions) {
+/// Shuffle new runs once; restore saved runs by ID, including legacy order.
+List<Map<String, dynamic>> marathonQuestions(
+  Iterable<Question> questions, {
+  MarathonProgress? progress,
+  Random? random,
+}) {
   final ordered = questions.toList()
     ..sort((a, b) {
       final ticket = a.ticketNumber.compareTo(b.ticketNumber);
@@ -20,7 +26,18 @@ List<Map<String, dynamic>> marathonQuestions(Iterable<Question> questions) {
           ? ticket
           : a.questionNumber.compareTo(b.questionNumber);
     });
-  return ordered.map((q) => q.toMap()).toList();
+  if (progress == null) {
+    ordered.shuffle(random);
+    return ordered.map((q) => q.toMap()).toList();
+  }
+  // Legacy runs keep their printed order so their answered prefix is intact.
+  // New content is appended; removed IDs and duplicate saved IDs are skipped.
+  final remaining = {for (final question in ordered) question.id: question};
+  return [
+    for (final id in progress.questionOrder)
+      if (remaining.containsKey(id)) remaining.remove(id)!.toMap(),
+    for (final question in remaining.values) question.toMap(),
+  ];
 }
 
 Future<void> openMarathon(BuildContext context, WidgetRef ref) async {
@@ -30,21 +47,26 @@ Future<void> openMarathon(BuildContext context, WidgetRef ref) async {
       ref.read(appSettingsProvider).ticketCategory != category) {
     return;
   }
-  final questions = marathonQuestions(
-    tickets.expand((ticket) => (ticket['questions'] as List).cast<Question>()),
-  );
+  final source = ref.read(progressDataSourceProvider);
+  var progress = source.loadMarathon(category);
+  if (progress != null &&
+      progress.answers.isEmpty &&
+      progress.questionOrder.isEmpty) {
+    progress = null;
+  }
+  final bank = tickets
+      .expand((ticket) => (ticket['questions'] as List).cast<Question>())
+      .toList();
+  var questions = marathonQuestions(bank, progress: progress);
   if (questions.isEmpty) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(appL10n.noQuestions)));
     return;
   }
-  final source = ref.read(progressDataSourceProvider);
-  var progress = source.loadMarathon(category);
   final choices = progress?.restoreChoices(questions);
   final answered = choices?.whereType<int>().length ?? 0;
-  if (answered == 0) progress = null;
-  if (progress != null && choices != null) {
+  if (answered > 0 && progress != null && choices != null) {
     final resume = await showDialog<bool>(
       context: context,
       builder: (_) =>
@@ -53,6 +75,7 @@ Future<void> openMarathon(BuildContext context, WidgetRef ref) async {
     if (resume == null || !context.mounted) return;
     if (!resume) {
       progress = null;
+      questions = marathonQuestions(bank);
     } else if (answered == questions.length) {
       final wrong = <Map<String, dynamic>>[
         for (var i = 0; i < questions.length; i++)

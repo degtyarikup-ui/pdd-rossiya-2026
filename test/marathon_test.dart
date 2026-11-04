@@ -1,6 +1,9 @@
 import 'helpers/achievement_awards.dart';
+
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -87,7 +90,24 @@ void main() {
             );
           }
         }
-        final ordered = marathonQuestions(bank.reversed);
+        final shuffled = marathonQuestions(bank, random: Random(42));
+        expect(
+          shuffled.map((q) => q['id']),
+          unorderedEquals(bank.map((q) => q.id)),
+        );
+        expect(
+          shuffled.map((q) => q['id']),
+          isNot(orderedEquals(bank.map((q) => q.id))),
+        );
+        final anotherRun = marathonQuestions(bank, random: Random(43));
+        expect(
+          anotherRun.map((q) => q['id']),
+          isNot(orderedEquals(shuffled.map((q) => q['id']))),
+        );
+        final ordered = marathonQuestions(
+          bank.reversed,
+          progress: const MarathonProgress(),
+        );
         expect(ordered.length, 800);
         expect(ordered.map((q) => q['id']).toSet().length, 800);
         for (var i = 0; i < 800; i++) {
@@ -120,7 +140,10 @@ void main() {
       );
       final fresh = ProgressDataSource();
       await fresh.init();
-      final bank = marathonQuestions(questions(3));
+      final bank = marathonQuestions(
+        questions(3),
+        progress: const MarathonProgress(),
+      );
       expect(fresh.loadMarathon(TicketCategory.ab)!.restoreChoices(bank), [
         1,
         null,
@@ -142,7 +165,10 @@ void main() {
   test(
     'invalid or changed content resumes at the first unanswered position',
     () async {
-      final bank = marathonQuestions(questions(4));
+      final bank = marathonQuestions(
+        questions(4),
+        progress: const MarathonProgress(),
+      );
       const progress = MarathonProgress(
         answers: {'q0': 1, 'q1': 9, 'q2': 0},
         currentQuestionId: 'q3',
@@ -154,6 +180,27 @@ void main() {
       expect(source.loadMarathon(TicketCategory.ab), isNull);
       await prefs.setString('marathon_v1_ab', '{"version":2,"answers":{}}');
       expect(source.loadMarathon(TicketCategory.ab), isNull);
+    },
+  );
+
+  test(
+    'saved order survives serialization and content changes without duplicates',
+    () {
+      const original = MarathonProgress(
+        questionOrder: ['q2', 'removed', 'q0', 'q2', 'q1'],
+        answers: {'q2': 1, 'q0': 0},
+        currentQuestionId: 'q1',
+      );
+      final progress = MarathonProgress.fromJson(
+        jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>,
+      );
+      final restored = marathonQuestions(
+        questions(4).reversed,
+        progress: progress,
+      );
+      expect(restored.map((q) => q['id']), ['q2', 'q0', 'q1', 'q3']);
+      expect(progress.restoreChoices(restored), [1, 0, null, null]);
+      expect(progress.resumeIndex(restored), 2);
     },
   );
 
@@ -207,12 +254,16 @@ void main() {
   }
 
   testWidgets(
-    'ordered play, cancellation, app restart, resume and correct final totals',
+    'shuffled play, cancellation, app restart, resume and correct final totals',
     (tester) async {
       await pumpEntry(tester);
       await tap(tester, 'Открыть');
       expect(find.byType(MarathonResumeDialog), findsNothing);
-      expect(find.text('Ситуация 1'), findsOneWidget);
+      final initialOrder = source
+          .loadMarathon(TicketCategory.ab)!
+          .questionOrder;
+      final firstId = initialOrder.first;
+      expect(initialOrder, unorderedEquals(['q0', 'q1', 'q2']));
       expect(
         tester
             .widget<PageView>(find.byType(PageView))
@@ -230,7 +281,7 @@ void main() {
       await tap(tester, 'Неверно');
       await tap(tester, 'Следующий вопрос');
       await close(tester);
-      expect(source.loadMarathon(TicketCategory.ab)!.answers, {'q0': 1});
+      expect(source.loadMarathon(TicketCategory.ab)!.answers, {firstId: 1});
       expect(source.loadUnfinishedSession(TicketCategory.ab), isNull);
 
       // Recreate both the widget tree and data source, as on a real cold launch.
@@ -244,10 +295,21 @@ void main() {
       Navigator.of(tester.element(find.byType(MarathonResumeDialog))).pop();
       await tester.pumpAndSettle();
       expect(find.byType(TrainingScreen), findsNothing);
-      expect(fresh.loadMarathon(TicketCategory.ab)!.answers, {'q0': 1});
+      expect(fresh.loadMarathon(TicketCategory.ab)!.answers, {firstId: 1});
       await tap(tester, 'Открыть');
       await tap(tester, 'Продолжить');
       expect(find.text('Вопрос 2 из 3'), findsOneWidget);
+      expect(
+        source.loadMarathon(TicketCategory.ab)!.questionOrder,
+        initialOrder,
+      );
+      expect(
+        tester
+            .widget<TrainingScreen>(find.byType(TrainingScreen))
+            .questions
+            .map((q) => q['id']),
+        initialOrder,
+      );
       await tap(tester, 'Верно');
       await tap(tester, 'Следующий вопрос');
       await tap(tester, 'Верно');
@@ -257,7 +319,7 @@ void main() {
       );
       expect(result.correct, 2);
       expect(result.total, 3);
-      expect(result.wrongQuestions.single['id'], 'q0');
+      expect(result.wrongQuestions.single['id'], firstId);
       expect(fresh.loadMarathon(TicketCategory.ab)!.answers.length, 3);
       // Reopening a completed marathon shows its result without a new attempt.
       await tester.pumpWidget(const SizedBox());
@@ -281,6 +343,9 @@ void main() {
       await tap(tester, 'Открыть');
       await close(tester);
       expect(source.loadMarathon(TicketCategory.ab)!.answers, isEmpty);
+      final initialOrder = source
+          .loadMarathon(TicketCategory.ab)!
+          .questionOrder;
 
       await tester.pumpWidget(const SizedBox());
       final fresh = ProgressDataSource();
@@ -289,6 +354,10 @@ void main() {
       await tap(tester, 'Открыть');
       expect(find.byType(MarathonResumeDialog), findsNothing);
       expect(find.text('Вопрос 1 из 3'), findsOneWidget);
+      expect(
+        fresh.loadMarathon(TicketCategory.ab)!.questionOrder,
+        initialOrder,
+      );
       await tester.pumpWidget(const SizedBox());
     },
   );
@@ -310,10 +379,14 @@ void main() {
       index: 0,
       category: TicketCategory.ab,
     );
-    await pumpEntry(tester);
+    await pumpEntry(tester, count: 40);
     await tap(tester, 'Открыть');
     await tap(tester, 'Сбросить и начать сначала');
-    expect(find.text('Вопрос 1 из 3'), findsOneWidget);
+    expect(find.text('Вопрос 1 из 40'), findsOneWidget);
+    final resetOrder = source.loadMarathon(TicketCategory.ab)!.questionOrder;
+    final printedOrder = questions(40).map((q) => q.id).toList();
+    expect(resetOrder, unorderedEquals(printedOrder));
+    expect(resetOrder, isNot(orderedEquals(printedOrder)));
     expect(source.loadMarathon(TicketCategory.ab)!.answers, isEmpty);
     expect(source.loadMarathon(TicketCategory.cd)!.answers, {'q0': 0});
     expect(
