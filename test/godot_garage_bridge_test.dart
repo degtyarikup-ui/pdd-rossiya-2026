@@ -117,6 +117,10 @@ void main() {
                       onPressed: () => GodotGame.playCrossroads(context, ref),
                       child: const Text('Crossroads'),
                     ),
+                    TextButton(
+                      onPressed: () => GodotGame.playViolator(context, ref),
+                      child: const Text('Violator'),
+                    ),
                   ],
                 );
               },
@@ -136,59 +140,109 @@ void main() {
     expect(tester.takeException(), isNull);
   }
 
-  testWidgets(
-    'native round is counted before exit and summary cannot count it twice',
-    (tester) async {
-      final sent = <Map>[];
-      final reporter = UsageReporter(
-        endpoint: 'https://test',
-        secret: 'test',
-        client: MockClient((r) async {
-          sent.add(jsonDecode(r.body) as Map);
-          return http.Response('{}', 200);
-        }),
-      );
-      UsageReporter.setInstanceForTest(reporter);
-      nativePending = Completer<String?>();
-      await open(tester);
-      await launch(tester, 'Crossroads');
-      expect(nativePending!.isCompleted, isFalse);
-      expect(
-        launches.single.any((arg) => arg.startsWith('--usage-session=')),
-        isTrue,
-      );
-      final event = {
-        'event': 'usage_start',
-        'feature': 'crossroads',
-        'id': 'native-session:1',
-        'ts': DateTime.now().millisecondsSinceEpoch,
-      };
-      await tester.runAsync(() async {
-        await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .handlePlatformMessage(
-              channel.name,
-              const StandardMethodCodec().encodeMethodCall(
-                MethodCall('gameEvent', jsonEncode(event)),
-              ),
-              (_) {},
-            );
-        await reporter.flush();
-      });
-      expect(sent.single['events'][0]['feature'], 'crossroads');
-      nativePending!.complete(
-        jsonEncode({
-          'usage_tracking': 1,
-          'usage_events': [event],
+  for (final (label, feature) in [
+    ('Crossroads', 'crossroads'),
+    ('Violator', 'violator'),
+  ]) {
+    testWidgets(
+      '$feature native round is counted before exit and summary cannot count it twice',
+      (tester) async {
+        final sent = <Map>[];
+        final reporter = UsageReporter(
+          endpoint: 'https://test',
+          secret: 'test',
+          client: MockClient((r) async {
+            sent.add(jsonDecode(r.body) as Map);
+            return http.Response('{}', 200);
+          }),
+        );
+        UsageReporter.setInstanceForTest(reporter);
+        nativePending = Completer<String?>();
+        await open(tester);
+        await launch(tester, label);
+        expect(nativePending!.isCompleted, isFalse);
+        expect(
+          launches.single.any((arg) => arg.startsWith('--usage-session=')),
+          isTrue,
+        );
+        final event = {
+          'event': 'usage_start',
+          'feature': feature,
+          'id': 'native-session:1',
+          'ts': DateTime.now().millisecondsSinceEpoch,
+        };
+        await tester.runAsync(() async {
+          await TestDefaultBinaryMessengerBinding
+              .instance
+              .defaultBinaryMessenger
+              .handlePlatformMessage(
+                channel.name,
+                const StandardMethodCodec().encodeMethodCall(
+                  MethodCall('gameEvent', jsonEncode(event)),
+                ),
+                (_) {},
+              );
+          await reporter.flush();
+        });
+        expect(sent.single['events'][0]['feature'], feature);
+        nativePending!.complete(
+          jsonEncode({
+            'usage_tracking': 1,
+            'usage_tracking_features': [feature],
+            'usage_events': [event],
+            'runs': [
+              {
+                'id': 'native-session:1',
+                'score': 0,
+                'solved': 0,
+                'wrong': feature == 'violator' ? 1 : 0,
+              },
+            ],
+          }),
+        );
+        await tester.pumpAndSettle();
+        await tester.runAsync(reporter.flush);
+        expect(sent, hasLength(1));
+      },
+    );
+  }
+
+  for (final genericTracking in [false, true]) {
+    testWidgets(
+      'legacy Violator pack uses per-round fallback (generic tracking: $genericTracking)',
+      (tester) async {
+        final sent = <Map>[];
+        final reporter = UsageReporter(
+          endpoint: 'https://test',
+          secret: 'test',
+          client: MockClient((r) async {
+            sent.add(jsonDecode(r.body) as Map);
+            return http.Response('{}', 200);
+          }),
+        );
+        UsageReporter.setInstanceForTest(reporter);
+        nativeResponse = jsonEncode({
+          if (genericTracking) 'usage_tracking': 1,
+          'usage_events': [],
           'runs': [
-            {'id': 'native-session:1', 'score': 0, 'solved': 0, 'wrong': 0},
+            {'id': 'old:1', 'score': 0, 'solved': 0, 'wrong': 1},
+            {'id': 'old:1', 'score': 0, 'solved': 0, 'wrong': 1},
+            {'id': 'old:2', 'score': 0, 'solved': 0, 'wrong': 1},
+            {'id': 'not-started', 'score': 0, 'solved': 0, 'wrong': 0},
           ],
-        }),
-      );
-      await tester.pumpAndSettle();
-      await tester.runAsync(reporter.flush);
-      expect(sent, hasLength(1));
-    },
-  );
+        });
+        await open(tester);
+        await launch(tester, 'Violator');
+        await tester.runAsync(reporter.flush);
+        expect(
+          sent
+              .expand((batch) => batch['events'] as List)
+              .map((event) => event['feature']),
+          ['violator', 'violator'],
+        );
+      },
+    );
+  }
 
   Map<String, dynamic> options() => Map<String, dynamic>.from(
     jsonDecode(

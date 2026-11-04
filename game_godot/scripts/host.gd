@@ -30,6 +30,7 @@ static var celebration_sound := true
 static var _usage_session := ""
 static var _usage_sequence := 0
 static var _usage_events: Array[Dictionary] = []
+const USAGE_FEATURES := ["game", "traffic_controller", "crossroads", "parking", "violator"]
 
 static func _configure_usage() -> bool:
 	var session := ""
@@ -45,7 +46,7 @@ static func _configure_usage() -> bool:
 ## Each actual round starts here, before any answer or exit. The iOS snapshot
 ## is cumulative and atomic so several fast restarts between polls survive.
 static func usage_start(feature: String) -> void:
-	if feature not in ["game", "traffic_controller", "crossroads", "parking"]: return
+	if feature not in USAGE_FEATURES: return
 	if not _configure_usage(): return
 	_usage_sequence += 1
 	var data := {"event": "usage_start", "feature": feature,
@@ -71,6 +72,7 @@ static func _celebration_summary(summary: Dictionary) -> Dictionary:
 	var copy := summary.duplicate(true)
 	if _configure_usage():
 		copy["usage_tracking"] = 1
+		copy["usage_tracking_features"] = USAGE_FEATURES.duplicate()
 		copy["usage_events"] = _usage_events.duplicate(true)
 	copy["achievement_awards"] = award_receipts.duplicate()
 	if not activity_days.is_empty():

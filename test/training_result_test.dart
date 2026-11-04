@@ -9,6 +9,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/models/question.dart';
+import 'package:pdd_app/data/sources/questions_data_source.dart';
+import 'package:pdd_app/presentation/screens/mistakes/mistakes_screen.dart';
+import 'package:pdd_app/presentation/screens/favorites/favorites_screen.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/data/services/review_prompt_service.dart';
@@ -88,6 +92,14 @@ List<Map<String, dynamic>> buildQuestions(int n) => List.generate(
   },
 );
 
+class _TrainingBank extends QuestionsDataSource {
+  @override
+  Future<List<Question>> loadTickets(
+    TicketCategory category, [
+    String? lang,
+  ]) async => buildQuestions(2).map(Question.fromJson).toList();
+}
+
 /// Итог пройденного билета или темы.
 ///
 /// До этой правки «Завершить» просто закрывало экран: человек проходил билет
@@ -102,6 +114,7 @@ void main() {
     ProgressDataSource? source,
     ReviewPromptService? review,
     String? resumedFeature,
+    Widget? entry,
   }) async {
     SharedPreferences.setMockInitialValues({});
     final data = source ?? ProgressDataSource();
@@ -119,27 +132,34 @@ void main() {
           noAchievementAwards,
           progressDataSourceProvider.overrideWithValue(data),
           ttsServiceProvider.overrideWithValue(_SilentTts()),
+          if (entry != null) ...[
+            questionsDataSourceProvider.overrideWithValue(_TrainingBank()),
+            favoriteQuestionsProvider.overrideWith((ref) async => ['q0', 'q1']),
+            wrongQuestionIdsProvider.overrideWith((ref) async => ['q0', 'q1']),
+          ],
           if (review != null)
             reviewPromptServiceProvider.overrideWithValue(review),
         ],
         child: MaterialApp(
           key: UniqueKey(),
-          home: resumedFeature != null
-              ? Scaffold(
-                  body: ContinueSessionCard(
-                    session: {
-                      'kind': 'training',
-                      'title': 'Билет 1',
-                      'questions': buildQuestions(questions),
-                      'index': 0,
-                      'usageFeature': resumedFeature,
-                    },
-                  ),
-                )
-              : TrainingScreen(
-                  questions: buildQuestions(questions),
-                  title: 'Билет 1',
-                ),
+          home:
+              entry ??
+              (resumedFeature != null
+                  ? Scaffold(
+                      body: ContinueSessionCard(
+                        session: {
+                          'kind': 'training',
+                          'title': 'Билет 1',
+                          'questions': buildQuestions(questions),
+                          'index': 0,
+                          'usageFeature': resumedFeature,
+                        },
+                      ),
+                    )
+                  : TrainingScreen(
+                      questions: buildQuestions(questions),
+                      title: 'Билет 1',
+                    )),
         ),
       ),
     );
@@ -156,7 +176,13 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  for (final feature in ['tickets', 'topics', 'unknown']) {
+  for (final feature in [
+    'tickets',
+    'topics',
+    'mistakes',
+    'favorites',
+    'unknown',
+  ]) {
     testWidgets('resume preserves $feature analytics without guessing a mode', (
       tester,
     ) async {
@@ -186,6 +212,64 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
     });
+  }
+
+  for (final feature in [UsageFeature.mistakes, UsageFeature.favorites]) {
+    for (final all in [false, true]) {
+      testWidgets(
+        '${feature.key} ${all ? 'set' : 'single question'} records its own mode',
+        (tester) async {
+          final sent = <Map>[];
+          final reporter = UsageReporter(
+            endpoint: 'https://test',
+            secret: 'test',
+            client: MockClient((r) async {
+              sent.add(jsonDecode(r.body) as Map);
+              return http.Response('{}', 200);
+            }),
+          );
+          UsageReporter.setInstanceForTest(reporter);
+          addTearDown(() => UsageReporter.setInstanceForTest(null));
+          final data = await pumpTraining(
+            tester,
+            questions: 2,
+            entry: feature == UsageFeature.mistakes
+                ? const MistakesScreen()
+                : const FavoritesScreen(),
+          );
+          expect(
+            sent,
+            isEmpty,
+            reason: 'opening a question list is not a training start',
+          );
+          await tester.tap(
+            find.text(
+              all
+                  ? (feature == UsageFeature.mistakes
+                        ? 'Повторить все ошибки'
+                        : 'Пройти всё избранное')
+                  : 'Вопрос 1',
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.runAsync(reporter.flush);
+          final training = tester.widget<TrainingScreen>(
+            find.byType(TrainingScreen),
+          );
+          expect(training.questions, hasLength(all ? 2 : 1));
+          expect(
+            sent
+                .expand((batch) => batch['events'] as List)
+                .map((event) => event['feature']),
+            [feature.key],
+          );
+          expect(
+            data.loadUnfinishedSession(TicketCategory.ab)?['usageFeature'],
+            feature.name,
+          );
+        },
+      );
+    }
   }
 
   Future<void> nextOrFinish(WidgetTester tester) async {
@@ -296,6 +380,17 @@ void main() {
   testWidgets('«Повторить ошибки» открывает только те вопросы, где ошиблись', (
     tester,
   ) async {
+    final sent = <Map>[];
+    final reporter = UsageReporter(
+      endpoint: 'https://test',
+      secret: 'test',
+      client: MockClient((r) async {
+        sent.add(jsonDecode(r.body) as Map);
+        return http.Response('{}', 200);
+      }),
+    );
+    UsageReporter.setInstanceForTest(reporter);
+    addTearDown(() => UsageReporter.setInstanceForTest(null));
     await pumpTraining(tester, questions: 3);
 
     await answer(tester, correct: false);
@@ -309,6 +404,13 @@ void main() {
     await tester.pumpAndSettle();
 
     final training = tester.widget<TrainingScreen>(find.byType(TrainingScreen));
+    await tester.runAsync(reporter.flush);
+    expect(
+      sent
+          .expand((batch) => batch['events'] as List)
+          .map((event) => event['feature']),
+      ['mistakes'],
+    );
     expect(training.questions.length, 2);
     expect(training.questions.map((q) => q['id']), [
       'q0',

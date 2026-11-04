@@ -125,6 +125,8 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
                               usageFeature: switch (session['usageFeature']) {
                                 'tickets' => UsageFeature.tickets,
                                 'topics' => UsageFeature.topics,
+                                'mistakes' => UsageFeature.mistakes,
+                                'favorites' => UsageFeature.favorites,
                                 _ => null,
                               },
                             ),

@@ -5150,12 +5150,15 @@ func _on_difficulty_chosen(level: String) -> void:
 	set_difficulty(level)
 	_save_difficulty()
 	ready_for_play = true
-	_start_game()
-	if _tutorial_pending():
+	var needs_tutorial := _tutorial_pending()
+	_start_game(not needs_tutorial)
+	if needs_tutorial:
 		_begin_tutorial()
 
 
-func _start_game() -> void:
+func _start_game(track_usage := true) -> void:
+	# Tutorial setup resets the board too, but the round begins only after it.
+	if track_usage: Host.usage_start("violator")
 	tutorial_step = ""
 	tutorial_car = null
 	is_game_over = false

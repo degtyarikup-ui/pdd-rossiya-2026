@@ -490,6 +490,12 @@ class GodotGame {
       await WidgetsBinding.instance.endOfFrame;
       if (!context.mounted) return;
       final progress = ref.read(violatorProgressProvider.notifier);
+      // The first usage-capable Godot packs did not track Violator yet.
+      // Their generic usage_tracking flag cannot describe this mode.
+      final trackedFeatures = map['usage_tracking_features'];
+      final tracksViolator =
+          trackedFeatures is List &&
+          trackedFeatures.contains(UsageFeature.violator.key);
       final runs = map['runs'] is List ? map['runs'] as List : [map];
       final seen = <String>{};
       final rankingSubmissions = <Future<int?>>[];
@@ -500,6 +506,7 @@ class GodotGame {
         final solved = ((run['solved'] as num?)?.toInt() ?? 0).clamp(0, 10000);
         final wrong = ((run['wrong'] as num?)?.toInt() ?? 0).clamp(0, 10000);
         if (solved + wrong == 0) continue;
+        if (!tracksViolator) UsageReporter.track(UsageFeature.violator);
         final score = GameEconomy.rankedScore(
           (run['score'] as num?)?.toInt() ?? 0,
           correct: solved,
@@ -1398,6 +1405,7 @@ class GodotGame {
       MaterialPageRoute(
         builder: (_) => TrainingScreen(
           questions: questions,
+          usageFeature: UsageFeature.mistakes,
           title: questions.length == 1
               ? appL10n.mistakeReview
               : appL10n.mistakesTitle,

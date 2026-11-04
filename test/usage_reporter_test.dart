@@ -128,72 +128,74 @@ void main() {
     expect(prefs.getString(UsageReporter.queueKey), isNull);
   });
 
-  test(
-    'game starts survive zero answers, snapshots and a lost response',
-    () async {
-      var online = false;
-      var now = DateTime.now();
-      final sent = <Map>[];
-      final reporter = UsageReporter(
-        endpoint: 'https://test',
-        secret: 'test',
-        now: () => now,
-        client: MockClient((r) async {
-          sent.add(jsonDecode(r.body) as Map);
-          return http.Response('{}', online ? 200 : 503);
-        }),
-      );
-      final start = {
-        'event': 'usage_start',
-        'feature': 'parking',
-        'id': 'session-1:1',
-        'ts': now.millisecondsSinceEpoch,
-      };
-      await reporter.recordGameEvent(start);
-      await reporter.recordGameSummary({
-        'usage_events': [start, start],
-      });
-      final prefs = await SharedPreferences.getInstance();
-      expect(
-        jsonDecode(prefs.getString(UsageReporter.queueKey)!),
-        hasLength(1),
-      );
-      online = true;
-      now = now.add(const Duration(seconds: 31));
-      await reporter.flush();
-      expect(sent.last['events'], sent.first['events']);
-      final count = sent.length;
-      await reporter.recordGameSummary({
-        'usage_events': [start],
-      });
-      expect(
-        sent,
-        hasLength(count),
-        reason: 'exit does not book the round twice',
-      );
+  for (final feature in ['parking', 'violator']) {
+    test(
+      '$feature starts survive zero answers, snapshots and a lost response',
+      () async {
+        var online = false;
+        var now = DateTime.now();
+        final sent = <Map>[];
+        final reporter = UsageReporter(
+          endpoint: 'https://test',
+          secret: 'test',
+          now: () => now,
+          client: MockClient((r) async {
+            sent.add(jsonDecode(r.body) as Map);
+            return http.Response('{}', online ? 200 : 503);
+          }),
+        );
+        final start = {
+          'event': 'usage_start',
+          'feature': feature,
+          'id': 'session-1:1',
+          'ts': now.millisecondsSinceEpoch,
+        };
+        await reporter.recordGameEvent(start);
+        await reporter.recordGameSummary({
+          'usage_events': [start, start],
+        });
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          jsonDecode(prefs.getString(UsageReporter.queueKey)!),
+          hasLength(1),
+        );
+        online = true;
+        now = now.add(const Duration(seconds: 31));
+        await reporter.flush();
+        expect(sent.last['events'], sent.first['events']);
+        final count = sent.length;
+        await reporter.recordGameSummary({
+          'usage_events': [start],
+        });
+        expect(
+          sent,
+          hasLength(count),
+          reason: 'exit does not book the round twice',
+        );
 
-      final restarted = UsageReporter(
-        endpoint: 'https://test',
-        secret: 'test',
-        now: () => now,
-        client: MockClient((r) async {
-          sent.add(jsonDecode(r.body) as Map);
-          return http.Response('{}', 200);
-        }),
-      );
-      await restarted.recordGameEvent(start);
-      expect(
-        sent.last['events'],
-        sent.first['events'],
-        reason: 'server dedup ID survives process restart',
-      );
-      await restarted.recordGameEvent({...start, 'id': 'session-1:2'});
-      expect(
-        sent.last['events'][0]['id'],
-        isNot(sent.first['events'][0]['id']),
-      );
-    },
-  );
+        final restarted = UsageReporter(
+          endpoint: 'https://test',
+          secret: 'test',
+          now: () => now,
+          client: MockClient((r) async {
+            sent.add(jsonDecode(r.body) as Map);
+            return http.Response('{}', 200);
+          }),
+        );
+        await restarted.recordGameEvent(start);
+        expect(
+          sent.last['events'],
+          sent.first['events'],
+          reason: 'server dedup ID survives process restart',
+        );
+        await restarted.recordGameEvent({...start, 'id': 'session-1:2'});
+        expect(
+          sent.last['events'][0]['id'],
+          isNot(sent.first['events'][0]['id']),
+        );
+      },
+    );
+  }
 
   test('malformed native events cannot block the usage outbox', () async {
     final sent = <Map>[];

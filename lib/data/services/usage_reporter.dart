@@ -14,6 +14,8 @@ enum UsageFeature {
   topics,
   exam,
   marathon,
+  mistakes,
+  favorites,
   feed,
   game,
   signSwiper('sign_swiper'),
@@ -21,7 +23,8 @@ enum UsageFeature {
   roundabout('roundabout'),
   crossroads,
   roadSigns('road_signs'),
-  parking;
+  parking,
+  violator;
 
   const UsageFeature([this.wireName]);
   final String? wireName;
@@ -81,6 +84,7 @@ class UsageReporter {
       'traffic_controller' => UsageFeature.trafficController,
       'crossroads' => UsageFeature.crossroads,
       'parking' => UsageFeature.parking,
+      'violator' => UsageFeature.violator,
       _ => null,
     };
     final id = event['id'];

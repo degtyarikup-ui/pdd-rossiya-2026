@@ -37,29 +37,52 @@ func _run() -> void:
 	check(latest.usage_events[1].id != event.id, "restart has a distinct ID")
 	var summary := Host._celebration_summary({"runs": []})
 	check(summary.usage_tracking == 1 and summary.usage_events.size() == 3 and summary.usage_events[0].id == event.id and summary.usage_events[0].ts == int(event.ts), "exit without answers retains the same events")
+	check(summary.usage_tracking_features.has("violator"), "capabilities distinguish Violator from old generic tracking packs")
 	Host.usage_start("unknown")
 	check(Host._usage_events.size() == 3, "unknown mode rejected")
 	Host.io_args = ["--usage-session=second-session"]
 	Host.usage_start("crossroads")
 	check(Host._usage_events.size() == 1 and Host._usage_events[0].id == "second-session:1", "retained iOS engine isolates launches")
 	# Exercise actual mini-game start functions, including a second round with no answers.
-	for mode in ["regulator", "crossroads", "parking"]:
+	var config_path := "user://violator.cfg"
+	var had_config := FileAccess.file_exists(config_path)
+	var saved_config := FileAccess.get_file_as_bytes(config_path) if had_config else PackedByteArray()
+	for mode in ["regulator", "crossroads", "parking", "violator"]:
 		Host.io_args = ["--usage-session=scene-" + mode, "--reduce-motion", "--sound=0"]
 		Host._configure_usage()
 		var scene: Node = load("res://%s.tscn" % mode).instantiate()
 		root.add_child(scene)
+		if mode == "violator":
+			for frame in 5: await process_frame
+			scene.set_process(false)
+			check(Host._usage_events.is_empty(), "Violator difficulty picker is not a round")
+			scene.set("tutorial_forced", true)
+			scene.call("_on_difficulty_chosen", "easy")
+			check(Host._usage_events.is_empty() and scene.get("tutorial_step") == "watch", "Violator tutorial is not an extra round")
+			scene.call("_tutorial_complete")
 		for frame in 240:
 			await process_frame
 			if not Host._usage_events.is_empty(): break
 		check(Host._usage_events.size() == 1, mode + " starts exactly once before an answer")
 		scene.set_process(false)
-		scene.call("_start_run" if mode == "parking" else "_start_game")
+		if mode == "violator":
+			scene.call("_on_restart_pressed")
+			check(Host._usage_events.size() == 1, "Violator restart picker does not count a start")
+			scene.call("_on_difficulty_chosen", "easy")
+		else:
+			scene.call("_start_run" if mode == "parking" else "_start_game")
 		check(Host._usage_events.size() == 2, mode + " restart counts before an answer")
 		scene.set("_exiting", true)
 		Models.release_geometry(scene)
 		await process_frame
 		scene.queue_free()
 		await process_frame
+	if had_config:
+		var file := FileAccess.open(config_path, FileAccess.WRITE)
+		file.store_buffer(saved_config)
+		file.close()
+	else:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(config_path))
 	Host.io = ""
 	print("Usage: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)

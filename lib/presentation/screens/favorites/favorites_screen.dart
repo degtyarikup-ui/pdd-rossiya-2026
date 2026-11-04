@@ -9,6 +9,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/safe_user_message.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
@@ -379,6 +380,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                       builder: (_) => TrainingScreen(
                         questions: questions,
                         title: appL10n.favorites,
+                        usageFeature: UsageFeature.favorites,
                       ),
                     ),
                   );
@@ -412,6 +414,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               builder: (_) => TrainingScreen(
                 questions: [question],
                 title: appL10n.favoriteQuestion,
+                usageFeature: UsageFeature.favorites,
               ),
             ),
           );

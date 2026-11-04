@@ -1,7 +1,11 @@
 // Usage is stored alongside existing day counters: no extra KV writes per event.
 export const USAGE_FROM = '2026-10-08';
-export const USAGE_COLLECTION_FROM = { marathon: '2026-10-27', road_signs: '2026-10-27' };
-export const USAGE_FEATURES = ['tickets', 'topics', 'exam', 'marathon', 'feed', 'game', 'sign_swiper', 'traffic_controller', 'roundabout', 'crossroads', 'road_signs', 'parking'];
+export const USAGE_COLLECTION_FROM = {
+  marathon: '2026-10-27', road_signs: '2026-10-27',
+  violator: '2026-11-04', mistakes: '2026-11-04', favorites: '2026-11-04',
+};
+// Keep the retired roundabout key so old clients and historical totals survive.
+export const USAGE_FEATURES = ['tickets', 'topics', 'exam', 'marathon', 'mistakes', 'favorites', 'feed', 'game', 'sign_swiper', 'traffic_controller', 'roundabout', 'crossroads', 'road_signs', 'parking', 'violator'];
 const DAY = 86400000;
 
 export async function acceptUsage(request, env, { jsonResponse, trackStatsBatch }, now = Date.now()) {

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import worker, { flushBufferedStats } from './worker.js';
 import { StatsBuffer } from './stats_buffer.js';
-import { usageSnapshot } from './usage_analytics.js';
+import { USAGE_FEATURES, usageSnapshot } from './usage_analytics.js';
 import { ANALYTICS_CLIENT_JS, ANALYTICS_VIEW_HTML } from './analytics_ui.js';
 
 class Storage {
@@ -126,7 +126,7 @@ test('usage does not replace existing counters when flushed together with other 
   assert.match(ANALYTICS_VIEW_HTML, /Использование режимов/);
 });
 
-for (const feature of ['marathon', 'road_signs', 'parking']) {
+for (const feature of USAGE_FEATURES) {
   test(`${feature} launches survive ingestion, deduplication and period aggregation`, async () => {
     const { post, body, buffer, kv } = setup();
     body.events[0].feature = feature;
@@ -151,6 +151,33 @@ test('new modes distinguish unavailable history from zero recorded starts', () =
     assert.deepEqual(report.timeline[1].features[feature], {starts: 0, installations: 0});
   }
   assert.equal(report.timeline[0].features.tickets.starts, 0);
+});
+
+test('violator, mistakes and favorites start collection independently of earlier modes', () => {
+  const report = usageSnapshot(['2026-11-03', '2026-11-04'].map(date => ({ date, data: {} })));
+  for (const feature of ['violator', 'mistakes', 'favorites']) {
+    assert.equal(report.collectionFrom[feature], '2026-11-04');
+    assert.deepEqual(report.timeline[0].features[feature], { starts: null, installations: null });
+    assert.deepEqual(report.timeline[1].features[feature], { starts: 0, installations: 0 });
+  }
+  assert.equal(report.timeline[0].features.parking.starts, 0);
+});
+
+test('mixed batches preserve all current modes, historical games and deduplicate replay', async () => {
+  const { post, body, buffer, kv } = setup();
+  body.events = USAGE_FEATURES.map((feature, index) => ({
+    id: index.toString(16).padStart(32, '0'), feature, ts: Date.now(),
+  }));
+  assert.equal((await post(body)).status, 200);
+  assert.equal((await post(body)).status, 200);
+  await buffer.flush();
+  const days = [...kv].filter(([key]) => key.startsWith('day:'))
+    .map(([key, value]) => ({ date: key.slice(4), data: JSON.parse(value) }));
+  const report = usageSnapshot(days);
+  assert.equal(Object.values(report.features).reduce((sum, feature) => sum + feature.starts, 0), USAGE_FEATURES.length);
+  for (const feature of USAGE_FEATURES) {
+    assert.deepEqual(report.features[feature], { starts: 1, installations: 1 });
+  }
 });
 
 test('lightweight analytics session check requires authorization and reads no stats', async () => {

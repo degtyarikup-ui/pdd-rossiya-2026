@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/config/country_config.dart';
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/result_share.dart';
@@ -96,6 +97,7 @@ class TrainingResultScreen extends StatelessWidget {
                     builder: (_) => TrainingScreen(
                       questions: wrongQuestions,
                       title: appL10n.mistakes,
+                      usageFeature: UsageFeature.mistakes,
                     ),
                   ),
                 );
