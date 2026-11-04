@@ -658,6 +658,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
             text: answer['text'] as String,
             isCorrect: answer['correct'] as bool,
             requireConfirmation: requireConfirmation,
+            showHint: showHintBlock,
           ),
         );
       }).toList(),
@@ -778,10 +779,12 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     required String text,
     required bool isCorrect,
     required bool requireConfirmation,
+    required bool showHint,
   }) {
     final colors = AppColors.of(context);
     final saved = _savedChoices[questionIndex];
     final isAnswered = saved != null;
+    final isHinted = showHint && isCorrect && !isAnswered;
     final isSelected = isAnswered
         ? (saved == index)
         : (questionIndex == _currentIndex && _selectedAnswerIndex == index);
@@ -826,6 +829,13 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
             color: backgroundColor,
             borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
           ),
+          foregroundDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
+            border: Border.all(
+              color: isHinted ? colors.green : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
           child: Row(
             children: [
               AnimatedContainer(
@@ -837,6 +847,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                       ? (isCorrect || isSelected
                             ? AppColors.white.withValues(alpha: 0.28)
                             : colors.gray)
+                      : isHinted
+                      ? colors.green
                       : isSelected
                       ? colors.accent.withValues(alpha: 0.12)
                       : colors.gray,
@@ -869,7 +881,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: isSelected
+                              color: isHinted
+                                  ? AppColors.white
+                                  : isSelected
                                   ? colors.accent
                                   : colors.secondaryText,
                             ),
