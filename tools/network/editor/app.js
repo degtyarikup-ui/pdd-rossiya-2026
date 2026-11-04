@@ -157,8 +157,12 @@ const App = (() => {
     return result;
   }
   // A drag: one undo step from its start, the view follows every move.
-  let dragBase = null;
-  function beginDrag() { lastMergedEdit = null; dragBase = snapshotText(); }
+  let dragBase = null, dragGeneration = 0;
+  function beginDrag() {
+    lastMergedEdit = null;
+    dragBase = snapshotText();
+    dragGeneration++;
+  }
   function dragMove(fn, opts = {}) {
     fn(state.S);
     if (opts.rebuild !== false) {
@@ -168,15 +172,18 @@ const App = (() => {
     }
     Scene3D.refresh(state.S);
     App.renderSelection?.();
+    App.refreshRoadGeometry?.();
+    if (opts.rebuild !== false) schedulePreview(true);
   }
   function endDrag(opts = {}) {
     if (dragBase === null) return;
-    if (snapshotText() !== dragBase) {
-      state.undo.push(dragBase);
+    const before = dragBase;
+    dragBase = null;
+    if (snapshotText() !== before) {
+      state.undo.push(before);
       state.redo = [];
       changed(opts);
     }
-    dragBase = null;
   }
   function cancelDrag() {
     if (dragBase === null) return;
@@ -186,12 +193,22 @@ const App = (() => {
     afterHistory();
   }
   function undo() {
+    if (dragBase !== null) {
+      if (typeof Tools !== "undefined") Tools.escape?.();
+      cancelDrag();
+      return;
+    }
     if (!state.undo.length) return;
     state.redo.push(snapshotText());
     state.S = JSON.parse(state.undo.pop());
     afterHistory();
   }
   function redo() {
+    if (dragBase !== null) {
+      if (typeof Tools !== "undefined") Tools.escape?.();
+      cancelDrag();
+      return;
+    }
     if (!state.redo.length) return;
     state.undo.push(snapshotText());
     state.S = JSON.parse(state.redo.pop());
@@ -213,22 +230,50 @@ const App = (() => {
   }
 
   // ---- preview: the server checks and builds the unsaved scene --------------------------------
-  let previewTimer = null, previewSeq = 0;
-  function schedulePreview() {
+  let previewTimer = null, previewRevision = 0, previewEpoch = 0;
+  let previewFlight = false, previewPending = false;
+  function schedulePreview(live = false) {
+    previewRevision++;
+    previewPending = true;
+    // Throttle a held pointer rather than debouncing it: surfaces and markings
+    // keep following the handle even when the pointer never comes to rest.
+    if (live && (previewTimer !== null || previewFlight)) return;
     clearTimeout(previewTimer);
-    previewTimer = setTimeout(runPreview, 220);
+    previewTimer = setTimeout(runPreview, live ? 40 : 100);
   }
   async function runPreview() {
-    if (!state.S) return;
-    const mine = ++previewSeq, sid = state.id;
-    const r = await api(`/api/preview/${sid}`, state.S).catch((e) => { toast(e.message, "bad"); return null; });
-    if (!r || mine !== previewSeq || sid !== state.id) return;
-    state.findings = r.findings;
-    state.edges = r.edges;
-    state.build = r.build;
-    Scene3D.setBuild(r.build);
-    renderTop();
-    App.renderPanels?.({ only: ["inspector"] });
+    previewTimer = null;
+    if (!state.S || previewFlight || !previewPending) return;
+    previewPending = false;
+    previewFlight = true;
+    const mine = previewRevision, epoch = previewEpoch, sid = state.id;
+    const gesture = dragBase === null ? null : dragGeneration;
+    const current = () => epoch === previewEpoch && sid === state.id;
+    try {
+      const r = await api(`/api/preview/${sid}`, state.S);
+      // During the same drag, show completed frames in order. After release,
+      // cancellation, undo or a scene change only the exact latest frame may win.
+      const live = gesture !== null && dragBase !== null && gesture === dragGeneration;
+      if (!current() || (mine !== previewRevision && !live)) return;
+      state.build = r.build;
+      Scene3D.setBuild(r.build);
+      if (mine === previewRevision) {
+        state.findings = r.findings;
+        state.edges = r.edges;
+        if (dragBase === null) {
+          renderTop();
+          App.renderPanels?.({ only: ["inspector"] });
+        }
+      }
+    } catch (error) {
+      if (current() && mine === previewRevision) toast(error.message, "bad");
+    } finally {
+      previewFlight = false;
+      if (previewPending) {
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(runPreview, dragBase === null ? 0 : 40);
+      }
+    }
   }
 
   // ---- scenes ------------------------------------------------------------------------------
@@ -272,6 +317,12 @@ const App = (() => {
         if (!saved || request !== openRequest || state.dirty || state.virtual || saving) return;
       }
     }
+    previewEpoch++;
+    previewRevision++;
+    previewPending = false;
+    clearTimeout(previewTimer);
+    previewTimer = null;
+    dragBase = null;
     state.S = r.scene;
     state.S.markings = state.S.markings || [];
     state.S.lawns = state.S.lawns || [];
@@ -455,7 +506,7 @@ const App = (() => {
   }
 
   // ---- moving, turning, copying, deleting ------------------------------------------------------
-  const movable = (ref) => ["decor", "track", "sign", "actor", "officer", "light", "marking", "lawn", "road", "route", "stop", "node"].includes(ref.t);
+  const movable = (ref) => ["decor", "track", "sign", "actor", "officer", "light", "marking", "lawn", "road", "route", "stop", "node", "street"].includes(ref.t);
   function moveRef(s, ref, dx, dz) {
     const o = objectOf(ref);
     if (!o) return;
@@ -477,6 +528,8 @@ const App = (() => {
       if (s.id === "mini_regulator") for (const r of s.routes.filter(r => r.kind === "manoeuvre")) r.points[0] = [s.stop.x, s.stop.z];
     } else if (ref.t === "node") {
       Layout.moveNode(s, ref.id, [o.x + dx, o.z + dz]);
+    } else if (ref.t === "street") {
+      Layout.moveNodes(s, [o.a, o.b], [dx, dz]);
     } else if (ref.t === "route") {
       if (o.auto) return;
       if (s.id === "mini_regulator" && ["approach", "manoeuvre"].includes(o.kind)) return;
@@ -496,7 +549,18 @@ const App = (() => {
   function nudge(dx, dz) {
     const list = state.sel.filter(r => !isLocked(r) && movable(r));
     if (!list.length) return;
-    edit((s) => list.forEach((r) => moveRef(s, r, dx, dz)), {merge:"nudge"});
+    edit((s) => {
+      const nodes = new Set();
+      for (const ref of list) {
+        if (ref.t === "node") nodes.add(ref.id);
+        if (ref.t === "street") {
+          const st = Layout.streetOf(s.layout, ref.id);
+          if (st) { nodes.add(st.a); nodes.add(st.b); }
+        }
+      }
+      const delta = nodes.size ? Layout.moveNodes(s, [...nodes], [dx, dz]) : [dx, dz];
+      list.filter(r => !["node", "street"].includes(r.t)).forEach(r => moveRef(s, r, ...delta));
+    }, {merge:"nudge:" + list.map(r => `${r.t}:${r.id}`).sort().join("|")});
   }
   // Arrow keys move along the screen, whichever way the view is turned (snapped to the axes when close).
   function nudgeScreen(right, up, step) {
@@ -521,12 +585,22 @@ const App = (() => {
     if (!o || isLocked(ref)) return false;
     if (ref.t === "stop") return Layout.isFreePlayer(state.S);
     if (ref.t === "route") return o.kind === "annotation";
+    if (ref.t === "street") return state.sel.length === 1;
     return ["decor","sign","actor","officer","light","marking","lawn","road"].includes(ref.t) && !o.auto;
   }
   function rotate(deg) {
     const list = state.sel.filter(canRotate);
     if (!list.length) return;
     const a = (deg * Math.PI) / 180;
+    if (list.length === 1 && list[0].t === "street") {
+      const candidate = { ...state.S, layout: JSON.parse(JSON.stringify(state.S.layout)) };
+      const st = Layout.streetOf(candidate.layout, list[0].id);
+      const start = Layout.nodeOf(candidate.layout, st.a), end = Layout.nodeOf(candidate.layout, st.b);
+      if (Layout.setStreetGeometry(candidate, st.id, {heading:Math.atan2(end.x-start.x, end.z-start.z)-a})) {
+        edit(s => { s.layout = candidate.layout; }, {merge:`rotate:street:${st.id}`});
+      }
+      return;
+    }
     edit((s) => {
       for (const ref of list) {
         const o = objectOf(ref);

@@ -74,7 +74,11 @@ const Tools = (() => {
     if (id === "annotation") { opts.answerMode = "annotation"; id = "answer"; }
     if (!allowed(id)) return App.toast("В мини-игре редактируются дороги, разметка и окружение");
     if (!definition(id)) return;
-    if (drag?.kind === "brush") { App.endDrag({ rebuild: false }); drag = null; }
+    if (drag) {
+      if (drag.kind === "brush") App.endDrag({ rebuild: false });
+      else App.cancelDrag();
+      drag = null; clearEditPreview();
+    }
     finishDraft(true);
     tool = id;
     shelfOpen = true;
@@ -410,7 +414,7 @@ const Tools = (() => {
   function onPointer(e) {
     if (!S()) return;
     if (e.type === "cancel") {
-      if (drag) { App.cancelDrag(); drag = null; $("#marquee").hidden = true; }
+      if (drag) { App.cancelDrag(); drag = null; $("#marquee").hidden = true; clearEditPreview(); }
       return;
     }
     if (e.type === "leave") { $("#hint").hidden = true; pointerInView = false; if (tool === "answer" && !draft) Scene3D.setDraft(null); Scene3D.setGhost(null); Scene3D.setBrushPreview?.(null); if (tool === "brush") Scene3D.setDraft(null); setHover(null); return; }
@@ -451,18 +455,43 @@ const Tools = (() => {
         drag = { kind: "point", ref: h, moved: false };
         return;
       }
-      if (h.t === "bend") { App.beginDrag(); drag = { kind: "bend", id: h.id }; return; }
+      if (h.t === "bend") {
+        const st = Layout.streetOf(S().layout, h.id);
+        if (!st || !e.world) return;
+        const a = Layout.nodeOf(S().layout, st.a), b = Layout.nodeOf(S().layout, st.b);
+        const mid = st.bend ? [(a.x + 2 * st.bend[0] + b.x) / 4, (a.z + 2 * st.bend[1] + b.z) / 4] : [(a.x + b.x) / 2, (a.z + b.z) / 2];
+        App.beginDrag();
+        drag = { kind: "bend", id: h.id, start: e.world, screen: [e.sx, e.sy], moved: false,
+          offset: [mid[0] - e.world.x, mid[1] - e.world.z] };
+        return;
+      }
       const already = App.state.sel.some((r) => App.sameRef(r, h));
       if (e.shift) { App.toggle(h); return; }
-      // Things (props, cars, lights, junction points) move at once; a road, a line or a lawn is picked
-      // first and moved by a second drag, so a click on the asphalt never shifts the road by accident.
-      const thing = h === e.labelRef || ["decor", "sign", "actor", "officer", "light", "node", "stop"].includes(h.t);
+      // Road bodies and handles can be grabbed immediately. The screen-space threshold keeps
+      // an ordinary click from moving them; traced outlines and lawns still select first.
+      const thing = h === e.labelRef || ["decor", "sign", "actor", "officer", "light", "node", "street", "stop"].includes(h.t);
       if (!already) App.select(h);
       if (!already && !thing) return;
-      // Alt: drag a copy, the original stays.
-      if (e.alt && !App.duplicate(0)) return;
+      // Alt copies objects; for road geometry it temporarily disables snapping.
+      if (e.alt && !["node", "street"].includes(h.t) && !App.duplicate(0)) return;
       App.beginDrag();
-      drag = { kind: "move", start: e.world, last: e.world, moved: false, nodeRef: !e.alt && h.t === "node" ? h : null, street: !e.alt && h.t === "street" ? h.id : null };
+      const refs = App.state.sel.filter(ref => App.pickable(ref)).map(ref => ({...ref}));
+      const nodeRef = h.t === "node" && refs.length === 1 ? h : null;
+      const node = nodeRef && Layout.nodeOf(S().layout, nodeRef.id);
+      const nodeIds = new Set();
+      for (const ref of refs) {
+        if (ref.t === "node") nodeIds.add(ref.id);
+        if (ref.t === "street") {
+          const st = Layout.streetOf(S().layout, ref.id);
+          if (st) { nodeIds.add(st.a); nodeIds.add(st.b); }
+        }
+      }
+      const linked = nodeRef && Layout.streetsAt(S().layout, nodeRef.id);
+      const anchor = linked?.length === 1 && Layout.nodeOf(S().layout, linked[0].a === nodeRef.id ? linked[0].b : linked[0].a);
+      drag = { kind: "move", start: e.world, last: e.world, screen: [e.sx, e.sy], moved: false,
+        refs, nodeRef, nodeIds: [...nodeIds], applied: [0, 0],
+        offset: node ? [node.x - e.world.x, node.z - e.world.z] : [0, 0],
+        anchor: anchor ? [anchor.x, anchor.z] : null };
     },
     move(e) {
       if (!drag) return setHover(Scene3D.hitAt(e.sx, e.sy, skipLocked));
@@ -537,30 +566,52 @@ const Tools = (() => {
         });
       }
       if (drag.kind === "bend") {
-        return App.dragMove((s) => {
+        if (!drag.moved && !pastDragThreshold(e)) return;
+        drag.moved = true;
+        App.dragMove((s) => {
           const st = Layout.streetOf(s.layout, drag.id);
-          const A = Layout.nodeOf(s.layout, st.a), B = Layout.nodeOf(s.layout, st.b);
-          const M = [e.world.x, e.world.z];
-          // The handle is the middle of the curve: the control point that puts the middle there.
-          const C = [2 * M[0] - (A.x + B.x) / 2, 2 * M[1] - (A.z + B.z) / 2];
-          const straight = Math.hypot(M[0] - (A.x + B.x) / 2, M[1] - (A.z + B.z) / 2) < 1.5;
-          st.bend = straight ? null : [r3(C[0]), r3(C[1])];
+          if (!st) return;
+          const a = Layout.nodeOf(s.layout, st.a), b = Layout.nodeOf(s.layout, st.b);
+          const middle = [(a.x + b.x) / 2, (a.z + b.z) / 2];
+          const m = [snapGrid(e.world.x + drag.offset[0], e), snapGrid(e.world.z + drag.offset[1], e)];
+          const straight = !e.alt && nearOnScreen(m, middle, 7);
+          st.bend = straight ? null : [r3(2 * m[0] - middle[0]), r3(2 * m[1] - middle[1])];
+          Scene3D.setDraft(straight ? {kind: "line", points: [], snap: middle} : null);
+          const line = Layout.centreline(s.layout, st);
+          editHint(e, `${Layout.polyLen(line).toLocaleString("ru-RU", {maximumFractionDigits: 1})} м`);
         });
+        return;
       }
       if (drag.kind === "move") {
-        const dx = e.world.x - drag.last.x, dz = e.world.z - drag.last.z;
-        if (!drag.moved && Math.hypot(e.world.x - drag.start.x, e.world.z - drag.start.z) < 0.3) return;
+        if (!drag.moved && !pastDragThreshold(e)) return;
         drag.moved = true;
-        drag.last = e.world;
         App.dragMove((s) => {
-          if (drag.nodeRef) return Layout.moveNode(s, drag.nodeRef.id, [snapGrid(e.world.x, e), snapGrid(e.world.z, e)]);
-          if (drag.street) {
-            const st = Layout.streetOf(s.layout, drag.street);
-            for (const nid of [st.a, st.b]) { const n = Layout.nodeOf(s.layout, nid); n.x = r3(n.x + dx); n.z = r3(n.z + dz); }
-            if (st.bend) st.bend = [r3(st.bend[0] + dx), r3(st.bend[1] + dz)];
+          if (drag.nodeRef) {
+            let p = [snapGrid(e.world.x + drag.offset[0], e), snapGrid(e.world.z + drag.offset[1], e)];
+            if (e.shift && drag.anchor) {
+              const dx = p[0] - drag.anchor[0], dz = p[1] - drag.anchor[1], length = Math.hypot(dx, dz);
+              const angle = Math.round(Math.atan2(dx, dz) / (Math.PI / 12)) * Math.PI / 12;
+              p = [drag.anchor[0] + Math.sin(angle) * length, drag.anchor[1] + Math.cos(angle) * length];
+            }
+            drag.snap = Layout.moveNode(s, drag.nodeRef.id, p, {snap: !e.alt});
+            const target = drag.snap?.node || drag.snap?.port || drag.snap?.street;
+            Scene3D.setDraft(target ? {kind: "line", points: [], snap: drag.snap.p, snapKind: drag.snap.port ? "port" : "node"} : null);
+            const n = Layout.nodeOf(s.layout, drag.nodeRef.id);
+            if (drag.anchor && n) {
+              const dx = n.x - drag.anchor[0], dz = n.z - drag.anchor[1];
+              const angle = ((Math.atan2(dx, dz) * 180 / Math.PI) % 360 + 360) % 360;
+              editHint(e, `${Math.hypot(dx, dz).toLocaleString("ru-RU", {maximumFractionDigits: 1})} м · ${Math.round(angle)}°`);
+            }
             return;
           }
-          for (const ref of App.state.sel) App.moveRef(s, ref, dx, dz);
+          let dx, dz;
+          if (drag.nodeIds.length) {
+            const total = [snapGrid(e.world.x - drag.start.x, e), snapGrid(e.world.z - drag.start.z, e)];
+            [dx, dz] = Layout.moveNodes(s, drag.nodeIds, [total[0] - drag.applied[0], total[1] - drag.applied[1]]);
+            drag.applied[0] += dx; drag.applied[1] += dz;
+          } else { dx = e.world.x - drag.last.x; dz = e.world.z - drag.last.z; }
+          drag.last = e.world;
+          for (const ref of drag.refs) if (!["node", "street"].includes(ref.t)) App.moveRef(s, ref, dx, dz);
         });
       }
     },
@@ -577,13 +628,16 @@ const Tools = (() => {
         return;
       }
       if (d.kind === "move" && d.nodeRef && d.moved) {
-        // A node dropped on another one joins it.
-        const s = S(), n = Layout.nodeOf(s.layout, d.nodeRef.id);
-        const other = s.layout.nodes.find((m) => m.id !== n.id && Math.hypot(m.x - n.x, m.z - n.z) < 3);
-        if (other) App.dragMove((sc) => Layout.mergeNodes(sc, n.id, other.id));
+        // Join only the node shown by the live snap marker, never an unseen neighbour.
+        if ((d.snap?.node || d.snap?.street) && !e.alt) {
+          let joined;
+          App.dragMove((sc) => { joined = Layout.connectNode(sc, d.nodeRef.id, d.snap); });
+          if (joined) App.select({t: "node", id: joined});
+        }
       }
       if (["turn", "point", "bend", "letter", "stop"].includes(d.kind) || d.moved) App.endDrag();
       else App.cancelDrag();
+      clearEditPreview();
       App.renderPanels?.();
     },
     dblclick(e) {
@@ -618,6 +672,31 @@ const Tools = (() => {
       App.select({ ...ref, v: best + 1 });
     },
   };
+
+  function pastDragThreshold(e) {
+    if (!Scene3D.screenOf) return Math.hypot(e.world.x - drag.start.x, e.world.z - drag.start.z) >= .3;
+    return Math.hypot(e.sx - drag.screen[0], e.sy - drag.screen[1]) >= 3;
+  }
+
+  function nearOnScreen(a, b, pixels) {
+    if (!Scene3D.screenOf) return Math.hypot(a[0] - b[0], a[1] - b[1]) < .5;
+    const p = Scene3D.screenOf(...a), q = Scene3D.screenOf(...b);
+    return Math.hypot(p.x - q.x, p.y - q.y) < pixels;
+  }
+
+  function editHint(e, text) {
+    const label = $("#hint");
+    label.dataset.occupied = "false";
+    label.textContent = text;
+    label.style.left = `clamp(4px, ${e.sx + 15}px, calc(100% - 150px))`;
+    label.style.top = `clamp(4px, ${e.sy + 15}px, calc(100% - 28px))`;
+    label.hidden = false;
+  }
+
+  function clearEditPreview() {
+    Scene3D.setDraft(null);
+    $("#hint").hidden = true;
+  }
 
   function segDist(p, a, b) {
     const dx = b[0] - a[0], dz = b[1] - a[1], l2 = dx * dx + dz * dz || 1;
@@ -1145,7 +1224,7 @@ const Tools = (() => {
   }
 
   function escape() {
-    if (drag) { App.cancelDrag(); drag = null; $("#marquee").hidden = true; return; }
+    if (drag) { App.cancelDrag(); drag = null; $("#marquee").hidden = true; clearEditPreview(); return; }
     if (draft) {
       const id = opts.answerRoute;
       finishDraft(true);

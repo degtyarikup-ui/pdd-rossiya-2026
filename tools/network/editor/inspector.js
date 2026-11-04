@@ -841,6 +841,29 @@
   }
 
   // ---- the road plan: a street, a node -----------------------------------------------------------
+  App.refreshRoadGeometry = () => {
+    if (!state.S?.layout || state.sel.length !== 1) return;
+    const ref = state.sel[0], L = state.S.layout;
+    const update = (key, value) => {
+      const field = pane().querySelector(`[data-text="${key}"]`);
+      if (!field || field === document.activeElement) return;
+      field.defaultValue = String(value);
+      field.value = String(value);
+    };
+    if (ref.t === "street") {
+      const st = Layout.streetOf(L, ref.id);
+      if (!st) return;
+      const a = Layout.nodeOf(L, st.a), b = Layout.nodeOf(L, st.b);
+      if (!a || !b) return;
+      update("road-length", Math.round(Layout.polyLen(Layout.centreline(L, st)) * 10) / 10);
+      update("road-heading", Math.round(((Math.atan2(b.x - a.x, b.z - a.z) * 180 / Math.PI + 360) % 360) * 10) / 10);
+      const straighten = pane().querySelector('[data-act="straighten"]');
+      if (straighten) straighten.disabled = !st.bend || App.isLocked(ref);
+    } else if (ref.t === "node") {
+      const n = Layout.nodeOf(L, ref.id);
+      if (n) for (const axis of ["x", "z"]) update(`node-${axis}`, r3(n[axis]));
+    }
+  };
   function roadNumber(key, title, value, min, max, step, reset = "") {
     const attr = `min="${min}" max="${max}" step="${step}" value="${r3(value)}" aria-label="${esc(title)}, м"`;
     return `<div class="road-measure"><span>${esc(title)}</span><input type="range" data-slider="${key}" ${attr}>
@@ -849,6 +872,36 @@
   function streetInspector(p, ref, st) {
     const s = state.S, L = s.layout, crop = s.crop || 90;
     const edit = (fn, opts) => { if (!App.isLocked(ref)) return App.edit(fn,opts); };
+    const A = Layout.nodeOf(L, st.a), B = Layout.nodeOf(L, st.b);
+    const chord = Math.hypot(B.x - A.x, B.z - A.z);
+    const length = Layout.polyLen(Layout.centreline(L, st));
+    const degrees = (Math.atan2(B.x - A.x, B.z - A.z) * 180 / Math.PI + 360) % 360;
+    const geometry = (key, raw) => {
+      if (App.isLocked(ref)) return false;
+      const value = Number(raw), isLength = key === "road-length";
+      const valid = String(raw).trim() !== "" && Number.isFinite(value)
+        && (isLength ? value >= 2 && value <= Math.max(crop * 4, length) : value >= -360 && value <= 360);
+      const reset = () => {
+        const field = pane().querySelector(`[data-text="${key}"]`);
+        if (field) field.value = field.defaultValue;
+      };
+      if (!valid) { reset(); return false; }
+      // Validate against a copy so an impossible transform cannot regenerate a saved scene.
+      const candidate = {...s, layout:JSON.parse(JSON.stringify(L))};
+      const change = isLength ? {length:value * chord / length} : {heading:value * Math.PI / 180};
+      const before = JSON.stringify(candidate.layout);
+      const accepted = Layout.setStreetGeometry(candidate, st.id, {...change, anchor:"a"});
+      if (!accepted) {
+        reset();
+        const difference = isLength ? Math.abs(value - length) : Math.abs(((value - degrees + 540) % 360 + 360) % 360 - 180);
+        if (difference < .001) return true;
+        App.toast("Дорога не помещается в сцене", "warn");
+        return false;
+      }
+      if (JSON.stringify(candidate.layout) === before) { reset(); return true; }
+      edit(sc => { sc.layout = candidate.layout; });
+      return true;
+    };
     const allEnds = [st.a, st.b].map((nid) => {
       const n = Layout.nodeOf(L, nid), kind = Layout.nodeKind(L, n, crop);
       return { nid, end: nid === st.a ? "a" : "b", kind, set: (st.ends || {})[nid === st.a ? "a" : "b"] || {} };
@@ -887,11 +940,14 @@
       `, {cls:"road-sheet"});
     };
     p.innerHTML = `${head(`<span class="ibadge">${ic("road")}</span>`, "Дорога")}
+      ${card("", `<div class="road-coordinates">
+        <label>Длина, м<input type="number" data-text="road-length" aria-label="Длина дороги, м" min="2" max="${Math.max(crop * 4, Math.ceil(length))}" step="0.1" value="${Math.round(length * 10) / 10}" required></label>
+        <label><span>Направление, ° <small>A → B</small></span><input type="number" data-text="road-heading" aria-label="Направление дороги A → B, градусы" min="-360" max="360" step="0.1" value="${Math.round(degrees * 10) / 10}" required></label>
+        </div><button class="btn ghost small road-straighten" data-act="straighten" ${st.bend ? "" : "disabled"}>${ic("road")}<span>Выпрямить</span></button>`, {cls:"road-sheet"})}
       ${roadSettings([st])}
       ${card("", `${st.kind !== "yard" ? `<div class="road-row"><span>Разделитель</span>${chips("median", [...(st.kind === "highway" ? [] : [{value:0,title:"Нет"}]), ...[2,3,5].map(value => ({value,title:`${value} м`}))], Layout.medianOf(st))}</div>` : ""}
         <label class="road-row"><span>Игрок</span><select data-text="player-end" aria-label="Направление игрока">${!isPlayer ? '<option value="" selected disabled>Не назначен</option>' : ""}${direction}</select></label>
-        ${st.kind !== "yard" && st.surface !== "sand" && !st.manualMarks ? button("marks-own","Редактировать линии отдельно","marking","ghost small") : ""}
-        ${st.bend ? button("straighten","Выпрямить дорогу","road","ghost small") : ""}`, {cls:"road-sheet"})}
+        ${st.kind !== "yard" && st.surface !== "sand" && !st.manualMarks ? button("marks-own","Редактировать линии отдельно","marking","ghost small") : ""}`, {cls:"road-sheet"})}
       ${st.kind === "highway" && highwayEnds.length ? card(highwayEnds.length === 1 ? "Стык трассы" : "", portScheme(), {cls:"road-sheet"}) : ""}
       ${ends.map(endPanel).join("")}
       <div class="selection-actions road-footer">${button("select-roads","Все дороги","road","ghost small")}${button("clear-selection","Снять выбор","x","ghost small")}
@@ -906,7 +962,9 @@
         for (const e of highwayEnds) Layout.setHighwayPort(st,e.end,
           preset === "both" || (preset === "entry" && e === entry) || (preset === "exit" && e === exit) ? "avenue" : "highway");
       }),
-      straighten: () => edit(() => { st.bend = null; }),
+      "text:road-length": value => geometry("road-length", value),
+      "text:road-heading": value => geometry("road-heading", value),
+      straighten: () => { if (st.bend) edit(() => { delete st.bend; }); },
       "marks-own": () => edit((sc) => {
         const own = sc.markings.filter((m) => m.auto && m.street === st.id && (m.type === "solid" || m.type === "dashed"));
         for (const m of own) sc.markings.push({ ...JSON.parse(JSON.stringify(m)), id: App.uniqueId("mark_", sc.markings.map((x) => x.id)), auto: undefined, street: undefined });
@@ -949,11 +1007,35 @@
   function nodeInspector(p, ref, n) {
     const s = state.S, L = s.layout, crop = s.crop || 90;
     const kind = Layout.nodeKind(L, n, crop);
+    const move = (axis, raw) => {
+      if (App.isLocked(ref)) return false;
+      const value = Number(raw);
+      const field = pane().querySelector(`[data-text="node-${axis}"]`);
+      if (String(raw).trim() === "" || !Number.isFinite(value) || Math.abs(value) > crop) {
+        if (field) field.value = field.defaultValue;
+        return false;
+      }
+      const candidate = {...s, layout:JSON.parse(JSON.stringify(L))};
+      const before = JSON.stringify(candidate.layout);
+      const result = Layout.moveNode(candidate, n.id, axis === "x" ? [value,n.z] : [n.x,value], {snap:false});
+      if (!result || result.blocked) {
+        if (field) field.value = field.defaultValue;
+        App.toast("Слишком близко к соседней точке", "warn");
+        return false;
+      }
+      if (JSON.stringify(candidate.layout) === before) {
+        if (field) field.value = field.defaultValue;
+        return true;
+      }
+      App.edit(sc => { sc.layout = candidate.layout; });
+      return true;
+    };
     const arms = Layout.streetsAt(L, n.id).length;
     const sizes = [{ value: "s", title: "Малое", r: 15, island: 6 }, { value: "m", title: "Среднее", r: 20, island: 9 }, { value: "l", title: "Большое", r: 26, island: 13 }];
     const size = n.ring ? sizes.reduce((b, x) => Math.abs(x.r - n.ring.r) < Math.abs(b.r - n.ring.r) ? x : b, sizes[1]).value : "m";
     const hasLights = s.lights.some((l) => Math.hypot(l.pos[0] - n.x, l.pos[1] - n.z) < (n.ring ? n.ring.r + 12 : 20));
     p.innerHTML = `${head(`<span class="ibadge">${ic(n.ring ? "ring" : "junction")}</span>`, n.ring ? "Кольцо" : kind === "junction" ? "Перекрёсток" : "Точка дороги")}
+      ${card("", `<div class="road-coordinates">${["x","z"].map(axis => `<label>${axis.toUpperCase()}, м<input type="number" data-text="node-${axis}" aria-label="${axis.toUpperCase()} точки дороги, м" min="${-crop}" max="${crop}" step="0.001" value="${r3(n[axis])}" required></label>`).join("")}</div>`, {cls:"road-sheet"})}
       ${arms >= 2 ? card("", `<div class="road-row"><span>Форма</span>${chips("ring", [{value:"cross", icon:"junction", title:arms === 2 ? "Стык" : "Перекрёсток"},{value:"ring", icon:"ring", title:"Кольцо"}], n.ring ? "ring" : "cross")}</div>
         ${n.ring ? `<div class="road-row"><span>Радиус</span>${chips("size", sizes.map(x => ({value:x.value, title:`${x.r} м`})), size)}</div>
           ${toggle("ring-outer-edge","Внешняя сплошная",n.ring.outerEdge !== false)}${toggle("ring-inner-edge","Сплошная вокруг островка",n.ring.innerEdge !== false)}` : ""}`,{cls:"road-sheet"}) : ""}
@@ -961,6 +1043,8 @@
       ${card("", button("del","Удалить точку с дорогами","trash","danger ghost"))}`;
     bind({
       del: () => App.remove(),
+      "text:node-x": value => move("x", value),
+      "text:node-z": value => move("z", value),
       "chip:ring": value => {
         if ((value === "ring") === !!n.ring) return;
         App.edit(() => { if (value === "ring") n.ring = {r:20, island:9}; else delete n.ring; });

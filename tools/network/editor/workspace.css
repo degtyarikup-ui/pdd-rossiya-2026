@@ -90,6 +90,7 @@
 input:is([type=search],[type=text]):focus { background: var(--field); }
 .tag:not(.letter):not(.exit):not(.annotation-text):not(.sel) { background: #1e2a31e8; color: #f2f5f7; }
 .tag.sel:not(.letter):not(.exit):not(.annotation-text) { background: #15658d; color: #fff; }
+.tag.road-end { translate: 13px -50%; padding: 2px 5px; border-radius: 4px; font-size: 10px; pointer-events: none; }
 .refpic { width: 280px; top: 56px; left: 12px; border-radius: 8px; }
 .refpic-head { min-height: 36px; background: var(--card); }
 .refpic-body:empty { display: none; }

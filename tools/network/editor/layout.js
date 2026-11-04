@@ -1256,6 +1256,7 @@ const Layout = (() => {
   // Snaps a point the way a city builder does: to a node, onto a street, to the middle of a side, to the border.
   function snapPoint(scene, p, opts = {}) {
     const L = scene.layout, crop = Number(scene.crop || 90);
+    const excludedStreets = new Set(opts.exceptStreets || []);
     let node = null, nearest = NODE_SNAP;
     for (const n of L.nodes) {
       const d = dist(p, xy(n));
@@ -1263,11 +1264,12 @@ const Layout = (() => {
     }
     if (node) return { p: xy(node), node: node.id };
     const ports = [[0, crop], [0, -crop], [crop, 0], [-crop, 0]];
-    for (const q of ports) if (dist(p, q) < PORT_SNAP) return { p: q, port: true };
+    for (const q of ports) if (dist(p, q) < PORT_SNAP &&
+      !opts.exceptPorts?.some(port => dist(port, q) < .001)) return { p: q, port: true };
     let street = null;
     nearest = Infinity;
     for (const st of L.streets) {
-      if (opts.exceptStreet && st.id === opts.exceptStreet) continue;
+      if (st.id === opts.exceptStreet || excludedStreets.has(st.id)) continue;
       const line = centreline(L, st);
       const at = projectOn(line, p);
       const q = along(line, at).p;
@@ -1416,24 +1418,105 @@ const Layout = (() => {
     if (L.player && !streetOf(L, L.player.street)) delete L.player;
   }
 
-  // Moves a node (snapped to the border's middle or the border when near it).
-  function moveNode(scene, nid, p) {
+  // Apply all endpoint positions together. Shared junctions and their curves move
+  // once, even when several selected streets share the same node.
+  function positionNodes(scene, positions) {
+    const L = scene.layout, crop = Number(scene.crop || 90), changes = new Map();
+    for (const [nid, p] of positions) {
+      const n = nodeOf(L, nid);
+      if (!n || !p.every(Number.isFinite)) return false;
+      if (dist(xy(n), p) < .0001) continue;
+      if (p.some((v, i) => Math.abs(v) > Math.max(crop, Math.abs(xy(n)[i])) + .0001)) return false;
+      changes.set(nid, P(p));
+    }
+    for (const st of L.streets) {
+      if (!changes.has(st.a) && !changes.has(st.b)) continue;
+      const a = xy(nodeOf(L, st.a)), b = xy(nodeOf(L, st.b));
+      // Do not collapse a road under its neighbour. Existing short authored
+      // segments remain valid, and are never lengthened merely by opening them.
+      const minimum = Math.min(1, dist(a, b));
+      if (dist(changes.get(st.a) || a, changes.get(st.b) || b) + .0001 < minimum) return false;
+    }
+    for (const st of L.streets) {
+      if (!st.bend || !changes.has(st.a) && !changes.has(st.b)) continue;
+      const delta = nid => changes.has(nid) ? sub(changes.get(nid), xy(nodeOf(L, nid))) : [0, 0];
+      st.bend = P(add(st.bend, mul(add(delta(st.a), delta(st.b)), .5)));
+    }
+    for (const [nid, p] of changes) {
+      const n = nodeOf(L, nid);
+      n.x = p[0]; n.z = p[1];
+    }
+    return true;
+  }
+
+  // Translate a connected selection without independently snapping its nodes.
+  // Clamp the entire selection at the scene edge, preserving its dimensions.
+  function moveNodes(scene, ids, delta) {
     const L = scene.layout, crop = Number(scene.crop || 90);
-    const n = nodeOf(L, nid);
-    const s = snapPoint(scene, p, { except: nid, exceptStreet: "__none" });
-    let q = s.node ? p : s.p;
-    q = [Math.max(-crop, Math.min(crop, q[0])), Math.max(-crop, Math.min(crop, q[1]))];
-    // Bends move with their streets' ends: half of the node's move.
-    const d = sub(q, xy(n));
-    for (const st of streetsAt(L, nid)) if (st.bend) st.bend = P(add(st.bend, mul(d, 0.5)));
-    n.x = r3(q[0]);
-    n.z = r3(q[1]);
+    const nodes = [...new Set(ids)].map(id => nodeOf(L, id)).filter(Boolean);
+    if (!nodes.length || !delta.every(Number.isFinite) || len(delta) < .0001) return [0, 0];
+    const d = delta.map((v, i) => {
+      const values = nodes.map(n => i ? n.z : n.x);
+      const low = Math.min(0, -crop - Math.min(...values)), high = Math.max(0, crop - Math.max(...values));
+      return r3(Math.max(low, Math.min(high, v)));
+    });
+    return positionNodes(scene, nodes.map(n => [n.id, add(xy(n), d)])) ? d : [0, 0];
+  }
+
+  // Moving an endpoint must not snap it back onto the very road being edited.
+  // Return the exact snap target so the pointer release can join that node only.
+  function moveNode(scene, nid, p, opts = {}) {
+    const L = scene.layout, crop = Number(scene.crop || 90), n = nodeOf(L, nid);
+    if (!n || !p.every(Number.isFinite)) return null;
+    if (opts.snap === false && dist(xy(n), p) < .0001) return { p: xy(n) };
+    const incident = streetsAt(L, nid);
+    // A port attracts a node approaching it, but must release a node already
+    // there. Otherwise the first few metres of every direction change vanish.
+    const exceptPorts = [[0,crop],[0,-crop],[crop,0],[-crop,0]].filter(port => dist(xy(n), port) < PORT_SNAP);
+    const s = opts.snap === false ? { p } : snapPoint(scene, p, {
+      except: nid, exceptStreets: incident.map(st => st.id), exceptPorts,
+    });
+    const q = s.p.map(v => Math.max(-crop, Math.min(crop, v)));
+    if (!positionNodes(scene, [[nid, q]])) return { p: xy(n), blocked: true };
+    return { ...s, p: xy(n) };
+  }
+
+  // Exact road placement uses endpoint heading and chord length. Curves retain
+  // their proportions under rotation/scaling; neighbouring curves follow their
+  // shared endpoint. The source schema and every unrelated object stay intact.
+  function setStreetGeometry(scene, sid, options = {}) {
+    const L = scene.layout, st = streetOf(L, sid);
+    if (!st) return false;
+    const a = xy(nodeOf(L, st.a)), b = xy(nodeOf(L, st.b));
+    const oldLength = dist(a, b), oldHeading = heading(sub(b, a));
+    const length = options.length ?? oldLength, angle = options.heading ?? oldHeading;
+    if (!Number.isFinite(length) || !Number.isFinite(angle) || length < 1 || oldLength < .001) return false;
+    const direction = [Math.sin(angle), Math.cos(angle)], center = mul(add(a, b), .5);
+    let nextA, nextB;
+    if (options.anchor === "a") { nextA = a; nextB = add(a, mul(direction, length)); }
+    else if (options.anchor === "b") { nextA = sub(b, mul(direction, length)); nextB = b; }
+    else { nextA = sub(center, mul(direction, length / 2)); nextB = add(center, mul(direction, length / 2)); }
+    const nextCenter = mul(add(nextA, nextB), .5);
+    const shift = [(options.x ?? nextCenter[0]) - nextCenter[0], (options.z ?? nextCenter[1]) - nextCenter[1]];
+    nextA = add(nextA, shift); nextB = add(nextB, shift);
+    if (dist(a, nextA) < .0001 && dist(b, nextB) < .0001) return false;
+    nextA = P(nextA); nextB = P(nextB);
+    let bend = null;
+    if (st.bend) {
+      const oldDirection = unit(sub(b, a)), relative = sub(st.bend, a), scale = length / oldLength;
+      bend = P(add(nextA, add(mul(direction, dot(relative, oldDirection) * scale), mul(left(direction), dot(relative, left(oldDirection)) * scale))));
+    }
+    if (!positionNodes(scene, [[st.a, nextA], [st.b, nextB]])) return false;
+    if (bend) st.bend = bend;
+    return true;
   }
 
   // Joins two nodes into one (the dragged node dropped on another).
   function mergeNodes(scene, from, into) {
     const L = scene.layout;
     if (from === into) return;
+    const source = nodeOf(L, from), target = nodeOf(L, into);
+    if (source?.ring && target && !target.ring) target.ring = { ...source.ring };
     for (const st of L.streets) {
       if (st.a === from) st.a = into;
       if (st.b === from) st.b = into;
@@ -1441,6 +1524,31 @@ const Layout = (() => {
     L.streets = L.streets.filter((s) => s.a !== s.b);
     if (L.player && L.player.toward === from) L.player.toward = into;
     tidy(L);
+  }
+
+  // Finalise a visible connection only on pointer release. Inserting a junction
+  // into a curve keeps both halves of its original quadratic and its end data.
+  function connectNode(scene, nid, snap) {
+    const n = scene.layout && nodeOf(scene.layout, nid);
+    if (!n || !snap || snap.blocked) return null;
+    const candidate = { ...scene, layout: JSON.parse(JSON.stringify(scene.layout)) }, L = candidate.layout;
+    let target = snap.node;
+    if (target) {
+      const into = nodeOf(L, target);
+      if (!into || target === nid || dist(xy(n), xy(into)) > .15 ||
+        streetsAt(L, nid).some(st => otherEnd(st, nid) === target) || n.ring && into.ring) return null;
+    } else if (snap.street) {
+      const st = streetOf(L, snap.street);
+      if (!st || st.a === nid || st.b === nid) return null;
+      const line = centreline(L, st), at = projectOn(line, xy(n)), total = polyLen(line);
+      if (at < 1 || at > total - 1 || dist(along(line, at).p, xy(n)) > .15) return null;
+      target = splitStreet(L, st.id, at);
+      const result = moveNode(candidate, nid, xy(nodeOf(L, target)), { snap: false });
+      if (result?.blocked) return null;
+    } else return null;
+    mergeNodes(candidate, nid, target);
+    scene.layout = L;
+    return target;
   }
 
   // ---- ready-made plans -----------------------------------------------------------------
@@ -1519,7 +1627,7 @@ const Layout = (() => {
 
   return {
     medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf, streetProfile, highwayPort, setHighwayPort,
-    applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, pavedEnd, setPavedEnd, PAVED_MAX, snapPoint, overlapsStreet, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
+    applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, pavedEnd, setPavedEnd, PAVED_MAX, snapPoint, overlapsStreet, addStreet, removeStreet, removeNode, moveNode, moveNodes, setStreetGeometry, mergeNodes, connectNode,
     splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading, laneOffsets,
     isFreePlayer, playerPose, setPlayerMode, movePlayer, rotatePlayer, freePlayerSupported, resetPlayerGuide, editPlayerRoute, setPlayerRouteManual,
     compactRoutePoints, compactPlayerRoute, refreshPlayerRoutes,

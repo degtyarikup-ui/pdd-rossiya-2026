@@ -35,3 +35,11 @@
 #inspector .road-actions { flex-wrap: wrap; }
 #inspector .road-footer { align-items: center; }
 #inspector .road-footer .icon-btn { color: var(--red); width: 30px; height: 28px; margin-left: auto; }
+
+#inspector .road-coordinates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+#inspector .road-coordinates label { display: grid; gap: 4px; min-width: 0; font-size: 11px; color: var(--ink-2); }
+#inspector .road-coordinates label > span { display: flex; align-items: baseline; justify-content: space-between; gap: 3px; white-space: nowrap; }
+#inspector .road-coordinates small { color: var(--ink-3); font-size: 9px; }
+#inspector .road-coordinates input { width: 100%; min-width: 0; font-variant-numeric: tabular-nums; }
+#inspector .road-sheet .road-straighten { justify-self: start; min-height: 25px; padding: 3px 6px; }
+#inspector .road-sheet .road-straighten:disabled { opacity: .4; background: transparent; }

@@ -45,7 +45,10 @@ const Scene3D = (() => {
       // Removing a group leaves each handle parented to that detached group.
       handles = handles.filter(h => h.parent !== groups[name]);
       scene.remove(groups[name]);
-      groups[name].traverse((o) => { if (o.geometry && o.userData.own) o.geometry.dispose(); });
+      groups[name].traverse((o) => {
+        if (o.geometry && o.userData.own) o.geometry.dispose();
+        if (o.userData.ownMaterial) o.material.dispose();
+      });
     }
     groups[name] = new THREE.Group();
     groups[name].visible = !hidden.has(GROUP_LAYER[name] || "") && !(phone && ["plan", "selection", "draft", "brushPreview"].includes(name));
@@ -165,6 +168,7 @@ const Scene3D = (() => {
       geo.computeVertexNormals();
       const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, ...OFFSET }));
       m.userData.own = true;
+      m.userData.ownMaterial = true;
       return m;
     }
     const kind = s.detail || (s.layer === "" ? null : s.layer === "sand" ? "dirt" : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement");
@@ -181,6 +185,7 @@ const Scene3D = (() => {
     geo.computeVertexNormals();
     const m = new THREE.Mesh(geo, layerMaterial(s));
     m.userData.own = true;
+    m.userData.ownMaterial = true;
     return m;
   }
 
@@ -202,6 +207,7 @@ const Scene3D = (() => {
     kg.computeVertexNormals();
     const km = new THREE.Mesh(kg, new THREE.MeshLambertMaterial({ color: kerbs.colour, side: THREE.DoubleSide }));
     km.userData.own = true;
+    km.userData.ownMaterial = true;
     g.add(km);
   }
 
@@ -965,6 +971,7 @@ const Scene3D = (() => {
   // ---- the road plan: streets and their nodes --------------------------------------------
   function rebuildPlan() {
     const g = setGroup("plan");
+    dropLabels("road-end");
     // Tram tracks: their centre line with an arrow the way they run (the rails come from the build).
     for (const t of (model && model.tracks) || []) {
       if (t.points.length < 2) continue;
@@ -992,8 +999,15 @@ const Scene3D = (() => {
       }
       if (planHandles || on) g.add(polyline(pts, 0.15, on ? ACCENT : 0xffffff, 1.5, on ? 1 : 0.55, !on));
       if (on) {
-        const mid = Layout.along(pts, Layout.polyLen(pts) / 2).p;
+        const a = Layout.nodeOf(L, st.a), b = Layout.nodeOf(L, st.b);
+        const c = st.bend || [(a.x + b.x) / 2, (a.z + b.z) / 2];
+        const mid = [(a.x + 2 * c[0] + b.x) / 4, (a.z + 2 * c[1] + b.z) / 4];
         g.add(handle(mid, "diamond", 0xffffff, ACCENT));
+        if (selStreets.size === 1) {
+          for (const [node, text] of [[a, "A"], [b, "B"]]) {
+            labels.push({ text, cls: "road-end", world: [node.x, .4, node.z] });
+          }
+        }
       }
     }
     if (!planHandles && !selNodes.size && !selStreets.size) return;
@@ -1320,7 +1334,8 @@ const Scene3D = (() => {
       const box = { x0: x - w / 2, y0: y - h, x1: x + w / 2, y1: y };
       const clash = placed.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0);
       const letter = l.cls.split(" ").includes("letter") || l.cls === "annotation-text";
-      const visible = (!phone || letter) && tmp.z < 1 && x > -40 && x < width + 40 && y > -20 && y < height + 20 && (!clash || letter) && (mode === "3d" || pxPerM > 1.6 || letter);
+      const endpoint = l.cls === "road-end";
+      const visible = (!phone || letter) && tmp.z < 1 && x > -40 && x < width + 40 && y > -20 && y < height + 20 && (!clash || letter || endpoint) && (mode === "3d" || pxPerM > 1.6 || letter || endpoint);
       if (visible) placed.push(box);
       l.el.style.display = visible ? "" : "none";
       l.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${l.textAngle || 0}deg)`;
@@ -1665,8 +1680,10 @@ const Scene3D = (() => {
       if (selStreet) {
         const st = Layout.streetOf(L, selStreet.id);
         if (st) {
-          const pts = Layout.centreline(L, st);
-          if (near(Layout.along(pts, Layout.polyLen(pts) / 2).p, 12)) return { t: "bend", id: st.id };
+          const a = Layout.nodeOf(L, st.a), b = Layout.nodeOf(L, st.b);
+          const c = st.bend || [(a.x + b.x) / 2, (a.z + b.z) / 2];
+          const mid = [(a.x + 2 * c[0] + b.x) / 4, (a.z + 2 * c[1] + b.z) / 4];
+          if (near(mid, 14)) return { t: "bend", id: st.id };
         }
       }
       if (planHandles || sel.some((s) => s.t === "street" || s.t === "node")) {
