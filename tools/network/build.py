@@ -536,7 +536,7 @@ def single_marking(m: dict):
     kind = m.get("type", "solid")
     if kind == "bus_stop":
         return bus_stop_marking.geometry(m)
-    if kind == "arrow":
+    if kind in ("arrow", "stop_text"):
         return direction_marking.geometry(m)
     if kind == "paint":
         parts = [polygon_of(p) for p in m.get("polygons", [])]

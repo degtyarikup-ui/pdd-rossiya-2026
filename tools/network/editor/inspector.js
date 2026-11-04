@@ -347,9 +347,10 @@
     return `<svg class="road-profile" viewBox="0 0 96 52" aria-hidden="true"><rect x="${start-4}" width="${width+8}" height="52" rx="4" fill="#c4c9bd"/><rect x="${start}" width="${width}" height="52" fill="#424954"/>${lines}<path d="M${start+lane/2} 32v-13m-3 4 3-4 3 4 M${start+width-lane/2} 19v13m-3-4 3 4 3-4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   }
   const roadValue = (st, key) => key === "kind" ? st.kind || "street" : key === "surface" ? st.surface || "asphalt"
-    : key === "centre" ? st.centre || (st.kind === "yard" ? "none" : st.kind === "avenue" ? "double" : "dashed")
+    : key === "centre" ? st.centre || (st.kind === "yard" ? "none" : ["avenue","highway"].includes(st.kind) ? "double" : "dashed")
     : key === "shoulder" ? !!st.shoulder : key === "median" ? Layout.medianOf(st) : st[key] !== false;
   function roadFieldApplies(st, key) {
+    if (key === "median") return st.kind !== "yard";
     if (key === "centre") return st.surface !== "sand" && !st.manualMarks && !Layout.medianOf(st);
     if (key === "walk" || key === "edge") return st.surface !== "sand";
     return true;
@@ -421,10 +422,12 @@
     return card(prefix ? `Дороги · ${streets.length}` : "", `
       ${custom ? '<div class="setting-title"><span>Профиль</span><span class="lane-custom">Своя ширина</span></div>' : fieldTitle("Профиль",val("kind"))}${profile}
       ${laneSettings(streets,prefix)}
+      ${streets.some(st => roadFieldApplies(st,"median")) ? `<div class="road-row">${fieldTitle("Разделитель",val("median"))}${chips(prefix+"median",[{value:0,title:"Нет"},...[2,3,5].map(value=>({value,title:`${value} м`}))],val("median"))}</div>` : ""}
       <div class="road-row">${fieldTitle("Покрытие",val("surface"))}${surfaces}</div>
       ${centre ? `<div class="road-row">${fieldTitle("Осевая",val("centre"))}${markButtons}</div>` : ""}
       ${[["edge","Краевая линия"],["walk","Тротуары"],["shoulder","Обочина"]].filter(([key]) => key === "shoulder" || paved).map(([key,title]) =>
         `<div class="road-switch">${toggle(prefix+key,title,val(key) === true)}${mixedBadge(val(key) === undefined)}</div>`).join("")}
+      ${streets.some(st => st.kind !== "yard" && st.surface !== "sand" && !st.manualMarks) ? button(prefix+"marks-own","Редактировать линии отдельно","marking","ghost small") : ""}
       ${manual ? button(prefix+"marks-auto","Вернуть авторазметку","restart","ghost small") : ""}
     `, {cls:"road-sheet"});
   }
@@ -448,6 +451,19 @@
     for (const [key,values] of Object.entries({surface:["asphalt","sand"], kind:Object.keys(Layout.KINDS), centre:["none","dashed","solid","double"]})) {
       h["chip:"+prefix+key] = value => { if (values.includes(value)) change(key,st => { st[key] = value; if (key === "kind") delete st.lanes; }); };
     }
+    h["chip:"+prefix+"median"] = raw => {
+      const value = Number(raw);
+      if (["0","2","3","5"].includes(String(raw))) change("median",st => { st.median = value; });
+    };
+    h[prefix+"marks-own"] = () => {
+      const streets = selectedOf(refs,"street").filter(st => st.kind !== "yard" && st.surface !== "sand" && !st.manualMarks);
+      if (!streets.length) return;
+      App.edit(sc => streets.forEach(st => {
+        const own = sc.markings.filter(m => m.auto && m.street === st.id && ["solid","dashed"].includes(m.type));
+        for (const m of own) sc.markings.push({...JSON.parse(JSON.stringify(m)), id:App.uniqueId("mark_",sc.markings.map(x=>x.id)),auto:undefined,planGenerated:undefined,street:undefined});
+        st.manualMarks = true;
+      }));
+    };
     const laneKeys = ["a-left","a-right","b-left","b-right","width","taper"];
     const changeLanes = (key, raw, step = false) => {
       if (!laneKeys.includes(key)) return false;
@@ -478,6 +494,91 @@
     return h;
   }
 
+  let bulkEndScope = "both";
+  function bulkEnds(streets, field) {
+    const L = state.S.layout, crop = state.S.crop || 90;
+    return streets.flatMap(st => ["a","b"].filter(end => bulkEndScope === "both" || bulkEndScope === end).map(end => ({
+      st, end, nid:st[end], kind:Layout.nodeKind(L,Layout.nodeOf(L,st[end]),crop), set:st.ends?.[end] || {},
+    }))).filter(e => field === "port" ? e.kind === "border" && e.st.kind === "highway" && !Layout.hasCustomLanes(e.st)
+      : field === "paved" ? e.kind === "junction" && e.st.surface === "sand" && (e.st.kind !== "highway" || Layout.hasCustomLanes(e.st))
+      : field === "approach" ? e.kind === "junction" : ["junction","ring","dead"].includes(e.kind));
+  }
+  function roadMeasures(st, scene = state.S) {
+    const a = Layout.nodeOf(scene.layout,st.a), b = Layout.nodeOf(scene.layout,st.b);
+    return {length:Layout.polyLen(Layout.centreline(scene.layout,st)),chord:Math.hypot(b.x-a.x,b.z-a.z),
+      heading:(Math.atan2(b.x-a.x,b.z-a.z)*180/Math.PI+360)%360};
+  }
+  function bulkRoadSettings(streets) {
+    const value = fn => shared(streets,fn);
+    const number = (key,label,val,min,max,step=.1) => `<label>${label}<input type="number" data-text="bulk-road-${key}" aria-label="${label}" value="${val ?? ""}" placeholder="—" min="${min}" max="${max}" step="${step}" required></label>`;
+    const geometry = card("Геометрия", `<div class="road-coordinates">${number("length","Длина, м",value(st=>r3(roadMeasures(st).length)),2,Math.max((state.S.crop||90)*4,...streets.map(st=>roadMeasures(st).length)))}${number("heading","Направление A → B, °",value(st=>r3(roadMeasures(st).heading)),-360,360)}</div>${button("bulk-road-straighten","Выпрямить","road","ghost small")}`,{cls:"road-sheet"});
+    const ends = bulkEnds(streets), ports = bulkEnds(streets,"port"), approaches = bulkEnds(streets,"approach"), paved = bulkEnds(streets,"paved");
+    const flag = (key,label) => { const val=shared(ends,e=>!!e.set[key]);return `<div class="road-switch">${toggle("bulk-road-end-"+key,label,val===true)}${mixedBadge(val===undefined)}</div>`; };
+    const limits = approaches.map(e=>Layout.endOffsetLimits(state.S.layout,e.st,e.nid,state.S.crop||90));
+    return geometry + card("Въезды и стыки", `${chips("bulk-road-ends",[{value:"both",title:"Оба конца"},{value:"a",title:"Конец A"},{value:"b",title:"Конец B"}],bulkEndScope)}
+      <p class="road-summary">Настройки применяются к подходящим концам выбранных дорог. A и B идут вдоль каждой дороги.</p>
+      ${ports.length ? `<div class="road-row">${fieldTitle("Стык трассы",shared(ports,e=>Layout.highwayPort(e.st,e.end)))}${chips("bulk-road-port",[{value:"highway",title:"3+3"},{value:"avenue",title:"2+2"}],shared(ports,e=>Layout.highwayPort(e.st,e.end)))}</div>` : ""}
+      ${ends.length ? flag("stop","Стоп-линия")+flag("zebra","Зебра")+`<div class="road-row">${fieldTitle("Вид стоп-линии",shared(ends,e=>e.set.stopStyle||"solid"))}${chips("bulk-road-stop-style",stopStyles,shared(ends,e=>e.set.stopStyle||"solid"))}</div>` : ""}
+      <div class="road-coordinates">${approaches.length ? number("approach","Отступ, м",shared(approaches,e=>Layout.endOffset(state.S.layout,e.st,e.nid,state.S.crop||90)),Math.max(...limits.map(l=>l.min)),Math.min(...limits.map(l=>l.max))) : ""}
+      ${paved.length ? number("paved","Асфальт у въезда, м",shared(paved,e=>Layout.pavedEnd(e.st,e.end)),0,Layout.PAVED_MAX,1) : ""}</div>
+      ${approaches.length ? button("bulk-road-approach-reset","Сбросить отступы","restart","ghost small") : ""}
+    `,{cls:"road-sheet"});
+  }
+  function bulkRoadHandlers(refs) {
+    const streets = () => selectedOf(refs,"street");
+    const changeEnds = (field,fn) => {
+      const ends = bulkEnds(streets(),field);
+      if (ends.length) App.edit(sc=>ends.forEach(e=>fn(e,sc)));
+    };
+    const updateEnd = (e,fn) => {
+      e.st.ends = e.st.ends || {};
+      e.st.ends[e.end] = {...e.st.ends[e.end]};
+      fn(e.st.ends[e.end]);
+    };
+    const geometry = (key,raw) => {
+      const selected = streets(), n = Number(raw), crop=state.S.crop||90;
+      if (!selected.length || !String(raw).trim() || !Number.isFinite(n) || (key === "length" ? n<2 || n>Math.max(crop*4,...selected.map(st=>roadMeasures(st).length)) : n < -360 || n > 360)) return;
+      const candidate = {...state.S,layout:JSON.parse(JSON.stringify(state.S.layout))};
+      const requested = key === "heading" ? (n%360+360)%360 : n;
+      const matches = st => {
+        const m=roadMeasures(st,candidate);
+        return key === "length" ? Math.abs(m.length-requested)<.01 : Math.abs((m.heading-requested+540)%360-180)<.01;
+      };
+      for (const st of selected) {
+        const current=Layout.streetOf(candidate.layout,st.id), m=roadMeasures(current,candidate);
+        if (!matches(current)) Layout.setStreetGeometry(candidate,st.id,{anchor:"a",...(key === "length" ? {length:n*m.chord/m.length} : {heading:n*Math.PI/180})});
+      }
+      // Shared endpoints may make the requested dimensions incompatible. Apply all or none.
+      if (!selected.every(st=>matches(Layout.streetOf(candidate.layout,st.id)))) {
+        App.toast("Не удалось применить размеры ко всем дорогам: проверьте общие узлы и границы сцены", "warn");
+        App.renderInspector();return;
+      }
+      if (JSON.stringify(candidate.layout)!==JSON.stringify(state.S.layout)) App.edit(sc=>{sc.layout=candidate.layout;});
+    };
+    return {
+      "chip:bulk-road-ends": value => { if (["a","b","both"].includes(value)) { bulkEndScope=value;App.renderInspector(); } },
+      "chip:bulk-road-port": value => { if (["highway","avenue"].includes(value)) changeEnds("port",e=>Layout.setHighwayPort(e.st,e.end,value)); },
+      ...Object.fromEntries(["stop","zebra"].map(key=>["toggle:bulk-road-end-"+key,on=>changeEnds(key,e=>updateEnd(e,set=>{set[key]=on;}))])),
+      "chip:bulk-road-stop-style": value => {
+        if (stopStyles.some(style=>style.value===value)) changeEnds("stop",e=>updateEnd(e,set=>{set.stop=true;setStopStyle(set,value);}));
+      },
+      ...Object.fromEntries(["approach","paved"].map(key=>["text:bulk-road-"+key,raw=>{
+        const value=Number(raw);
+        if (!String(raw).trim() || !Number.isFinite(value)) return;
+        const ends=bulkEnds(streets(),key);
+        const valid=ends.every(e=>{
+          const limits=key === "paved" ? {min:0,max:Layout.PAVED_MAX} : Layout.endOffsetLimits(state.S.layout,e.st,e.nid,state.S.crop||90);
+          return value>=limits.min && value<=limits.max;
+        });
+        if (valid) changeEnds(key,(e,sc)=>key === "paved" ? Layout.setPavedEnd(sc,e.st.id,e.end,value) : Layout.setEndOffset(sc,e.st.id,e.nid,value));
+      }])),
+      "bulk-road-approach-reset": () => changeEnds("approach",(e,sc)=>Layout.setEndOffset(sc,e.st.id,e.nid,0)),
+      "bulk-road-straighten": () => { const list=streets().filter(st=>st.bend);if(list.length)App.edit(()=>list.forEach(st=>{delete st.bend;})); },
+      "text:bulk-road-length": raw=>geometry("length",raw),
+      "text:bulk-road-heading": raw=>geometry("heading",raw),
+    };
+  }
+
   function multiInspector(p) {
     const refs = [...state.sel], streets = selectedOf(refs,"street"), decor = selectedOf(refs,"decor"), actors = selectedOf(refs,"actor");
     const signalActors = actors.filter(actor => ActorSignals.supports(actor.type));
@@ -488,7 +589,7 @@
     p.innerHTML = `${head(`<span class="ibadge">${ic("layers")}</span>`, `Выбрано · ${refs.length}`)}
       ${selectionActions()}
       ${locked ? `<p class="selection-status">${ic("lock")}Заблокировано: ${locked}</p>` : ""}
-      ${streets.length ? roadSettings(streets,"bulk-road-") : ""}
+      ${streets.length ? roadSettings(streets,"bulk-road-")+bulkRoadSettings(streets) : ""}
       ${decor.length ? card(`Окружение · ${decor.length}`, `${fieldTitle("Цвет",tint)}${tints(decor[0].prop,tint)}
         ${fieldTitle("Масштаб",scale)}${chips("bulk-scale",[.75,1,1.25,1.5].map(value => ({value,title:`×${value}`})),scale)}
         ${slider("scale","Множитель",1,.5,1.6,.05,"×1")}`, {cls:"road-sheet"}) : ""}
@@ -501,7 +602,7 @@
       App.select(selected); App.rotate(degree); App.select(before);
     };
     bind({
-      ...selectionHandlers, ...roadHandlers(refs,"bulk-road-"),
+      ...selectionHandlers, ...roadHandlers(refs,"bulk-road-"), ...bulkRoadHandlers(refs),
       dup: () => { App.select(editableRefs(refs)); App.duplicate(); },
       del: () => { App.select(editableRefs(refs)); App.remove(); },
       rotl: () => rotate(-15), rotr: () => rotate(15),
@@ -1062,9 +1163,7 @@
         <label><span>Направление, ° <small>A → B</small></span><input type="number" data-text="road-heading" aria-label="Направление дороги A → B, градусы" min="-360" max="360" step="0.1" value="${Math.round(degrees * 10) / 10}" required></label>
         </div><button class="btn ghost small road-straighten" data-act="straighten" ${st.bend ? "" : "disabled"}>${ic("road")}<span>Выпрямить</span></button>`, {cls:"road-sheet"})}
       ${roadSettings([st])}
-      ${card("", `${st.kind !== "yard" ? `<div class="road-row"><span>Разделитель</span>${chips("median", [...(st.kind === "highway" ? [] : [{value:0,title:"Нет"}]), ...[2,3,5].map(value => ({value,title:`${value} м`}))], Layout.medianOf(st))}</div>` : ""}
-        ${App.hasPlayerPlan(s) ? `<label class="road-row"><span>Игрок</span><select data-text="player-end" aria-label="Направление игрока">${!isPlayer ? '<option value="" selected disabled>Не назначен</option>' : ""}${direction}</select></label>` : ""}
-        ${st.kind !== "yard" && st.surface !== "sand" && !st.manualMarks ? button("marks-own","Редактировать линии отдельно","marking","ghost small") : ""}`, {cls:"road-sheet"})}
+      ${App.hasPlayerPlan(s) ? card("", `<label class="road-row"><span>Игрок</span><select data-text="player-end" aria-label="Направление игрока">${!isPlayer ? '<option value="" selected disabled>Не назначен</option>' : ""}${direction}</select></label>`, {cls:"road-sheet"}) : ""}
       ${st.kind === "highway" && !Layout.hasCustomLanes(st) && highwayEnds.length ? card(highwayEnds.length === 1 ? "Стык трассы" : "", portScheme(), {cls:"road-sheet"}) : ""}
       ${ends.map(endPanel).join("")}
       <div class="selection-actions road-footer">${button("select-roads","Все дороги","road","ghost small")}${button("clear-selection","Снять выбор","x","ghost small")}
@@ -1073,7 +1172,6 @@
       ...selectionHandlers,
       ...roadHandlers([ref]),
       del: () => { if (!App.isLocked(ref)) App.remove(); },
-      "chip:median": (v) => edit(() => { if (Number(v)) st.median = Number(v); else delete st.median; }),
       ...Object.fromEntries(highwayEnds.map(e => [`chip:port-${e.end}`, v => edit(() => Layout.setHighwayPort(st,e.end,v))])),
       "text:highway-preset": preset => edit(() => {
         for (const e of highwayEnds) Layout.setHighwayPort(st,e.end,
@@ -1082,12 +1180,6 @@
       "text:road-length": value => geometry("road-length", value),
       "text:road-heading": value => geometry("road-heading", value),
       straighten: () => { if (st.bend) edit(() => { delete st.bend; }); },
-      "marks-own": () => edit((sc) => {
-        const own = sc.markings.filter((m) => m.auto && m.street === st.id && (m.type === "solid" || m.type === "dashed"));
-        for (const m of own) sc.markings.push({ ...JSON.parse(JSON.stringify(m)), id: App.uniqueId("mark_", sc.markings.map((x) => x.id)), auto: undefined, planGenerated: undefined, street: undefined });
-        st.manualMarks = true;
-      }),
-      "marks-auto": () => edit(() => { delete st.manualMarks; }),
       end: (d) => edit(() => {
         st.ends = st.ends || {};
         st.ends[d.end] = { ...(st.ends[d.end] || {}) };
@@ -1406,20 +1498,20 @@
 
   // ---- markings and shapes -------------------------------------------------------------------
   function markingInspector(p, ref, m) {
-    const paint = m.type === "paint", arrow = m.type === "arrow", bus = m.type === "bus_stop";
+    const paint = m.type === "paint", arrow = ["arrow", "stop_text"].includes(m.type), bus = m.type === "bus_stop";
     const busValue = key => key === "length" ? BusStopMark.length(m) : m[key] ?? BusStopMark.defaults[key];
     const busSize = (key,title) => {
       const [min,max,step]=BusStopMark.limits[key], value=Number(busValue(key).toFixed(2));
       return `<div class="bus-stop-size"><label ${key === "step" ? 'title="Шаг равномерно подгоняется под длину"' : ""}>${title}<span><input type="number" min="${min}" max="${max}" step="${step}" data-text="bus-${key}" aria-label="${title}, м" value="${value}"> м</span></label><input type="range" min="${min}" max="${max}" step="${step}" data-slider="bus-${key}" aria-label="${title}" value="${value}"></div>`;
     };
     const setBusSize = (key,value) => { if(key === "length") BusStopMark.setLength(m,value); else m[key]=value; };
-    const typeOptions = paint ? "" : chips("type", Object.entries(Catalog.MARKS).map(([k,v]) => ({value:k,html:k === "bus_stop" ? BusStopMark.svg() : k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`,tip:v.title})),m.type,{cls:"path-marks"});
+    const typeOptions = paint ? "" : chips("type", Object.entries(Catalog.MARKS).map(([k,v]) => ({value:k,html:k === "bus_stop" ? BusStopMark.svg() : k === "stop_text" ? DirectionMark.svg("stop_text") : k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`,tip:v.title})),m.type,{cls:"path-marks"});
     const arrowLength = arrow && m.points?.length === 2 ? Math.hypot(m.points[1][0] - m.points[0][0], m.points[1][1] - m.points[0][1]) : 6;
     p.innerHTML = `${head(`<span class="ibadge">${bus ? BusStopMark.svg() : ic("marking")}</span>`, App.nameOf(ref), paint ? "снята с картинки билета" : "")}
       ${paint ? "" : card("Разметка", typeOptions, {cls:"path-sheet"})}
       ${bus ? card("Размеры остановки", `<div class="path-sizes">${busSize("length","Длина")}${busSize("depth","Глубина зубцов")}${busSize("step","Шаг зубцов")}${busSize("width","Толщина линии")}</div>`
         + `<div class="bus-stop-summary"><span data-bus-count>${BusStopMark.label(m)}</span>${button("bus-side", "На другую сторону", "measure", "ghost")}</div>`, {cls:"path-sheet"}) : ""}
-      ${arrow ? card("Направления по полосе", chips("mark-direction", DirectionMark.variants.map(([value, title]) => ({value, tip:title, html: DirectionMark.svg(value)})), m.direction || "straight", {cls:"path-directions"}), {cls:"path-sheet"})
+      ${arrow ? (m.type === "stop_text" ? "" : card("Направления по полосе", chips("mark-direction", DirectionMark.variants.map(([value, title]) => ({value, tip:title, html: DirectionMark.svg(value)})), m.direction || "straight", {cls:"path-directions"}), {cls:"path-sheet"}))
         + card("", slider("mark-length", "Длина", arrowLength, 1, 30, .5, `${arrowLength.toFixed(1)} м`)
           + slider("mark-width", "Ширина", m.width ?? 2.6, .4, 6, .1, `${(m.width ?? 2.6).toFixed(1)} м`)
           + button("mark-flip", "Развернуть на 180°", "rotr", "ghost wide"), {cls:"path-sheet"}) : ""}
@@ -1448,11 +1540,12 @@
       "bus-side": () => { if(!App.isLocked(ref))App.edit(()=>{m.side=-(m.side ?? 1);}); },
       "chip:type": (v) => { if(App.isLocked(ref))return; App.edit(() => {
         m.type = v;
-        if (["stop", "zebra", "arrow"].includes(v) && m.points) m.points = m.points.slice(0, 2);
+        if (["stop", "zebra", "arrow", "stop_text"].includes(v) && m.points) m.points = m.points.slice(0, 2);
         if (v === "zebra") m.length = m.length || 4; else delete m.length;
         if (v === "stop") m.width = 0.4; else delete m.width;
         if (v === "arrow") { m.direction = m.direction || "straight"; m.width = 2.6; }
         else delete m.direction;
+        if (v === "stop_text") m.width = 2.6;
         if (v !== "stop") delete m.stopStyle;
         if (v === "bus_stop") {
           m.points=[m.points[0],m.points.at(-1)];

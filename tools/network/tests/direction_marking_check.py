@@ -88,7 +88,7 @@ with tempfile.TemporaryDirectory(prefix='direction-marking-', dir=build.ROOT/'sc
             scene = request('/api/scene/ticket_1_8')['scene']
             before = copy.deepcopy(scene)
             for i,key in enumerate(arrows.SHAPES):
-                scene['markings'].append({**base,'id':f'arrow_{i}','direction':key,
+                scene['markings'].append({**base,'type':'stop_text' if key=='stop_text' else 'arrow','id':f'arrow_{i}','direction':key,
                                           'points':[[3.5,15+i*9],[3.5,21+i*9]]})
             assert not [f for f in check.check_scene(scene) if f['level']=='error']
             response = request('/api/scene/ticket_1_8',scene)
@@ -98,7 +98,7 @@ with tempfile.TemporaryDirectory(prefix='direction-marking-', dir=build.ROOT/'sc
             assert saved['scene']['roads'] == before['roads'] and saved['scene']['routes'] == before['routes']
             paint=surface_polygon(next(s for s in saved['build']['surfaces'] if s['id']=='marking_white'))
             for mark in scene['markings']:
-                if mark['type']=='arrow': assert arrows.geometry(mark).difference(paint.buffer(.003)).area < .002
+                if mark['type'] in ('arrow','stop_text'): assert arrows.geometry(mark).difference(paint.buffer(.003)).area < .002
             assert (sit/'ticket_1_8/scene.json').exists() and (net/'build/ticket_1_8.json').exists()
             scene['markings'][-1]['direction']='right'
             request('/api/scene/ticket_1_8',scene)

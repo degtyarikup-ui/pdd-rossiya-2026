@@ -19,7 +19,7 @@ const DirectionMark = (() => {
     if (length < .01) return [];
     const width = mark.width ?? 2.6;
     // The driver's right is -X when driving along +Z.
-    return (shapes[mark.direction || 'straight'] || []).map(ring => ring.map(([x, z]) => [
+    return (shapes[mark.type === 'stop_text' ? 'stop_text' : mark.direction || 'straight'] || []).map(ring => ring.map(([x, z]) => [
       a[0] + dx * z - dz / length * x * width,
       a[1] + dz * z + dx / length * x * width,
     ]));

@@ -1018,15 +1018,16 @@
     1,
     1
    ],
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "clearDistance": 47.265,
    "halfLength": 2.454,
    "halfWidth": 1.09,
    "behaviour": {
     "staysPut": false,
-    "waitsForPlayer": true
+    "waitsForPlayer": false
    },
-   "way": "left"
+   "way": "left",
+   "paint": "#317ED4"
   }
  ],
  "lights": [],
@@ -1069,7 +1070,9 @@
   },
   "correct": 1,
   "maneuver": "straight",
-  "yieldTo": [],
+  "yieldTo": [
+   "van_1"
+  ],
   "sourceQuestionId": "ebf1250c0212d082b4d869d6347d47ba",
   "sourceCategory": "ab",
   "sourceImage": "a3c10883d8f389574cb255f4d33864b0"

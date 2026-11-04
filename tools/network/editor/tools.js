@@ -153,7 +153,7 @@ const Tools = (() => {
       html = tile("scene-format", "compact", "Прямая · 90 м", Layout.svg(Layout.template("straight",45),45,62), false, "Прямая сцена · 90 × 90 м")
         + Layout.TEMPLATES.map(t => tile("tpl", t.id, t.title, Layout.svg(Layout.template(t.id, S().crop || 90), S().crop || 90, 62))).join("");
     } else if (tool === "marking") {
-      html = Object.entries(Catalog.MARKS).map(([k,v]) => tile("mark", k, k === "arrow" ? "Направления" : v.title, k === "bus_stop" ? BusStopMark.svg() : k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`, opts.mark === k, v.title)).join("");
+      html = Object.entries(Catalog.MARKS).map(([k,v]) => tile("mark", k, k === "arrow" ? "Направления" : v.title, k === "bus_stop" ? BusStopMark.svg() : k === "stop_text" ? DirectionMark.svg("stop_text") : k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`, opts.mark === k, v.title)).join("");
       if (opts.mark === "arrow") extra = `<div class="shelf-strip direction-options">${DirectionMark.variants.map(([k,title]) => tile("mark-direction", k, title, DirectionMark.svg(k), opts.markDirection === k)).join("")}</div>`;
     } else if (tool === "answer" && !opts.pathFor && !opts.answerRoute) {
       extra = renderAnswerOptions();
@@ -192,7 +192,7 @@ const Tools = (() => {
 
   function draftActions() {
     if (!draft) return "";
-    const count = draft.points.length, twoClicks = tool === "marking" && ["arrow", "bus_stop", "stop", "zebra"].includes(opts.mark);
+    const count = draft.points.length, twoClicks = tool === "marking" && ["arrow", "stop_text", "bus_stop", "stop", "zebra"].includes(opts.mark);
     const canFinish = !twoClicks && tool !== "road" && count >= (tool === "lawn" ? 3 : 2);
     const lastRoadStep = draft.roadSteps?.[count - 2];
     const canGoBack = tool === "road" ? lastRoadStep && App.state.undo.at(-1) === lastRoadStep.snapshot : !(opts.answerRoute && count === 1);
@@ -646,7 +646,7 @@ const Tools = (() => {
       const pts = App.pointsOfRef(ref);
       if (!pts) return;
       const o = App.objectOf(ref);
-      if (ref.t === "marking" && ["arrow","bus_stop"].includes(o?.type)) return;
+      if (ref.t === "marking" && ["arrow","stop_text","bus_stop"].includes(o?.type)) return;
       if (ref.t === "route" && o?.kind === "approach" && !o.manual) return;
       const closed = ref.t === "road" || ref.t === "lawn";
       let best = -1, bd = 3;
@@ -768,7 +768,7 @@ const Tools = (() => {
         const bus = opts.mark === "bus_stop";
         const points = [...draft.points,draft.cursor].slice(0,2);
         const side = bus ? BusStopMark.chooseSide(S(),{...BusStopMark.defaults,points}) : 1;
-        Scene3D.setDraft({kind:bus ? "bus_stop" : opts.mark === "arrow" ? "arrow" : "line", direction:opts.markDirection, side, points:draft.points, cursor:draft.cursor, colour:bus ? 0xf5b025 : 0xffffff});
+        Scene3D.setDraft({kind:bus ? "bus_stop" : ["arrow", "stop_text"].includes(opts.mark) ? opts.mark : "line", direction:opts.markDirection, side, points:draft.points, cursor:draft.cursor, colour:bus ? 0xf5b025 : 0xffffff});
       }
     },
     down(e) {
@@ -779,14 +779,14 @@ const Tools = (() => {
       if (!draft) draft = { points: [] };
       if (sameDraftPoint(p)) return;
       draft.points.push(p);
-      if (opts.mark === "arrow" && draft.points.length === 2 && Math.hypot(p[0] - draft.points[0][0], p[1] - draft.points[0][1]) < 1) {
+      if (["arrow", "stop_text"].includes(opts.mark) && draft.points.length === 2 && Math.hypot(p[0] - draft.points[0][0], p[1] - draft.points[0][1]) < 1) {
         draft.points.pop();
         return App.toast("Задайте стрелку длиной не меньше метра", "warn");
       }
       if (opts.mark === "bus_stop" && draft.points.length === 2 && (BusStopMark.length(draft) < 2 || BusStopMark.length(draft) > 60)) {
         draft.points.pop(); return App.toast("Задайте длину остановки от 2 до 60 м", "warn");
       }
-      if (["stop", "zebra", "arrow", "bus_stop"].includes(opts.mark) && draft.points.length === 2) return finishDraft();
+      if (["stop", "zebra", "arrow", "stop_text", "bus_stop"].includes(opts.mark) && draft.points.length === 2) return finishDraft();
       marking.move(e);
     },
     dblclick() { finishDraft(); },
@@ -1196,6 +1196,7 @@ const Tools = (() => {
         if (opts.mark === "stop") m.width = 0.4;
         if (opts.mark === "zebra") m.length = 4;
         if (opts.mark === "bus_stop") { Object.assign(m,BusStopMark.defaults); m.colour="yellow"; m.side=BusStopMark.chooseSide(s,m); }
+        if (opts.mark === "stop_text") m.width = 2.6;
         if (opts.mark === "arrow") { m.direction = opts.markDirection; m.width = 2.6; }
         s.markings.push(m);
         return { t: "marking", id };

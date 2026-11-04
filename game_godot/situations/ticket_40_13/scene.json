@@ -2478,10 +2478,6 @@
      -12.939
     ],
     [
-     2.824,
-     -12.032
-    ],
-    [
      2.859,
      -11.126
     ],
@@ -3073,6 +3069,7 @@
    "staysPut": false,
    "paint": "#F08A24",
    "way": "straight",
+   "driverSignal": "none",
    "turnSignal": "auto",
    "hazards": false
   },
@@ -3152,11 +3149,13 @@
    "staysPut": false,
    "paint": "#F08A24",
    "way": "straight",
+   "driverSignal": "none",
    "turnSignal": "auto",
    "hazards": false
   }
  ],
  "playerPlacement": "free",
+ "annotations": [],
  "showPlayerGuide": true,
  "questionView": {
   "centre": [

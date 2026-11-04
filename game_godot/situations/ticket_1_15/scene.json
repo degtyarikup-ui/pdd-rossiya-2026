@@ -2837,6 +2837,10 @@
    "holdFor": null,
    "waitsForPlayer": true,
    "staysPut": false,
+   "paint": null,
+   "way": "left",
+   "driverSignal": "none",
+   "turnSignal": "auto",
    "hazards": false
   },
   {
@@ -2911,10 +2915,16 @@
    "holdFor": null,
    "waitsForPlayer": true,
    "staysPut": false,
+   "paint": "#1F3A5F",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "auto",
    "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "annotations": [],
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    2.876,

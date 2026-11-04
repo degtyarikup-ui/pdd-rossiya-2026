@@ -92,7 +92,7 @@ for (const ends of [['a'], ['b'], ['a', 'b']]) for (const lane of [0, 1, 2]) {
 }
 
 // Explicit highway choices, different medians and reloads preserve the continuous section.
-for (const median of [2, 3, 5]) {
+for (const median of [0, 2, 3, 5]) {
   const s = scene('highway', 2), st = s.layout.streets[0];
   st.median = median;
   setPort(st, 'a', 'highway'); setPort(st, 'b', 'highway');
@@ -102,6 +102,14 @@ for (const median of [2, 3, 5]) {
   }
   near(Math.abs(s.routes.find(r => r.kind === 'manoeuvre').points.at(-1)[0]), median / 2 + 8.75,
     'outer lane continues as the outer lane through the next highway edge');
+  if (median === 0) {
+    assert(s.roads.every(r=>!r.holes?.length), 'disabled divider leaves solid carriageway');
+    const lines=s.markings.filter(m=>m.street===st.id);
+    assert.equal(lines.filter(m=>m.type==='dashed').length,4,'all six lanes keep their separators');
+    assert.equal(lines.filter(m=>m.type==='solid').length,2,'undivided highway defaults to double centre line');
+    const restored=clone(s);L.apply(restored);
+    assert.equal(L.medianOf(restored.layout.streets[0]),0,'explicit zero persists after reload');
+  }
   retain(s, `median-${median}`, true);
 }
 

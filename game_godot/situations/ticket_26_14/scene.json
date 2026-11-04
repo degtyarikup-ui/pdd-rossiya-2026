@@ -2950,7 +2950,8 @@
       2.793,
       -44.649
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.915,
    "halfWidth": 1.046,
@@ -2994,7 +2995,12 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "npc_car",
@@ -3030,7 +3036,8 @@
       -25.896,
       -36.479
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.19,
    "halfWidth": 1.023,
@@ -3090,9 +3097,17 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": "left",
+   "driverSignal": "none",
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "annotations": [],
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    -4.399,
@@ -3100,6 +3115,5 @@
   ],
   "height": 42.925
  },
- "officers": [],
- "playerPlacement": "street"
+ "officers": []
 }

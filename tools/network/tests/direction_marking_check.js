@@ -49,7 +49,21 @@ const slider = (name,value)=>listeners.change({target:{closest:s=>s==='[data-sli
   App.select(ref);
   chip('type','solid');assert.equal(current().direction,undefined);
   chip('type','arrow');assert.equal(current().direction,'straight');
+  chip('type','stop_text');
+  assert.equal(current().type,'stop_text');
+  assert(!pane.innerHTML.includes('data-chip="mark-direction"'));
+  assert.match(pane.innerHTML,/data-slider="mark-length"/);
+  slider('mark-length',4);slider('mark-width',2.8);
+  assert.equal(current().width,2.8);
+  App.undo();assert.equal(current().width,2.6);
+  App.redo();assert.equal(current().width,2.8);
   const fixtures=[];
+  for(const angle of [0,.63,Math.PI/2,Math.PI]) {
+    const mark={type:'stop_text',points:[[5,10],[5+Math.sin(angle)*4,10+Math.cos(angle)*4]],width:2.8};
+    const polygons=clone(marks.polygons(mark));
+    assert.equal(polygons.length,7);
+    fixtures.push({mark,polygons});
+  }
   for(const [direction] of marks.variants) for(const angle of [0,.63,Math.PI/2,Math.PI]) {
     const mark={id:'test',type:'arrow',direction,points:[[5,10],[5+Math.sin(angle)*6,10+Math.cos(angle)*6]],width:2.6};
     fixtures.push({mark,polygons:clone(marks.polygons(mark))});

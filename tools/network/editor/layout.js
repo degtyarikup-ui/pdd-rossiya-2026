@@ -38,7 +38,7 @@ const Layout = (() => {
 
   const kindOf = (st) => KINDS[st.kind] || KINDS.street;
   // A street with a dividing strip (median, m) is that much wider: the strip in the middle, the lanes beside it.
-  const medianOf = (st) => (st.kind === "yard" ? 0 : Number(st.median) || (st.kind === "highway" ? 3 : 0));
+  const medianOf = (st) => (st.kind === "yard" ? 0 : st.median == null ? (st.kind === "highway" ? 3 : 0) : Math.max(0, Number(st.median) || 0));
   const hasCustomLanes = st => !!st.lanes;
   function laneConfig(st) {
     const kind = kindOf(st), count = kind.lanes.length;
@@ -520,17 +520,7 @@ const Layout = (() => {
           if (island.length >= 3) roadItem.holes.push(island);
           roadItem.green = true;
         }
-        if (highway && !st.manualMarks) {
-          const samples = densePath(body,1.5), normal = offsetRight(samples,1);
-          for (const side of [1,-1]) for (const boundary of [3.5,7]) {
-            const points = samples.map((p,i) => {
-              const profile = streetProfile(L,st,projectOn(line,p),crop);
-              const lateral = profile.median/2 + (boundary === 7 ? 7 + (profile.width/2-profile.median/2-7)* (1-profile.blend) : 3.5);
-              return {p:P(add(p,mul(sub(normal[i],p),side*lateral))),blend:profile.blend};
-            }).filter(v => boundary === 3.5 || v.blend > .06).map(v => v.p);
-            if (points.length >= 2) mark({type:"dashed",points});
-          }
-        } else if (!custom && st.kind === "avenue") for (const side of [1, -1]) mark({ type: "dashed", points: offsetRight(body, side * (m / 2 + 3.5)).map(P) });
+        if (!custom && st.kind === "avenue") for (const side of [1, -1]) mark({ type: "dashed", points: offsetRight(body, side * (m / 2 + 3.5)).map(P) });
         // Where the strip has ended (towards the side of the scene) the plain street's centre line goes on.
         if (highway) {
           highwayEnds(L,st,crop).forEach((end,i) => {
@@ -548,7 +538,7 @@ const Layout = (() => {
       if (body.length >= 2 && !medianOf(st)) {
         if (ext0) body[0] = add(body[0], mul(unit(sub(body[0], body[1])), ext0));
         if (ext1) body[body.length - 1] = add(body.at(-1), mul(unit(sub(body.at(-1), body.at(-2))), ext1));
-        const c = st.manualMarks || st.surface === "sand" ? "none" : st.centre || (st.kind === "yard" ? "none" : st.kind === "avenue" ? "double" : "dashed");
+        const c = st.manualMarks || st.surface === "sand" ? "none" : st.centre || (st.kind === "yard" ? "none" : ["avenue","highway"].includes(st.kind) ? "double" : "dashed");
         if (c === "dashed") mark({ type: "dashed", points: body.map(P) });
         else if (c === "solid") mark({ type: "solid", points: body.map(P) });
         else if (c === "double") {
@@ -558,6 +548,18 @@ const Layout = (() => {
         if (!custom && st.kind === "avenue" && !st.manualMarks && st.surface !== "sand") {
           mark({ type: "dashed", points: offsetRight(body, 3.5).map(P) });
           mark({ type: "dashed", points: offsetRight(body, -3.5).map(P) });
+        }
+      }
+
+      if (highway && body.length >= 2 && !st.manualMarks && st.surface !== "sand") {
+        const samples = densePath(body,1.5), normal = offsetRight(samples,1);
+        for (const side of [1,-1]) for (const boundary of [3.5,7]) {
+          const points = samples.map((p,i) => {
+            const profile = streetProfile(L,st,projectOn(line,p),crop);
+            const lateral = profile.median/2 + (boundary === 7 ? 7 + (profile.width/2-profile.median/2-7)* (1-profile.blend) : 3.5);
+            return {p:P(add(p,mul(sub(normal[i],p),side*lateral))),blend:profile.blend};
+          }).filter(v => boundary === 3.5 || v.blend > .06).map(v => v.p);
+          if (points.length >= 2) mark({type:"dashed",points});
         }
       }
 

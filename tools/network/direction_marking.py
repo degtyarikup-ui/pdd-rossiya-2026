@@ -10,6 +10,8 @@ SHAPES = json.loads((Path(__file__).parent / "editor/direction_arrows.json").rea
 
 
 def error(mark):
+    if mark.get("type") == "stop_text":
+        mark = {**mark, "direction": "stop_text"}
     if not isinstance(mark.get("direction", "straight"), str) or mark.get("direction", "straight") not in SHAPES:
         return "неизвестное направление стрелки"
     points = mark.get("points")
@@ -28,6 +30,8 @@ def error(mark):
 def geometry(mark):
     if error(mark):
         return Polygon()
+    if mark.get("type") == "stop_text":
+        mark = {**mark, "direction": "stop_text"}
     a, b = mark["points"]
     dx, dz = b[0] - a[0], b[1] - a[1]
     length, width = math.hypot(dx, dz), mark.get("width", 2.6)

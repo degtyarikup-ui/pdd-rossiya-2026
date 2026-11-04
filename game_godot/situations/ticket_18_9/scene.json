@@ -3573,6 +3573,8 @@
  "lights": [],
  "actors": [],
  "playerPlacement": "street",
+ "annotations": [],
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    -0.015,

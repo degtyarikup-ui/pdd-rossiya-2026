@@ -48,7 +48,7 @@ def finding(out, level, code, message, ref=None):
     out.append({"level": level, "code": code, "message": message, "ref": ref})
 
 
-MARKING_TYPES = ("paint", "solid", "dashed", "stop", "zebra", "arrow", "bus_stop")
+MARKING_TYPES = ("paint", "solid", "dashed", "stop", "zebra", "arrow", "stop_text", "bus_stop")
 MARKING_COLOURS = ("white", "yellow")
 LINE_MARKINGS = ("solid", "dashed", "stop", "zebra")
 
@@ -107,7 +107,7 @@ def check_layers(scene: dict, area, out: list) -> None:
             outside = bus_stop_marking.geometry(m).difference(area.buffer(.05)).area
             if outside > .1:
                 finding(out, "warn", "marking-off-road", f"{m.get('id')}: часть зубцов вне дороги — переместите разметку или смените сторону", ref)
-        elif kind == "arrow":
+        elif kind in ("arrow", "stop_text"):
             problem = direction_marking.error(m)
             if problem:
                 finding(out, "error", "marking-arrow", f"{m.get('id')}: {problem}", ref)

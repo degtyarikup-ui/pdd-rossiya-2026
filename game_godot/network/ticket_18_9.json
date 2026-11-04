@@ -243,7 +243,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -4628,7 +4628,7 @@
     "b": "n7",
     "kind": "street",
     "ends": {},
-    "edge": true
+    "edge": false
    }
   ],
   "player": {
