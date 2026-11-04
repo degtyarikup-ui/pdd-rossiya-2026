@@ -161,6 +161,10 @@ const CROSSWALK_ROUTES_WEST_2WAY := {"lo": [Vector2(-5.5, -50.0), Vector2(-5.5, 
 # Crosswalks of the level being played (a subset of CROSSWALKS, see DIFFICULTIES).
 var crosswalks: Dictionary = CROSSWALKS
 var asphalt_material: StandardMaterial3D
+var sidewalk_mat: StandardMaterial3D
+var curb_mat: StandardMaterial3D
+var lawn_grass_mat: StandardMaterial3D
+var grass_mat: StandardMaterial3D
 var street_lamps: Array[OmniLight3D] = []   # the real lights of the four corner lamps
 var lamp_pools: MultiMeshInstance3D           # light pools under every lamp
 const LAMP_POOL_SIZE := 13.0
@@ -365,6 +369,7 @@ var completed_runs: Array[Dictionary] = []
 var previous_best := 0
 var result_action := ""
 var season_name := "summer"
+var snow: Snow
 var economy := { "seconds": 180, "lives": 5, "maxScore": 1500, "base": 50, "step": 5, "bonusCap": 5 }
 
 # Scenery pools
@@ -452,6 +457,8 @@ func _apply_tier(next: String, automatic := false) -> void:
 	beacon_lights_allowed = tier != "low"
 	if is_instance_valid(rain_drops):
 		rain_drops.multimesh.visible_instance_count = RAIN_DROPS_LOW if tier == "low" else -1
+	if is_instance_valid(snow):
+		snow.multimesh.visible_instance_count = 48 if tier == "low" else -1
 	_refresh_lighting()
 	if hud: hud.tier = tier
 
@@ -516,6 +523,9 @@ func _setup_rain() -> void:
 func _update_rain(delta: float) -> void:
 	if not is_instance_valid(rain_drops):
 		return
+	if season_name == "winter":
+		rain_drops.visible = false
+		return
 	rain_drops.visible = rain_amount > 0.01
 	if not rain_drops.visible:
 		return
@@ -529,7 +539,8 @@ func _setup_args() -> void:
 	Ui.lang = "ru"
 	Ui.configure_theme(Host.user_args())
 	var month := int(Time.get_date_dict_from_system().month)
-	season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
+	if season_name == "summer":
+		season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
 	for arg in Host.user_args():
 		if arg.begins_with("--session-id="):
 			session_id = arg.trim_prefix("--session-id=")
@@ -544,6 +555,8 @@ func _setup_args() -> void:
 		elif arg.begins_with("--difficulty="):
 			difficulty = arg.trim_prefix("--difficulty=")
 			difficulty_from_args = true
+		elif arg.begins_with("--season="):
+			season_name = arg.trim_prefix("--season=")
 		elif arg.begins_with("--mode="):
 			game_mode = "patrol" if arg.trim_prefix("--mode=") == "patrol" else "blitz"
 		elif arg == "--tutorial":
@@ -659,29 +672,45 @@ func _build_level() -> void:
 
 func _setup_road_geometry() -> void:
 	sc = Scenery.new(season_name)
+	var roof = sc.season.roof
+	if roof != null:
+		var snow_color := Color(roof)
+		sc.material.set_shader_parameter("snow_color", Vector3(snow_color.r, snow_color.g, snow_color.b))
 	junction_node = Node3D.new()
 	junction_node.name = "Junction"
 	add_child(junction_node)
+
+	if season_name == "winter":
+		if snow == null:
+			snow = Snow.new(96)
+			snow.name = "Snow"
+			snow.scale = Vector3.ONE * 1.5
+			add_child(snow)
+		snow.visible = true
+	elif snow != null:
+		snow.visible = false
 
 	# Materials - matching Crossroads & Living City (Scenery palettes)
 	asphalt_material = StandardMaterial3D.new()
 	asphalt_material.albedo_color = ASPHALT_DRY # Crossroads dark graphite asphalt
 	asphalt_material.roughness = 0.88
 
-	var sidewalk_mat := StandardMaterial3D.new()
-	sidewalk_mat.albedo_color = Color("#646960") # Scenery sidewalk concrete tone
+	var is_winter: bool = sc != null and sc.season.precipitation == "snow"
+
+	sidewalk_mat = StandardMaterial3D.new()
+	sidewalk_mat.albedo_color = sc.color("sidewalk") if is_winter else Color("#646960") # Scenery sidewalk concrete tone
 	sidewalk_mat.roughness = 0.82
 
-	var curb_mat := StandardMaterial3D.new()
-	curb_mat.albedo_color = Color("#72776E") # Balanced curb tone
+	curb_mat = StandardMaterial3D.new()
+	curb_mat.albedo_color = sc.color("sidewalk").darkened(0.08) if is_winter else Color("#72776E") # Balanced curb tone
 	curb_mat.roughness = 0.70
 
-	var lawn_grass_mat := StandardMaterial3D.new()
-	lawn_grass_mat.albedo_color = Color("#38532C") # Soft natural Russian lawn green
+	lawn_grass_mat = StandardMaterial3D.new()
+	lawn_grass_mat.albedo_color = sc.color("ground") if is_winter else Color("#38532C") # Soft natural Russian lawn green
 	lawn_grass_mat.roughness = 0.92
 
-	var grass_mat := StandardMaterial3D.new()
-	grass_mat.albedo_color = Color("#2F4525") # Natural surrounding ground
+	grass_mat = StandardMaterial3D.new()
+	grass_mat.albedo_color = sc.color("ground") if is_winter else Color("#2F4525") # Natural surrounding ground
 	grass_mat.roughness = 0.95
 
 	var white_mat := StandardMaterial3D.new()
@@ -1426,9 +1455,12 @@ func _build_city_scenery() -> void:
 	var birch_color: Color = sc.color("birch") if sc != null else Color("#4E8236")
 	var pine_colors: Array = sc.season.pine if sc != null else [Color("#2B4D28")]
 
+	var is_winter: bool = sc != null and sc.season.precipitation == "snow"
+	var bush_color: Color = Color.WHITE if is_winter else Color(canopy_colors[0])
+
 	# Soil pits material for urban tree pits (приствольные квадраты земли)
 	var soil_mat := StandardMaterial3D.new()
-	soil_mat.albedo_color = Color("#3B2B1E") # Dark rich urban soil
+	soil_mat.albedo_color = sc.color("ground") if is_winter else Color("#3B2B1E") # Snow-covered or dark rich urban soil
 	soil_mat.roughness = 0.95
 
 	var add_tree_pit := func(pos: Vector3, is_tree: bool) -> void:
@@ -1451,10 +1483,10 @@ func _build_city_scenery() -> void:
 			_put_prop("trees/round_0", pe, -0.2 * z, Vector3.ONE * 1.2, Color(canopy_colors[abs(int(z)) % canopy_colors.size()]))
 		if not is_near_kiosk.call(pwb) and not is_near_building.call(pwb, 3.0) and not is_near_fence.call(pwb, 1.4):
 			add_tree_pit.call(pwb, false)
-			_put_prop("street/bush", pwb, 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
+			_put_prop("street/bush", pwb, 0.0, Vector3.ONE * 1.2, bush_color)
 		if not is_near_kiosk.call(peb) and not is_near_building.call(peb, 3.0) and not is_near_fence.call(peb, 1.4):
 			add_tree_pit.call(peb, false)
-			_put_prop("street/bush", peb, 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
+			_put_prop("street/bush", peb, 0.0, Vector3.ONE * 1.2, bush_color)
 
 	for z in [18.0, 22.0, 26.0, 30.0, 34.0, 38.0]:
 		var pw := Vector3(-6.8, 0.18, z)
@@ -1469,10 +1501,10 @@ func _build_city_scenery() -> void:
 			_put_prop("trees/pine_0", pe, -0.15 * z, Vector3.ONE * 1.15, Color(pine_colors[int(z) % pine_colors.size()]))
 		if not is_near_kiosk.call(pwb) and not is_near_building.call(pwb, 3.0) and not is_near_fence.call(pwb, 1.4):
 			add_tree_pit.call(pwb, false)
-			_put_prop("street/bush", pwb, 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
+			_put_prop("street/bush", pwb, 0.0, Vector3.ONE * 1.2, bush_color)
 		if not is_near_kiosk.call(peb) and not is_near_building.call(peb, 3.0) and not is_near_fence.call(peb, 1.4):
 			add_tree_pit.call(peb, false)
-			_put_prop("street/bush", peb, 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
+			_put_prop("street/bush", peb, 0.0, Vector3.ONE * 1.2, bush_color)
 
 	# Trees and greenery along the cross streets (placed at Z = -4.8 and 14.8 with 2.6m clearance to fences)
 	for x in [-14.0, -18.0, -22.0, -26.0, -30.0, -34.0, -38.0]:
@@ -1488,10 +1520,10 @@ func _build_city_scenery() -> void:
 			_put_prop("trees/round_0", pts, -0.2 * x, Vector3.ONE * 1.15, Color(canopy_colors[abs(int(x)) % canopy_colors.size()]))
 		if not is_near_kiosk.call(pbn) and not is_near_building.call(pbn, 3.0) and not is_near_fence.call(pbn, 1.4):
 			add_tree_pit.call(pbn, false)
-			_put_prop("street/bush", pbn, 0.0, Vector3.ONE * 1.15, Color(canopy_colors[0]))
+			_put_prop("street/bush", pbn, 0.0, Vector3.ONE * 1.15, bush_color)
 		if not is_near_kiosk.call(pbs) and not is_near_building.call(pbs, 3.0) and not is_near_fence.call(pbs, 1.4):
 			add_tree_pit.call(pbs, false)
-			_put_prop("street/bush", pbs, 0.0, Vector3.ONE * 1.15, Color(canopy_colors[0]))
+			_put_prop("street/bush", pbs, 0.0, Vector3.ONE * 1.15, bush_color)
 
 	for x in [14.0, 18.0, 22.0, 26.0, 30.0, 34.0, 38.0]:
 		var ptn := Vector3(x, 0.18, -4.8)
@@ -1506,10 +1538,10 @@ func _build_city_scenery() -> void:
 			_put_prop("trees/birch_0", pts, -0.2 * x, Vector3.ONE * 1.15, birch_color)
 		if not is_near_kiosk.call(pbn) and not is_near_building.call(pbn, 3.0) and not is_near_fence.call(pbn, 1.4):
 			add_tree_pit.call(pbn, false)
-			_put_prop("street/bush", pbn, 0.0, Vector3.ONE * 1.15, Color(canopy_colors[0]))
+			_put_prop("street/bush", pbn, 0.0, Vector3.ONE * 1.15, bush_color)
 		if not is_near_kiosk.call(pbs) and not is_near_building.call(pbs, 3.0) and not is_near_fence.call(pbs, 1.4):
 			add_tree_pit.call(pbs, false)
-			_put_prop("street/bush", pbs, 0.0, Vector3.ONE * 1.15, Color(canopy_colors[0]))
+			_put_prop("street/bush", pbs, 0.0, Vector3.ONE * 1.15, bush_color)
 
 	# Dense courtyard and lawn groves in all 4 quadrants (placed in open courtyards with strict building and fence collision avoidance)
 	var lawn_trees := [
@@ -1548,9 +1580,9 @@ func _build_city_scenery() -> void:
 		var b1_pos: Vector3 = lt.pos + Vector3(1.4, 0, 1.4)
 		var b2_pos: Vector3 = lt.pos + Vector3(-1.4, 0, -1.2)
 		if not is_near_kiosk.call(b1_pos) and not is_near_building.call(b1_pos, 3.2) and not is_near_fence.call(b1_pos, 2.0):
-			_put_prop("street/bush", b1_pos, 0.0, Vector3.ONE * 1.3, Color(canopy_colors[0]))
+			_put_prop("street/bush", b1_pos, 0.0, Vector3.ONE * 1.3, bush_color)
 		if not is_near_kiosk.call(b2_pos) and not is_near_building.call(b2_pos, 3.2) and not is_near_fence.call(b2_pos, 2.0):
-			_put_prop("street/bush", b2_pos, 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
+			_put_prop("street/bush", b2_pos, 0.0, Vector3.ONE * 1.2, bush_color)
 		# Soil pits for plants that stand on the paved sidewalk surfaces:
 		if absf(lt.pos.x) < 11.5 or (lt.pos.z > -8.5 and lt.pos.z < 17.5):
 			add_tree_pit.call(lt.pos, true)
@@ -1606,7 +1638,10 @@ func _put_prop(prop: String, pos: Vector3, yaw := 0.0, scale := Vector3.ONE, tin
 	var pool := _get_scenery_pool(prop)
 	if pool == null:
 		return
-	pool.put(0, Transform3D(Basis(Vector3.UP, yaw).scaled(scale), pos), tint)
+	var is_winter: bool = sc != null and sc.season.precipitation == "snow"
+	var custom_tint := tint
+	custom_tint.a = 1.0 if is_winter else 0.0
+	pool.put(0, Transform3D(Basis(Vector3.UP, yaw).scaled(scale), pos), custom_tint)
 
 
 func _finish_scenery_pools() -> void:
@@ -1954,6 +1989,9 @@ func _process(delta: float) -> void:
 	if _exiting: return
 	_update_frame_budget(delta)
 	_update_rain(delta)
+	if snow != null and snow.visible:
+		var cam_pos := cam_pivot.global_position if is_instance_valid(cam_pivot) else Vector3.ZERO
+		snow.step(delta, cam_pos)
 	if not ready_for_play or is_game_over:
 		return
 
@@ -2030,7 +2068,7 @@ func _update_continuous_weather(elapsed: float, delta: float) -> void:
 		weather_phase = cur_phase_name
 		set_signal_mode("flashing" if weather_phase == "night" and game_mode == "patrol" else "normal")
 		if is_instance_valid(ui):
-			var toast_key := "violatorPhaseDusk" if weather_phase == "dusk" else ("violatorPhaseNight" if weather_phase == "night" else ("violatorPhaseRain" if weather_phase == "rain" else ""))
+			var toast_key := "violatorPhaseDusk" if weather_phase == "dusk" else ("violatorPhaseNight" if weather_phase == "night" else ("violatorPhaseSnow" if (weather_phase == "rain" and season_name == "winter") else ("violatorPhaseRain" if weather_phase == "rain" else "")))
 			if toast_key != "":
 				ui.show_toast(ViolatorUiScript.tr_v(toast_key), false)
 		_refresh_car_headlights()
@@ -2080,12 +2118,13 @@ func _refresh_lighting() -> void:
 func _get_weather_preset(idx: int) -> Dictionary:
 	match idx:
 		0: # Day - natural filmic sunlight matching Crossroads & Living City
+			var is_win := season_name == "winter"
 			return {
-				"sun_energy": 0.56,
-				"sun_color": Color("#FFE3B8"),
+				"sun_energy": 0.50 if is_win else 0.56,
+				"sun_color": Color("#EAF1FA") if is_win else Color("#FFE3B8"),
 				"sky_color": Color("#35465C"),
-				"amb_energy": 0.40,
-				"amb_color": Color("#FFF1DE"),
+				"amb_energy": 0.45 if is_win else 0.40,
+				"amb_color": Color("#E1E6EB") if is_win else Color("#FFF1DE"),
 				"lamp_energy": 0.0,
 				"asphalt_rough": 0.88
 			}

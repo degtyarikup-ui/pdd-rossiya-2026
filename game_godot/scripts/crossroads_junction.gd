@@ -1751,7 +1751,7 @@ func _build_rural_scenery_decor() -> void:
 	var canopy_colors: Array = sc.season.canopy
 	var birch_color: Color = sc.color("birch")
 	var pine_color: Color = sc.color("pine") if sc.season.has("pine") else Color("#2D4D2E")
-	var bush_color := Color("#3E6B32")
+	var bush_color: Color = Color.WHITE if sc.season.get("precipitation", "") == "snow" else Color("#3E6B32")
 
 	# --- 1. Authentic Russian Village / Rural Crossroads ---
 	# Small single-story village houses (scale 0.90..0.95), wooden fences, gardens, birches and pines
@@ -2180,7 +2180,7 @@ func _build_urban_scenery_decor() -> void:
 	else:
 		_build_rural_forest_skyline("west")
 
-	var bush_color := Color("#3E6B32")
+	var bush_color: Color = Color.WHITE if sc.season.get("precipitation", "") == "snow" else Color("#3E6B32")
 	if sc.season.has("pine"):
 		pine_color = sc.color("pine")
 	else:

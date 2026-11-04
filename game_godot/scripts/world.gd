@@ -78,6 +78,7 @@ var question_signal_side := ""
 var tier := "high"
 var street_half := Street.ROAD_HALF   # carriageway half-width of the ring street (a multi-lane exit widens it)
 var leaves: Leaves                # autumn only
+var snow: Snow                    # winter only
 const CAMERA_PITCH := atan2(42.0, 44.0)
 const CAMERA_DISTANCE := 60.8276253029822 # hypot(42, 44); a rotation preserves the legacy offset.
 var cam_heading := 0.0            # smoothed like cameraHeading in game.js
@@ -243,6 +244,9 @@ func _ready() -> void:
 	if _season() == "autumn":
 		leaves = Leaves.new(scenery.season.canopy, 36)
 		add_child(leaves)
+	elif _season() == "winter":
+		snow = Snow.new(90)
+		add_child(snow)
 	for i in chunk_count:
 		var node := MeshInstance3D.new()
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -482,6 +486,8 @@ func _run_previews() -> void:
 	controls.set_active(false)
 	if leaves:
 		leaves.visible = false
+	if snow:
+		snow.visible = false
 	topdown_cam_locked = true
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.keep_aspect = Camera3D.KEEP_HEIGHT
@@ -2266,6 +2272,8 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	_rebase_walkers(xf)
 	if leaves:
 		leaves.transform = xf * leaves.transform
+	if snow:
+		snow.transform = xf * snow.transform
 	skip_jerk=true
 	# Keep the old street behind a turn until it is out of view. Its UVs retain their original world frame.
 	# A second nearby turn must not delete actors still visible on the previous street.
@@ -3720,6 +3728,8 @@ func _process(delta: float) -> void:
 	if perf_tick: perf_tick = _perf_time("occlusion", perf_tick)
 	if leaves:
 		leaves.step(delta, look)
+	if snow:
+		snow.step(delta, look)
 	hud.speed_kmh = drive.speed * 3.6
 	_measure_jerk(delta)
 	if dbg_every > 0.0:
@@ -4087,6 +4097,8 @@ func _apply_tier(next: String, automatic := false) -> void:
 	if leaves:
 		# Fewer leaves on a weak GPU, as in the game (18 instead of 36).
 		leaves.multimesh.visible_instance_count = 18 if tier == "low" else -1
+	if snow:
+		snow.multimesh.visible_instance_count = 45 if tier == "low" else -1
 	hud.tier = tier
 
 

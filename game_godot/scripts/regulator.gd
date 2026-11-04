@@ -52,6 +52,7 @@ var ready_for_play := false
 var economy := { "seconds": 60, "lives": 5, "maxScore": 1500, "base": 24, "step": 2, "bonusCap": 4 }
 var season_name := "summer"
 var leaves: Leaves
+var snow: Snow
 var atmosphere: RegulatorAtmosphere
 var is_new_record := false
 
@@ -123,7 +124,8 @@ func _setup_args() -> void:
 	Ui.lang = "ru"
 	Ui.configure_theme(Host.user_args())
 	var month := int(Time.get_date_dict_from_system().month)
-	season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
+	if season_name == "summer":
+		season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
 
 	for arg in Host.user_args():
 		if arg.begins_with("--lang="):
@@ -208,6 +210,10 @@ func _setup_scene_objects() -> void:
 		leaves = Leaves.new(junction.sc.season.canopy, 12)
 		leaves.scale = Vector3.ONE * 0.4
 		add_child(leaves)
+	elif season_name == "winter":
+		snow = Snow.new(48)
+		snow.scale = Vector3.ONE * 0.7
+		add_child(snow)
 	atmosphere = RegulatorAtmosphere.new(camera, env.environment, sun, junction, car)
 	add_child(atmosphere)
 
@@ -247,6 +253,8 @@ func _apply_tier(next: String, automatic := false) -> void:
 	frame_budget.reset(profile.scale, profile.shadows, profile.msaa != Viewport.MSAA_DISABLED)
 	if leaves:
 		leaves.multimesh.visible_instance_count = 6 if tier == "low" else -1
+	if snow:
+		snow.multimesh.visible_instance_count = 24 if tier == "low" else -1
 	if junction:
 		var walkers := junction.walker_crowds.size()
 		junction.set_walker_budget(-1 if Quality.ambient_walkers(tier, walkers, Engine.max_fps) >= walkers
@@ -406,6 +414,8 @@ func _process(delta: float) -> void:
 	_update_camera(delta)
 	if leaves:
 		leaves.step(delta, Vector3.ZERO)
+	if snow:
+		snow.step(delta, Vector3.ZERO)
 	if is_game_over or not ready_for_play:
 		return
 

@@ -24,6 +24,7 @@ var env: WorldEnvironment
 
 var actors_root: Node3D
 var leaves: Leaves                # autumn only, the main game's falling leaves
+var snow: Snow                    # winter only, falling snowflakes
 var fx_root: Node3D
 var active_actors: Array[CrossroadsActor] = []
 
@@ -139,7 +140,8 @@ func _setup_args() -> void:
 	Ui.lang = "ru"
 	Ui.configure_theme(Host.user_args())
 	var month := int(Time.get_date_dict_from_system().month)
-	season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
+	if season_name == "summer":
+		season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
 
 	for arg in Host.user_args():
 		if arg.begins_with("--lang="):
@@ -216,6 +218,7 @@ func _setup_quality() -> void:
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if tier == "high" else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	Engine.max_fps = 60 if mobile and profile.max_fps == 0 else int(profile.max_fps)
 	if leaves != null: leaves.multimesh.visible_instance_count = 24 if tier == "low" else -1
+	if snow != null: snow.multimesh.visible_instance_count = 60 if tier == "low" else -1
 	var walkers := junction.walker_crowds.size()
 	var walker_count := Quality.ambient_walkers(tier, walkers, Engine.max_fps)
 	junction.set_walker_budget(-1 if walker_count >= walkers else walker_count)
@@ -256,6 +259,11 @@ func _setup_scene_nodes() -> void:
 		# The orbit camera stands farther than the city's: larger leaves over a larger area.
 		leaves.scale = Vector3.ONE * 1.7
 		add_child(leaves)
+	elif season_name == "winter":
+		snow = Snow.new(120)
+		snow.name = "Snow"
+		snow.scale = Vector3.ONE * 1.7
+		add_child(snow)
 
 
 func _setup_ui() -> void:
@@ -1444,6 +1452,8 @@ func _process(delta: float) -> void:
 
 	if leaves != null and not _suspended:
 		leaves.step(delta, cam_pivot.global_position)
+	if snow != null and not _suspended:
+		snow.step(delta, cam_pivot.global_position)
 	var cam_changed := false
 	if absf(cam_yaw - _target_cam_yaw) > 0.0001:
 		cam_yaw = lerp_angle(cam_yaw, _target_cam_yaw, minf(1.0, 16.0 * delta))

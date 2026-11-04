@@ -54,6 +54,7 @@ var vehicle_paint := Color("#0574F8")
 var geo: Dictionary
 var season_name := "summer"
 var sc: Scenery
+var snow: Snow
 
 var camera: Camera3D
 var sun: DirectionalLight3D
@@ -105,6 +106,10 @@ func _ready() -> void:
 	var loader := Loader.attach(self)
 	geo = ParkingLevels.geometry(vehicle_id)
 	sc = Scenery.new(season_name)
+	var roof = sc.season.roof
+	if roof != null:
+		var snow_color := Color(roof)
+		sc.material.set_shader_parameter("snow_color", Vector3(snow_color.r, snow_color.g, snow_color.b))
 	_setup_environment()
 	sound = GameSound.new()
 	sound.enabled = not _has_arg("--mute")
@@ -144,7 +149,8 @@ func _setup_args() -> void:
 	Ui.lang = "ru"
 	Ui.configure_theme(Host.user_args())
 	var month := int(Time.get_date_dict_from_system().month)
-	season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
+	if season_name == "summer":
+		season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
 	for arg: String in Host.user_args():
 		if arg.begins_with("--lang="): Ui.lang = arg.trim_prefix("--lang=")
 		elif arg == "--no-haptics": GameSound.haptics = false
@@ -204,6 +210,8 @@ func _setup_quality() -> void:
 	_display_hz = maxi(30, roundi(DisplayServer.screen_get_refresh_rate(DisplayServer.SCREEN_OF_MAIN_WINDOW)))
 	if DisplayServer.screen_get_refresh_rate() <= 0.0: _display_hz = 60
 	Engine.max_fps = int(profile.max_fps)
+	if snow != null:
+		snow.multimesh.visible_instance_count = 40 if tier == "low" else -1
 	adaptive_quality = mobile and not fixed
 	frame_budget.reset(profile.scale, profile.shadows, profile.msaa != Viewport.MSAA_DISABLED)
 
@@ -298,6 +306,15 @@ func _load_level(index: int) -> void:
 	level_index = index
 	level = ParkingLevels.build(index)
 	ParkingLighting.apply_environment(sun, env.environment, level.get("night", false), level.id == "underground", season_name, sun.shadow_enabled)
+	if season_name == "winter" and not level.get("indoor", false) and level.id != "underground":
+		if snow == null:
+			snow = Snow.new(80)
+			snow.name = "Snow"
+			snow.scale = Vector3.ONE * 1.3
+			add_child(snow)
+		snow.visible = true
+	elif snow != null:
+		snow.visible = false
 	way = ParkingLevels.way_in(level, geo)
 	segment = 0
 	_guide_index = 0
@@ -989,6 +1006,9 @@ func _process(delta: float) -> void:
 		if brake_mat.albedo_color != brake_colour: brake_mat.albedo_color = brake_colour
 	_update_guidance(delta)
 	_frame_camera(false, delta)
+	if snow != null and snow.visible:
+		var focus_pos: Vector3 = car.position if is_instance_valid(car) else Vector3.ZERO
+		snow.step(delta, focus_pos)
 	_update_occluders(delta)
 	_update_frame_budget(delta)
 	sound.speed = absf(speed) * 2.5
