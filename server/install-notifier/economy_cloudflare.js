@@ -33,7 +33,7 @@ export function normalizeUsage(rows) {
 async function fetchBilling(env, deps) {
   const request = async path => {
     const response = await (deps.fetch || fetch)('https://api.cloudflare.com/client/v4/accounts/' + env.CLOUDFLARE_BILLING_ACCOUNT_ID + '/' + path, {
-      method: 'GET', redirect: 'error', headers: { Authorization: 'Bearer ' + env.CLOUDFLARE_BILLING_TOKEN, Accept: 'application/json' }, signal: AbortSignal.timeout(8000),
+      method: 'GET', redirect: 'manual', headers: { Authorization: 'Bearer ' + env.CLOUDFLARE_BILLING_TOKEN, Accept: 'application/json' }, signal: AbortSignal.timeout(8000),
     });
     if (!response.ok) throw new Error('Billing unavailable');
     const data = await response.json();
