@@ -11,6 +11,7 @@ import { userSummary } from './user_store.js';
 class DelayedKV {
   constructor(entries = []) {
     this.data = new Map(entries);
+    this.data.set('economy_fx_usd_v1',JSON.stringify({rubPerUsd:95,effectiveDate:new Date().toISOString().slice(0,10),requestedDay:new Date().toISOString().slice(0,10),checkedAt:new Date().toISOString()}));
     this.metadata = new Map();
     this.pending = [];
     this.reads = [];
@@ -79,7 +80,7 @@ test('economy reads 24 orders and 16 store profiles in bounded rounds with stabl
   for (const user of users) kv.data.set('user:' + user.id, json(user));
   const summaries = users.map(({ verifiedPurchase, ...summary }) => summary);
   summaries.push({ id: 'free', premiumSource: 'admin_grant' });
-  const result = await kv.finish(computeEconomyStats(envFor(kv), 'month', { now: NOW, listUserSummaries: async () => summaries }));
+  const result = await kv.finish(computeEconomyStats(envFor(kv), 'month', { now: NOW, fx: {rubPerUsd:95,effectiveDate:'2026-11-04'}, listUserSummaries: async () => summaries }));
   assert.equal(kv.maxActive, 8);
   assert.equal(kv.waves.length, 7, '1 metadata + 3 orders + 2 profiles + 1 AI round');
   assert.equal(kv.reads.length, 46);
@@ -105,7 +106,7 @@ test('economy skips full profiles supplied by the caller and isolates corrupt or
     ['user:broken', '{']]);
   kv.failures.add('pay_order:failed');
   kv.failures.add('user:missing');
-  const result = await kv.finish(computeEconomyStats(envFor(kv), 'month', { now: NOW,
+  const result = await kv.finish(computeEconomyStats(envFor(kv), 'month', { now: NOW, fx: {rubPerUsd:95,effectiveDate:'2026-11-04'},
     listUserSummaries: async () => [full, missing, broken] }));
   assert.equal(kv.count('user:full'), 0);
   assert.equal(kv.count('user:missing'), 1);

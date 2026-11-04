@@ -35,6 +35,7 @@ const day = (offset = 0) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe
 
 async function startPreview() {
   const env = { INSTALLS: new MemoryKV(), ADMIN_PASSWORD: crypto.randomUUID() };
+  await env.INSTALLS.put('economy_fx_usd_v1',JSON.stringify({rubPerUsd:95,effectiveDate:day(),requestedDay:day(),checkedAt:new Date().toISOString(),source:'CBR'}));
   const config = {
     ...structuredClone(DEFAULT_ECONOMY_CONFIG),
     extraExpenses: [
@@ -144,7 +145,7 @@ if (process.argv.includes('--serve')) {
       assert.ok(await page.locator('#ec-dialog').getAttribute('aria-labelledby'));
       const bounds = await page.locator('#ec-dialog').boundingBox();
       assert.ok(Math.abs(bounds.x * 2 + bounds.width - page.viewportSize().width) <= 2, 'dialog is centered horizontally');
-      assert.equal(await page.locator('#ec-form input, #ec-form select').evaluateAll(nodes => nodes.every(node => node.labels?.length || node.getAttribute('aria-label'))), true);
+      assert.equal(await page.locator('#ec-form input, #ec-form select').evaluateAll(nodes => nodes.every(node => node.type==='hidden' || node.labels?.length || node.getAttribute('aria-label'))), true);
     }
     async function remove() {
       await page.locator('#ec-delete').click();
@@ -170,6 +171,10 @@ if (process.argv.includes('--serve')) {
       let initial = await stats();
       assert.equal(initial.revenue.grossRub, 580);
       assert.equal(initial.expenses.paymentFeesRub, 23.2);
+      assert.equal(initial.currency,'USD');
+      assert.match(await page.locator('#ec-gross-val').innerText(),/^\$6,10$/);
+      assert.match(await page.locator('#ec-fx-status').innerText(),/ЦБ.*95/);
+      assert.equal(initial.receipts.some(row=>row.isTest),false);
       assert.match(await page.locator('#ec-receipts-body').innerText(), /Анна/);
       assert.equal(await page.locator('#ec-expense-register').getAttribute('open'), null);
       await screenshot('desktop');
@@ -194,15 +199,15 @@ if (process.argv.includes('--serve')) {
       await page.locator('#ec-platega-panel > summary').click();
 
       // Filters change the journal only, including test visibility and source search.
-      await page.locator('#ec-show-tests').check();
+      assert.equal(await page.locator('#ec-show-tests').count(),0);
       assert.equal((await stats()).revenue.grossRub, 580);
-      await page.locator('#ec-show-tests').uncheck();
+
       await mode('withdrawal');
       await page.locator('#ec-store-filter').selectOption('rustore');
       assert.equal(await page.locator(edit('revenue', 'fixture-income')).count(), 1);
       await open(edit('revenue', 'fixture-income'));
       await select('currency', 'USD');
-      assert.equal(await page.locator('#ec-form [name="usdRate"]').inputValue(), '95', 'RUB to USD starts at the configured rate');
+      assert.equal(await page.locator('#ec-form [name="usdRate"]').count(),0);
       await page.locator('#ec-cancel').click();
       await page.locator('#ec-search').fill('нет такой операции');
       assert.match(await page.locator('#ec-receipts-body').innerText(), /Ничего не найдено/);
@@ -250,7 +255,7 @@ if (process.argv.includes('--serve')) {
       const beforeWithdrawal = await stats();
       await add('withdrawal');
       await field('title', ''); await field('amount', 25);
-      await select('currency', 'USD'); await field('usdRate', 95);
+      await select('currency', 'USD');
       await field('fee', 1.5); await select('feeMode', 'additional');
       await field('date', day()); await screenshot('withdrawal-dialog'); await save();
       let withdrawal = (await config()).withdrawals.find(item => item.title === 'Вывод средств');
@@ -258,6 +263,10 @@ if (process.argv.includes('--serve')) {
       let afterWithdrawal = await stats();
       assert.equal(afterWithdrawal.revenue.grossRub, beforeWithdrawal.revenue.grossRub);
       assert.equal(afterWithdrawal.withdrawalSummary.receivedRub, 2375);
+      assert.equal(afterWithdrawal.usd.withdrawalSummary.receivedUsd,25);
+      assert.equal(afterWithdrawal.usd.withdrawalSummary.debitedUsd,26.5);
+      assert.equal(afterWithdrawal.usd.expenses.withdrawalFeesUsd,1.5);
+      assert.match(await page.locator('#ec-withdrawn-total').innerText(),/\$25,00/);
       assert.equal(afterWithdrawal.withdrawalSummary.debitedRub, 2517.5);
       assert.equal(afterWithdrawal.expenses.withdrawalFeesRub, 142.5);
       assert.ok(Math.abs(afterWithdrawal.profit.operatingRub - beforeWithdrawal.profit.operatingRub + 142.5) < .01);
@@ -280,15 +289,15 @@ if (process.argv.includes('--serve')) {
       await mode('all');
       await add('revenue');
       await field('title', 'Партнёрское поступление'); await field('amount', 10);
-      await select('currency', 'USD'); await field('usdRate', 100); await select('store', 'other'); await save();
+      await select('currency', 'USD'); await select('store', 'other'); await save();
       const revenue = (await config()).manualRevenues.find(item => item.title === 'Партнёрское поступление');
-      assert.equal(revenue.amountRub, 1000);
-      assert.equal((await stats()).revenue.grossRub, 1580);
+      assert.equal(revenue.amountRub, 950);
+      assert.equal((await stats()).revenue.grossRub, 1530);
 
       // Later settings edits do not revalue already recorded FX transactions.
-      await open('#ec-settings'); await field('usdRate', 110); await field('paymentFeePercent', 8); await save();
+      await open('#ec-settings'); await field('paymentFeePercent', 8); await save();
       assert.equal((await stats()).withdrawalSummary.feeRub, 142.5);
-      assert.equal((await stats()).revenue.grossRub, 1580);
+      assert.equal((await stats()).revenue.grossRub, 1530);
       await open(edit('revenue', revenue.id)); await remove();
       assert.equal((await stats()).revenue.grossRub, 580);
       await open(edit('withdrawal', withdrawal.id)); await remove();

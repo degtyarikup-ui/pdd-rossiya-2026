@@ -41,6 +41,7 @@ const USER_NAME = 'Приватный пользователь';
 
 async function preview() {
   const env = { INSTALLS: new MemoryKV(), ADMIN_PASSWORD: crypto.randomUUID() };
+  await env.INSTALLS.put('economy_fx_usd_v1',JSON.stringify({rubPerUsd:95,effectiveDate:day(0),requestedDay:day(0),checkedAt:new Date().toISOString(),source:'CBR'}));
   const token = crypto.randomUUID().replaceAll('-', ''), now = Date.now();
   await env.INSTALLS.put(`admin_session:${token}`, JSON.stringify({ created: now }));
   await env.INSTALLS.put('tasks:items', JSON.stringify([{ id: 'loading-task', text: TASK_TITLE, status: 'idea', priority: 'normal', version: '', attachments: [], createdAt: now }]));

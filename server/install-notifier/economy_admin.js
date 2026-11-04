@@ -1,5 +1,7 @@
 // Админский учёт экономики. Платежи и сроки Premium здесь не изменяются.
 // Доход включает продажи магазинов по тарифу; выплаты магазинов — справочные.
+import { getUsdRate } from './economy_fx.js';
+import { economyInUsd } from './economy_usd.js';
 import { handlePlategaBalances } from './economy_platega.js';
 import { getCloudflareBilling, cloudflareExpenseLines } from './economy_cloudflare.js';
 import { mapAdminReads } from './admin_reads.js';
@@ -143,10 +145,12 @@ function safeConfig(parsed = {}) {
   result.extraExpenses = normalizeList(parsed.extraExpenses, normalizeExpense);
   result.manualRevenues = normalizeList(parsed.manualRevenues, item => normalizeRevenue(item, Date.now(), true, result.usdRate));
   result.withdrawals = normalizeList(parsed.withdrawals, item => normalizeWithdrawal(item, Date.now(), true, result.usdRate));
+  result.excludeTestOrders = true;
   return result;
 }
 export function isTestOrder(order) {
   if (!order) return false;
+  if (order.verifiedPurchase && isTestOrder(order.verifiedPurchase)) return true;
   if (order.isTest === true || order.test === true || String(order.environment || '').toLowerCase() === 'sandbox') return true;
   // Старые собственные проверки не имели isTest. Цена 99 ₽, имя и способ
   // оплаты не являются признаками теста: это также обычные покупки клиентов.
@@ -247,10 +251,10 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
   const monthStart = Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), 1);
   const calendarPeriodStart = period === 'month' ? monthStart : period === '30d' ? calendarNow - 29 * DAY : 0;
   const periodStart = period === 'all' ? 0 : calendarPeriodStart - MOSCOW_OFFSET;
-  const [config, orderKeys, users, cloudflare] = await Promise.all([
+  const [config, orderKeys, users, cloudflare, fx] = await Promise.all([
     getEconomyConfig(env), listAll(env, 'pay_order:'),
     typeof deps.listUserSummaries === 'function' ? deps.listUserSummaries(env) : [],
-    getCloudflareBilling(env, deps),
+    getCloudflareBilling(env, deps), getUsdRate(env, deps),
   ]);
   const orders = await mapAdminReads(orderKeys, async key => {
     try { return JSON.parse(await env.INSTALLS.get(key.name)); }
@@ -268,6 +272,7 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
       // Возврат сохраняет confirmedAt. Историческая дата подтверждения
       // не делает chargebacked/canceled/mismatch оплату доходом.
       if (!order || (order.status ? order.status !== 'confirmed' : !order.confirmedAt)) continue;
+      if (isTestOrder(order)) continue;
       const time = remember(order.confirmedAt || order.createdAt);
       if (!inPeriod(time, periodStart, now)) continue;
       const amount = Number(order.amount);
@@ -291,11 +296,14 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
     try { return JSON.parse(await env.INSTALLS.get('user:' + user.id) || 'null') || user; }
     catch (_) { return user; }
   });
+  const realUsersCount = fullUsers.filter(user => !isTestOrder(user)).length;
   const storeCounts = { web: 0, appstore: 0, googleplay: 0, rustore: 0, admin_grant: 0 };
   let activePayingCount = 0;
   const seenTransactions = new Set();
   for (let index = 0; index < users.length; index++) {
     const user = users[index];
+    const full = fullUsers[index];
+    if (isTestOrder({ ...full, environment: full.verifiedPurchase?.environment })) continue;
     remember(user.createdAt);
     const source = String(user.premiumSource || '').toLowerCase();
     const expiry = timestamp(user.premiumExpiresAt);
@@ -304,7 +312,6 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
       if (['web', 'appstore', 'googleplay', 'rustore'].includes(source)) activePayingCount++;
     }
     if (!['appstore', 'googleplay', 'rustore'].includes(source) && !user.purchasedAt && !user.storeVerifiedAt) continue;
-    const full = fullUsers[index];
     const purchase = full.verifiedPurchase || {};
     const purchaseSource = String(purchase.store || source).toLowerCase();
     if (!['appstore', 'googleplay', 'rustore'].includes(purchaseSource)) continue;
@@ -428,7 +435,7 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
   receipts.sort((a, b) => timestamp(b.date) - timestamp(a.date));
   estimatedReceipts.sort((a, b) => timestamp(b.date) - timestamp(a.date));
   const estimatedStoresRub = round(estimatedReceipts.reduce((sum, receipt) => sum + ((!receipt.isTest || !config.excludeTestOrders) ? receipt.amountRub : 0), 0));
-  return {
+  const result = {
     period, updatedAt: new Date(now).toISOString(), cloudflare,
     periodInfo: { from: dayString(budgetStart), to: reportDay(now), timeZone: 'Europe/Moscow',
       budgetMonths: Math.round(multiplier * 10000) / 10000, infrastructureBasis: cloudflare.configured ? 'cloudflare_invoices_and_domain_budget' : 'prorated_monthly_budget',
@@ -457,10 +464,11 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
     breakEven: { targetRub: totalExpensesRub, monthlyRub: round(monthlyRub), weeklySubsNeeded: Math.ceil(totalExpensesRub / 99),
       threeMonthSubsNeeded: Math.ceil(totalExpensesRub / 290), coveragePercent: totalExpensesRub > 0 ? Math.round(grossRevenueRub / totalExpensesRub * 100) : 100,
       isProfitable: grossRevenueRub >= totalExpensesRub },
-    unitEconomics: { totalUsersCount: users.length, activePayingCount,
-      payingConversionRate: users.length ? round(activePayingCount / users.length * 100) : 0,
-      arppu: activePayingCount ? round(grossRevenueRub / activePayingCount) : 0, arpu: users.length ? round(grossRevenueRub / users.length) : 0 },
+    unitEconomics: { totalUsersCount: realUsersCount, activePayingCount,
+      payingConversionRate: realUsersCount ? round(activePayingCount / realUsersCount * 100) : 0,
+      arppu: activePayingCount ? round(grossRevenueRub / activePayingCount) : 0, arpu: realUsersCount ? round(grossRevenueRub / realUsersCount) : 0 },
   };
+  return { ...result, currency: 'USD', fx, usd: economyInUsd(result, fx) };
 }
 export async function handleEconomyAdmin(request, env, url, deps = {}) {
   const path = url.pathname;
@@ -481,6 +489,8 @@ export async function handleEconomyAdmin(request, env, url, deps = {}) {
   if (!object(body)) return reply({ error: 'Некорректные данные' }, 400);
   if (!env?.INSTALLS) return reply({ error: 'Хранилище недоступно' }, 503);
   if (path.endsWith('/settings')) {
+    if (Object.hasOwn(body, 'usdRate')) return reply({ error: 'Курс обновляется автоматически по данным ЦБ' }, 400);
+    if (body.excludeTestOrders === false) return reply({ error: 'Тестовые операции всегда исключены' }, 400);
     if (['extraExpenses', 'manualRevenues', 'withdrawals'].some(key => Object.hasOwn(body, key))) return reply({ error: 'Изменяйте записи через журнал операций' }, 400);
     try { return reply({ ok: true, config: await saveEconomyConfig(env, body) }); }
     catch (error) { return reply({ error: error.message }, 400); }
@@ -511,6 +521,8 @@ export async function handleEconomyAdmin(request, env, url, deps = {}) {
       input.amount = body.amountRub;
       if (kind !== 'expenses') { input.currency = 'RUB'; input.usdRate = 1; }
     }
+    if (Object.hasOwn(body, 'usdRate')) number(body.usdRate, 'курс доллара', ...numericRules.usdRate);
+    if (kind !== 'expenses' && input.currency === 'USD') input.usdRate = (await getUsdRate(env, deps)).rubPerUsd;
     if (kind !== 'expenses' && body.currency === 'USD' && input.usdRate === 1 && list[index]?.currency === 'RUB' && !Object.hasOwn(body, 'usdRate')) input.usdRate = config.usdRate;
     if (Object.hasOwn(body, 'monthly') && !Object.hasOwn(body, 'frequency')) input.frequency = body.monthly ? 'monthly' : 'once';
     item = kind === 'expenses' ? normalizeExpense(input, deps.now ?? Date.now())

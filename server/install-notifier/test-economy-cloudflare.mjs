@@ -35,13 +35,13 @@ test('usage failure does not discard verified invoices or invent zero usage',asy
 test('real invoices replace budget and exactly matched legacy records once; usage stays outside profit',async()=>{
  const e=env();const extraExpenses=[{id:'manual-host',title:'Cloudflare',amount:10.15,currency:'USD',date:'2026-10-22',frequency:'once'},{id:'manual-domain',title:'Покупка домена на Claudlfare (pdd-drive.app)',amount:1,currency:'USD',date:'2026-10-11',frequency:'once'}];
  await e.INSTALLS.put('economy_config',JSON.stringify({...DEFAULT_ECONOMY_CONFIG,domainEnabled:false,extraExpenses}));
- const all=await computeEconomyStats(e,'all',{now,fetch:fakeFetch});
+ const all=await computeEconomyStats(e,'all',{now,fetch:fakeFetch,fx:{rubPerUsd:95,effectiveDate:'2026-11-04'}});
  assert.equal(all.expenses.totalRub,1534.25); // $16.15, no duplicate $11.15, no monthly budget or $0.15 usage
  assert.equal(all.expenses.lines.length,3);assert.equal(all.expenses.monthlyRub,475);
  assert.equal(all.expenses.lines.filter(l=>l.matchedManualId).length,2);
  assert.equal(all.config.extraExpenses.length,2);
- const month=await computeEconomyStats(e,'month',{now,fetch:fakeFetch});assert.equal(month.expenses.totalRub,0);
- const recent=await computeEconomyStats(e,'30d',{now,fetch:fakeFetch});assert.equal(recent.expenses.totalRub,1059.25);
+ const month=await computeEconomyStats(e,'month',{now,fetch:fakeFetch,fx:{rubPerUsd:95,effectiveDate:'2026-11-04'}});assert.equal(month.expenses.totalRub,0);
+ const recent=await computeEconomyStats(e,'30d',{now,fetch:fakeFetch,fx:{rubPerUsd:95,effectiveDate:'2026-11-04'}});assert.equal(recent.expenses.totalRub,1059.25);
  const ambiguous=cloudflareExpenseLines(all.cloudflare,[extraExpenses[0],{...extraExpenses[0],id:'another'}],95,'1970-01-01','2026-11-04');assert.equal(ambiguous.replaced.size,0);
 });
 test('billing routes require admin auth before any network or storage work',async()=>{

@@ -15,7 +15,7 @@ class MemoryKV {
 }
 const NOW = Date.parse('2026-10-16T12:00:00Z');
 const environment = () => ({ INSTALLS: new MemoryKV() });
-const stats = (env, period = 'month', extra = {}) => computeEconomyStats(env, period, { now: NOW, listUserSummaries: async () => [], ...extra });
+const stats = (env, period = 'month', extra = {}) => computeEconomyStats(env, period, { now: NOW, fx: {rubPerUsd:95,effectiveDate:'2026-10-16',stale:false}, listUserSummaries: async () => [], ...extra });
 async function seedConfig(env, changes = {}) {
   await env.INSTALLS.put('economy_config', JSON.stringify({ ...DEFAULT_ECONOMY_CONFIG, cloudflareMonthlyUsd: 0, domainMonthlyRub: 0, ...changes }));
 }
@@ -26,7 +26,7 @@ async function order(env, id, changes = {}) {
 async function api(env, path, body, method = 'POST', overrides = {}) {
   const request = new Request('https://test/api/admin/economy/' + path, { method,
     ...(method === 'POST' ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
-  const response = await handleEconomyAdmin(request, env, new URL(request.url), { now: NOW, listUserSummaries: async () => [], ...overrides });
+  const response = await handleEconomyAdmin(request, env, new URL(request.url), { now: NOW, fx: {rubPerUsd:95,effectiveDate:'2026-10-16',stale:false}, listUserSummaries: async () => [], ...overrides });
   return { status: response.status, data: await response.json() };
 }
 
@@ -196,11 +196,11 @@ test('weekly SBP clients are not classified as tests by price, name or email sub
   const result = await stats(env);
   assert.equal(result.revenue.grossRub, 99);
   assert.equal(result.revenue.ordersCount, 1);
-  assert.equal(result.receipts.length, 3);
+  assert.equal(result.receipts.length, 1);
   assert.equal(isTestOrder({ amount: 99, method: 2, tier: 'weekly', name: 'Сергей', userId: 'contest' }), false);
   assert.equal(isTestOrder({ environment: 'Sandbox' }), true);
   await saveEconomyConfig(env, { excludeTestOrders: false });
-  assert.equal((await stats(env)).revenue.grossRub, 297);
+  assert.equal((await stats(env)).revenue.grossRub, 99);
 });
 
 test('revenue and receipts both honor period and exclude future payments', async () => {
@@ -467,13 +467,13 @@ test('all store sales enter income and profit alongside SBP and other receipts',
   assert.equal(result.revenue.appstoreRub, 290);
   assert.equal(result.revenue.gplayRub, 290);
   assert.equal(result.revenue.rustoreRub, 290);
-  assert.equal(result.receipts.length, 6);
+  assert.equal(result.receipts.length, 5);
   assert.equal(result.expenses.paymentFeesRub, 7.92);
   assert.equal(result.profit.reinvestRub, 530.54);
   assert.equal(result.partners.nikita.payoutRub, 53.05);
   assert.equal(result.partners.sergey.payoutRub, 477.49);
   await saveEconomyConfig(env, { excludeTestOrders: false });
-  assert.equal((await stats(env, 'month', { listUserSummaries: async () => users })).revenue.grossRub, 1359);
+  assert.equal((await stats(env, 'month', { listUserSummaries: async () => users })).revenue.grossRub, 1069);
 });
 
 test('store purchase remains counted when another entitlement becomes the main source', async () => {
@@ -524,12 +524,12 @@ test('payment commission applies only to included web income, per payment rounde
   assert.equal(result.expenses.totalRub, 87.92);
   assert.equal(result.receipts.find(row => row.id === 'actual').feeRub, 7.92);
   assert.equal(result.receipts.find(row => row.id === 'actual').netRub, 91.08);
-  assert.equal(result.receipts.find(row => row.id === 'test').feeRub, 0);
+  assert.equal(result.receipts.some(row => row.id === 'test'), false);
   assert.equal(result.receipts.find(row => row.id === 'other').feeRub, 0);
   assert.equal(result.receipts.find(row => row.id === 'payout').feeRub, 0);
   assert.equal(result.receipts.find(row => row.id === 'tiny-a').feeRub, 0);
   await saveEconomyConfig(env, { excludeTestOrders: false });
-  assert.equal((await stats(env)).expenses.paymentFeesRub, 95.92);
+  assert.equal((await stats(env)).expenses.paymentFeesRub, 87.92);
   await saveEconomyConfig(env, { paymentFeePercent: 0 });
   assert.equal((await stats(env)).expenses.paymentFeesRub, 0);
   for (const paymentFeePercent of [-1, 101, '8', null]) {
@@ -648,8 +648,8 @@ test('manual foreign currency income freezes its rate and legacy RUB edits remai
   assert.equal(legacy.data.revenue.amountRub, 123);
   assert.equal((await stats(env)).revenue.grossRub, 123);
   const changedCurrency = await api(env, 'revenues/update', { id, amount: 1, currency: 'USD' });
-  assert.equal(changedCurrency.data.revenue.usdRate, 120);
-  assert.equal(changedCurrency.data.revenue.amountRub, 120);
+  assert.equal(changedCurrency.data.revenue.usdRate, 95);
+  assert.equal(changedCurrency.data.revenue.amountRub, 95);
 });
 
 test('standalone commissions retain their type and recur without duplicate expense entries', async () => {

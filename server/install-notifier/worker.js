@@ -11,6 +11,7 @@ import { NOTIFICATIONS_NAV_HTML, NOTIFICATIONS_VIEW_HTML, NOTIFICATIONS_CLIENT_J
 import { TASKS_NAV_HTML, TASKS_VIEW_HTML, TASKS_CLIENT_JS } from './tasks_ui.js';
 import { handleTasksAdmin } from './tasks_admin.js';
 import { ECONOMY_NAV_HTML, ECONOMY_VIEW_HTML, ECONOMY_CLIENT_JS } from './economy_ui.js';
+import { getUsdRate } from './economy_fx.js';
 import { getCloudflareBilling } from './economy_cloudflare.js';
 import { handleEconomyAdmin } from './economy_admin.js';
 import { mapAdminReads } from './admin_reads.js';
@@ -4286,6 +4287,7 @@ const workerHandlers = {
     if (!env.INSTALLS) return;
     if (new Date(event.scheduledTime || Date.now()).getUTCMinutes() === 0) {
       ctx.waitUntil(cronTask('cloudflare_billing', getCloudflareBilling(env)));
+      ctx.waitUntil(cronTask('economy_fx', getUsdRate(env)));
     }
 
     // Закрытие недельного рейтинга (итоговые места → ачивка «Покоритель

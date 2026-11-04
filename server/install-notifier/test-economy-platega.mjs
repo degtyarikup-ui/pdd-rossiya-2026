@@ -96,11 +96,11 @@ test('the route is read-only and does not change the ledger or profit', async ()
     async list() { return { keys: [], list_complete: true }; },
     async put() { assert.fail('balances must not write the ledger'); },
   } };
-  const before = await computeEconomyStats(env, 'month', { now: NOW });
+  const before = await computeEconomyStats(env, 'month', { now: NOW, fx: {rubPerUsd:95,effectiveDate:'2026-11-04'} });
   const get = request();
   const response = await handleEconomyAdmin(get, env, new URL(get.url), { now: NOW, fetch: async () => Response.json(providerBalances) });
   assert.equal(response.status, 200);
-  assert.deepEqual(await computeEconomyStats(env, 'month', { now: NOW }), before);
+  assert.deepEqual(await computeEconomyStats(env, 'month', { now: NOW, fx: {rubPerUsd:95,effectiveDate:'2026-11-04'} }), before);
   for (const method of ['POST', 'DELETE', 'PUT']) {
     const req = request(method);
     const denied = await handleEconomyAdmin(req, env, new URL(req.url), { fetch() { assert.fail('unsupported method reached provider'); } });

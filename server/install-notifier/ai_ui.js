@@ -38,7 +38,7 @@ export const AI_VIEW_HTML = String.raw`
  <div class="ai-kpi">
   <span class="ai-kpi-label">Расходы</span>
   <div class="ai-kpi-value" id="ai-m-cost-usd">$0.00000</div>
-  <div class="ai-kpi-footer"><span id="ai-m-cost-rub">~0.00 ₽</span></div>
+  <div class="ai-kpi-footer"><span>USD · по токенам</span></div>
  </div>
  <div class="ai-kpi">
   <span class="ai-kpi-label">Токены</span>
@@ -104,7 +104,6 @@ async function loadAiStats(force) {
     document.getElementById('ai-m-total').innerText = (s.totalRequests || 0).toLocaleString();
     document.getElementById('ai-m-today').innerText = (s.todayRequests || 0).toLocaleString();
     document.getElementById('ai-m-cost-usd').innerText = '$' + (s.costUsd || 0).toFixed(5);
-    document.getElementById('ai-m-cost-rub').innerText = '~' + (s.costRub || 0) + ' ₽';
     document.getElementById('ai-m-tokens-total').innerText = (s.totalTokens || 0).toLocaleString();
     document.getElementById('ai-m-tokens-k').innerText = Math.round((s.totalTokens || 0) / 1000) + 'k';
     document.getElementById('ai-m-tokens-prompt').innerText = (s.promptTokens || 0).toLocaleString();
