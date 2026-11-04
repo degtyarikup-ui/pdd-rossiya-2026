@@ -44,6 +44,26 @@
 #inspector .road-sheet .road-straighten { justify-self: start; min-height: 25px; padding: 3px 6px; }
 #inspector .road-sheet .road-straighten:disabled { opacity: .4; background: transparent; }
 
+#inspector .lane-settings { display: grid; gap: 5px; padding-block: 4px; }
+#inspector .lane-settings .setting-title { display: flex; align-items: baseline; justify-content: space-between; }
+#inspector .lane-settings .setting-title small, #inspector .lane-custom { font-size: 10px; color: var(--ink-3); }
+#inspector .lane-layout { display: grid; grid-template-columns: 60px minmax(0,1fr); gap: 4px; align-items: center; }
+#inspector .lane-layout.lane-multiple { grid-template-columns: minmax(0,1fr); }
+#inspector .lane-diagram { width: 60px; height: 80px; overflow: visible; }
+#inspector .lane-diagram text { fill: var(--ink-2); font-size: 10px; font-weight: 600; }
+#inspector .lane-counts { display: grid; grid-template-columns: 12px repeat(2,minmax(0,1fr)); gap: 4px; align-items: center; }
+#inspector .lane-side { text-align: center; color: var(--ink-2); font-size: 10px; white-space: nowrap; }
+#inspector .lane-end { color: var(--ink-2); font-size: 11px; font-weight: 600; }
+#inspector .lane-count { display: flex; min-width: 0; align-items: center; background: var(--field); border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+#inspector .lane-count button { flex: 0 0 21px; width: 21px; min-height: 27px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--ink-2); font: inherit; }
+#inspector .lane-count button:hover:enabled { background: var(--accent-soft); color: var(--ink); }
+#inspector .lane-count button:disabled { opacity: .3; }
+#inspector .lane-count input { flex: 1; min-width: 0; width: 0; height: 27px; padding: 0; text-align: center; appearance: textfield; -moz-appearance: textfield; border: 0; border-radius: 0; background: transparent; }
+#inspector .lane-count input::-webkit-inner-spin-button, #inspector .lane-count input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+#inspector .lane-dimensions { gap: 7px; }
+#inspector .lane-dimensions input { min-height: 27px; }
+#inspector .lane-dimensions input:disabled { opacity: .45; }
+
 #inspector .shape-point-fields { display: grid; grid-template-columns: minmax(0, .95fr) repeat(2, minmax(0, 1fr)); gap: 7px; }
 #inspector .shape-point-fields label { display: grid; gap: 4px; min-width: 0; font-size: 11px; color: var(--ink-2); }
 #inspector .shape-point-fields input { min-width: 0; width: 100%; font-variant-numeric: tabular-nums; }

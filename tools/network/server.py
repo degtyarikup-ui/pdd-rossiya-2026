@@ -45,6 +45,7 @@ QUESTIONS = check.ROOT / "assets" / "countries" / "ru" / "questions"
 IMAGES = check.ROOT / "assets" / "countries" / "ru" / "images"
 QUESTION_POOL = question_pool.QuestionPool(QUESTIONS, NET, IMAGES)
 ID = re.compile(r"^[a-z0-9_]+$")
+SOURCE_IMAGE_NAME = r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}"
 # The triangulation library keeps global state and crashes when two threads use it at once, and the
 # geometry code (shapely, triangle) is not made for parallel use from here: every request that loads or
 # builds a scene runs under this one lock. One editor, short requests: the lock costs nothing visible.
@@ -118,9 +119,13 @@ def keep_history(sid: str, keep: int = 30) -> None:
 
 
 def source_image(image: str, category: str | None = None):
+    # Reviewed illustrations use names such as verified_ab_4_9, not MD5 hashes.
+    # Keep category and basename explicit so no source URL can escape its folder.
+    if not re.fullmatch(SOURCE_IMAGE_NAME, image) or category not in (None, "ab", "cd"):
+        return None
     for cat in ([category] if category else ("ab", "cd")):
         f = IMAGES / f"questions_{cat}" / f"{image}.webp"
-        if f.exists():
+        if f.is_file():
             return f
     return None
 
@@ -351,11 +356,11 @@ class Handler(BaseHTTPRequestHandler):
         m = re.match(r"^/preview/([a-z0-9_]+)\.png$", path)
         if m:
             return self.file(PREVIEW / f"{m[1]}.png")
-        m = re.match(r"^/asset/source/([a-f0-9]{32})\.webp$", path)
+        m = re.fullmatch(rf"/asset/source/({SOURCE_IMAGE_NAME})\.webp", path)
         if m:
             f = source_image(m[1])
             return self.file(f) if f else self.send(404, {"error": "not found"})
-        m = re.match(r"^/asset/source/(ab|cd)/([a-f0-9]{32})\.webp$", path)
+        m = re.fullmatch(rf"/asset/source/(ab|cd)/({SOURCE_IMAGE_NAME})\.webp", path)
         if m:
             f = source_image(m[2], m[1])
             return self.file(f) if f else self.send(404, {"error": "not found"})

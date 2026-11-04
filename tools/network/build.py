@@ -300,8 +300,10 @@ def road_geometry(scene: dict):
     cut_band = box.exterior.buffer(1.5, quad_segs=8)
     roads = tidy(roads).difference(cut_band).union(roads.intersection(cut_band)).intersection(box)
     # Layout streets already define their own end widths and curved centre lines.
-    # Legacy square-end alignment would add a straight strip beside a curved sand road.
-    if not (scene.get("layout") and any(r.get("surface") == "sand" for r in scene.get("roads", []))):
+    # Legacy alignment would add a straight strip beside curved sand roads or
+    # replace an explicit 8 m custom section with the old 8.4 m street profile.
+    custom_profile = any(st.get("lanes") for st in (scene.get("layout") or {}).get("streets", []))
+    if not custom_profile and not (scene.get("layout") and any(r.get("surface") == "sand" for r in scene.get("roads", []))):
         roads = street_ends(roads, box)
     islands = tidy(unary_union(holes)).intersection(roads) if holes else Polygon()
     return roads.difference(islands), islands, roads

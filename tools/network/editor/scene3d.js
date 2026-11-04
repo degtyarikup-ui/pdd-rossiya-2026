@@ -992,8 +992,7 @@ const Scene3D = (() => {
       const pts = Layout.centreline(L, st);
       const on = selStreets.has(st.id), hov = hover && hover.t === "street" && hover.id === st.id;
       if (on || hov) {
-        const w = Layout.widthOf(st);
-        const outline = [...Layout.offsetRight(pts, -w / 2), ...Layout.offsetRight(pts, w / 2).reverse()];
+        const outline = Layout.streetOutline(L,st,crop);
         outline.push(outline[0]);
         g.add(polyline(outline, 0.16, on ? ACCENT : HOVER, on ? 3 : 2));
       }
@@ -1755,11 +1754,8 @@ const Scene3D = (() => {
     if (L) {
       let bestSt = null, bestD = Infinity;
       for (const st of L.streets) {
-        const pts = Layout.centreline(L, st);
-        for (let k = 0; k + 1 < pts.length; k++) {
-          const d = segDist(w, pts[k], pts[k + 1]);
-          if (d < Layout.widthOf(st) / 2 + 0.5 && d < bestD) { bestD = d; bestSt = st; }
-        }
+        const d = Layout.streetHitDistance(L,st,[w.x,w.z],model.crop || 90);
+        if (d < bestD) { bestD = d; bestSt = st; }
       }
       if (bestSt && !skip({ t: "street", id: bestSt.id })) return { t: "street", id: bestSt.id };
       for (const n of L.nodes) {

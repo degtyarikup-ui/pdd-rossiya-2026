@@ -743,7 +743,7 @@ func _rebuild_ring() -> void:
 	street.texture_frame = texture_frame
 	street.connector = street_connector
 	if not pending_connection.is_empty(): street.profile=pending_connection.port
-	elif current and current.sit.network: street.profile=current.sit.network.connections.entry
+	elif current and current.sit.network: street.profile=SceneStitch.reverse_profile(current.sit.network.connections.entry)
 	var first := int(floor(drive.pos.z / L)) - int(cfg.chunks_behind)
 	street.begin_batch()
 	for slot in chunk_count:
@@ -857,7 +857,7 @@ func road_supports(p: Vector3) -> bool:
 		for node in road_nodes:
 			if node.mesh and (_street_ground(node).at(node.global_transform.affine_inverse()*p) & GroundMap.ROAD) != 0: return true
 		return false
-	return absf(p.x) <= _half_at(p.z) and absf(p.x) >= float(street.profile.get("median", 0.0))*0.5
+	return absf(p.x) <= _half_at(p.z) and absf(p.x-float(street.profile.get("centre_offset", 0.0))) >= float(street.profile.get("median", 0.0))*0.5
 
 
 func _street_ground(node: MeshInstance3D) -> GroundMap:
@@ -1458,7 +1458,7 @@ func _scene_connections(id: String) -> Dictionary:
 func _join_rank(out: Dictionary, entry: Dictionary) -> int:
 	if out.is_empty() or entry.is_empty(): return 5
 	if SceneStitch.directly_compatible(out, entry): return 0
-	if int(out.get("lanes", 2)) != int(entry.get("lanes", 2)): return 4
+	if SceneStitch.needs_lane_transition(out, entry): return 4
 	if str(out.get("surface", "asphalt")) != str(entry.get("surface", "asphalt")): return 3
 	if absf(float(out.get("declared_median", 0.0)) - float(entry.get("declared_median", 0.0))) > 0.1: return 2
 	return 1
@@ -1561,7 +1561,7 @@ func _tram_joint_profiles(previous: Situation, next: Situation, out: Dictionary,
 
 func _prepare_tram_joint_profiles(previous: Situation, next: Situation, out: Dictionary, entry: Dictionary, profile: Dictionary, frames: SceneTree = null) -> Dictionary:
 	var from_profile := profile.duplicate(true)
-	var to_profile := profile.duplicate(true)
+	var to_profile := SceneStitch.reverse_profile(profile)
 	if previous.tram_plan.get("actors", {}).is_empty() and next.tram_plan.get("actors", {}).is_empty():
 		return {"from": from_profile, "to": to_profile}
 	# The outgoing binding itself is installed between warmup and activation.
@@ -1576,7 +1576,7 @@ func _prepare_tram_joint_profiles(previous: Situation, next: Situation, out: Dic
 		# Snapshot bindings on the main thread: the player can finish/rebase
 		# the previous scene while this immutable geometry job is running.
 		var from_network := TramStitch._bound_network(previous.network, out, profile)
-		var to_network := TramStitch._bound_network(next.network, entry, profile)
+		var to_network := TramStitch._bound_network(next.network, entry, to_profile)
 		var from_plan := previous.tram_plan
 		var to_plan := next.tram_plan
 		tracks = await Situation._data_in_background(func(): return TramStitch.joint(from_plan, from_network, out, to_plan, to_network, entry, profile), frames, weakref(next))
@@ -1665,7 +1665,7 @@ func _maybe_spawn() -> void:
 		if not pending_connection.is_empty(): anchor=pending_connection.port
 		var width := float(entry.width)
 		# A first highway also gets an entrance from the initial ordinary street.
-		if pending_connection.is_empty() and int(entry.lanes)==6:
+		if pending_connection.is_empty() and (int(entry.lanes)==6 or entry.get("custom_lanes", false)):
 			anchor.merge({"width":street_half*2.0,"lanes":4 if street_half>6.5 else 2,
 				"median":street.profile.get("median",0.0),"declared_median":street.profile.get("median",0.0),
 				"walk":street.profile.get("walk",true),"edge":true,"centre":"dashed","surface":"asphalt"},true)
@@ -1680,19 +1680,19 @@ func _maybe_spawn() -> void:
 				if previous != null: previous.bind_end(pending_connection.local_port,float(anchor.width),scenery,texture_frame)
 				sit.bind_end(entry,width,scenery,texture_frame)
 			else:
-				var profile := SceneStitch.joint_profile(entry,anchor)
+				var profile := SceneStitch.joint_profile(anchor,entry)
 				width=profile.width
 				if previous != null:
 					var tram_profiles := _tram_joint_profiles(previous, sit, pending_connection.local_port, entry, profile)
 					previous.bind_end(pending_connection.local_port,width,scenery,texture_frame,tram_profiles.from)
 					sit.bind_end(entry,width,scenery,texture_frame,tram_profiles.to)
 				else:
-					sit.bind_end(entry,width,scenery,texture_frame,profile)
+					sit.bind_end(entry,width,scenery,texture_frame,SceneStitch.reverse_profile(profile))
 		else:
 			sit.bind_end(entry,width,scenery,texture_frame)
 		if transition:
 			var target: Vector3 = sit.transform*_route_contact(sit.network.route("approach"),entry)
-			street_connector={"start":float(anchor.p.z),"end":float(placement_anchor.p.z),"from":anchor.duplicate(),"to":entry.duplicate(),
+			street_connector={"start":float(anchor.p.z),"end":float(placement_anchor.p.z),"from":anchor.duplicate(),"to":SceneStitch.reverse_profile(entry),
 				"from_x":drive.pos.x,"to_x":target.x}
 		street_half=width/2.0
 		zc=sit.position.z
@@ -2537,7 +2537,7 @@ func _spawn_traffic() -> void:
 		var car := {
 			"sound_kind": kind, "dir": dir, "base": base, "spd": base, "v": dir * base, "len": CAR_LENGTH,
 			"shove": 0.0, "moves": true,   # a hit car rolls away (m/s along the road) and slows back
-			"x": -dir * _ambient_lane_offset(), "z": drive.pos.z - 150.0 - (i / 2) * spacing if dir > 0 else drive.pos.z + 280.0 + (i / 2) * spacing,
+			"x": _ambient_lane_position(INF, dir), "z": drive.pos.z - 150.0 - (i / 2) * spacing if dir > 0 else drive.pos.z + 280.0 + (i / 2) * spacing,
 		}
 		if kind in Fleet.BIG:
 			var node: Node3D = Fleet.dps_car() if kind == "dps" else Fleet.taxi() if kind == "taxi" else RoadBody.model(kind, Fleet.paint(rng))
@@ -2645,7 +2645,7 @@ func _reset_ambient() -> void:
 		traffic[i].erase("lane_target")
 		traffic[i].erase("quiet_stop_z")
 		traffic[i].z = drive.pos.z - 170.0 if traffic[i].dir > 0 else drive.pos.z + 280.0
-		traffic[i].x = -traffic[i].dir * _ambient_lane_offset()
+		traffic[i].x = _ambient_lane_position(INF, traffic[i].dir)
 		traffic[i].yaw = 0.0 if traffic[i].dir > 0 else PI
 
 
@@ -2924,21 +2924,23 @@ func _ambient_quiet_gap(car: Dictionary) -> float:
 ## Smoothly move toward the centre before a parked body, then return after the entire tail clears.
 ## If no supported/legal gap exists or an oncoming car occupies it, wait with bumper clearance.
 func _ambient_park_plan(car: Dictionary) -> Dictionary:
-	var nominal: float = -car.dir * _ambient_lane_offset(float(car.z))
+	var nominal: float = _ambient_lane_position(float(car.z), car.dir)
 	var target := nominal
 	var wait_gap := INF
 	for bodies in street.parked_bodies.values():
 		for body in bodies:
-			if signf(body.p.x) != signf(nominal): continue
 			var ahead: float = (body.p.z - car.z) * car.dir
 			var tail: float = body.hl + float(car.len) * 0.5 + 8.0
 			if ahead > 65.0 or ahead < -tail: continue
-			var inner: float = absf(body.p.x) - body.hw - float(car.get("hw", 0.95)) - 0.4
-			if inner >= absf(nominal): continue
 			var at: Dictionary=street.profile_at(float(body.p.z))
+			var centre: float = at.get("centre_offset", 0.0)
+			var side: float = -car.dir
+			if signf(body.p.x-centre) != side: continue
+			var inner: float = absf(body.p.x-centre) - body.hw - float(car.get("hw", 0.95)) - 0.4
+			if inner >= absf(nominal-centre): continue
 			var median: float = float(at.get("median", 0.0)) * 0.5
 			var minimum := median + float(car.get("hw", 0.95)) + 0.15 if median > 0.0 or at.get("centre", "dashed") != "dashed" else -0.2
-			var passing_x: float = signf(nominal) * inner
+			var passing_x: float = centre + side * inner
 			var supported := inner >= minimum and _departure_clear(Vector3(passing_x, 0, body.p.z), Vector3(0, 0, car.dir), float(car.get("hw", 0.95)), float(car.len) * 0.5)
 			var opposite_clear := true
 			# Only when the passing envelope reaches the opposite lane do oncoming vehicles matter.
@@ -2952,7 +2954,7 @@ func _ambient_park_plan(car: Dictionary) -> Dictionary:
 				continue
 			var weight := 1.0 - smoothstep(20.0, 65.0, ahead) if ahead > 0 else 1.0
 			var desired: float = lerpf(nominal, passing_x, weight)
-			if absf(desired) < absf(target): target = desired
+			if absf(desired-centre) < absf(target-centre): target = desired
 	return {"x": target, "wait_gap": wait_gap}
 
 
@@ -2971,7 +2973,7 @@ func _update_traffic(delta: float) -> void:
 		if (car.z < behind or car.z > behind + span) and not _ambient_visible(car):
 			var entry := car.duplicate()
 			entry.z = behind + 16.0 + float(car.len) * 0.5 if car.dir > 0 else behind + span - 16.0 - float(car.len) * 0.5
-			entry.x = -car.dir * _ambient_lane_offset(float(entry.z))
+			entry.x = _ambient_lane_position(float(entry.z), car.dir)
 			entry.yaw = 0.0 if car.dir > 0.0 else PI
 			if not _ambient_visible(entry) and not _ambient_in_quiet_zone(entry):
 				car.z = entry.z; car.x = entry.x; car.yaw = entry.yaw
@@ -4469,10 +4471,19 @@ func _safe_ambient_lane(car: Dictionary, ahead := 0.0) -> Vector3:
 
 func _ambient_lane_offset(z := INF) -> float:
 	var at: Dictionary=street.profile_at(drive.pos.z if z==INF else z)
+	return _ambient_profile_offset(at)
+
+
+func _ambient_profile_offset(at: Dictionary) -> float:
 	var median_half: float=float(at.get("median",0.0))*0.5
 	var lane_count: int=maxi(1,int(at.get("lanes",2))/2)
 	var lane_width: float=at.get("lane_width",(float(at.get("width",street_half*2.0))*0.5-median_half)/lane_count)
 	return median_half+lane_width*0.5
+
+
+func _ambient_lane_position(z: float, direction: float) -> float:
+	var at: Dictionary = street.profile_at(drive.pos.z if z == INF else z)
+	return float(at.get("centre_offset", 0.0)) - direction * _ambient_profile_offset(at)
 
 
 func _rebase_timing(label: String, start: int) -> int:

@@ -233,6 +233,10 @@
       ${head(`<span class="ibadge">${ic("map")}</span>`, "Сцена")}
       ${assistant ? card("Подготовлено Codex", `<p class="assistant-review-status">${approved ? "Одобрено вами · сцена в игре" : "Ожидает вашего одобрения"}</p>${button(approved ? "withdraw-approval" : "approve-scene", approved ? "Снять одобрение и убрать из игры" : "Одобрить и добавить в игру", approved ? "undo" : "check-circle", approved ? "ghost wide" : "primary wide")}`, {cls:"assistant-review-card"})
         : card("", toggle("playable", "В игре", state.playable, "gamepad"))}
+      ${card("", propertyRow("Формат", chips("scene-format", [
+        {value:"standard", title:"180 × 180 м", icon:"junction", tip:"Обычная сцена · 180 × 180 м"},
+        {value:"compact", title:"90 × 90 м", icon:"road", tip:"Прямая сцена · 90 × 90 м"},
+      ], Number(s.crop || 90) === 45 ? "compact" : "standard")), {cls:"property-fields"})}
       ${card("", propertyRow("Манёвр", maneuver)
         + (lanes.length > 1 ? propertyRow("Полоса", chips("lane", laneItems, curLane)) : "")
         + propertyRow("Ограничение", chips("speed", speeds, q.speedLimit ?? "", {cls:"signs"}))
@@ -253,6 +257,9 @@
       "toggle:playable": (on) => App.setPlayable(on),
       "approve-scene": () => App.setPlayable(true),
       "withdraw-approval": () => App.setPlayable(false),
+      "chip:scene-format": value => {
+        if ((value === "compact" ? 45 : 90) !== Number(state.S.crop || 90)) return Tools.applySceneFormat(value);
+      },
       ...playerGuideHandlers,
       run: () => App.runInGame(false),
       "run-auto": () => App.runInGame(true),
@@ -347,15 +354,62 @@
     if (key === "walk" || key === "edge") return st.surface !== "sand";
     return true;
   }
+  function laneDiagram(st, config) {
+    const centre = 44, top = 17, bottom = 87, L = state.S.layout;
+    const total = Layout.polyLen(Layout.centreline(L,st));
+    const profiles = Array.from({length:33}, (_, i) => Layout.streetProfile(L,st,total*i/32,state.S.crop || 90));
+    const width = (profile,side) => profile[side+"Width"] ?? profile.width/2;
+    const count = (profile,side) => profile[side+"Lanes"] ?? (width(profile,side)-profile.median/2)/config.width;
+    const scale = 34 / Math.max(...profiles.flatMap(p => [width(p,"left"),width(p,"right")]));
+    const edge = (side, sign) => profiles.map((profile,i) => [r3(centre+sign*width(profile,side)*scale),r3(bottom-i/32*(bottom-top))]);
+    const left = edge("left",-1), right = edge("right",1);
+    const outline = [...left,...right.reverse()].map(p => p.join(",")).join(" ");
+    const lines = ["left","right"].flatMap(side => {
+      const sign = side === "left" ? -1 : 1;
+      return Array.from({length:Math.max(0,Math.ceil(Math.max(...profiles.map(p=>count(p,side))))-1)}, (_, i) => {
+        const points = profiles.map((profile,j) => {
+          const n = Math.min(i+1,count(profile,side));
+          return `${r3(centre+sign*(profile.median/2+n*config.width)*scale)},${r3(bottom-j/32*(bottom-top))}`;
+        });
+        return `<polyline points="${points.join(" ")}" fill="none" stroke="#e8eff2" stroke-width=".7" stroke-dasharray="3 3"/>`;
+      });
+    }).join("");
+    const median = [-1,1].flatMap(sign => {
+      const points = profiles.map((profile,i) => `${r3(centre+sign*profile.median/2*scale)},${r3(bottom-i/32*(bottom-top))}`);
+      return sign > 0 ? points.reverse() : points;
+    }).join(" ");
+    return `<svg class="lane-diagram" viewBox="0 0 88 104" role="img" aria-label="Полосы от A к B: слева ${config.a.left} → ${config.b.left}, справа ${config.a.right} → ${config.b.right}">
+      <polygon points="${outline}" fill="#3d4752" stroke="#92a3ae" stroke-width="1"/>${lines}
+      ${profiles.some(p=>p.median) ? `<polygon points="${median}" fill="#749b68"/>` : ""}
+      <path d="M44 84V20m-2 3 2-3 2 3" stroke="var(--accent)" stroke-width="1" fill="none"/>
+      <text x="44" y="11" text-anchor="middle">B</text><text x="44" y="101" text-anchor="middle">A</text></svg>`;
+  }
+  function laneSettings(streets, prefix) {
+    const configs = streets.map(Layout.laneConfig), single = streets.length === 1;
+    const transitions = streets.map(st => Layout.laneTransition(state.S.layout,st,state.S.crop || 90));
+    const value = (end, side) => shared(configs,c => side ? c[end][side] : c[end]);
+    const number = (key, label, val, min, max, step, disabled = false) => `<input type="number" data-text="${prefix}lanes-${key}" aria-label="${esc(label)}" min="${min}" max="${max}" step="${step}" value="${val ?? ""}" placeholder="—" required ${disabled ? "disabled" : ""}>`;
+    const counts = ["a","b"].map(end => `<span class="lane-end">${end.toUpperCase()}</span>${["left","right"].map(side => {
+      const n = value(end,side), key = `${end}-${side}`, label = `${end.toUpperCase()} · ${side === "left" ? "Слева" : "Справа"}`;
+      return `<div class="lane-count"><button type="button" data-act="${prefix}lane-step" data-key="${key}" data-step="-1" aria-label="${label} · убрать полосу" ${n === 1 ? "disabled" : ""}>−</button>${number(key,`${label} · полос`,n,1,6,1)}<button type="button" data-act="${prefix}lane-step" data-key="${key}" data-step="1" aria-label="${label} · добавить полосу" ${n === 6 ? "disabled" : ""}>+</button></div>`;
+    }).join("")}`).join("");
+    const taper = configs.some(c => c.a.left !== c.b.left || c.a.right !== c.b.right);
+    const taperMin = Math.max(...transitions.map(t=>t.min)), taperMax = Math.min(...transitions.map(t=>t.max));
+    const shownTaper = shared(transitions,t => r3(t.length));
+    return `<div class="lane-settings" role="group" aria-label="Полосы дороги"><div class="setting-title"><span>Полосы</span><small>A → B</small></div>
+      <div class="lane-layout ${single ? "" : "lane-multiple"}">${single ? laneDiagram(streets[0],configs[0]) : ""}<div class="lane-counts"><span></span><span class="lane-side">← Слева</span><span class="lane-side">Справа →</span>${counts}</div></div>
+      <div class="road-coordinates lane-dimensions"><label>Полоса, м${number("width","Ширина полосы, м",value("width"),2.5,4.5,.1)}</label><label>Переход, м${number("taper","Длина перехода, м",shownTaper,r3(taperMin),r3(taperMax),.001,!taper || taperMin>=taperMax)}</label></div></div>`;
+  }
   function roadSettings(streets, prefix = "") {
     const val = key => shared(streets.filter(st => roadFieldApplies(st,key)), st => roadValue(st,key));
     const paved = streets.some(st => roadFieldApplies(st,"walk"));
     const centre = streets.some(st => roadFieldApplies(st,"centre"));
     const manual = streets.some(st => st.manualMarks);
+    const custom = streets.some(st => Layout.hasCustomLanes(st));
     const profile = chips(prefix+"kind", Object.entries(Layout.KINDS).map(([value, info]) => ({
       value, title: info.title, html: roadPicture(value),
       tip: `${info.title} · ${String(Layout.widthOf({kind:value})).replace(".", ",")} м`,
-    })), val("kind"), {cls:"road-profiles"});
+    })), custom ? null : val("kind"), {cls:"road-profiles"});
     const surfaces = chips(prefix+"surface", [
       {value:"asphalt", title:"Асфальт", html:'<i class="surface-preview asphalt"></i>'},
       {value:"sand", title:"Грунт", html:'<i class="surface-preview sand"></i>'},
@@ -365,7 +419,8 @@
       value, tip:title, title:value === "none" ? "Нет" : "", html:value === "none" ? "" : `<i class="mark-pic m-${value}"></i>`,
     })), val("centre"), {cls:"road-lines"});
     return card(prefix ? `Дороги · ${streets.length}` : "", `
-      ${fieldTitle("Профиль",val("kind"))}${profile}
+      ${custom ? '<div class="setting-title"><span>Профиль</span><span class="lane-custom">Своя ширина</span></div>' : fieldTitle("Профиль",val("kind"))}${profile}
+      ${laneSettings(streets,prefix)}
       <div class="road-row">${fieldTitle("Покрытие",val("surface"))}${surfaces}</div>
       ${centre ? `<div class="road-row">${fieldTitle("Осевая",val("centre"))}${markButtons}</div>` : ""}
       ${[["edge","Краевая линия"],["walk","Тротуары"],["shoulder","Обочина"]].filter(([key]) => key === "shoulder" || paved).map(([key,title]) =>
@@ -391,8 +446,32 @@
     const h = {[prefix+"marks-auto"]: () => change("manualMarks",st => { delete st.manualMarks; })};
     for (const key of ["walk","edge","shoulder"]) h["toggle:"+prefix+key] = on => setFlag(key,on);
     for (const [key,values] of Object.entries({surface:["asphalt","sand"], kind:Object.keys(Layout.KINDS), centre:["none","dashed","solid","double"]})) {
-      h["chip:"+prefix+key] = value => { if (values.includes(value)) change(key,st => { st[key] = value; }); };
+      h["chip:"+prefix+key] = value => { if (values.includes(value)) change(key,st => { st[key] = value; if (key === "kind") delete st.lanes; }); };
     }
+    const laneKeys = ["a-left","a-right","b-left","b-right","width","taper"];
+    const changeLanes = (key, raw, step = false) => {
+      if (!laneKeys.includes(key)) return false;
+      const streets = selectedOf(refs,"street");
+      const transitions = key === "taper" ? streets.map(st => Layout.laneTransition(state.S.layout,st,state.S.crop || 90)) : [];
+      const n = Number(raw), count = key.includes("-"), min = count ? 1 : key === "width" ? 2.5 : Math.max(...transitions.map(t=>r3(t.min))), max = count ? 6 : key === "width" ? 4.5 : Math.min(...transitions.map(t=>r3(t.max)));
+      const reset = () => {
+        const input = pane().querySelector(`[data-text="${prefix}lanes-${key}"]`);
+        if (input) input.value = input.defaultValue;
+      };
+      if (String(raw).trim() === "" || !Number.isFinite(n) || (!step && (n < min || n > max || count && !Number.isInteger(n)))) { reset(); return false; }
+      const updates = streets.flatMap((st,i) => {
+        const config = Layout.laneConfig(st), [end,side] = key.split("-"), before = side ? config[end][side] : key === "taper" ? r3(transitions[i].length) : config[key];
+        const next = step ? Math.max(min,Math.min(max,before+n)) : n;
+        if (next === before) return [];
+        if (side) config[end][side] = next; else config[key] = next;
+        return [{st,config}];
+      });
+      if (updates.length) App.edit(() => updates.forEach(({st,config}) => Layout.setLaneConfig(st,config)));
+      else reset();
+      return true;
+    };
+    for (const key of laneKeys) h["text:"+prefix+"lanes-"+key] = raw => changeLanes(key,raw);
+    h[prefix+"lane-step"] = d => { if (["-1","1"].includes(d.step)) return changeLanes(d.key,d.step,true); };
     for (const key of ["walk","edge"]) h["chip:"+prefix+key] = value => {
       if (["true","false"].includes(value)) setFlag(key,value === "true");
     };
@@ -859,6 +938,16 @@
       if (!a || !b) return;
       update("road-length", Math.round(Layout.polyLen(Layout.centreline(L, st)) * 10) / 10);
       update("road-heading", Math.round(((Math.atan2(b.x - a.x, b.z - a.z) * 180 / Math.PI + 360) % 360) * 10) / 10);
+      const transition = Layout.laneTransition(L,st,state.S.crop || 90);
+      update("lanes-taper",r3(transition.length));
+      const taper = pane().querySelector('[data-text="lanes-taper"]');
+      if (taper) {
+        const config = Layout.laneConfig(st);
+        taper.min = r3(transition.min); taper.max = r3(transition.max);
+        taper.disabled = App.isLocked(ref) || transition.min>=transition.max || config.a.left===config.b.left && config.a.right===config.b.right;
+      }
+      const diagram = pane().querySelector('.lane-diagram');
+      if (diagram) diagram.outerHTML = laneDiagram(st,Layout.laneConfig(st));
       const straighten = pane().querySelector('[data-act="straighten"]');
       if (straighten) straighten.disabled = !st.bend || App.isLocked(ref);
     } else if (ref.t === "node") {
@@ -950,7 +1039,7 @@
       ${card("", `${st.kind !== "yard" ? `<div class="road-row"><span>Разделитель</span>${chips("median", [...(st.kind === "highway" ? [] : [{value:0,title:"Нет"}]), ...[2,3,5].map(value => ({value,title:`${value} м`}))], Layout.medianOf(st))}</div>` : ""}
         ${App.hasPlayerPlan(s) ? `<label class="road-row"><span>Игрок</span><select data-text="player-end" aria-label="Направление игрока">${!isPlayer ? '<option value="" selected disabled>Не назначен</option>' : ""}${direction}</select></label>` : ""}
         ${st.kind !== "yard" && st.surface !== "sand" && !st.manualMarks ? button("marks-own","Редактировать линии отдельно","marking","ghost small") : ""}`, {cls:"road-sheet"})}
-      ${st.kind === "highway" && highwayEnds.length ? card(highwayEnds.length === 1 ? "Стык трассы" : "", portScheme(), {cls:"road-sheet"}) : ""}
+      ${st.kind === "highway" && !Layout.hasCustomLanes(st) && highwayEnds.length ? card(highwayEnds.length === 1 ? "Стык трассы" : "", portScheme(), {cls:"road-sheet"}) : ""}
       ${ends.map(endPanel).join("")}
       <div class="selection-actions road-footer">${button("select-roads","Все дороги","road","ghost small")}${button("clear-selection","Снять выбор","x","ghost small")}
         <button class="icon-btn" data-act="del" aria-label="Удалить дорогу" title="Удалить дорогу">${ic("trash")}</button></div>`;

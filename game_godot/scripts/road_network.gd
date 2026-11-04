@@ -755,4 +755,4 @@ func _join_median(poly: Array) -> bool:
 ## walls and border strokes follow the same warp as the road; a rectangular
 ## replacement would introduce a step when two authors choose different widths.
 func _continuous_highway(binding: Dictionary) -> bool:
-	return binding.port.get("highway",false) and int(binding.port.get("lanes",2))==6 and float(binding.port.get("median",0.0))>0.01
+	return binding.port.get("custom_lanes", false) or (binding.port.get("highway",false) and int(binding.port.get("lanes",2))==6 and float(binding.port.get("median",0.0))>0.01)

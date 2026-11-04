@@ -141,7 +141,8 @@ const Tools = (() => {
     } else if (tool === "track") {
       html = [["tram", "Трамвайные"], ["railway", "Железнодорожные"]].map(([k,title]) => tile("rail-type", k, title, railPicture(k === "railway"), k === opts.railType)).join("");
     } else if (tool === "junction") {
-      html = Layout.TEMPLATES.map(t => tile("tpl", t.id, t.title, Layout.svg(Layout.template(t.id), 90, 62))).join("");
+      html = tile("scene-format", "compact", "Прямая · 90 м", Layout.svg(Layout.template("straight",45),45,62), false, "Прямая сцена · 90 × 90 м")
+        + Layout.TEMPLATES.map(t => tile("tpl", t.id, t.title, Layout.svg(Layout.template(t.id, S().crop || 90), S().crop || 90, 62))).join("");
     } else if (tool === "marking") {
       html = Object.entries(Catalog.MARKS).map(([k,v]) => tile("mark", k, k === "arrow" ? "Направления" : v.title, k === "bus_stop" ? BusStopMark.svg() : k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`, opts.mark === k, v.title)).join("");
       if (opts.mark === "arrow") extra = `<div class="shelf-strip direction-options">${DirectionMark.variants.map(([k,title]) => tile("mark-direction", k, title, DirectionMark.svg(k), opts.markDirection === k)).join("")}</div>`;
@@ -326,6 +327,7 @@ const Tools = (() => {
       if (d.answerStyle) opts.answerArrowhead = d.answerStyle === "arrow";
       if (d.annotationStyle) opts.annotationStyle = d.annotationStyle;
       if (d.tpl) return applyTemplate(d.tpl);
+      if (d.sceneFormat) return applySceneFormat(d.sceneFormat);
       if (d.brushMode) opts.brushMode = d.brushMode;
       if (d.brushScale) opts.brushScale = Number(d.brushScale);
       if (d.brushTurn) return rotateBrush(Number(d.brushTurn));
@@ -345,22 +347,31 @@ const Tools = (() => {
       !App.state.locked.has("roads") && JSON.stringify(scene) === snapshot;
   }
 
-  async function applyTemplate(kind) {
+  function applySceneFormat(format) {
+    if (!["standard", "compact"].includes(format)) return;
+    return applyTemplate(format === "compact" ? "straight" : "cross", {format, crop:format === "compact" ? 45 : 90});
+  }
+  async function applyTemplate(kind, options = {}) {
     const s = S();
+    if (!s) return;
     if (App.state.locked.has("roads")) return App.toast("Слой дорог заблокирован", "warn");
     const snapshot = JSON.stringify(s);
     const traced = s.roads.some((r) => !r.auto);
-    const ok = await App.confirm("Заменить дороги сцены?", traced
+    const ok = await App.confirm(options.format ? "Сменить формат сцены?" : "Заменить дороги сцены?", options.format
+      ? `${options.format === "compact" ? "Прямая дорога · 90 × 90 м" : "Перекрёсток · 180 × 180 м"}. Дороги, разметка и газоны построятся заново. Остальные объекты сохранят координаты. Можно отменить ⌘Z.`
+      : traced
       ? "Дороги, разметка и газоны сцены построятся заново по выбранному перекрёстку. Дома, деревья, машины и ответы останутся. Можно отменить ⌘Z."
       : "Дороги сцены построятся заново. Можно отменить ⌘Z.", "Заменить");
     if (!ok || !roadEditStillCurrent(s, snapshot)) return;
     App.edit((sc) => {
+      if (options.format) { sc.crop = options.crop; sc.sceneFormat = options.format; }
       sc.layout = Layout.template(kind, sc.crop || 90);
       sc.roads = []; sc.markings = []; sc.lawns = [];
       sc.routes = sc.routes.filter((r) => ["choice", "actor", "guide", "annotation"].includes(r.kind));
     });
     App.select([]);
     set("select");
+    if (options.format) Scene3D.fit?.();
     App.toast("Готово: дороги, разметка и маршруты построены", "good");
   }
 
@@ -1306,5 +1317,5 @@ const Tools = (() => {
   }
   return { editText, init, set, current, list: () => LIST, escape, enter, fitSelection, pickProp, pickActor, pickSign, pickLight, drawPathFor, drawAnswerRoute, editRoads, convertScene,
     get touchDraggable() { return tool !== "answer" && !!HANDLERS[tool]?.up; },
-    applyTemplate, renderBar, lightSpot, rotateBrush, get opts() { return opts; } };
+    applyTemplate, applySceneFormat, renderBar, lightSpot, rotateBrush, get opts() { return opts; } };
 })();

@@ -144,13 +144,16 @@ const Framing = (() => {
   }, true);
 
   // ---- the ticket's photo ---------------------------------------------------------------------
-  const photo = () => state.source?.imageUrl || (state.source?.image ? `/asset/source/${state.source.image}.webp` : null);
+  const photo = () => state.source?.imageUrl ?? (state.source?.image ? `/asset/source/${state.source.category ? `${state.source.category}/` : ""}${state.source.image}.webp` : null);
   function openPhoto() {
     const src = photo();
     if (!src) return;
-    $("#lightbox").innerHTML = `<img src="${src}" alt=""><div class="lightbox-bar"><button class="btn ghost" data-pin>${ic("image")}Закрепить над сценой</button><button class="btn primary" data-close>Закрыть</button></div>`;
+    $("#lightbox").innerHTML = `<img src="${esc(src)}" alt=""><div class="lightbox-bar"><button class="btn ghost" data-pin>${ic("image")}Закрепить над сценой</button><button class="btn primary" data-close>Закрыть</button></div>`;
     $("#lightbox").hidden = false;
   }
+  $("#lightbox").addEventListener("error", (e) => {
+    if (e.target.matches("img")) $("#lightbox").hidden = true;
+  }, true);
   $("#lightbox").addEventListener("click", (e) => {
     if (e.target.closest("[data-pin]")) { pin(true); $("#lightbox").hidden = true; return; }
     if (e.target.closest("[data-close]") || e.target.id === "lightbox") $("#lightbox").hidden = true;
@@ -167,13 +170,18 @@ const Framing = (() => {
     const source = state.source, q = state.S?.question || {}, ru = q.text?.ru || {};
     const answers = source ? source.answers.map(a => a.text) : ru.options || [];
     el.innerHTML = `<div class="refpic-head"><span>Оригинал билета</span>${src ? `<button class="icon-btn" data-big aria-label="Увеличить оригинал">${ic("fit")}</button>` : ""}<button class="icon-btn" data-collapse aria-label="Закрыть оригинал">${ic("x")}</button></div>
-      ${src ? `<img data-photo src="${src}" alt="Фото текущего вопроса">` : ""}
+      ${src ? `<img data-photo src="${esc(src)}" alt="">` : ""}
       <div class="ref-controls"><button class="btn ghost small" data-question aria-pressed="${showQuestion}">Вопрос и ответы</button><button class="btn ghost small" data-comment aria-pressed="${showComment}">Комментарий</button></div>
       <div class="refpic-body">${showQuestion ? `<p class="qtext">${esc(source ? source.question : ru.title || "")}</p><div class="answers">${answers.map((a, i) => `<button class="answer ${q.correct === i ? "on" : ""}" data-correct="${i}"><i>${i + 1}</i><span>${esc(a)}</span></button>`).join("")}</div>` : ""}${showComment ? `<p class="comment">${esc(source?.comment || "Комментарий отсутствует")}</p>` : ""}</div>`;
   }
   (() => {
     const el = $("#refpic");
     let drag = null;
+    el.addEventListener("error", (e) => {
+      if (!e.target.matches("[data-photo]")) return;
+      e.target.remove();
+      el.querySelector("[data-big]")?.remove();
+    }, true);
     el.addEventListener("click", (e) => {
       if (e.target.closest("[data-collapse]")) { pin(false); $("#reference-toggle").focus(); }
       else if (e.target.closest("[data-question]")) { showQuestion = !showQuestion; pin(pinned); }

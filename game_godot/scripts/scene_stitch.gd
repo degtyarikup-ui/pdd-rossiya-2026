@@ -72,7 +72,17 @@ static func describe(data: Dictionary, built: Dictionary) -> Dictionary:
 			var median := float(st.get("median", 0.0)) if kind != "yard" else 0.0
 			if kind == "highway" and median <= 0.0: median = 3.0
 			var width: float = {"yard":5.0,"street":8.4,"avenue":14.0,"highway":21.0}.get(kind,8.4) + median
-			var port := _port(sample.p, -sample.t, width, built)
+			var custom: Dictionary = st.get("lanes", {})
+			var section := _custom_section(st, length, inset if end == 0 else length-inset,
+				int(degree.get(st.a, 0)) == 1 and (absf(absf(a.x)-crop)<0.05 or absf(absf(a.z)-crop)<0.05),
+				int(degree.get(st.b, 0)) == 1 and (absf(absf(b.x)-crop)<0.05 or absf(absf(b.z)-crop)<0.05))
+			var positive: float = section.right if end == 0 else section.left
+			var negative: float = section.left if end == 0 else section.right
+			var lane_width: float = section.width
+			if not custom.is_empty(): width = (positive + negative) * lane_width + median
+			var port := _port(sample.p, -sample.t, width, built,
+				-negative * lane_width - median * 0.5 if not custom.is_empty() else -INF,
+				positive * lane_width + median * 0.5 if not custom.is_empty() else INF)
 			# The built section is authoritative, including older saved highway scenes
 			# that still end at 2+2 until the author resaves them in the editor.
 			var lanes := 4 if kind == "avenue" else 2
@@ -83,6 +93,15 @@ static func describe(data: Dictionary, built: Dictionary) -> Dictionary:
 				"boundary":boundary, "lanes":lanes, "declared_median":median, "highway":kind=="highway",
 				"walk":st.get("walk",true) and st.get("surface", "asphalt") != "sand", "edge":st.get("edge",true),
 				"surface":st.get("surface", "asphalt"),"centre":"none" if st.get("manualMarks",false) else st.get("centre","none" if kind=="yard" else "double" if kind in ["avenue","highway"] else "dashed")}, true)
+			if not custom.is_empty():
+				var offset: float = (sample.p-port.p).dot(right(port.out))
+				# The crop can cut the outermost lane of a very short diagonal. Keep
+				# partial capacities instead of advertising a full lane outside asphalt.
+				positive = _clean_capacity((float(port.width)*0.5-offset-float(port.median)*0.5)/lane_width)
+				negative = _clean_capacity((float(port.width)*0.5+offset-float(port.median)*0.5)/lane_width)
+				port.merge({"custom_lanes": true, "positive_lanes": positive, "negative_lanes": negative,
+					"lanes": positive + negative, "lane_width": lane_width,
+					"centre_offset": offset}, true)
 			if not at_crop:
 				# Finish after turning into a short branch, while the whole car is
 				# still on its road. A minimum lead keeps the nose away from the edge.
@@ -123,6 +142,34 @@ static func describe(data: Dictionary, built: Dictionary) -> Dictionary:
 		var port := _best_port(ports,v(points[-1]),(v(points[-1])-v(points[-2])).normalized(),exclude)
 		if not port.is_empty(): exits[key]=port
 	return {"ports":ports,"entry":entry,"exits":exits}
+
+
+## Mirrors Layout.customProfile, including a saved slice created by splitting a
+## taper. Read the section at the actual cut, never its original endpoint counts.
+static func _custom_section(st: Dictionary, total: float, distance: float, border_a: bool, border_b: bool) -> Dictionary:
+	var raw: Dictionary = st.get("lanes", {})
+	var span: Dictionary = raw.get("profile", {})
+	var config: Dictionary = span.get("config", raw)
+	var kind := str(st.get("kind", "street"))
+	var count := 3 if kind == "highway" else 2 if kind == "avenue" else 1
+	var default_width: float = {"yard": 2.5, "street": 4.2, "avenue": 3.5, "highway": 3.5}.get(kind, 4.2)
+	var width := clampf(float(config.get("width", default_width)), 2.5, 4.5)
+	var collar := minf(34.0, total*0.4)
+	var plain_a := float(span.get("plainA", collar if border_a else 0.0))
+	var plain_b := float(span.get("plainB", collar if border_b else 0.0))
+	var original_length := float(span.get("length", total))
+	if not span.is_empty(): distance = float(span.start)+(float(span.end)-float(span.start))*distance/maxf(0.001,total)
+	var taper := maxf(0.001,minf(clampf(float(config.get("taper",40.0)),5.0,150.0),original_length-plain_a-plain_b))
+	var result := {"width": width}
+	for side in ["left", "right"]:
+		var a := clampi(roundi(float(config.get("a", {}).get(side, count))), 1, 6)
+		var b := clampi(roundi(float(config.get("b", {}).get(side, count))), 1, 6)
+		var t := clampf((distance-plain_a)/taper if a < b else (distance-(original_length-plain_b-taper))/taper,0.0,1.0)
+		result[side] = a+(b-a)*t*t*(3.0-2.0*t)
+	return result
+
+static func _clean_capacity(value: float) -> float:
+	return float(roundi(value)) if absf(value-roundf(value)) < 0.02 else maxf(0.0, value)
 
 
 ## Teaching arrows may be short, edited, or omit a legal branch entirely.
@@ -169,8 +216,10 @@ static func _crossings(ring: Array, p: Vector3, out: Vector3) -> Array:
 	xs.sort()
 	return xs
 
-static func _port(p: Vector3, out: Vector3, width: float, built: Dictionary) -> Dictionary:
-	var lo := -width/2.0;var hi := width/2.0;var median := 0.0
+static func _port(p: Vector3, out: Vector3, width: float, built: Dictionary, minimum := -INF, maximum := INF) -> Dictionary:
+	var bound_lo := -width/2.0 if minimum == -INF else minimum
+	var bound_hi := width/2.0 if maximum == INF else maximum
+	var lo := bound_lo;var hi := bound_hi;var median := 0.0
 	var left: Array = [];var opposite: Array = []
 	var spanning := false;var measured := false
 	for road in built.get("carriageway", []):
@@ -178,8 +227,8 @@ static func _port(p: Vector3, out: Vector3, width: float, built: Dictionary) -> 
 		for i in range(0,xs.size()-1,2):
 			# A parallel street can share the polygon's outer ring. Measure only
 			# this saved street's corridor, never the grass gap and its neighbour.
-			var start := maxf(float(xs[i]), -width/2.0)
-			var end := minf(float(xs[i+1]), width/2.0)
+			var start := maxf(float(xs[i]), bound_lo)
+			var end := minf(float(xs[i+1]), bound_hi)
 			if end <= start: continue
 			measured=true
 			if start<=0.5 and end>=-0.5:
@@ -209,13 +258,32 @@ static func contact_median(port: Dictionary) -> float:
 	return maxf(float(port.get("median",0.0)),float(port.get("declared_median",0.0)))
 
 static func match_score(a: Dictionary, b: Dictionary) -> float:
-	return 500.0*absf(float(a.lanes)-float(b.lanes)) + (200.0 if a.surface!=b.surface else 0.0) + (50.0 if absf(a.declared_median-b.declared_median)>0.1 else 0.0) + absf(a.width-b.width) + (5.0 if a.walk!=b.walk else 0.0)
+	var difference := absf(float(a.lanes)-float(b.lanes))
+	if a.get("custom_lanes", false) or b.get("custom_lanes", false):
+		difference = absf(side_capacity(a, 1)-side_capacity(b, -1)) + absf(side_capacity(a, -1)-side_capacity(b, 1))
+	return 500.0*difference + (200.0 if a.surface!=b.surface else 0.0) + (50.0 if absf(a.declared_median-b.declared_median)>0.1 else 0.0) + absf(a.width-b.width) + (5.0 if a.walk!=b.walk else 0.0)
+
+static func side_lanes(profile: Dictionary, side: int) -> int:
+	return maxi(1, ceili(side_capacity(profile, side)))
+
+static func side_capacity(profile: Dictionary, side: int) -> float:
+	return float(profile.get("positive_lanes" if side > 0 else "negative_lanes", maxi(1, int(profile.get("lanes", 2)) / 2)))
+
+## Entrance ports face out of their scene, opposite to travel along the connector.
+## Reverse only new directional fields; legacy symmetric profiles stay byte-for-byte equal.
+static func reverse_profile(profile: Dictionary) -> Dictionary:
+	var result := profile.duplicate(true)
+	if not profile.get("custom_lanes", false): return result
+	result.positive_lanes = side_capacity(profile, -1)
+	result.negative_lanes = side_capacity(profile, 1)
+	result.centre_offset = -float(profile.get("centre_offset", 0.0))
+	return result
 
 ## First selection tier: matching physical sections need only a straight seam.
 ## Other same-lane profiles remain valid fallbacks, with their existing end blend.
 static func directly_compatible(a: Dictionary, b: Dictionary) -> bool:
 	if a.is_empty() or b.is_empty(): return false
-	return int(a.get("lanes",2)) == int(b.get("lanes",2)) \
+	return not needs_lane_transition(a, b) \
 		and str(a.get("surface","asphalt")) == str(b.get("surface","asphalt")) \
 		and absf(float(a.get("median",0.0))-float(b.get("median",0.0))) <= 0.1 \
 		and absf(float(a.get("width",8.4))-float(b.get("width",8.4))) <= 0.15 \
@@ -224,6 +292,8 @@ static func directly_compatible(a: Dictionary, b: Dictionary) -> bool:
 		and str(a.get("centre","dashed")) == str(b.get("centre","dashed"))
 
 static func needs_lane_transition(a: Dictionary,b: Dictionary) -> bool:
+	if a.get("custom_lanes", false) or b.get("custom_lanes", false):
+		return absf(side_capacity(a, 1)-side_capacity(b, -1)) > 0.01 or absf(side_capacity(a, -1)-side_capacity(b, 1)) > 0.01
 	return int(a.get("lanes",2))!=int(b.get("lanes",2))
 
 ## Place the next entrance exactly against the previous exit, with tangents opposed.
@@ -266,6 +336,9 @@ static func warp(p: Vector3,bindings: Array,inverse := false) -> Vector3:
 		if d< -0.001 or d>END_BLEND: continue
 		var r := right(port.out)
 		var x: float = (p-port.p).dot(r)
+		if port.get("custom_lanes", false) or binding.get("custom_lanes", false):
+			p = _warp_directional(p, x, d, binding, inverse)
+			continue
 		var source: float = port.width/2.0
 		var target := lerpf(source,float(binding.width)/2.0,smoothstep(END_BLEND,0.0,d))
 		if inverse:
@@ -294,14 +367,49 @@ static func warp(p: Vector3,bindings: Array,inverse := false) -> Vector3:
 	return p
 
 
+static func _warp_directional(p: Vector3, x: float, d: float, binding: Dictionary, inverse: bool) -> Vector3:
+	var port: Dictionary = binding.port
+	var t := smoothstep(END_BLEND, 0.0, d)
+	var source := float(port.width) * 0.5
+	var target := lerpf(source, float(binding.width) * 0.5, t)
+	var sm := contact_median(port) * 0.5
+	var tm := lerpf(sm, float(binding.get("median", sm * 2.0)) * 0.5, t)
+	var sc := float(port.get("centre_offset", 0.0))
+	var tc := lerpf(sc, float(binding.get("centre_offset", sc)), t)
+	var sw := WALK_WIDTH if port.get("walk", true) else 0.0
+	var tw := lerpf(sw, WALK_WIDTH if binding.get("walk", port.get("walk", true)) else 0.0, t)
+	if inverse:
+		var swap := source; source = target; target = swap
+		swap = sm; sm = tm; tm = swap
+		swap = sc; sc = tc; tc = swap
+		swap = sw; sw = tw; tw = swap
+	if absf(x) > source + WALK_WIDTH + 2.0: return p
+	var nx: float
+	if absf(x) > source:
+		var offset := absf(x) - source
+		nx = signf(x) * (target + (offset * tw / sw if sw > 0.001 and offset <= sw else offset + tw - sw))
+		if not inverse and p.y > 0.16 and sw > 0.001 and tw < sw: p.y *= tw / sw
+	elif x < sc - sm:
+		nx = lerpf(-target, tc - tm, (x + source) / maxf(0.001, sc - sm + source))
+	elif x > sc + sm:
+		nx = lerpf(tc + tm, target, (x - sc - sm) / maxf(0.001, source - sc - sm))
+	else:
+		nx = tc + (x - sc) * tm / sm if sm > 0.001 else tc
+	return p + right(port.out) * (nx - x)
+
+
 static func joint_profile(a: Dictionary,b: Dictionary) -> Dictionary:
 	var ma := contact_median(a);var mb := contact_median(b)
 	# Both streets are divided but end their dividers in a nose before the contact: the lawn
 	# is bridged nose to nose (RoadNetwork._add_median_bridge), so the divider runs on unbroken.
 	var da := float(a.get("declared_median",0.0));var db := float(b.get("declared_median",0.0))
 	var bridge := minf(da,db) if da>0.01 and db>0.01 and not (ma>0.01 and mb>0.01) else 0.0
-	return {"width":joint_width(a,b),"median":(ma+mb)*0.5 if ma>0.01 and mb>0.01 else 0.0,
+	var result := {"width":joint_width(a,b),"median":(ma+mb)*0.5 if ma>0.01 and mb>0.01 else 0.0,
 		"bridge":bridge,"walk":a.walk and b.walk,"surface":a.surface if a.surface==b.surface else "blend"}
+	if a.get("custom_lanes", false) or b.get("custom_lanes", false):
+		result.merge({"custom_lanes": true, "positive_lanes": side_capacity(a, 1), "negative_lanes": side_capacity(a, -1),
+			"centre_offset": (float(a.get("centre_offset", 0.0)) - float(b.get("centre_offset", 0.0))) * 0.5}, true)
+	return result
 
 ## Asphalt tone fading into a dirt road over the last SURFACE_BLEND metres before the contact.
 static func surface_blend(p: Vector3,bindings: Array) -> float:
@@ -320,7 +428,11 @@ static func median_at(p: Vector3,bindings: Array) -> bool:
 		if int(binding.port.get("lanes",2))==6 and binding.port.get("highway",false):
 			median=lerpf(float(binding.port.get("median",0.0)),median,smoothstep(END_BLEND,0.0,d))
 		if median<=0.001: continue
-		if d>=-0.001 and d<=END_BLEND and absf((p-binding.port.p).dot(right(binding.port.out)))<median/2.0-0.001: return true
+		var offset := 0.0
+		if binding.port.get("custom_lanes", false) or binding.get("custom_lanes", false):
+			offset = lerpf(float(binding.port.get("centre_offset", 0.0)), float(binding.get("centre_offset", binding.port.get("centre_offset", 0.0))), smoothstep(END_BLEND, 0.0, d))
+			median = lerpf(float(binding.port.get("median", 0.0)), median, smoothstep(END_BLEND, 0.0, d))
+		if d>=-0.001 and d<=END_BLEND and absf((p-binding.port.p).dot(right(binding.port.out)) - offset)<median/2.0-0.001: return true
 	return false
 
 ## Only generated triangle meshes with SurfaceTool.set_smooth_group(-1) and

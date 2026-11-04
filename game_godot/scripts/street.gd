@@ -218,6 +218,7 @@ func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 		var pa := _road_profile_at(z0+z);var pb := _road_profile_at(z0+ze)
 		var mid := _road_profile_at(z0+(z+ze)*0.5)
 		var ma := float(pa.get("median",0.0))*0.5;var mb := float(pb.get("median",0.0))*0.5
+		var ca := float(pa.get("centre_offset", 0.0)); var cb := float(pb.get("centre_offset", 0.0))
 		var road_kind := "dirt" if float(mid.dirt_amount)>0.5 else "asphalt"
 		_quad(st, -ha, ha, -hb, hb, z, ze, ROAD_LEVEL, _road_colour(pa), road_kind, z0, ROAD_LEVEL, _road_colour(pb), Vector2(pa.detail_strength,pb.detail_strength))
 		for side: float in [-1.0, 1.0]:
@@ -242,10 +243,10 @@ func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 			if maxf(float(pa.edge_strength),float(pb.edge_strength))>0.001:
 				_quad(st,side*(ha-0.325),side*(ha-0.175),side*(hb-0.325),side*(hb-0.175),z,ze,MARK_LEVEL,_road_colour(pa).lerp(mark,float(pa.edge_strength)),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,float(pb.edge_strength)))
 		if maxf(ma,mb)>0.001:
-			_quad(st,-ma,ma,-mb,mb,z,ze,KERB+0.005,sc.color("ground"),"grass",z0)
+			_quad(st,ca-ma,ca+ma,cb-mb,cb+mb,z,ze,KERB+0.005,sc.color("ground"),"grass",z0)
 			for side in [-1.0,1.0]:
-				_kerb(st,side*ma,side*mb,z,ze,pave,-side)
-				_quad(st,side*(ma+0.125),side*(ma+0.275),side*(mb+0.125),side*(mb+0.275),z,ze,MARK_LEVEL,mark,"",z0)
+				_kerb(st,ca+side*ma,cb+side*mb,z,ze,pave,-side)
+				_quad(st,ca+side*(ma+0.125),ca+side*(ma+0.275),cb+side*(mb+0.125),cb+side*(mb+0.275),z,ze,MARK_LEVEL,mark,"",z0)
 		z = ze
 	# Centre dashes 1.5: 2 m dash, 3 m gap, phase from world z.
 	z = ceilf(z0 / 5.0) * 5.0 - z0
@@ -254,13 +255,23 @@ func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 			var a := maxf(z,float(span[0]));var b := minf(minf(z+2.0,L),float(span[1]))
 			if b<=a: continue
 			var pa := _road_profile_at(z0+a);var pb := _road_profile_at(z0+b)
+			var ca := float(pa.get("centre_offset", 0.0)); var cb := float(pb.get("centre_offset", 0.0))
 			var median: float=maxf(float(pa.get("median",0.0)),float(pb.get("median",0.0)))
 			if median<=0.001 and maxf(float(pa.centre_dashed),float(pb.centre_dashed))>0.001:
-				_quad(st,-0.09,0.09,-0.09,0.09,a,b,MARK_LEVEL,_road_colour(pa).lerp(mark,float(pa.centre_dashed)),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,float(pb.centre_dashed)))
-			var lanes_a := lane_boundaries(z0+a,_half(half_at,z0+a));var lanes_b := lane_boundaries(z0+b,_half(half_at,z0+b))
-			for lane in mini(lanes_a.size(),lanes_b.size()):
-				if minf(float(pa.dirt_amount),float(pb.dirt_amount))>=0.999: continue
-				for side in [-1.0,1.0]: _quad(st,side*lanes_a[lane]-0.065,side*lanes_a[lane]+0.065,side*lanes_b[lane]-0.065,side*lanes_b[lane]+0.065,a,b,MARK_LEVEL,_road_colour(pa).lerp(mark,1.0-float(pa.dirt_amount)),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,1.0-float(pb.dirt_amount)))
+				_quad(st,ca-0.09,ca+0.09,cb-0.09,cb+0.09,a,b,MARK_LEVEL,_road_colour(pa).lerp(mark,float(pa.centre_dashed)),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,float(pb.centre_dashed)))
+			if pa.get("custom_lanes", false) or pb.get("custom_lanes", false):
+				var half_a := _half(half_at,z0+a); var half_b := _half(half_at,z0+b)
+				var strokes_a := directional_boundaries(z0+a); var strokes_b := directional_boundaries(z0+b)
+				for slot in strokes_a:
+					if not strokes_b.has(slot) or minf(float(pa.dirt_amount),float(pb.dirt_amount)) >= 0.999: continue
+					var xa: float = strokes_a[slot]; var xb: float = strokes_b[slot]
+					if half_a - absf(xa) <= 0.25 and half_b - absf(xb) <= 0.25: continue
+					_quad(st,xa-0.065,xa+0.065,xb-0.065,xb+0.065,a,b,MARK_LEVEL,_road_colour(pa).lerp(mark,1.0-float(pa.dirt_amount)),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,1.0-float(pb.dirt_amount)))
+			else:
+				var lanes_a := lane_boundaries(z0+a,_half(half_at,z0+a));var lanes_b := lane_boundaries(z0+b,_half(half_at,z0+b))
+				for lane in mini(lanes_a.size(),lanes_b.size()):
+					if minf(float(pa.dirt_amount),float(pb.dirt_amount))>=0.999: continue
+					for side in [-1.0,1.0]: _quad(st,side*lanes_a[lane]-0.065,side*lanes_a[lane]+0.065,side*lanes_b[lane]-0.065,side*lanes_b[lane]+0.065,a,b,MARK_LEVEL,_road_colour(pa).lerp(mark,1.0-float(pa.dirt_amount)),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,1.0-float(pb.dirt_amount)))
 		z += 5.0
 	z=0.0
 	while z<L:
@@ -269,12 +280,13 @@ func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 			var a:=maxf(z,float(span[0]));var b:=minf(end,float(span[1]))
 			if b<=a: continue
 			var pa := _road_profile_at(z0+a);var pb := _road_profile_at(z0+b)
+			var ca := float(pa.get("centre_offset", 0.0)); var cb := float(pb.get("centre_offset", 0.0))
 			if maxf(float(pa.get("median",0.0)),float(pb.get("median",0.0)))>0.001: continue
 			for mode in ["solid","double"]:
 				var sa := float(pa["centre_"+mode]);var sb := float(pb["centre_"+mode])
 				if maxf(sa,sb)<=0.001: continue
 				for x in ([0.0] if mode=="solid" else [-0.15,0.15]):
-					_quad(st,x-0.065,x+0.065,x-0.065,x+0.065,a,b,MARK_LEVEL,_road_colour(pa).lerp(mark,sa),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,sb))
+					_quad(st,ca+x-0.065,ca+x+0.065,cb+x-0.065,cb+x+0.065,a,b,MARK_LEVEL,_road_colour(pa).lerp(mark,sa),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,sb))
 		z=end
 	# No ground here: the world's one lawn (world.gd _build_ground) lies under everything.
 	# Stacked grass planes a few centimetres apart flicker on a phone's depth buffer.
@@ -288,8 +300,13 @@ func profile_at(z: float) -> Dictionary:
 	var result: Dictionary=a.duplicate() if t<0.5 else b.duplicate()
 	result.width=lerpf(float(a.get("width",ROAD_HALF*2.0)),float(b.get("width",ROAD_HALF*2.0)),t)
 	result.median=lerpf(float(a.get("median",0.0)),float(b.get("median",0.0)),t)
+	if a.get("custom_lanes", false) or b.get("custom_lanes", false):
+		result.custom_lanes = true
+		result.centre_offset = lerpf(float(a.get("centre_offset", 0.0)), float(b.get("centre_offset", 0.0)), t)
 	var aw: float=(float(a.get("width",ROAD_HALF*2.0))-float(a.get("median",0.0)))/maxi(2,int(a.get("lanes",2)))
 	var bw: float=(float(b.get("width",ROAD_HALF*2.0))-float(b.get("median",0.0)))/maxi(2,int(b.get("lanes",2)))
+	if a.get("custom_lanes", false): aw = float(a.get("lane_width", aw))
+	if b.get("custom_lanes", false): bw = float(b.get("lane_width", bw))
 	result.lane_width=lerpf(aw,bw,t)
 	var ad := 1.0 if a.get("surface","asphalt")=="sand" else 0.0
 	var bd := 1.0 if b.get("surface","asphalt")=="sand" else 0.0
@@ -354,6 +371,25 @@ func lane_boundaries(z: float,half: float) -> Array[float]:
 		var bx := bm+(float(b.width)*0.5-bm)*mini(lane,nb)/nb
 		var x := lerpf(ax,bx,t)
 		if half-x>0.25: result.append(x)
+	return result
+
+
+## A stable slot per side and lane keeps a disappearing outer line attached to
+## its edge. Opposite carriageways can taper independently without crossing paint.
+func directional_boundaries(z: float) -> Dictionary:
+	var a: Dictionary = profile if connector.is_empty() else connector.from
+	var b: Dictionary = profile if connector.is_empty() else connector.to
+	var t := 0.0 if connector.is_empty() else smoothstep(float(connector.start), float(connector.end), z)
+	var result := {}
+	for side in [-1, 1]:
+		var na := SceneStitch.side_lanes(a, side); var nb := SceneStitch.side_lanes(b, side)
+		var capacity_a := maxf(0.001, SceneStitch.side_capacity(a, side)); var capacity_b := maxf(0.001, SceneStitch.side_capacity(b, side))
+		for lane in range(1, maxi(na, nb)):
+			var am := float(a.get("median", 0.0)) * 0.5; var bm := float(b.get("median", 0.0)) * 0.5
+			var ac := float(a.get("centre_offset", 0.0)); var bc := float(b.get("centre_offset", 0.0))
+			var ax: float = ac + side * (am + (float(a.get("width", ROAD_HALF * 2.0)) * 0.5 - side * ac - am) * minf(lane, capacity_a) / capacity_a)
+			var bx: float = bc + side * (bm + (float(b.get("width", ROAD_HALF * 2.0)) * 0.5 - side * bc - bm) * minf(lane, capacity_b) / capacity_b)
+			result[Vector2i(side, lane)] = lerpf(ax, bx, t)
 	return result
 
 

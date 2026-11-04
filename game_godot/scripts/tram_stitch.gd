@@ -19,7 +19,7 @@ static func joint(from_plan: Dictionary, from_network: RoadNetwork, from_port: D
 	if from_plan.get("actors", {}).is_empty() or to_plan.get("actors", {}).is_empty(): return result
 	if str(from_port.get("surface", "asphalt")) != "asphalt" or str(to_port.get("surface", "asphalt")) != "asphalt": return result
 	var first := _bound_network(from_network, from_port, road_profile)
-	var second := _bound_network(to_network, to_port, road_profile)
+	var second := _bound_network(to_network, to_port, SceneStitch.reverse_profile(road_profile))
 	var left := _tracks(from_plan, first, from_port, 1.0)
 	var right := _tracks(to_plan, second, to_port, -1.0)
 	var choices: Array = []

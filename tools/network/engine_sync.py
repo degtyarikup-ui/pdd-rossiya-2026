@@ -111,6 +111,19 @@ def sync(sid: str) -> dict:
     routes = {r["id"]: r for r in net.get("routes", [])}
     support = SurfaceSupport(build.build(net))
 
+    # Explicit scene formats change the playable footprint, not only the
+    # editor's crop. Keep legacy exports identical until the author chooses one.
+    if net.get("sceneFormat") in ("standard", "compact"):
+        crop = float(net.get("crop", 90))
+        out["crop"] = crop
+        out["startZ"] = -crop
+        out["centerZ"] = 0
+        out["sceneFormat"] = net["sceneFormat"]
+        mask = out.get("roadMask") or {}
+        cell = float(mask.get("cell", .25))
+        out["roadMask"] = {**mask, "cell": cell, "x": -crop, "z": -crop,
+                           "width": round(2 * crop / cell), "height": round(2 * crop / cell)}
+
     player = (net.get("layout") or {}).get("player") or {}
     free_pose = player.get("pose") if player.get("mode") == "free" else None
     stop = free_pose if isinstance(free_pose, dict) else net["stop"]

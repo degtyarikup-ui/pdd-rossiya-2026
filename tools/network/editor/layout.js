@@ -39,7 +39,29 @@ const Layout = (() => {
   const kindOf = (st) => KINDS[st.kind] || KINDS.street;
   // A street with a dividing strip (median, m) is that much wider: the strip in the middle, the lanes beside it.
   const medianOf = (st) => (st.kind === "yard" ? 0 : Number(st.median) || (st.kind === "highway" ? 3 : 0));
-  const widthOf = (st) => kindOf(st).width + medianOf(st);
+  const hasCustomLanes = st => !!st.lanes;
+  function laneConfig(st) {
+    const kind = kindOf(st), count = kind.lanes.length;
+    const raw = st.lanes || {}, side = end => {
+      const fallback = st.kind === "highway" && st.ends?.[end]?.port === "avenue" ? 2 : count;
+      const span = raw.profile, actual = span && profileCounts(span.config,span[end === "a" ? "start" : "end"],span.length,span.plainA,span.plainB);
+      return {left: Math.max(1, Math.min(6, Math.round(Number(actual?.left ?? raw[end]?.left) || fallback))),
+        right: Math.max(1, Math.min(6, Math.round(Number(actual?.right ?? raw[end]?.right) || fallback)))};
+    };
+    return {a: side("a"), b: side("b"), width: Math.max(2.5, Math.min(4.5, Number(raw.width) || kind.width / (count * 2))),
+      taper: Math.max(5, Math.min(150, Number(raw.taper) || 40))};
+  }
+  function setLaneConfig(st, config) {
+    const value = laneConfig({...st, lanes: config});
+    if (JSON.stringify(st.lanes) === JSON.stringify(value)) return false;
+    st.lanes = value;
+    return true;
+  }
+  const widthOf = (st) => {
+    if (!hasCustomLanes(st)) return kindOf(st).width + medianOf(st);
+    const lanes = st.lanes.profile?.config || laneConfig(st);
+    return (Math.max(lanes.a.left, lanes.b.left) + Math.max(lanes.a.right, lanes.b.right)) * lanes.width + medianOf(st);
+  };
   const controlsPlayer = (scene) => !!scene.layout && !scene.layout.preserveSource;
   const planGenerated = (scene, item) => !!item.planGenerated &&
     String(item.id || "").startsWith(scene.layout?.generatedPrefix || "plan_");
@@ -82,7 +104,103 @@ const Layout = (() => {
       return null;
     });
   }
+  function profileCounts(lanes, distance, total, plainA, plainB) {
+    const length = Math.max(.001,Math.min(lanes.taper,total-plainA-plainB));
+    const count = side => {
+      const a = lanes.a[side], b = lanes.b[side];
+      if (a === b) return a;
+      const t = Math.max(0,Math.min(1,a < b ? (distance-plainA)/length : (distance-(total-plainB-length))/length));
+      return a+(b-a)*t*t*(3-2*t);
+    };
+    return {left:count("left"),right:count("right")};
+  }
+  function laneTransition(L,st,crop) {
+    const total = polyLen(centreline(L,st)), collar = Math.min(34,total*.4);
+    const aCollar = nodeKind(L,nodeOf(L,st.a),crop) === "border" ? collar : 0;
+    const bCollar = nodeKind(L,nodeOf(L,st.b),crop) === "border" ? collar : 0;
+    const max = Math.min(150,Math.max(.001,total-aCollar-bCollar)), requested = laneConfig(st).taper;
+    const span = st.lanes?.profile;
+    let length = Math.min(max,requested);
+    if (span) {
+      const sourceLength = Math.min(span.config.taper,span.length-span.plainA-span.plainB);
+      length = Math.max(...["left","right"].map(side => {
+        const a = span.config.a[side],b = span.config.b[side];
+        if (a === b) return 0;
+        const start = a < b ? span.plainA : span.length-span.plainB-sourceLength;
+        return Math.max(0,Math.min(span.end,start+sourceLength)-Math.max(span.start,start));
+      }));
+    }
+    return {min:Math.min(5,max),max,length,requested,aCollar,bCollar};
+  }
+  function customProfile(L, st, d, crop, total = polyLen(centreline(L, st))) {
+    const span = st.lanes.profile, lanes = span?.config || laneConfig(st), median = medianOf(st);
+    // The runtime joins scenes 24 m before their edges and blends another 10 m.
+    // Keep both authored endpoint sections constant throughout those collars.
+    const collar = Math.min(34,total*.4);
+    const plainA = span ? span.plainA : nodeKind(L,nodeOf(L,st.a),crop) === "border" ? collar : 0;
+    const plainB = span ? span.plainB : nodeKind(L,nodeOf(L,st.b),crop) === "border" ? collar : 0;
+    const distance = span ? span.start+(span.end-span.start)*d/Math.max(.001,total) : d;
+    const counts = profileCounts(lanes,distance,span?.length || total,plainA,plainB);
+    const leftLanes = counts.left, rightLanes = counts.right;
+    const leftWidth = median/2+lanes.width*leftLanes, rightWidth = median/2+lanes.width*rightLanes;
+    return {width:leftWidth+rightWidth,median,leftWidth,rightWidth,leftLanes,rightLanes,laneWidth:lanes.width,blend:1};
+  }
+  function customOffset(L, st, points, crop, side, extra = 0) {
+    const line = centreline(L, st), total = polyLen(line), normal = offsetRight(points, 1);
+    return points.map((p,i) => {
+      const profile = customProfile(L, st, projectOn(line, p), crop, total);
+      return P(add(p, mul(sub(normal[i], p), side * (profile[side > 0 ? "rightWidth" : "leftWidth"] + extra))));
+    });
+  }
+  function customOutline(L, st, points, crop) {
+    const dense = densePath(points, 1.5);
+    return simpleOutline([...customOffset(L,st,dense,crop,-1), ...customOffset(L,st,dense,crop,1).reverse()]);
+  }
+  function streetOutline(L,st,crop) {
+    const line = centreline(L,st);
+    if (hasCustomLanes(st)) return customOutline(L,st,line,crop);
+    const width = widthOf(st);
+    return [...offsetRight(line,-width/2),...offsetRight(line,width/2).reverse()];
+  }
+  function streetHitDistance(L,st,point,crop,tolerance=.5) {
+    const line = centreline(L,st), at = projectOn(line,point), pose = along(line,at), distance = dist(point,pose.p);
+    if (!hasCustomLanes(st)) return distance < widthOf(st)/2+tolerance ? distance : Infinity;
+    const profile = streetProfile(L,st,at,crop), lateral = dot(sub(point,pose.p),right(pose.t));
+    const longitudinal = Math.abs(dot(sub(point,pose.p),pose.t));
+    return lateral > -profile.leftWidth-tolerance && lateral < profile.rightWidth+tolerance && longitudinal <= tolerance
+      ? distance : Infinity;
+  }
+  function customLane(L, st, startNode, offset, crop) {
+    const line = centreline(L, st), total = polyLen(line), points = densePath(line, 1.5), normal = offsetRight(points, 1);
+    const config = st.lanes.profile?.config || laneConfig(st), side = startNode === st.a ? "right" : "left", sign = side === "right" ? 1 : -1;
+    const index = Math.max(0, Math.round((Math.abs(offset) - medianOf(st) / 2) / config.width - .5));
+    const path = points.map((p,i) => {
+      const profile = customProfile(L,st,projectOn(line,p),crop,total);
+      const countA = config.a[side], countB = config.b[side];
+      const span = st.lanes.profile, sourceTotal = span?.length || total;
+      const collar = Math.min(34,sourceTotal*.4);
+      const plainA = span ? span.plainA : nodeKind(L,nodeOf(L,st.a),crop) === "border" ? collar : 0;
+      const plainB = span ? span.plainB : nodeKind(L,nodeOf(L,st.b),crop) === "border" ? collar : 0;
+      const localD = projectOn(line,p), d = span ? span.start+(span.end-span.start)*localD/total : localD;
+      const roadLength = Math.min(config.taper,sourceTotal-plainA-plainB);
+      const roadStart = countA < countB ? plainA : sourceTotal-plainB-roadLength;
+      // A car starts merging before the pavement narrows. The longer centreline
+      // keeps the rear corner on asphalt even for six lanes and a short taper.
+      const travelLength = Math.max(roadLength,Math.abs(countA-countB)*config.width*2+8);
+      let start = countA < countB ? roadStart+3 : roadStart+roadLength-3-travelLength;
+      let finish = countA < countB ? start+travelLength : roadStart+roadLength-3;
+      start = Math.max(plainA ? Math.min(25,plainA) : 0,start);
+      finish = Math.min(sourceTotal-(plainB ? Math.min(25,plainB) : 0),finish);
+      const t = Math.max(0,Math.min(1,(d-start)/Math.max(.001,finish-start)));
+      const blend = countA === countB ? 0 : t*t*(3-2*t);
+      const laneA = Math.min(index,countA-1), laneB = Math.min(index,countB-1);
+      const lane = laneA+(laneB-laneA)*blend;
+      return P(add(p,mul(sub(normal[i],p),sign * (profile.median / 2 + config.width * (lane + .5)))));
+    });
+    return startNode === st.a ? path : path.reverse();
+  }
   function streetProfile(L, st, d, crop) {
+    if (hasCustomLanes(st)) return customProfile(L,st,d,crop);
     const width = widthOf(st), median = medianOf(st);
     if (st.kind !== "highway") return { width, median, blend: 1 };
     const total = polyLen(centreline(L, st)), ends = highwayEnds(L, st, crop);
@@ -244,6 +362,12 @@ const Layout = (() => {
     return onBorder(L, n, crop) ? "border" : "dead";
   }
 
+  function radiusAt(L,st,nid,crop) {
+    if (!hasCustomLanes(st)) return widthOf(st)/2;
+    const profile = streetProfile(L,st,st.a === nid ? 0 : polyLen(centreline(L,st)),crop);
+    return Math.max(profile.leftWidth,profile.rightWidth);
+  }
+
   // How far from a node a street's paint stops: the cross street, then the kerb rounding.
   function gapAt(L, st, nid, crop) {
     const n = nodeOf(L, nid);
@@ -251,9 +375,9 @@ const Layout = (() => {
     if (kind === "ring") return n.ring.r + 1.0;
     if (kind === "joint") return 0;
     if (kind === "border") return -1.0;           // beyond the border: the builder cuts it at the square
-    if (kind === "dead") return widthOf(st) / 2;
-    const others = streetsAt(L, nid).filter((s) => s !== st).map(widthOf);
-    return Math.max(...others) / 2 + KERB_R;
+    if (kind === "dead") return radiusAt(L,st,nid,crop);
+    const others = streetsAt(L, nid).filter((s) => s !== st).map(s=>radiusAt(L,s,nid,crop));
+    return Math.max(...others) + KERB_R;
   }
 
   // Where the stop line of a street end lies (from the node), with or without a zebra before it.
@@ -327,7 +451,7 @@ const Layout = (() => {
 
     for (const st of L.streets) {
       streetId = st.id;
-      const w = widthOf(st);
+      const w = widthOf(st), custom = hasCustomLanes(st);
       let pts = centreline(L, st);
       // A border end reaches a metre past the square (the builder cuts it there); others end at the node.
       const ext = (nid, at0) => {
@@ -341,8 +465,8 @@ const Layout = (() => {
       // With a dividing strip the street meets the game's own street (no strip) at the sides of the
       // scene: its last metres there narrow back to the plain width (the builder rounds the step).
       const borderA = nodeKind(L, nodeOf(L, st.a), crop) === "border", borderB = nodeKind(L, nodeOf(L, st.b), crop) === "border";
-      const highway = st.kind === "highway";
-      const plainEnds = !highway && medianOf(st) > 0 && (borderA || borderB);
+      const highway = st.kind === "highway" && !custom;
+      const plainEnds = !custom && !highway && medianOf(st) > 0 && (borderA || borderB);
       const lenAll = polyLen(pts);
       const wide = plainEnds ? cut(pts, borderA ? 22 : 0, lenAll - (borderB ? 22 : 0)) : pts;
       // A dirt street may keep a paved stretch at a junction end (ends.<a|b>.paved metres):
@@ -353,16 +477,18 @@ const Layout = (() => {
       for (const [end, len] of [["a", pavedA], ["b", pavedB]]) {
         if (!len) continue;
         const piece = end === "a" ? cut(wide.length >= 2 ? wide : pts, 0, len + 0.5) : cut(wide.length >= 2 ? wide : pts, lenWide - len - 0.5, lenWide);
-        if (piece.length >= 2) roads.push({ id: `road_${st.id}_paved_${end}`, auto: true, outer: outline(piece, w), holes: [], walk: false, edge: false, surface: "asphalt" });
+        if (piece.length >= 2) roads.push({ id: `road_${st.id}_paved_${end}`, auto: true, outer: custom ? customOutline(L,st,piece,crop) : outline(piece, w), holes: [], walk: false, edge: false, surface: "asphalt" });
       }
-      const roadItem = { id: `road_${st.id}`, auto: true, outer: highway ? profileOutline(L,st,densePath(pts,1.5),crop) : outline(dirtPath && dirtPath.length >= 2 ? dirtPath : wide.length >= 2 ? wide : pts, w), holes: [], walk: st.walk !== false && !st.shoulder && st.surface !== "sand", edge: st.edge !== false && st.surface !== "sand", surface: st.surface || "asphalt" };
+      const roadItem = { id: `road_${st.id}`, auto: true, outer: custom ? customOutline(L,st,dirtPath && dirtPath.length >= 2 ? dirtPath : pts,crop) : highway ? profileOutline(L,st,densePath(pts,1.5),crop) : outline(dirtPath && dirtPath.length >= 2 ? dirtPath : wide.length >= 2 ? wide : pts, w), holes: [], walk: st.walk !== false && !st.shoulder && st.surface !== "sand", edge: st.edge !== false && st.surface !== "sand", surface: st.surface || "asphalt" };
       if (st.shoulder) roadItem.shoulder = 2.5;
       roads.push(roadItem);
       // The taper carries the street's switches: an edge line turned off is off on the narrowing too.
       if (plainEnds) roads.push({ id: `road_${st.id}_plain`, auto: true, outer: outline(pts, kindOf(st).width), holes: [], walk: roadItem.walk, edge: roadItem.edge, surface: roadItem.surface, ...(roadItem.shoulder ? {shoulder:roadItem.shoulder} : {}) });
       if (st.walk === false || st.shoulder || st.surface === "sand") {
         for (const side of [1, -1]) {
-          const inner = offsetRight(pts, side * w / 2), outer = offsetRight(pts, side * (w / 2 + 3.4)).reverse();
+          const samples = custom ? densePath(pts,1.5) : pts;
+          const inner = custom ? customOffset(L,st,samples,crop,side) : offsetRight(pts, side * w / 2);
+          const outer = (custom ? customOffset(L,st,samples,crop,side,3.4) : offsetRight(pts, side * (w / 2 + 3.4))).reverse();
           lawns.push({ id: `auto_lawn_${st.id}_${side > 0 ? "r" : "l"}`, auto: true, outer: simpleOutline([...inner, ...outer]), holes: [] });
         }
       }
@@ -383,12 +509,12 @@ const Layout = (() => {
       // lines (cars turn round its nose); signs and lights can stand on it.
       if (medianOf(st) > 0 && body.length >= 2) {
         const m = medianOf(st);
-        const a0 = d0 > 0 ? d0 + 1.0 : (borderA && !highway ? 30 : 0), a1 = d1 < total ? d1 - 1.0 : total - (borderB && !highway ? 30 : 0);
+        const a0 = d0 > 0 ? d0 + 1.0 : (borderA && !highway && !custom ? 30 : 0), a1 = d1 < total ? d1 - 1.0 : total - (borderB && !highway && !custom ? 30 : 0);
         const strip = cut(line, Math.max(0, a0), Math.min(total, a1));
         // A continuous divider is cut by the same crop plane as its road, so
         // the builder must not round a median nose exactly on the scene border.
-        if (highway && borderA && d0 < 0) strip.unshift(pts[0]);
-        if (highway && borderB && d1 > total) strip.push(pts.at(-1));
+        if ((highway || custom) && borderA && d0 < 0) strip.unshift(pts[0]);
+        if ((highway || custom) && borderB && d1 > total) strip.push(pts.at(-1));
         if (strip.length >= 2) {
           const island = highway ? profileOutline(L,st,densePath(strip,1.5),crop,true) : outline(strip,m);
           if (island.length >= 3) roadItem.holes.push(island);
@@ -404,7 +530,7 @@ const Layout = (() => {
             }).filter(v => boundary === 3.5 || v.blend > .06).map(v => v.p);
             if (points.length >= 2) mark({type:"dashed",points});
           }
-        } else if (st.kind === "avenue") for (const side of [1, -1]) mark({ type: "dashed", points: offsetRight(body, side * (m / 2 + 3.5)).map(P) });
+        } else if (!custom && st.kind === "avenue") for (const side of [1, -1]) mark({ type: "dashed", points: offsetRight(body, side * (m / 2 + 3.5)).map(P) });
         // Where the strip has ended (towards the side of the scene) the plain street's centre line goes on.
         if (highway) {
           highwayEnds(L,st,crop).forEach((end,i) => {
@@ -414,7 +540,7 @@ const Layout = (() => {
             while (plain < total && streetProfile(L,st,i === 0 ? plain : total-plain,crop).median <= .05) plain += .5;
             if (plain) for (const offset of [-.15,.15]) mark({type:"solid",points:offsetRight(cut(from,0,plain),offset).map(P)});
           });
-        } else {
+        } else if (!custom) {
           if (borderA) mark({ type: "dashed", points: cut(line, 0, 26).map(P) });
           if (borderB) mark({ type: "dashed", points: cut(line, total - 26, total).map(P) });
         }
@@ -429,9 +555,23 @@ const Layout = (() => {
           mark({ type: "solid", points: offsetRight(body, 0.15).map(P) });
           mark({ type: "solid", points: offsetRight(body, -0.15).map(P) });
         }
-        if (st.kind === "avenue" && !st.manualMarks && st.surface !== "sand") {
+        if (!custom && st.kind === "avenue" && !st.manualMarks && st.surface !== "sand") {
           mark({ type: "dashed", points: offsetRight(body, 3.5).map(P) });
           mark({ type: "dashed", points: offsetRight(body, -3.5).map(P) });
+        }
+      }
+
+      if (custom && body.length >= 2 && !st.manualMarks && st.surface !== "sand") {
+        const config = laneConfig(st), samples = densePath(body,1), normal = offsetRight(samples,1);
+        for (const [side, sign] of [["left",-1],["right",1]]) {
+          for (let boundary = 1; boundary < Math.max(config.a[side],config.b[side]); boundary++) {
+            const points = samples.filter(p => customProfile(L,st,projectOn(line,p),crop,total)[side + "Lanes"] > boundary + .03)
+              .map(p => {
+                const i = samples.indexOf(p);
+                return P(add(p,mul(sub(normal[i],p),sign * (medianOf(st)/2 + boundary*config.width))));
+              });
+            if (points.length >= 2) mark({type:"dashed",points});
+          }
         }
       }
 
@@ -444,13 +584,18 @@ const Layout = (() => {
         const tin = mul(along(from, 1).t, -1);              // driving toward the node
         if (end.stop) {
           const s = along(from, stopDistance(L, st, nid, crop)).p;
+          const profile = custom ? customProfile(L,st,st.a === nid ? stopDistance(L,st,nid,crop) : total-stopDistance(L,st,nid,crop),crop,total) : null;
+          const incomingWidth = profile ? profile[st.b === nid ? "rightWidth" : "leftWidth"] : w/2;
           mark({ type: "stop", width: 0.4, ...(end.stopStyle === "yield" ? { stopStyle: "yield" } : {}),
-            points: [P(s), P(add(s, mul(right(tin), w / 2)))] });
+            points: [P(s), P(add(s, mul(right(tin), incomingWidth)))] });
         }
         if (end.zebra) {
           const at = kind === "ring" ? gapAt(L, st, nid, crop) + ZEBRA_LEN / 2 : Math.max(gapAt(L, st, nid, crop), 4) + 0.5 + ZEBRA_LEN / 2 + endOffset(L, st, nid, crop);
           const c = along(from, at).p;
-          mark({ type: "zebra", length: ZEBRA_LEN, points: [P(add(c, mul(right(tin), -w / 2))), P(add(c, mul(right(tin), w / 2)))] });
+          const profile = custom ? customProfile(L,st,st.a === nid ? at : total-at,crop,total) : null;
+          const incomingWidth = profile ? profile[st.b === nid ? "rightWidth" : "leftWidth"] : w/2;
+          const outgoingWidth = profile ? profile[st.b === nid ? "leftWidth" : "rightWidth"] : w/2;
+          mark({ type: "zebra", length: ZEBRA_LEN, points: [P(add(c, mul(right(tin), -outgoingWidth))), P(add(c, mul(right(tin), incomingWidth)))] });
         }
       }
     }
@@ -464,8 +609,9 @@ const Layout = (() => {
       if (kind === "ring") {
         roads.push({ id: `road_${n.id}`, auto: true, outer: circle(xy(n), n.ring.r, 64), holes: [circle(xy(n), n.ring.island, 48).reverse()],
           outerEdge: n.ring.outerEdge !== false, innerEdge: n.ring.innerEdge !== false });
-      } else if (kind !== "border") {
-        roads.push({ id: `road_${n.id}`, auto: true, outer: circle(xy(n), Math.max(...at.map(st => streetProfile(L,st,st.a === n.id ? 0 : polyLen(centreline(L,st)),crop).width)) / 2, 40), holes: [] });
+      } else if (kind !== "border" && !continuousProfileJoint(L,n,at)) {
+        roads.push({ id: `road_${n.id}`, auto: true, outer: at.some(hasCustomLanes) ? customNodeCap(L,n,at,crop)
+          : circle(xy(n), Math.max(...at.map(st => streetProfile(L,st,st.a === n.id ? 0 : polyLen(centreline(L,st)),crop).width / 2)), 40), holes: [] });
       }
     }
     if (L.preserveSource) {
@@ -478,9 +624,40 @@ const Layout = (() => {
     return { roads, markings, lawns };
   }
 
+  function continuousProfileJoint(L,node,streets) {
+    if (streets.length !== 2 || !streets.every(st => st.lanes?.profile)) return false;
+    const [a,b] = streets, pa = a.lanes.profile,pb = b.lanes.profile;
+    const da = a.a === node.id ? pa.start : pa.end, db = b.a === node.id ? pb.start : pb.end;
+    return Math.abs(da-db) < .001 && JSON.stringify(pa.config) === JSON.stringify(pb.config)
+      && dot(along(lineFrom(L,a,node.id),0).t,along(lineFrom(L,b,node.id),0).t) < -.99;
+  }
+
+  function customNodeCap(L, node, streets, crop) {
+    const points = streets.flatMap(st => {
+      const line = centreline(L,st), atA = st.a === node.id;
+      const profile = streetProfile(L,st,atA ? 0 : polyLen(line),crop);
+      const tangent = along(line,atA ? 0 : polyLen(line)).t;
+      const shift = hasCustomLanes(st) ? (profile.rightWidth-profile.leftWidth)/2 : 0;
+      return circle(add(xy(node),mul(right(tangent),shift)),profile.width/2,40);
+    });
+    if (streets.length === 1) return points;
+    const sorted = points.sort((a,b) => a[0]-b[0] || a[1]-b[1]);
+    const cross = (a,b,c) => (b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+    const half = points => {
+      const out = [];
+      for (const p of points) {
+        while (out.length > 1 && cross(out.at(-2),out.at(-1),p) <= 0) out.pop();
+        out.push(p);
+      }
+      return out.slice(0,-1);
+    };
+    return [...half(sorted),...half(sorted.slice().reverse())];
+  }
+
   // ---- routes -------------------------------------------------------------------------
   // The lane (a polyline in the direction of travel) of a street driven away from node `nid`.
   function laneAway(L, st, nid, offset, crop) {
+    if (hasCustomLanes(st)) return customLane(L,st,nid,offset,crop);
     if (st.kind === "highway") return highwayLane(L,st,nid,offset,crop);
     const pts = lineFrom(L, st, nid);
     const far = nodeOf(L, otherEnd(st, nid));
@@ -488,7 +665,27 @@ const Layout = (() => {
     return offsetRight(pts, offset);
   }
 
-  function laneOffsets(st) { return kindOf(st).lanes.map((x) => x + medianOf(st) / 2); }
+  function incomingConnectedLane(L,st,toward,offset,crop) {
+    const index = Math.max(0,laneOffsets(st,toward).indexOf(offset));
+    let points = laneAway(L,st,otherEnd(st,toward),offset,crop), current = st, at = otherEnd(st,toward);
+    const needed = polyLen(points)+80, visited = new Set([st.id]);
+    while (polyLen(points) < needed && nodeKind(L,nodeOf(L,at),crop) === "joint") {
+      const previous = streetsAt(L,at).find(s=>s!==current);
+      if (!previous || visited.has(previous.id)) break;
+      visited.add(previous.id);
+      const offsets = laneOffsets(previous,at), lo = offsets[Math.min(index,offsets.length-1)];
+      const before = laneAway(L,previous,otherEnd(previous,at),lo,crop);
+      points = [...before.slice(0,-1),...points];
+      current = previous;at = otherEnd(previous,at);
+    }
+    return points;
+  }
+
+  function laneOffsets(st, toward = st.b) {
+    if (!hasCustomLanes(st)) return kindOf(st).lanes.map((x) => x + medianOf(st) / 2);
+    const config = st.lanes.profile?.config || laneConfig(st), side = toward === st.b ? "right" : "left";
+    return Array.from({length: Math.max(config.a[side],config.b[side])}, (_,i) => config.width*(i+.5)+medianOf(st)/2);
+  }
 
   // Classifies every way out of a junction for a car coming in on street `inSt`: straight, left, right, uturn.
   function exitsOf(L, inSt, nid) {
@@ -525,19 +722,28 @@ const Layout = (() => {
     const inLine = lineFrom(L, inSt, nid);
     const tin = mul(along(inLine, 1).t, -1);
     const outSt = exit.street;
-    const outLanes = laneOffsets(outSt);
-    const inLanes = laneOffsets(inSt);
-    const resolvedInIdx = (inLaneIdx !== null && inLaneIdx !== undefined)
+    const outLanes = laneOffsets(outSt,otherEnd(outSt,nid));
+    const inLanes = laneOffsets(inSt,nid);
+    let resolvedInIdx = (inLaneIdx !== null && inLaneIdx !== undefined)
       ? inLaneIdx
       : Math.max(0, inLanes.findIndex((l) => Math.abs(l - loIn) < 0.05));
-    if (inSt.kind === "highway") loIn = inLanes[resolvedInIdx] ?? inLanes[0];
+    const originalInIdx = resolvedInIdx;
+    if (hasCustomLanes(inSt)) {
+      const config = laneConfig(inSt), count = config[endOf(inSt,nid)][nid === inSt.b ? "right" : "left"];
+      resolvedInIdx = Math.min(resolvedInIdx,count-1);
+    }
+    if (inSt.kind === "highway" || hasCustomLanes(inSt)) loIn = inLanes[resolvedInIdx] ?? inLanes[0];
+    if (hasCustomLanes(outSt)) {
+      const config = laneConfig(outSt), count = config[endOf(outSt,nid)][nid === outSt.a ? "right" : "left"];
+      outLanes.splice(count);
+    }
     const loOut = exitKey === "right" ? outLanes.at(-1)
       : (exitKey === "straight" && outLanes.length > 1 && resolvedInIdx > 0)
         ? outLanes[Math.min(outLanes.length - 1, resolvedInIdx)]
         : outLanes[0];
     const ring = n.ring;
     const pts = [start];
-    if (inSt.kind === "highway") {
+    if (inSt.kind === "highway" && !hasCustomLanes(inSt)) {
       const incoming = highwayLane(L,inSt,otherEnd(inSt,nid),loIn,crop);
       const begin = projectOn(incoming,start), finish = polyLen(incoming) - (ring ? ring.r + 3 : Math.max(...streetsAt(L,nid).filter(s => s !== inSt).map(widthOf))/2 + .5);
       pts.push(...cut(incoming,begin+.5,finish));
@@ -563,8 +769,28 @@ const Layout = (() => {
       for (const p of cut(outLine, dOut, dOut + tail)) pts.push(p);
       return { points: pts, outLanes: loOut };
     }
-    const gapIn = Math.max(...streetsAt(L, nid).filter((s) => s !== inSt).map(widthOf)) / 2 + 0.5;
-    const entry = add(along(inLine, gapIn).p, mul(right(tin), loIn));
+    const gapIn = Math.max(...streetsAt(L, nid).filter((s) => s !== inSt).map(s=>radiusAt(L,s,nid,crop))) + 0.5;
+    let entry = add(along(inLine, gapIn).p, mul(right(tin), loIn));
+    let entryTangent = tin;
+    if (hasCustomLanes(inSt)) {
+      const incoming = laneAway(L,inSt,otherEnd(inSt,nid),inLanes[originalInIdx] ?? inLanes[0],crop);
+      const finish = projectOn(incoming,entry), begin = projectOn(incoming,start);
+      const end = along(incoming,finish);
+      entry = end.p; entryTangent = end.t;
+      if (finish > begin) pts.push(...cut(incoming,begin+.5,finish));
+    }
+    if (exitKey === "uturn" && hasCustomLanes(inSt)) {
+      const back = laneAway(L,inSt,nid,loOut,crop), outAt = gapIn+3, exit = along(back,outAt);
+      const reach = Math.max(gapIn+3,dist(entry,exit.p)*.6);
+      const c0 = add(entry,mul(entryTangent,reach)), c1 = sub(exit.p,mul(exit.t,reach));
+      pts.push(entry);
+      for (let i=1;i<=20;i++) {
+        const t=i/20,u=1-t;
+        pts.push(add(add(mul(entry,u*u*u),mul(c0,3*u*u*t)),add(mul(c1,3*u*t*t),mul(exit.p,t*t*t))));
+      }
+      pts.push(...cut(back,outAt+.5,Math.min(polyLen(back),outAt+tail)));
+      return {points:pts};
+    }
     if (exitKey === "uturn") {
       const R = Math.max(2.6, loIn + 0.8);
       pts.push(entry);
@@ -578,10 +804,10 @@ const Layout = (() => {
       return { points: pts };
     }
     const outLine = laneAway(L, outSt, nid, loOut, crop);
-    const gapOut = widthOf(inSt) / 2 + 0.5;
+    const gapOut = radiusAt(L,inSt,nid,crop) + 0.5;
     const ex = along(outLine, gapOut);
     pts.push(entry);
-    if (exitKey !== "straight") pts.push(...bezier(entry, tin, ex.p, ex.t, 8));
+    if (exitKey !== "straight" || hasCustomLanes(inSt) || hasCustomLanes(outSt)) pts.push(...bezier(entry, entryTangent, ex.p, ex.t, 8));
     pts.push(ex.p);
     for (const p of cut(outLine, gapOut + 0.5, outSt.kind === "highway" ? polyLen(outLine)-3 : gapOut + tail)) pts.push(p);
     return { points: pts };
@@ -1011,7 +1237,7 @@ const Layout = (() => {
     const nid = pl.toward;
     const n = nodeOf(L, nid);
     const q = (scene.question || {}).maneuver;
-    const lanes = laneOffsets(st);
+    const lanes = laneOffsets(st,nid);
     const defaultLane = q === "right" ? lanes.length - 1 : 0;
     const laneIdx = (pl.lane !== undefined && pl.lane !== null) ? Number(pl.lane) : defaultLane;
     const safeLaneIdx = Math.max(0, Math.min(lanes.length - 1, laneIdx));
@@ -1026,8 +1252,16 @@ const Layout = (() => {
     // The car stands with its front at the stop line, not on it (the game puts its centre at the stop).
     // Splitting/shortening a street can leave less room than the usual stop setback.
     // Keep the car on this segment so the approach never ends before its beginning.
-    const carD = Math.min(Math.max(0, total - 1), Math.max(sd + CAR_BACK, Number(pl.questionAt) || sd + CAR_BACK));
+    const carD = hasCustomLanes(st) && Number.isFinite(pl.questionAt)
+      ? Math.max(1,Math.min(total-1,pl.questionAt))
+      : Math.min(Math.max(0, total - 1), Math.max(sd + CAR_BACK, Number(pl.questionAt) || sd + CAR_BACK));
     const s = along(inLine, carD);
+    if (hasCustomLanes(st)) {
+      const lane = laneAway(L,st,otherEnd(st,nid),lo,crop);
+      const axisPoint = add(s.p,mul(right(mul(s.t,-1)),lo));
+      const pose = along(lane,projectOn(lane,axisPoint));
+      return {st,nid,kind,lo,stop:pose.p,tin:pose.t,sd:carD,stopLineDistance:sd,total,lanes,laneIndex:safeLaneIdx};
+    }
     if (st.kind === "highway") {
       const profile = streetProfile(L,st,st.a === nid ? carD : total-carD,crop);
       lo = profile.median/2 + 1.75 + (safeLaneIdx === 2 ? 3.5+3.5*profile.blend : safeLaneIdx*3.5);
@@ -1061,9 +1295,10 @@ const Layout = (() => {
     const plan = streetPlayerPlan(scene);
     if (!plan) return { routes: [], stop: null, exitWidths: {}, approachWidth: 8.4 };
     const { st, nid, kind, lo, stop, tin, sd } = plan;
-    const lane = st.kind === "highway" ? highwayLane(L,st,otherEnd(st,nid),laneOffsets(st)[plan.laneIndex],crop) : offsetRight(lineFrom(L, st, otherEnd(st, nid)), lo);
-    const laneTotal = polyLen(lane);
-    const approach = cut(lane, Math.max(0, laneTotal - sd - 80), laneTotal - sd);
+    const lane = hasCustomLanes(st) ? incomingConnectedLane(L,st,nid,lo,crop)
+      : st.kind === "highway" ? highwayLane(L,st,otherEnd(st,nid),laneOffsets(st)[plan.laneIndex],crop) : offsetRight(lineFrom(L, st, otherEnd(st, nid)), lo);
+    const laneTotal = polyLen(lane), stopAt = hasCustomLanes(st) ? projectOn(lane,stop) : laneTotal-sd;
+    const approach = cut(lane, Math.max(0, stopAt - 80), stopAt);
     const startNode = nodeOf(L, otherEnd(st, nid));
     if (nodeKind(L, startNode, crop) === "border" && approach.length) approach[0] = add(approach[0], mul(tin, -1));
     approach[approach.length - 1] = stop;
@@ -1087,13 +1322,13 @@ const Layout = (() => {
       // No junction ahead: the road goes on (a bend or a straight). One way, called by its turn.
       const ahead = [stop];
       const inLine = lineFrom(L, st, nid);
-      const toEnd = st.kind === "highway" ? cut(lane,projectOn(lane,stop)+.5,polyLen(lane)) : offsetRight(cut(inLine,0,plan.sd).reverse(),lo).slice(1);
+      const toEnd = st.kind === "highway" || hasCustomLanes(st) ? cut(lane,projectOn(lane,stop)+.5,polyLen(lane)) : offsetRight(cut(inLine,0,plan.sd).reverse(),lo).slice(1);
       for (const p of toEnd) ahead.push(p);
       let cur = st, at = nid, guard = 0;
       while (guard++ < 20 && nodeKind(L, nodeOf(L, at), crop) === "joint") {
         const nxt = streetsAt(L, at).find((s) => s !== cur);
         if (!nxt) break;
-        const lanes = laneOffsets(nxt), nextLo = lanes[Math.min(plan.laneIndex,lanes.length-1)];
+        const lanes = laneOffsets(nxt,otherEnd(nxt,at)), nextLo = lanes[Math.min(plan.laneIndex,lanes.length-1)];
         for (const p of laneAway(L, nxt, at, nextLo, crop).slice(1)) ahead.push(p);
         cur = nxt;
         at = otherEnd(nxt, at);
@@ -1199,8 +1434,8 @@ const Layout = (() => {
     let best = null;
     for (const st of L.streets) {
       for (const nid of [st.a, st.b]) {
-        for (const lo of laneOffsets(st)) {
-          const lane = st.kind === "highway" ? highwayLane(L,st,otherEnd(st,nid),lo,scene.crop||90) : offsetRight(lineFrom(L, st, otherEnd(st, nid)), lo);
+        for (const lo of laneOffsets(st,nid)) {
+          const lane = hasCustomLanes(st) ? laneAway(L,st,otherEnd(st,nid),lo,scene.crop||90) : st.kind === "highway" ? highwayLane(L,st,otherEnd(st,nid),lo,scene.crop||90) : offsetRight(lineFrom(L, st, otherEnd(st, nid)), lo);
           for (let i = 0; i + 1 < lane.length; i++) {
             const a = lane[i], b = lane[i + 1], ab = sub(b, a), l2 = dot(ab, ab) || 1;
             const t = Math.max(0, Math.min(1, dot(sub(p, a), ab) / l2));
@@ -1349,9 +1584,13 @@ const Layout = (() => {
   }
 
   // Splits a street at distance `at` along it: a new node there, two streets in its place.
-  function splitStreet(L, sid, at) {
+  function splitStreet(L, sid, at, crop = Math.max(...L.nodes.map(n => Math.max(Math.abs(n.x),Math.abs(n.z)))), context = {}) {
     const st = streetOf(L, sid);
-    const line = centreline(L, st);
+    const player = hasCustomLanes(st) && L.player?.street === sid ? streetPlayerPlan({...context,layout:L,crop}) : null;
+    const line = centreline(L, st), total = polyLen(line);
+    const span = hasCustomLanes(st) ? st.lanes.profile || {config:laneConfig(st),start:0,end:total,length:total,
+      plainA:nodeKind(L,nodeOf(L,st.a),crop) === "border" ? Math.min(34,total*.4) : 0,
+      plainB:nodeKind(L,nodeOf(L,st.b),crop) === "border" ? Math.min(34,total*.4) : 0} : null;
     let q = along(line, at).p, bendA = null, bendB = null;
     if (st.bend) {
       // The displayed polyline has equal parameter steps. Subdivide the original
@@ -1371,13 +1610,23 @@ const Layout = (() => {
     const nid = newId(L, "n");
     L.nodes.push({ id: nid, x: r3(q[0]), z: r3(q[1]) });
     const second = { ...JSON.parse(JSON.stringify(st)), id: newId(L, "s"), a: nid, b: st.b, bend: bendB && P(bendB) };
+    if (span) {
+      const middle = span.start+(span.end-span.start)*Math.max(0,Math.min(1,at/total));
+      st.lanes.profile = {...span,end:middle};
+      second.lanes.profile = {...JSON.parse(JSON.stringify(span)),start:middle};
+    }
     st.b = nid;
     st.bend = bendA && P(bendA);
     const ends = st.ends || {};
     st.ends = { a: ends.a || {} };
     second.ends = { b: ends.b || {} };
     L.streets.push(second);
-    if (L.player && L.player.street === st.id && L.player.toward === second.b) L.player.street = second.id;
+    if (player) {
+      const station = projectOn(line,player.stop), chosen = station <= at ? st : second;
+      const toward = player.nid === second.b ? chosen.b : chosen.a;
+      L.player = {...L.player,street:chosen.id,toward,lane:player.laneIndex,
+        questionAt:projectOn(lineFrom(L,chosen,toward),player.stop)};
+    } else if (L.player && L.player.street === st.id && L.player.toward === second.b) L.player.street = second.id;
     return nid;
   }
 
@@ -1420,7 +1669,7 @@ const Layout = (() => {
     const cuts = stops.filter(stop => stop.street).sort((x, y) => y.at - x.at);
     for (const stop of cuts) {
       const line = centreline(L, streetOf(L, stop.street));
-      stop.node = splitStreet(L, stop.street, projectOn(line, stop.p));
+      stop.node = splitStreet(L, stop.street, projectOn(line, stop.p),scene.crop || 90,scene);
     }
     const chain = stops.sort((x, y) => x.t - y.t).map(stop => nodeAt(L, stop));
     const made = [];
@@ -1586,7 +1835,7 @@ const Layout = (() => {
       if (!st || st.a === nid || st.b === nid) return null;
       const line = centreline(L, st), at = projectOn(line, xy(n)), total = polyLen(line);
       if (at < 1 || at > total - 1 || dist(along(line, at).p, xy(n)) > .15) return null;
-      target = splitStreet(L, st.id, at);
+      target = splitStreet(L, st.id, at,scene.crop || 90,scene);
       const result = moveNode(candidate, nid, xy(nodeOf(L, target)), { snap: false });
       if (result?.blocked) return null;
     } else return null;
@@ -1670,10 +1919,10 @@ const Layout = (() => {
   }
 
   return {
-    controlsPlayer, ensureEditablePlan, planGenerated,
-    medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf, streetProfile, highwayPort, setHighwayPort,
+    controlsPlayer, ensureEditablePlan, planGenerated, hasCustomLanes, laneConfig, setLaneConfig, laneTransition,
+    medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf, streetProfile, streetOutline, streetHitDistance, highwayPort, setHighwayPort,
     applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, pavedEnd, setPavedEnd, PAVED_MAX, snapPoint, overlapsStreet, addStreet, removeStreet, removeNode, moveNode, moveNodes, setStreetGeometry, mergeNodes, connectNode,
-    splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading, laneOffsets,
+    splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading, laneOffsets, laneAway,
     isFreePlayer, playerPose, setPlayerMode, movePlayer, rotatePlayer, freePlayerSupported, resetPlayerGuide, editPlayerRoute, setPlayerRouteManual,
     compactRoutePoints, compactPlayerRoute, refreshPlayerRoutes,
   };

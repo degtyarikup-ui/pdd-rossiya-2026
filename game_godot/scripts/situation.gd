@@ -329,6 +329,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 			s.add_child(sign)
 			s._signs.append(sign)
 	s.set_evidence_visible(false)
+	if s._compact_extent() < INF: s._trim_end_props()
 	if s.network:
 		s._surface_signature=hash(s.network.stitch_bindings)
 		s._surface_cache[s._surface_signature]=s.get_node("surfaces").mesh
@@ -547,7 +548,7 @@ static func _without_baked_ground_staged(mesh: Mesh, net: RoadNetwork = null, fr
 			# and texture shimmer and show seams. Dropped where the network draws the same ground.
 			if flat and net and a.y >= -0.001 and a.y < 0.035:
 				var centre := Vector2((a.x + b.x + c.x) / 3.0, (a.z + b.z + c.z) / 3.0)
-				if net.covers(centre):
+				if net.data.get("sceneFormat") == "compact" or net.covers(centre):
 					continue
 			# Its own kerb walls (0..0.2 m) stand exactly on the network's kerbs: two walls in one
 			# place shimmer (kerb corners, the whole ring of a roundabout). The network draws them.
@@ -602,7 +603,7 @@ static func _without_covered_texture(mesh: Mesh, net: RoadNetwork) -> Mesh:
 		for k in range(0, indices.size(), 3):
 			var a := verts[indices[k]];var b := verts[indices[k+1]];var c := verts[indices[k+2]]
 			var ground := absf(a.y-b.y)<0.001 and absf(a.y-c.y)<0.001 and a.y>=-0.001 and a.y<0.035
-			if ground and net.covers(Vector2((a.x+b.x+c.x)/3.0,(a.z+b.z+c.z)/3.0)): continue
+			if ground and (net.data.get("sceneFormat") == "compact" or net.covers(Vector2((a.x+b.x+c.x)/3.0,(a.z+b.z+c.z)/3.0))): continue
 			keep.append_array([indices[k],indices[k+1],indices[k+2]])
 		if keep.is_empty(): continue
 		arrays[Mesh.ARRAY_INDEX]=keep
@@ -675,14 +676,27 @@ func _place_props(scenery: Scenery, frames: SceneTree = null) -> void:
 		contact.transform_format = MultiMesh.TRANSFORM_3D
 		contact.mesh = Models.contact_mesh()
 		contact.instance_count = trees.size()
+		var poses: Array[Transform3D] = []
+		var tree_sources: Array = []
+		var tree_slots := {}
 		for i in trees.size():
 			var p: Dictionary = trees[i]
-			contact.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3(1.4*p.scale[0],1.0,1.4*p.scale[2])),Vector3(p.pos[0],0.012,p.pos[2])))
+			var xf := Transform3D(Basis.from_scale(Vector3(1.4*p.scale[0],1.0,1.4*p.scale[2])),Vector3(p.pos[0],0.012,p.pos[2]))
+			poses.append(xf)
+			var slot := int(tree_slots.get(p.prop, 0))
+			tree_sources.append({"prop": p.prop, "index": slot})
+			tree_slots[p.prop] = slot + 1
+			contact.set_instance_transform(i, xf)
 		var mi := MultiMeshInstance3D.new()
 		mi.multimesh = contact
 		mi.material_override = Models.contact_material()
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
+		if _compact_extent() < INF:
+			mi.set_meta("authored_transforms", poses.duplicate())
+			mi.set_meta("instance_transforms", poses)
+			mi.set_meta("tree_sources", tree_sources)
+			_pool_nodes["tree_contact"] = mi
 
 
 ## A service driveway may open an existing fence outside the question area.
@@ -1184,18 +1198,43 @@ func street_interval() -> Array:
 
 
 ## Scenery beyond an end's runtime cut belongs to the adjoining scene. Original transforms remain in data.
+func _compact_extent() -> float:
+	if network and network.data.get("sceneFormat") == "compact": return float(network.data.get("crop", 45.0))
+	if data.get("sceneFormat") == "compact": return float(data.get("crop", 45.0))
+	return INF
+
+
 func _trim_end_props() -> void:
+	var extent := _compact_extent()
 	for node in lights + _signs:
-		node.visible = SceneStitch.contains(node.position, _cut_bindings) and (network == null or SceneStitch.contains(node.position, network.stitch_bindings))
+		node.visible = absf(node.position.x) <= extent and absf(node.position.z) <= extent and SceneStitch.contains(node.position, _cut_bindings) and (network == null or SceneStitch.contains(node.position, network.stitch_bindings))
 	for prop in _pool_nodes:
 		var node: MultiMeshInstance3D = _pool_nodes[prop]
+		if node.has_meta("tree_sources"): continue
 		var original: Array = node.get_meta("authored_transforms", [])
 		for index in original.size():
 			var xf: Transform3D = original[index]
-			if not SceneStitch.contains(xf.origin, _cut_bindings) or (network and not SceneStitch.contains(xf.origin, network.stitch_bindings)):
+			var outside := false
+			if extent < INF:
+				var box: AABB = xf * node.multimesh.mesh.get_aabb()
+				outside = box.position.x < -extent or box.end.x > extent or box.position.z < -extent or box.end.z > extent
+			if outside or not SceneStitch.contains(xf.origin, _cut_bindings) or (network and not SceneStitch.contains(xf.origin, network.stitch_bindings)):
 				xf = Scenery.Pool.HIDDEN
 			(node.get_meta("instance_transforms") as Array)[index] = xf
 			Scenery.clear_fade_slot(node, index)
+			node.multimesh.set_instance_transform(index, xf)
+	# A small shadow may fit the square while its larger crown does not. Use
+	# the actual tree instance's visibility, after all tree pools were updated.
+	if _pool_nodes.has("tree_contact"):
+		var node: MultiMeshInstance3D = _pool_nodes.tree_contact
+		var original: Array = node.get_meta("authored_transforms", [])
+		var sources: Array = node.get_meta("tree_sources", [])
+		for index in sources.size():
+			var source: Dictionary = sources[index]
+			var tree: MultiMeshInstance3D = _pool_nodes[source.prop]
+			var hidden: bool = tree.get_meta("instance_transforms")[source.index] == Scenery.Pool.HIDDEN
+			var xf: Transform3D = Scenery.Pool.HIDDEN if hidden else original[index]
+			(node.get_meta("instance_transforms") as Array)[index] = xf
 			node.multimesh.set_instance_transform(index, xf)
 
 
