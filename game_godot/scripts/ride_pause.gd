@@ -8,6 +8,8 @@ signal exit_requested
 signal vehicle_changed(selection: Dictionary)
 signal sound_changed(enabled: bool)
 signal voice_changed(enabled: bool)
+signal voice_speed_changed(speed: float)
+signal voice_premium_requested
 signal debug_menu_revealed
 signal debug_reward_requested(kind: String)
 signal debug_perf_changed(enabled: bool)
@@ -29,6 +31,14 @@ var paint_index := 0
 var sound_enabled := true
 var voice_enabled := false
 var voice_available := true
+var voice_premium := false
+var voice_speed := 1.0
+var _voice_hold: Timer
+var _voice_hold_handled := false
+var _voice_speed_panel: VBoxContainer
+var _voice_slider: HSlider
+var _voice_lock: Label
+var _voice_speed_buttons: Array[Button] = []
 var debug_perf_visible := false
 ## Carousel position in items; whole numbers are resting positions. Circular with three or more cars.
 var position_items := 0.0
@@ -72,7 +82,10 @@ func _init(options: Dictionary, selection := {}) -> void:
 	data = options
 	sound_enabled = bool(options.get("sound", true))
 	voice_available = bool(options.get("voice_available", true))
-	voice_enabled = bool(options.get("voice", false)) and voice_available
+	voice_premium = bool(options.get("voice_premium", false))
+	voice_speed = float(options.get("voice_speed", 1.0))
+	if voice_speed not in QuestionVoice.SPEEDS: voice_speed = 1.0
+	voice_enabled = bool(options.get("voice", false)) and voice_available and voice_premium
 	debug_perf_visible = bool(options.get("debug_perf_visible", false))
 	for i in data.cars.size():
 		if data.cars[i].id == selection.get("id", ""):
@@ -645,21 +658,150 @@ func _build_audio_controls() -> void:
 	_sound_button = _audio_button(Ui.t("gamePauseSound"))
 	_sound_button.button_pressed = sound_enabled
 	_sound_button.toggled.connect(func(on):
+		GameSound.buzz(5)
 		sound_enabled = on
 		_refresh_audio_controls(_sound_button)
 		sound_changed.emit(on)
 	)
 	row.add_child(_sound_button)
 	_voice_button = _audio_button(Ui.t("gamePauseVoice"))
-	_voice_button.button_pressed = voice_enabled
+	_voice_button.toggle_mode = true
 	_voice_button.disabled = not voice_available
-	_voice_button.toggled.connect(func(on):
-		voice_enabled = on
+	_voice_hold = Timer.new()
+	_voice_hold.one_shot = true
+	_voice_hold.wait_time = 0.45
+	add_child(_voice_hold)
+	_voice_hold.timeout.connect(func():
+		if not voice_premium or not voice_available: return
+		_voice_hold_handled = true
+		_show_voice_speed()
+	)
+	_voice_button.button_down.connect(func():
+		_voice_hold_handled = false
+		if voice_premium and voice_available: _voice_hold.start()
+	)
+	_voice_button.button_up.connect(func(): _voice_hold.stop())
+	_voice_button.mouse_exited.connect(func(): _voice_hold.stop())
+	_voice_button.pressed.connect(func():
+		if _voice_hold_handled:
+			_voice_button.set_pressed_no_signal(voice_enabled)
+			return
+		GameSound.buzz(5)
+		if not voice_premium:
+			_voice_button.set_pressed_no_signal(false)
+			voice_premium_requested.emit()
+			return
+		voice_enabled = not voice_enabled
 		_refresh_audio_controls(_voice_button)
-		voice_changed.emit(on)
+		voice_changed.emit(voice_enabled)
 	)
 	row.add_child(_voice_button)
+	_voice_lock = Ui.icon(0xf889, 12, Ui.c("gold")) # lock_rounded
+	_voice_lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_voice_button.add_child(_voice_lock)
+	_voice_lock.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_voice_lock.position = Vector2(-18, 6)
+	_build_voice_speed()
 	_refresh_audio_controls(null)
+
+
+func update_voice_access(allowed: bool, enabled: bool, speed: float) -> void:
+	voice_premium = allowed
+	voice_enabled = enabled and allowed and voice_available
+	voice_speed = speed if speed in QuestionVoice.SPEEDS else 1.0
+	if not allowed: _voice_speed_panel.hide()
+	_refresh_audio_controls(null)
+
+
+func _build_voice_speed() -> void:
+	_voice_speed_panel = VBoxContainer.new()
+	_voice_speed_panel.add_theme_constant_override("separation", 4)
+	_voice_speed_panel.visible = false
+	_box.add_child(_voice_speed_panel)
+	_voice_speed_panel.add_child(Ui.scaled_label(Ui.t("voiceSpeed"), 14, 600, Ui.c("text")))
+	_voice_slider = HSlider.new()
+	_voice_slider.min_value = 0
+	_voice_slider.max_value = 3
+	_voice_slider.step = 1
+	_voice_slider.tick_count = 4
+	_voice_slider.ticks_on_borders = true
+	for name in ["slider", "grabber_area", "grabber_area_highlight"]:
+		var track := Ui.box(Ui.c("divider") if name == "slider" else Ui.c("accent"), 3)
+		track.content_margin_top = 3
+		track.content_margin_bottom = 3
+		_voice_slider.add_theme_stylebox_override(name, track)
+	var thumb := Image.create(28, 28, false, Image.FORMAT_RGBA8)
+	for y in 28:
+		for x in 28:
+			var distance := Vector2(x + 0.5, y + 0.5).distance_to(Vector2(14, 14))
+			var ink := Ui.c("accent") if distance < 10 else Ui.c("card")
+			ink.a = clampf(14.0 - distance, 0.0, 1.0)
+			thumb.set_pixel(x, y, ink)
+	var texture := ImageTexture.create_from_image(thumb)
+	_voice_slider.add_theme_icon_override("grabber", texture)
+	_voice_slider.add_theme_icon_override("grabber_highlight", texture)
+	_voice_slider.add_theme_icon_override("grabber_disabled", texture)
+	_voice_slider.custom_minimum_size = Vector2(0, 44)
+	_voice_slider.value = QuestionVoice.SPEEDS.find(voice_speed)
+	_voice_slider.accessibility_name = Ui.t("voiceSpeed")
+	_voice_slider.value_changed.connect(func(value): _set_voice_speed(int(value)))
+	_voice_speed_panel.add_child(_voice_slider)
+	var ticks := HBoxContainer.new()
+	ticks.add_theme_constant_override("separation", 4)
+	_voice_speed_panel.add_child(ticks)
+	for i in QuestionVoice.SPEEDS.size():
+		var button := Button.new()
+		button.text = _speed_text(QuestionVoice.SPEEDS[i])
+		button.custom_minimum_size = Vector2(0, 44)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.add_theme_font_override("font", Ui.font(600))
+		button.add_theme_font_size_override("font_size", roundi(14 * Ui.text_scale()))
+		button.add_theme_stylebox_override("focus", _focus_ring())
+		button.pressed.connect(func(): _voice_slider.value = i)
+		ticks.add_child(button)
+		_voice_speed_buttons.append(button)
+	_refresh_speed_ticks()
+
+
+func _speed_text(value: float) -> String:
+	return "%sx" % ("1" if is_equal_approx(value, 1.0) else str(value))
+
+
+func _refresh_speed_ticks() -> void:
+	for i in _voice_speed_buttons.size():
+		var selected := is_equal_approx(QuestionVoice.SPEEDS[i], voice_speed)
+		var button := _voice_speed_buttons[i]
+		for state in ["normal", "hover", "pressed"]:
+			button.add_theme_stylebox_override(state, Ui.box(Ui.c("accent_light") if selected else Ui.c("field"), 10))
+		button.add_theme_color_override("font_color", Ui.c("accent") if selected else Ui.c("secondary"))
+		button.accessibility_name = Ui.t("voiceSpeedValue", {"speed": _speed_text(QuestionVoice.SPEEDS[i]).trim_suffix("x")})
+	_voice_slider.accessibility_description = Ui.t("voiceSpeedValue", {"speed": _speed_text(voice_speed).trim_suffix("x")})
+
+
+func _set_voice_speed(index: int) -> void:
+	if not voice_premium or index < 0 or index >= QuestionVoice.SPEEDS.size(): return
+	var next: float = QuestionVoice.SPEEDS[index]
+	if is_equal_approx(next, voice_speed): return
+	voice_speed = next
+	GameSound.buzz(5)
+	_refresh_speed_ticks()
+	_refresh_audio_controls(null)
+	voice_speed_changed.emit(voice_speed)
+
+
+func _show_voice_speed() -> void:
+	GameSound.buzz(8)
+	_voice_speed_panel.visible = not _voice_speed_panel.visible
+	if not _voice_speed_panel.visible: return
+	_voice_slider.set_value_no_signal(QuestionVoice.SPEEDS.find(voice_speed))
+	_refresh_speed_ticks()
+	_layout()
+	if not Host.user_args().has("--reduce-motion"):
+		_voice_speed_panel.modulate.a = 0.0
+		create_tween().tween_property(_voice_speed_panel, "modulate:a", 1.0, 0.18).set_trans(Tween.TRANS_CUBIC)
+	_voice_slider.grab_focus()
+	_scroll.ensure_control_visible.call_deferred(_voice_speed_panel)
+
 
 
 ## A pill toggle: child 0 is the state icon (right), child 1 the label (left).
@@ -691,27 +833,33 @@ func _audio_button(text: String) -> Button:
 	button.resized.connect(func(): button.pivot_offset = button.size * 0.5)
 	button.button_down.connect(func(): _press(button, true))
 	button.button_up.connect(func(): _press(button, false))
-	button.toggled.connect(func(_on): GameSound.buzz(5))
 	return button
 
 
 ## Only [param toggled] animates; the other pill keeps still.
 func _refresh_audio_controls(toggled: Button) -> void:
 	for button: Button in [_sound_button, _voice_button]:
-		var animate := button == toggled
+		var animate := button == toggled and not Host.user_args().has("--reduce-motion")
 		var is_voice := button == _voice_button
 		var enabled := voice_enabled if is_voice else sound_enabled
 		var code := (0xf00e5 if enabled else 0xf0295) if is_voice else (0xf029a if enabled else 0xf0299)
 		var state := ("gameVoiceOn" if enabled else "gameVoiceOff") if is_voice else ("gameSoundOn" if enabled else "gameSoundOff")
 		if is_voice and not voice_available:
 			state = "gameVoiceUnavailable"
-		button.tooltip_text = Ui.t(state)
-		button.accessibility_name = Ui.t(state)
+		var locked := is_voice and not voice_premium and voice_available
+		button.tooltip_text = Ui.t("voicePremium") if locked else Ui.t(state)
+		if is_voice and voice_premium and voice_available:
+			button.tooltip_text += "\n" + Ui.t("voiceSpeedHint")
+		button.accessibility_name = button.tooltip_text
+		if is_voice:
+			_voice_lock.visible = locked
+			button.set_pressed_no_signal(voice_enabled)
 		var icon: Label = button.get_child(0)
 		var label: Label = button.get_child(1)
-		icon.text = char(code)
-		var ink := Ui.c("accent") if enabled else Ui.c("secondary")
-		var background := Ui.c("accent_light") if enabled else Ui.c("field")
+		icon.text = char(0xf00e5 if locked else code)
+		if is_voice: label.text = _speed_text(voice_speed) if voice_premium and voice_available else Ui.t("gamePauseVoice")
+		var ink := Ui.c("gold") if locked else (Ui.c("accent") if enabled else Ui.c("secondary"))
+		var background := Ui.c("gold_surface") if locked else (Ui.c("accent_light") if enabled else Ui.c("field"))
 		var fill: StyleBoxFlat = button.get_theme_stylebox("normal")
 		button.modulate.a = 0.55 if button.disabled else 1.0
 		if not animate:
@@ -807,6 +955,9 @@ func _press(control: Control, down: bool, depth := 0.97) -> void:
 	var previous: Tween = control.get_meta("press_tween") if control.has_meta("press_tween") else null
 	if is_instance_valid(previous):
 		previous.kill()
+	if Host.user_args().has("--reduce-motion"):
+		control.scale = Vector2.ONE
+		return
 	control.pivot_offset = control.size * 0.5
 	var tween := control.create_tween()
 	control.set_meta("press_tween", tween)

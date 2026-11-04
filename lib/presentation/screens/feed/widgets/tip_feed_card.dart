@@ -10,6 +10,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 class TipFeedCard extends StatefulWidget {
   final FeedItem item;
   final bool isCurrent;
+  final bool isPaused;
   final VoidCallback onAutoNext;
   final VoidCallback onPrevious;
   final void Function(double progress, int remainingSeconds)? onTimerTick;
@@ -18,6 +19,7 @@ class TipFeedCard extends StatefulWidget {
     super.key,
     required this.item,
     required this.isCurrent,
+    this.isPaused = false,
     required this.onAutoNext,
     required this.onPrevious,
     this.onTimerTick,
@@ -44,7 +46,7 @@ class _TipFeedCardState extends State<TipFeedCard>
     _timerController = AnimationController(vsync: this, duration: _tipDuration);
 
     _timerController.addListener(() {
-      if (widget.isCurrent) {
+      if (widget.isCurrent && !widget.isPaused) {
         final progress = (1.0 - _timerController.value).clamp(0.0, 1.0);
         final remainingSec = (progress * 15).ceil();
         widget.onTimerTick?.call(progress, remainingSec);
@@ -60,7 +62,10 @@ class _TipFeedCardState extends State<TipFeedCard>
     });
 
     _timerController.addStatusListener((status) {
-      if (status == AnimationStatus.completed && mounted && widget.isCurrent) {
+      if (status == AnimationStatus.completed &&
+          mounted &&
+          widget.isCurrent &&
+          !widget.isPaused) {
         widget.onAutoNext();
       }
     });
@@ -73,7 +78,8 @@ class _TipFeedCardState extends State<TipFeedCard>
 
   void _startTimer() {
     _lastTickedSecond = null;
-    _timerController.forward(from: 0.0);
+    _timerController.value = 0;
+    if (!widget.isPaused) _timerController.forward();
   }
 
   void _stopTimer() {
@@ -88,6 +94,13 @@ class _TipFeedCardState extends State<TipFeedCard>
       _startTimer();
     } else if (oldWidget.isCurrent && !widget.isCurrent) {
       _stopTimer();
+    }
+    if (oldWidget.isPaused != widget.isPaused && widget.isCurrent) {
+      if (widget.isPaused) {
+        _stopTimer();
+      } else {
+        _timerController.forward();
+      }
     }
   }
 

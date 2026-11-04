@@ -81,6 +81,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   }
 
   String? _lastSpokenQuestionId;
+  String? _lastSpokenLanguage;
   int _voiceScheduleGen = 0;
   late final PageController _pageController;
   late final TtsService _ttsService;
@@ -448,11 +449,14 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
       return;
     }
 
-    if (_lastSpokenQuestionId == questionId) {
+    final language = ref.read(appSettingsProvider).effectiveLanguageCode;
+    if (_lastSpokenQuestionId == questionId &&
+        _lastSpokenLanguage == language) {
       return;
     }
 
     _lastSpokenQuestionId = questionId;
+    _lastSpokenLanguage = language;
     final gen = ++_voiceScheduleGen;
     final capturedIndex = _currentIndex;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -461,7 +465,12 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
       if (_isAnswerSubmitted || _selectedAnswerIndex != null) return;
       final q = widget.questions[_currentIndex];
       if ((q['id'] as String) != questionId) return;
-      if (!ref.read(appSettingsProvider).voiceEnabled) return;
+      final settings = ref.read(appSettingsProvider);
+      if (!settings.voiceEnabled ||
+          settings.effectiveLanguageCode != language ||
+          !ref.read(isPremiumProvider)) {
+        return;
+      }
 
       final answerTexts = answers
           .map((answer) => (answer as Map)['text'] as String)
@@ -511,7 +520,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     final comment = question['comment'] as String? ?? '';
     final isAnswered = _isAnswerSubmitted;
     final hasHint = comment.isNotEmpty;
-    final voiceEnabled = appSettings.voiceEnabled;
+    final voiceEnabled =
+        appSettings.voiceEnabled && ref.watch(isPremiumProvider);
     final voiceShouldPlay =
         voiceEnabled && !isAnswered && _selectedAnswerIndex == null;
 

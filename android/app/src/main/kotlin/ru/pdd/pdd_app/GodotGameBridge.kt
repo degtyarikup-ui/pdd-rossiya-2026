@@ -52,15 +52,37 @@ class GodotGameBridge(private val activity: Activity, messenger: BinaryMessenger
                                 val reply = data?.getParcelable<ResultReceiver>("reply") ?: return
                                 val json = data.getString("json") ?: return
                                 if (pending !== result) { reply.send(0, null); return }
-                                android.util.Log.i("PddQuestionReport", "Forwarding request to Flutter")
+                                val showPremium = runCatching {
+                                    org.json.JSONObject(json).optString("request_kind") == "voice_premium"
+                                }.getOrDefault(false)
+                                if (showPremium) {
+                                    activity.startActivity(Intent(activity, activity.javaClass)
+                                        .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                                    @Suppress("DEPRECATION")
+                                    activity.overridePendingTransition(0, 0)
+                                }
+                                fun returnToGame() {
+                                    if (showPremium && pending === result && !activity.isFinishing) {
+                                        activity.startActivity(Intent().setClassName(activity, GAME_ACTIVITY)
+                                            .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                                        @Suppress("DEPRECATION")
+                                        activity.overridePendingTransition(0, 0)
+                                    }
+                                }
                                 channel.invokeMethod("reportQuestion", json, object : MethodChannel.Result {
                                     override fun success(value: Any?) {
-                                        android.util.Log.i("PddQuestionReport", "Flutter result: ${value == true}")
+                                        returnToGame()
                                         if (value is String) reply.send(1, Bundle().apply { putString("json", value) })
                                         else reply.send(if (value == true) 1 else 0, null)
                                     }
-                                    override fun error(code: String, message: String?, details: Any?) = reply.send(0, null)
-                                    override fun notImplemented() = reply.send(0, null)
+                                    override fun error(code: String, message: String?, details: Any?) {
+                                        returnToGame()
+                                        reply.send(0, null)
+                                    }
+                                    override fun notImplemented() {
+                                        returnToGame()
+                                        reply.send(0, null)
+                                    }
                                 })
                             }
                         }))

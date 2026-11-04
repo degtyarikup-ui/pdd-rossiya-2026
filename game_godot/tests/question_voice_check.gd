@@ -7,6 +7,24 @@ const JUNCTION := "ticket_10_13"
 const ROAD := "road_1_16"
 
 
+class FakeVoice extends QuestionVoice:
+	var speech: Array = []
+	var stop_count := 0
+	var pause_count := 0
+	var resume_count := 0
+	var languages: Array = []
+	var voices_present := true
+	func _tts_available() -> bool: return true
+	func _tts_voices(language: String) -> PackedStringArray:
+		languages.append(language)
+		return PackedStringArray([language + "-voice"]) if voices_present else PackedStringArray()
+	func _tts_speak(text: String, voice_id: String, rate: float, utterance: int) -> void:
+		speech.append({"text":text, "voice":voice_id, "speed":rate, "id":utterance})
+	func _tts_stop() -> void: stop_count += 1
+	func _tts_pause() -> void: pause_count += 1
+	func _tts_resume() -> void: resume_count += 1
+
+
 func check(ok: bool, message: String) -> void:
 	checks += 1
 	if not ok:
@@ -61,6 +79,8 @@ func _player_checks() -> void:
 	Ui.lang = "ru"
 	var voice := QuestionVoice.new()
 	root.add_child(voice)
+	voice.set_access(true)
+	voice.set_enabled(true)
 	voice.begin(JUNCTION)
 	check(voice._player.stream is AudioStreamMP3 and voice._player.playing, "Question plays the app's recording")
 	await create_timer(0.12).timeout
@@ -104,7 +124,7 @@ func _player_checks() -> void:
 	for language in ["en", "kk"]:
 		Ui.lang = language
 		voice.begin(JUNCTION)
-		check(not voice.can_play(JUNCTION) and voice._player.stream == null, "No wrong-language speech for " + language)
+		check(voice._player.stream == null, "No Russian recording for " + language)
 	Ui.lang = "ru"
 	voice.available = false
 	voice.begin(JUNCTION)
@@ -127,9 +147,67 @@ func _player_checks() -> void:
 	check(not PackFiles._bytes.has(old_path), "Fetch finishing after node teardown safely clears obsolete audio bytes")
 
 
+func _premium_speed_and_language_checks() -> void:
+	Ui.lang = "ru"
+	var voice := FakeVoice.new()
+	root.add_child(voice)
+	voice.set_enabled(true)
+	voice.begin(JUNCTION)
+	check(not voice.enabled and voice._player.stream == null, "Saved enabled preference cannot play without Premium")
+	voice.set_access(true)
+	voice.set_enabled(true)
+	voice.begin(JUNCTION)
+	await create_timer(0.08).timeout
+	var stream := voice._player.stream
+	var position := voice._player.get_playback_position()
+	voice.set_speed(1.5)
+	check(voice._player.stream == stream and voice._player.get_playback_position() >= position - 0.01, "Rate changes keep recording and position")
+	check(is_equal_approx(voice._player.pitch_scale, 1.5) and is_equal_approx(voice._pitch.pitch_scale, 1.0 / 1.5), "Recorded speed preserves natural pitch")
+	voice.set_access(true, Time.get_unix_time_from_system() - 1.0)
+	check(not voice.enabled and not voice._player.playing, "Expired entitlement immediately stops playback")
+	voice.set_access(true)
+	voice.set_enabled(true)
+	for language in ["en", "kk"]:
+		Ui.lang = language
+		voice.set_speed(1.2)
+		voice.begin("translated", {"title":"Question in " + language, "options":["First", "Second"]})
+		check(voice.speech[-1].voice == language + "-voice" and voice.speech[-1].text.contains("1. First"), "Synth uses exact selected language and numbered answers: " + language)
+		check(is_equal_approx(voice.speech[-1].speed, 1.2) and voice._player.stream == null, "Translation uses selected speed and no Russian clip")
+		check(is_equal_approx(voice.question_tick_delta(1.0, 2.2), 0.2), "Question timer preserves two seconds while synthetic speech is active")
+		check(is_zero_approx(voice.question_tick_delta(0.5, 2.0)), "Long synthetic speech cannot time out the question")
+		voice._on_synth_boundary(9, voice._tts_utterance)
+		var prior: Dictionary = voice.speech[-1]
+		voice.set_speed(1.5)
+		check(voice.speech[-1].text == str(prior.text).substr(9), "Synthetic rate change continues at last word boundary")
+		voice.suspend()
+		check(voice.pause_count > 0, "Translated voice follows pause")
+		voice.resume()
+		check(voice.resume_count > 0, "Translated voice resumes same utterance")
+		var count := voice.speech.size()
+		voice._on_synth_ended(voice._tts_utterance)
+		check(is_equal_approx(voice.question_tick_delta(1.0, 2.0), 1.0), "Natural completion releases timer with two seconds to answer")
+		voice.suspend()
+		voice.resume()
+		check(voice.speech.size() == count, "Completed translation does not replay after pause")
+	voice.begin("stalled", {"title":"Hung engine"})
+	voice._synth_timer_budget = 0.1
+	voice.set_enabled(false)
+	voice.set_enabled(true)
+	check(is_equal_approx(voice.question_tick_delta(0.2, 2.0), 0.2) and not voice._synth_started,
+		"Broken TTS has bounded cumulative time; toggles do not reset its budget")
+	voice.voices_present = false
+	voice.begin("missing_voice", {"title":"Missing language"})
+	check(voice._voice_wait_until > 0 and not voice._synth_started, "Missing language waits for voice discovery without wrong-language fallback")
+	voice.set_access(false)
+	check(voice._voice_wait_until == 0 and not voice.enabled, "Revocation cancels pending language discovery")
+	voice.queue_free()
+	await process_frame
+	Ui.lang = "ru"
+
+
 func _world_checks() -> void:
 	var options := {"cars":[{"id":"hatch", "name":"", "paints":[{"paint":"red", "name":"", "hex":"#ED4621"}]}],
-		"can_start":true, "sound":false, "voice":true, "voice_available":true}
+		"can_start":true, "sound":false, "voice":true, "voice_available":true, "voice_premium":true}
 	Host.io = ProjectSettings.globalize_path("res://../scratch/question-voice-check")
 	DirAccess.make_dir_recursive_absolute(Host.io)
 	Host.io_args = ["--ride-options=" + JSON.stringify(options), "--mute", "--lang=ru"]
@@ -216,6 +294,7 @@ func _run() -> void:
 	_answer_time_checks()
 	_recordings()
 	await _player_checks()
+	await _premium_speed_and_language_checks()
 	await _world_checks()
 	print("question_voice_check: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)

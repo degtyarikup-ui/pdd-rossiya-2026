@@ -15,6 +15,7 @@ import 'package:pdd_app/data/services/notification_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/config/build_info.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/question_voice_toggle.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/presentation/screens/pdd/pdd_screen.dart';
@@ -463,17 +464,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                         ),
                         _buildDivider(),
-                        _buildSettingItem(
-                          icon: Icons.record_voice_over_outlined,
-                          title: appL10n.voiceOverQuestions,
-                          trailing: Switch(
-                            value: settings.voiceEnabled,
-                            onChanged: (value) {
-                              HapticFeedbackHelper.select();
-                              settingsController.setVoiceEnabled(value);
-                            },
-                          ),
-                        ),
+                        const QuestionVoiceSettingsTile(),
                         _buildDivider(),
                         _buildSettingItem(
                           icon: Icons.notifications_none_rounded,

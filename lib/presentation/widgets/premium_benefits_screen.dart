@@ -15,10 +15,11 @@ import 'package:pdd_app/presentation/widgets/premium_motion.dart';
 /// The benefits stay visible behind the plan picker. Only a completed store
 /// purchase/restore or an Android browser handoff closes this route as well.
 class PremiumBenefitsScreen extends StatefulWidget {
-  const PremiumBenefitsScreen({super.key, this.lockedGame});
+  const PremiumBenefitsScreen({super.key, this.lockedGame, this.lockedFeature});
 
   /// The Premium-only game that opened the screen, named above the headline.
   final String? lockedGame;
+  final String? lockedFeature;
 
   @override
   State<PremiumBenefitsScreen> createState() => _PremiumBenefitsScreenState();
@@ -132,6 +133,7 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
                                           entrance: _entrance,
                                           statistics: _statistics,
                                           lockedGame: widget.lockedGame,
+                                          lockedFeature: widget.lockedFeature,
                                         ),
                                         Padding(
                                           padding: const EdgeInsets.fromLTRB(
@@ -324,12 +326,14 @@ class _BenefitsHeader extends StatelessWidget {
     required this.entrance,
     required this.statistics,
     this.lockedGame,
+    this.lockedFeature,
   });
 
   final double width;
   final Animation<double> entrance;
   final Animation<double> statistics;
   final String? lockedGame;
+  final String? lockedFeature;
 
   @override
   Widget build(BuildContext context) {
@@ -434,14 +438,17 @@ class _BenefitsHeader extends StatelessWidget {
           ),
           child: Column(
             children: [
-              if (lockedGame != null) ...[
+              if (lockedGame != null || lockedFeature != null) ...[
                 PremiumReveal(
                   key: const ValueKey('premium-reveal-locked-game'),
                   progress: entrance,
                   begin: 0,
                   end: .48,
                   distance: 8,
-                  child: _LockedGameNote(game: lockedGame!),
+                  child: _LockedGameNote(
+                    message:
+                        lockedFeature ?? l10n.paywallLockedGame(lockedGame!),
+                  ),
                 ),
                 const SizedBox(height: 14),
               ],
@@ -491,11 +498,11 @@ class _BenefitsHeader extends StatelessWidget {
   }
 }
 
-/// Says which game the player tapped, so the paywall answers "why am I here".
+/// Explains the feature or game that brought the user to the paywall.
 class _LockedGameNote extends StatelessWidget {
-  const _LockedGameNote({required this.game});
+  const _LockedGameNote({required this.message});
 
-  final String game;
+  final String message;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
@@ -518,7 +525,7 @@ class _LockedGameNote extends StatelessWidget {
           const SizedBox(width: 6),
           Flexible(
             child: Text(
-              context.l10n.paywallLockedGame(game),
+              message,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 14,
@@ -731,7 +738,11 @@ class _Benefit extends StatelessWidget {
                   child: Center(
                     child: SizedBox.square(
                       dimension: 56 * 24 / 80,
-                      child: FittedBox(child: icon),
+                      child: const Icon(
+                        Icons.record_voice_over_rounded,
+                        size: 24,
+                        color: Color(0xFFB7F700),
+                      ),
                     ),
                   ),
                 )

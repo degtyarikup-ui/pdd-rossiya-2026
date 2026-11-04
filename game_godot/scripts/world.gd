@@ -98,6 +98,8 @@ var ui: GameUi
 var sound: GameSound
 var voice: QuestionVoice
 var voice_timer_extended := false
+var voice_speed_time_credit := 0.0
+var _voice_bridge: Node
 var dbg_t := 0.0
 var dbg_every := 0.0
 var perf_frames := 0
@@ -267,9 +269,20 @@ func _ready() -> void:
 	sound.enabled = not _is_test_run() or _has_arg("--sound")
 	voice = QuestionVoice.new()
 	add_child(voice)
-	voice.available = Ui.lang == "ru"
-	voice.enabled = not _is_test_run() or _has_arg("--voice")
+	voice.available = Ui.lang in ["ru", "en", "kk"]
+	# Embedded access is always supplied by Flutter. Explicit CLI voice is a local preview.
+	voice.set_access(_has_arg("--voice"))
+	voice.set_enabled(_has_arg("--voice"))
 	voice.playback_started.connect(_on_voice_started)
+	voice.access_changed.connect(func():
+		if is_instance_valid(pause_menu): pause_menu.update_voice_access(voice.has_access(), voice.enabled, voice.speed)
+	)
+	voice.voice_unavailable.connect(func():
+		if ui != null: ui.show_notice("voice_unavailable", 6.0)
+	)
+	voice.playback_unavailable.connect(func():
+		if ui != null: ui.show_notice("voice_playback_unavailable", 6.0)
+	)
 	ui.answer_chosen.connect(_on_answer_chosen)
 	ui.continue_pressed.connect(_on_continue)
 	ui.pause_pressed.connect(_on_pause)
@@ -1909,12 +1922,13 @@ func _update_junction(dt: float) -> void:
 ## Both road and junction cards use the same recordings and timer policy.
 func _show_voiced_question(card: Dictionary, id: String, seconds: float) -> void:
 	voice_timer_extended = false
+	voice_speed_time_credit = 0.0
 	if voice.enabled:
 		seconds = maxf(seconds, voice.duration(id) + 2.0)
 	ui.show_question(card, seconds)
 	var history := question_history.mark_shown(id)
 	event.emit({"event": "question_shown", "situation": id, "question_history": history})
-	voice.begin(id)
+	voice.begin(id, card)
 
 
 func _on_voice_started(seconds: float) -> void:
@@ -3317,7 +3331,9 @@ func _show_pause_menu() -> void:
 	var options := _live_garage_options()
 	options.sound = sound.enabled
 	options.voice = voice.enabled
-	options.voice_available = voice.available and Ui.lang == "ru"
+	options.voice_available = voice.available and Ui.lang in ["ru", "en", "kk"]
+	options.voice_premium = voice.has_access()
+	options.voice_speed = voice.speed
 	options.debug_menu = _has_arg("--debug-menu") and phase != "over"
 	options.debug_menu_open = debug_menu_unlocked
 	options.debug_perf_visible = hud.visible
@@ -3331,9 +3347,43 @@ func _show_pause_menu() -> void:
 	pause_menu.vehicle_changed.connect(_on_vehicle_changed)
 	pause_menu.sound_changed.connect(func(on): sound.enabled = on)
 	pause_menu.voice_changed.connect(func(on): voice.set_enabled(on))
+	pause_menu.voice_speed_changed.connect(_on_voice_speed_changed)
+	pause_menu.voice_premium_requested.connect(_on_voice_premium_requested)
 	pause_menu.debug_menu_revealed.connect(func(): debug_menu_unlocked = true)
 	pause_menu.debug_reward_requested.connect(_preview_reward)
 	pause_menu.debug_perf_changed.connect(_set_debug_perf)
+
+
+func _on_voice_speed_changed(value: float) -> void:
+	var previous := voice.speed
+	voice.set_speed(value)
+	# Grant only the largest extra listening budget once per card. Alternating
+	# speeds or restarting a phrase never repeatedly adds answer time.
+	if phase == "question" and not question_over and is_instance_valid(voice._player) and voice._player.stream != null:
+		var extra := maxf(0.0, voice._player.stream.get_length() * (1.0 / voice.speed - 1.0 / previous))
+		if extra > voice_speed_time_credit:
+			ui.ensure_question_seconds(ui.remaining_seconds() + extra - voice_speed_time_credit)
+			voice_speed_time_credit = extra
+
+
+func _on_voice_premium_requested() -> void:
+	if _exiting or not paused or is_instance_valid(_voice_bridge): return
+	_voice_bridge = preload("res://scripts/question_report_bridge.gd").new()
+	add_child(_voice_bridge)
+	if is_instance_valid(pause_menu): pause_menu._voice_button.disabled = true
+	_voice_bridge.data_received.connect(func(data: Dictionary):
+		_voice_bridge.queue_free()
+		_voice_bridge = null
+		if _exiting: return
+		voice.set_access(bool(data.get("voice_premium", false)), float(data.get("voice_expires_at", 0.0)))
+		voice.available = bool(data.get("voice_available", voice.available)) and Ui.lang in ["ru", "en", "kk"]
+		voice.set_speed(float(data.get("voice_speed", voice.speed)))
+		voice.set_enabled(bool(data.get("voice", false)))
+		if is_instance_valid(pause_menu):
+			pause_menu._voice_button.disabled = not voice.available
+			pause_menu.update_voice_access(voice.has_access(), voice.enabled, voice.speed)
+	)
+	_voice_bridge.submit({"request_kind": "voice_premium"})
 
 
 ## The host has already booked previous visits of a resumed ride. Add only
@@ -3525,8 +3575,10 @@ func _start_ride() -> void:
 	tips_enabled = bool(options.get("tips", false))
 	resume_state = options.get("resume", {})
 	sound.enabled = bool(options.get("sound", true)) and not _is_test_run()
-	voice.available = bool(options.get("voice_available", true)) and Ui.lang == "ru"
-	voice.set_enabled(bool(options.get("voice", not _is_test_run())))
+	voice.available = bool(options.get("voice_available", true)) and Ui.lang in ["ru", "en", "kk"]
+	voice.set_access(bool(options.get("voice_premium", false)), float(options.get("voice_expires_at", 0.0)))
+	voice.set_speed(float(options.get("voice_speed", 1.0)))
+	voice.set_enabled(bool(options.get("voice", false)))
 	GameSound.haptics = bool(options.get("haptics", true))
 	var selection := RidePause.new(options, options.get("selected", {}))
 	var car := selection.current()
@@ -3570,7 +3622,9 @@ func _exit_summary() -> Dictionary:
 	if _has_arg("--debug-menu"): out["debug_perf"] = hud.visible
 	out["sound"] = sound.enabled
 	out["voice"] = voice.enabled
-	out["voice_available"] = voice.available and Ui.lang == "ru"
+	out["voice_available"] = voice.available and Ui.lang in ["ru", "en", "kk"]
+	out["voice_speed"] = voice.speed
+	out["voice_premium"] = voice.has_access()
 	return out
 
 
@@ -3619,7 +3673,7 @@ func _process(delta: float) -> void:
 	# Keyboard/autopilot input can arrive through the loading overlay. Keep the car,
 	# traffic and timers still while the first scene is being prepared and rendered.
 	if loader != null: delta = 0.0
-	if phase == "question" and ui.tick(delta) and not question_over:
+	if phase == "question" and ui.tick(voice.question_tick_delta(delta, ui.remaining_seconds())) and not question_over:
 		_on_answer_chosen(-1)
 	run.distance_m = int(drive.distance_traveled)
 	_update_rules(delta)

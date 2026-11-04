@@ -254,6 +254,50 @@ void main() {
       },
     );
 
+    testWidgets('voice paywall returns to the same pending ride on $platform', (
+      tester,
+    ) async {
+      await open(tester);
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        nativePending = Completer<String?>();
+        final ride = GodotGame.play(gameContext, gameRef);
+        await pumpUntilLaunched(tester, 1);
+        const codec = StandardMethodCodec();
+        final reply = Completer<Object?>();
+        tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+          channel.name,
+          codec.encodeMethodCall(
+            const MethodCall(
+              'reportQuestion',
+              '{"request_kind":"voice_premium"}',
+            ),
+          ),
+          (bytes) => reply.complete(codec.decodeEnvelope(bytes!)),
+        );
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump(const Duration(seconds: 2));
+        expect(find.byType(PremiumPaywallSheet), findsOneWidget);
+        expect(find.text(appL10n.voicePremiumRequired), findsOneWidget);
+        expect(reply.isCompleted, isFalse);
+        expect(nativePending!.isCompleted, isFalse);
+        expect(launches, hasLength(1));
+        await tester.tap(find.byKey(const ValueKey('premium-close-benefits')));
+        await tester.pumpAndSettle();
+        final response = jsonDecode(await reply.future as String) as Map;
+        expect(response['voice_premium'], isFalse);
+        expect(response['voice'], isFalse);
+        expect(response['voice_speed'], 1.0);
+        expect(nativePending!.isCompleted, isFalse);
+        expect(launches, hasLength(1));
+        nativePending!.complete(null);
+        await tester.pumpAndSettle();
+        await ride;
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
     testWidgets(
       'all games follow the selected app theme on $platform on every launch',
       (tester) async {
@@ -1001,29 +1045,33 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
   });
 
-  testWidgets('city voice inherits app choice without requiring premium', (
-    tester,
-  ) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('app_settings', jsonEncode({'voiceEnabled': true}));
-    await open(tester);
-    await launch(tester);
-    final ride = options();
-    expect(ride['voice'], isTrue);
-    expect(ride['voice_available'], isTrue);
-    expect(ride['sound'], isFalse);
-    expect((ride['achievement'] as Map)['count'], '0 / 5');
-  });
+  testWidgets(
+    'free city voice stays locked even with a saved enabled preference',
+    (tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('app_settings', jsonEncode({'voiceEnabled': true}));
+      await open(tester);
+      await launch(tester);
+      final ride = options();
+      expect(ride['voice'], isFalse);
+      expect(ride['voice_premium'], isFalse);
+      expect(ride['voice_speed'], 1.0);
+      expect(ride['voice_available'], isTrue);
+      expect(ride['sound'], isFalse);
+      expect((ride['achievement'] as Map)['count'], '0 / 5');
+    },
+  );
 
   testWidgets('voice and effects choices persist independently between rides', (
     tester,
   ) async {
-    await open(tester);
+    await open(tester, premium: true);
     nativeResponse = jsonEncode({
       'run_started': false,
       'sound': false,
       'voice': true,
       'voice_available': true,
+      'voice_speed': 1.5,
     });
     await launch(tester);
     final prefs = await SharedPreferences.getInstance();
@@ -1033,6 +1081,8 @@ void main() {
     nativeResponse = null;
     await launch(tester);
     expect(options()['voice'], isTrue);
+    expect(options()['voice_speed'], 1.5);
+    expect((await progress.loadAppSettings()).voiceSpeed, 1.5);
     expect(options()['sound'], isFalse);
 
     nativeResponse = jsonEncode({
@@ -1050,29 +1100,30 @@ void main() {
     expect(options()['sound'], isTrue);
   });
 
-  testWidgets('unavailable languages preserve saved Russian voice preference', (
-    tester,
-  ) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('godot_city_voice', true);
-    for (final language in ['en', 'kk']) {
-      await open(tester, locale: Locale(language));
-      nativeResponse = jsonEncode({
-        'run_started': false,
-        'voice': false,
-        'voice_available': false,
-      });
+  testWidgets(
+    'translated city voice uses requested language and preserves voice preference',
+    (tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('godot_city_voice', true);
+      for (final language in ['en', 'kk']) {
+        await open(tester, premium: true, locale: Locale(language));
+        nativeResponse = jsonEncode({
+          'run_started': false,
+          'voice': false,
+          'voice_available': false,
+        });
+        await launch(tester);
+        expect(options()['voice'], isTrue);
+        expect(options()['voice_available'], isTrue);
+        expect(prefs.getBool('godot_city_voice'), isTrue);
+      }
+      await open(tester, premium: true);
+      nativeResponse = null;
       await launch(tester);
-      expect(options()['voice'], isFalse);
-      expect(options()['voice_available'], isFalse);
-      expect(prefs.getBool('godot_city_voice'), isTrue);
-    }
-    await open(tester);
-    nativeResponse = null;
-    await launch(tester);
-    expect(options()['voice'], isTrue);
-    expect(options()['voice_available'], isTrue);
-  });
+      expect(options()['voice'], isTrue);
+      expect(options()['voice_available'], isTrue);
+    },
+  );
 }
 
 class _OnRoutePush extends NavigatorObserver {

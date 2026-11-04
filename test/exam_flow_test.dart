@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'helpers/achievement_awards.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,8 +15,30 @@ import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
 import 'package:pdd_app/presentation/widgets/result_stage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Немой TTS, чтобы тесты не трогали платформенный канал flutter_tts.
+/// Немая озвучка, чтобы тесты не запускали платформенный аудиоплеер.
 class _SilentTts implements TtsService {
+  @override
+  ValueListenable<NarrationStatus> get status =>
+      ValueNotifier(NarrationStatus.idle);
+
+  @override
+  Future<void> setAppActive(bool active) async {}
+
+  @override
+  Future<void> configure({
+    required bool enabled,
+    required double speed,
+  }) async {}
+
+  @override
+  Future<void> pause() async {}
+
+  @override
+  Future<void> resume() async {}
+
+  @override
+  Future<Duration?> remainingPlaybackDuration() async => null;
+
   @override
   Future<void> speakQuestion({
     String? rawQuestionId,

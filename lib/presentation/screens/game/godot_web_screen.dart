@@ -10,25 +10,29 @@ import 'package:pdd_app/presentation/screens/game/platform/godot_web_frame.dart'
 /// the route with the run's summary (JSON), as GodotGame's channel does on
 /// Android; the game's own screens (pause, questions, result) run inside it.
 class GodotWebScreen extends StatefulWidget {
-  const GodotWebScreen({super.key, required this.args});
+  const GodotWebScreen({super.key, required this.args, this.onVoicePremium});
 
   final List<String> args;
+  final Future<Map<String, dynamic>> Function()? onVoicePremium;
 
   /// Keep the fullscreen road and the menu stationary throughout the handover.
-  static PageRouteBuilder<String> route({required List<String> args}) =>
-      PageRouteBuilder<String>(
-        transitionDuration: const Duration(milliseconds: 180),
-        reverseTransitionDuration: const Duration(milliseconds: 120),
-        pageBuilder: (_, _, _) => GodotWebScreen(args: args),
-        transitionsBuilder: (_, animation, _, child) => FadeTransition(
-          opacity: CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOutCubic,
-            reverseCurve: Curves.easeOutCubic,
-          ),
-          child: child,
-        ),
-      );
+  static PageRouteBuilder<String> route({
+    required List<String> args,
+    Future<Map<String, dynamic>> Function()? onVoicePremium,
+  }) => PageRouteBuilder<String>(
+    transitionDuration: const Duration(milliseconds: 180),
+    reverseTransitionDuration: const Duration(milliseconds: 120),
+    pageBuilder: (_, _, _) =>
+        GodotWebScreen(args: args, onVoicePremium: onVoicePremium),
+    transitionsBuilder: (_, animation, _, child) => FadeTransition(
+      opacity: CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeOutCubic,
+      ),
+      child: child,
+    ),
+  );
 
   @override
   State<GodotWebScreen> createState() => _GodotWebScreenState();
@@ -37,6 +41,7 @@ class GodotWebScreen extends StatefulWidget {
 class _GodotWebScreenState extends State<GodotWebScreen> {
   late final GodotWebFrame _frame = GodotWebFrame(
     args: widget.args,
+    onVoicePremium: widget.onVoicePremium,
     onExit: _exit,
     onSummary: (json) => _summary = json,
     onEvent: (event) {

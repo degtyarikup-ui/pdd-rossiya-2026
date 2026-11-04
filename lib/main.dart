@@ -295,11 +295,12 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      TtsService.instance.stop().ignore();
+      TtsService.instance.setAppActive(false).ignore();
     }
     // Пересчитываем напоминание при уходе в фон (учитывает сегодняшнюю
     // тренировку) и при возврате (держит расписание свежим).
     if (state == AppLifecycleState.resumed) {
+      TtsService.instance.setAppActive(true).ignore();
       unawaited(PremiumService.instance.refreshDailyLimits());
       unawaited(NotificationInboxService.instance.refresh());
       unawaited(UsageReporter.instance.flush());
@@ -346,6 +347,8 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final appSettings = ref.watch(appSettingsProvider);
     updateAppLocale(Locale(appSettings.effectiveLanguageCode));
+    ref.watch(ttsServiceProvider);
+    // Effective system language can change without replacing AppSettings.
     TtsService.instance.updateLanguage(appSettings.effectiveLanguageCode);
     HapticFeedbackHelper.setEnabled(appSettings.hapticsEnabled);
 

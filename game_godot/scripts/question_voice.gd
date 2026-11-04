@@ -4,12 +4,22 @@ class_name QuestionVoice
 extends Node
 
 signal playback_started(duration: float)
+signal access_changed
+signal voice_unavailable
+signal playback_unavailable
 
 const AUDIO_INDEX := "res://questions/audio.json"
 const AUDIO_FOLDER := "res://question_audio/"
 
-var enabled := true
+const SPEEDS := [0.8, 1.0, 1.2, 1.5]
+
+var enabled := false
 var available := true
+var premium := false
+var premium_expires_at := 0.0
+var speed := 1.0
+var _bus_name := ""
+var _pitch: AudioEffectPitchShift
 var _clips: Dictionary = {}
 var _player: AudioStreamPlayer
 var _active_id := ""
@@ -19,6 +29,17 @@ var _suspended := false
 var _ready_to_play := false
 var _started := false
 var _closed := false
+var _active_card: Dictionary = {}
+var _synth_text := ""
+var _synth_offset := 0
+var _synth_boundary := 0
+var _synth_started := false
+var _synth_restart := false
+var _synth_completed := false
+var _tts_utterance := 0
+var _voice_wait_until := 0
+var _next_voice_attempt := 0
+var _synth_timer_budget := 120.0
 
 
 func _ready() -> void:
@@ -26,32 +47,93 @@ func _ready() -> void:
 		var index: Variant = JSON.parse_string(FileAccess.get_file_as_string(AUDIO_INDEX))
 		if index is Dictionary and index.get("language", "") == "ru":
 			_clips = index.get("clips", {})
+	_tts_utterance = int(get_instance_id() % 1000000000)
+	_bus_name = "QuestionVoice_%s" % get_instance_id()
+	AudioServer.add_bus()
+	var bus := AudioServer.bus_count - 1
+	AudioServer.set_bus_name(bus, _bus_name)
+	_pitch = AudioEffectPitchShift.new()
+	AudioServer.add_bus_effect(bus, _pitch)
 	_player = AudioStreamPlayer.new()
+	_player.bus = _bus_name
+	set_speed(speed)
 	_player.name = "RecordedQuestion"
 	# Stream playback supports pause/resume on the web as well as native platforms.
 	_player.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
 	_player.finished.connect(func(): _started = false)
 	add_child(_player)
+	if DisplayServer.has_feature(DisplayServer.FEATURE_TEXT_TO_SPEECH):
+		DisplayServer.tts_set_utterance_callback(DisplayServer.TTS_UTTERANCE_BOUNDARY, _on_synth_boundary)
+		DisplayServer.tts_set_utterance_callback(DisplayServer.TTS_UTTERANCE_ENDED, _on_synth_ended)
 
 
 func can_play(id: String) -> bool:
-	return available and Ui.lang == "ru" and _clips.has(id) and not _file_for(id).is_empty()
+	if not has_access() or not available: return false
+	if Ui.lang in ["en", "kk"]: return not id.is_empty()
+	return Ui.lang == "ru" and _clips.has(id) and not _file_for(id).is_empty()
 
 
 func duration(id: String) -> float:
-	return maxf(0.0, float(_clips.get(id, {}).get("duration", 0.0))) if can_play(id) else 0.0
+	if Ui.lang != "ru": return 0.0
+	return maxf(0.0, float(_clips.get(id, {}).get("duration", 0.0))) / speed if can_play(id) else 0.0
 
 
-func begin(id: String) -> void:
+func has_access() -> bool:
+	return premium and (premium_expires_at <= 0.0 or Time.get_unix_time_from_system() < premium_expires_at)
+
+
+func set_access(allowed: bool, expires_at := 0.0) -> void:
+	var changed := premium != allowed or premium_expires_at != expires_at
+	premium = allowed
+	premium_expires_at = expires_at
+	if not has_access():
+		set_enabled(false)
+		_cancel_audio()
+	if changed: access_changed.emit()
+
+
+func set_speed(value: float) -> void:
+	var old := speed
+	speed = value if value in SPEEDS else 1.0
+	if is_instance_valid(_player): _player.pitch_scale = speed
+	if _pitch != null:
+		_pitch.pitch_scale = 1.0 / speed
+		var bus := AudioServer.get_bus_index(_bus_name)
+		if bus > 0: AudioServer.set_bus_effect_enabled(bus, 0, not is_equal_approx(speed, 1.0))
+	if not is_equal_approx(old, speed) and _synth_started:
+		_synth_offset += _synth_boundary
+		_synth_boundary = 0
+		_tts_utterance += 1
+		_tts_stop()
+		_synth_started = false
+		_synth_restart = true
+		if not _suspended: _start_synth()
+
+
+func _process(_delta: float) -> void:
+	if premium and not has_access(): set_access(false)
+	if _voice_wait_until > 0 and not _suspended and enabled:
+		if Time.get_ticks_msec() >= _voice_wait_until:
+			_voice_wait_until = 0
+			voice_unavailable.emit()
+		elif Time.get_ticks_msec() >= _next_voice_attempt:
+			_next_voice_attempt = Time.get_ticks_msec() + 200
+			_start_synth()
+
+
+func begin(id: String, card: Dictionary = {}) -> void:
 	stop()
+	_synth_timer_budget = 120.0
 	if _closed:
 		return
 	_active_id = id
+	_active_card = card.duplicate(true)
 	if enabled:
 		_load_active()
 
 
 func set_enabled(on: bool) -> void:
+	on = on and has_access() and available and Ui.lang in ["ru", "en", "kk"]
 	if enabled == on:
 		return
 	enabled = on
@@ -64,6 +146,7 @@ func set_enabled(on: bool) -> void:
 ## is loaded quietly there and starts only after the player returns to the card.
 func suspend() -> void:
 	_suspended = true
+	if _synth_started: _tts_pause()
 	if is_instance_valid(_player):
 		_player.stream_paused = true
 
@@ -71,6 +154,10 @@ func suspend() -> void:
 func resume() -> void:
 	_suspended = false
 	if not enabled or not can_play(_active_id) or _closed:
+		return
+	if Ui.lang in ["en", "kk"]:
+		if _synth_started: _tts_resume()
+		elif not _synth_completed: _start_synth()
 		return
 	if _ready_to_play:
 		_start_loaded()
@@ -80,6 +167,7 @@ func resume() -> void:
 
 func stop() -> void:
 	_active_id = ""
+	_active_card = {}
 	_cancel_audio()
 
 
@@ -90,6 +178,15 @@ func shutdown() -> void:
 
 func _cancel_audio() -> void:
 	_request += 1
+	_tts_utterance += 1
+	if _synth_started and _tts_available(): _tts_stop()
+	_synth_started = false
+	_synth_restart = false
+	_synth_completed = false
+	_synth_text = ""
+	_synth_offset = 0
+	_synth_boundary = 0
+	_voice_wait_until = 0
 	_ready_to_play = false
 	_started = false
 	if is_instance_valid(_player):
@@ -108,7 +205,18 @@ func _file_for(id: String) -> String:
 
 
 func _load_active() -> void:
-	if _closed or not enabled or not can_play(_active_id):
+	if _closed or not enabled or not has_access() or not available: return
+	if not can_play(_active_id):
+		playback_unavailable.emit()
+		return
+	if Ui.lang in ["en", "kk"]:
+		_synth_text = str(_active_card.get("title", "")).strip_edges()
+		var answers: Array = _active_card.get("options", [])
+		if not answers.is_empty():
+			_synth_text += ". " + Ui.t("ttsAnswerOptions") + ". "
+			for i in answers.size():
+				_synth_text += "%d. %s. " % [i + 1, str(answers[i])]
+		if not _suspended: _start_synth()
 		return
 	_active_path = AUDIO_FOLDER + _file_for(_active_id)
 	var path := _active_path
@@ -134,12 +242,15 @@ func _on_fetched(ok: bool, token: int, path: String) -> void:
 			PackFiles.forget(path)
 		return
 	if not ok:
+		playback_unavailable.emit()
 		return
 	var data := PackFiles.bytes(path)
 	if data.is_empty():
+		playback_unavailable.emit()
 		return
 	var stream := AudioStreamMP3.load_from_buffer(data)
 	if stream == null or stream.get_length() <= 0.0:
+		playback_unavailable.emit()
 		return
 	_player.stream = stream
 	# Decoded audio owns its data; fetched bytes need not remain in the web cache.
@@ -156,8 +267,75 @@ func _start_loaded() -> void:
 	_player.stream_paused = false
 	_player.play()
 	_started = true
-	playback_started.emit(_player.stream.get_length())
+	playback_started.emit(_player.stream.get_length() / speed)
+
+
+func _start_synth() -> void:
+	if _closed or _suspended or not enabled or not can_play(_active_id) or Ui.lang not in ["en", "kk"] or _synth_text.is_empty(): return
+	if not _tts_available():
+		voice_unavailable.emit()
+		return
+	var voices := _tts_voices(Ui.lang)
+	if voices.is_empty():
+		if _voice_wait_until == 0: _voice_wait_until = Time.get_ticks_msec() + 3000
+		return
+	_voice_wait_until = 0
+	_tts_utterance += 1
+	_synth_started = true
+	_tts_speak(_synth_text.substr(_synth_offset), voices[0], speed, _tts_utterance)
+	if not _synth_restart: playback_started.emit(Ui.answer_seconds(_synth_text.length()) / speed)
+	_synth_restart = false
+
+
+## Unknown system-voice durations cannot cut a phrase off. Let the ordinary
+## timer reach two seconds, then hold until the matching completion callback.
+## The cumulative budget belongs to the card, not the utterance: toggles/rate
+## changes cannot farm time and a broken native engine cannot hold it forever.
+func question_tick_delta(delta: float, remaining: float) -> float:
+	if Ui.lang not in ["en", "kk"] or not enabled or not has_access() or not (_synth_started or _voice_wait_until > 0): return delta
+	_synth_timer_budget = maxf(0.0, _synth_timer_budget - delta)
+	if _synth_timer_budget <= 0.0:
+		_cancel_audio()
+		playback_unavailable.emit()
+		return delta
+	return minf(delta, maxf(0.0, remaining - 2.0))
+
+
+## Isolated platform adapter also lets headless regression tests exercise the
+## exact language, speed, cancellation and phrase-continuation contract.
+func _tts_available() -> bool:
+	return DisplayServer.has_feature(DisplayServer.FEATURE_TEXT_TO_SPEECH)
+
+func _tts_voices(language: String) -> PackedStringArray:
+	return DisplayServer.tts_get_voices_for_language(language)
+
+func _tts_speak(text: String, voice_id: String, rate: float, utterance: int) -> void:
+	DisplayServer.tts_speak(text, voice_id, 100, 1.0, rate, utterance, true)
+
+func _tts_stop() -> void:
+	DisplayServer.tts_stop()
+
+func _tts_pause() -> void:
+	DisplayServer.tts_pause()
+
+func _tts_resume() -> void:
+	DisplayServer.tts_resume()
+
+
+func _on_synth_boundary(position: int, utterance: int) -> void:
+	if utterance == _tts_utterance: _synth_boundary = maxi(0, position)
+
+
+func _on_synth_ended(utterance: int) -> void:
+	if utterance == _tts_utterance:
+		_synth_started = false
+		_synth_completed = true
 
 
 func _exit_tree() -> void:
 	shutdown()
+	if DisplayServer.has_feature(DisplayServer.FEATURE_TEXT_TO_SPEECH):
+		DisplayServer.tts_set_utterance_callback(DisplayServer.TTS_UTTERANCE_BOUNDARY, Callable())
+		DisplayServer.tts_set_utterance_callback(DisplayServer.TTS_UTTERANCE_ENDED, Callable())
+	var bus := AudioServer.get_bus_index(_bus_name)
+	if bus > 0: AudioServer.remove_bus(bus)

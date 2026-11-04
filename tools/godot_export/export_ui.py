@@ -28,6 +28,7 @@ KEYS = [
     'gameAchievementsComplete', 'gamePaintAllCars',
     'gameAchievementCount', 'gameSoundOn', 'gameSoundOff',
     'gameVoiceOn', 'gameVoiceOff', 'gameVoiceUnavailable',
+    'voicePremium', 'voiceSpeed', 'voiceSpeedHint', 'voiceSpeedValue', 'voicePremiumRequired', 'voicePlaybackUnavailable', 'ttsAnswerOptions', 'ttsAnswer',
     'gameSpeedUnit', 'gameMeters', 'gameKilometers', 'gameViolations', 'gamePause', 'gamePauseSound', 'gamePauseVoice', 'gameRunProgress',
     'gameSpeedLimitLabel', 'gameOncoming', 'gameOneWayAgainst', 'gameRoadworksHit', 'gameCollision',
     'gameOffroad', 'gamePriorityViolation', 'gameSpeeding', 'gameOvertakingProhibited', 'gamePedestrianYield',

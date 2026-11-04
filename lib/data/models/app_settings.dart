@@ -8,6 +8,17 @@ class AppSettings {
   final bool soundEffectsEnabled;
   final bool confirmAnswerEnabled;
   final bool voiceEnabled;
+  final double voiceSpeed;
+
+  static const voiceSpeeds = <double>[0.8, 1.0, 1.2, 1.5];
+
+  static double parseVoiceSpeed(Object? value) {
+    if (value is num && voiceSpeeds.contains(value.toDouble())) {
+      return value.toDouble();
+    }
+    return 1.0;
+  }
+
   final bool notificationsEnabled;
   final bool pushMessagesEnabled;
   final TicketCategory ticketCategory;
@@ -24,6 +35,7 @@ class AppSettings {
     this.soundEffectsEnabled = true,
     this.confirmAnswerEnabled = false,
     this.voiceEnabled = false,
+    this.voiceSpeed = 1.0,
     this.notificationsEnabled = true,
     this.pushMessagesEnabled = false,
     this.ticketCategory = TicketCategory.ab,
@@ -62,6 +74,7 @@ class AppSettings {
     bool? soundEffectsEnabled,
     bool? confirmAnswerEnabled,
     bool? voiceEnabled,
+    double? voiceSpeed,
     bool? notificationsEnabled,
     bool? pushMessagesEnabled,
     TicketCategory? ticketCategory,
@@ -74,6 +87,9 @@ class AppSettings {
       soundEffectsEnabled: soundEffectsEnabled ?? this.soundEffectsEnabled,
       confirmAnswerEnabled: confirmAnswerEnabled ?? this.confirmAnswerEnabled,
       voiceEnabled: voiceEnabled ?? this.voiceEnabled,
+      voiceSpeed: voiceSpeed == null
+          ? this.voiceSpeed
+          : parseVoiceSpeed(voiceSpeed),
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       pushMessagesEnabled: pushMessagesEnabled ?? this.pushMessagesEnabled,
       ticketCategory: ticketCategory ?? this.ticketCategory,
@@ -107,6 +123,7 @@ class AppSettings {
       soundEffectsEnabled: map['soundEffectsEnabled'] as bool? ?? true,
       confirmAnswerEnabled: map['confirmAnswerEnabled'] as bool? ?? false,
       voiceEnabled: map['voiceEnabled'] as bool? ?? false,
+      voiceSpeed: parseVoiceSpeed(map['voiceSpeed']),
       notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
       pushMessagesEnabled: map['pushMessagesEnabled'] as bool? ?? false,
       ticketCategory: TicketCategory.parse(map['ticketCategory'] as String?),
@@ -122,6 +139,7 @@ class AppSettings {
       'soundEffectsEnabled': soundEffectsEnabled,
       'confirmAnswerEnabled': confirmAnswerEnabled,
       'voiceEnabled': voiceEnabled,
+      'voiceSpeed': voiceSpeed,
       'notificationsEnabled': notificationsEnabled,
       'pushMessagesEnabled': pushMessagesEnabled,
       'ticketCategory': ticketCategory.name,

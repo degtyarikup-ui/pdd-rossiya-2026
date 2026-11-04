@@ -81,6 +81,11 @@ class AppSettingsController extends StateNotifier<AppSettings> {
     await _dataSource.saveAppSettings(state);
   }
 
+  Future<void> setVoiceSpeed(double value) async {
+    state = state.copyWith(voiceSpeed: value);
+    await _dataSource.saveAppSettings(state);
+  }
+
   Future<void> setNotificationsEnabled(bool value) async {
     state = state.copyWith(notificationsEnabled: value);
     await StreakNotifier.instance.setUserStreakEnabled(value);
@@ -130,7 +135,16 @@ final appSettingsProvider =
 
 final ttsServiceProvider = Provider<TtsService>((ref) {
   final service = TtsService.instance;
-  ref.onDispose(service.dispose);
+  ref.listen<AppSettings>(appSettingsProvider, (_, settings) {
+    service.updateLanguage(settings.effectiveLanguageCode);
+    service.configure(
+      enabled: settings.voiceEnabled,
+      speed: settings.voiceSpeed,
+    );
+  }, fireImmediately: true);
+  // The singleton also serves the feed; disposing a screen/provider must not
+  // destroy its audio player for the rest of the application.
+  ref.onDispose(service.stop);
   return service;
 });
 
@@ -492,7 +506,20 @@ final isPremiumProvider = Provider<bool>((ref) {
   ref.watch(appDataRefreshProvider);
   ref.watch(progressImportsProvider);
   ref.watch(authAndPremiumStreamProvider);
-  return PremiumService.instance.isPremium;
+  final service = ref.watch(premiumServiceProvider);
+  final premium = service.isPremium;
+  final expiresAt = service.expiresAt;
+  if (premium && expiresAt != null) {
+    final remaining = expiresAt.difference(DateTime.now());
+    // Entitlement expiry need not produce a network/account event. Refresh the
+    // controls at the deadline so they lock as soon as playback loses access.
+    final expiryTimer = Timer(
+      remaining.isNegative ? Duration.zero : remaining + const Duration(milliseconds: 1),
+      ref.invalidateSelf,
+    );
+    ref.onDispose(expiryTimer.cancel);
+  }
+  return premium;
 });
 
 final dailyCardsRemainingProvider = Provider<int>((ref) {

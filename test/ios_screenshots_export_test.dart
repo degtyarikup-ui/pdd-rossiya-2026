@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'helpers/achievement_awards.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -17,6 +18,28 @@ import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockTts implements TtsService {
+  @override
+  ValueListenable<NarrationStatus> get status =>
+      ValueNotifier(NarrationStatus.idle);
+
+  @override
+  Future<void> setAppActive(bool active) async {}
+
+  @override
+  Future<void> configure({
+    required bool enabled,
+    required double speed,
+  }) async {}
+
+  @override
+  Future<void> pause() async {}
+
+  @override
+  Future<void> resume() async {}
+
+  @override
+  Future<Duration?> remainingPlaybackDuration() async => null;
+
   @override
   Future<void> speakQuestion({
     String? rawQuestionId,

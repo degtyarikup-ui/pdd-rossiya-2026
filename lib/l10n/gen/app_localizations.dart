@@ -718,6 +718,54 @@ abstract class AppLocalizations {
   /// **'Озвучка вопросов'**
   String get voiceOverQuestions;
 
+  /// No description provided for @voicePremium.
+  ///
+  /// In ru, this message translates to:
+  /// **'Озвучка с Премиумом'**
+  String get voicePremium;
+
+  /// No description provided for @voicePremiumRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Озвучка доступна с Премиумом'**
+  String get voicePremiumRequired;
+
+  /// No description provided for @voiceSpeed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скорость озвучки'**
+  String get voiceSpeed;
+
+  /// No description provided for @voiceSpeedHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удерживайте, чтобы изменить скорость'**
+  String get voiceSpeedHint;
+
+  /// No description provided for @voiceSpeedValue.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скорость {speed}x'**
+  String voiceSpeedValue(String speed);
+
+  /// No description provided for @voiceSpeedDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите удобный темп. Скорость сохранится для всех вопросов.'**
+  String get voiceSpeedDescription;
+
+  /// No description provided for @voiceLanguageDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Готовая озвучка на русском. На английском и казахском — системный голос устройства.'**
+  String get voiceLanguageDescription;
+
+  /// No description provided for @voicePlaybackUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось воспроизвести озвучку. Попробуйте ещё раз.'**
+  String get voicePlaybackUnavailable;
+
   /// No description provided for @ticketCategorySetting.
   ///
   /// In ru, this message translates to:
@@ -1573,7 +1621,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameVoiceUnavailable.
   ///
   /// In ru, this message translates to:
-  /// **'Записанная озвучка пока доступна только на русском'**
+  /// **'Для этого языка нет системного голоса. Установите голос в настройках устройства.'**
   String get gameVoiceUnavailable;
 
   /// No description provided for @gameAchievementCount.

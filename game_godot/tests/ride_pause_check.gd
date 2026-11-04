@@ -46,7 +46,7 @@ func _options() -> Dictionary:
 		{"id":"cyber", "name":"Кибертрак", "paints":paints.duplicate(true)}],
 		"texts":{"runs":"Заезды 3 из 3", "record":"Рекорд", "colour":"Цвет", "start":"Начать заезд", "no_runs":"Нет заездов"},
 		"record":4387, "can_start":true,
-		"voice":true, "voice_available":true,
+		"voice":true, "voice_available":true, "voice_premium":true,
 		"achievement":{"title":"Достижения", "progress":"Верных ответов в Живом городе: 7 / 10", "count":"7 / 10", "next":"Новый цвет: синий", "complete":false, "fraction":0.4,
 			"hint":"Новые машины и цвета открываются за правильные ответы в Живом городе. Каждый цвет доступен для всех машин."},
 		"reward_list":[]}
@@ -261,10 +261,32 @@ func _check_pause_collection(options: Dictionary) -> void:
 	check(not menu.sound_enabled and menu.voice_enabled and audio_events.sound == 1 and audio_events.voice == 0,
 		"Muting effects leaves recorded question voice enabled")
 	check(menu._sound_button.get_child(0).text == char(0xf0299), "Muted effects show the crossed speaker icon")
-	menu._voice_button.button_pressed = false
+	menu._voice_button.pressed.emit()
 	check(not menu.voice_enabled and audio_events.voice == 1,
 		"Recorded question voice toggle emits its independent preference")
 	check(menu._voice_button.get_child(0).text == char(0xf0295), "Muted question voice shows the crossed voice icon")
+	var speed_events: Array = []
+	menu.voice_speed_changed.connect(func(value): speed_events.append(value))
+	menu._voice_button.button_down.emit()
+	await create_timer(0.48).timeout
+	menu._voice_button.button_up.emit()
+	menu._voice_button.pressed.emit()
+	check(menu._voice_speed_panel.visible and not menu.voice_enabled and audio_events.voice == 1,
+		"Holding voice opens speed without toggling narration")
+	for i in QuestionVoice.SPEEDS.size():
+		menu._voice_slider.value = i
+		check(is_equal_approx(menu.voice_speed, QuestionVoice.SPEEDS[i]), "Slider selects exact supported speed")
+	check(speed_events.size() == 4 and menu._voice_button.get_child(1).text == "1.5x", "Speed changes update button and emit preference")
+	menu._show_voice_speed()
+	menu.update_voice_access(false, true, 1.5)
+	var premium_requests := [0]
+	menu.voice_premium_requested.connect(func(): premium_requests[0] += 1)
+	menu._voice_hold_handled = false
+	menu._voice_button.pressed.emit()
+	check(premium_requests[0] == 1 and not menu.voice_enabled and menu._voice_lock.visible,
+		"Locked narration requests Premium without changing voice setting")
+	menu.update_voice_access(true, false, 1.0)
+
 	for i in 8:
 		menu._select_paint(i)
 		await process_frame
@@ -387,10 +409,10 @@ func _run() -> void:
 	check(world.sound.enabled, "Pause speaker icon enables the game")
 	world.pause_menu._sound_button.button_pressed = false
 	check(not world.sound.enabled and world._exit_summary().sound == false, "Pause mute is returned for persistent app settings")
-	world.pause_menu._voice_button.button_pressed = false
+	world.pause_menu._voice_button.pressed.emit()
 	check(not world.voice.enabled and not world._exit_summary().voice and not world.sound.enabled,
 		"Recorded voice icon changes its independent engine and persistent setting while paused")
-	world.pause_menu._voice_button.button_pressed = true
+	world.pause_menu._voice_button.pressed.emit()
 	check(world.voice.enabled and world._exit_summary().voice and not world.sound.enabled,
 		"Recorded question voice can be enabled while effects stay muted")
 	world.pause_menu.resume_requested.emit()

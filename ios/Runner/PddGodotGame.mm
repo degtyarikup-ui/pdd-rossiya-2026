@@ -425,9 +425,23 @@ static void HideGame(dispatch_block_t completion) {
   NSData *body = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
   if (!body) return;
   const NSUInteger generation = gRunGeneration;
+  const BOOL showPremium = [payload[@"request_kind"] isEqual:@"voice_premium"];
+  UIWindow *pausedWindow = gGameWindow;
+  if (showPremium && pausedWindow && !gGameClosing) {
+    [EngineService() sceneWillResignActive:pausedWindow.windowScene];
+    pausedWindow.hidden = YES;
+    [gAppWindow makeKeyAndVisible];
+  }
   [gChannel invokeMethod:@"reportQuestion" arguments:[[NSString alloc] initWithData:body encoding:NSUTF8StringEncoding]
                   result:^(id result) {
     if (generation != gRunGeneration || !gPending) return;
+    if (showPremium && pausedWindow == gGameWindow && !gGameClosing) {
+      [pausedWindow makeKeyAndVisible];
+      pausedWindow.alpha = 1;
+      if (pausedWindow.windowScene.activationState == UISceneActivationStateForegroundActive) {
+        [EngineService() sceneDidBecomeActive:pausedWindow.windowScene];
+      }
+    }
     BOOL success = [result isKindOfClass:NSNumber.class] && [result boolValue];
     NSMutableDictionary *response = [@{@"request_id": requestId, @"success": @(success)} mutableCopy];
     if ([result isKindOfClass:NSString.class]) {

@@ -113,6 +113,14 @@
   "hapticFeedback": "Діріл",
   "soundEffects": "Дыбыстық әсерлер",
   "voiceOverQuestions": "Сұрақтарды дауыстап оқу",
+  "voicePremium": "Премиум дыбыстау",
+  "voicePremiumRequired": "Дыбыстау Премиуммен қолжетімді",
+  "voiceSpeed": "Дыбыстау жылдамдығы",
+  "voiceSpeedHint": "Жылдамдықты өзгерту үшін басып тұрыңыз",
+  "voiceSpeedValue": "Жылдамдық {speed}x",
+  "voiceSpeedDescription": "Өзіңізге ыңғайлы қарқынды таңдаңыз. Жылдамдық барлық сұрақтар үшін сақталады.",
+  "voiceLanguageDescription": "Орыс тілінде дайын жазба. Ағылшын және қазақ тілдерінде құрылғының жүйелік дауысы қолданылады.",
+  "voicePlaybackUnavailable": "Дыбыстауды ойнату мүмкін болмады. Қайталап көріңіз.",
   "ticketCategorySetting": "Санат",
   "ticketCategoryHint": "A/B – жеңіл автомобильдер мен мотоциклдер, C/D – жүк көліктері мен автобустар",
   "dataSection": "Деректер",
@@ -254,7 +262,7 @@
   "gameSoundOff": "Ойын дыбыстарын қосу",
   "gameVoiceOn": "Сұрақтарды дыбыстауды өшіру",
   "gameVoiceOff": "Сұрақтарды дыбыстауды қосу",
-  "gameVoiceUnavailable": "Жазылған дыбыстау әзірше тек орыс тілінде қолжетімді",
+  "gameVoiceUnavailable": "Бұл тіл үшін жүйелік дауыс жоқ. Құрылғы параметрлерінде дауысты орнатыңыз.",
   "gameAchievementCount": "{correct} / {total}",
   "@gameAchievementCount": {
     "placeholders": {

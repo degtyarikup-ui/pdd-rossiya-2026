@@ -7,6 +7,7 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
+import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
@@ -17,10 +18,10 @@ import 'package:pdd_app/l10n/l10n.dart';
 class FeedCard extends ConsumerStatefulWidget {
   final FeedItem item;
   final bool isCurrent;
-  final bool isSoundEnabled;
+  final bool voiceEnabled;
+  final double voiceSpeed;
   final int? initialSelectedAnswerIndex;
   final ValueChanged<int>? onAnswerRecorded;
-  final VoidCallback onToggleSound;
   final VoidCallback onAutoNext;
   final VoidCallback onPrevious;
   final void Function(double progress, int remainingSeconds)? onTimerTick;
@@ -32,11 +33,11 @@ class FeedCard extends ConsumerStatefulWidget {
     super.key,
     required this.item,
     required this.isCurrent,
-    required this.isSoundEnabled,
+    required this.voiceEnabled,
+    this.voiceSpeed = 1,
     this.isPaused = false,
     this.initialSelectedAnswerIndex,
     this.onAnswerRecorded,
-    required this.onToggleSound,
     required this.onAutoNext,
     required this.onPrevious,
     this.onTimerTick,
@@ -59,6 +60,17 @@ class _FeedCardState extends ConsumerState<FeedCard>
   bool _isAnswered = false;
   Timer? _autoAdvanceTimer;
   int? _lastTickedSecond;
+  late final TtsService _ttsService;
+  int _voiceGeneration = 0;
+  bool _hasRequestedNarration = false;
+  Timer? _narrationWatchdog;
+  Duration _narrationEstimate = Duration.zero;
+
+  bool get _narrationIsBusy =>
+      widget.voiceEnabled &&
+      _hasRequestedNarration &&
+      (_ttsService.status.value == NarrationStatus.playing ||
+          _ttsService.status.value == NarrationStatus.loading);
 
   Duration get _calculatedDuration {
     final textLen =
@@ -74,6 +86,8 @@ class _FeedCardState extends ConsumerState<FeedCard>
   @override
   void initState() {
     super.initState();
+    _ttsService = ref.read(ttsServiceProvider);
+    _ttsService.status.addListener(_onNarrationStatus);
     _timerController = AnimationController(
       vsync: this,
       duration: _calculatedDuration,
@@ -83,7 +97,8 @@ class _FeedCardState extends ConsumerState<FeedCard>
       if (widget.isCurrent && !_isAnswered && !widget.isPaused) {
         final progress = (1.0 - _timerController.value).clamp(0.0, 1.0);
         final remainingSec = (_timerController.duration != null)
-            ? (progress * _timerController.duration!.inMilliseconds / 1000)
+            ? ((progress * _timerController.duration!.inMilliseconds).round() /
+                      1000)
                   .ceil()
             : 0;
         widget.onTimerTick?.call(progress, remainingSec);
@@ -105,8 +120,16 @@ class _FeedCardState extends ConsumerState<FeedCard>
     }
 
     _timerController.addStatusListener((status) {
-      if (status == AnimationStatus.completed && !_isAnswered && mounted) {
-        _handleTimeExpired();
+      if (status == AnimationStatus.completed &&
+          !_isAnswered &&
+          mounted &&
+          widget.isCurrent &&
+          !widget.isPaused) {
+        if (_narrationIsBusy) {
+          _waitForNarration();
+        } else {
+          _handleTimeExpired();
+        }
       }
     });
 
@@ -129,6 +152,7 @@ class _FeedCardState extends ConsumerState<FeedCard>
       _selectedAnswerIndex = widget.initialSelectedAnswerIndex;
       _isAnswered = true;
       _timerController.stop();
+      _voiceGeneration++;
     }
 
     if (!oldWidget.isCurrent && widget.isCurrent) {
@@ -147,28 +171,53 @@ class _FeedCardState extends ConsumerState<FeedCard>
     if (oldWidget.isPaused != widget.isPaused) {
       if (widget.isPaused) {
         _timerController.stop();
-        TtsService.instance.stop();
-      } else if (widget.isCurrent && !_isAnswered) {
-        _timerController.forward();
+        _autoAdvanceTimer?.cancel();
+        _narrationWatchdog?.cancel();
+        if (widget.isCurrent) unawaited(_ttsService.pause());
+      } else if (widget.isCurrent) {
+        if (_isAnswered) {
+          _scheduleAdvance(const Duration(milliseconds: 700));
+        } else {
+          _timerController.forward();
+          if (widget.voiceEnabled) {
+            if (_hasRequestedNarration) {
+              unawaited(_resumeNarration());
+            } else {
+              unawaited(_playTts());
+            }
+          }
+        }
       }
     }
 
-    if (oldWidget.isSoundEnabled != widget.isSoundEnabled && widget.isCurrent) {
-      if (widget.isSoundEnabled && !_isAnswered) {
-        _playTts();
+    if (oldWidget.voiceEnabled != widget.voiceEnabled && widget.isCurrent) {
+      if (widget.voiceEnabled && !_isAnswered && !widget.isPaused) {
+        unawaited(_playTts());
       } else {
-        TtsService.instance.stop();
+        _voiceGeneration++;
+        _hasRequestedNarration = false;
+        unawaited(_ttsService.stop());
+        _setNarrationRemaining(null);
       }
+    }
+
+    if (oldWidget.voiceSpeed != widget.voiceSpeed &&
+        widget.isCurrent &&
+        widget.voiceEnabled &&
+        !_isAnswered) {
+      unawaited(_syncNarrationDeadline());
     }
   }
 
   void _startCard() {
     if (!_isAnswered) {
       _lastTickedSecond = null;
+      _hasRequestedNarration = false;
       _timerController.duration = _calculatedDuration;
-      _timerController.forward(from: 0.0);
-      if (widget.isSoundEnabled) {
-        _playTts();
+      _timerController.value = 0;
+      if (!widget.isPaused) {
+        _timerController.forward();
+        if (widget.voiceEnabled) unawaited(_playTts());
       }
     }
   }
@@ -176,20 +225,133 @@ class _FeedCardState extends ConsumerState<FeedCard>
   void _stopCard() {
     _timerController.stop();
     _autoAdvanceTimer?.cancel();
-    TtsService.instance.stop();
+    _narrationWatchdog?.cancel();
+    _voiceGeneration++;
+    _hasRequestedNarration = false;
+    unawaited(_ttsService.stop());
   }
 
   Future<void> _playTts() async {
-    if (!widget.isCurrent || _isAnswered || !widget.isSoundEnabled) return;
-    await TtsService.instance.speakOrPlayFeedItem(
+    final generation = ++_voiceGeneration;
+    // Start after all cards have handled their active/inactive transition, so
+    // the previous card cannot stop the newly selected card's recording.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted ||
+        generation != _voiceGeneration ||
+        !widget.isCurrent ||
+        _isAnswered ||
+        widget.isPaused ||
+        !widget.voiceEnabled ||
+        !ref.read(isPremiumProvider)) {
+      return;
+    }
+    _hasRequestedNarration = true;
+    final duration = await _ttsService.speakOrPlayFeedItem(
       rawQuestionId: widget.item.rawQuestionId,
       question: widget.item.questionText,
       answers: widget.item.answers,
     );
+    if (!mounted || generation != _voiceGeneration || !widget.isCurrent) return;
+    _narrationEstimate = duration ?? Duration.zero;
+    _setNarrationRemaining(duration);
+  }
+
+  Future<void> _resumeNarration() async {
+    await _ttsService.resume();
+    await _syncNarrationDeadline();
+  }
+
+  Future<void> _syncNarrationDeadline() async {
+    final generation = _voiceGeneration;
+    final remaining = await _ttsService.remainingPlaybackDuration();
+    if (!mounted || generation != _voiceGeneration || !widget.isCurrent) return;
+    if (remaining != null) {
+      _setNarrationRemaining(remaining);
+    } else if (!_narrationIsBusy) {
+      _setNarrationRemaining(Duration.zero);
+    }
+  }
+
+  void _setNarrationRemaining(Duration? remaining) {
+    if (_isAnswered) return;
+    _narrationWatchdog?.cancel();
+    final elapsed =
+        (_timerController.duration!.inMilliseconds * _timerController.value)
+            .round();
+    final readingRemaining = _calculatedDuration.inMilliseconds - elapsed;
+    // Preserve the original reading allowance and leave two seconds to answer
+    // after the recorded question. A speed change only adjusts this deadline.
+    final voiceRemaining = remaining == null
+        ? 0
+        : remaining.inMilliseconds + 2000;
+    final budget = readingRemaining > voiceRemaining
+        ? readingRemaining
+        : voiceRemaining;
+    final total = elapsed + budget.clamp(500, 120000);
+    _timerController.stop();
+    _timerController.duration = Duration(milliseconds: total);
+    _timerController.value = elapsed / total;
+    if (widget.isCurrent && !widget.isPaused) _timerController.forward();
+  }
+
+  void _onNarrationStatus() {
+    final status = _ttsService.status.value;
+    if (status == NarrationStatus.loading ||
+        status == NarrationStatus.playing) {
+      return;
+    }
+    final generation = _voiceGeneration;
+    // Native completion, a missing voice and an unavailable recording all
+    // release the deadline. Ignore an old recording's stop during a page swap.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          generation != _voiceGeneration ||
+          !widget.isCurrent ||
+          !widget.voiceEnabled ||
+          !_hasRequestedNarration ||
+          _isAnswered ||
+          _ttsService.status.value != status) {
+        return;
+      }
+      _setNarrationRemaining(Duration.zero);
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  void _waitForNarration() {
+    // Device voices do not expose an exact duration. Keep the final answer
+    // allowance while speech finishes, rather than marking an unheard answer
+    // wrong because its estimated reading time was too short.
+    _setNarrationRemaining(Duration.zero);
+    _timerController.stop();
+    final generation = _voiceGeneration;
+    final watchdogMs = (_narrationEstimate.inMilliseconds * 3).clamp(
+      30000,
+      180000,
+    );
+    _narrationWatchdog = Timer(Duration(milliseconds: watchdogMs), () {
+      if (!mounted || generation != _voiceGeneration || !widget.isCurrent) {
+        return;
+      }
+      // A broken native completion callback must not hold a card forever.
+      _hasRequestedNarration = false;
+      unawaited(_ttsService.stop());
+      _setNarrationRemaining(Duration.zero);
+    });
+  }
+
+  void _scheduleAdvance(Duration delay) {
+    _autoAdvanceTimer?.cancel();
+    _autoAdvanceTimer = Timer(delay, () {
+      if (mounted && widget.isCurrent && !widget.isPaused) widget.onAutoNext();
+    });
   }
 
   void _handleTimeExpired() {
     if (_isAnswered) return;
+    _narrationWatchdog?.cancel();
+    _voiceGeneration++;
+    unawaited(_ttsService.stop());
     HapticFeedbackHelper.error();
     SoundEffectsService.instance.playIncorrect();
 
@@ -200,17 +362,15 @@ class _FeedCardState extends ConsumerState<FeedCard>
     widget.onAnswerRecorded?.call(-1);
     widget.onAnswerStateChanged?.call(true, false);
 
-    _autoAdvanceTimer = Timer(const Duration(milliseconds: 700), () {
-      if (mounted && widget.isCurrent) {
-        widget.onAutoNext();
-      }
-    });
+    _scheduleAdvance(const Duration(milliseconds: 700));
   }
 
   void _onAnswerSelected(int index) {
     if (_isAnswered) return;
     _timerController.stop();
-    TtsService.instance.stop();
+    _narrationWatchdog?.cancel();
+    _voiceGeneration++;
+    unawaited(_ttsService.stop());
 
     final isCorrect = index == widget.item.correctAnswerIndex;
     if (isCorrect) {
@@ -234,16 +394,16 @@ class _FeedCardState extends ConsumerState<FeedCard>
         ? const Duration(milliseconds: 650)
         : const Duration(milliseconds: 700);
 
-    _autoAdvanceTimer = Timer(delay, () {
-      if (mounted && widget.isCurrent) {
-        widget.onAutoNext();
-      }
-    });
+    _scheduleAdvance(delay);
   }
 
   @override
   void dispose() {
     _timerController.stop();
+    _voiceGeneration++;
+    _narrationWatchdog?.cancel();
+    _ttsService.status.removeListener(_onNarrationStatus);
+    if (widget.isCurrent) unawaited(_ttsService.stop());
     _autoAdvanceTimer?.cancel();
     _timerController.dispose();
     _scrollController.dispose();

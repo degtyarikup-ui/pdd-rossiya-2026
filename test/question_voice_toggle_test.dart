@@ -12,11 +12,36 @@ import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
 import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/question_voice_toggle.dart';
+import 'package:pdd_app/presentation/widgets/premium_benefits_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _RecordingTts implements TtsService {
   final questions = <String?>[];
   var stops = 0;
+
+  @override
+  final status = ValueNotifier<NarrationStatus>(NarrationStatus.idle);
+
+  @override
+  Future<void> configure({
+    required bool enabled,
+    required double speed,
+  }) async {}
+
+  @override
+  Future<void> pause() async {}
+
+  @override
+  Future<void> setAppActive(bool active) async {}
+
+  @override
+  Future<void> resume() async {}
+
+  @override
+  Future<Duration?> remainingPlaybackDuration() async => null;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
   Future<void> speakQuestion({
@@ -41,6 +66,8 @@ class _RecordingTts implements TtsService {
     required List<String> answers,
   }) async => null;
 }
+
+final _premiumAccess = StateProvider<bool>((ref) => true);
 
 List<Map<String, dynamic>> _questions() => List.generate(
   60,
@@ -68,6 +95,8 @@ Future<void> _show(
     UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData(
           brightness: dark ? Brightness.dark : Brightness.light,
           extensions: [dark ? AppThemeColors.dark : AppThemeColors.light],
@@ -90,6 +119,7 @@ void main() {
     WidgetTester tester, {
     String language = 'ru',
     bool voiceEnabled = false,
+    bool premium = true,
   }) async {
     SharedPreferences.setMockInitialValues({});
     final source = ProgressDataSource();
@@ -104,6 +134,8 @@ void main() {
         noAchievementAwards,
         progressDataSourceProvider.overrideWithValue(source),
         ttsServiceProvider.overrideWithValue(tts),
+        _premiumAccess.overrideWith((ref) => premium),
+        isPremiumProvider.overrideWith((ref) => ref.watch(_premiumAccess)),
       ],
     );
     await container.read(appSettingsProvider.notifier).ready;
@@ -137,7 +169,7 @@ void main() {
           );
 
           expect(find.byTooltip(appL10n.gameVoiceOff), findsOneWidget);
-          expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
+          expect(find.byIcon(Icons.voice_over_off_rounded), findsOneWidget);
           expect(tts.questions, isEmpty);
           expect(tester.getTopRight(find.byType(QuestionVoiceToggle)).dx, 300);
           expect(tester.takeException(), isNull);
@@ -189,27 +221,18 @@ void main() {
     await tester.pumpAndSettle();
 
     await _show(tester, container, _training());
-    expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.record_voice_over_rounded), findsOneWidget);
     expect(tts.questions, hasLength(2));
 
     await _show(tester, container, const SettingsScreen());
-    final voiceSwitch = find.descendant(
-      of: find
-          .ancestor(
-            of: find.text(appL10n.voiceOverQuestions),
-            matching: find.byType(Row),
-          )
-          .first,
-      matching: find.byType(Switch),
-    );
-    expect(tester.widget<Switch>(voiceSwitch).value, isTrue);
-    await tester.ensureVisible(voiceSwitch);
+    final voiceToggle = find.byType(QuestionVoiceToggle);
+    await tester.ensureVisible(voiceToggle);
     await tester.pumpAndSettle();
-    await tester.tap(voiceSwitch);
+    await tester.tap(voiceToggle);
     await tester.pumpAndSettle();
 
     await _show(tester, container, _training());
-    expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.voice_over_off_rounded), findsOneWidget);
     expect(tts.questions, hasLength(2));
     expect((await source.loadAppSettings()).voiceEnabled, isFalse);
 
@@ -226,4 +249,105 @@ void main() {
     expect(reloaded.read(appSettingsProvider).voiceEnabled, isTrue);
     expect(tester.takeException(), isNull);
   });
+
+  for (final exam in [false, true]) {
+    testWidgets(
+      'free narration is locked despite saved enabled flag: exam=$exam',
+      (tester) async {
+        final (_, container, tts) = await setup(
+          tester,
+          premium: false,
+          voiceEnabled: true,
+        );
+        await _show(
+          tester,
+          container,
+          exam ? ExamScreen(allQuestions: _questions()) : _training(),
+        );
+        expect(tts.questions, isEmpty);
+        expect(find.byIcon(Icons.lock_rounded), findsOneWidget);
+        await tester.tap(find.byType(QuestionVoiceToggle));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 2));
+        expect(find.byType(PremiumBenefitsScreen), findsOneWidget);
+        expect(tts.questions, isEmpty);
+        expect(container.read(appSettingsProvider).voiceEnabled, isTrue);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'revoking Premium stops current and future narration: exam=$exam',
+      (tester) async {
+        final (_, container, tts) = await setup(tester, voiceEnabled: true);
+        await _show(
+          tester,
+          container,
+          exam ? ExamScreen(allQuestions: _questions()) : _training(),
+        );
+        expect(tts.questions, hasLength(1));
+        final stops = tts.stops;
+        container.read(_premiumAccess.notifier).state = false;
+        await tester.pumpAndSettle();
+        expect(tts.stops, greaterThan(stops));
+        tester
+            .widget<PageView>(find.byType(PageView))
+            .controller!
+            .jumpToPage(1);
+        await tester.pumpAndSettle();
+        expect(tts.questions, hasLength(1));
+        expect(find.byIcon(Icons.lock_rounded), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'speed changes do not restart narration; locale changes do: exam=$exam',
+      (tester) async {
+        final (_, container, tts) = await setup(tester, voiceEnabled: true);
+        await _show(
+          tester,
+          container,
+          exam ? ExamScreen(allQuestions: _questions()) : _training(),
+        );
+        expect(tts.questions, hasLength(1));
+        await container.read(appSettingsProvider.notifier).setVoiceSpeed(1.5);
+        await tester.pumpAndSettle();
+        expect(tts.questions, hasLength(1));
+        expect(find.text('1.5x'), findsOneWidget);
+        await container
+            .read(appSettingsProvider.notifier)
+            .setLanguageCode('en');
+        await tester.pumpAndSettle();
+        expect(tts.questions, hasLength(2));
+        await container
+            .read(appSettingsProvider.notifier)
+            .setLanguageCode('kk');
+        await tester.pumpAndSettle();
+        expect(tts.questions, hasLength(3));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final language in ['ru', 'en', 'kk']) {
+    testWidgets('holding opens speed picker without toggling: $language', (
+      tester,
+    ) async {
+      final (source, container, tts) = await setup(tester, language: language);
+      await _show(tester, container, _training());
+      expect(find.text('1x'), findsOneWidget);
+      await tester.longPress(find.byType(QuestionVoiceToggle));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('voice-speed-slider')), findsOneWidget);
+      expect(container.read(appSettingsProvider).voiceEnabled, isFalse);
+      for (final speed in AppSettings.voiceSpeeds) {
+        await tester.tap(find.byKey(ValueKey('voice-speed-$speed')));
+        await tester.pumpAndSettle();
+        expect(container.read(appSettingsProvider).voiceSpeed, speed);
+        expect((await source.loadAppSettings()).voiceSpeed, speed);
+      }
+      expect(tts.questions, isEmpty);
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

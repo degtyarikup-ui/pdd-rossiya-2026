@@ -50,14 +50,16 @@
         </activity>
         <!-- 3D-игра на Godot (game_godot/): свой процесс — движок не перезапускается
              внутри одного процесса и закрывает его при выходе. Класс есть только
-             в сборке с движком (scripts/godot_android_assets.sh). -->
+             в сборке с движком (scripts/godot_android_assets.sh).
+             singleTop позволяет REORDER_TO_FRONT вернуть ту же игру после paywall,
+             не уничтожая Flutter Activity над ней (как сделал бы singleTask). -->
         <activity
             android:name=".game.GodotGameActivity"
             android:process=":game"
             android:exported="${godotGameExported}"
             android:theme="@style/GodotGameTheme"
             android:screenOrientation="portrait"
-            android:launchMode="singleTask"
+            android:launchMode="singleTop"
             android:taskAffinity=""
             android:excludeFromRecents="true"
             android:configChanges="layoutDirection|locale|orientation|keyboardHidden|screenSize|smallestScreenSize|density|keyboard|navigation|screenLayout|uiMode"
@@ -81,6 +83,10 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <!-- English/Kazakh device narration needs visibility of Android TTS engines. -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE"/>
+        </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

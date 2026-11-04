@@ -11,6 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
+import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/feed_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,6 +24,8 @@ void main() {
     // This capture runs under flutter_test outside the default test/ folder.
     // ignore: invalid_use_of_visible_for_testing_member
     SharedPreferences.setMockInitialValues({});
+    final progress = ProgressDataSource();
+    await progress.init();
     tester.view.physicalSize = const Size(1080, 1920);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.resetPhysicalSize);
@@ -61,6 +65,7 @@ void main() {
     final key = GlobalKey();
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [progressDataSourceProvider.overrideWithValue(progress)],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
           locale: const Locale('ru'),
@@ -73,8 +78,7 @@ void main() {
               body: FeedCard(
                 item: item,
                 isCurrent: false,
-                isSoundEnabled: true,
-                onToggleSound: () {},
+                voiceEnabled: true,
                 onAutoNext: () {},
                 onPrevious: () {},
               ),

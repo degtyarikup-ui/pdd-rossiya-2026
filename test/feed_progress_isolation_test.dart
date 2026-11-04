@@ -7,6 +7,7 @@ import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -42,6 +43,7 @@ void main() {
         int? recorded;
         await tester.pumpWidget(
           ProviderScope(
+            overrides: [progressDataSourceProvider.overrideWithValue(progress)],
             child: MaterialApp(
               theme: AppTheme.lightTheme,
               localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -59,8 +61,7 @@ void main() {
                     correctAnswerIndex: 0,
                   ),
                   isCurrent: true,
-                  isSoundEnabled: false,
-                  onToggleSound: () {},
+                  voiceEnabled: false,
                   onAutoNext: () {},
                   onPrevious: () {},
                   onAnswerRecorded: (index) => recorded = index,

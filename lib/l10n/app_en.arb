@@ -113,6 +113,14 @@
   "hapticFeedback": "Vibration",
   "soundEffects": "Sound effects",
   "voiceOverQuestions": "Voiceover questions",
+  "voicePremium": "Premium narration",
+  "voicePremiumRequired": "Narration is available with Premium",
+  "voiceSpeed": "Narration speed",
+  "voiceSpeedHint": "Hold to change speed",
+  "voiceSpeedValue": "Speed {speed}x",
+  "voiceSpeedDescription": "Choose a comfortable pace. Your speed is saved for all questions.",
+  "voiceLanguageDescription": "Recorded narration in Russian. English and Kazakh use your device’s system voice.",
+  "voicePlaybackUnavailable": "Narration could not be played. Please try again.",
   "ticketCategorySetting": "Category",
   "ticketCategoryHint": "A/B – cars and motorcycles, C/D – trucks and buses",
   "dataSection": "Data",
@@ -254,7 +262,7 @@
   "gameSoundOff": "Turn on game sounds",
   "gameVoiceOn": "Turn off question narration",
   "gameVoiceOff": "Turn on question narration",
-  "gameVoiceUnavailable": "Recorded narration is currently available only in Russian",
+  "gameVoiceUnavailable": "No system voice is available for this language. Install a voice in your device settings.",
   "gameAchievementCount": "{correct} / {total}",
   "@gameAchievementCount": {
     "placeholders": {

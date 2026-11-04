@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -394,6 +393,35 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get voiceOverQuestions => 'Озвучка вопросов';
+
+  @override
+  String get voicePremium => 'Озвучка с Премиумом';
+
+  @override
+  String get voicePremiumRequired => 'Озвучка доступна с Премиумом';
+
+  @override
+  String get voiceSpeed => 'Скорость озвучки';
+
+  @override
+  String get voiceSpeedHint => 'Удерживайте, чтобы изменить скорость';
+
+  @override
+  String voiceSpeedValue(String speed) {
+    return 'Скорость ${speed}x';
+  }
+
+  @override
+  String get voiceSpeedDescription =>
+      'Выберите удобный темп. Скорость сохранится для всех вопросов.';
+
+  @override
+  String get voiceLanguageDescription =>
+      'Готовая озвучка на русском. На английском и казахском — системный голос устройства.';
+
+  @override
+  String get voicePlaybackUnavailable =>
+      'Не удалось воспроизвести озвучку. Попробуйте ещё раз.';
 
   @override
   String get ticketCategorySetting => 'Категория билетов';
@@ -887,7 +915,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameVoiceUnavailable =>
-      'Записанная озвучка пока доступна только на русском';
+      'Для этого языка нет системного голоса. Установите голос в настройках устройства.';
 
   @override
   String gameAchievementCount(int correct, int total) {

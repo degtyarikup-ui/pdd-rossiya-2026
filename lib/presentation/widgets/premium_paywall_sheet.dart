@@ -10,23 +10,35 @@ import 'package:pdd_app/presentation/widgets/premium_benefits_screen.dart';
 /// [lockedGame] names the Premium-only game the player tapped, so the screen
 /// says why it opened.
 class PremiumPaywallSheet extends StatelessWidget {
-  const PremiumPaywallSheet({super.key, this.lockedGame});
+  const PremiumPaywallSheet({super.key, this.lockedGame, this.lockedFeature});
 
   final String? lockedGame;
 
-  static Future<bool?> show(BuildContext context, {String? lockedGame}) {
+  /// Localized explanation for the feature that opened this paywall.
+  final String? lockedFeature;
+
+  static Future<bool?> show(
+    BuildContext context, {
+    String? lockedGame,
+    String? lockedFeature,
+  }) {
     HapticFeedbackHelper.tap();
     return Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
         fullscreenDialog: true,
         // Keep the staggered content live during the native route transition.
         allowSnapshotting: false,
-        builder: (_) => PremiumPaywallSheet(lockedGame: lockedGame),
+        builder: (_) => PremiumPaywallSheet(
+          lockedGame: lockedGame,
+          lockedFeature: lockedFeature,
+        ),
       ),
     );
   }
 
   @override
-  Widget build(BuildContext context) =>
-      PremiumBenefitsScreen(lockedGame: lockedGame);
+  Widget build(BuildContext context) => PremiumBenefitsScreen(
+    lockedGame: lockedGame,
+    lockedFeature: lockedFeature,
+  );
 }

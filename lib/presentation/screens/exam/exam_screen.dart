@@ -86,6 +86,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   int _initialWrongCount = 0;
   bool _timedOut = false;
   String? _lastSpokenQuestionId;
+  String? _lastSpokenLanguage;
   int _voiceScheduleGen = 0;
   PageController? _pageController;
   final ScrollController _questionStripController = ScrollController();
@@ -646,11 +647,14 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       return;
     }
 
-    if (_lastSpokenQuestionId == questionId) {
+    final language = ref.read(appSettingsProvider).effectiveLanguageCode;
+    if (_lastSpokenQuestionId == questionId &&
+        _lastSpokenLanguage == language) {
       return;
     }
 
     _lastSpokenQuestionId = questionId;
+    _lastSpokenLanguage = language;
     final gen = ++_voiceScheduleGen;
     final capturedIndex = _currentIndex;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -660,7 +664,12 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       if (_isAnswerSubmitted || _selectedAnswerIndex != null) return;
       final q = _examQuestions[_currentIndex];
       if ((q['id'] as String) != questionId) return;
-      if (!ref.read(appSettingsProvider).voiceEnabled) return;
+      final settings = ref.read(appSettingsProvider);
+      if (!settings.voiceEnabled ||
+          settings.effectiveLanguageCode != language ||
+          !ref.read(isPremiumProvider)) {
+        return;
+      }
 
       final answerTexts = answers
           .map((answer) => (answer as Map)['text'] as String)
@@ -705,7 +714,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     final answers = question['answers'] as List;
     final questionText = question['question'] as String;
     final isAnswered = _isAnswerSubmitted;
-    final voiceEnabled = appSettings.voiceEnabled;
+    final voiceEnabled =
+        appSettings.voiceEnabled && ref.watch(isPremiumProvider);
     final voiceShouldPlay =
         voiceEnabled && !isAnswered && _selectedAnswerIndex == null;
 
@@ -820,8 +830,10 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                         );
                         const voice = QuestionVoiceToggle();
                         const gap = SizedBox(width: AppDimensions.spacingM);
-                        if (constraints.maxWidth < 400 &&
-                            MediaQuery.textScalerOf(context).scale(16) > 22) {
+                        if (constraints.maxWidth < 340 ||
+                            (constraints.maxWidth < 400 &&
+                                MediaQuery.textScalerOf(context).scale(16) >
+                                    22)) {
                           return Column(
                             children: [
                               Row(

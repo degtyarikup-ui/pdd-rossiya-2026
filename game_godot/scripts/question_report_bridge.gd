@@ -13,9 +13,9 @@ var _plugin: Object
 
 func submit(payload: Dictionary) -> void:
 	if request_id != "": return
-	expects_data = payload.get("request_kind", "") == "leaderboard"
+	expects_data = payload.get("request_kind", "") in ["leaderboard", "voice_premium"]
 	request_id = "%s-%s" % [Time.get_ticks_usec(), get_instance_id()]
-	_deadline = Time.get_ticks_msec() + 30000
+	_deadline = 0 if payload.get("request_kind", "") == "voice_premium" else Time.get_ticks_msec() + 30000
 	if Host.embedded():
 		_plugin = Engine.get_singleton("PddHost")
 		if expects_data: _plugin.connect("game_data_result", _on_data_result)
@@ -50,7 +50,7 @@ func submit(payload: Dictionary) -> void:
 func _process(_delta: float) -> void:
 	if request_id == "": return
 	var now := Time.get_ticks_msec()
-	if now >= _deadline:
+	if _deadline > 0 and now >= _deadline:
 		_finish(false)
 		return
 	if now < _next_poll: return

@@ -32,6 +32,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _SilentTts implements TtsService {
   @override
+  ValueListenable<NarrationStatus> get status =>
+      ValueNotifier(NarrationStatus.idle);
+
+  @override
+  Future<void> setAppActive(bool active) async {}
+
+  @override
+  Future<void> configure({
+    required bool enabled,
+    required double speed,
+  }) async {}
+
+  @override
+  Future<void> pause() async {}
+
+  @override
+  Future<void> resume() async {}
+
+  @override
+  Future<Duration?> remainingPlaybackDuration() async => null;
+
+  @override
   Future<void> stop() async {}
   @override
   Future<void> dispose() async {}

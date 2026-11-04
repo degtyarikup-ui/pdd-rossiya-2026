@@ -41,6 +41,7 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_leaderboard_sheet
 import 'package:pdd_app/presentation/screens/game/widgets/game_over_dialog.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
+import 'package:pdd_app/presentation/widgets/pending_payment_recovery.dart';
 import 'package:pdd_app/presentation/widgets/result_share.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
@@ -651,6 +652,10 @@ class GodotGame {
             try {
               final report = jsonDecode(call.arguments as String);
               if (report is Map<String, dynamic>) {
+                if (report['request_kind'] == 'voice_premium') {
+                  overlay.setVisible(false);
+                  return jsonEncode(await _requestVoicePremium(context, ref));
+                }
                 return await QuestionReportService.sendGameReport(report);
               }
             } catch (_) {}
@@ -675,9 +680,12 @@ class GodotGame {
       if (kIsWeb) {
         // The web route owns its own loading surface above the iframe.
         overlay.close();
-        result = await Navigator.of(
-          context,
-        ).push<String>(GodotWebScreen.route(args: args));
+        result = await Navigator.of(context).push<String>(
+          GodotWebScreen.route(
+            args: args,
+            onVoicePremium: () => _requestVoicePremium(context, ref),
+          ),
+        );
       } else {
         result = await _channel.invokeMethod<String>('start', {'args': args});
       }
@@ -710,6 +718,45 @@ class GodotGame {
       }
       overlay.close();
     }
+  }
+
+  /// The native engine remains paused while Flutter presents its normal paywall.
+  /// Recheck the authoritative entitlement after closing, including external SBP.
+  static Future<Map<String, dynamic>> _requestVoicePremium(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    if (!context.mounted) return {'voice_premium': false};
+    if (!ref.read(isPremiumProvider)) {
+      final result = await PremiumPaywallSheet.show(
+        context,
+        lockedFeature: appL10n.voicePremiumRequired,
+      );
+      if (result == false && !kIsWeb) {
+        await PendingPaymentRecovery.waitForForeground();
+        if (!context.mounted) return {'voice_premium': false};
+        await PendingPaymentRecovery.instance.recover(context);
+      }
+    }
+    if (!context.mounted) return {'voice_premium': false};
+    final premium = ref.read(isPremiumProvider);
+    final settings = ref.read(appSettingsProvider);
+    if (premium) await (await _prefs())?.setBool(_cityVoiceKey, true);
+    if (!context.mounted) return {'voice_premium': false};
+    return {
+      'voice_premium': premium,
+      'voice': premium,
+      'voice_available': [
+        'ru',
+        'en',
+        'kk',
+      ].contains(settings.effectiveLanguageCode),
+      'voice_speed': settings.voiceSpeed,
+      'voice_expires_at':
+          (ref.read(premiumServiceProvider).expiresAt?.millisecondsSinceEpoch ??
+              0) /
+          1000.0,
+    };
   }
 
   /// Owned cars/paints and settings for immediate start and the pause menu.
@@ -765,7 +812,7 @@ class GodotGame {
     final nextReward = garage.nextReward;
     final target =
         nextReward?.threshold ?? GameGarageService.rewards.last.threshold;
-    final voiceAvailable = lang == 'ru';
+    final voiceAvailable = ['ru', 'en', 'kk'].contains(lang);
     final voice = prefs?.getBool(_cityVoiceKey) ?? settings.voiceEnabled;
     return {
       'cars': cars,
@@ -819,8 +866,14 @@ class GodotGame {
           prefs?.getBool(_citySoundKey) ??
           SoundEffectsService.instance.isEnabled,
       'haptics': HapticFeedbackHelper.enabled,
-      'voice': voiceAvailable && voice,
+      'voice': premium && voiceAvailable && voice,
       'voice_available': voiceAvailable,
+      'voice_premium': premium,
+      'voice_speed': settings.voiceSpeed,
+      'voice_expires_at':
+          (ref.read(premiumServiceProvider).expiresAt?.millisecondsSinceEpoch ??
+              0) /
+          1000.0,
       if (const bool.fromEnvironment('GAME_DEBUG'))
         'debug_perf': prefs?.getBool(_cityPerfKey) ?? false,
       'unlimited': unlimited,
@@ -896,8 +949,14 @@ class GodotGame {
         await (await _prefs())?.setBool(_citySoundKey, sound);
       }
       final voice = summary['voice'];
-      if (voice is bool && summary['voice_available'] == true) {
+      if (premium && voice is bool && summary['voice_available'] == true) {
         await (await _prefs())?.setBool(_cityVoiceKey, voice);
+      }
+      final voiceSpeed = summary['voice_speed'];
+      if (premium && voiceSpeed is num && context.mounted) {
+        await ref
+            .read(appSettingsProvider.notifier)
+            .setVoiceSpeed(voiceSpeed.toDouble());
       }
       final car = summary['car'];
       if (car is Map && car['id'] is String && car['paint'] is String) {

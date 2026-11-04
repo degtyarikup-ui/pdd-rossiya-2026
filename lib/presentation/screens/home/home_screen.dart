@@ -47,8 +47,8 @@ import 'package:pdd_app/presentation/widgets/app_notice_widgets.dart';
 import 'package:pdd_app/presentation/widgets/inbox_home_alert.dart';
 import 'package:pdd_app/presentation/widgets/premium_celebration_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
-import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/web_payment_return.dart';
+import 'package:pdd_app/presentation/widgets/pending_payment_recovery.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pdd_app/presentation/widgets/sign_in_required_view.dart';
 import 'package:pdd_app/presentation/widgets/continue_session_card.dart';
@@ -120,19 +120,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   /// Android: оплата СБП, которую человек начал в браузере. Когда он вернулся
   /// в приложение, сервер перепроверяет заказ у Platega и начисляет срок.
-  Future<void> _checkPendingPayment() async {
-    final status = await PremiumService.instance.checkPendingPayment();
-    if (!mounted) return;
-    if (status == 'confirmed') {
-      await PremiumCelebrationScreen.show(
-        context,
-        reason: PremiumCelebrationReason.purchased,
-        expiresAt: PremiumService.instance.expiresAt,
-      );
-    } else if (status == 'canceled') {
-      AppToast.show(context, appL10n.webPayCanceled);
-    }
-  }
+  Future<void> _checkPendingPayment() =>
+      PendingPaymentRecovery.instance.recover(context);
 
   @override
   void didChangeDependencies() {

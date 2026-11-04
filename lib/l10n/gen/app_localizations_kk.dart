@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -382,6 +381,35 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get voiceOverQuestions => 'Сұрақтарды дауыстап оқу';
+
+  @override
+  String get voicePremium => 'Премиум дыбыстау';
+
+  @override
+  String get voicePremiumRequired => 'Дыбыстау Премиуммен қолжетімді';
+
+  @override
+  String get voiceSpeed => 'Дыбыстау жылдамдығы';
+
+  @override
+  String get voiceSpeedHint => 'Жылдамдықты өзгерту үшін басып тұрыңыз';
+
+  @override
+  String voiceSpeedValue(String speed) {
+    return 'Жылдамдық ${speed}x';
+  }
+
+  @override
+  String get voiceSpeedDescription =>
+      'Өзіңізге ыңғайлы қарқынды таңдаңыз. Жылдамдық барлық сұрақтар үшін сақталады.';
+
+  @override
+  String get voiceLanguageDescription =>
+      'Орыс тілінде дайын жазба. Ағылшын және қазақ тілдерінде құрылғының жүйелік дауысы қолданылады.';
+
+  @override
+  String get voicePlaybackUnavailable =>
+      'Дыбыстауды ойнату мүмкін болмады. Қайталап көріңіз.';
 
   @override
   String get ticketCategorySetting => 'Санат';
@@ -873,7 +901,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameVoiceUnavailable =>
-      'Жазылған дыбыстау әзірше тек орыс тілінде қолжетімді';
+      'Бұл тіл үшін жүйелік дауыс жоқ. Құрылғы параметрлерінде дауысты орнатыңыз.';
 
   @override
   String gameAchievementCount(int correct, int total) {

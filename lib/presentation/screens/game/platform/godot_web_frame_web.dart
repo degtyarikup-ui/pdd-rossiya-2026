@@ -14,6 +14,9 @@ class GodotWebFrame {
   static int _sequence = 0;
   static const _folder = 'godot/';
 
+  final Future<Map<String, dynamic>> Function()? _onVoicePremium;
+  bool _voicePremiumBusy = false;
+
   final _frame = web.HTMLIFrameElement();
   final _container = web.HTMLDivElement();
   final _cover = web.HTMLDivElement();
@@ -42,9 +45,11 @@ class GodotWebFrame {
     required void Function(String summaryJson) onExit,
     void Function(String summaryJson)? onSummary,
     void Function(Map<String, dynamic> event)? onEvent,
+    Future<Map<String, dynamic>> Function()? onVoicePremium,
   }) : _onExit = onExit,
        _onSummary = onSummary,
-       _onEvent = onEvent {
+       _onEvent = onEvent,
+       _onVoicePremium = onVoicePremium {
     _viewType = 'pdd-godot-${++_sequence}';
     _frame.style
       ..border = '0'
@@ -146,6 +151,33 @@ class GodotWebFrame {
     final id = event['request_id'];
     final payload = event['payload'];
     if (id is! String || payload is! Map<String, dynamic>) return;
+    if (payload['request_kind'] == 'voice_premium') {
+      if (_voicePremiumBusy) return;
+      _voicePremiumBusy = true;
+      Map<String, dynamic> result = {'voice_premium': false};
+      // Keep the engine alive but remove its platform view from hit testing
+      // while Flutter renders the paywall above this route.
+      _container.style.visibility = 'hidden';
+      try {
+        result = await _onVoicePremium?.call() ?? result;
+      } catch (_) {
+        result = {'voice_premium': false};
+      } finally {
+        _voicePremiumBusy = false;
+        if (!_disposed) _container.style.visibility = 'visible';
+      }
+      if (_disposed) return;
+      _frame.contentWindow?.postMessage(
+        jsonEncode({
+          'bridge': 'pdd-godot',
+          'kind': 'question_report_result',
+          'request_id': id,
+          'data': result,
+        }).toJS,
+        web.window.location.origin.toJS,
+      );
+      return;
+    }
     final success = await QuestionReportService.sendGameReport(payload);
     if (_disposed) return;
     _frame.contentWindow?.postMessage(

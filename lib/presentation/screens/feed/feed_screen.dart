@@ -18,6 +18,7 @@ import 'package:pdd_app/presentation/screens/feed/widgets/tip_feed_card.dart';
 import 'package:pdd_app/presentation/widgets/ai_explanation_sheet.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
+import 'package:pdd_app/presentation/widgets/question_voice_toggle.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 
@@ -30,18 +31,17 @@ class FeedScreen extends ConsumerStatefulWidget {
 
 class _FeedScreenState extends ConsumerState<FeedScreen>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
-  static const String _prefKeyFeedSound = 'feed_sound_enabled';
   static const String _prefKeySwipeHintCount = 'feed_swipe_hint_count';
 
   late PageController _pageController;
   late AnimationController _bounceController;
   late Animation<double> _bounceAnimation;
 
-  static bool? _cachedSoundEnabled;
-
   int _currentIndex = 0;
-  bool _isSoundEnabled = true;
   bool _isAiSheetOpen = false;
+  bool _isVoiceSheetOpen = false;
+  bool _isAppActive = true;
+  late final TtsService _ttsService;
   int _swipeHintCount = 0;
   int _correctStreak = 0;
   final List<FeedItem> _items = [];
@@ -65,9 +65,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   void initState() {
     super.initState();
     UsageReporter.track(UsageFeature.feed);
-    if (_cachedSoundEnabled != null) {
-      _isSoundEnabled = _cachedSoundEnabled!;
-    }
+    _ttsService = ref.read(ttsServiceProvider);
     WidgetsBinding.instance.addObserver(this);
     _pageController = PageController();
 
@@ -116,14 +114,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   Future<void> _loadPreferences() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final sound = prefs.getBool(_prefKeyFeedSound);
       final swipeCount = prefs.getInt(_prefKeySwipeHintCount) ?? 0;
       if (mounted) {
         setState(() {
-          if (sound != null) {
-            _cachedSoundEnabled = sound;
-            _isSoundEnabled = sound;
-          }
           _swipeHintCount = swipeCount;
         });
       }
@@ -143,24 +136,20 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.hidden ||
-        state == AppLifecycleState.detached) {
-      TtsService.instance.stop();
-    }
+    if (!mounted) return;
+    setState(() => _isAppActive = state == AppLifecycleState.resumed);
   }
 
   @override
   void deactivate() {
-    TtsService.instance.stop();
+    _ttsService.stop();
     super.deactivate();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    TtsService.instance.stop();
+    _ttsService.stop();
     _pageController.dispose();
     _bounceController.dispose();
     _timerProgressNotifier.dispose();
@@ -172,7 +161,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
 
   void _onPageChanged(int index) {
     HapticFeedbackHelper.select();
-    TtsService.instance.stop().ignore();
+    _ttsService.stop().ignore();
 
     if (index > _currentIndex && !_viewedIndices.contains(index)) {
       if (!PremiumService.instance.canAccessFeed) {
@@ -317,23 +306,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     }
   }
 
-  Future<void> _toggleSound() async {
-    HapticFeedbackHelper.tap();
-    final newVal = !_isSoundEnabled;
-    _cachedSoundEnabled = newVal;
-    if (!newVal) {
-      TtsService.instance.stop().ignore();
-    }
-    setState(() => _isSoundEnabled = newVal);
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_prefKeyFeedSound, newVal);
-    } catch (_) {}
-  }
-
   Future<void> _openAiChatForCurrentItem(FeedItem currentItem) async {
     HapticFeedbackHelper.tap();
-    TtsService.instance.stop();
     setState(() {
       _isAiSheetOpen = true;
     });
@@ -428,6 +402,10 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     List<FeedItem> displayItems,
     AppThemeColors colors,
   ) {
+    final settings = ref.watch(appSettingsProvider);
+    final voiceEnabled = settings.voiceEnabled && ref.watch(isPremiumProvider);
+    final isPaused =
+        _isAiSheetOpen || _isVoiceSheetOpen || !_isAppActive || _isRefreshing;
     final currentItem = _currentIndex < displayItems.length
         ? displayItems[_currentIndex]
         : displayItems.first;
@@ -466,6 +444,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                         key: ValueKey('${item.id}_$index'),
                         item: item,
                         isCurrent: index == _currentIndex,
+                        isPaused: isPaused,
                         onAutoNext: _autoNext,
                         onPrevious: _previousPage,
                         onTimerTick: (progress, remainingSec) {
@@ -475,11 +454,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                       );
                     }
                     return FeedCard(
-                      key: ValueKey('${item.id}_$index'),
+                      key: ValueKey(
+                        '${item.id}_${index}_${settings.effectiveLanguageCode}',
+                      ),
                       item: item,
                       isCurrent: index == _currentIndex,
-                      isSoundEnabled: _isSoundEnabled,
-                      isPaused: _isAiSheetOpen,
+                      voiceEnabled: voiceEnabled,
+                      voiceSpeed: settings.voiceSpeed,
+                      isPaused: isPaused,
                       initialSelectedAnswerIndex: _answeredChoices[item.id],
                       onAnswerRecorded: (selectedIdx) {
                         _answeredChoices[item.id] = selectedIdx;
@@ -490,7 +472,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                           _correctStreak = 0;
                         }
                       },
-                      onToggleSound: _toggleSound,
                       onAutoNext: _autoNext,
                       onPrevious: _previousPage,
                       onTimerTick: (progress, remainingSec) {
@@ -612,16 +593,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                   ),
                   const SizedBox(height: 10),
 
-                  // 2. Sound Toggle Button
-                  _buildFloatingActionButton(
-                    icon: _isSoundEnabled
-                        ? Icons.volume_up_rounded
-                        : Icons.volume_off_rounded,
-                    iconColor: _isSoundEnabled
-                        ? colors.primaryText
-                        : colors.secondaryText,
-                    onTap: _toggleSound,
-                    colors: colors,
+                  // 2. Narration shares its preference and speed with study modes.
+                  QuestionVoiceToggle(
+                    onSheetVisibilityChanged: (visible) {
+                      if (mounted) {
+                        setState(() => _isVoiceSheetOpen = visible);
+                      }
+                    },
                   ),
                   const SizedBox(height: 10),
 

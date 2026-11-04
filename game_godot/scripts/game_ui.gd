@@ -332,7 +332,7 @@ func show_notice(type: String, seconds := 3.0) -> void:
 		"collision": "gameCollision", "offroad": "gameOffroad", "priority": "gamePriorityViolation",
 		"speeding": "gameSpeeding", "overtaking": "gameOvertakingProhibited", "pedestrian": "gamePedestrianYield",
 		"railway": "gameRailwayViolation", "stop": "gameStopViolation", "red_light": "gameRedLightViolation",
-		"report_sent": "reportSent",
+		"report_sent": "reportSent", "voice_unavailable": "gameVoiceUnavailable", "voice_playback_unavailable": "voicePlaybackUnavailable",
 	}.get(type, "gameWrongManeuver")
 	_notice_text.text = Ui.t(key)
 	var arriving := not _notice.visible or _notice.modulate.a < 1.0
