@@ -432,7 +432,6 @@ class SwipeCardViewState extends State<SwipeCardView>
                 lift: _lift,
                 child: SignCardFace(
                   card: widget.card,
-                  tint: _tint,
                   verdict: _answer == null ? null : _correct,
                   progress: _feedback,
                   feedback: _answer == null ? null : _buildFeedback(colors),
@@ -614,13 +613,12 @@ class _CardSurface extends StatelessWidget {
   }
 }
 
-/// Содержимое карточки: знак на подложке, вопрос и строка итога, которая
+/// Содержимое карточки: знак без отдельной подложки, вопрос и строка итога, которая
 /// раскрывается после ответа. Общая для верхней карточки и карточки колоды.
 class SignCardFace extends StatelessWidget {
   const SignCardFace({
     super.key,
     required this.card,
-    this.tint,
     this.verdict,
     this.progress,
     this.feedback,
@@ -629,13 +627,10 @@ class SignCardFace extends StatelessWidget {
 
   final SignCardQuestion card;
 
-  /// −1…1: направление отвода — подложка знака теплеет к цвету ответа.
-  final ValueListenable<double>? tint;
-
   /// Итог: true — верно, false — ошибка, null — ещё нет ответа.
   final bool? verdict;
 
-  /// Ход показа итога (0…1): значок на подложке и строка итога появляются.
+  /// Ход показа итога (0…1): значок возле знака и строка итога появляются.
   final Animation<double>? progress;
   final Widget? feedback;
 
@@ -733,31 +728,68 @@ class SignCardFace extends StatelessWidget {
         constraints.maxHeight - promptHeight - footerHeight * open - 16 - 12;
     // На компактном экране сохраняем размер знака и весь вопрос;
     // вертикальная прокрутка не конкурирует с горизонтальным жестом.
-    final plateHeight = remaining.clamp(150.0, 320.0);
+    final artworkHeight = remaining
+        .clamp(
+          150.0,
+          math.max(150.0, math.min(320.0, constraints.maxWidth * 0.9)),
+        )
+        .toDouble();
     // On a tall card the sign and question sit in the middle, not at the top.
     final slack =
         constraints.maxHeight -
         footerHeight * open -
-        (plateHeight + 16 + promptHeight + 12);
+        (artworkHeight + 16 + promptHeight + 12);
 
-    final body = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (slack > 0) SizedBox(height: slack / 2),
-        SizedBox(
-          height: plateHeight,
-          child: _SignPlate(
-            sign: card.sign,
-            tint: tint,
-            verdict: verdict,
-            progress: progress,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(card.prompt, textAlign: TextAlign.center, style: promptStyle),
-        const SizedBox(height: 12),
-      ],
-    );
+    final landscape =
+        constraints.maxWidth >= 480 && constraints.maxHeight < 300;
+    final body = landscape
+        ? SizedBox(
+            height: math.max(120, constraints.maxHeight - footerHeight * open),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: math.min(220, constraints.maxWidth * 0.36),
+                  child: _SignArtwork(
+                    sign: card.sign,
+                    verdict: verdict,
+                    progress: progress,
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: SingleChildScrollView(
+                    primary: false,
+                    child: Text(
+                      card.prompt,
+                      textAlign: TextAlign.center,
+                      style: promptStyle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (slack > 0) SizedBox(height: slack / 2),
+              SizedBox(
+                height: artworkHeight,
+                child: _SignArtwork(
+                  sign: card.sign,
+                  verdict: verdict,
+                  progress: progress,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                card.prompt,
+                textAlign: TextAlign.center,
+                style: promptStyle,
+              ),
+              const SizedBox(height: 12),
+            ],
+          );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -810,74 +842,59 @@ class SignCardFace extends StatelessWidget {
   }
 }
 
-/// Подложка знака: светлая плашка карточки; при отводе мягко принимает цвет
-/// ответа, в итоге — цвет результата и значок в углу.
-class _SignPlate extends StatelessWidget {
-  const _SignPlate({
+/// Знак на общей поверхности карточки, с отдельным значком результата.
+class _SignArtwork extends StatelessWidget {
+  const _SignArtwork({
     required this.sign,
-    required this.tint,
     required this.verdict,
     required this.progress,
   });
 
   final SignItem sign;
-  final ValueListenable<double>? tint;
   final bool? verdict;
   final Animation<double>? progress;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final image = Padding(
-      padding: const EdgeInsets.all(18),
-      child: _SignImage(sign: sign),
-    );
-    final listenable = Listenable.merge([?tint, ?progress]);
     return AnimatedBuilder(
-      animation: listenable,
-      child: image,
+      animation: progress ?? const AlwaysStoppedAnimation<double>(1),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        child: _SignImage(sign: sign),
+      ),
       builder: (context, child) {
-        final t = tint?.value ?? 0;
-        final strength = verdict != null ? 1.0 : t.abs();
-        final target = t >= 0 ? colors.greenLight : colors.redLight;
-        final plate = Color.lerp(colors.gray, target, strength * 0.9)!;
         final pop = verdict == null
             ? 0.0
             : Curves.easeOutBack.transform(
                 ((progress?.value ?? 1) * 2.4).clamp(0.0, 1.0),
               );
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: plate,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              child!,
-              if (verdict != null)
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Transform.scale(
-                    scale: pop,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: verdict! ? colors.green : colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        verdict! ? Icons.check_rounded : Icons.close_rounded,
-                        size: 20,
-                        color: Colors.white,
-                      ),
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            child!,
+            if (verdict != null)
+              Positioned(
+                top: 10,
+                right: 10,
+                child: Transform.scale(
+                  scale: pop,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: verdict! ? colors.green : colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      verdict! ? Icons.check_rounded : Icons.close_rounded,
+                      size: 20,
+                      color: Colors.white,
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         );
       },
     );

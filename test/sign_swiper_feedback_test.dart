@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
@@ -209,6 +210,28 @@ void main() {
       );
     }
   }
+
+  testWidgets('Landscape keeps the sign and question visible side by side', (
+    tester,
+  ) async {
+    final controller = SwipeCardController();
+    await open(tester, controller, size: const Size(844, 390), dark: true);
+    final cardRect = tester.getRect(find.byType(SwipeCardView));
+    final promptRect = tester.getRect(find.text(question.prompt));
+    expect(promptRect.top, greaterThanOrEqualTo(cardRect.top));
+    expect(promptRect.bottom, lessThanOrEqualTo(cardRect.bottom));
+    final signRect = tester.getRect(find.byType(SvgPicture));
+    expect(signRect.right, lessThan(promptRect.left));
+    expect(signRect.top, greaterThanOrEqualTo(cardRect.top));
+    expect(signRect.bottom, lessThanOrEqualTo(cardRect.bottom));
+    expect(tester.takeException(), isNull);
+    controller.swipeRight();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 340));
+    expect(find.byKey(const ValueKey('sign-answer-feedback')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpAndSettle();
+  });
 
   test('Incorrect haptic respects disabling between its two pulses', () async {
     final calls = <String>[];
