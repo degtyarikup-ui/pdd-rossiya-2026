@@ -3,6 +3,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/presentation/widgets/app_notice_widgets.dart';
 
 void main() {
+  testWidgets('a banner taller than two screens can count a visible view', (
+    tester,
+  ) async {
+    var views = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: NoticeViewObserver(
+              onViewed: () => views++,
+              child: const SizedBox(width: 350, height: 2400),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 1250));
+    expect(views, 1);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('view requires sustained visibility and fires only once', (
     tester,
   ) async {

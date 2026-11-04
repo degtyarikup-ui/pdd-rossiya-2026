@@ -10,6 +10,14 @@ import { fileURLToPath } from 'node:url';
 import worker from './worker.js';
 import { NotificationsState, DEFAULT_NOTIFICATION_CONFIG } from './notifications.js';
 
+// The inputs are visually hidden; click their visible labels so Playwright
+// waits for scrolling/layout to settle instead of forcing a hidden coordinate.
+async function choose(page, selector, checked = true) {
+  const input = page.locator(selector);
+  if (await input.isChecked() !== checked) await input.locator('..').click();
+  assert.equal(await input.isChecked(), checked);
+}
+
 class MemoryKV {
   constructor() { this.store = new Map(); this.metadata = new Map(); }
   async get(key, options) {
@@ -86,18 +94,18 @@ if (process.argv.includes('--serve')) {
   const app = await preview();
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
   try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: 1440, height: 1000 } });
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.goto(app.url + '/admin');
     await page.click('[data-feature="notifications"]');
     await page.waitForSelector('#nt-history .nf-msg');
     assert.equal(await page.locator('#nt-history .nf-msg').count(), 3);
     // Picture only: the window shows the picture, the list shows an entry.
-    await page.check('input[name="nt-place"][value="popup"]', { force: true });
+    await choose(page, 'input[name="nt-place"][value="popup"]');
     await page.fill('#nt-title', 'Новая версия');
     assert.match(await page.textContent('#nt-screen'), /Новая версия/);
     // A push: title is limited for lock screens and previewed per platform.
-    await page.check('#nt-push', { force: true });
+    await choose(page, '#nt-push');
     assert.equal(await page.getAttribute('#nt-title', 'maxlength'), '50');
     assert.match(await page.textContent('#nt-screen'), /Раскрыто.*Новая версия/);
     // iPhone picture: a thumbnail on the lock screen, above the text when expanded.
@@ -114,9 +122,9 @@ if (process.argv.includes('--serve')) {
     assert.equal(await page.isDisabled('input[name="nt-platform"][value="web"]'), true);
     // Platforms are picked independently; a push never goes to the web.
     assert.equal(await page.isChecked('input[name="nt-platform"][value="web"]'), false);
-    await page.uncheck('input[name="nt-platform"][value="ios"]', { force: true });
+    await choose(page, 'input[name="nt-platform"][value="ios"]', false);
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('input[name="nt-platform"]:checked')].map(x => x.value)), ['android']);
-    await page.check('input[name="nt-platform"][value="ios"]', { force: true });
+    await choose(page, 'input[name="nt-platform"][value="ios"]');
     // A test goes to my account without confirmation.
     await page.click('#nt-test');
     await page.fill('#nt-target', 'me@example.test');
@@ -130,7 +138,7 @@ if (process.argv.includes('--serve')) {
     assert.equal(await page.textContent('#nt-test'), 'Отправить на 2');
     await page.click('#nt-test');
     await page.waitForFunction(() => document.querySelectorAll('#nt-history .nf-msg').length === 6);
-    await page.uncheck('#nt-recips input[data-rc="1"]', { force: true });
+    await choose(page, '#nt-recips input[data-rc="1"]', false);
     assert.equal(await page.textContent('#nt-test'), 'Отправить себе');
     assert.equal(test.inAppKind, 'popup');
     assert.match(test.targetTopic, /^pdd_account_[a-f0-9]{64}$/);
@@ -140,8 +148,8 @@ if (process.argv.includes('--serve')) {
     await page.click('#nt-confirm-send');
     await page.waitForFunction(() => document.querySelectorAll('#nt-history .nf-msg').length === 7);
     // Permanent means inbox-only, and copying preserves the chosen lifetime.
-    await page.check('input[name="nt-place"][value="popup"]', { force: true });
-    await page.check('input[name="nt-days"][value="forever"]', { force: true });
+    await choose(page, 'input[name="nt-place"][value="popup"]');
+    await choose(page, 'input[name="nt-days"][value="forever"]');
     assert.equal(await page.isChecked('input[name="nt-place"][value="news"]'), true);
     assert.equal(await page.isDisabled('input[name="nt-place"][value="popup"]'), true);
     assert.equal(await page.isDisabled('input[name="nt-place"][value="banner"]'), true);
@@ -158,7 +166,7 @@ if (process.argv.includes('--serve')) {
     assert.ok(permanent.expiresAt > Date.now() + 365 * 86400000);
     await page.click('[data-nt-copy="' + permanent.id + '"]');
     assert.equal(await page.isChecked('input[name="nt-days"][value="forever"]'), true);
-    await page.check('input[name="nt-days"][value="1"]', { force: true });
+    await choose(page, 'input[name="nt-days"][value="1"]');
     assert.equal(await page.isDisabled('input[name="nt-place"][value="popup"]'), false);
     assert.equal(await page.isDisabled('#nt-push'), false);
     assert.match(await page.textContent('#nt-lifetime-note'), /исчезнет и из списка/);
@@ -186,7 +194,7 @@ if (!process.argv.includes('--serve')) test('notification history shows deadline
   Object.assign(scheduled, { kind: 'news', startAt: now + 3600000, expiresAt: now + 7200000, status: 'scheduled' });
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
   try {
-    const page = await browser.newPage({ viewport: { width: 1268, height: 1000 } });
+    const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: 1268, height: 1000 } });
     await page.clock.install({ time: new Date(now) });
     let reads = 0;
     page.on('request', request => { if (new URL(request.url()).pathname === '/api/admin/notifications' && request.method() === 'GET') reads++; });
@@ -222,7 +230,7 @@ if (!process.argv.includes('--serve')) test('audience and store chips preserve i
   const app = await preview();
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
   try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
+    const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: 1440, height: 1100 } });
     const errors=[];page.on('pageerror', e=>errors.push(e.message));
     await page.goto(app.url+'/admin');
     // Migrate the previous editor's single-store draft.
@@ -237,9 +245,9 @@ if (!process.argv.includes('--serve')) test('audience and store chips preserve i
     await page.click('#nt-reset');
     assert.deepEqual(await checked('nt-store'),['play','rustore']);
     await page.fill('#nt-title','Только Premium в RuStore');
-    await page.uncheck('input[name="nt-store"][value="play"]',{force:true});
-    await page.uncheck('input[name="nt-audience"][value="guest"]',{force:true});
-    await page.uncheck('input[name="nt-audience"][value="registered"]',{force:true});
+    await choose(page, 'input[name="nt-store"][value="play"]', false);
+    await choose(page, 'input[name="nt-audience"][value="guest"]', false);
+    await choose(page, 'input[name="nt-audience"][value="registered"]', false);
     assert.deepEqual(await checked('nt-audience'),['premium']);
     assert.equal(await page.isDisabled('#nt-push'),true);
     assert.match(await page.textContent('#nt-push-state'),/все категории/);
@@ -260,20 +268,20 @@ if (!process.argv.includes('--serve')) test('audience and store chips preserve i
     await row.locator('[data-nt-copy]').click();
     assert.deepEqual(await checked('nt-store'),['rustore']);
     assert.deepEqual(await checked('nt-audience'),['premium']);
-    await page.uncheck('input[name="nt-audience"][value="premium"]',{force:true});
+    await choose(page, 'input[name="nt-audience"][value="premium"]', false);
     assert.equal(await page.isDisabled('#nt-publish'),true);
     assert.equal(await page.getAttribute('#nt-publish','title'),'Выберите категорию пользователей');
-    await page.check('input[name="nt-audience"][value="guest"]',{force:true});
-    await page.check('input[name="nt-audience"][value="registered"]',{force:true});
+    await choose(page, 'input[name="nt-audience"][value="guest"]');
+    await choose(page, 'input[name="nt-audience"][value="registered"]');
     assert.deepEqual(await checked('nt-audience'),['guest','registered']);
-    await page.uncheck('input[name="nt-store"][value="rustore"]',{force:true});
+    await choose(page, 'input[name="nt-store"][value="rustore"]', false);
     assert.equal(await page.getAttribute('#nt-publish','title'),'Выберите магазин');
-    await page.uncheck('input[name="nt-platform"][value="android"]',{force:true});
+    await choose(page, 'input[name="nt-platform"][value="android"]', false);
     assert.equal(await page.isVisible('#nt-stores'),false);
     assert.equal(await page.isDisabled('#nt-publish'),false);
-    await page.check('input[name="nt-platform"][value="android"]',{force:true});
-    await page.check('input[name="nt-store"][value="play"]',{force:true});
-    await page.check('input[name="nt-store"][value="rustore"]',{force:true});
+    await choose(page, 'input[name="nt-platform"][value="android"]');
+    await choose(page, 'input[name="nt-store"][value="play"]');
+    await choose(page, 'input[name="nt-store"][value="rustore"]');
     assert.deepEqual(await checked('nt-store'),['play','rustore']);
     for (const width of [1440,820,390]) {
       await page.setViewportSize({width,height:1100});
@@ -282,4 +290,144 @@ if (!process.argv.includes('--serve')) test('audience and store chips preserve i
     }
     assert.deepEqual(errors,[]);
   } finally { await browser.close();await app.close(); }
+});
+
+if (!process.argv.includes('--serve')) test('profile banners compose optional parts, preserve image ratios and move the following sections', { timeout: 90000 }, async t => {
+  let chromium;
+  try { ({ chromium } = createRequire(import.meta.url)('playwright')); } catch { t.skip('Playwright не найден (NODE_PATH)'); return; }
+  const app = await preview();
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
+  try {
+    const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: 1440, height: 1100 } });
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.route('https://assets.example.test/**', route => {
+      const tall = route.request().url().includes('tall');
+      return route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="'+(tall?1620:180)+'"><rect width="100%" height="100%" fill="#e8f2fe"/><circle cx="800" cy="90" r="150" fill="#0574f8"/><path d="M80 90h480" stroke="#0574f8" stroke-width="18" stroke-linecap="round"/></svg>' });
+    });
+    await page.goto(app.url + '/admin');
+    await page.click('[data-feature="notifications"]');
+    await page.waitForSelector('#nt-history .nf-msg');
+    await choose(page, 'input[name="nt-place"][value="profile"]');
+    assert.equal(await page.isVisible('#nt-tabs [data-tab="profile"]'), true);
+    assert.equal(await page.isVisible('#nt-tabs [data-tab="home"]'), false);
+    assert.equal(await page.getAttribute('#nt-body', 'maxlength'), '1000');
+    assert.match(await page.textContent('#nt-place-note'), /Под Premium/);
+    assert.equal(await page.isDisabled('#nt-publish'), true);
+    assert.equal(await page.locator('.ap-profile .pb').count(), 0, 'empty card takes no space');
+
+    // A standalone button is content, with an explicit label and action.
+    await page.check('#nt-profile-button');
+    assert.equal(await page.getAttribute('#nt-publish', 'title'), 'Выберите действие для кнопки');
+    await page.selectOption('#nt-action', 'tickets');
+    assert.equal(await page.getAttribute('#nt-publish', 'title'), 'Добавьте текст кнопки');
+    await page.fill('#nt-button', 'Продолжить подготовку');
+    assert.equal(await page.isDisabled('#nt-publish'), false);
+    assert.equal(await page.locator('.pb.only-button .pb-button').textContent(), 'Продолжить подготовку');
+    const publish = async () => {
+      const count = await page.locator('#nt-history .nf-msg').count();
+      await page.click('#nt-publish');
+      assert.match(await page.textContent('#nt-confirm-tags'), /В профиле/);
+      await page.click('#nt-confirm-send');
+      await page.waitForFunction(n => document.querySelectorAll('#nt-history .nf-msg').length === n + 1, count);
+      return [...app.data.values()].filter(m => m?.kind === 'profile').sort((a,b) => b.createdAt-a.createdAt)[0];
+    };
+    const button = await publish();
+    assert.equal(button.layout, 'standard');
+    assert.equal(button.button, true);
+    assert.equal(button.title, '');
+    assert.equal(button.imageUrl, '');
+    assert.equal(await page.locator('[data-nt-message="'+button.id+'"] strong').textContent(), button.buttonText);
+    await page.click('[data-nt-copy="'+button.id+'"]');
+    assert.equal(await page.isChecked('#nt-profile-button'), true);
+    assert.equal(await page.inputValue('#nt-button'), button.buttonText);
+
+    const setImage = async name => {
+      if (await page.locator('#nt-drop [data-img="remove"]').count()) await page.click('#nt-drop [data-img="remove"]');
+      page.once('dialog', dialog => dialog.accept('https://assets.example.test/'+name+'.svg'));
+      await page.click('#nt-drop [data-img="url"]');
+      await page.waitForFunction(() => document.querySelector('#nt-drop b').textContent.startsWith('1080 ×'));
+      await page.locator('.pb img').evaluate(img => img.decode());
+    };
+    await setImage('short');
+    assert.equal(await page.locator('.pb img').count(), 1);
+    assert.equal(await page.locator('.pb .pb-button').count(), 1);
+    const combined = await publish();
+    assert.equal(combined.layout, 'standard', 'image plus button stays composed');
+    assert.equal(combined.imageWidth, 1080);
+    assert.equal(combined.imageHeight, 180);
+    assert.equal(combined.button, true);
+    await page.click('[data-nt-copy="'+combined.id+'"]');
+    assert.equal(await page.isChecked('#nt-profile-button'), true);
+    assert.match(await page.textContent('#nt-drop'), /1080 × 180/);
+
+    // Text-only, picture-only and all parts use the same flowing card.
+    await page.uncheck('#nt-profile-button');
+    assert.equal(await page.locator('.pb-content').count(), 0, 'image-only has no empty text padding');
+    const imageOnly = await publish();
+    assert.equal(imageOnly.layout, 'image');
+    assert.equal(imageOnly.button, false);
+    await page.click('[data-nt-copy="'+imageOnly.id+'"]');
+    assert.equal(await page.isChecked('#nt-profile-button'), false);
+    await page.click('#nt-drop [data-img="remove"]');
+    await page.fill('#nt-body', 'Короткая подсказка для подготовки.');
+    assert.equal(await page.isDisabled('#nt-publish'), false);
+    assert.equal(await page.locator('.pb p').textContent(), 'Короткая подсказка для подготовки.');
+    assert.equal(await page.locator('.pb img,.pb .pb-button').count(), 0);
+    await page.fill('#nt-title', 'Готовьтесь в удобном темпе');
+    await page.fill('#nt-body', 'Разбирайте сложные ситуации и возвращайтесь к ошибкам. '.repeat(8));
+    await page.check('#nt-profile-button');
+    await page.fill('#nt-button', 'Открыть билеты');
+    await setImage('short');
+    const layout = () => page.evaluate(() => {
+      const card = document.querySelector('.pb').getBoundingClientRect();
+      const image = document.querySelector('.pb img').getBoundingClientRect();
+      const premium = document.querySelector('.pr-premium').getBoundingClientRect();
+      const next = document.querySelector('.pr-section').getBoundingClientRect();
+      const scroller = document.querySelector('.ap-profile .ap-body');
+      return { imageWidth: image.width, imageHeight: image.height, cardHeight: card.height, gapBefore: card.top-premium.bottom, gapAfter: next.top-card.bottom, scrollHeight: scroller.scrollHeight, clientHeight: scroller.clientHeight };
+    });
+    const short = await layout();
+    assert.ok(Math.abs(short.imageHeight/short.imageWidth-1/6)<.01);
+    assert.ok(short.gapBefore>=8 && short.gapAfter>=8, 'content has separate non-overlapping rows');
+    await setImage('tall');
+    const tall = await layout();
+    assert.ok(Math.abs(tall.imageHeight/tall.imageWidth-1.5)<.01, 'portrait is not cropped or capped');
+    assert.ok(tall.cardHeight>short.cardHeight+200, 'tall image grows the card');
+    assert.ok(tall.gapAfter>=8 && tall.scrollHeight>tall.clientHeight, 'following content flows below the card');
+    await page.locator('.ap-profile .ap-body').evaluate(el => { el.scrollTop=el.scrollHeight; });
+    assert.equal(await page.locator('.pr-section').last().evaluate(el => {
+      const b=el.getBoundingClientRect(),s=el.closest('.ap-body').getBoundingClientRect();return b.bottom<=s.bottom+1;
+    }), true, 'bottom section remains reachable');
+
+    await page.reload();
+    await page.click('[data-feature="notifications"]');
+    await page.waitForSelector('#nt-history .nf-msg');
+    assert.equal(await page.isChecked('input[name="nt-place"][value="profile"]'), true);
+    assert.equal(await page.isChecked('#nt-profile-button'), true);
+    assert.equal(await page.inputValue('#nt-button'), 'Открыть билеты');
+    // The in-app placement survives enabling push and remains distinct from home.
+    await page.fill('#nt-body', 'Подготовка к экзамену каждый день');
+    await choose(page, '#nt-push');
+    await page.click('#nt-tabs [data-tab="profile"]');
+    assert.equal(await page.locator('.ap-profile .pb').count(), 1);
+    await page.click('#nt-publish');
+    assert.match(await page.textContent('#nt-confirm-tags'), /Пуш.*В профиле/);
+    await page.click('#nt-confirm-send');
+    await page.waitForFunction(() => document.querySelectorAll('#nt-history .nf-msg').length === 7);
+    const push = [...app.data.values()].find(m => m?.kind==='push' && m.inAppKind==='profile');
+    assert.equal(push.imageWidth, 1080);
+    assert.equal(push.imageHeight, 1620);
+    await page.click('[data-nt-copy="'+push.id+'"]');
+    assert.equal(await page.isChecked('input[name="nt-place"][value="profile"]'), true);
+    await choose(page, '#nt-push', false);
+    await page.click('#nt-tabs [data-tab="profile"]');
+    for (const width of [1440,820,390]) {
+      await page.setViewportSize({width,height:1100});
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'profile editor fits at '+width);
+      assert.equal(await page.locator('#nt-places label').count(),4);
+      if (process.env.NOTIFICATIONS_UI_SCREENSHOTS) await page.locator('#notifications-view').screenshot({path:fileURLToPath(new URL('../../../output/notification-profile-'+width+'.png',import.meta.url))});
+    }
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); await app.close(); }
 });

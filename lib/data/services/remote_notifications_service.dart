@@ -56,10 +56,14 @@ class AppNotice {
   /// Publication time; orders the notification inbox.
   final DateTime? createdAt;
 
-  /// `popup` (modal on home), `banner` (dismissible card on home) or `news`
-  /// (only listed in the notification inbox).
+  /// `popup` (modal on home), `banner` (card on home), `profile` (card under
+  /// Premium in the profile), or `news` (only in the notification inbox).
   final String kind;
   final String imageUrl, emoji, buttonText, dismissText, actionUrl;
+
+  /// Original pixel size, when known, reserves the image's natural height
+  /// before it loads. Missing or invalid metadata falls back to image decode.
+  final int? imageWidth, imageHeight;
 
   /// `standard`, `compact`, `cover`, or `image` (the picture is the whole
   /// message: a home banner or a window without text).
@@ -84,6 +88,8 @@ class AppNotice {
     this.createdAt,
     this.kind = 'popup',
     this.imageUrl = '',
+    this.imageWidth,
+    this.imageHeight,
     this.emoji = '',
     this.buttonText = '',
     this.dismissText = '',
@@ -96,9 +102,16 @@ class AppNotice {
   });
 
   bool get isBanner => kind == 'banner';
+  bool get isProfileBanner => kind == 'profile';
   bool get isNews => kind == 'news';
   bool get isImageOnly => layout == 'image';
   bool get isImageBanner => isBanner && isImageOnly;
+  double? get imageAspectRatio {
+    final width = _imageDimension(imageWidth);
+    final height = _imageDimension(imageHeight);
+    return width != null && height != null ? width / height : null;
+  }
+
   bool isActiveAt(DateTime now) => persistent || expiresAt.isAfter(now);
   bool wasSeen(Set<String> seen) =>
       seen.contains(id) || seenIds.any(seen.contains);
@@ -108,6 +121,9 @@ class AppNotice {
 
   static String _str(dynamic v, [int max = 500]) =>
       v is String && v.length <= max ? v.trim() : '';
+
+  static int? _imageDimension(dynamic value) =>
+      value is int && value > 0 && value <= 20000 ? value : null;
 
   static Color? parseColor(dynamic v) {
     if (v is! String || !RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v)) return null;
@@ -125,7 +141,7 @@ class AppNotice {
     final id = value['id'] as String;
     if (!RegExp(r'^[a-f0-9-]{36}$').hasMatch(id)) return null;
     final image = _str(value['imageUrl']);
-    final kind = const ['banner', 'news'].contains(value['kind'])
+    final kind = const ['banner', 'profile', 'news'].contains(value['kind'])
         ? value['kind'] as String
         : 'popup';
     if (value['layout'] == 'image' && !image.startsWith('https://')) {
@@ -155,6 +171,8 @@ class AppNotice {
           : null,
       kind: kind,
       imageUrl: image.startsWith('https://') ? image : '',
+      imageWidth: _imageDimension(value['imageWidth']),
+      imageHeight: _imageDimension(value['imageHeight']),
       emoji: _str(value['emoji'], 8),
       buttonText: _str(value['buttonText'], 24),
       dismissText: _str(value['dismissText'], 24),
@@ -239,6 +257,9 @@ class RemoteNotificationsService {
   /// Active, not-dismissed banners for the home screen.
   final ValueNotifier<List<AppNotice>> banners = ValueNotifier(const []);
 
+  /// Active, not-dismissed banners below Premium on the profile screen.
+  final ValueNotifier<List<AppNotice>> profileBanners = ValueNotifier(const []);
+
   /// Every active message (news, windows, banners) for the notification inbox.
   final ValueNotifier<List<AppNotice>> inbox = ValueNotifier(const []);
   final StreamController<NoticeTap> _taps = StreamController.broadcast();
@@ -262,7 +283,8 @@ class RemoteNotificationsService {
 
   /// A window or banner for this message on the home screen. Campaigns also
   /// sent as a push show one only where the push could not arrive.
-  bool _showsOnHome(AppNotice m) => !m.isNews && !(m.push && receivesPush);
+  bool _showsOnHome(AppNotice m) =>
+      !m.isNews && !m.isProfileBanner && !(m.push && receivesPush);
 
   /// Messages already shown as a window, dismissed as a banner or opened
   /// from a push.
@@ -361,6 +383,17 @@ class RemoteNotificationsService {
               .take(3)
               .toList()
         : const [];
+    profileBanners.value = _config['popupEnabled'] == true
+        ? active
+              .where(
+                (m) =>
+                    m.isProfileBanner &&
+                    !(m.push && receivesPush) &&
+                    !m.wasSeen(seen),
+              )
+              .take(3)
+              .toList()
+        : const [];
     final deadlines = active
         .where((m) => !m.persistent)
         .map((m) => m.expiresAt);
@@ -395,6 +428,7 @@ class RemoteNotificationsService {
         'platform': platform,
         'imageBanners': '1',
         'imagePopups': '1',
+        'profileBanners': '1',
         'inbox': '1',
         if (platform == 'android')
           'store': StoreConfig.current == AppStore.rustore ? 'rustore' : 'play',

@@ -108,7 +108,7 @@ class NotificationInboxService extends ChangeNotifier {
 
   /// Unread entries the home screen reminds about: everything unread except
   /// what was already there when the reminder was closed. Windows and banners
-  /// show themselves on the home screen, and a push this device received
+  /// have their own placement, and a push this device received
   /// already reached the lock screen: they keep only the bell's dot.
   int get homeAlertCount => _items
       .where(
@@ -122,7 +122,7 @@ class NotificationInboxService extends ChangeNotifier {
   bool _remindsOnHome(AppNotice? n) =>
       n == null || (n.isNews && !(n.push && _receivesPush()));
 
-  /// An admin message seen elsewhere (a banner on the home screen).
+  /// An admin message seen elsewhere (a banner on the home/profile screen).
   Future<void> markNoticeRead(String noticeId) async {
     final id = 'news_$noticeId';
     if (_prefs == null || _read.contains(id)) return;

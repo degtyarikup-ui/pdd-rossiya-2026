@@ -111,6 +111,11 @@ void main() {
                   'kind': 'news',
                   'persistent': true,
                 },
+                {
+                  ...notice(expiresAt: expiry.millisecondsSinceEpoch),
+                  'id': 'f169e042-5b7b-40a0-b15e-b80c4444ce1d',
+                  'kind': 'profile',
+                },
               ],
             }),
             200,
@@ -127,13 +132,15 @@ void main() {
           expired.complete();
         }
       });
-      expect(service.inbox.value, hasLength(3));
+      expect(service.inbox.value, hasLength(4));
       expect(service.banners.value, hasLength(1));
+      expect(service.profileBanners.value, hasLength(1));
       expect(service.nextNotice, isNotNull);
       now = expiry;
       await expired.future.timeout(const Duration(seconds: 3));
       expect(service.inbox.value.single.persistent, isTrue);
       expect(service.banners.value, isEmpty);
+      expect(service.profileBanners.value, isEmpty);
       expect(service.nextNotice, isNull);
       expect(publications, 1);
       expect(requests, 1);
@@ -154,6 +161,7 @@ void main() {
       expect(request.url.queryParameters['app'], 'ru');
       expect(request.url.queryParameters['imageBanners'], '1');
       expect(request.url.queryParameters['imagePopups'], '1');
+      expect(request.url.queryParameters['profileBanners'], '1');
       expect(request.url.queryParameters['store'], 'play');
       return http.Response(
         jsonEncode({
@@ -312,6 +320,139 @@ void main() {
     expect(plain.button, isFalse);
     expect(plain.body, isEmpty);
   });
+  test('profile parses independent parts and safe image dimensions', () {
+    final base = {
+      ...notice(),
+      'kind': 'profile',
+      'title': '',
+      'body': '',
+      'button': true,
+      'buttonText': 'Открыть билеты',
+      'action': 'tickets',
+    };
+    final button = AppNotice.parse(base)!;
+    expect(button.isProfileBanner, isTrue);
+    expect(button.isBanner, isFalse);
+    expect(button.isImageOnly, isFalse);
+    expect(button.button, isTrue);
+    expect(button.buttonText, 'Открыть билеты');
+    expect(button.tap?.action, NoticeAction.tickets);
+    expect(button.imageAspectRatio, isNull);
+
+    final withImage = {
+      ...base,
+      'imageUrl': 'https://cdn.test/profile.png',
+      'imageWidth': 1600,
+      'imageHeight': 240,
+    };
+    expect(AppNotice.parse(withImage)!.imageAspectRatio, 1600 / 240);
+    expect(AppNotice.parse(withImage)!.button, isTrue);
+    final imageOnly = AppNotice.parse({
+      ...withImage,
+      'layout': 'image',
+      'button': false,
+      'buttonText': '',
+    })!;
+    expect(imageOnly.isImageOnly, isTrue);
+    expect(imageOnly.button, isFalse);
+
+    for (final dimension in [0, -1, 20001, 1.5, '1600']) {
+      expect(
+        AppNotice.parse({
+          ...withImage,
+          'imageWidth': dimension,
+        })!.imageAspectRatio,
+        isNull,
+      );
+      expect(
+        AppNotice.parse({
+          ...withImage,
+          'imageHeight': dimension,
+        })!.imageAspectRatio,
+        isNull,
+      );
+    }
+    expect(
+      AppNotice.parse({...withImage, 'imageHeight': null})!.imageAspectRatio,
+      isNull,
+    );
+  });
+
+  test('profile cards stay separate and dismissed across restarts', () async {
+    const homeId = 'd169e042-5b7b-40a0-b15e-b80c4444ce1d';
+    const popupId = 'e169e042-5b7b-40a0-b15e-b80c4444ce1d';
+    final client = MockClient(
+      (_) async => http.Response(
+        jsonEncode({
+          'config': config,
+          'messages': [
+            {...notice(), 'kind': 'profile'},
+            {...notice(), 'kind': 'banner', 'id': homeId},
+            {...notice(), 'kind': 'popup', 'id': popupId},
+          ],
+        }),
+        200,
+      ),
+    );
+    final service = RemoteNotificationsService.forTesting(client: client);
+    addTearDown(service.dispose);
+    await service.refresh();
+    expect(service.profileBanners.value.single.id, id);
+    expect(service.banners.value.single.id, homeId);
+    expect(service.nextNotice?.id, popupId);
+    await service.dismissBanner(id);
+    expect(service.profileBanners.value, isEmpty);
+    expect(service.inbox.value, hasLength(3));
+    final restarted = RemoteNotificationsService.forTesting(client: client);
+    addTearDown(restarted.dispose);
+    await restarted.refresh();
+    expect(restarted.profileBanners.value, isEmpty);
+    expect(restarted.banners.value.single.id, homeId);
+    expect(restarted.nextNotice?.id, popupId);
+  });
+
+  test(
+    'profile limits active cards and clears on policy or network failure',
+    () async {
+      var enabled = true;
+      var failure = false;
+      final service = RemoteNotificationsService.forTesting(
+        client: MockClient(
+          (_) async => http.Response(
+            failure
+                ? '{}'
+                : jsonEncode({
+                    'config': {...config, 'popupEnabled': enabled},
+                    'messages': [
+                      for (var i = 0; i < 5; i++)
+                        {
+                          ...notice(),
+                          'id': 'c069e042-5b7b-40a0-b15e-b80c4444ce1$i',
+                          'kind': 'profile',
+                        },
+                    ],
+                  }),
+            failure ? 503 : 200,
+          ),
+        ),
+      );
+      addTearDown(service.dispose);
+      await service.refresh();
+      expect(service.profileBanners.value, hasLength(3));
+      expect(service.banners.value, isEmpty);
+      expect(await service.takeNextNotice(), isNull);
+      enabled = false;
+      await service.refresh();
+      expect(service.profileBanners.value, isEmpty);
+      enabled = true;
+      await service.refresh();
+      expect(service.profileBanners.value, hasLength(3));
+      failure = true;
+      await service.refresh();
+      expect(service.profileBanners.value, isEmpty);
+      expect(service.inbox.value, isEmpty);
+    },
+  );
   test('banners are separate from popups and stay dismissed', () async {
     final client = MockClient(
       (request) async => http.Response(
@@ -398,6 +539,7 @@ void main() {
     'a campaign also sent as a push shows no window or banner where the push arrived',
     () async {
       const bannerId = 'c069e042-5b7b-40a0-b15e-b80c4444ce1b';
+      const profileId = 'd169e042-5b7b-40a0-b15e-b80c4444ce1d';
       final client = MockClient(
         (_) async => http.Response(
           jsonEncode({
@@ -405,6 +547,7 @@ void main() {
             'messages': [
               {...notice(), 'kind': 'popup', 'push': true},
               {...notice(), 'id': bannerId, 'kind': 'banner', 'push': true},
+              {...notice(), 'id': profileId, 'kind': 'profile', 'push': true},
             ],
           }),
           200,
@@ -417,7 +560,8 @@ void main() {
       await pushed.refresh();
       expect(pushed.nextNotice, isNull);
       expect(pushed.banners.value, isEmpty);
-      expect(pushed.inbox.value, hasLength(2), reason: 'still in the inbox');
+      expect(pushed.profileBanners.value, isEmpty);
+      expect(pushed.inbox.value, hasLength(3), reason: 'still in the inbox');
 
       SharedPreferences.setMockInitialValues({});
       final withoutPush = RemoteNotificationsService.forTesting(
@@ -427,6 +571,7 @@ void main() {
       await withoutPush.refresh();
       expect(withoutPush.nextNotice?.id, id);
       expect(withoutPush.banners.value.single.id, bannerId);
+      expect(withoutPush.profileBanners.value.single.id, profileId);
     },
   );
   test('a picture alone is a valid inbox entry', () {

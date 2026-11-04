@@ -20,7 +20,7 @@ test('permanent news stay in the inbox without allowing permanent windows, banne
  assert.equal(campaignMatches(validated,'ru','ios',startAt), true);
  assert.equal(campaignMatches(validated,'ru','ios',now+365*86400000), true);
  assert.equal(typeof clientMessage(validated).expiresAt, 'number', 'older inbox clients keep working');
- for (const kind of ['popup','banner','push']) assert.throws(() => validateCampaign({...permanent,kind},now), /только в списке/);
+ for (const kind of ['popup','banner','push','profile']) assert.throws(() => validateCampaign({...permanent,kind},now), /только в списке/);
  assert.throws(() => validateCampaign(sample({persistent:'true'}),now));
  assert.throws(() => validateCampaign(sample({expiresAt:null}),now));
  const {call} = setup();
@@ -265,6 +265,98 @@ test('public notification route forwards image capability to the Durable Object'
   assert.equal(paths[0].searchParams.get('imageBanners'),'1');
   await worker.fetch(new Request('https://test/api/notifications?app=ru&platform=web'),env);
   assert.notEqual(paths[1].searchParams.get('imageBanners'),'1');
+});
+test('profile cards compose image, title, text and button independently',()=>{
+  for (let mask=1;mask<16;mask++) {
+    const image=Boolean(mask&1),title=Boolean(mask&2),body=Boolean(mask&4),button=Boolean(mask&8);
+    const item=validateCampaign(sample({kind:'profile',title:title?'Знаки без ошибок':'',body:body?'Короткая тренировка на каждый день':'',
+      imageUrl:image?'https://cdn.test/profile.png':'',button,buttonText:button?'Начать':'',action:button?'game':'none',
+      ...(image?{imageWidth:1080,imageHeight:mask===1?120:1440}:{})}));
+    assert.equal(item.layout,image&&!title&&!body&&!button?'image':'standard');
+    assert.equal(item.button,button);
+    const message=clientMessage(item);
+    assert.equal(message.kind,'profile');assert.equal(message.button,button);
+    assert.equal(message.imageWidth,image?1080:undefined);
+    assert.equal(message.imageHeight,image?(mask===1?120:1440):undefined);
+  }
+  assert.equal(validateCampaign(sample({kind:'profile'})).button,false,'new placement never invents a button');
+  assert.equal(validateCampaign(sample({kind:'profile',body:'x'.repeat(1000)})).body.length,1000,'profile text is not constrained by the home card height');
+  assert.equal(validateCampaign(sample({kind:'profile',title:'',body:'',button:true,buttonText:'Открыть',action:'tickets',layout:'image'})).layout,'standard');
+});
+test('profile cards reject empty content, incomplete buttons and malformed image dimensions',()=>{
+  for (const bad of [
+    {title:'',body:'',button:false},
+    {title:'',body:'',button:true,buttonText:'Открыть',action:'none'},
+    {button:true,buttonText:'',action:'tickets'},
+    {button:true,buttonText:'Открыть',action:'url',actionUrl:'http://test.invalid'},
+    {button:'true',buttonText:'Открыть',action:'tickets'},
+    {body:'x'.repeat(1001)},
+  ]) assert.throws(()=>validateCampaign(sample({kind:'profile',...bad})));
+  for (const dims of [
+    {imageWidth:1080},{imageHeight:720},{imageWidth:0,imageHeight:720},
+    {imageWidth:1080,imageHeight:20001},{imageWidth:1.5,imageHeight:720},
+    {imageWidth:'1080',imageHeight:720},{imageWidth:null,imageHeight:720},
+  ]) assert.throws(()=>validateCampaign(sample({kind:'profile',imageUrl:'https://cdn.test/p.png',...dims})),/Размер картинки/);
+  assert.throws(()=>validateCampaign(sample({kind:'profile',imageWidth:1080,imageHeight:720})),/Размер картинки/);
+  assert.equal(validateCampaign(sample({kind:'profile',imageUrl:'https://cdn.test/p.png',imageWidth:20000,imageHeight:1})).imageHeight,1);
+  assert.equal(clientMessage(validateCampaign(sample({kind:'profile',imageUrl:'https://cdn.test/p.png'}))).imageWidth,undefined,'metadata remains optional for older saved drafts and direct API callers');
+});
+test('profile cards and profile pushes are never delivered to clients without the exact capability',async()=>{
+  const {call}=setup(fcmEnv);
+  await call('/config',{...DEFAULT_NOTIFICATION_CONFIG,pushEnabled:true});
+  const ordinary=sample({kind:'banner'});
+  const profile=sample({kind:'profile'});
+  const image=sample({kind:'profile',title:'',body:'',imageUrl:'https://cdn.test/p.png'});
+  const button=sample({kind:'profile',title:'',body:'',button:true,buttonText:'Тренироваться',action:'tickets'});
+  const push=sample({kind:'push',inAppKind:'profile'});
+  for (const message of [ordinary,profile,image,button,push]) assert.equal((await call('/publish',message)).status,200);
+  for (const suffix of ['', '&profileBanners=0', '&profileBanners=true', '&imageBanners=1&imagePopups=1&inbox=1']) {
+    const messages=(await (await call('/client?app=ru&platform=ios'+suffix)).json()).messages;
+    assert.deepEqual(messages.map(m=>m.id),[ordinary.id]);
+  }
+  const messages=(await (await call('/client?app=ru&platform=ios&profileBanners=1')).json()).messages;
+  assert.equal(messages.length,5,'profile capability includes image-only composition');
+  assert.equal(messages.find(m=>m.id===image.id).layout,'image');
+  assert.deepEqual([messages.find(m=>m.id===push.id).kind,messages.find(m=>m.id===push.id).push],['profile',true]);
+});
+test('profile dimensions survive publication and distinguish idempotent requests',async()=>{
+  const {call}=setup();
+  const message=sample({kind:'profile',imageUrl:'https://cdn.test/p.png',imageWidth:1080,imageHeight:180});
+  assert.equal((await call('/publish',message)).status,200);
+  assert.equal((await (await call('/publish',message)).json()).duplicate,true);
+  assert.equal((await call('/publish',{...message,imageHeight:1200})).status,409);
+  const list=async()=> (await (await call('/client?app=ru&platform=web&profileBanners=1')).json()).messages;
+  assert.deepEqual((await list()).map(m=>[m.imageWidth,m.imageHeight]),[[1080,180]]);
+  await call('/toggle',{id:message.id,enabled:false});assert.equal((await list()).length,0);
+  await call('/toggle',{id:message.id,enabled:true});assert.equal((await list()).length,1);
+});
+test('a profile test with an attributed link aliases its identical broadcast, preserving different destinations',async()=>{
+  const {call,data}=setup();
+  const content={kind:'profile',imageUrl:'https://cdn.test/p.png',imageWidth:1080,imageHeight:180,
+    button:true,buttonText:'Подробнее',action:'url',actionUrl:'https://pdd-drive.ru/tarify/?offer=profile'};
+  const personal=sample({...content,target:'me@test.invalid'});
+  const broadcast=sample(content);
+  const another=sample({...content,actionUrl:'https://pdd-drive.ru/'});
+  await call('/publish',personal);await call('/publish',broadcast);await call('/publish',another);
+  data.get('message:'+personal.id).createdAt=Date.now()-20;
+  data.get('message:'+broadcast.id).createdAt=Date.now()-10;
+  const messages=(await (await call('/client?app=ru&platform=ios&profileBanners=1&email=me@test.invalid')).json()).messages;
+  assert.equal(messages.length,2);
+  const received=messages.find(m=>m.id===broadcast.id);
+  assert.deepEqual(received.seenIds,[personal.id]);
+  assert.equal(new URL(received.actionUrl).searchParams.get('utm_campaign'),broadcast.id,'delivery keeps the real campaign attribution');
+  assert.equal(new URL(received.actionUrl).searchParams.get('utm_medium'),'profile');
+  assert.equal(messages.find(m=>m.id===another.id).seenIds,undefined,'different destinations never share dismissals');
+});
+test('public notification route forwards profile capability without enabling it for old clients',async()=>{
+  const paths=[];
+  const env={NOTIFICATIONS:{idFromName:()=> 'state',get:()=>({fetch:async path=>{paths.push(new URL(path));return Response.json({messages:[]});}})}};
+  for (const suffix of ['&profileBanners=1','','&profileBanners=true']) {
+    await worker.fetch(new Request('https://test/api/notifications?app=ru&platform=web'+suffix),env);
+  }
+  assert.equal(paths[0].searchParams.get('profileBanners'),'1');
+  assert.equal(paths[1].searchParams.get('profileBanners'),'');
+  assert.equal(paths[2].searchParams.get('profileBanners'),'true');
 });
 test('push payload carries image, accent, action and iOS mutable-content',()=>{
   const m=buildPushMessage(validateCampaign(sample({kind:'push',emoji:'🎉',imageUrl:'https://x.test/a.png',accent:'#112233',action:'game'})));

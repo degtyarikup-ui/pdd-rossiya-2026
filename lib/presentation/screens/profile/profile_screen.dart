@@ -21,6 +21,7 @@ import 'package:pdd_app/presentation/widgets/notifications_bell_button.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_banner_card.dart';
+import 'package:pdd_app/presentation/widgets/profile_notice_banner.dart';
 import 'package:pdd_app/presentation/widgets/profile_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/streak_widgets.dart';
 
@@ -229,6 +230,7 @@ class ProfileScreen extends ConsumerWidget {
 
               // Премиум-баннер
               const PremiumBannerCard(),
+              const ProfileNoticeBanners(),
               const SizedBox(height: AppDimensions.spacingXL),
 
               // Серия дней — над достижениями: привычка рядом с наградами за неё.

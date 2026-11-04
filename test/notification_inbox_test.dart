@@ -225,6 +225,64 @@ void main() {
     expect(inbox.homeAlertCount, 0);
   });
 
+  test(
+    'profile banner stays in inbox without a duplicate home alert',
+    () async {
+      final inbox = _inbox(_State());
+      await inbox.init();
+      inbox.setNews([_news(_id1, kind: 'profile')], const {});
+      expect(inbox.items.single.notice!.isProfileBanner, isTrue);
+      expect(inbox.unreadCount, 1);
+      expect(inbox.homeAlertCount, 0);
+
+      await inbox.markNoticeRead(_id1);
+      expect(inbox.unreadCount, 0);
+      expect(inbox.items, hasLength(1));
+      final again = _inbox(_State());
+      await again.init();
+      again.setNews([_news(_id1, kind: 'profile')], const {});
+      expect(again.hasUnread, isFalse);
+    },
+  );
+
+  testWidgets('button-only profile has its label in the wide inbox preview', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final inbox = _inbox(_State());
+    await tester.runAsync(inbox.init);
+    inbox.setNews([
+      AppNotice(
+        id: _id1,
+        title: '',
+        body: '',
+        kind: 'profile',
+        expiresAt: DateTime(2026, 12, 1),
+        button: true,
+        buttonText: 'Открыть билеты',
+        action: NoticeAction.tickets,
+      ),
+    ], const {});
+    await tester.pumpWidget(
+      MaterialApp(home: NotificationsScreen(service: inbox)),
+    );
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+    final preview = find.byKey(ValueKey('inbox-preview-news_$_id1'));
+    expect(preview, findsOneWidget);
+    expect(
+      find.descendant(of: preview, matching: find.text('Открыть билеты')),
+      findsOneWidget,
+    );
+    expect(find.text(appL10n.inboxPictureTitle), findsNothing);
+    expect(inbox.items.single.notice!.tap!.action, NoticeAction.tickets);
+    expect(inbox.hasUnread, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('home reminder opens the inbox and disappears once read', (
     tester,
   ) async {

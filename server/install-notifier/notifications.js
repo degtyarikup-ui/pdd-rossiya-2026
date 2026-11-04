@@ -7,12 +7,13 @@ export const DEFAULT_NOTIFICATION_CONFIG = Object.freeze({ pushEnabled: false, p
 const reply = (value, status = 200) => Response.json(value, { status, headers: { 'Cache-Control': 'no-store' } });
 // popup  — modal window on the home screen (one show per device);
 // banner — dismissible card at the top of the home screen (non-blocking);
+// profile — naturally sized card below Premium on the profile screen;
 // push   — system notification via FCM. In the app it is listed in the inbox
 //          or, on devices the push did not reach, shown as a window or banner
 //          (`inAppKind`).
 // news   — entry in the app's notification inbox only (no window, no push).
-export const KINDS = ['popup', 'banner', 'push', 'news'];
-export const IN_APP_KINDS = ['news', 'popup', 'banner'];
+export const KINDS = ['popup', 'banner', 'push', 'news', 'profile'];
+export const IN_APP_KINDS = ['news', 'popup', 'banner', 'profile'];
 // What a campaign is in the app. Pushes saved before `inAppKind` had `inApp`.
 export const placement = item => item.kind !== 'push' ? item.kind : (IN_APP_KINDS.includes(item.inAppKind) ? item.inAppKind : item.inApp ? 'popup' : 'news');
 // Push display budget (iOS ≈ one line of title and four of text on the lock
@@ -84,6 +85,12 @@ export function validateCampaign(input, now = Date.now()) {
   if (value.kind === 'push' && value.audiences.length !== AUDIENCES.length) throw new Error('Для выбора категорий пользователей отключите пуш — уведомление останется в приложении');
   value.layout = input.layout || 'standard';
   if (!LAYOUTS.includes(value.layout)) throw new Error('Некорректный макет');
+  // Shown in the app on devices without the push. Old saves had only `inApp`.
+  value.inAppKind = value.kind !== 'push' ? '' : input.inAppKind === undefined || input.inAppKind === '' ? (input.inApp === true ? 'popup' : 'news') : input.inAppKind;
+  if (value.kind === 'push' && !IN_APP_KINDS.includes(value.inAppKind)) throw new Error('Некорректный вид в приложении');
+  value.inApp = value.inAppKind === 'popup';
+  const profile = placement(value) === 'profile';
+  if (profile && input.button !== undefined && typeof input.button !== 'boolean') throw new Error('Некорректная кнопка');
   if (value.kind === 'push') {
     // A system notification needs text: a picture alone shows nothing.
     if (value.layout === 'image') throw new Error('Пуш не может состоять только из картинки');
@@ -95,13 +102,10 @@ export function validateCampaign(input, now = Date.now()) {
     // text and button. Without any text the message is the picture itself.
     value.title = str(input.title, 80, 'Заголовок');
     value.body = str(input.body, 1000, 'Текст');
-    value.layout = value.title || value.body ? (value.layout === 'image' ? 'standard' : value.layout) : 'image';
+    const hasContent = value.title || value.body || (profile && input.button === true);
+    value.layout = hasContent ? (value.layout === 'image' ? 'standard' : value.layout) : 'image';
   }
   const imageBanner = value.layout === 'image';
-  // Shown in the app on devices without the push. Old saves had only `inApp`.
-  value.inAppKind = value.kind !== 'push' ? '' : input.inAppKind === undefined || input.inAppKind === '' ? (input.inApp === true ? 'popup' : 'news') : input.inAppKind;
-  if (value.kind === 'push' && !IN_APP_KINDS.includes(value.inAppKind)) throw new Error('Некорректный вид в приложении');
-  value.inApp = value.inAppKind === 'popup';
   if (placement(value) === 'banner' && value.body.length > 200) throw new Error('Текст баннера: не более 200 символов');
   value.id = input.id;
   if (typeof value.id !== 'string' || !/^[a-f0-9-]{36}$/.test(value.id)) throw new Error('Некорректный ID сообщения');
@@ -121,23 +125,33 @@ export function validateCampaign(input, now = Date.now()) {
   // Customization.
   value.imageUrl = httpsUrl(input.imageUrl, 'Картинка');
   if (imageBanner && !value.imageUrl) throw new Error('Добавьте картинку, заголовок или текст');
+  // Optional intrinsic dimensions reserve the image's full aspect ratio before
+  // it loads. No prescribed banner height: both short and tall images are valid.
+  if (input.imageWidth !== undefined || input.imageHeight !== undefined) {
+    if (!value.imageUrl || ![input.imageWidth, input.imageHeight].every(n => Number.isInteger(n) && n >= 1 && n <= 20000)) {
+      throw new Error('Размер картинки: укажите ширину и высоту от 1 до 20000 пикселей');
+    }
+    value.imageWidth = input.imageWidth;
+    value.imageHeight = input.imageHeight;
+  }
   value.emoji = str(input.emoji, 8, 'Эмодзи');
   value.accent = input.accent ? String(input.accent) : '';
   if (value.accent && !/^#[0-9a-fA-F]{6}$/.test(value.accent)) throw new Error('Цвет: формат #RRGGBB');
   // Absent on campaigns saved before buttons became optional: they had one.
-  value.button = !imageBanner && input.button !== false;
+  value.button = !imageBanner && (profile ? input.button === true : input.button !== false);
   value.buttonText = value.button ? str(input.buttonText, 24, 'Текст кнопки') : '';
   value.dismissText = value.button ? str(input.dismissText, 24, 'Текст второй кнопки') : '';
   value.action = input.action || 'none';
   if (!ACTIONS.includes(value.action)) throw new Error('Некорректное действие');
   value.actionUrl = value.action === 'url' ? httpsUrl(input.actionUrl, 'Ссылка действия') : '';
   if (value.action === 'url' && !value.actionUrl) throw new Error('Укажите ссылку для кнопки');
+  if (profile && value.button && (!value.buttonText || value.action === 'none')) throw new Error('Для кнопки укажите текст и действие');
   value.createdAt = now;
   value.enabled = true;
   value.status = value.kind === 'push' ? 'queued' : (value.startAt > now ? 'scheduled' : 'published');
   return value;
 }
-const SAME_FIELDS = ['kind', 'title', 'body', 'app', 'platform', 'store', 'platforms', 'expiresAt', 'persistent', 'target', 'imageUrl', 'emoji', 'accent', 'layout', 'button', 'buttonText', 'dismissText', 'action', 'actionUrl', 'inApp', 'inAppKind'];
+const SAME_FIELDS = ['kind', 'title', 'body', 'app', 'platform', 'store', 'platforms', 'expiresAt', 'persistent', 'target', 'imageUrl', 'imageWidth', 'imageHeight', 'emoji', 'accent', 'layout', 'button', 'buttonText', 'dismissText', 'action', 'actionUrl', 'inApp', 'inAppKind'];
 export function campaignMatches(item, app, platform, now = Date.now(), user = {}, store = '') {
   if (!item.enabled || item.expiresAt <= now || (item.startAt || 0) > now) return false;
   if (item.app !== 'all' && item.app !== app) return false;
@@ -175,6 +189,7 @@ export function clientMessage(item, seenIds = []) {
   return { id: item.id, kind: placement(item), push: item.kind === 'push', title: item.title, body: item.body, expiresAt: item.expiresAt, createdAt: item.createdAt,
     ...(item.persistent ? { persistent: true } : {}), ...(seenIds.length ? { seenIds } : {}),
     imageUrl: item.imageUrl || '', emoji: item.emoji || '', accent: item.accent || '', layout: item.layout || 'standard',
+    ...(item.imageWidth && item.imageHeight ? { imageWidth: item.imageWidth, imageHeight: item.imageHeight } : {}),
     button: item.button !== false && item.layout !== 'image', buttonText: item.buttonText || '', dismissText: item.dismissText || '', action: item.action || 'none', actionUrl: bannerActionUrl(item) };
 }
 // A test followed by an identical broadcast is one message for its recipient.
@@ -183,6 +198,9 @@ export function clientMessage(item, seenIds = []) {
 function clientFeed(records, visible, app, platform, user, store) {
   const presentation = item => {
     const { id, createdAt, expiresAt, ...fields } = clientMessage(item);
+    // Delivery adds this campaign's ID to owned-site links. Compare the saved
+    // destination so an identical test and broadcast still share seen state.
+    fields.actionUrl = item.actionUrl || '';
     return JSON.stringify(fields);
   };
   const audienceMatches = item => campaignMatches(
@@ -319,6 +337,9 @@ export class NotificationsState {
       const imageBanners = url.searchParams.get('imageBanners') === '1';
       // Picture-only windows arrived later than picture-only banners.
       const imagePopups = imageBanners && url.searchParams.get('imagePopups') === '1';
+      // Unknown kinds become popups in older builds. Never leak profile cards
+      // onto their home screen, including profile presentations of a push.
+      const profileBanners = url.searchParams.get('profileBanners') === '1';
       // Older clients would show inbox news as a popup window.
       const inbox = url.searchParams.get('inbox') === '1';
       // A sent push also lands in the inbox of builds that have one. Its window
@@ -326,8 +347,9 @@ export class NotificationsState {
       const sent = item => ['accepted', 'unknown'].includes(item.status);
       const visible = config.popupEnabled ? [...records.values()].filter(item => {
         const shown = placement(item);
+        if (shown === 'profile' && !profileBanners) return false;
         if (item.kind === 'push' && shown === 'news' && !sent(item)) return false;
-        return (shown !== 'news' || inbox) && (item.layout !== 'image' || (shown === 'banner' ? imageBanners : imagePopups))
+        return (shown !== 'news' || inbox) && (item.layout !== 'image' || (shown === 'profile' ? profileBanners : shown === 'banner' ? imageBanners : imagePopups))
           && campaignMatches(item, app, platform, Date.now(), user, url.searchParams.get('store') || '');
       }) : [];
       const messages = clientFeed(records, visible, app, platform, user, url.searchParams.get('store') || '');

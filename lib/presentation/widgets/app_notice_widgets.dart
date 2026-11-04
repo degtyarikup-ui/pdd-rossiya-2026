@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -510,7 +511,7 @@ class _NoticeCloseButton extends StatelessWidget {
   }
 }
 
-/// A view requires half the rendered banner to stay visible for one second.
+/// A view requires half the banner (or viewport, for tall banners) for one second.
 /// Mounted off-screen tabs, covered routes and background apps do not count.
 class NoticeViewObserver extends StatefulWidget {
   const NoticeViewObserver({super.key, required this.child, this.onViewed});
@@ -555,7 +556,9 @@ class _NoticeViewObserverState extends State<NoticeViewObserver> {
       visible =
           !intersection.isEmpty &&
           intersection.width * intersection.height >=
-              rect.width * rect.height / 2;
+              math.min(rect.width, screen.width) *
+                  math.min(rect.height, screen.height) /
+                  2;
     } else {
       visible = false;
     }

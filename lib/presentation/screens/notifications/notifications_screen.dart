@@ -459,7 +459,14 @@ _inboxContent(InboxItem item, AppThemeColors colors) {
     InboxItemType.update => (Icons.system_update_rounded, colors.accent),
   };
   final title = switch (item.type) {
-    InboxItemType.news => notice!.title.isNotEmpty ? notice.title : notice.body,
+    InboxItemType.news =>
+      notice!.title.isNotEmpty
+          ? notice.title
+          : notice.body.isNotEmpty
+          ? notice.body
+          : notice.isProfileBanner && notice.button
+          ? notice.buttonText
+          : '',
     InboxItemType.premiumStarted => appL10n.inboxPremiumStartedTitle,
     InboxItemType.premiumEnded => appL10n.inboxPremiumEndedTitle,
     InboxItemType.update => appL10n.inboxUpdateTitle(item.update!.version),

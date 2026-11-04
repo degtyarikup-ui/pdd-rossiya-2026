@@ -5,6 +5,7 @@ const ART = {
   push: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><rect x="19.5" y="9" width="17" height="7" rx="2" fill="currentColor" fill-opacity=".18"/><path d="M22 12h9M22 14h6" stroke-width="1.2"/><path d="M8 13a6 6 0 0 1 3-5M48 13a6 6 0 0 0-3-5" stroke-linecap="round"/></svg>',
   news: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><rect x="19.5" y="8" width="17" height="6" rx="1.6" fill="currentColor" fill-opacity=".18"/><rect x="19.5" y="17" width="17" height="6" rx="1.6"/><rect x="19.5" y="26" width="17" height="6" rx="1.6"/><circle cx="35" cy="9" r="1.8" fill="currentColor" stroke="none"/></svg>',
   popup: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><rect x="16.8" y="2.8" width="22.4" height="34.4" rx="4.2" fill="currentColor" fill-opacity=".08" stroke="none"/><rect x="19" y="11" width="18" height="17" rx="3" fill="currentColor" fill-opacity=".18"/><path d="M22 23h12" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  profile: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><circle cx="23" cy="9" r="2"/><path d="M28 8h8M20 14h16" stroke-opacity=".45"/><rect x="19.5" y="18" width="17" height="9" rx="2" fill="currentColor" fill-opacity=".18"/><path d="M20 31h16" stroke-opacity=".45"/></svg>',
   banner: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><rect x="19.5" y="7" width="17" height="10" rx="2" fill="currentColor" fill-opacity=".18"/><path d="M20 21h16M20 25h16M20 29h10" stroke-width="1.2" stroke-opacity=".45"/></svg>',
 };
 const LAYOUT_ART = {
@@ -31,10 +32,11 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .nf-push{display:flex;align-items:center;gap:14px;padding:12px 16px 12px 12px;border-radius:16px;background:var(--nf-soft);cursor:pointer;position:relative;margin-bottom:10px;color:var(--text-muted)}
 .nf-push svg{width:56px;height:40px;flex-shrink:0}.nf-push span{flex:1;min-width:0}.nf-push b{display:block;font-size:14px;color:var(--text)}.nf-push small{display:block;font-size:12px;margin-top:2px}
 .nf-push:has(input:checked){background:var(--primary-subtle);color:var(--primary)}.nf-push:has(input:disabled){cursor:not-allowed;opacity:.6}
-.nf-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.nf-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .nf-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px 12px;border-radius:16px;border:1.5px solid var(--nf-line);cursor:pointer;color:#9AA2B1;text-align:center}
 .nf-tile svg{width:56px;height:40px}.nf-tile b{font-size:13px;font-weight:600;color:var(--text)}
 .nf-tile:has(input:checked){border-color:var(--primary);color:var(--primary);background:#F7FAFF}.nf-tile:has(input:focus-visible){outline:2px solid var(--primary);outline-offset:2px}
+.nf-toggle{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-top:12px}.nf-toggle input{accent-color:var(--primary);width:16px;height:16px;margin:0}.nf-toggle[hidden]{display:none}
 .nf-note{margin:10px 0 0;font-size:12px;color:var(--text-muted)}.nf-note:empty{display:none}
 .nf-drop{display:flex;align-items:center;gap:14px;border:1.5px dashed #CDD3DD;border-radius:16px;padding:14px;cursor:pointer;color:var(--text-muted);font-size:13px;transition:border-color .15s,background .15s}
 .nf-drop:hover,.nf-drop.over{border-color:var(--primary);background:#F7FAFF}.nf-drop svg{flex-shrink:0}
@@ -91,6 +93,9 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .an-b{display:flex;gap:10px;align-items:center}.an-b>div{flex:1;min-width:0}.an-b p{margin:1px 0 0;color:#444}.an-th{width:36px;height:36px;border-radius:8px;background:#ddd center/cover;flex-shrink:0}
 .nf-android-image{margin-top:8px;width:100%;aspect-ratio:2/1;border-radius:12px;background:#ddd center/cover}
 .ap{height:100%;display:flex;flex-direction:column;background:#F8F9FA;position:relative}.ap-body{flex:1;padding:4px 12px 0;display:flex;flex-direction:column;gap:9px;overflow:hidden}.ap-body>*{flex-shrink:0}
+.ap-profile .ap-body{overflow-y:auto;min-height:0;padding-bottom:12px;scrollbar-width:thin}.ap-profile .ph-st,.ap-profile .ap-nav{flex-shrink:0}.ap-profile .ap-nav i:first-child{background:#E3E6EC}.ap-profile .ap-nav i:last-child{background:#0574F8}
+.pr-account{padding:14px;display:flex;align-items:center;gap:10px}.pr-avatar{width:38px;height:38px;border-radius:50%;background:#E8F2FE;display:flex;align-items:center;justify-content:center;color:#0574F8;font-weight:700;font-size:16px}.pr-account b{font-size:13px}.pr-account small{display:block;font-size:10px;color:#777;margin-top:3px}.pr-premium{padding:16px;color:#fff;background:#0574F8;border-radius:14px}.pr-premium b{font-size:16px;display:block}.pr-premium small{display:block;font-size:10px;opacity:.85;margin-top:4px}.pr-section{padding:14px;font-size:12px}.pr-section>b{display:block;margin-bottom:12px}.pr-badges{display:flex;gap:12px}.pr-badges i{width:46px;height:46px;border-radius:50%;background:#EFF2F7}
+.pb{border-radius:14px;background:#fff;position:relative;overflow:hidden;font-size:12px}.pb img{display:block;width:100%;height:auto;min-height:32px;object-fit:contain}.pb-content{padding:14px}.pb b{display:block;font-size:14px;line-height:1.3;padding-right:18px;overflow-wrap:anywhere}.pb p{margin:0;color:#5E5E5E;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}.pb:has(img) b{padding-right:0}.pb b+p{margin-top:6px}.pb:not(:has(img)) p:first-child{padding-right:18px}.pb .pb-button{display:block;border-radius:10px;text-align:center;padding:10px 12px;font-size:12px;font-weight:600;line-height:1.4;overflow-wrap:anywhere}.pb b~.pb-button,.pb p~.pb-button{margin-top:12px}.pb.only-button .pb-content{padding-right:38px}.pb .ax{top:3px;right:3px;width:27px;height:27px;font-size:12px;background:transparent;color:#777}.pb:has(img) .ax{background:rgba(255,255,255,.94)}
 .ap-title{font-size:19px;font-weight:700;margin:2px 2px 2px}
 .sk{background:#fff;border-radius:14px}.sk-stats{height:118px;padding:14px;display:flex;gap:12px;align-items:center}.sk-ring{width:62px;height:62px;border-radius:50%;border:7px solid #E8F2FE;border-top-color:#0574F8;flex-shrink:0}
 .sk-l{height:7px;border-radius:4px;background:#EFF0F4;margin:6px 0}.sk-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.sk-grid div{height:74px}.sk-exam{height:96px;background:#0574F8;opacity:.9}
@@ -127,14 +132,14 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .nf-modal .nf-tags{margin:0 0 18px}.nf-modal .nf-actions{display:flex;gap:8px;justify-content:flex-end}
 #notifications-view .nf-modal input{width:100%;box-sizing:border-box;border:1.5px solid var(--nf-line);border-radius:12px;padding:11px 14px;font:inherit;font-size:14px;margin-bottom:16px}
 @media(max-width:1180px){.nf-grid{grid-template-columns:minmax(0,1fr)}.nf-preview{position:static}.nf-msg{grid-template-columns:52px minmax(0,1fr) auto}.nf-msg>.nf-who,.nf-msg>.nf-metric{grid-column:2}.nf-msg>.nf-acts{grid-column:1/-1;justify-content:flex-start}}
-@media(max-width:600px){#notifications-view .nf-card{padding:18px}.nf-two,.nf-row{grid-template-columns:minmax(0,1fr)}.nf-tile{padding:12px 4px 10px}.nf-tile svg{width:44px;height:32px}.nf-bar .nf-grow{display:none}.nf-bar #nt-publish{width:100%;justify-content:center;order:5}}
+@media(max-width:600px){#notifications-view .nf-card{padding:18px}.nf-two,.nf-row{grid-template-columns:minmax(0,1fr)}.nf-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.nf-tile{padding:12px 4px 10px}.nf-tile svg{width:44px;height:32px}.nf-drop.has{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:8px 10px}.nf-drop.has img{width:56px;height:56px;grid-row:1/3}.nf-drop.has .nf-grow{grid-column:2/4}.nf-drop.has small{white-space:normal;line-height:1.4}.nf-drop.has [data-img="replace"]{justify-self:start;padding-left:0}.nf-bar .nf-grow{display:none}.nf-bar #nt-publish{width:100%;justify-content:center;order:5}}
 </style>
 <div id="nt-page-error" class="nt-error" role="alert"></div>
 <div class="nf-grid">
 <form id="nt-form" class="nf-card" novalidate>
 <section class="nf-sec"><h4>Где увидят</h4>
 <label class="nf-push" id="nt-push-tile"><input type="checkbox" id="nt-push">${ART.push}<span><b>Пуш на телефон</b><small id="nt-push-state">iOS и Android</small></span><i></i></label>
-<div class="nf-tiles" id="nt-places">${tile('news', 'В списке')}${tile('popup', 'Окно')}${tile('banner', 'Баннер')}</div>
+<div class="nf-tiles" id="nt-places">${tile('news', 'В списке')}${tile('popup', 'Окно')}${tile('banner', 'Баннер')}${tile('profile', 'В профиле')}</div>
 <p class="nf-note" id="nt-place-note"></p>
 </section>
 <section class="nf-sec"><h4>Содержимое</h4>
@@ -146,6 +151,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 </section>
 <section class="nf-sec"><h4>По нажатию</h4>
 <div class="nf-row"><select id="nt-action" aria-label="Действие"><option value="none">Ничего</option><option value="url">Открыть ссылку</option><option value="tickets">Билеты</option><option value="topics">Темы</option><option value="game">Игра</option><option value="feed">Лента</option><option value="settings">Настройки</option><option value="premium">Премиум</option></select><input type="url" id="nt-url" placeholder="https://…" aria-label="Ссылка" hidden></div>
+<label class="nf-toggle" id="nt-profile-button-wrap" hidden><input type="checkbox" id="nt-profile-button">Добавить кнопку</label>
 <div class="nf-row" id="nt-button-wrap"><input id="nt-button" maxlength="24" placeholder="Текст кнопки" aria-label="Текст кнопки"><input id="nt-dismiss" maxlength="24" placeholder="Вторая кнопка" aria-label="Вторая кнопка"></div>
 <div class="nf-swatches" id="nt-swatches"><button type="button" class="nf-swatch" data-color="" style="background:#0574F8" title="Как в приложении"></button><button type="button" class="nf-swatch" data-color="#16A34A" style="background:#16A34A"></button><button type="button" class="nf-swatch" data-color="#F59E0B" style="background:#F59E0B"></button><button type="button" class="nf-swatch" data-color="#DC2626" style="background:#DC2626"></button><button type="button" class="nf-swatch" data-color="#7C3AED" style="background:#7C3AED"></button><button type="button" class="nf-swatch" data-color="#121212" style="background:#121212"></button><input type="color" id="nt-accent" value="#0574F8" title="Свой цвет"></div>
 </section>
@@ -169,7 +175,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 <p class="nf-result" id="nt-result" role="status"></p>
 </form>
 <aside class="nf-card nf-preview" aria-label="Предпросмотр">
-<div class="nf-tabs" id="nt-tabs"><button type="button" data-tab="push">Пуш</button><button type="button" data-tab="home">Главная</button><button type="button" data-tab="inbox">Уведомления</button></div>
+<div class="nf-tabs" id="nt-tabs"><button type="button" data-tab="push">Пуш</button><button type="button" data-tab="home">Главная</button><button type="button" data-tab="profile">Профиль</button><button type="button" data-tab="inbox">Уведомления</button></div>
 <div class="nf-os" id="nt-os"><button type="button" data-os="ios">iPhone</button><button type="button" data-os="android">Android</button></div>
 <div class="nf-phone"><div class="nf-screen" id="nt-screen"></div></div>
 </aside>
@@ -186,13 +192,13 @@ var el=function(id){return document.getElementById('nt-'+id);};
 var esc=function(v){return adminEsc(v==null?'':String(v));};
 var ART=${JSON.stringify(ART)};
 var cfg=null,ready=false,busy=false,items=[],usersLoaded=false,pending=null,afterTarget=null;
-var S={push:false,place:'news',layout:'standard',accent:'',platforms:['ios','android','web'],stores:['play','rustore'],audiences:['guest','registered','premium'],when:'now',days:'7',image:'',imgW:0,imgH:0,tab:'',os:'ios'};
+var S={push:false,place:'news',layout:'standard',accent:'',platforms:['ios','android','web'],stores:['play','rustore'],audiences:['guest','registered','premium'],when:'now',days:'7',image:'',imgW:0,imgH:0,profileButton:false,tab:'',os:'ios'};
 // Lock-screen budget: about one line of title on both systems, four lines of
 // text on iPhone and one on collapsed Android. FCM rejects more than 4 KB.
 var PUSH={title:50,titleSoft:38,body:300,bodySoft:150};
-var BODY_MAX={popup:1000,news:1000,banner:200,push:300};
+var BODY_MAX={popup:1000,news:1000,banner:200,profile:1000,push:300};
 var ACTIONS={none:'',url:'Ссылка',tickets:'Билеты',topics:'Темы',game:'Игра',feed:'Лента',settings:'Настройки',premium:'Премиум'};
-var PLACES={news:'В списке',popup:'Окно',banner:'Баннер'};
+var PLACES={news:'В списке',popup:'Окно',banner:'Баннер',profile:'В профиле'};
 var PLATFORMS={ios:'iOS',android:'Android',web:'Веб'},ALL=['ios','android','web'];
 function platformsOf(m){return Array.isArray(m.platforms)?m.platforms:m.platform==='all'?ALL:m.platform==='some'?String(m.platforms||'').split(','):[m.platform];}
 function has(p){return S.platforms.indexOf(p)>=0;}
@@ -230,9 +236,10 @@ function pushAvailable(){return !!(cfg&&ready&&cfg.pushEnabled)&&S.audiences.len
 
 function draft(){
  var push=S.push,place=S.place,title=el('title').value.trim(),body=el('body').value.trim(),action=el('action').value;
- var imageOnly=!push&&!title&&!body,button=!imageOnly&&(place==='popup'||action!=='none');
+ var profile=place==='profile',button=profile?S.profileButton:!!(title||body)&&(place==='popup'||action!=='none');
+ var imageOnly=!push&&!title&&!body&&!button;
  return {kind:push?'push':place,inAppKind:push?place:'',app:'ru',platforms:push?mobile():S.platforms.slice(),store:!push&&has('android')&&S.stores.length===1?S.stores[0]:'all',audiences:S.audiences.slice(),
-  title:title,body:body,emoji:'',imageUrl:S.image,layout:imageOnly?'image':(place==='popup'&&S.image?S.layout:'standard'),accent:imageOnly?'':S.accent,
+  title:title,body:body,emoji:'',imageUrl:S.image,...(profile&&S.image&&S.imgW>0&&S.imgW<=20000&&S.imgH>0&&S.imgH<=20000?{imageWidth:S.imgW,imageHeight:S.imgH}:{}),layout:imageOnly?'image':(place==='popup'&&S.image?S.layout:'standard'),accent:imageOnly?'':S.accent,
   button:button,buttonText:button?el('button').value.trim():'',dismissText:button&&place==='popup'?el('dismiss').value.trim():'',action:action,actionUrl:action==='url'?el('url').value.trim():''};
 }
 function problem(d){
@@ -242,7 +249,9 @@ function problem(d){
  else if(!d.platforms.length)return 'Выберите платформу';
  if(!d.audiences.length)return 'Выберите категорию пользователей';
  if(d.kind!=='push'&&has('android')&&!S.stores.length)return 'Выберите магазин';
- if(!d.title&&!d.body&&!d.imageUrl)return 'Добавьте картинку, заголовок или текст';
+ if(S.place==='profile'&&d.button&&d.action==='none')return 'Выберите действие для кнопки';
+ if(S.place==='profile'&&d.button&&!d.buttonText)return 'Добавьте текст кнопки';
+ if(!d.title&&!d.body&&!d.imageUrl&&!(S.place==='profile'&&d.button&&d.buttonText&&d.action!=='none'))return S.place==='profile'?'Добавьте картинку, текст или кнопку':'Добавьте картинку, заголовок или текст';
  if(d.body.length>BODY_MAX[d.kind==='push'&&S.place==='banner'?'banner':d.kind])return 'Сократите текст';
  if(S.place==='banner'&&d.body.length>200)return 'Текст баннера — до 200 символов';
  if(d.imageUrl&&!https(d.imageUrl))return 'Картинка должна открываться по https://';
@@ -253,7 +262,7 @@ function problem(d){
 function startAt(){return S.when==='later'&&el('start').value?new Date(el('start').value).getTime():0;}
 
 // ── Preview: the phone shows the push, the home screen or the inbox.
-function tabs(){var t=[];if(S.push)t.push('push');if(S.days!=='forever'&&(S.place!=='news'||!S.push))t.push('home');t.push('inbox');return t;}
+function tabs(){var t=[];if(S.push)t.push('push');if(S.days!=='forever'&&(S.place!=='news'||!S.push))t.push(S.place==='profile'?'profile':'home');t.push('inbox');return t;}
 function osLabel(){var a=brand('apple'),g=brand('android');el('os').querySelector('[data-os="ios"]').innerHTML=a+'iPhone';el('os').querySelector('[data-os="android"]').innerHTML=g+'Android';}
 function status(dark){return '<div class="ph-st"'+(dark?' style="color:#fff"':'')+'><span>9:41</span><i></i><span>●●●</span></div>';}
 function lockDate(){return new Date().toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'});}
@@ -293,6 +302,16 @@ function home(d){
  if(S.place==='popup'){var w=windowHtml(d);if(w)body+='<div class="ov">'+w+'</div>';}
  return body+'</div>';
 }
+function profileBanner(d){
+ var img=d.imageUrl&&https(d.imageUrl),c=d.accent||'#056BE4',content=!!(d.title||d.body||d.button);
+ if(!img&&!content)return '';
+ var rgb=c.slice(1).match(/../g).map(function(v){var n=parseInt(v,16)/255;return n<=.04045?n/12.92:Math.pow((n+.055)/1.055,2.4);});
+ var ink=(rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722)>.179?'#121212':'#fff';
+ return '<div class="pb'+(!img&&!d.title&&!d.body?' only-button':'')+'">'+(img?'<img src="'+esc(d.imageUrl)+'" alt=""'+(d.imageWidth?' width="'+d.imageWidth+'" height="'+d.imageHeight+'"':'')+'>':'')+(content?'<div class="pb-content">'+(d.title?'<b>'+esc(d.title)+'</b>':'')+(d.body?'<p>'+esc(d.body)+'</p>':'')+(d.button?'<span class="pb-button" style="background:'+esc(c)+';color:'+ink+'">'+esc(d.buttonText||'Подробнее')+'</span>':'')+'</div>':'')+'<span class="ax">✕</span></div>';
+}
+function profile(d){
+ return '<div class="ap ap-profile">'+status()+'<div class="ap-body"><div class="ap-title">Профиль</div><div class="sk pr-account"><span class="pr-avatar">А</span><div><b>Александр</b><small>Ваш аккаунт</small></div></div><div class="pr-premium"><b>Premium</b><small>Больше возможностей для подготовки</small></div>'+profileBanner(d)+'<div class="sk pr-section"><b>Серия занятий</b><div class="sk-l" style="width:70%"></div><div class="sk-l" style="width:45%"></div></div><div class="sk pr-section"><b>Достижения</b><div class="pr-badges"><i></i><i></i><i></i></div></div></div><div class="ap-nav"><i></i><i></i><i></i><i></i></div></div>';
+}
 function inbox(d){
  var img=d.imageUrl&&https(d.imageUrl),c=BLUE,title=d.title||(!d.body?'':d.body),body=d.title?d.body:'';
  var action=d.action!=='none'?(d.buttonText||'Открыть'):'';
@@ -307,6 +326,7 @@ function renderPreview(){
  el('os').hidden=S.tab!=='push';el('os').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.os===S.os);});
  if(S.tab==='push')el('screen').innerHTML=S.os==='ios'?pushIos(d):pushAndroid(d);
  else if(S.tab==='home')el('screen').innerHTML=home(d);
+ else if(S.tab==='profile')el('screen').innerHTML=profile(d);
  else el('screen').innerHTML=inbox(d);
 }
 
@@ -321,7 +341,7 @@ function sync(){
  setRadio('nt-place',S.place);document.querySelectorAll('input[name="nt-platform"]').forEach(function(x){x.checked=has(x.value);});document.querySelectorAll('input[name="nt-store"]').forEach(function(x){x.checked=S.stores.indexOf(x.value)>=0;});document.querySelectorAll('input[name="nt-audience"]').forEach(function(x){x.checked=S.audiences.indexOf(x.value)>=0;x.disabled=push;});setRadio('nt-when',S.when);setRadio('nt-days',S.days);setRadio('nt-layout',S.layout);
  el('audience-note').textContent=push?'Для выбора категорий отключите пуш.':'Зарегистрированные — без активного Premium.';
  document.querySelector('input[name="nt-platform"][value="web"]').disabled=push;
- el('place-note').textContent=push&&S.place!=='news'?'Тем, у кого пуши выключены':'';
+ el('place-note').textContent=S.place==='profile'?'Под Premium. Высота по содержимому: картинка целиком, разделы ниже сдвигаются.'+(push?' Покажется тем, у кого пуши выключены.':''):push&&S.place!=='news'?'Тем, у кого пуши выключены':'';
  el('stores').hidden=push||!has('android');el('when-wrap').hidden=S.when!=='later';
  el('days-label').textContent='Хранить в списке';
  el('lifetime-note').textContent=permanent?'Только в списке, пока вы не выключите или не удалите уведомление.':'По окончании срока исчезнет и из списка. Окно показывается один раз, закрытый баннер не возвращается.';
@@ -330,14 +350,15 @@ function sync(){
  count('title',el('title').value.trim().length,titleMax,push?PUSH.titleSoft:0);count('body',el('body').value.trim().length,bodyMax,push?PUSH.bodySoft:0);
  el('title').placeholder=push?'Заголовок пуша':'Заголовок';
  el('layout-wrap').hidden=!(S.place==='popup'&&S.image&&!imageOnly);
+ el('profile-button-wrap').hidden=S.place!=='profile';el('profile-button').checked=S.profileButton;
  el('button-wrap').hidden=!d.button;el('dismiss').hidden=S.place!=='popup';
  el('button').placeholder=S.place==='popup'?(d.action==='none'?'Кнопка: Понятно':'Кнопка: Открыть'):'Кнопка: Подробнее';
  el('url').hidden=d.action!=='url';el('swatches').hidden=imageOnly;
  document.querySelectorAll('#nt-swatches .nf-swatch').forEach(function(s){s.classList.toggle('on',s.dataset.color===S.accent);});
  var drop=el('drop');
  var spec=imageSpec(),size=spec.w+' × '+spec.h,fit=imageFit(spec);
- if(S.image){drop.classList.add('has');drop.innerHTML='<img src="'+esc(S.image)+'" alt=""><div class="nf-grow"><b>'+(S.imgW?S.imgW+' × '+S.imgH:'Картинка')+'</b>'+(fit?'<small class="'+fit.cls+'">'+esc(fit.text)+'</small>':'<small>Нужно '+size+'</small>')+'</div><button type="button" class="nf-link" data-img="replace">Заменить</button><button type="button" class="nf-link danger" data-img="remove">Убрать</button>';}
- else{drop.classList.remove('has');drop.innerHTML=ratioIcon(spec)+'<div class="nf-grow"><b>Картинка '+size+'</b><small>'+esc(['Перетащите или выберите','до 1 МБ',spec.note].filter(Boolean).join(' · '))+'</small></div><button type="button" class="nf-link" data-img="url">Ссылка</button>';}
+ if(S.image){drop.classList.add('has');drop.innerHTML='<img src="'+esc(S.image)+'" alt=""><div class="nf-grow"><b>'+(S.imgW?S.imgW+' × '+S.imgH:'Картинка')+'</b>'+(fit?'<small class="'+fit.cls+'">'+esc(fit.text)+'</small>':'<small>'+(spec.flexible?'Любые пропорции · без обрезки':'Нужно '+size)+'</small>')+'</div><button type="button" class="nf-link" data-img="replace">Заменить</button><button type="button" class="nf-link danger" data-img="remove">Убрать</button>';}
+ else{drop.classList.remove('has');drop.innerHTML=ratioIcon(spec)+'<div class="nf-grow"><b>'+(spec.flexible?'Картинка любых пропорций':'Картинка '+size)+'</b><small>'+esc(['Перетащите или выберите','до 1 МБ',spec.note].filter(Boolean).join(' · '))+'</small></div><button type="button" class="nf-link" data-img="url">Ссылка</button>';}
  el('recips').innerHTML=recipients().map(function(r,i){return '<label class="nf-rc" title="'+esc(r.v)+'"><input type="checkbox" data-rc="'+i+'"'+(r.on?' checked':'')+'><span>'+esc(r.v)+'</span><button type="button" data-rc-del="'+i+'" aria-label="Убрать '+esc(r.v)+'">✕</button></label>';}).join('')+'<button type="button" class="nf-rc-add" id="nt-me">+ Аккаунт</button>';
  var n=chosen().length;el('test').lastChild.textContent=n>1?'Отправить на '+n:'Отправить себе';
  var p=problem(d);
@@ -346,14 +367,14 @@ function sync(){
  el('publish').textContent=S.when==='later'?'Запланировать':push?'Отправить всем':'Опубликовать';
  renderPreview();saveDraft();
 }
-function saveDraft(){try{localStorage.setItem('nt-draft',JSON.stringify({s:{push:S.push,place:S.place,layout:S.layout,accent:S.accent,platforms:S.platforms,stores:S.stores,audiences:S.audiences,days:S.days,image:S.image},title:el('title').value,body:el('body').value,action:el('action').value,url:el('url').value,button:el('button').value,dismiss:el('dismiss').value}));}catch(_){}}
+function saveDraft(){try{localStorage.setItem('nt-draft',JSON.stringify({s:{push:S.push,place:S.place,layout:S.layout,accent:S.accent,platforms:S.platforms,stores:S.stores,audiences:S.audiences,days:S.days,image:S.image,profileButton:S.profileButton},title:el('title').value,body:el('body').value,action:el('action').value,url:el('url').value,button:el('button').value,dismiss:el('dismiss').value}));}catch(_){}}
 function loadDraft(){try{var x=JSON.parse(localStorage.getItem('nt-draft')||'null');if(!x)return;Object.assign(S,x.s||{});if(!Array.isArray(S.platforms))S.platforms=ALL.slice();if(!Array.isArray(x.s&&x.s.stores))S.stores=storesOf(x.s||{});if(!Array.isArray(S.audiences))S.audiences=ALL_AUDIENCES.slice();delete S.platform;delete S.store;['title','body','action','url','button','dismiss'].forEach(function(k){if(typeof x[k]==='string')el(k).value=x[k];});}catch(_){}}
-function clearForm(){['title','body','url','button','dismiss','start'].forEach(function(k){el(k).value='';});el('action').value='none';Object.assign(S,{push:false,place:'news',layout:'standard',accent:'',platforms:ALL.slice(),stores:['play','rustore'],audiences:ALL_AUDIENCES.slice(),when:'now',days:'7',image:'',imgW:0,imgH:0,tab:''});pending=null;el('editor-error').textContent='';}
+function clearForm(){['title','body','url','button','dismiss','start'].forEach(function(k){el(k).value='';});el('action').value='none';Object.assign(S,{push:false,place:'news',layout:'standard',accent:'',platforms:ALL.slice(),stores:['play','rustore'],audiences:ALL_AUDIENCES.slice(),when:'now',days:'7',image:'',imgW:0,imgH:0,profileButton:false,tab:''});pending=null;el('editor-error').textContent='';}
 function fill(m){
- clearForm();S.push=m.kind==='push';S.place=placeOf(m);S.platforms=platformsOf(m).slice();S.stores=storesOf(m);S.audiences=audiencesOf(m).slice();S.layout=m.layout==='cover'||m.layout==='compact'?m.layout:'standard';S.accent=m.accent||'';S.image=m.imageUrl||'';
+ clearForm();S.push=m.kind==='push';S.place=placeOf(m);S.platforms=platformsOf(m).slice();S.stores=storesOf(m);S.audiences=audiencesOf(m).slice();S.layout=m.layout==='cover'||m.layout==='compact'?m.layout:'standard';S.accent=m.accent||'';S.image=m.imageUrl||'';S.imgW=m.imageWidth||0;S.imgH=m.imageHeight||0;S.profileButton=S.place==='profile'&&m.button!==false&&m.layout!=='image';
  S.days=m.persistent?'forever':String([1,3,7,30].find(function(days){return days*86400000>=m.expiresAt-(m.startAt||m.createdAt);})||7);
  el('title').value=m.title||'';el('body').value=m.body||'';el('action').value=m.action||'none';el('url').value=m.actionUrl||'';el('button').value=m.buttonText||'';el('dismiss').value=m.dismissText||'';
- el('result').textContent='';sync();el('form').scrollIntoView({behavior:'smooth',block:'start'});
+ el('result').textContent='';if(S.image&&!S.imgW)setImage(S.image);else sync();el('form').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 // ── Image: the size that fits every place the message appears. In the app a
@@ -362,12 +383,14 @@ function fill(m){
 function imageSpec(){
  var only=!S.push&&!el('title').value.trim()&&!el('body').value.trim();
  if(S.push)return {w:1024,h:512,note:'главное — по центру',crops:true};
+ if(S.place==='profile')return {w:1080,h:540,note:'без обрезки · высота по картинке',flexible:true};
  if(S.place==='banner')return only?{w:1920,h:734,note:'правый верхний угол — под крестик'}:{w:512,h:512};
  if(S.place==='popup')return only?{w:1080,h:1350,note:'правый верхний угол — под крестик'}:S.layout==='cover'?{w:1600,h:1200}:S.layout==='compact'?{w:512,h:512}:{w:1600,h:900};
  return {w:1600,h:900};
 }
 function imageFit(spec){
  if(!S.imgW)return null;
+ if(spec.flexible)return {cls:S.imgW<600?'warn':'ok',text:S.imgW<600?'Для чёткости лучше ширина от 600 px; пропорции сохранятся':'✓ Без обрезки · высота по картинке'};
  var off=(S.imgW/S.imgH)/(spec.w/spec.h);
  if(S.imgW<spec.w/2)return {cls:'warn',text:'Маленькая — будет нечёткой, нужно '+spec.w+' × '+spec.h};
  if(Math.abs(off-1)<=0.04)return {cls:'ok',text:'✓ Подходит'};
@@ -398,9 +421,13 @@ el('file').addEventListener('change',function(){var f=el('file').files[0];el('fi
 // ── Controls.
 function onFormEdit(e){
  var t=e&&e.target;if(!t)return sync();
+ // Text input already synced on input. Rebuilding the image controls again on
+ // blur would remove a link button between pointerdown and click.
+ if(e.type==='change'&&(t.tagName==='TEXTAREA'||t.matches('input:not([type=checkbox]):not([type=radio])')))return;
  if(t.closest&&t.closest('#nt-recips'))return;
  if(t.id==='nt-push'){S.push=t.checked;S.tab=S.push?'push':'';if(S.push){S.platforms=mobile();if(!S.platforms.length)S.platforms=['ios','android'];}}
- else if(t.name==='nt-place'){S.place=t.value;S.tab=S.place==='news'&&S.push?'inbox':S.place==='news'?'inbox':'home';}
+ else if(t.name==='nt-place'){S.place=t.value;S.tab=S.place==='news'&&S.push?'inbox':S.place==='news'?'inbox':S.place==='profile'?'profile':'home';}
+ else if(t.id==='nt-profile-button')S.profileButton=t.checked;
  else if(t.name==='nt-platform'){S.platforms=ALL.filter(function(p){return p===t.value?t.checked:has(p);});if(mobile().length===1)S.os=mobile()[0];}
  else if(t.name==='nt-store')S.stores=['play','rustore'].filter(function(s){return s===t.value?t.checked:S.stores.indexOf(s)>=0;});
  else if(t.name==='nt-audience')S.audiences=ALL_AUDIENCES.filter(function(a){return a===t.value?t.checked:S.audiences.indexOf(a)>=0;});
@@ -459,7 +486,7 @@ function tagsFor(m){
  return t.join('');
 }
 function thumb(m){var place=placeOf(m);return m.imageUrl?'<span class="nf-thumb" style="'+bg(m.imageUrl)+'"></span>':'<span class="nf-thumb">'+ART[m.kind==='push'?'push':place]+'</span>';}
-function heading(m){return m.title||m.body||(m.layout==='image'?(placeOf(m)==='banner'?'Баннер-картинка':placeOf(m)==='popup'?'Окно-картинка':'Картинка'):'Сообщение');}
+function heading(m){return m.title||m.body||(placeOf(m)==='profile'&&m.buttonText?m.buttonText:'')||(m.layout==='image'?(placeOf(m)==='banner'?'Баннер-картинка':placeOf(m)==='popup'?'Окно-картинка':'Картинка'):'Сообщение');}
 el('form').addEventListener('submit',function(e){
  e.preventDefault();if(busy||el('publish').disabled)return;
  if(!pending)pending=prepare(false);if(!pending)return;
