@@ -140,11 +140,9 @@ class _ProfileNoticeBannerState extends State<ProfileNoticeBanner> {
     final hasButton = notice.button && notice.tap != null;
     final hasContent = hasTitle || hasBody || hasButton;
     if (!hasImage && !hasContent) return const SizedBox.shrink();
-    // Slightly deepen the brand blue so a white action label remains readable.
-    final accent =
-        notice.accent ?? Color.lerp(AppColors.accent, Colors.black, .08)!;
-    final onAccent = accent.computeLuminance() > .179
-        ? Colors.black
+    final accent = notice.accent ?? colors.accent;
+    final onAccent = accent.computeLuminance() > .55
+        ? Colors.black87
         : Colors.white;
     final wholeCardTap = !hasButton && notice.tap != null;
     final imageRatio = _image == null
@@ -171,13 +169,13 @@ class _ProfileNoticeBannerState extends State<ProfileNoticeBanner> {
           ),
         if (hasContent)
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppDimensions.spacingL),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (hasTitle)
                   Padding(
-                    padding: EdgeInsets.only(right: hasImage ? 0 : 28),
+                    padding: EdgeInsets.only(right: hasImage ? 0 : 36),
                     child: Text(
                       notice.title,
                       style: TextStyle(
@@ -188,11 +186,12 @@ class _ProfileNoticeBannerState extends State<ProfileNoticeBanner> {
                       ),
                     ),
                   ),
-                if (hasTitle && hasBody) const SizedBox(height: 8),
+                if (hasTitle && hasBody)
+                  const SizedBox(height: AppDimensions.spacingS),
                 if (hasBody)
                   Padding(
                     padding: EdgeInsets.only(
-                      right: hasImage || hasTitle ? 0 : 28,
+                      right: hasImage || hasTitle ? 0 : 36,
                     ),
                     child: Text(
                       notice.body,
@@ -204,7 +203,8 @@ class _ProfileNoticeBannerState extends State<ProfileNoticeBanner> {
                     ),
                   ),
                 if (hasButton) ...[
-                  if (hasTitle || hasBody) const SizedBox(height: 16),
+                  if (hasTitle || hasBody)
+                    const SizedBox(height: AppDimensions.spacingL),
                   Padding(
                     padding: EdgeInsets.only(
                       right: !hasImage && !hasTitle && !hasBody ? 36 : 0,
@@ -255,17 +255,9 @@ class _ProfileNoticeBannerState extends State<ProfileNoticeBanner> {
             Positioned(
               top: 4,
               right: 4,
-              child: IconButton(
-                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                style: IconButton.styleFrom(
-                  minimumSize: const Size(40, 40),
-                  backgroundColor: hasImage
-                      ? colors.cardBackground.withValues(alpha: .94)
-                      : null,
-                  foregroundColor: colors.secondaryText,
-                ),
-                icon: const Icon(Icons.close_rounded, size: 18),
+              child: NoticeCloseButton(
                 onPressed: widget.onDismiss,
+                overImage: hasImage,
               ),
             ),
           ],

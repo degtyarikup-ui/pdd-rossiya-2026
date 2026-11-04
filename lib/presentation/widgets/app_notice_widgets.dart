@@ -169,7 +169,7 @@ class AppNoticeDialog extends StatelessWidget {
           Positioned(
             top: 8,
             right: 8,
-            child: _NoticeCloseButton(
+            child: NoticeCloseButton(
               onPressed: () => Navigator.of(context).pop(false),
               overImage: hasImage && !compact,
             ),
@@ -224,7 +224,7 @@ extension on AppNoticeDialog {
             Positioned(
               top: 8,
               right: 8,
-              child: _NoticeCloseButton(
+              child: NoticeCloseButton(
                 onPressed: () => Navigator.of(context).pop(false),
                 overImage: true,
               ),
@@ -327,7 +327,7 @@ class AppNoticeBanner extends StatelessWidget {
             Positioned(
               top: 4,
               right: 4,
-              child: _NoticeCloseButton(onPressed: onDismiss, overImage: image),
+              child: NoticeCloseButton(onPressed: onDismiss, overImage: image),
             ),
           ],
         ),
@@ -486,8 +486,13 @@ class AppNoticeBanner extends StatelessWidget {
   }
 }
 
-class _NoticeCloseButton extends StatelessWidget {
-  const _NoticeCloseButton({required this.onPressed, this.overImage = false});
+/// Shared dismissal control for every admin banner and popup.
+class NoticeCloseButton extends StatelessWidget {
+  const NoticeCloseButton({
+    super.key,
+    required this.onPressed,
+    this.overImage = false,
+  });
   final VoidCallback onPressed;
   final bool overImage;
 
