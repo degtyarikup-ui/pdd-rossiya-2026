@@ -59,8 +59,10 @@ def main():
     sdk = prerequisites()
     if not (sdk / 'cmake' / CMAKE_VERSION / 'bin/cmake').is_file():
         raise RuntimeError('Нет CMake 3.22.1. Сначала ./scripts/setup_android.sh; см. docs/build/android.md.')
+    dev_season = os.environ.get('DEV_SEASON', 'winter')
     command = ['flutter', 'build', 'apk', '--flavor', 'ru', '--release', '-Pdev',
                '--dart-define=COUNTRY=ru', '--dart-define=GAME_DEBUG=true',
+               f'--dart-define=DEV_SEASON={dev_season}',
                '--build-number=' + str(int(datetime.datetime.now(datetime.timezone.utc).timestamp()))]
     if args.arm64:
         command += ['--target-platform', 'android-arm64']

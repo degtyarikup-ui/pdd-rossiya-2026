@@ -620,6 +620,10 @@ class GodotGame {
         overlay.close();
         return null;
       }
+      const devSeason = String.fromEnvironment('DEV_SEASON', defaultValue: '');
+      final effectiveSeason = devSeason.isNotEmpty
+          ? devSeason
+          : (const bool.fromEnvironment('GAME_DEBUG') ? 'winter' : null);
       args = [
         ...args,
         '--usage-session=${GameLeaderboardService.newRunId()}',
@@ -628,6 +632,9 @@ class GodotGame {
         '--returning-label=${appL10n.gameReturning}',
         if (MediaQuery.disableAnimationsOf(context)) '--reduce-motion',
         if (const bool.fromEnvironment('GAME_DEBUG')) '--loader-profile',
+        if (effectiveSeason != null &&
+            !args.any((a) => a.startsWith('--season=')))
+          '--season=$effectiveSeason',
       ];
       if (!kIsWeb) {
         _channel.setMethodCallHandler((call) async {
