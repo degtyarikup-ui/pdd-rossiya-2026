@@ -29,13 +29,17 @@ function anUpdatedLabel(at) {
   return new Date(at).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' МСК';
 }
 function anAuthRequired() {
+  ++window.__analyticsRequestId;
+  if(anActiveLoad)anActiveLoad.controller.abort();
+  anActiveLoad=null;
   anAuthenticated=false;
+  if(window.AdminData)window.AdminData.reset();
   anClearCache();
   window.__anData=null;
   document.getElementById('login-overlay').style.display='flex';
   document.getElementById('app').style.display='none';
 }
-async function checkAuthAndLoad() {
+async function checkAuthAndLoad(force) {
   var key=anCachePrefix+currentApp+':'+currentDays;
   if(anActiveLoad && anActiveLoad.key===key)return;
   if(anActiveLoad)anActiveLoad.controller.abort();
@@ -51,13 +55,9 @@ async function checkAuthAndLoad() {
   if(state){state.className='admin-data-state loading';state.textContent='Обновление…';}
   if(banner)banner.classList.remove('visible');
   try {
-    if(!anAuthenticated){
-      var session=await fetch('/api/admin/session',{cache:'no-store',signal:load.controller.signal});
-      if(requestId!==window.__analyticsRequestId)return;
-      if(session.status===401 || session.status===403){anAuthRequired();return;}
-      if(!session.ok)throw new Error('Не удалось проверить сессию');
-      anAuthenticated=true;
-    }
+    await AdminData.ensureSession();
+    if(requestId!==window.__analyticsRequestId)return;
+    anAuthenticated=true;
     document.getElementById('login-overlay').style.display='none';
     document.getElementById('app').style.display='flex';
     cached=anReadCache(key);
@@ -69,19 +69,16 @@ async function checkAuthAndLoad() {
       renderDashboard({totals:{},timeline:[],sources:[]});
     }
     window.__anCacheKey=key;
-    var response=await fetch('/api/admin/stats?days='+currentDays+'&app='+currentApp,{cache:'no-store',signal:load.controller.signal});
-    if(requestId!==window.__analyticsRequestId)return;
-    if(response.status===401 || response.status===403){anAuthRequired();return;}
-    if(!response.ok)throw new Error('Сервер вернул ошибку '+response.status);
-    var data=await response.json();
-    if(requestId!==window.__analyticsRequestId)return;
-    renderDashboard(data);
-    var at=Date.now();
-    // A missing users block indicates an incomplete server refresh. Keep the
-    // previous complete snapshot available for the next visit.
-    if(data.users)anWriteCache(key,data,at);
-    window.__analyticsUpdatedAt=new Date(at);
-    if(state){state.className='admin-data-state ready';state.textContent='Обновлено '+anUpdatedLabel(at);}
+    await AdminData.load('/api/admin/stats?days='+currentDays+'&app='+currentApp,{
+      view:'analytics-view',force:force===true,hasData:!!cached,timeout:150000,signal:load.controller.signal,
+      onData:function(data,meta){
+        if(requestId!==window.__analyticsRequestId)return;
+        renderDashboard(data);
+        if(!meta.cached&&data.users)anWriteCache(key,data,meta.updatedAt);
+        window.__analyticsUpdatedAt=new Date(meta.updatedAt);
+        if(state){state.className='admin-data-state '+(meta.refreshing?'loading':'ready');state.textContent=meta.refreshing?'Данные на '+anUpdatedLabel(meta.updatedAt)+' · обновление…':'Обновлено '+anUpdatedLabel(meta.updatedAt);}
+      }
+    });
   } catch(err) {
     if(requestId!==window.__analyticsRequestId)return;
     if(state){state.className='admin-data-state error';state.textContent=cached?'Данные на '+anUpdatedLabel(cached.at):'Нет обновления';}

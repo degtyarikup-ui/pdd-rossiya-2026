@@ -89,17 +89,17 @@ export const AI_VIEW_HTML = String.raw`
 
 export const AI_CLIENT_JS = String.raw`
 let aiAvailableModels = [];
+let aiLoadId = 0, aiModelDirty = false;
 function updateAiModelDescription() {
   const model = aiAvailableModels.find(m => m.id === document.getElementById('ai-model-select').value);
   document.getElementById('ai-model-description').textContent = model
     ? model.description + '. Вход: ' + model.inputPrice + ', выход (включая размышления): ' + model.outputPrice + ' токенов.' : '';
 }
-async function loadAiStats() {
-  try {
-    const res = await fetch('/api/admin/ai/stats');
-    if (res.status === 401) { checkAuthAndLoad(); return; }
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error('Не удалось загрузить настройки ИИ');
+async function loadAiStats(force) {
+  const id = ++aiLoadId;
+  const accept = (data) => {
+    if (id !== aiLoadId) return;
+    if (!data.ok) throw new Error('Не удалось загрузить настройки ИИ');
     const s = data.stats;
     document.getElementById('ai-m-total').innerText = (s.totalRequests || 0).toLocaleString();
     document.getElementById('ai-m-today').innerText = (s.todayRequests || 0).toLocaleString();
@@ -111,11 +111,19 @@ async function loadAiStats() {
     document.getElementById('ai-m-tokens-cand').innerText = (s.candidateTokens || 0).toLocaleString();
     document.getElementById('ai-m-model').innerText = s.activeModelName || s.activeModel;
     aiAvailableModels = s.availableModels || [];
-    document.getElementById('ai-model-select').value = s.activeModel;
+    if (!aiModelDirty) document.getElementById('ai-model-select').value = s.activeModel;
     updateAiModelDescription();
+  };
+  try {
+    if (window.AdminData) await AdminData.load('/api/admin/ai/stats', {view:'ai-view', force:force===true, onData:accept});
+    else {
+      const res=await fetch('/api/admin/ai/stats');
+      if(res.status===401){checkAuthAndLoad();return;}
+      const data=await res.json();if(!res.ok)throw new Error('Не удалось загрузить настройки ИИ');accept(data);
+    }
   } catch (err) { console.error('loadAiStats error:', err); }
 }
-document.getElementById('ai-model-select').addEventListener('change', updateAiModelDescription);
+document.getElementById('ai-model-select').addEventListener('change', function(){aiModelDirty=true;updateAiModelDescription();});
 document.getElementById('save-ai-model-btn').addEventListener('click', async function() {
   this.disabled = true;
   this.innerText = 'Сохранение...';
@@ -126,7 +134,7 @@ document.getElementById('save-ai-model-btn').addEventListener('click', async fun
     });
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.error || 'Не удалось сохранить модель');
-    await loadAiStats();
+    aiModelDirty=false; await loadAiStats(true);
     this.innerText = 'Применено!';
   } catch (error) {
     alert('Ошибка сохранения: ' + error.message);

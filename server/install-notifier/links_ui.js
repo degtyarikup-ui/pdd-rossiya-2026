@@ -158,20 +158,27 @@ function lnRenderUrl() {
   document.getElementById('ln-copy').disabled = !lnSourceCode();
 }
 
-async function lnLoad() {
-  try {
-    var res = await Promise.all([
-      adminFetchJson('/api/admin/links'),
-      adminFetchJson('/api/admin/stats?days=' + lnState.days + '&app=ru')
-    ]);
-    lnState.links = res[0].links || [];
-    lnState.stats = res[1];
-    lnRenderStats();
-  } catch (err) {
-    document.getElementById('ln-links').innerHTML = '<div class="an-empty">Не загрузилось: ' + anEsc(err.message) + '</div>';
+var lnLoadId=0;
+async function lnLoad(force) {
+  var id=++lnLoadId,days=lnState.days,parts=[],received=[false,false];
+  try{
+    var urls=['/api/admin/links','/api/admin/stats?days='+days+'&app=ru'];
+    await Promise.all(urls.map(async function(url,index){
+      function accept(data){
+        if(id!==lnLoadId||days!==lnState.days)return;
+        parts[index]=data;received[index]=true;
+        if(!received.every(Boolean))return;
+        lnState.links=parts[0].links||[];lnState.stats=parts[1];lnRenderStats();
+      }
+      if(window.AdminData)return AdminData.load(url,{view:'links-view',force:force===true,onData:accept});
+      accept(await adminFetchJson(url));
+    }));
+  }catch(err){
+    if(id!==lnLoadId)return;
+    if(!lnState.stats)document.getElementById('ln-links').innerHTML='<div class="an-empty">Не загрузилось: '+anEsc(err.message)+'</div>';
+    else adminToast('Не удалось обновить ссылки: '+err.message,true);
   }
 }
-
 function lnRenderStats() {
   var st = lnState.stats || {};
   var camps = {};
@@ -235,9 +242,9 @@ async function lnCopy(text, btn) {
 }
 
 // Старый скрипт зовёт updateGeneratedLink при входе в раздел — это наша загрузка.
-function updateGeneratedLink() {
+function updateGeneratedLink(force) {
   if (!lnState.loaded) { lnState.loaded = true; lnRenderForm(); }
-  lnLoad();
+  lnLoad(force);
 }
 
 (function () {

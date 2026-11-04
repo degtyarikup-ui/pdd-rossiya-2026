@@ -364,6 +364,7 @@ export function enhanceAdminClientJs(js) {
       "currentDays = parseInt(btn.dataset.days, 10);\n    checkAuthAndLoad();",
       "currentDays = parseInt(btn.dataset.days, 10);\n    localStorage.setItem('pdd-admin-days', String(currentDays));\n    checkAuthAndLoad();"
     )
+    .replace("addEventListener('click', checkAuthAndLoad)", "addEventListener('click', () => checkAuthAndLoad(true))")
     .replace(
       "setInterval(checkAuthAndLoad, 30000);",
       "setInterval(() => { if (!document.hidden && currentFeature === 'analytics') checkAuthAndLoad(); }, 60000);"
@@ -434,22 +435,14 @@ export function enhanceAdminClientJs(js) {
   );
   result = result.replace("  await fetch('/api/admin/logout', { method: 'POST' });",
     "  ++window.__analyticsRequestId; if (anActiveLoad) anActiveLoad.controller.abort(); anActiveLoad = null; anAuthRequired(); await fetch('/api/admin/logout', { method: 'POST' });");
-  // Начальная загрузка раздела могла получить 401 до входа. После успешного
-  // входа загружаем его заново и отменяем ответы прежней попытки.
+  // A fresh document after login discards prior-session rows and unsaved drafts
+  // in every module before any private view can become visible.
   const loginStart = result.indexOf('async function handleLoginSubmit()');
   const loginEnd = result.indexOf("document.getElementById('login-submit-btn')", loginStart);
   if (loginStart !== -1 && loginEnd > loginStart) {
     const loginJs = result.slice(loginStart, loginEnd).replace(
-      '    checkAuthAndLoad();',
-      `    await checkAuthAndLoad();
-    if (currentFeature === 'publications' && typeof window.pubOpen === 'function') {
-      if (typeof pbLoadId !== 'undefined') pbLoadId += 1;
-      if (typeof pbLoading !== 'undefined') pbLoading = false;
-      if (typeof pbLoaded !== 'undefined') pbLoaded = false;
-      var publicationRefresh = document.getElementById('pb-refresh');
-      if (publicationRefresh) publicationRefresh.disabled = false;
-      window.pubOpen(typeof pbWorkspace !== 'undefined' ? pbWorkspace : 'plan', false);
-    }`
+      "    document.getElementById('login-overlay').style.display = 'none';\n    document.getElementById('app').style.display = 'flex';\n    checkAuthAndLoad();",
+      '    location.reload();'
     );
     result = result.slice(0, loginStart) + loginJs + result.slice(loginEnd);
   }

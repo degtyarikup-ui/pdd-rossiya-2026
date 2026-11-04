@@ -86,29 +86,47 @@ export const ECONOMY_CLIENT_JS = String.raw`
  function activate(container,attribute,value){el(container).querySelectorAll('button').forEach(function(button){var active=button.getAttribute(attribute)===value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});}
  function enableActions(){['ec-settings','ec-edit-shares','ec-add-operation','ec-add-expense'].forEach(function(id){el(id).disabled=!stats||saving||stats.period!==period;});}
  async function loadEconomy(force){
-  if(loading&&force!==true)return loading;
   var id=++requestId,selectedPeriod=period;
-  el('ec-data-state').className='admin-data-state loading';set('ec-data-state','Загрузка…');el('economy-view').setAttribute('aria-busy','true');enableActions();
+  el('ec-data-state').hidden=false;el('ec-data-state').className='admin-data-state loading';set('ec-data-state',stats?'Обновление…':'Загрузка…');enableActions();
+  function accept(data,meta){
+   if(id!==requestId||selectedPeriod!==period)return;if(!data.ok)throw new Error(data.error||'Не удалось загрузить данные');
+   var first=!stats;stats=data;if(first)el('ec-plan-target').value=data.config.targetMonthlyProfit??50000;
+   render();enableActions();el('ec-data-state').className='admin-data-state '+(meta?.refreshing?'loading':'ready');
+   set('ec-data-state',meta?.refreshing?'Обновление…':'Обновлено '+new Date(meta?.updatedAt||Date.now()).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}));
+  }
   var task=(async function(){
    try{
-    var response=await fetch('/api/admin/economy/stats?period='+selectedPeriod);
-    if(response.status===401){if(typeof checkAuthAndLoad==='function')checkAuthAndLoad();throw new Error('Войдите в админку заново');}
-    var data=await response.json();if(!response.ok||!data.ok)throw new Error(data.error||'Не удалось загрузить данные');if(id!==requestId)return;
-    var first=!stats;stats=data;if(first)el('ec-plan-target').value=data.config.targetMonthlyProfit??50000;
-    render();enableActions();el('ec-data-state').className='admin-data-state ready';set('ec-data-state','Обновлено '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}));return true;
-   }catch(error){if(id!==requestId)return;el('ec-data-state').className='admin-data-state error';set('ec-data-state','Ошибка загрузки');feedback(error.message+(stats?' · показаны предыдущие данные':''),true);if(!stats)el('ec-receipts-body').innerHTML='<tr><td colspan="5" class="ec-empty">Нажмите «Обновить», чтобы повторить</td></tr>';return false;}
-   finally{if(id===requestId){el('economy-view').setAttribute('aria-busy','false');loading=null;}}
+    var url='/api/admin/economy/stats?period='+selectedPeriod;
+    if(window.AdminData)await AdminData.load(url,{view:'economy-view',force:force===true,onData:accept});
+    else{var response=await fetch(url);if(response.status===401){if(typeof checkAuthAndLoad==='function')checkAuthAndLoad();throw new Error('Войдите в админку заново');}var data=await response.json();if(!response.ok)throw new Error(data.error||'Не удалось загрузить данные');accept(data,{});}
+    return true;
+   }catch(error){
+    if(id!==requestId)return;
+    el('ec-data-state').className='admin-data-state error';
+    if(window.AdminData){
+     el('ec-data-state').hidden=true;
+     if(el('ec-feedback').classList.contains('error'))el('ec-feedback').hidden=true;
+    }else{
+     set('ec-data-state','Ошибка обновления');feedback(error.message+(stats?' · показаны предыдущие данные':''),true);
+     if(!stats)el('ec-receipts-body').innerHTML='<tr><td colspan="5" class="ec-empty">Нажмите «Обновить», чтобы повторить</td></tr>';
+    }
+    return false;
+   }
+   finally{if(id===requestId)loading=null;}
   })();loading=task;return task;
  }
  async function loadPlatega(force){
-  if(plategaLoading||(plategaData&&!force))return;plategaLoading=true;el('ec-platega-refresh').disabled=true;el('ec-platega-status').classList.remove('error');set('ec-platega-status','Загрузка…');
-  try{
-   var response=await fetch('/api/admin/economy/platega'),data=await response.json();if(!response.ok||!data.ok)throw new Error(data.error||'Не удалось загрузить баланс');
-   plategaData=data;
+  if(plategaLoading)return;plategaLoading=true;el('ec-platega-refresh').disabled=true;el('ec-platega-status').classList.remove('error');set('ec-platega-status',plategaData?'Обновление…':'Загрузка…');
+  function accept(data){
+   if(!data.ok)throw new Error(data.error||'Не удалось загрузить баланс');plategaData=data;
    if(!data.configured){set('ec-platega-status','Platega не подключена');el('ec-platega-body').innerHTML='';return;}
    set('ec-platega-status','Обновлено '+new Date(data.updatedAt||Date.now()).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}));
    var balances=(data.balances||[]).filter(function(item){return Number.isFinite(Number(item.amount));});
    el('ec-platega-body').innerHTML=balances.length?balances.map(function(item){return '<div class="ec-platega-balance"><span class="ec-caption">'+esc(item.currency)+'</span><strong>'+esc(num(item.amount))+'</strong>'+(item.frozenBalance!=null?'<span class="ec-caption">Заморожено '+esc(num(item.frozenBalance))+'</span>':'')+'</div>';}).join(''):'<div class="ec-caption">Балансы не получены</div>';
+  }
+  try{
+   if(window.AdminData)await AdminData.load('/api/admin/economy/platega',{view:'ec-platega-body',ttl:15000,force:force===true,onData:accept});
+   else{var response=await fetch('/api/admin/economy/platega'),data=await response.json();if(!response.ok)throw new Error(data.error||'Не удалось загрузить баланс');accept(data);}
   }catch(error){el('ec-platega-status').classList.add('error');set('ec-platega-status',(plategaData?.configured?'Показан предыдущий баланс. ':'')+(error.message||'Не удалось загрузить баланс'));}
   finally{plategaLoading=false;el('ec-platega-refresh').disabled=false;}
  }
@@ -197,7 +215,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
   }else if(kind==='builtin'){
    heading=item.title;html=input('amount',item.currency==='USD'?'Бюджет, $ / мес':'Бюджет, ₽ / мес',item.amount,{full:true})+'<div class="ec-form-preview">В выбранном периоде <b>'+rub(item.periodRub)+'</b></div>';note='Бюджет распределяется по дням месяца.';
   }
-  set('ec-dialog-title',heading);el('ec-fields').innerHTML=html;el('ec-form-error').hidden=true;formNote(note);el('ec-delete').hidden=!item.id;set('ec-delete',kind==='builtin'?'Отключить':'Удалить');el('ec-submit').hidden=false;set('ec-submit',item.id||kind==='shares'||kind==='settings'?'Сохранить':'Добавить');set('ec-cancel','Отмена');el('ec-dialog').showModal();if(item.id&&field('operationType'))field('operationType').disabled=true;updateFormPreview();
+  set('ec-dialog-title',heading);el('ec-fields').innerHTML=html;el('ec-form-error').hidden=true;formNote(note);el('ec-delete').hidden=!item.id;set('ec-delete',kind==='builtin'?'Отключить':'Удалить');el('ec-submit').hidden=false;set('ec-submit',item.id||kind==='shares'||kind==='settings'?'Сохранить':'Добавить');set('ec-cancel','Отмена');if(item.id&&field('operationType'))field('operationType').disabled=true;updateFormPreview();el('ec-dialog').showModal();
  }
  function updateFormPreview(changed){
   if(!dialogContext)return;var kind=dialogContext.kind;
@@ -263,7 +281,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
  function openRow(event){var button=event.target.closest('button');if(!button||!stats)return;if(button.dataset.detailKey)return showDetails(button.dataset.detailKey);var kind=button.dataset.editKind,id=button.dataset.id;if(!kind)return;var list=kind==='builtin'?stats.expenses.lines:kind==='revenue'?stats.config.manualRevenues:kind==='withdrawal'?stats.config.withdrawals:stats.config.extraExpenses;var item=(list||[]).find(function(row){return row.id===id;});if(item)showForm(kind,item);}
  function init(){
   if(!el('economy-view'))return;window.loadEconomy=loadEconomy;
-  el('ec-period-tabs').addEventListener('click',function(event){var button=event.target.closest('[data-period]');if(!button)return;period=button.dataset.period;page=0;activate('ec-period-tabs','data-period',period);loadEconomy(true);});
+  el('ec-period-tabs').addEventListener('click',function(event){var button=event.target.closest('[data-period]');if(!button)return;period=button.dataset.period;page=0;activate('ec-period-tabs','data-period',period);loadEconomy(false);});
   el('ec-refresh').onclick=function(){loadEconomy(true);};el('ec-settings').onclick=function(){showForm('settings');};el('ec-edit-shares').onclick=function(){showForm('shares');};el('ec-add-operation').onclick=function(){showForm('expense');};el('ec-add-expense').onclick=function(){showForm('expense');};
   el('ec-receipt-mode').addEventListener('click',function(event){var button=event.target.closest('[data-mode]');if(!button)return;receiptMode=button.dataset.mode;page=0;activate('ec-receipt-mode','data-mode',receiptMode);renderReceipts();});
   el('ec-expense-filter').addEventListener('change',renderExpenses);

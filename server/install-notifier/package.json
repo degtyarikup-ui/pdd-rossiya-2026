@@ -24,7 +24,9 @@
     "test:storage": "node --test test-storage-costs.mjs test-storage-pressure.mjs",
     "test:runtime": "node --test test-runtime-smoke.mjs",
     "test:attribution": "node --test test-attribution.mjs test-acquisition-analytics.mjs ../../tools/blog_admin/test_tracker.cjs",
-    "test:attribution:ui": "node --test test-acquisition-ui.mjs"
+    "test:attribution:ui": "node --test test-acquisition-ui.mjs",
+    "test:admin:data": "node --test test-admin-data.mjs test-admin-auth-race.mjs test-admin-performance.mjs",
+    "test:admin:ui": "node --test test-admin-loading-ui.mjs"
   },
   "dependencies": {
     "jose": "^6.2.12"

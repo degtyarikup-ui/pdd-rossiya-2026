@@ -334,17 +334,19 @@ function scMskShort(iso) {
   return s.slice(8, 10) + '.' + s.slice(5, 7) + ' ' + s.slice(11);   // 02.09 19:00
 }
 
-async function loadSocial() {
+var scLoadId=0, scConnectionDirty=false;
+async function loadSocial(force) {
+  var id=++scLoadId;
+  function accept(data){
+    if(id!==scLoadId)return;scState=data;
+    document.getElementById('sc-clock').textContent=scState.serverTimeMsk||'—';
+    scRenderStatus();scRenderSchedule();scRenderList();scRenderLog();
+  }
   try {
-    scState = await scApi('state');
-    document.getElementById('sc-clock').textContent = scState.serverTimeMsk || '—';
-    scRenderStatus();
-    scRenderSchedule();
-    scRenderList();
-    scRenderLog();
-  } catch (e) { scToast('Не загрузилось: ' + e.message, true); }
+    if(window.AdminData)await AdminData.load('/api/admin/social/state',{view:'social-view',force:force===true,onData:accept});
+    else accept(await scApi('state'));
+  } catch(e){if(id===scLoadId)scToast('Не загрузилось: '+e.message,true);}
 }
-
 function scAccount() { return (scState.accounts || [])[0] || null; }
 
 function scRenderStatus() {
@@ -364,7 +366,7 @@ function scRenderStatus() {
 
   var conn = document.getElementById('sc-conn');
   var idEl = document.getElementById('sc-client-id');
-  if (document.activeElement !== idEl) idEl.value = s.googleClientId || '';
+  if (!scConnectionDirty && document.activeElement !== idEl) idEl.value = s.googleClientId || '';
   document.getElementById('sc-client-secret').placeholder = s.hasGoogleClientSecret ? 'задан' : 'не задан';
   document.getElementById('sc-refresh-token').placeholder = s.hasGoogleRefreshToken ? 'задан' : 'не задан';
   document.getElementById('sc-ig-token').placeholder = (a && a.hasInstagramToken) ? 'задан' : 'не задан';
@@ -516,7 +518,7 @@ window.scRetry = async function (ev, id, platform) {
       ? { id: id, confirmReplacement: true } : { id: id, platform: platform });
     if (res.ok === false) throw new Error(res.message || res.error || 'не получилось');
     scToast(res.message || 'Запустил');
-    await loadSocial();
+    await loadSocial(true);
   } catch (e) {
     scToast('Не удалось запустить: ' + e.message, true);
     return;
@@ -527,7 +529,7 @@ window.scRetry = async function (ev, id, platform) {
   var ticks = 0;
   var timer = setInterval(async function () {
     ticks += 1;
-    await loadSocial();
+    await loadSocial(true);
     var post = (scState.posts || []).find(function (x) { return x.id === id; });
     if (ticks > 40 || !post || post.status !== 'processing') clearInterval(timer);
   }, 15000);
@@ -656,7 +658,7 @@ window.scPublishSelected = async function () {
     if (!res.ok) throw new Error(res.message || res.error || 'не получилось');
     scToast(res.message + (res.skipped ? ' (остальные ' + res.skipped + ' — следующим заходом)' : ''));
     scSelected = {};
-    await loadSocial();
+    await loadSocial(true);
   } catch (e) {
     scToast('Публикация не запущена: ' + e.message, true);
     return;
@@ -668,7 +670,7 @@ window.scPublishSelected = async function () {
   var ticks = 0;
   var timer = setInterval(async function () {
     ticks += 1;
-    await loadSocial();
+    await loadSocial(true);
     var busy = (scState.posts || []).some(function (p) { return p.status === 'processing'; });
     if (!busy || ticks > 60) clearInterval(timer);
   }, 15000);
@@ -682,7 +684,7 @@ window.scBulk = async function (action) {
     await scApi('posts/bulk', { ids: ids, action: action });
     scSelected = {};
     scToast('Готово');
-    await loadSocial();
+    await loadSocial(true);
   } catch (e) {
     // Preserve the selection for review; a conflict never authorizes replay.
     scToast('Действие не выполнено: ' + e.message, true);
@@ -694,7 +696,7 @@ window.scSetDate = async function (input) {
   // Введено московское время — переводим в UTC перед отправкой.
   var iso = value ? new Date(new Date(value).getTime() - 3 * 3600000).toISOString() : null;
   await scApi('posts/update', { id: input.dataset.id, scheduledAt: iso });
-  await loadSocial();
+  await loadSocial(true);
 };
 
 function scModal(html, onOk) {
@@ -751,7 +753,7 @@ window.scEditTargets = function (ids) {
     if (!targets.length) throw new Error('Выберите хотя бы одну соцсеть');
     var res = await scApi('posts/bulk', { ids: posts.map(function (p) { return p.id; }), action: 'targets', targets: targets });
     scToast('Соцсети сохранены · ' + res.changed);
-    await loadSocial();
+    await loadSocial(true);
   });
   scBindTargets(bg);
 };
@@ -776,7 +778,7 @@ window.scBulkDate = function (chosenIds) {
       var res = await scApi('posts/bulk', { ids: ids, action: 'schedule', startAt: d + 'T' + t, everyDays: every });
       scSelected = {};
       scToast('Расставлено: ' + (res.changed || 0));
-      await loadSocial();
+      await loadSocial(true);
     }
   );
 };
@@ -803,7 +805,7 @@ window.scBulkCaption = function () {
       }
       scSelected = {};
       scToast('Описание обновлено у ' + ids.length + ' роликов');
-      await loadSocial();
+      await loadSocial(true);
     }
   );
 };
@@ -825,7 +827,7 @@ window.scPreview = function (id) {
       patch.scheduledAt = w ? new Date(new Date(w + ':00.000Z').getTime() - 3 * 3600000).toISOString() : null;
     }
     await scApi('posts/update', patch);
-    await loadSocial();
+    await loadSocial(true);
   };
   var bg = scModal('<div class="sc-preview-content"><div class="sc-preview-media">'
     + '<video src="/s/v/' + scEsc(p.streamToken) + '" poster="/s/t/' + scEsc(p.streamToken) + '" controls playsinline preload="none" style="width:100%;aspect-ratio:9/16;background:#17191E;border-radius:12px;object-fit:cover;"></video>'
@@ -851,7 +853,7 @@ window.scOne = async function (id, action) {
   await scApi('posts/bulk', { ids: [id], action: action });
   document.querySelectorAll('.sc-modal-bg').forEach(function (m) { m.remove(); });
   scToast('Готово');
-  await loadSocial();
+  await loadSocial(true);
 };
 
 window.scPublishNow = async function (id) {
@@ -865,7 +867,7 @@ window.scPublishNow = async function (id) {
     if (res.ok === false) throw new Error(res.message || res.error || 'не получилось');
     scToast(res.message || 'Публикация запущена');
     document.querySelectorAll('.sc-modal-bg').forEach(function (m) { m.remove(); });
-    await loadSocial();
+    await loadSocial(true);
   } catch (e) {
     scToast('Публикация не запущена: ' + e.message, true);
     return;
@@ -876,7 +878,7 @@ window.scPublishNow = async function (id) {
   var ticks = 0;
   var timer = setInterval(async function () {
     ticks += 1;
-    await loadSocial();
+    await loadSocial(true);
     var p = (scState.posts || []).find(function (x) { return x.id === id; });
     if (ticks > 40 || !p || p.status !== 'processing') clearInterval(timer);
   }, 15000);
@@ -914,8 +916,9 @@ document.getElementById('sc-save-conn').onclick = async function () {
       await scApi('accounts', { account: { id: a && a.id, instagramToken: ig, driveFolderId: folder || (a && a.driveFolderId) || '' } });
     }
     ['sc-client-secret', 'sc-refresh-token', 'sc-ig-token'].forEach(function (id) { document.getElementById(id).value = ''; });
+    scConnectionDirty=false;
     scToast('Сохранено');
-    await loadSocial();
+    await loadSocial(true);
   } catch (e) { scToast('Ошибка: ' + e.message, true); }
 };
 
@@ -950,7 +953,7 @@ document.getElementById('sc-save-schedule').onclick = async function () {
     scScheduleDirty = false;
     document.getElementById('sc-save-state').textContent = 'Сохранено';
     scToast('Настройки и соцсети очереди сохранены');
-    await loadSocial();
+    await loadSocial(true);
   } catch (e) { scToast('Не удалось сохранить: ' + e.message, true); this.disabled = false; }
 };
 
@@ -986,11 +989,12 @@ document.getElementById('sc-sync').onclick = async function () {
     var bad = (res.results || []).filter(function (r) { return r.status === 'error'; });
     if (bad.length) scToast(bad[0].message, true);
     else scToast(added ? ('Добавлено: ' + added) : updatedFolders ? 'Папки роликов обновлены' : 'Новых роликов нет');
-    await loadSocial();
+    await loadSocial(true);
   } catch (e) { scToast('Ошибка: ' + e.message, true); }
 };
 
-document.getElementById('sc-refresh').onclick = loadSocial;
+document.getElementById('sc-refresh').onclick = function(){loadSocial(true);};
+document.getElementById('sc-client-id').addEventListener('input',function(){scConnectionDirty=true;});
 
 document.querySelectorAll('#social-view .sc-tabs .sc-tab').forEach(function (tab) {
   tab.onclick = function () {
@@ -1025,15 +1029,19 @@ document.querySelectorAll('#social-view .sc-tabs .sc-tab').forEach(function (tab
   var toggle = card.querySelector('#ai-legacy-toggle');
   var state = card.querySelector('#ai-key-state');
 
-  async function loadFlag() {
+  var flagLoadId=0;
+  async function loadFlag(force) {
+    var id=++flagLoadId;
+    function accept(data){
+      if(id!==flagLoadId||toggle.disabled)return;
+      toggle.checked=data.open;
+      state.textContent=data.hasAppKey?'ключ приложения задан':'ключ приложения не задан';
+      state.style.color=data.hasAppKey?'var(--success)':'var(--danger)';
+    }
     try {
-      var res = await fetch('/api/admin/ai/legacy');
-      if (!res.ok) return;
-      var data = await res.json();
-      toggle.checked = data.open;
-      state.textContent = data.hasAppKey ? 'ключ приложения задан' : 'ключ приложения не задан';
-      state.style.color = data.hasAppKey ? 'var(--success)' : 'var(--danger)';
-    } catch (e) { /* раздел мог ещё не открываться */ }
+      if(window.AdminData)await AdminData.load('/api/admin/ai/legacy',{view:'ai-view',force:force===true,onData:accept});
+      else{var res=await fetch('/api/admin/ai/legacy');if(!res.ok)return;accept(await res.json());}
+    }catch(e){ /* статус общей загрузки показывает ошибку */ }
   }
 
   toggle.addEventListener('change', async function () {
@@ -1058,7 +1066,7 @@ document.querySelectorAll('#social-view .sc-tabs .sc-tab').forEach(function (tab
   document.querySelectorAll('.sidebar-menu .nav-item').forEach(function (btn) {
     if (btn.dataset.feature === 'ai') btn.addEventListener('click', loadFlag);
   });
-  loadFlag();
+  if(location.hash.split('/')[0]==='#ai'||localStorage.getItem('pdd-admin-feature')==='ai')loadFlag();
 })();
 
 // Раздел добавлен после того, как основной скрипт уже разобрал меню, поэтому

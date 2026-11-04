@@ -277,16 +277,23 @@ function uvToast(msg, isError) {
 }
 
 // ── Список ──
-async function loadUsersList() {
+var uvListLoadId=0, uvDetailLoadId=0;
+async function loadUsersList(force) {
+  var id=++uvListLoadId;
   var meta = document.getElementById('uv-meta');
   if (!uvState.loaded && meta) meta.textContent = 'Загрузка…';
-  try {
-    var data = await uvFetch('/api/admin/users');
+  function accept(data){
+    if(id!==uvListLoadId)return;
     uvState.users = data.users || [];
     uvState.loaded = true;
     uvRenderList();
     uvSyncRoute();
+  }
+  try {
+    if(window.AdminData)await AdminData.load('/api/admin/users',{view:'users-view',force:force===true,onData:accept});
+    else accept(await uvFetch('/api/admin/users'));
   } catch (err) {
+    if(id!==uvListLoadId)return;
     if (meta) meta.innerHTML = '<span style="color:var(--danger)">Не удалось загрузить: ' + uvEsc(err.message) + '</span>';
   }
 }
@@ -417,26 +424,33 @@ function uvSyncRoute() {
     return;
   }
   list.hidden = true; detail.hidden = false;
-  if (uvState.openId === id && uvState.detail) return;
+  if (uvState.openId === id && uvState.detail) { uvLoadDetail(id, false, true); return; }
   uvState.openId = id;
   uvLoadDetail(id);
 }
 
 // ── Карточка ──
-async function uvLoadDetail(id) {
-  var box = document.getElementById('uv-detail-screen');
-  var cached = uvState.users.find(function (u) { return u.id === id; });
-  uvState.detail = null;
-  box.innerHTML = uvBackBtn() + (cached ? '<div class="uv-card">' + uvHeroHtml(cached) + '</div>' : '') + '<div class="uv-grid"><div class="uv-skeleton"></div><div class="uv-skeleton"></div></div>';
-  try {
-    var data = await uvFetch('/api/admin/users/detail?id=' + encodeURIComponent(id));
-    if (uvState.openId !== id) return;
-    uvState.detail = data;
-    uvState.grant = { days: 30, mode: 'extend', until: '', lifetime: false };
-    uvRenderDetail();
-  } catch (err) {
-    if (uvState.openId !== id) return;
-    box.innerHTML = uvBackBtn() + '<div class="uv-card uv-empty">Не удалось открыть карточку: ' + uvEsc(err.message) + '</div>';
+async function uvLoadDetail(id, force, preserve) {
+  var box=document.getElementById('uv-detail-screen'),requestId=++uvDetailLoadId;
+  if(!preserve){
+    var cached=uvState.users.find(function(u){return u.id===id;});
+    uvState.detail=null;uvState.detailDirty=false;
+    uvState.grant={days:30,mode:'extend',until:'',lifetime:false};
+    box.innerHTML=uvBackBtn()+(cached?'<div class="uv-card">'+uvHeroHtml(cached)+'</div>':'');
+  }
+  function accept(data){
+    if(uvState.openId!==id||requestId!==uvDetailLoadId)return;
+    uvState.detail=data;
+    if(!uvState.detailDirty)uvRenderDetail();
+  }
+  try{
+    var url='/api/admin/users/detail?id='+encodeURIComponent(id);
+    if(window.AdminData)await AdminData.load(url,{view:'uv-detail-screen',force:force===true,onData:accept});
+    else accept(await uvFetch(url));
+  }catch(err){
+    if(uvState.openId!==id||requestId!==uvDetailLoadId)return;
+    if(!uvState.detail)box.innerHTML=uvBackBtn()+'<div class="uv-card uv-empty">Не удалось открыть карточку: '+uvEsc(err.message)+'</div>';
+    else uvToast('Не удалось обновить карточку: '+err.message,true);
   }
 }
 function uvBackBtn() {
@@ -754,7 +768,8 @@ function uvSaveNoteSoon() {
   });
   document.getElementById('uv-sort').addEventListener('change', function (e) { uvState.sort = e.target.value; uvRenderList(); });
   document.getElementById('uv-export').addEventListener('click', uvExportCsv);
-  document.getElementById('refresh-users-btn').addEventListener('click', loadUsersList);
+  document.getElementById('refresh-users-btn').addEventListener('click', function(){loadUsersList(true);});
+  document.getElementById('uv-detail-screen').addEventListener('input', function(){uvState.detailDirty=true;});
 
   view.addEventListener('click', function (e) {
     var t = e.target;
@@ -776,6 +791,7 @@ function uvSaveNoteSoon() {
     if (row) { uvOpen(row.dataset.user); window.scrollTo(0, 0); return; }
     var preset = t.closest('#uv-presets button');
     if (preset) {
+      uvState.detailDirty=true;
       var g = uvState.grant;
       g.lifetime = preset.dataset.days === 'lifetime';
       if (!g.lifetime) g.days = parseInt(preset.dataset.days, 10);
@@ -788,6 +804,7 @@ function uvSaveNoteSoon() {
     }
     var mode = t.closest('#uv-mode button');
     if (mode) {
+      uvState.detailDirty=true;
       uvState.grant.mode = mode.dataset.mode;
       document.querySelectorAll('#uv-mode button').forEach(function (b) { b.classList.toggle('active', b === mode); });
       uvUpdateGrantPreview();

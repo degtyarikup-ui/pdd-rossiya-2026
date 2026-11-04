@@ -131,6 +131,8 @@ function blRenderArticles() {
   refresh.textContent = blState.loading ? 'Обновление…' : 'Обновить';
   document.getElementById('reset-blog-btn').disabled = blState.busy || blState.loading;
   if (!blState.loaded) return;
+  // A background response must not interrupt editing a native date input.
+  if (!blState.busy && document.activeElement && container.contains?.(document.activeElement) && document.activeElement.matches('[data-blog-date]')) return;
   var articles = blVisibleArticles();
   document.getElementById('blog-results').textContent = 'Показано ' + articles.length + ' из ' + blState.articles.length;
   if (!articles.length) {
@@ -162,15 +164,14 @@ function blRenderArticles() {
   }).join('');
 }
 
-window.loadBlogArticles = async function() {
+window.loadBlogArticles = async function(force) {
   if (!document.getElementById('blog-view')) return;
   var requestId = ++blState.requestId;
   blState.loading = true;
   blRenderArticles();
   var errorBox = document.getElementById('blog-load-error');
   errorBox.hidden = true;
-  try {
-    var data = await adminFetchJson('/api/admin/blog');
+  function accept(data) {
     if (requestId !== blState.requestId) return;
     if (!Array.isArray(data)) throw new Error('Некорректный ответ сервера');
     blState.articles = data.slice().sort(function(a,b) { return String(a.datePublished || '').localeCompare(String(b.datePublished || '')) || String(a.slug).localeCompare(String(b.slug)); });
@@ -179,6 +180,11 @@ window.loadBlogArticles = async function() {
       var article = blState.articles.find(function(a) { return a.slug === slug; });
       if (!article || article.datePublished === blState.drafts[slug]) delete blState.drafts[slug];
     });
+    blRenderArticles();
+  }
+  try {
+    if(window.AdminData)await AdminData.load('/api/admin/blog',{view:'blog-view',force:force===true,onData:accept});
+    else accept(await adminFetchJson('/api/admin/blog'));
   } catch(err) {
     if (requestId !== blState.requestId) return;
     errorBox.textContent = 'Не удалось загрузить план: ' + err.message + (blState.loaded ? '. Показаны данные предыдущего обновления.' : '. Нажмите «Обновить», чтобы повторить.');
@@ -200,7 +206,7 @@ async function blMutate(path, options, message, apply) {
     if (apply) apply();
     adminToast(message, false);
     document.dispatchEvent(new CustomEvent('pdd:publications-changed', { detail: { channel:'blog' } }));
-    await loadBlogArticles();
+    await loadBlogArticles(true);
   } catch(err) {
     adminToast('Изменение не сохранилось: ' + err.message, true);
   } finally { blState.busy = false; blRenderArticles(); }
@@ -232,12 +238,12 @@ window.deleteBlogArticle = async function(slug) {
   view.querySelectorAll('[data-blog-filter]').forEach(function(button) {
     button.addEventListener('click', function() { blState.filter = this.dataset.blogFilter; blRenderArticles(); });
   });
-  document.getElementById('refresh-blog-btn').addEventListener('click', loadBlogArticles);
+  document.getElementById('refresh-blog-btn').addEventListener('click', function(){loadBlogArticles(true);});
   document.getElementById('reset-blog-btn').addEventListener('click', async function() {
     if (blState.busy || !confirm('Сбросить список статей к исходному состоянию?')) return;
     await blMutate('reset', {method:'POST'}, 'Исходный план восстановлен', function() { blState.drafts = {}; });
   });
-  view.addEventListener('change', function(event) {
+  function captureDateDraft(event) {
     var input = event.target.closest('[data-blog-date]');
     if (!input || blState.busy) return;
     var article = blState.articles.find(function(a) { return a.slug === input.dataset.blogDate; });
@@ -245,7 +251,9 @@ window.deleteBlogArticle = async function(slug) {
     if (input.value === article.datePublished) delete blState.drafts[article.slug];
     else blState.drafts[article.slug] = input.value;
     input.closest('.bl-date').querySelector('.bl-date-actions').hidden = input.value === article.datePublished;
-  });
+  }
+  view.addEventListener('input',captureDateDraft);
+  view.addEventListener('change',captureDateDraft);
   view.addEventListener('click', function(event) {
     var button = event.target.closest('[data-blog-action]');
     if (!button || blState.busy) return;

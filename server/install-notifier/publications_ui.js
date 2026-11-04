@@ -152,17 +152,20 @@ window.pubOpen=function(workspace,updateHistory){
  ['blog','threads','social'].forEach(function(k){var el=document.getElementById(k+'-view');if(el)el.style.display=(pbWorkspace===(k==='social'?'videos':k))?'block':'none';});
  document.querySelectorAll('[data-pb-workspace]').forEach(function(btn){var active=btn.dataset.pbWorkspace===pbWorkspace;btn.classList.toggle('active',active);btn.setAttribute('aria-selected',String(active));btn.tabIndex=active?0:-1;});
  if(updateHistory){var hash='#publications'+(pbWorkspace==='plan'?'':'/'+pbWorkspace);if(location.hash!==hash)history.pushState(null,'',hash);}
- if(pbWorkspace==='plan'){if(!pbLoaded&&!pbLoading)loadPublications();else pbRender();}
+ if(pbWorkspace==='plan'){if(pbLoaded)pbRender();loadPublications();}
  else if(pbWorkspace==='blog')loadBlogArticles();else if(pbWorkspace==='threads')loadThreads();else loadSocial();
 };
-async function loadPublications(){
+async function loadPublications(force){
  var id=++pbLoadId;pbLoading=true;document.getElementById('pb-refresh').disabled=true;document.getElementById('pb-updated').textContent='Обновление…';
- var urls=['/api/admin/blog','/api/admin/threads/state','/api/admin/social/state'];
- var results=await Promise.allSettled(urls.map(async function(url){var res=await fetch(url,{signal:AbortSignal.timeout(15000)});if(res.status===401||res.status===403){checkAuthAndLoad();throw new Error('Нужно войти в админку');}var data=await res.json();if(!res.ok)throw new Error(data.error||'Ошибка '+res.status);return data;}));
+ var urls=['/api/admin/blog','/api/admin/threads/state','/api/admin/social/state'],names=['Блог','Threads','Видео'],keys=['blog','threads','social'];
+ var results=await Promise.allSettled(urls.map(async function(url,index){
+  function accept(data){if(id!==pbLoadId)return;pbState[keys[index]]=data;pbLoaded=true;pbItems=PB_NORMALIZE(pbState);pbRender();}
+  if(window.AdminData)return AdminData.load(url,{view:'pb-plan-workspace',force:force===true,onData:accept});
+  var res=await fetch(url,{signal:AbortSignal.timeout(15000)});if(res.status===401||res.status===403){checkAuthAndLoad();throw new Error('Нужно войти в админку');}var data=await res.json();if(!res.ok)throw new Error(data.error||'Ошибка '+res.status);accept(data);return data;
+ }));
  if(id!==pbLoadId)return;
- var names=['Блог','Threads','Видео'],keys=['blog','threads','social'],errors=[];
- results.forEach(function(r,i){if(r.status==='fulfilled')pbState[keys[i]]=r.value;else errors.push(names[i]+': '+r.reason.message);});
- pbLoaded=results.some(function(r){return r.status==='fulfilled';});pbLoading=false;pbItems=PB_NORMALIZE(pbState);document.getElementById('pb-refresh').disabled=false;
+ var errors=[];results.forEach(function(result,index){if(result.status==='rejected')errors.push(names[index]+': '+result.reason.message);});
+ pbLoading=false;document.getElementById('pb-refresh').disabled=false;
  document.getElementById('pb-feedback').textContent=errors.length?'Не удалось обновить '+errors.join('; ')+'. Если данные уже были загружены, показана последняя версия.':'';
  document.getElementById('pb-updated').textContent=errors.length?'Частичные данные':'Обновлено '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
  pbRender();
@@ -250,7 +253,7 @@ function pbClearFilters(){pbRange='';pbChannel='all';pbFocusDate='';pbPage=0;doc
  document.querySelectorAll('.sidebar-menu .nav-item').forEach(function(btn){btn.addEventListener('click',function(){var active=btn.dataset.feature==='publications';document.getElementById('publications-view').style.display=active?'block':'none';if(active)pubOpen(pbRouteWorkspace(),false);else pbCloseDrawer();});});
  document.querySelectorAll('[data-pb-workspace]').forEach(function(btn){btn.onclick=function(){pubOpen(btn.dataset.pbWorkspace,true);};btn.onkeydown=function(e){if(['ArrowLeft','ArrowRight'].indexOf(e.key)===-1)return;e.preventDefault();var buttons=Array.from(document.querySelectorAll('[data-pb-workspace]')),index=buttons.indexOf(btn);var next=buttons[(index+(e.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length];next.click();next.focus();};});
  document.querySelectorAll('[data-pb-mode]').forEach(function(btn){btn.onclick=function(){pbMode=btn.dataset.pbMode;pbFocusDate='';pbPage=0;localStorage.setItem('pdd-publications-mode',pbMode);pbRender();};});
- document.getElementById('pb-refresh').onclick=function(){if(pbWorkspace==='plan')loadPublications();else pubOpen(pbWorkspace,false);};
+ document.getElementById('pb-refresh').onclick=function(){if(pbWorkspace==='plan')loadPublications(true);else if(pbWorkspace==='blog')loadBlogArticles(true);else if(pbWorkspace==='threads')loadThreads(true);else loadSocial(true);};
  document.getElementById('pb-search').oninput=function(){pbPage=0;pbRender();};document.getElementById('pb-status').onchange=function(){pbRange='';pbFocusDate='';pbPage=0;pbRender();};document.getElementById('pb-reset').onclick=pbClearFilters;
  document.getElementById('pb-channels').onclick=function(e){var b=e.target.closest('[data-pb-channel]');if(b){pbChannel=b.dataset.pbChannel;pbPage=0;pbRender();}};
  document.getElementById('pb-summary').onclick=function(e){var b=e.target.closest('[data-pb-summary]');if(b){document.getElementById('pb-status').value=b.dataset.pbSummary;pbMonth=PB_DAY(Date.now()).slice(0,7);pbRange=b.dataset.pbSummary==='upcoming'?'week':b.dataset.pbSummary==='all'?'all':'';pbFocusDate='';pbPage=0;pbMode='list';pbRender();}};

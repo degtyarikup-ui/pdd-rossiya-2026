@@ -12,6 +12,7 @@ import { TASKS_NAV_HTML, TASKS_VIEW_HTML, TASKS_CLIENT_JS } from './tasks_ui.js'
 import { handleTasksAdmin } from './tasks_admin.js';
 import { ECONOMY_NAV_HTML, ECONOMY_VIEW_HTML, ECONOMY_CLIENT_JS } from './economy_ui.js';
 import { handleEconomyAdmin } from './economy_admin.js';
+import { mapAdminReads } from './admin_reads.js';
 import { premiumBanner, premiumContextLines, premiumDate } from './premium_message.js';
 import { metadataFields, acquisitionFields, mergeAcquisition, attributionLines, installSourceLines, deviceLine, attributedDestination, marketingSource, siteSourceKey, SOURCE_LABELS } from './attribution.js';
 import { storeReportSnapshot } from './store_reports.js';
@@ -65,6 +66,7 @@ import { AI_VIEW_HTML, enhanceAiClientJs } from './ai_ui.js';
 import { AI_MODELS, getActiveAiModel, isSupportedAiModel, aiModelPricing, aiGenerationConfig, aiReply, aiUsage } from './ai_models.js';
 import { LINKS_VIEW_HTML, LINKS_CLIENT_JS } from './links_ui.js';
 import { enhanceAdminHtml, enhanceAdminClientJs, ADMIN_UI_CLIENT_JS } from './admin_ui.js';
+import { ADMIN_DATA_STYLES, ADMIN_DATA_CLIENT_JS } from './admin_data.js';
 import { StatsBuffer } from './stats_buffer.js';
 import { handleUsersAdmin, isPremiumActive } from './users_admin.js';
 import { putUserRecord, putUserActivity, listUserSummaries } from './user_store.js';
@@ -2485,8 +2487,13 @@ function analyticsBlockForApp(dayData, appFilter) {
 // Прошедшие дни уже не меняются (сброс буфера раз в час дописывает максимум
 // во вчерашний день), поэтому держим их в памяти изолята: панель обновляется
 // раз в минуту и без кэша читала бы до 180 ключей за раз.
-const pastDayCache = new Map();
+const pastDayCaches = new WeakMap();
 async function readDayData(env, dateKey) {
+  let pastDayCache = pastDayCaches.get(env.INSTALLS);
+  if (!pastDayCache) {
+    pastDayCache = new Map();
+    pastDayCaches.set(env.INSTALLS, pastDayCache);
+  }
   const today = mskDayKey(new Date());
   const yesterday = mskDayKey(new Date(Date.now() - 86400000));
   const frozen = dateKey !== today && dateKey !== yesterday;
@@ -2540,12 +2547,8 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
     for (let i = daysCount * 2 - 1; i >= 0; i--) {
       allKeys.push(mskDayKey(new Date(now.getTime() - i * 86400000)));
     }
-    const periodDays = new Map();
-    for (let offset = 0; offset < allKeys.length; offset += 8) {
-      await Promise.all(allKeys.slice(offset, offset + 8).map(async key => {
-        periodDays.set(key, await readDayData(env, key));
-      }));
-    }
+    const dayValues = await mapAdminReads(allKeys, key => readDayData(env, key));
+    const periodDays = new Map(allKeys.map((key, index) => [key, dayValues[index]]));
 
     let totalViews = 0;
     let totalClicks = 0;
@@ -2648,9 +2651,13 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
       }
     }
 
-    const grandTotalRu = await readCounter(env, 'counter');
-    const grandTotalBy = await readCounter(env, 'counter:by');
-    const grandTotalRs = await readCounter(env, 'counter:rs');
+    const [grandTotalRu, grandTotalBy, grandTotalRs, rawEvents, storeReports] = await Promise.all([
+      readCounter(env, 'counter'),
+      readCounter(env, 'counter:by'),
+      readCounter(env, 'counter:rs'),
+      env.INSTALLS.get('recent_events').catch(() => null),
+      storeReportSnapshot(env, dateKeys, appFilter),
+    ]);
     const grandTotalAll = grandTotalRu + grandTotalBy + grandTotalRs;
     const grandTotal = appFilter === 'rs' ? grandTotalRs
       : appFilter === 'by' ? grandTotalBy
@@ -2675,7 +2682,6 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
 
     let recent = [];
     try {
-      const rawEvents = await env.INSTALLS.get('recent_events');
       if (rawEvents) {
         const allRecent = JSON.parse(rawEvents);
         recent = allRecent.filter((e) => appFilter === 'all' || (e.app || 'ru') === appFilter);
@@ -2706,7 +2712,7 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
       },
       timeline,
       usage: usageSnapshot(usageDays, appFilter),
-      storeReports: await storeReportSnapshot(env, dateKeys, appFilter),
+      storeReports,
       sources,
       targets,
       campaigns,
@@ -2800,13 +2806,13 @@ function renderAdminPage() {
     .replace('<button class="nav-item" data-feature="links">', TASKS_NAV_HTML + '\n      <button class="nav-item" data-feature="links">')
     .replace('</nav>', ECONOMY_NAV_HTML + '\n      ' + NOTIFICATIONS_NAV_HTML + '    </nav>')
     .replace('\n\n  </main>', '\n' + TASKS_VIEW_HTML + '\n' + ECONOMY_VIEW_HTML + '\n' + NOTIFICATIONS_VIEW_HTML + '\n' + SOCIAL_VIEW_HTML + '\n' + THREADS_VIEW_HTML + '\n' + PUBLICATIONS_VIEW_HTML + '\n  </main>')));
-  return html + ADMIN_THEME_HTML + "<script>" + BRAND_SVGS_CLIENT_JS + clientJs + ANALYTICS_CLIENT_JS + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + ECONOMY_CLIENT_JS + NOTIFICATIONS_CLIENT_JS + TASKS_CLIENT_JS + BLOG_CLIENT_JS + PUBLICATIONS_CLIENT_JS + ADMIN_UI_CLIENT_JS + ADMIN_THEME_CLIENT_JS + "</script></body></html>";
+  return html + ADMIN_THEME_HTML + ADMIN_DATA_STYLES + "<script>" + ADMIN_DATA_CLIENT_JS + BRAND_SVGS_CLIENT_JS + clientJs + ANALYTICS_CLIENT_JS + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + ECONOMY_CLIENT_JS + NOTIFICATIONS_CLIENT_JS + TASKS_CLIENT_JS + BLOG_CLIENT_JS + PUBLICATIONS_CLIENT_JS + ADMIN_UI_CLIENT_JS + ADMIN_THEME_CLIENT_JS + "</script></body></html>";
 }
 
 
 // ────────────────────── AI Model Pricing & Analytics ──────────────────────
 async function getAiAnalyticsStats(env) {
-  const activeModel = await getActiveAiModel(env);
+  const activeModelPromise = getActiveAiModel(env);
   let totalRequests = 0;
   let todayRequests = 0;
   let promptTokens = 0;
@@ -2816,17 +2822,28 @@ async function getAiAnalyticsStats(env) {
   if (env.INSTALLS) {
     try {
       const today = mskDayKey(new Date());
-      totalRequests = parseInt(await env.INSTALLS.get('ai_stats_total_req') || '0', 10);
-      todayRequests = parseInt(await env.INSTALLS.get('ai_stats_today_req_' + today) || '0', 10);
-      promptTokens = parseInt(await env.INSTALLS.get('ai_stats_prompt_tokens') || '0', 10);
-      candidateTokens = parseInt(await env.INSTALLS.get('ai_stats_candidate_tokens') || '0', 10);
-      const rawCost = await env.INSTALLS.get('ai_stats_cost_usd');
+      const values = await Promise.allSettled([
+        'ai_stats_total_req', 'ai_stats_today_req_' + today,
+        'ai_stats_prompt_tokens', 'ai_stats_candidate_tokens', 'ai_stats_cost_usd',
+      ].map(key => env.INSTALLS.get(key)));
+      // Keep the existing partial fallback when a read fails, while issuing
+      // independent reads together instead of waiting on five round trips.
+      const value = index => {
+        if (values[index].status === 'rejected') throw values[index].reason;
+        return values[index].value;
+      };
+      totalRequests = parseInt(value(0) || '0', 10);
+      todayRequests = parseInt(value(1) || '0', 10);
+      promptTokens = parseInt(value(2) || '0', 10);
+      candidateTokens = parseInt(value(3) || '0', 10);
+      const rawCost = value(4);
       if (rawCost !== null) {
         costUsd = parseFloat(rawCost);
       }
     } catch (_) {}
   }
 
+  const activeModel = await activeModelPromise;
   const totalTokens = promptTokens + candidateTokens;
   const costRub = (costUsd * 92.5).toFixed(2);
 
@@ -2973,17 +2990,30 @@ async function saveUserProfile(env, user) {
 
 // Сводки пользователей для аналитики: list() в KV тоже лимитирован
 // (1000 в сутки на бесплатном тарифе), поэтому не чаще раза в 5 минут.
-let userSummaryCache = { at: 0, users: null };
+const userSummaryCaches = new WeakMap();
+const pendingUserSummaries = new WeakMap();
+function freshUserSummaries(env) {
+  if (!env.INSTALLS) return Promise.resolve([]);
+  let pending = pendingUserSummaries.get(env.INSTALLS);
+  if (!pending) {
+    pending = listUserSummaries(env).finally(() => {
+      if (pendingUserSummaries.get(env.INSTALLS) === pending) pendingUserSummaries.delete(env.INSTALLS);
+    });
+    pendingUserSummaries.set(env.INSTALLS, pending);
+  }
+  return pending;
+}
 async function cachedUserSummaries(env) {
-  if (userSummaryCache.users && Date.now() - userSummaryCache.at < 5 * 60 * 1000) return userSummaryCache.users;
-  const users = await listUserSummaries(env);
-  userSummaryCache = { at: Date.now(), users };
+  if (!env.INSTALLS) return [];
+  const cached = userSummaryCaches.get(env.INSTALLS);
+  if (cached && Date.now() - cached.at < 5 * 60 * 1000) return cached.users;
+  const users = await freshUserSummaries(env);
+  userSummaryCaches.set(env.INSTALLS, { at: Date.now(), users });
   return users;
 }
 
 async function getAllUsers(env) {
-  if (!env.INSTALLS) return [];
-  return listUserSummaries(env);
+  return freshUserSummaries(env);
 }
 
 
@@ -3351,7 +3381,7 @@ const workerHandlers = {
 
     if (url.pathname.startsWith('/api/admin/economy')) {
       if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
-      return handleEconomyAdmin(request, env, url, { listUserSummaries });
+      return handleEconomyAdmin(request, env, url, { listUserSummaries: freshUserSummaries });
     }
 
     if (url.pathname === '/api/admin/app-updates') {

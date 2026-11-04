@@ -476,7 +476,10 @@ el('recips').addEventListener('change',function(e){var box=e.target.closest('[da
 el('me-cancel').onclick=function(){afterTarget=null;el('me-dialog').close();};
 el('me-save').onclick=function(){var v=el('target').value.trim().toLowerCase();if(!v||/[\s'"<>]/.test(v)){el('target').focus();return;}var list=recipients().filter(function(r){return r.v!==v;});list.push({v:v,on:true});saveRecipients(list);el('me-dialog').close();sync();var next=afterTarget;afterTarget=null;if(next)next();};
 el('target').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();el('me-save').click();}});
-async function loadUsers(){if(usersLoaded)return;usersLoaded=true;try{var r=await fetch('/api/admin/users');if(!r.ok)return;var d=await r.json();el('users-list').innerHTML=(d.users||[]).slice(0,200).map(function(u){return '<option value="'+esc(u.email||u.id)+'">'+esc((u.name||'Пользователь')+' · '+u.id)+'</option>';}).join('');}catch(_){}}
+async function loadUsers(){
+ function accept(d){usersLoaded=true;el('users-list').innerHTML=(d.users||[]).slice(0,200).map(function(u){return '<option value="'+esc(u.email||u.id)+'">'+esc((u.name||'Пользователь')+' · '+u.id)+'</option>';}).join('');}
+ try{if(window.AdminData)await AdminData.load('/api/admin/users',{onData:accept});else{var r=await fetch('/api/admin/users');if(r.ok)accept(await r.json());}}catch(_){usersLoaded=false;}
+}
 function tagsFor(m){
  var t=[];
  if(m.kind==='push')t.push('<span class="nf-tag">'+SVG.bell+'Пуш</span>');
@@ -563,14 +566,21 @@ el('history').addEventListener('click',async function(e){
  try{if(b.dataset.ntDelete)await api('/delete',{id:id});else await api('/toggle',{id:id,enabled:b.dataset.enabled==='true'});await load();}
  catch(err){el('page-error').textContent=err.message;b.disabled=false;}
 });
-el('refresh').onclick=load;
+el('refresh').onclick=function(){load(true);};
 
-async function load(){
- el('page-error').textContent='';
- try{var d=await api('');cfg=d.config;ready=d.pushConfigured;
-  items=d.messages||[];render(items);if(S.push&&!pushAvailable()&&!busy)S.push=false;sync();}
- catch(e){el('page-error').textContent=e.message;}
+var notificationLoadId=0;
+async function load(force){
+ var id=++notificationLoadId;el('page-error').textContent='';
+ function accept(d){
+  if(id!==notificationLoadId)return;cfg=d.config;ready=d.pushConfigured;
+  items=d.messages||[];render(items);if(S.push&&!pushAvailable()&&!busy)S.push=false;sync();
+ }
+ try{
+  if(window.AdminData)await AdminData.load('/api/admin/notifications',{view:'notifications-view',force:force===true,onData:accept});
+  else accept(await api(''));
+ }catch(e){if(id===notificationLoadId)el('page-error').textContent=e.message;}
 }
+window.loadNotifications=load;
 document.querySelectorAll('.sidebar-menu .nav-item').forEach(function(btn){btn.addEventListener('click',function(){document.getElementById('notifications-view').style.display=btn.dataset.feature==='notifications'?'block':'none';if(btn.dataset.feature==='notifications')load();});});
 osLabel();loadDraft();if(S.image)setImage(S.image);sync();
 })();

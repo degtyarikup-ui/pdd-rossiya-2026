@@ -1159,18 +1159,25 @@ VIEW_TITLES.tasks = 'Задачи';
     return data;
   }
 
-  async function loadTasks() {
-    try {
-      var res = await api('', 'GET');
+  var tasksLoadId=0;
+  async function loadTasks(force) {
+    var id=++tasksLoadId;
+    function accept(res){
+      if(id!==tasksLoadId)return;
       allTasks = res.tasks || [];
       currentVersions = res.versions || [];
       isLoaded = true;
       syncVersionsDropdown();
       render();
+    }
+    try {
+      if(window.AdminData)await AdminData.load('/api/admin/tasks',{view:'tasks-view',force:force===true,onData:accept});
+      else accept(await api('', 'GET'));
     } catch (err) {
       notify('Не удалось загрузить задачи: ' + err.message, true);
     }
   }
+  window.loadTasks=loadTasks;
 
   function syncVersionsDropdown() {
     var cur = versionSelect.value;
@@ -1726,7 +1733,7 @@ VIEW_TITLES.tasks = 'Задачи';
       var isTasks = btn.dataset.feature === 'tasks';
       var view = document.getElementById('tasks-view');
       if (view) view.style.display = isTasks ? 'block' : 'none';
-      if (isTasks && !isLoaded) loadTasks();
+      if (isTasks) loadTasks();
     });
   });
 

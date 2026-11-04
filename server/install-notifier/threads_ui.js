@@ -99,16 +99,19 @@ async function thApi(path, body) {
   return data;
 }
 
-async function loadThreads() {
-  try {
-    thState = await thApi('state');
-    document.getElementById('th-clock').textContent = thState.serverTimeMsk || '—';
-    thRenderStatus();
-    thRenderList();
-    thRenderLog();
-  } catch (e) { scToast('Не загрузилось: ' + e.message, true); }
+var thLoadId=0, thScheduleDirty=false, thDrafts={};
+async function loadThreads(force) {
+  var id=++thLoadId;
+  function accept(data){
+    if(id!==thLoadId)return;thState=data;
+    document.getElementById('th-clock').textContent=thState.serverTimeMsk||'—';
+    thRenderStatus();thRenderList();thRenderLog();
+  }
+  try{
+    if(window.AdminData)await AdminData.load('/api/admin/threads/state',{view:'threads-view',force:force===true,onData:accept});
+    else accept(await thApi('state'));
+  }catch(e){if(id===thLoadId)scToast('Не загрузилось: '+e.message,true);}
 }
-
 function thRenderStatus() {
   var s = thState.settings || {};
   var posts = thState.posts || [];
@@ -121,7 +124,7 @@ function thRenderStatus() {
 
   document.getElementById('th-token').placeholder = s.hasToken ? (s.tokenMask + ' — пусто = не менять') : 'не задан';
   var t = document.getElementById('th-time');
-  if (document.activeElement !== t) t.value = s.postTime || '10:00';
+  if (!thScheduleDirty && document.activeElement !== t) t.value = s.postTime || '10:00';
 
   var next = posts.filter(function (p) { return p.status === 'queued' && p.scheduledAt; })
     .sort(function (a, b) { return a.scheduledAt.localeCompare(b.scheduledAt); })[0];
@@ -155,6 +158,7 @@ function thRenderList() {
 
   var list = thPosts();
   var box = document.getElementById('th-list');
+  var active=document.activeElement,focused=box.contains(active)&&active.matches('[data-th-text],[data-th-date]')?{id:active.dataset.thText||active.dataset.thDate,text:!!active.dataset.thText,start:active.selectionStart,end:active.selectionEnd}:null;
   if (!list.length) {
     box.innerHTML = '<div class="sc-empty">'
       + (thFilter === 'queued' ? 'Постов нет — нажми «Добавить посты»' : 'Пусто') + '</div>';
@@ -186,12 +190,12 @@ function thRenderList() {
       + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">'
       + state + link + '<span style="font-size:11px;color:var(--text-muted);">' + p.text.length + ' знаков</span></div>'
       + '<textarea class="sc-input" style="width:100%;min-height:64px;font-size:12.5px;" data-th-text="' + p.id + '"'
-      + ' onchange="thSaveText(this)">' + scEsc(p.text) + '</textarea>'
+      + ' onchange="thSaveText(this)">' + scEsc(thDrafts[p.id]?.text ?? p.text) + '</textarea>'
       + (p.error ? '<div class="sc-err" style="font-size:11.5px;">' + scEsc(p.error) + '</div>' : '')
       + '</div>'
       + '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">'
       + '<input type="datetime-local" class="sc-input" style="width:180px;font-size:12px;" data-th-date="' + p.id + '"'
-      + ' value="' + (p.scheduledAt ? scMsk(p.scheduledAt).replace(' ', 'T') : '') + '" onchange="thSetDate(this)">'
+      + ' value="' + scEsc(thDrafts[p.id]?.date ?? (p.scheduledAt ? scMsk(p.scheduledAt).replace(' ', 'T') : '')) + '" onchange="thSetDate(this)">'
       + '<div style="display:flex;gap:6px;">'
       + (p.status === 'published' || p.status === 'processing' ? ''
           : '<button class="btn-action" onclick="thPublishOne(\\'' + p.id + '\\')">'
@@ -204,6 +208,7 @@ function thRenderList() {
       + '</div></div>';
   }).join('');
 
+  if(focused){var restored=Array.from(box.querySelectorAll(focused.text?'[data-th-text]':'[data-th-date]')).find(function(node){return (node.dataset.thText||node.dataset.thDate)===focused.id;});if(restored){restored.focus({preventScroll:true});if(focused.text)restored.setSelectionRange(focused.start,focused.end);}}
   box.querySelectorAll('[data-th-pick]').forEach(function (cb) {
     cb.onchange = function () {
       thSelected[cb.dataset.thPick] = cb.checked;
@@ -257,7 +262,7 @@ window.thBulk = async function (action) {
   await thApi('bulk', { ids: ids, action: action });
   thSelected = {};
   scToast('Готово');
-  await loadThreads();
+  await loadThreads(true);
 };
 
 window.thBulkDate = function () {
@@ -279,20 +284,22 @@ window.thBulkDate = function () {
       });
       thSelected = {};
       scToast('Расставлено: ' + (res.changed || 0));
-      await loadThreads();
+      await loadThreads(true);
     }
   );
 };
 
 window.thSaveText = async function (el) {
-  await thApi('update', { id: el.dataset.thText, text: el.value });
-  scToast('Сохранено');
+  var id=el.dataset.thText,value=el.value;
+  try{await thApi('update',{id:id,text:value});var post=thState.posts.find(function(p){return p.id===id;});if(post)post.text=value;if(thDrafts[id]?.text===value)delete thDrafts[id].text;scToast('Сохранено');}
+  catch(error){scToast('Не удалось сохранить: '+error.message,true);}
 };
 
 window.thSetDate = async function (el) {
   var v = el.value ? new Date(new Date(el.value + ':00.000Z').getTime() - 3 * 3600000).toISOString() : null;
-  await thApi('update', { id: el.dataset.thDate, scheduledAt: v });
-  await loadThreads();
+  var id=el.dataset.thDate,value=el.value;
+  try{await thApi('update',{id:id,scheduledAt:v});if(thDrafts[id]?.date===value)delete thDrafts[id].date;await loadThreads(true);}
+  catch(error){scToast('Не удалось сохранить: '+error.message,true);}
 };
 
 // Быстрое удаление одного поста: кнопка-корзина рядом с «Опубликовать».
@@ -301,7 +308,7 @@ window.thDeleteOne = async function (id) {
   await thApi('bulk', { ids: [id], action: 'delete' });
   delete thSelected[id];
   scToast('Пост удалён');
-  await loadThreads();
+  await loadThreads(true);
 };
 
 window.thPublishOne = async function (id) {
@@ -346,7 +353,7 @@ function thWatch() {
   var ticks = 0;
   var timer = setInterval(async function () {
     ticks += 1;
-    await loadThreads();
+    await loadThreads(true);
     if (ticks > 12) clearInterval(timer);
   }, 12000);
   loadThreads();
@@ -372,9 +379,9 @@ document.getElementById('th-save-conn').onclick = async function () {
     token: document.getElementById('th-token').value,
     postTime: document.getElementById('th-time').value
   });
-  document.getElementById('th-token').value = '';
+  document.getElementById('th-token').value = '';thScheduleDirty=false;
   scToast(res.note || 'Сохранено');
-  await loadThreads();
+  await loadThreads(true);
 };
 
 document.getElementById('th-check').onclick = async function () {
@@ -395,7 +402,7 @@ document.getElementById('th-add').onclick = function () {
     async function (box) {
       var res = await thApi('add', { text: box.querySelector('#th-m-text').value });
       scToast(res.ok ? ('Добавлено постов: ' + res.added) : (res.message || 'Пусто'), !res.ok);
-      await loadThreads();
+      await loadThreads(true);
     }
   );
 };
@@ -411,10 +418,12 @@ document.getElementById('th-plan').onclick = async function () {
     everyDays: document.getElementById('th-every').value
   });
   scToast('Расставлено постов: ' + (res.changed || 0));
-  await loadThreads();
+  await loadThreads(true);
 };
 
-document.getElementById('th-refresh').onclick = loadThreads;
+document.getElementById('th-refresh').onclick = function(){loadThreads(true);};
+document.getElementById('th-time').addEventListener('input',function(){thScheduleDirty=true;});
+document.getElementById('th-list').addEventListener('input',function(event){var node=event.target,id=node.dataset.thText||node.dataset.thDate;if(!id)return;(thDrafts[id]||(thDrafts[id]={}))[node.dataset.thText?'text':'date']=node.value;});
 
 document.querySelectorAll('#threads-view .sc-tab[data-th-filter]').forEach(function (tab) {
   tab.onclick = function () {

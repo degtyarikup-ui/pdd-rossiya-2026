@@ -1,6 +1,7 @@
 // Админский учёт экономики. Платежи и сроки Premium здесь не изменяются.
 // Доход включает продажи магазинов по тарифу; выплаты магазинов — справочные.
 import { handlePlategaBalances } from './economy_platega.js';
+import { mapAdminReads } from './admin_reads.js';
 
 export const DEFAULT_ECONOMY_CONFIG = {
   usdRate: 95,
@@ -245,15 +246,23 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
   const monthStart = Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), 1);
   const calendarPeriodStart = period === 'month' ? monthStart : period === '30d' ? calendarNow - 29 * DAY : 0;
   const periodStart = period === 'all' ? 0 : calendarPeriodStart - MOSCOW_OFFSET;
-  const config = await getEconomyConfig(env);
+  const [config, orderKeys, users] = await Promise.all([
+    getEconomyConfig(env), listAll(env, 'pay_order:'),
+    typeof deps.listUserSummaries === 'function' ? deps.listUserSummaries(env) : [],
+  ]);
+  const orders = await mapAdminReads(orderKeys, async key => {
+    try { return JSON.parse(await env.INSTALLS.get(key.name)); }
+    catch (_) { return null; }
+  });
   const receipts = [], estimatedReceipts = [];
   const knownDates = [];
   const revenueByStore = { web: 0, appstore: 0, googleplay: 0, rustore: 0, other: 0 };
   const remember = value => { const time = timestamp(value); if (time !== null && time <= now) knownDates.push(time); return time; };
   let webConfirmedOrdersCount = 0;
-  for (const key of await listAll(env, 'pay_order:')) {
+  for (let index = 0; index < orderKeys.length; index++) {
+    const key = orderKeys[index];
     try {
-      const order = JSON.parse(await env.INSTALLS.get(key.name));
+      const order = orders[index];
       // Возврат сохраняет confirmedAt. Историческая дата подтверждения
       // не делает chargebacked/canceled/mismatch оплату доходом.
       if (!order || (order.status ? order.status !== 'confirmed' : !order.confirmedAt)) continue;
@@ -271,12 +280,20 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
       if (!isTest || !config.excludeTestOrders) { revenueByStore.web += amount; webConfirmedOrdersCount++; }
     } catch (_) { /* Повреждённая отдельная запись не скрывает всю страницу. */ }
   }
-  let users = [];
-  if (typeof deps.listUserSummaries === 'function') users = await deps.listUserSummaries(env);
+  const fullUsers = await mapAdminReads(users, async user => {
+    const source = String(user.premiumSource || '').toLowerCase();
+    if ((!['appstore', 'googleplay', 'rustore'].includes(source) && !user.purchasedAt && !user.storeVerifiedAt)
+      || Object.hasOwn(user, 'verifiedPurchase')) return user;
+    // KV metadata deliberately omits receipts/tokens. Read the full profile only
+    // for store candidates; callers already providing full records need no reread.
+    try { return JSON.parse(await env.INSTALLS.get('user:' + user.id) || 'null') || user; }
+    catch (_) { return user; }
+  });
   const storeCounts = { web: 0, appstore: 0, googleplay: 0, rustore: 0, admin_grant: 0 };
   let activePayingCount = 0;
   const seenTransactions = new Set();
-  for (const user of users) {
+  for (let index = 0; index < users.length; index++) {
+    const user = users[index];
     remember(user.createdAt);
     const source = String(user.premiumSource || '').toLowerCase();
     const expiry = timestamp(user.premiumExpiresAt);
@@ -285,8 +302,7 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
       if (['web', 'appstore', 'googleplay', 'rustore'].includes(source)) activePayingCount++;
     }
     if (!['appstore', 'googleplay', 'rustore'].includes(source) && !user.purchasedAt && !user.storeVerifiedAt) continue;
-    let full = user;
-    try { full = JSON.parse(await env.INSTALLS.get('user:' + user.id) || 'null') || user; } catch (_) {}
+    const full = fullUsers[index];
     const purchase = full.verifiedPurchase || {};
     const purchaseSource = String(purchase.store || source).toLowerCase();
     if (!['appstore', 'googleplay', 'rustore'].includes(purchaseSource)) continue;
