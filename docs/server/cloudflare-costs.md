@@ -111,3 +111,11 @@ Hard cutoff, теряющий синхронизацию/оплаты, не вв
 [DO pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/),
 [KV analytics](https://developers.cloudflare.com/kv/observability/metrics-analytics/),
 [DO analytics](https://developers.cloudflare.com/durable-objects/observability/metrics-and-analytics/).
+
+## Автоматический учёт в админке (04.11.2026)
+
+Cloudflare Billing Read подключён к экономике. Закрытые счета заменяют
+распределённый бюджет Cloudflare; потребление текущего цикла отображается
+отдельно, вне прибыли. Счета относятся ко всему аккаунту. Правила валютного
+пересчёта, сверки ручных записей, кэширования и продления токена —
+[источники экономики](../admin/economy-data-sources.md#cloudflare-подключено-04112026).

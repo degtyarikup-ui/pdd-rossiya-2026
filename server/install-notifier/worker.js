@@ -11,6 +11,7 @@ import { NOTIFICATIONS_NAV_HTML, NOTIFICATIONS_VIEW_HTML, NOTIFICATIONS_CLIENT_J
 import { TASKS_NAV_HTML, TASKS_VIEW_HTML, TASKS_CLIENT_JS } from './tasks_ui.js';
 import { handleTasksAdmin } from './tasks_admin.js';
 import { ECONOMY_NAV_HTML, ECONOMY_VIEW_HTML, ECONOMY_CLIENT_JS } from './economy_ui.js';
+import { getCloudflareBilling } from './economy_cloudflare.js';
 import { handleEconomyAdmin } from './economy_admin.js';
 import { mapAdminReads } from './admin_reads.js';
 import { premiumBanner, premiumContextLines, premiumDate } from './premium_message.js';
@@ -4283,6 +4284,9 @@ const workerHandlers = {
   // Суточная сводка — крон в 22:00 МСК (19:00 UTC)
   async scheduled(event, env, ctx) {
     if (!env.INSTALLS) return;
+    if (new Date(event.scheduledTime || Date.now()).getUTCMinutes() === 0) {
+      ctx.waitUntil(cronTask('cloudflare_billing', getCloudflareBilling(env)));
+    }
 
     // Закрытие недельного рейтинга (итоговые места → ачивка «Покоритель
     // рейтинга»): раз в неделю, в пн 00:05 МСК, и страховкой в суточный запуск.

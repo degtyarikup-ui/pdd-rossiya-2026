@@ -1,6 +1,7 @@
 // Админский учёт экономики. Платежи и сроки Premium здесь не изменяются.
 // Доход включает продажи магазинов по тарифу; выплаты магазинов — справочные.
 import { handlePlategaBalances } from './economy_platega.js';
+import { getCloudflareBilling, cloudflareExpenseLines } from './economy_cloudflare.js';
 import { mapAdminReads } from './admin_reads.js';
 
 export const DEFAULT_ECONOMY_CONFIG = {
@@ -246,9 +247,10 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
   const monthStart = Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), 1);
   const calendarPeriodStart = period === 'month' ? monthStart : period === '30d' ? calendarNow - 29 * DAY : 0;
   const periodStart = period === 'all' ? 0 : calendarPeriodStart - MOSCOW_OFFSET;
-  const [config, orderKeys, users] = await Promise.all([
+  const [config, orderKeys, users, cloudflare] = await Promise.all([
     getEconomyConfig(env), listAll(env, 'pay_order:'),
     typeof deps.listUserSummaries === 'function' ? deps.listUserSummaries(env) : [],
+    getCloudflareBilling(env, deps),
   ]);
   const orders = await mapAdminReads(orderKeys, async key => {
     try { return JSON.parse(await env.INSTALLS.get(key.name)); }
@@ -370,11 +372,13 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
   withdrawalSummary.count = withdrawals.length;
   withdrawals.sort((a, b) => timestamp(b.date) - timestamp(a.date));
   config.extraExpenses.forEach(expense => remember(expense.date));
+  (cloudflare.invoices || []).forEach(invoice => remember(invoice.date));
   const budgetStart = period === 'all'
     ? (knownDates.length ? Date.parse(reportDay(Math.min(...knownDates))) : monthStart)
     : calendarPeriodStart;
   const multiplier = budgetMonths(budgetStart, calendarNow);
-  const cloudflareMonthlyRub = config.cloudflareEnabled ? round(config.cloudflareMonthlyUsd * config.usdRate) : 0;
+  const cloudflareBudgetEnabled = config.cloudflareEnabled && !cloudflare.configured;
+  const cloudflareMonthlyRub = cloudflareBudgetEnabled ? round(config.cloudflareMonthlyUsd * config.usdRate) : 0;
   const domainMonthlyRub = config.domainEnabled ? config.domainMonthlyRub : 0;
   const cloudflarePeriodRub = round(cloudflareMonthlyRub * multiplier);
   const domainPeriodRub = round(domainMonthlyRub * multiplier);
@@ -385,10 +389,15 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
     { id: 'builtin-domain', title: 'Домен pdd-drive.ru', amount: config.domainMonthlyRub, currency: 'RUB', frequency: 'monthly',
       date: dayString(budgetStart), endDate: null, builtin: true, source: 'domain', basis: 'budget',
       periodRub: domainPeriodRub, monthlyRub: domainMonthlyRub, occurrences: null },
-  ].filter(line => line.source === 'cloudflare' ? config.cloudflareEnabled : config.domainEnabled);
+  ].filter(line => line.source === 'cloudflare' ? cloudflareBudgetEnabled : config.domainEnabled);
   let extraExpensesRub = 0, oneOffRub = 0, recurringRub = lines.reduce((sum, line) => sum + line.periodRub, 0);
   let monthlyRub = cloudflareMonthlyRub + domainMonthlyRub;
+  const imported = cloudflareExpenseLines(cloudflare, config.extraExpenses, config.usdRate, dayString(calendarPeriodStart), reportDay(now));
+  lines.push(...imported.lines);
+  oneOffRub += imported.lines.reduce((sum, line) => sum + line.periodRub, 0);
+  monthlyRub += (cloudflare.subscriptions || []).reduce((sum, item) => sum + item.usd * config.usdRate, 0);
   for (const expense of config.extraExpenses) {
+    if (imported.replaced.has(expense.id)) continue;
     const amountRub = expense.amount * (expense.currency === 'USD' ? config.usdRate : 1);
     const count = occurrences(expense, calendarPeriodStart, calendarNow);
     const periodRub = round(amountRub * count);
@@ -420,9 +429,9 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
   estimatedReceipts.sort((a, b) => timestamp(b.date) - timestamp(a.date));
   const estimatedStoresRub = round(estimatedReceipts.reduce((sum, receipt) => sum + ((!receipt.isTest || !config.excludeTestOrders) ? receipt.amountRub : 0), 0));
   return {
-    period, updatedAt: new Date(now).toISOString(),
+    period, updatedAt: new Date(now).toISOString(), cloudflare,
     periodInfo: { from: dayString(budgetStart), to: reportDay(now), timeZone: 'Europe/Moscow',
-      budgetMonths: Math.round(multiplier * 10000) / 10000, infrastructureBasis: 'prorated_monthly_budget',
+      budgetMonths: Math.round(multiplier * 10000) / 10000, infrastructureBasis: cloudflare.configured ? 'cloudflare_invoices_and_domain_budget' : 'prorated_monthly_budget',
       allTimeStartBasis: period === 'all' ? 'earliest_known_record' : undefined },
     config,
     revenue: { grossRub: grossRevenueRub, webRub: round(revenueByStore.web), appstoreRub: round(revenueByStore.appstore),
@@ -433,7 +442,7 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
     receipts, estimatedReceipts, withdrawals, withdrawalSummary,
     expenses: { totalRub: totalExpensesRub, monthlyRub: round(monthlyRub), recurringRub: round(recurringRub), oneOffRub: round(oneOffRub),
       paymentFeesRub, withdrawalFeesRub: withdrawalSummary.feeRub,
-      lines, cloudflare: { usd: config.cloudflareMonthlyUsd, rub: cloudflarePeriodRub, monthlyRub: cloudflareMonthlyRub, enabled: config.cloudflareEnabled, basis: 'budget' },
+      lines, cloudflare: { usd: cloudflare.configured ? null : config.cloudflareMonthlyUsd, rub: cloudflare.configured ? round(imported.lines.reduce((sum, line) => sum + line.periodRub, 0)) : cloudflarePeriodRub, monthlyRub: cloudflare.configured ? round((cloudflare.subscriptions || []).reduce((sum, item) => sum + item.usd * config.usdRate, 0)) : cloudflareMonthlyRub, enabled: cloudflare.configured || config.cloudflareEnabled, basis: cloudflare.configured ? 'invoice' : 'budget' },
       domain: { rub: domainPeriodRub, monthlyRub: domainMonthlyRub, enabled: config.domainEnabled, basis: 'budget' },
       ai: { usd: Number(aiCostUsd.toFixed(6)), rub: aiCostRub, periodRub: aiPeriodRub, scope: 'all',
         includedInTotal: aiIncluded, available: aiValues[0] !== null && aiValues[0] !== undefined,
@@ -455,6 +464,10 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
 }
 export async function handleEconomyAdmin(request, env, url, deps = {}) {
   const path = url.pathname;
+  if (path === '/api/admin/economy/cloudflare/sync' && request.method === 'POST') {
+    try { return reply({ ok: true, ...await getCloudflareBilling(env, { ...deps, force: true }) }); }
+    catch (error) { return reply({ ok: false, error: error.message }, 503); }
+  }
   if (path === '/api/admin/economy/platega' && request.method === 'GET') return handlePlategaBalances(env, deps);
   if (path === '/api/admin/economy/stats' && request.method === 'GET') {
     const period = url.searchParams.get('period') || 'month';

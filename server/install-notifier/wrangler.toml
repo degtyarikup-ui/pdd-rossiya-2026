@@ -13,6 +13,7 @@ enabled = true
 invocation_logs = false
 
 [vars]
+CLOUDFLARE_BILLING_ACCOUNT_ID = "a4eee3dae596a9dd9ea14dc123874f9d"
 ACCOUNT_STATE_REQUIRED = "true"
 SOCIAL_PUBLISHER_REQUIRED = "true"
 SOCIAL_QUEUE_REQUIRED = "true"

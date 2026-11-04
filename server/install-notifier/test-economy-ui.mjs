@@ -342,3 +342,21 @@ if (process.argv.includes('--serve')) {
     }
   });
 }
+
+if (!process.argv.includes('--serve')) test('Cloudflare invoices are read-only in current ledger and archive; settings save and mobile layout work', { timeout: 60000 }, async () => {
+ const {chromium}=createRequire(import.meta.url)('playwright');const preview=await startPreview();
+ preview.env.CLOUDFLARE_BILLING_TOKEN=crypto.randomUUID();preview.env.CLOUDFLARE_BILLING_ACCOUNT_ID='fixture';
+ await preview.env.INSTALLS.put('economy_cloudflare_v1',JSON.stringify({accountId:'fixture',updatedAt:new Date().toISOString(),pending:0,invoices:[{id:'today',amount:10.15,currency:'USD',date:day(),receipt:'IN-TODAY'},{id:'old',amount:5,currency:'USD',date:day(-60),receipt:'IN-OLD'}],usage:{usd:0.15,from:day(-10),to:day(),services:[{name:'Durable Objects',usd:0.15}]},subscriptions:[{name:'Workers Paid',usd:5}]}));
+ const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
+ try {
+ const page=await browser.newPage({viewport:{width:1440,height:1100}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(preview.url+'/admin#economy');await page.locator('#ec-cloudflare-panel').waitFor({state:'visible'});
+ await page.locator('#ec-cloudflare-panel summary').click();assert.match(await page.locator('#ec-cloudflare-body').innerText(),/весь|всего аккаунта/);
+ await page.locator('#ec-receipts-body [data-detail-key="expense:cloudflare:today"]').first().click();assert.match(await page.locator('#ec-fields').innerText(),/IN-TODAY/);assert.equal(await page.locator('#ec-submit').isVisible(),false);await page.locator('#ec-cancel').click();
+ await page.locator('#ec-expense-register summary').click();await page.locator('#ec-expenses-body [data-detail-key="expense:cloudflare:old"]').first().click();assert.match(await page.locator('#ec-fields').innerText(),/IN-OLD/);await page.locator('#ec-cancel').click();
+ await page.locator('#ec-settings').click();await page.locator('#ec-submit').click();await page.locator('#ec-dialog').waitFor({state:'hidden'});
+ await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
+ if(process.env.ECONOMY_UI_SCREENSHOTS){await mkdir(new URL('../../output/cloudflare-billing/',import.meta.url),{recursive:true});await page.locator('#ec-cloudflare-panel').screenshot({path:fileURLToPath(new URL('../../output/cloudflare-billing/mobile-panel.png',import.meta.url))});}
+ assert.deepEqual(errors,[]);
+ }finally{await browser.close();await preview.close();}
+});
