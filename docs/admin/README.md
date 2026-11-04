@@ -135,6 +135,9 @@ python3 tools/blog_admin/build_worker_catalog.py --existing output/blog-catalog-
 
 ## Экономика
 
+Проверенные API, ограничения точности и план импорта магазинных отчётов —
+[финансовые источники](economy-data-sources.md).
+
 `economy_admin.js` хранит параметры и ручные записи в `economy_config` (KV).
 `economy_ui.js` показывает продажи, расходы, прибыль и компактное распределение;
 основной список — единый журнал с поиском и фильтрами. «+ Операция» добавляет
