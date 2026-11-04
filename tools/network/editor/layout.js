@@ -40,6 +40,26 @@ const Layout = (() => {
   // A street with a dividing strip (median, m) is that much wider: the strip in the middle, the lanes beside it.
   const medianOf = (st) => (st.kind === "yard" ? 0 : Number(st.median) || (st.kind === "highway" ? 3 : 0));
   const widthOf = (st) => kindOf(st).width + medianOf(st);
+  const controlsPlayer = (scene) => !!scene.layout && !scene.layout.preserveSource;
+  const planGenerated = (scene, item) => !!item.planGenerated &&
+    String(item.id || "").startsWith(scene.layout?.generatedPrefix || "plan_");
+
+  // A native outline is already editable. Adding a street must not turn an
+  // approximate lane detector into the source of all existing scene geometry.
+  function ensureEditablePlan(scene) {
+    if (scene.layout) return scene.layout;
+    const native = ["roads", "markings", "lawns", "routes"].some(key => scene[key]?.length);
+    const layout = { nodes: [], streets: [] };
+    if (native) {
+      const ids = Object.values(scene).filter(Array.isArray).flat().map(item => String(item?.id || ""));
+      let prefix = "plan_", suffix = 1;
+      while (ids.some(id => id.startsWith(prefix))) prefix = `plan${++suffix}_`;
+      layout.preserveSource = true;
+      layout.generatedPrefix = prefix;
+    }
+    scene.layout = layout;
+    return layout;
+  }
 
   // Highway ends continue 3+3 unless the author explicitly requests an avenue port.
   const highwayPort = (st, end) => st.ends?.[end]?.port === "avenue" ? "avenue" : "highway";
@@ -448,6 +468,13 @@ const Layout = (() => {
         roads.push({ id: `road_${n.id}`, auto: true, outer: circle(xy(n), Math.max(...at.map(st => streetProfile(L,st,st.a === n.id ? 0 : polyLen(centreline(L,st)),crop).width)) / 2, 40), holes: [] });
       }
     }
+    if (L.preserveSource) {
+      const prefix = L.generatedPrefix || "plan_";
+      for (const list of [roads, markings, lawns]) for (const item of list) {
+        item.id = prefix + item.id;
+        item.planGenerated = true;
+      }
+    }
     return { roads, markings, lawns };
   }
 
@@ -562,14 +589,14 @@ const Layout = (() => {
 
   // Free question pose is separate from the entry street: roads/paint and the connector to the
   // continuous city stay unchanged. The pose is persisted in the layout, never inferred from a route.
-  const isFreePlayer = (scene) => scene.layout?.player?.mode === "free";
+  const isFreePlayer = (scene) => controlsPlayer(scene) && scene.layout.player?.mode === "free";
   function playerPose(scene) {
     const pose = isFreePlayer(scene) && scene.layout.player.pose;
     return pose ? { x: Number(pose.x), z: Number(pose.z), yaw: Number(pose.yaw) || 0 }
       : { ...scene.stop, yaw: Number(scene.stop?.yaw) || 0 };
   }
   function setPlayerMode(scene, mode) {
-    if (!scene.layout) return false;
+    if (!controlsPlayer(scene)) return false;
     const plan = streetPlayerPlan(scene);
     if (!plan) return false;
     const pl = scene.layout.player = { ...(scene.layout.player || {}), street: plan.st.id, toward: plan.nid };
@@ -605,10 +632,14 @@ const Layout = (() => {
     route.manual = true;
     delete route.auto;
     if (isFreePlayer(scene) && route.kind === "manoeuvre") route.playerFreeEdited = true;
-    if (scene.layout && route.kind === "approach") route.playerApproachEdited = true;
+    if (controlsPlayer(scene) && route.kind === "approach") route.playerApproachEdited = true;
   }
   function setPlayerRouteManual(scene, route, manual) {
     if (!route) return;
+    if (!controlsPlayer(scene)) {
+      if (manual) editPlayerRoute(scene, route);
+      return;
+    }
     if (manual) {
       // This explicit conversion happens before the user selects a control point.
       // Point drags call editPlayerRoute instead, which must never renumber vertices.
@@ -666,6 +697,7 @@ const Layout = (() => {
     return true;
   }
   function playerPlan(scene) {
+    if (!controlsPlayer(scene)) return null;
     const plan = streetPlayerPlan(scene);
     if (!plan || !isFreePlayer(scene)) return plan;
     const p = playerPose(scene);
@@ -779,7 +811,7 @@ const Layout = (() => {
   // the player or touching authored street/free-mode paths. Opening a scene
   // can then offer the new controls as an undoable, unsaved editor change.
   function refreshPlayerRoutes(scene) {
-    if (!scene.layout) return scene;
+    if (!controlsPlayer(scene)) return scene;
     const fresh = new Map(generateRoutes(scene).routes.map(r => [r.id, r]));
     for (const route of scene.routes || []) {
       if (!route.auto || route.manual || !["approach", "manoeuvre"].includes(route.kind)) continue;
@@ -1079,6 +1111,9 @@ const Layout = (() => {
   }
 
   function generateRoutes(scene) {
+    if (scene.layout?.preserveSource) return {
+      routes: scene.routes || [], stop: scene.stop, exitWidths: scene.exitWidths, approachWidth: scene.approachWidth,
+    };
     const ordinary = streetRoutes(scene);
     return isFreePlayer(scene) && ordinary.stop ? freeRoutes(scene, ordinary) : ordinary;
   }
@@ -1086,6 +1121,15 @@ const Layout = (() => {
   // Replaces the generated items of a scene by the plan's (the user's own roads, marks, routes stay).
   function apply(scene) {
     if (!scene.layout) return scene;
+    if (scene.layout.preserveSource) {
+      const generated = generate(scene);
+      for (const key of ["roads", "markings", "lawns"]) {
+        if (scene[key] !== undefined || generated[key].length) {
+          scene[key] = [...(scene[key] || []).filter(item => !planGenerated(scene, item)), ...generated[key]];
+        }
+      }
+      return scene;
+    }
     if (!scene.layout.streets.length) {
       // Every street removed: what the plan made goes too (the stop stays where it was).
       for (const key of ["roads", "markings", "lawns", "routes"]) scene[key] = (scene[key] || []).filter((x) => !x.auto);
@@ -1626,6 +1670,7 @@ const Layout = (() => {
   }
 
   return {
+    controlsPlayer, ensureEditablePlan, planGenerated,
     medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf, streetProfile, highwayPort, setHighwayPort,
     applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, pavedEnd, setPavedEnd, PAVED_MAX, snapPoint, overlapsStreet, addStreet, removeStreet, removeNode, moveNode, moveNodes, setStreetGeometry, mergeNodes, connectNode,
     splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading, laneOffsets,

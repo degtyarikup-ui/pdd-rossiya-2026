@@ -1743,7 +1743,7 @@ const Scene3D = (() => {
     }
     if (!hidden.has("marks")) {
       for (const m of model.markings || []) {
-        if (m.auto) continue;
+        if (App.isGeneratedSurface(m, model)) continue;
         const ref = { t: "marking", id: m.id };
         if (skip(ref)) continue;
         if (m.type === "bus_stop" && (BusStopMark.polygons(m).some(polygon=>inside(w,polygon)) || lineHit(BusStopMark.line(m),wpp*6))) return ref;
@@ -1767,12 +1767,12 @@ const Scene3D = (() => {
       }
     }
     for (const l of model.lawns || []) {
-      if (l.auto) continue;
+      if (App.isGeneratedSurface(l, model)) continue;
       const ref = { t: "lawn", id: l.id };
       if (!skip(ref) && inside(w, l.outer)) return ref;
     }
     for (const r of model.roads) {
-      if (r.auto) continue;
+      if (App.isGeneratedSurface(r, model)) continue;
       for (let k = 0; k < (r.holes || []).length; k++) {
         const ref = { t: "road", id: r.id, part: k };
         if (!skip(ref) && inside(w, r.holes[k])) return ref;
@@ -1781,7 +1781,7 @@ const Scene3D = (() => {
       if (!skip(ref) && inside(w, r.outer)) return ref;
     }
     for (const m of model.markings || []) {
-      if (m.auto || m.points) continue;
+      if (App.isGeneratedSurface(m, model) || m.points) continue;
       const ref = { t: "marking", id: m.id };
       if (!skip(ref) && (m.polygons || []).some((p) => inside(w, p.outer))) return ref;
     }

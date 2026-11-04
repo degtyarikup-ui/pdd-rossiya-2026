@@ -53,7 +53,20 @@ const App = (() => {
   // ---- the scene's objects --------------------------------------------------------------------
   const S = () => state.S;
   // The scene with a road plan to find lanes in: its own, or the one detected for a traced scene.
-  const planScene = () => (state.S && state.S.layout ? state.S : state.S && state.plan ? { ...state.S, layout: state.plan } : null);
+  const hasPlayerPlan = scene => !!scene?.layout && !scene.layout.preserveSource;
+  function planScene() {
+    if (hasPlayerPlan(state.S)) return state.S;
+    if (!state.S) return null;
+    const added = state.S.layout?.preserveSource ? state.S.layout : null;
+    if (!added?.streets.length) return state.plan ? {...state.S, layout:state.plan} : null;
+    // Lane suggestions may combine detected native roads and authored additions;
+    // this temporary graph never replaces either source or the player's routes.
+    const base = state.plan || {nodes:[],streets:[]}, prefix = added.generatedPrefix || "plan_";
+    return {...state.S, layout:{...base,
+      nodes:[...base.nodes, ...added.nodes.map(node => ({...node, id:prefix+node.id}))],
+      streets:[...base.streets, ...added.streets.map(street => ({...street, id:prefix+street.id, a:prefix+street.a, b:prefix+street.b}))],
+    }};
+  }
   function objectOf(ref) {
     const s = state.S;
     if (!s || !ref) return null;
@@ -85,6 +98,14 @@ const App = (() => {
     if (ref.t === "road") return ref.part >= 0 ? o.holes[ref.part] : o.outer;
     return null;
   }
+  function shapeCenter(ref) {
+    const points = pointsOfRef(ref) || [];
+    if (!points.length) return [0, 0];
+    return [0, 1].map(axis => (Math.min(...points.map(p => p[axis])) + Math.max(...points.map(p => p[axis]))) / 2);
+  }
+  const isGeneratedSurface = (item, scene = state.S) => !!item && (scene?.layout?.preserveSource
+    ? Layout.planGenerated(scene, item) : !!item.auto);
+  const isNativeShape = ref => ["road", "lawn"].includes(ref.t) && !isGeneratedSurface(objectOf(ref));
   const isPaint = (ref) => objectOf(ref)?.type === "paint";
   const layerOf = (ref) => ({ decor: "decor", track: "roads", sign: "signs", actor: "actors", officer: "actors", light: "lights", route: "routes", marking: "marks", lawn: "roads",
     road: "roads", street: "roads", node: "roads", bend: "roads", stop: "actors" }[ref.t]);
@@ -135,14 +156,33 @@ const App = (() => {
   }
   // One undo step around fn (which changes state.S). The road plan rebuilds what it makes.
   let lastMergedEdit = null;
+  function actorIntents() {
+    if (!state.S?.layout?.preserveSource) return null;
+    return new Map((state.S.actors || []).map(actor => [actor.id, JSON.stringify([
+      actor.pos, actor.yaw, actor.way, actor.behaviour?.staysPut, actor.track,
+      state.S.routes.find(route => route.id === (actor.route || `actor_${actor.id}`))?.manual,
+    ])]));
+  }
+  function refreshEditedActors(before) {
+    if (!before) return;
+    const after = actorIntents(), plan = planScene();
+    if (!after || !plan) return;
+    const actors = state.S.actors.filter(actor => before.get(actor.id) !== after.get(actor.id));
+    if (!actors.length) return;
+    const subset = {...state.S, actors};
+    Layout.applyActors(subset, plan);
+    state.S.routes = subset.routes;
+  }
   function edit(fn, opts = {}) {
     if (!state.S) return;
     const before = snapshotText();
+    const intents = opts.rebuild !== false ? actorIntents() : null;
     const result = fn(state.S);
     if (opts.rebuild !== false) {
       if (state.S.layout) Layout.apply(state.S);
       if (state.S.tracks) Tracks.apply(state.S);
       if (!state.S.layout && state.plan) Layout.applyActors(state.S, planScene());
+      refreshEditedActors(intents);
     }
     const after = snapshotText();
     if (after === before) return result;
@@ -164,16 +204,18 @@ const App = (() => {
     dragGeneration++;
   }
   function dragMove(fn, opts = {}) {
+    const intents = opts.rebuild !== false ? actorIntents() : null;
     fn(state.S);
     if (opts.rebuild !== false) {
       if (state.S.layout) Layout.apply(state.S);
       if (state.S.tracks) Tracks.apply(state.S);
       if (!state.S.layout && state.plan) Layout.applyActors(state.S, planScene());
+      refreshEditedActors(intents);
     }
     Scene3D.refresh(state.S);
     App.renderSelection?.();
     App.refreshRoadGeometry?.();
-    if (opts.rebuild !== false) schedulePreview(true);
+    if (opts.rebuild !== false || opts.surfaces) schedulePreview(true);
   }
   function endDrag(opts = {}) {
     if (dragBase === null) return;
@@ -331,7 +373,7 @@ const App = (() => {
     setSceneSection(sid);
     // A traced scene has no road plan: one detected from its roads finds the lanes and ways of its cars.
     state.plan = null;
-    if (!state.S.layout && sid !== "mini_regulator") api(`/api/layout/detect/${sid}`).then((d) => { if (state.id === sid) { state.plan = d.layout; App.renderInspector?.(); } }).catch(() => {});
+    if (!hasPlayerPlan(state.S) && sid !== "mini_regulator") api(`/api/layout/detect/${sid}`).then((d) => { if (state.id === sid) { state.plan = d.layout; App.renderInspector?.(); } }).catch(() => {});
     state.findings = r.findings;
     state.edges = r.edges;
     state.build = r.build;
@@ -349,7 +391,7 @@ const App = (() => {
           [...(state.S.roads || []),...(state.S.lawns || [])].some(item => item.auto && item.id === f.ref?.id)))) {
       Layout.apply(state.S);
     }
-    if (state.S.layout) Layout.refreshPlayerRoutes(state.S);
+    if (hasPlayerPlan(state.S)) Layout.refreshPlayerRoutes(state.S);
     if (state.virtual) state.savedJson = snapshotText();
     if (snapshotText() !== state.savedJson) {
       state.undo.push(state.savedJson);
@@ -497,6 +539,7 @@ const App = (() => {
     const kinds = new Set(state.sel.map((r) => r.t));
     const all = [];
     if (!kinds.size || kinds.has("street")) (s.layout?.streets || []).forEach(st => all.push({t:"street",id:st.id}));
+    if (!kinds.size || kinds.has("road")) s.roads.filter(r => !isGeneratedSurface(r)).forEach(r => all.push({t:"road",id:r.id,part:-1}));
     if (!kinds.size || kinds.has("sign")) (s.signs || []).forEach(o => all.push({t:"sign",id:o.id}));
     if (!kinds.size || kinds.has("officer")) (s.officers || []).forEach(o => all.push({t:"officer",id:o.id}));
     if (!kinds.size || kinds.has("decor")) s.decor.forEach((d) => all.push({ t: "decor", id: d.id }));
@@ -520,7 +563,7 @@ const App = (() => {
       }
     } else if (ref.t === "stop") {
       if (Layout.isFreePlayer(s)) return Layout.movePlayer(s, [s.stop.x + dx, s.stop.z + dz]);
-      if (s.layout) return;
+      if (hasPlayerPlan(s)) return;
       s.stop.x = r3(s.stop.x + dx); s.stop.z = r3(s.stop.z + dz);
       const ap = s.routes.find((r) => r.id === "approach");
       if (ap && ap.points) ap.points.forEach(shift);
@@ -560,7 +603,7 @@ const App = (() => {
       }
       const delta = nodes.size ? Layout.moveNodes(s, [...nodes], [dx, dz]) : [dx, dz];
       list.filter(r => !["node", "street"].includes(r.t)).forEach(r => moveRef(s, r, ...delta));
-    }, {merge:"nudge:" + list.map(r => `${r.t}:${r.id}`).sort().join("|")});
+    }, {merge:"nudge:" + list.map(r => `${r.t}:${r.id}`).sort().join("|"), rebuild:!list.every(isNativeShape)});
   }
   // Arrow keys move along the screen, whichever way the view is turned (snapped to the axes when close).
   function nudgeScreen(right, up, step) {
@@ -586,7 +629,7 @@ const App = (() => {
     if (ref.t === "stop") return Layout.isFreePlayer(state.S);
     if (ref.t === "route") return o.kind === "annotation";
     if (ref.t === "street") return state.sel.length === 1;
-    return ["decor","sign","actor","officer","light","marking","lawn","road"].includes(ref.t) && !o.auto;
+    return ["decor","sign","actor","officer","light","marking","lawn","road"].includes(ref.t) && !isGeneratedSurface(o);
   }
   function rotate(deg) {
     const list = state.sel.filter(canRotate);
@@ -610,7 +653,7 @@ const App = (() => {
         const rings = ref.t === "route" ? [o.points] : ref.t === "marking" ? (o.points ? [o.points] : o.polygons.flatMap((p) => [p.outer, ...(p.holes || [])]))
           : ref.t === "road" && ref.part >= 0 ? [o.holes[ref.part]] : [o.outer, ...(o.holes || [])];
         const all = rings.flat();
-        const cx = all.reduce((t, p) => t + p[0], 0) / all.length, cz = all.reduce((t, p) => t + p[1], 0) / all.length;
+        const [cx, cz] = isNativeShape(ref) ? shapeCenter(ref) : [all.reduce((t, p) => t + p[0], 0) / all.length, all.reduce((t, p) => t + p[1], 0) / all.length];
         const c = Math.cos(a), n = Math.sin(a);
         rings.forEach((ring) => ring.forEach((p) => {
           const x = p[0] - cx, z = p[1] - cz;
@@ -618,7 +661,7 @@ const App = (() => {
           p[1] = r3(cz + x * n + z * c);
         }));
       }
-    }, {merge:"rotate"});
+    }, {merge:"rotate", rebuild:!list.every(isNativeShape)});
   }
   const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a <= -Math.PI) a += 2 * Math.PI; return a; };
 
@@ -632,7 +675,7 @@ const App = (() => {
   const COPYABLE = ["decor", "sign", "actor", "officer", "light", "marking", "lawn"];
   function canCopy(ref) {
     const o = objectOf(ref);
-    return o && !isLocked(ref) && (COPYABLE.includes(ref.t) && !o.auto || ref.t === "route" && o.kind === "annotation");
+    return o && !isLocked(ref) && (COPYABLE.includes(ref.t) && !isGeneratedSurface(o) || ref.t === "route" && o.kind === "annotation");
   }
   function selectionCopies() {
     return state.sel.filter(canCopy).map(ref => {
@@ -665,6 +708,7 @@ const App = (() => {
     }
     o.id = uniqueId(prefix, taken);
     delete o.auto;
+    delete o.planGenerated;
     const ref = { t: c.t, id: o.id };
     s[listKey].push(o);
     if (c.t === "actor") {
@@ -724,7 +768,7 @@ const App = (() => {
     const o = objectOf(ref);
     return o && !isLocked(ref) && ref.t !== "stop" &&
       !(ref.t === "route" && (o.auto || ["approach","manoeuvre","guide"].includes(o.kind))) &&
-      !(["marking","road","lawn"].includes(ref.t) && o.auto);
+      !(["marking","road","lawn"].includes(ref.t) && isGeneratedSurface(o));
   }
   async function remove() {
     const list = state.sel.filter(r => !isLocked(r));
@@ -737,13 +781,13 @@ const App = (() => {
       const o = objectOf(ref);
       if (ref.t === "route" && ["manoeuvre", "guide"].includes(o?.kind) && ref.v === 0) return toast("Эта точка закреплена у автомобиля игрока", "warn");
       if (ref.t === "route" && state.S.id === "mini_regulator" && ((o?.kind === "manoeuvre" && ref.v === 0) || (o?.kind === "approach" && ref.v === pts.length - 1))) return toast("Эта точка закреплена у автомобиля игрока", "warn");
-      if (ref.t === "route" && o?.kind === "approach" && state.S.layout && (!o.manual || ref.v === 0 || ref.v === pts.length - 1)) return toast("Начало подъезда закреплено у въезда, конец — у игрока", "warn");
+      if (ref.t === "route" && o?.kind === "approach" && hasPlayerPlan(state.S) && (!o.manual || ref.v === 0 || ref.v === pts.length - 1)) return toast("Начало подъезда закреплено у въезда, конец — у игрока", "warn");
       edit(() => {
         if (ref.t === "route" && o) {
           Layout.editPlayerRoute(state.S, o);
         }
         pts.splice(ref.v, 1);
-      });
+      }, {rebuild:!isNativeShape(ref)});
       return select({ ...ref, v: undefined });
     }
     const hidesPlayerGuide = state.S.id !== "mini_regulator" && list.some(r => r.t === "route" && ["manoeuvre", "guide"].includes(objectOf(r)?.kind));
@@ -989,7 +1033,7 @@ const App = (() => {
   }
 
   return {
-    state, planScene, api, toast, confirm: confirmBox, esc, ic, r3, objectOf, pointsOfRef, isPaint, layerOf, catalogSize, sameRef, nameOf,
+    state, planScene, hasPlayerPlan, api, toast, confirm: confirmBox, esc, ic, r3, objectOf, pointsOfRef, shapeCenter, isGeneratedSurface, isPaint, layerOf, catalogSize, sameRef, nameOf,
     edit, beginDrag, dragMove, endDrag, cancelDrag, undo, redo, changed, openScene, sceneTitle, save, setPlayable, runInGame,
     select, toggle, pickable, isLocked, moveRef, nudge, canRotate, canCopy, canRemoveObject, rotate, copy, paste, duplicate, remove, setPlayerGuideVisible, selectPlayerPath, resetPlayerGuide, uniqueId, toggleHidden, toggleLocked,
     renderTop, showHome, setView, plural, thumbRev, boot, loadList,

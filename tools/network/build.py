@@ -250,10 +250,37 @@ def authored_rails(scene: dict):
     return unary_union(parts) if parts else Polygon()
 
 
+def plan_generated(scene: dict, item: dict) -> bool:
+    layout = scene.get("layout") or {}
+    return bool(layout.get("preserveSource") and item.get("planGenerated")
+                and str(item.get("id", "")).startswith(layout.get("generatedPrefix", "plan_")))
+
+
+def plan_road_id(scene: dict, node_id: str) -> str:
+    layout = scene.get("layout") or {}
+    prefix = layout.get("generatedPrefix", "plan_") if layout.get("preserveSource") else ""
+    return f"{prefix}road_{node_id}"
+
+
 def road_geometry(scene: dict):
     """(road without islands, islands, all roads) as shapely geometry, inside the crop square.
     A tram track is paved too: where it leaves the road (into a depot) the kerb and the pavement
     open for it, the way a driveway does."""
+    if (scene.get("layout") or {}).get("preserveSource"):
+        # Keep the native contours' original regularisation, edge alignment and
+        # islands. An added street contributes its own surface without shaving
+        # off part of an existing cul-de-sac or cutting it with a new median.
+        native = {**scene, "roads": [r for r in scene.get("roads", []) if not plan_generated(scene, r)]}
+        native.pop("layout", None)
+        road, islands, all_roads = road_geometry(native)
+        added = [r for r in scene.get("roads", []) if plan_generated(scene, r)]
+        if not added:
+            return road, islands, all_roads
+        overlay = {**scene, "roads": added, "tracks": [], "actors": [],
+                   "layout": {**scene["layout"], "preserveSource": False}}
+        extra_road, extra_islands, extra_all = road_geometry(overlay)
+        return (road.union(extra_road).difference(islands),
+                islands.union(extra_islands.difference(road)), all_roads.union(extra_all))
     filled, holes = [], []
     for line in track_lines(scene):
         filled.append(line.buffer(TRACK_BED / 2, cap_style=2, join_style=1))
@@ -543,7 +570,7 @@ def ground(scene: dict):
 def roadside_roads(scene, key):
     """Include junction fillers only when all adjoining arms share the roadside."""
     layout = scene.get("layout") or {}
-    nodes = {f"road_{n['id']}": n['id'] for n in layout.get("nodes", [])}
+    nodes = {plan_road_id(scene, n['id']): n['id'] for n in layout.get("nodes", [])}
     def enabled(r):
         return bool(r.get("shoulder")) if key == "shoulder" else r.get("walk") is not False
     roads = scene.get("roads", [])
@@ -566,7 +593,7 @@ def sidewalk_support(scene: dict):
     roads = scene.get("roads", [])
     if not any(r.get("walk") is False for r in roads):
         return None
-    nodes = {f"road_{n['id']}" for n in (scene.get("layout") or {}).get("nodes", [])}
+    nodes = {plan_road_id(scene, n['id']) for n in (scene.get("layout") or {}).get("nodes", [])}
     enabled = roadside_roads(scene, "walk")
     if not enabled:
         return Polygon()
@@ -667,7 +694,8 @@ def build(scene: dict) -> dict:
         poly = polygon_of(item)
         # Generated roadside grass must yield to the adjoining street's sidewalk.
         # Hand-drawn lawns retain the author's explicit pavement cut-outs.
-        if support is not None and item.get("auto") and str(item.get("id", "")).startswith("auto_lawn_"):
+        prefix = (scene.get("layout") or {}).get("generatedPrefix", "plan_") if plan_generated(scene, item) else ""
+        if support is not None and item.get("auto") and str(item.get("id", "")).startswith(prefix + "auto_lawn_"):
             roadside_polys.append(poly)
             continue
         lawn_polys.append(poly)
@@ -697,7 +725,7 @@ def build(scene: dict) -> dict:
         # As in crossroads: the rounded corners beside a dirt arm are dirt, not asphalt.
         # A junction's own outline (road_<node>) is no paved road there; its fillet
         # pieces that touch the dirt road go to the dirt, the rest stays asphalt.
-        nodes = {f"road_{n.get('id')}" for n in scene["layout"].get("nodes", [])}
+        nodes = {plan_road_id(scene, n.get('id')) for n in scene["layout"].get("nodes", [])}
         junctions = [r for r in scene.get("roads", []) if r.get("id") in nodes and r.get("surface") != "sand"]
         if junctions:
             streets = unary_union([polygon_of(r) for r in scene.get("roads", [])
@@ -771,7 +799,7 @@ def build(scene: dict) -> dict:
         paved = road.difference(sand).buffer(-0.05).buffer(0.05)
         field, shoulder = soft_ground(sand, paved, roads_all.union(pavement).union(islands).union(rural_shoulder), box)
         surfaces.extend(field)
-    if scene.get("layout"):
+    if scene.get("layout") and not scene["layout"].get("preserveSource"):
         # A scene laid out from a road plan (the editor) has its own ground everywhere else: the baked
         # scene's old roads (where the plan has none now) are covered, and the game drops them (covers()).
         v, t = triangulate(box.difference(roads_all.union(pavement).union(shoulder)))

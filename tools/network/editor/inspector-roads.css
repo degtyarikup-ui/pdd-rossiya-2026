@@ -43,3 +43,10 @@
 #inspector .road-coordinates input { width: 100%; min-width: 0; font-variant-numeric: tabular-nums; }
 #inspector .road-sheet .road-straighten { justify-self: start; min-height: 25px; padding: 3px 6px; }
 #inspector .road-sheet .road-straighten:disabled { opacity: .4; background: transparent; }
+
+#inspector .shape-point-fields { display: grid; grid-template-columns: minmax(0, .95fr) repeat(2, minmax(0, 1fr)); gap: 7px; }
+#inspector .shape-point-fields label { display: grid; gap: 4px; min-width: 0; font-size: 11px; color: var(--ink-2); }
+#inspector .shape-point-fields input { min-width: 0; width: 100%; font-variant-numeric: tabular-nums; }
+#inspector .shape-point-fields .point-index input { flex: 1; width: 0; padding-inline: 4px; }
+#inspector .shape-point-fields + .path-actions .btn { min-width: 0; }
+#inspector .shape-point-fields + .path-actions .btn:disabled { opacity: .4; }

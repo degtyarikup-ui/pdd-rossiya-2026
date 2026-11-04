@@ -364,51 +364,21 @@ const Tools = (() => {
     App.toast("Готово: дороги, разметка и маршруты построены", "good");
   }
 
-  // Turns a traced scene into a road plan matching it (the server finds the arms at the sides).
-  async function convertScene() {
+  // Authored outlines are already editable. Keep the compatibility entry point
+  // for old controls, but never reconstruct a source road from detected exits.
+  function editRoads() {
     const s = S();
-    if (!s || s.layout || App.state.locked.has("roads")) return;
-    const snapshot = JSON.stringify(s);
-    const r = await App.api(`/api/layout/detect/${s.id}`).catch(e => {
-      if (roadEditStillCurrent(s, snapshot)) App.toast(e.message, "bad");
-      return null;
-    });
-    if (!r || !roadEditStillCurrent(s, snapshot)) return;
-    // Islands of the old roads stay (a roundabout's island is the plan's own): each as a small road with
-    // the island cut out, so the builder keeps the kerb round it.
-    const ring = r.layout.nodes.find((n) => n.ring);
-    // Only islands that lie well inside the new carriageway: one on a widening the plan does not have would
-    // stick out over the pavement.
-    const planned = Layout.generate({ ...s, layout: r.layout }).roads;
-    const inPoly = (p, poly) => {
-      let c = false;
-      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-        const [xi, zi] = poly[i], [xj, zj] = poly[j];
-        if ((zi > p[1]) !== (zj > p[1]) && p[0] < ((xj - xi) * (p[1] - zi)) / (zj - zi) + xi) c = !c;
-      }
-      return c;
-    };
-    const holes = s.roads.flatMap((road) => road.holes || []);
-    const islands = holes.filter((h) => {
-      const c = h.reduce((a, p) => [a[0] + p[0] / h.length, a[1] + p[1] / h.length], [0, 0]);
-      if (ring && Math.hypot(c[0] - ring.x, c[1] - ring.z) < ring.ring.island + 3) return false;
-      return h.every((p) => planned.some((road) => inPoly(p, road.outer)));
-    });
-    const dropped = holes.length - islands.length - (ring ? 1 : 0);
-    App.edit((sc) => {
-      sc.layout = r.layout;
-      sc.roads = islands.map((h, k) => {
-        const c = h.reduce((a, p) => [a[0] + p[0] / h.length, a[1] + p[1] / h.length], [0, 0]);
-        return { id: `island_${k + 1}`, outer: h.map((p) => [r3(c[0] + (p[0] - c[0]) * 1.25), r3(c[1] + (p[1] - c[1]) * 1.25)]), holes: [h] };
-      });
-      sc.lawns = [];
-      sc.markings = (sc.markings || []).filter((m) => m.type !== "paint");
-      sc.routes = sc.routes.filter((x) => ["choice", "actor", "guide", "annotation"].includes(x.kind));
-    });
-    App.toast(dropped > 0 ? `Дороги в конструкторе. Островков на расширениях убрано: ${dropped} — ⌘Z вернёт` : "Дороги теперь можно править как в конструкторе", dropped > 0 ? "warn" : "good");
+    if (!s || App.state.locked.has("roads")) return;
+    const road = s.roads.find(r => !App.isGeneratedSurface(r));
+    const street = s.layout?.streets[0];
     set("select");
+    if (road) App.select({t: "road", id: road.id});
+    else if (street) App.select({t: "street", id: street.id});
+    else App.select([]);
+    App.showInspector?.();
     return s;
   }
+  const convertScene = editRoads;
 
   // ---- the pointer ---------------------------------------------------------------------------
   function onPointer(e) {
@@ -435,6 +405,7 @@ const Tools = (() => {
   }
 
   const skipLocked = (ref) => !App.pickable(ref);
+  const authoredSurface = ref => ["road", "lawn", "marking"].includes(ref.t) && !App.isGeneratedSurface(App.objectOf(ref));
 
   // Select and move.
   const select = {
@@ -448,11 +419,11 @@ const Tools = (() => {
         const at = AnswerMark.position(App.objectOf({t:"route",id:h.id}));
         drag = {kind:"letter",id:h.id, offset:e.world ? [at[0]-e.world.x,at[1]-e.world.z] : [0,0]}; return;
       }
-      if (h.t === "stop" && S().layout) { App.select({ t: "stop" }); App.beginDrag(); drag = { kind: "stop" }; return; }
+      if (h.t === "stop" && Layout.controlsPlayer(S())) { App.select({ t: "stop" }); App.beginDrag(); drag = { kind: "stop" }; return; }
       if (h.point) {
         App.select({ ...h, v: h.v });
         App.beginDrag();
-        drag = { kind: "point", ref: h, moved: false };
+        drag = { kind: "point", ref: h, moved: false, rawSurface: authoredSurface(h) };
         return;
       }
       if (h.t === "bend") {
@@ -468,8 +439,8 @@ const Tools = (() => {
       const already = App.state.sel.some((r) => App.sameRef(r, h));
       if (e.shift) { App.toggle(h); return; }
       // Road bodies and handles can be grabbed immediately. The screen-space threshold keeps
-      // an ordinary click from moving them; traced outlines and lawns still select first.
-      const thing = h === e.labelRef || ["decor", "sign", "actor", "officer", "light", "node", "street", "stop"].includes(h.t);
+      // an ordinary click from moving them; lawns still select first.
+      const thing = h === e.labelRef || ["decor", "sign", "actor", "officer", "light", "node", "street", "road", "stop"].includes(h.t);
       if (!already) App.select(h);
       if (!already && !thing) return;
       // Alt copies objects; for road geometry it temporarily disables snapping.
@@ -489,7 +460,7 @@ const Tools = (() => {
       const linked = nodeRef && Layout.streetsAt(S().layout, nodeRef.id);
       const anchor = linked?.length === 1 && Layout.nodeOf(S().layout, linked[0].a === nodeRef.id ? linked[0].b : linked[0].a);
       drag = { kind: "move", start: e.world, last: e.world, screen: [e.sx, e.sy], moved: false,
-        refs, nodeRef, nodeIds: [...nodeIds], applied: [0, 0],
+        refs, nodeRef, nodeIds: [...nodeIds], applied: [0, 0], rawSurface: refs.length > 0 && refs.every(authoredSurface),
         offset: node ? [node.x - e.world.x, node.z - e.world.z] : [0, 0],
         anchor: anchor ? [anchor.x, anchor.z] : null };
     },
@@ -548,7 +519,7 @@ const Tools = (() => {
           const o = App.objectOf(ref);
           if (ref.t === "route" && ["manoeuvre", "guide"].includes(o?.kind) && ref.v === 0) return;
           if (ref.t === "route" && S().id === "mini_regulator" && ((o?.kind === "manoeuvre" && ref.v === 0) || (o?.kind === "approach" && ref.v === o.points.length - 1))) return;
-          if (ref.t === "route" && o?.kind === "approach" && S().layout && (!o.manual || ref.v === 0 || ref.v === o.points.length - 1)) return;
+          if (ref.t === "route" && o?.kind === "approach" && Layout.controlsPlayer(S()) && (!o.manual || ref.v === 0 || ref.v === o.points.length - 1)) return;
           if (ref.t === "route" && o) {
             Layout.editPlayerRoute(S(), o);
           }
@@ -563,7 +534,7 @@ const Tools = (() => {
               if (a) a.pos = [pts[0][0], pts[0][1]];
             }
           }
-        });
+        }, drag.rawSurface ? {rebuild: false, surfaces: true} : {});
       }
       if (drag.kind === "bend") {
         if (!drag.moved && !pastDragThreshold(e)) return;
@@ -612,7 +583,7 @@ const Tools = (() => {
           } else { dx = e.world.x - drag.last.x; dz = e.world.z - drag.last.z; }
           drag.last = e.world;
           for (const ref of drag.refs) if (!["node", "street"].includes(ref.t)) App.moveRef(s, ref, dx, dz);
-        });
+        }, drag.rawSurface ? {rebuild: false, surfaces: true} : {});
       }
     },
     up(e) {
@@ -635,7 +606,7 @@ const Tools = (() => {
           if (joined) App.select({t: "node", id: joined});
         }
       }
-      if (["turn", "point", "bend", "letter", "stop"].includes(d.kind) || d.moved) App.endDrag();
+      if (["turn", "point", "bend", "letter", "stop"].includes(d.kind) || d.moved) App.endDrag(d.rawSurface ? {rebuild: false} : {});
       else App.cancelDrag();
       clearEditPreview();
       App.renderPanels?.();
@@ -668,7 +639,7 @@ const Tools = (() => {
           Layout.editPlayerRoute(S(), o);
         }
         pts.splice(best + 1, 0, [r3(e.world.x), r3(e.world.z)]);
-      });
+      }, authoredSurface(ref) ? {rebuild: false} : {});
       App.select({ ...ref, v: best + 1 });
     },
   };
@@ -742,10 +713,9 @@ const Tools = (() => {
       if (!draft) setHover(null);
       else showSegment(e, anchor, at, target, occupied);
     },
-    async down(e) {
+    down(e) {
       if (!e.world) return;
       const s = S();
-      const first = !s.layout;
       const snapped = Layout.snapPoint(s.layout ? s : { ...s, layout: { nodes: [], streets: [] } }, [e.world.x, e.world.z]);
       if (!draft) {
         draft = {points: [snapped.p], roadSteps: [{point: snapped.p, snapshot: JSON.stringify(s)}]};
@@ -755,20 +725,8 @@ const Tools = (() => {
       const a = draft.points.at(-1), b = snapped.p;
       if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 3) return finishDraft();
       if (s.layout && Layout.overlapsStreet(s.layout, a, b)) return App.toast("Этот участок уже занят дорогой", "warn");
-      if (first && (s.roads.length || s.markings.length || s.routes.some(r => !["choice","actor","guide","annotation"].includes(r.kind)))) {
-        const drawing = draft, snapshot = JSON.stringify(s);
-        const replace = await App.confirm("Заменить основу дороги?", "В этой сцене дорога нарисована вручную. Первый участок заменит её контуры и связанную с ними разметку.", "Построить");
-        if (draft !== drawing) return;
-        if (!replace || !roadEditStillCurrent(s, snapshot)) return finishDraft(true);
-      }
       App.edit((sc) => {
-        if (!sc.layout) {
-          sc.layout = { nodes: [], streets: [] };
-          // A traced scene starts its plan from nothing: its old road copy is replaced.
-          sc.roads = sc.roads.filter((r) => r.auto);
-          sc.markings = (sc.markings || []).filter((m) => m.type !== "paint");
-          sc.routes = sc.routes.filter((r) => ["choice", "actor", "guide", "annotation"].includes(r.kind));
-        }
+        Layout.ensureEditablePlan(sc);
         Layout.addStreet(sc, a, b, opts.roadKind);
       });
       draft.roadSteps.splice(draft.points.length, Infinity, {point: b, snapshot: JSON.stringify(s)});
@@ -795,7 +753,7 @@ const Tools = (() => {
       if (!e.world) return;
       if (App.state.locked.has("marks")) return App.toast("Слой разметки заблокирован", "warn");
       const s = S(), p = [snapGrid(e.world.x, e), snapGrid(e.world.z, e)];
-      if ((opts.mark === "stop" || opts.mark === "zebra") && s.layout) return toggleEnd(p, opts.mark);
+      if ((opts.mark === "stop" || opts.mark === "zebra") && Layout.controlsPlayer(s)) return toggleEnd(p, opts.mark);
       if (!draft) draft = { points: [] };
       if (sameDraftPoint(p)) return;
       draft.points.push(p);
@@ -1346,7 +1304,7 @@ const Tools = (() => {
     input.addEventListener('pointerdown',e=>e.stopPropagation());
     input.addEventListener('blur',()=>finish(false));input.focus();input.select();
   }
-  return { editText, init, set, current, list: () => LIST, escape, enter, fitSelection, pickProp, pickActor, pickSign, pickLight, drawPathFor, drawAnswerRoute, convertScene,
+  return { editText, init, set, current, list: () => LIST, escape, enter, fitSelection, pickProp, pickActor, pickSign, pickLight, drawPathFor, drawAnswerRoute, editRoads, convertScene,
     get touchDraggable() { return tool !== "answer" && !!HANDLERS[tool]?.up; },
     applyTemplate, renderBar, lightSpot, rotateBrush, get opts() { return opts; } };
 })();

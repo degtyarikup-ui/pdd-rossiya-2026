@@ -284,13 +284,13 @@
         const tracks = (s.tracks || []).map(track => ({ t: "track", id: track.id }));
         if (s.layout) {
           return [...s.layout.nodes.filter((n) => Layout.nodeKind(s.layout, n, s.crop || 90) === "junction" || n.ring).map((n) => ({ t: "node", id: n.id })),
-            ...s.layout.streets.map((st) => ({ t: "street", id: st.id })), ...s.roads.filter((r) => !r.auto).map((r) => ({ t: "road", id: r.id, part: -1 })),
-            ...s.lawns.filter((l) => !l.auto).map((l) => ({ t: "lawn", id: l.id })), ...tracks];
+            ...s.layout.streets.map((st) => ({ t: "street", id: st.id })), ...s.roads.filter((r) => !App.isGeneratedSurface(r)).map((r) => ({ t: "road", id: r.id, part: -1 })),
+            ...s.lawns.filter((l) => !App.isGeneratedSurface(l)).map((l) => ({ t: "lawn", id: l.id })), ...tracks];
         }
         return [...s.roads.flatMap((r) => [{ t: "road", id: r.id, part: -1 }, ...(r.holes || []).map((_, k) => ({ t: "road", id: r.id, part: k }))]),
           ...s.lawns.map((l) => ({ t: "lawn", id: l.id })), ...tracks];
       }
-      case "marks": return s.markings.filter((m) => !m.auto).map((m) => ({ t: "marking", id: m.id }));
+      case "marks": return s.markings.filter((m) => !App.isGeneratedSurface(m)).map((m) => ({ t: "marking", id: m.id }));
       case "routes": return s.routes.filter((r) => r.kind !== "actor").map((r) => ({ t: "route", id: r.id }));
       case "actors": return [{ t: "stop" }, ...s.actors.map((a) => ({ t: "actor", id: a.id })), ...(s.officers || []).map((o) => ({ t: "officer", id: o.id }))];
       case "lights": return s.lights.map((l) => ({ t: "light", id: l.id }));

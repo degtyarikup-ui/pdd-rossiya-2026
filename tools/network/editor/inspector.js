@@ -209,7 +209,7 @@
     if (state.id === "mini_regulator") return regulatorInspector(p);
     const s = state.S, q = s.question || {};
     const routes = s.routes.filter((r) => r.kind === "manoeuvre").map((r) => r.exit);
-    const plan = s.layout ? Layout.playerPlan(s) : null;
+    const plan = App.hasPlayerPlan(s) ? Layout.playerPlan(s) : null;
     const lanes = plan && !Layout.isFreePlayer(s) ? (plan.lanes || Layout.laneOffsets(plan.st)) : [];
     const laneItems = lanes.length === 2
       ? [{ value: 0, title: "Левая" }, { value: 1, title: "Правая" }]
@@ -225,7 +225,7 @@
     const approved = assistant && s.assistantReview.status === "approved" && state.playable;
     const maneuver = chips("maneuver", ["left", "straight", "right", "uturn"].map(k => ({
       value:k, icon:Catalog.EXITS[k].icon, tip:Catalog.EXITS[k].title,
-      disabled:k !== "straight" && !routes.includes(k) && !s.layout,
+      disabled:k !== "straight" && !routes.includes(k) && !App.hasPlayerPlan(s),
     })), q.maneuver, {cls:"arrows"});
     const speeds = [{value:"", title:"Нет"}, ...[20,40,60].map(v => ({value:v, tip:`${v} км/ч`, html:`<span class="speed-sign">${v}</span>`}))];
     const waits = [{value:"", title:"Нет"}, ...[2,5].map(v => ({value:v, title:`${v} с`}))];
@@ -242,9 +242,7 @@
         + (s.actors.length ? propertyRow("Уступить", `<div class="yield-choices">${yields}</div>`) : ""), {cls:"property-fields"})}
       ${playerGuideCard(q)}
       ${card("", propertyRow("Кадр вопроса", button("frame", "Настроить", "video", "ghost"))
-        + propertyRow("Дороги", `<div class="insp-actions">${s.layout
-          ? button("select-roads", "Все дороги", "road", "ghost") + button("templates", "Шаблоны", "junction", "ghost")
-          : button("convert", "В конструктор", "road", "ghost")}</div>`)
+        + propertyRow("Дороги", `<div class="insp-actions">${button("select-roads", "Все дороги", "road", "ghost") + button("templates", "Шаблоны", "junction", "ghost")}</div>`)
         + propertyRow("Выезды", `<div class="edges"><span class="edge-box" aria-hidden="true"><i class="e-n ${side("n")}"></i><i class="e-s ${side("s")}"></i><i class="e-e ${side("e")}"></i><i class="e-w ${side("w")}"></i>${ic("junction")}</span>
           <span class="${edgeMismatch ? "warn" : ""}">${edgeMismatch ? "Разная ширина" : Object.values(edges).filter(Boolean).length}</span></div>`), {cls:"property-fields"})}
       <section class="card" id="checks">${sceneChecks()}
@@ -279,7 +277,6 @@
       frame: () => Framing.start(),
       photo: () => Framing.openPhoto(),
       pin: () => Framing.pin(true),
-      convert: () => Tools.convertScene(),
       finding: (d) => focusFinding(state.findings[Number(d.i)]),
     });
   }
@@ -297,8 +294,9 @@
     else if (ref.type === "light") r = { t: "light", id: ref.id };
     else if (ref.type === "prop" && ref.id) r = { t: "decor", id: ref.id };
     else if (ref.type === "stop") r = { t: "stop" };
-    if (r && r.t === "road" && s.roads.find((x) => x.id === r.id)?.auto) {
-      const st = s.layout?.streets.find((x) => `road_${x.id}` === r.id);
+    if (r && r.t === "road" && App.isGeneratedSurface(s.roads.find((x) => x.id === r.id))) {
+      const prefix = s.layout?.preserveSource ? s.layout.generatedPrefix || "plan_" : "";
+      const st = s.layout?.streets.find((x) => `${prefix}road_${x.id}` === r.id);
       r = st ? { t: "street", id: st.id } : null;
     }
     if (!r) return;
@@ -318,7 +316,10 @@
   const fieldTitle = (title, value) => `<div class="setting-title"><span>${esc(title)}</span>${mixedBadge(value === undefined)}</div>`;
   const selectionActions = () => `<div class="selection-actions">${button("select-roads", "Все дороги", "road", "ghost small")}${button("clear-selection", "Снять выбор", "x", "ghost small")}</div>`;
   const selectionHandlers = {
-    "select-roads": () => App.select((state.S.layout?.streets || []).map(st => ({t:"street",id:st.id})).filter(App.pickable)),
+    "select-roads": () => App.select([
+      ...(state.S.layout?.streets || []).map(st => ({t:"street",id:st.id})),
+      ...state.S.roads.filter(road => !App.isGeneratedSurface(road)).map(road => ({t:"road",id:road.id,part:-1})),
+    ].filter(App.pickable)),
     "clear-selection": () => App.select([]),
   };
   function changeSelected(refs, type, fn, opts) {
@@ -520,7 +521,7 @@
   function actorInspector(p, ref, a) {
     const s = state.S;
     const plan = App.planScene();
-    const lane = !!plan && Catalog.ACTORS[a.type]?.lane && (s.layout || a.way || !a.route);
+    const lane = !!plan && Catalog.ACTORS[a.type]?.lane && (App.hasPlayerPlan(s) || a.way || !a.route);
     const ways = lane ? Layout.waysFrom(plan, a.pos, a.yaw) : [];
     const PAINTS = [null, "#F2F3F5", "#B9C0C7", "#2B2F36", "#C0392B", "#317ED4", "#1F3A5F", "#4D7768", "#E8C547", "#F08A24", "#8A6E4B"];
     const route = a.route && s.routes.find((r) => r.id === a.route);
@@ -842,6 +843,7 @@
 
   // ---- the road plan: a street, a node -----------------------------------------------------------
   App.refreshRoadGeometry = () => {
+    App.refreshShapeGeometry?.();
     if (!state.S?.layout || state.sel.length !== 1) return;
     const ref = state.sel[0], L = state.S.layout;
     const update = (key, value) => {
@@ -913,7 +915,7 @@
       const dx = here.x-there.x, dz = here.z-there.z;
       return Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? "Слева" : "Справа") : (dz > 0 ? "Сверху" : "Снизу");
     };
-    const pl = Layout.playerPlan(s), isPlayer = pl?.st.id === st.id;
+    const pl = App.hasPlayerPlan(s) ? Layout.playerPlan(s) : null, isPlayer = pl?.st.id === st.id;
     const direction = allEnds.map(e => {
       const where = {junction:"к перекрёстку", ring:"к кольцу", border:"к краю"}[e.kind] || "к концу";
       return `<option value="${esc(e.nid)}" ${isPlayer && pl.nid === e.nid ? "selected" : ""}>${endLabel(e)} · ${where}</option>`;
@@ -946,7 +948,7 @@
         </div><button class="btn ghost small road-straighten" data-act="straighten" ${st.bend ? "" : "disabled"}>${ic("road")}<span>Выпрямить</span></button>`, {cls:"road-sheet"})}
       ${roadSettings([st])}
       ${card("", `${st.kind !== "yard" ? `<div class="road-row"><span>Разделитель</span>${chips("median", [...(st.kind === "highway" ? [] : [{value:0,title:"Нет"}]), ...[2,3,5].map(value => ({value,title:`${value} м`}))], Layout.medianOf(st))}</div>` : ""}
-        <label class="road-row"><span>Игрок</span><select data-text="player-end" aria-label="Направление игрока">${!isPlayer ? '<option value="" selected disabled>Не назначен</option>' : ""}${direction}</select></label>
+        ${App.hasPlayerPlan(s) ? `<label class="road-row"><span>Игрок</span><select data-text="player-end" aria-label="Направление игрока">${!isPlayer ? '<option value="" selected disabled>Не назначен</option>' : ""}${direction}</select></label>` : ""}
         ${st.kind !== "yard" && st.surface !== "sand" && !st.manualMarks ? button("marks-own","Редактировать линии отдельно","marking","ghost small") : ""}`, {cls:"road-sheet"})}
       ${st.kind === "highway" && highwayEnds.length ? card(highwayEnds.length === 1 ? "Стык трассы" : "", portScheme(), {cls:"road-sheet"}) : ""}
       ${ends.map(endPanel).join("")}
@@ -967,7 +969,7 @@
       straighten: () => { if (st.bend) edit(() => { delete st.bend; }); },
       "marks-own": () => edit((sc) => {
         const own = sc.markings.filter((m) => m.auto && m.street === st.id && (m.type === "solid" || m.type === "dashed"));
-        for (const m of own) sc.markings.push({ ...JSON.parse(JSON.stringify(m)), id: App.uniqueId("mark_", sc.markings.map((x) => x.id)), auto: undefined, street: undefined });
+        for (const m of own) sc.markings.push({ ...JSON.parse(JSON.stringify(m)), id: App.uniqueId("mark_", sc.markings.map((x) => x.id)), auto: undefined, planGenerated: undefined, street: undefined });
         st.manualMarks = true;
       }),
       "marks-auto": () => edit(() => { delete st.manualMarks; }),
@@ -1097,9 +1099,9 @@
     const index = Number.isInteger(ref.v) ? Math.max(0, Math.min(count - 1, ref.v)) : 0;
     // Traced scenes predate the manual flag: any non-generated player route
     // is already authored and must remain editable without a mode switch.
-    const manual = !!route.manual || !route.auto;
+    const manual = !!route.manual || !route.auto || !App.hasPlayerPlan(state.S);
     const anchored = ["manoeuvre", "guide"].includes(route.kind) ? index === 0
-      : !!state.S.layout && (index === 0 || index === count - 1);
+      : App.hasPlayerPlan(state.S) && (index === 0 || index === count - 1);
     const current = sc => sc.routes.find(r => r.id === route.id);
     const anchor = anchored ? (route.kind === "approach" && index === 0 ? "У въезда" : "У автомобиля") : "";
     return {
@@ -1117,7 +1119,7 @@
             if (!r?.points[index]) return;
             Layout.editPlayerRoute(sc, r);
             r.points[index][axis] = r3(Number(v));
-            if (r.kind === "approach" && !sc.layout && index === r.points.length - 1 && sc.stop) {
+            if (r.kind === "approach" && !App.hasPlayerPlan(sc) && index === r.points.length - 1 && sc.stop) {
               sc.stop[axis === 0 ? "x" : "z"] = r.points[index][axis];
             }
           });
@@ -1162,9 +1164,9 @@
     if (state.id === "mini_regulator" && ["approach", "manoeuvre"].includes(r.kind)) return regulatorRouteInspector(p, ref, r);
     if (r.kind === "approach") {
       const points = playerRoutePointTools(ref, r);
-      const manual = !!r.manual || !r.auto;
+      const manual = !!r.manual || !r.auto || !App.hasPlayerPlan(s);
       p.innerHTML = `${head(`<span class="ibadge">${ic("route")}</span>`, "Подъезд игрока")}
-        ${pathMode(manual, !!s.layout, r.points.length, !manual)}${points.html}`;
+        ${pathMode(manual, App.hasPlayerPlan(s), r.points.length, !manual)}${points.html}`;
       bind({
         ...points.handlers,
         "own-path": () => { App.select({t:"route",id:r.id}); App.edit(sc => Layout.setPlayerRouteManual(sc, sc.routes.find(x => x.id === r.id), true)); },
@@ -1255,10 +1257,10 @@
       const points = playerRoutePointTools(ref, r);
       const main = s.question.maneuver === r.exit;
       const guideVisible = s.question?.showPlayerGuide !== false;
-      const manual = !!r.manual || !r.auto;
+      const manual = !!r.manual || !r.auto || !App.hasPlayerPlan(s);
       p.innerHTML = `${head(`<span class="ibadge">${ic(Catalog.EXITS[r.exit]?.icon || "route")}</span>`, `Манёвр · ${Catalog.EXITS[r.exit]?.title.toLowerCase()}`, main ? "Едет игрок" : "")}
         ${main ? "" : card("", button("make-main", "Назначить игроку", "flag", "ghost wide"), {cls:"path-sheet"})}
-        ${guideVisible ? pathMode(manual, !!s.layout, r.points.length) + points.html : ""}
+        ${guideVisible ? pathMode(manual, App.hasPlayerPlan(s), r.points.length) + points.html : ""}
         ${playerGuideCard(s.question)}`;
       bind({
         ...points.handlers,
@@ -1372,13 +1374,116 @@
       },
     });
   }
+  function shapeField(key, label, value, attributes = "") {
+    return `<label>${esc(label)}<input type="number" data-text="${key}" aria-label="${esc(label)}" step="0.001" value="${r3(value)}" required ${attributes}></label>`;
+  }
+  App.refreshShapeGeometry = () => {
+    if (state.sel.length !== 1 || !["road", "lawn"].includes(state.sel[0].t)) return;
+    const ref = state.sel[0], center = App.shapeCenter(ref), points = App.pointsOfRef(ref);
+    if (!center || !points?.length) return;
+    const index = Math.max(0, Math.min(points.length - 1, Number.isInteger(ref.v) ? ref.v : 0));
+    const update = (key, value) => {
+      const field = pane().querySelector(`[data-text="${key}"]`);
+      if (!field || field === document.activeElement) return;
+      field.defaultValue = String(r3(value)); field.value = String(r3(value));
+    };
+    for (const [i, axis] of ["x", "z"].entries()) {
+      update(`shape-center-${axis}`, center[i]);
+      update(`shape-point-${axis}`, points[index][i]);
+    }
+  };
   function shapeInspector(p, ref, o) {
-    const title = App.nameOf(ref);
-    p.innerHTML = `${head(`<span class="ibadge">${ic(ref.t === "lawn" ? "lawn" : "road")}</span>`, title)}
-      ${card("", propertyRow("Поворот", `<div class="insp-actions">${button("rotl", "−15°", "rotl", "ghost")}${button("rotr", "+15°", "rotr", "ghost")}</div>`))}
-      ${ref.t === "road" && !state.S.layout ? card("", button("convert", "Перевести в конструктор", "road", "ghost wide")) : ""}
-      ${card("", ref.t === "road" ? button("del", "Удалить", "trash", "danger ghost wide") : deleteRow())}`;
-    bind({ ...common, rotl: () => App.rotate(-15), rotr: () => App.rotate(15), convert: () => Tools.convertScene() });
+    const title = App.nameOf(ref), road = ref.t === "road", hole = road && ref.part >= 0;
+    const center = App.shapeCenter(ref), points = App.pointsOfRef(ref) || [];
+    if (!center || !points.length) { p.innerHTML = head(ic(road ? "road" : "lawn"), title); bind({}); return; }
+    const index = Math.max(0, Math.min(points.length - 1, Number.isInteger(ref.v) ? ref.v : 0));
+    const point = points[index], next = points[(index + 1) % points.length];
+    const canInsert = Math.hypot(next[0] - point[0], next[1] - point[1]) > .002;
+    const editable = () => !App.isGeneratedSurface(o) && !App.isLocked(ref);
+    const edit = fn => { if (editable()) return App.edit(fn, {rebuild:false}); };
+    const numeric = (key, raw) => {
+      const number = Number(raw);
+      if (String(raw).trim() !== "" && Number.isFinite(number)) return number;
+      const field = pane().querySelector(`[data-text="${key}"]`);
+      if (field) field.value = field.defaultValue;
+      return null;
+    };
+    const move = (axis, raw) => {
+      const value = numeric(`shape-center-${axis}`, raw);
+      if (value === null || !editable()) return false;
+      const current = App.shapeCenter(ref), delta = value - current[axis === "x" ? 0 : 1];
+      if (Math.abs(delta) < .000001) return true;
+      edit(sc => App.moveRef(sc, ref, axis === "x" ? delta : 0, axis === "z" ? delta : 0));
+      return true;
+    };
+    const movePoint = (axis, raw) => {
+      const value = numeric(`shape-point-${axis}`, raw);
+      if (value === null || !editable()) return false;
+      edit(() => { point[axis === "x" ? 0 : 1] = value; });
+      App.select({...ref, v:index});
+      return true;
+    };
+    const surface = chips("shape-surface", [
+      {value:"asphalt", title:"Асфальт", html:'<i class="surface-preview asphalt"></i>'},
+      {value:"sand", title:"Грунт", html:'<i class="surface-preview sand"></i>'},
+    ], o.surface || "asphalt", {cls:"road-surfaces"});
+    const ringChoices = road && o.holes?.length ? `<label class="road-row"><span>Контур</span><select data-text="shape-contour" aria-label="Контур дороги">${[[-1,"Внешний"],...o.holes.map((_,i)=>[i,`Островок ${i+1}`])].map(([value,label])=>`<option value="${value}" ${value === (hole ? ref.part : -1) ? "selected" : ""}>${label}</option>`).join("")}</select></label>` : "";
+    p.innerHTML = `${head(`<span class="ibadge">${ic(road ? "road" : "lawn")}</span>`, title)}
+      ${card("", `<div class="road-coordinates">${shapeField("shape-center-x","X центра, м",center[0])}${shapeField("shape-center-z","Z центра, м",center[1])}</div>
+        <div class="road-row"><span>Поворот</span><div class="insp-actions">${button("rotl","−15°","rotl","ghost small")}${button("rot90","90°","","ghost small")}${button("rotr","+15°","rotr","ghost small")}</div></div>`, {cls:"road-sheet"})}
+      ${road && !hole ? card("", `<div class="road-row"><span>Покрытие</span>${surface}</div>
+        ${o.surface !== "sand" ? toggle("shape-edge","Краевая линия",o.edge !== false) + toggle("shape-walk","Тротуары",o.walk !== false) : ""}
+        ${toggle("shape-shoulder","Обочина",!!o.shoulder)}`, {cls:"road-sheet"}) : ""}
+      ${card("", `${ringChoices}<div class="shape-point-fields">
+        <label>Точка<span class="point-index"><input type="number" data-text="shape-index" aria-label="Номер точки контура" min="1" max="${points.length}" step="1" value="${index+1}" required><small>/ ${points.length}</small></span></label>
+        ${shapeField("shape-point-x","X точки, м",point[0])}${shapeField("shape-point-z","Z точки, м",point[1])}
+        </div><div class="path-actions"><button class="btn ghost small" data-act="shape-insert" ${canInsert ? "" : "disabled"}>${ic("plus")}<span>Вставить точку</span></button>
+          <button class="btn ghost small" data-act="shape-remove-point" ${points.length > 3 ? "" : "disabled"}>${ic("trash")}<span>Удалить точку</span></button></div>`, {cls:"road-sheet"})}
+      ${card("", button("shape-delete", hole ? "Удалить островок" : road ? "Удалить дорогу" : "Удалить газон", "trash", "danger ghost wide"))}`;
+    if (App.isGeneratedSurface(o)) p.querySelectorAll("button, input, select").forEach(field => { field.disabled = true; });
+    bind({
+      "text:shape-center-x": raw => move("x",raw),
+      "text:shape-center-z": raw => move("z",raw),
+      "text:shape-point-x": raw => movePoint("x",raw),
+      "text:shape-point-z": raw => movePoint("z",raw),
+      "text:shape-index": raw => {
+        const value = Number(raw);
+        if (Number.isInteger(value) && value >= 1 && value <= points.length) App.select({...ref, v:value-1});
+      },
+      "text:shape-contour": raw => {
+        const value = Number(raw);
+        if (Number.isInteger(value) && value >= -1 && value < (o.holes?.length || 0)) App.select({t:"road", id:ref.id, part:value});
+      },
+      "chip:shape-surface": value => {
+        if (road && !hole && ["asphalt","sand"].includes(value)) edit(() => { o.surface = value; });
+      },
+      "toggle:shape-edge": on => { if (road && !hole && o.surface !== "sand") edit(() => { o.edge = on; }); },
+      "toggle:shape-walk": on => { if (road && !hole && o.surface !== "sand") edit(() => { o.walk = on; if (on) delete o.shoulder; }); },
+      "toggle:shape-shoulder": on => { if (road && !hole) edit(() => {
+        if (on) { o.shoulder = 2.5; o.walk = false; } else delete o.shoulder;
+      }); },
+      rotl: () => { if (editable()) App.rotate(-15); },
+      rotr: () => { if (editable()) App.rotate(15); },
+      rot90: () => { if (editable()) App.rotate(90); },
+      "shape-insert": () => {
+        if (!canInsert || !editable()) return;
+        edit(() => { points.splice(index+1,0,[(point[0]+next[0])/2,(point[1]+next[1])/2]); });
+        App.select({...ref,v:index+1});
+      },
+      "shape-remove-point": () => {
+        if (points.length <= 3 || !editable()) return;
+        edit(() => { points.splice(index,1); });
+        App.select({...ref,v:Math.min(index,points.length-1)});
+      },
+      "shape-delete": () => {
+        if (!editable()) return;
+        edit(sc => {
+          if (hole) o.holes.splice(ref.part,1);
+          else { const key = road ? "roads" : "lawns"; sc[key] = sc[key].filter(item => item.id !== ref.id); }
+        });
+        App.select(hole ? {t:"road",id:ref.id,part:-1} : []);
+      },
+    });
   }
 
   function shiftPlayerLateral(sc, delta) {
@@ -1401,7 +1506,7 @@
   function stopInspector(p) {
     const s = state.S, q = s.question;
     const routes = s.routes.filter((r) => r.kind === "manoeuvre").map((r) => r.exit);
-    const plan = s.layout ? Layout.playerPlan(s) : null;
+    const plan = App.hasPlayerPlan(s) ? Layout.playerPlan(s) : null;
     const free = Layout.isFreePlayer(s), pose = Layout.playerPose(s);
     const lanes = plan && !Layout.isFreePlayer(s) ? (plan.lanes || Layout.laneOffsets(plan.st)) : [];
     const laneItems = lanes.length === 2
@@ -1416,13 +1521,13 @@
     const distance = plan && !free ? Math.max(0, plan.sd - plan.stopLineDistance - 2.4) : 0;
     p.innerHTML = `${head(`<span class="ibadge">${ic("car")}</span>`, "Игрок")}
       ${card("Манёвр", maneuver, {cls:"path-inline"})}
-      ${s.layout ? card("Привязка", placement, {cls:"path-inline"}) : ""}
+      ${App.hasPlayerPlan(s) ? card("Привязка", placement, {cls:"path-inline"}) : ""}
       ${free ? card("", `<div class="path-coordinates">${[["X, м","playerX",pose.x,.1],["Z, м","playerZ",pose.z,.1],["Угол, °","playerYaw",r3(pose.yaw*180/Math.PI),1]].map(([label,key,v,step])=>`<label>${label}<input type="number" step="${step}" data-text="${key}" value="${v}"></label>`).join("")}</div>
         <div class="turn-row">${dial(pose.yaw)}<div class="insp-actions">${button("rotl", "−15°", "rotl", "ghost")}${button("rot90", "90°", "", "ghost")}${button("rotr", "+15°", "rotr", "ghost")}</div></div>`, {cls:"path-sheet"}) : ""}
       ${lanes.length > 1 ? card("Полоса", chips("lane", laneItems, curLane), {cls:"path-inline"}) : ""}
       ${plan && !free ? card("", slider("questionOffset", "До стоп-линии", distance, 0, Math.min(60, Math.max(0, plan.total - plan.stopLineDistance - 3.4)), .5, `${distance.toFixed(1)} м`)
         + `<button class="btn ghost path-reset" data-act="question-at-line" title="Вернуть к стоп-линии" aria-label="Вернуть к стоп-линии">${ic("restart")}</button>`, {cls:"path-inline path-offset"}) : ""}
-      ${!s.layout ? card("Сдвиг на 3,5 м", `<div class="path-actions">${button("shift-left", "Влево", "arrow-left", "ghost")}${button("shift-right", "Вправо", "arrow-right", "ghost")}</div>`, {cls:"path-inline"}) : ""}
+      ${!App.hasPlayerPlan(s) ? card("Сдвиг на 3,5 м", `<div class="path-actions">${button("shift-left", "Влево", "arrow-left", "ghost")}${button("shift-right", "Вправо", "arrow-right", "ghost")}</div>`, {cls:"path-inline"}) : ""}
       ${s.id !== "mini_regulator" ? playerGuideCard(q) : ""}`;
     const moveFree = (axis, value) => App.edit(sc => { const at = Layout.playerPose(sc), number = Number(value); if (!Number.isFinite(number)) return; at[axis] = number; if (!Layout.movePlayer(sc, [at.x, at.z])) App.toast("Весь автомобиль должен оставаться на проезжей части"); });
     const turnFree = angle => App.edit(sc => { if (!Layout.rotatePlayer(sc, angle)) App.toast("После поворота автомобиль выходит за край дороги"); });

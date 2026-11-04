@@ -17,6 +17,7 @@ function mount(fullSigns = false) {
   const App = { state, esc: value => String(value ?? '').replaceAll('"', '&quot;'), ic: icon => `<svg data-icon="${icon}"></svg>`, thumbRev: {}, sceneTitle: () => 'Билет 1 · вопрос 2',
     objectOf: ref => ref.t === 'decor' ? state.S.decor.find(item => item.id === ref.id) : {}, sameRef: (a, b) => a.t === b.t && a.id === b.id,
     pickable: ref => !state.hidden.has(layerOf(ref)) && !state.locked.has(layerOf(ref)), nameOf: ref => ref.id,
+    isGeneratedSurface: item => !!item.auto,
     select(refs, { add = false } = {}) { state.sel = add ? [...state.sel, ...refs] : refs; }, toast() {} };
   const QuestionPlan = { close() {}, sidebarHtml: (_query, options) => `<div id="question-filter-options" ${options.filtersCollapsed ? 'hidden' : ''}>Subfilters</div>`, filterSummary: () => ({ label: 'Реализуем', count: 1 }), visibleCount: () => 1 };
   const context = vm.createContext({ App, document, QuestionPlan, URLSearchParams, location: { search: '' }, localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },

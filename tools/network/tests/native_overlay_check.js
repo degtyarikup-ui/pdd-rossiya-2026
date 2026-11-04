@@ -1,0 +1,84 @@
+// Native polygon scenes remain the source when new graph streets are added.
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const Layout = require("../editor/layout");
+const clone = value => JSON.parse(JSON.stringify(value));
+const source = JSON.parse(fs.readFileSync(path.join(__dirname,"../../../game_godot/network/ticket_9_14.json"),"utf8"));
+const original = JSON.stringify(source);
+const scene = clone(source);
+const unchanged = s => {
+  const native = clone(s);
+  for (const key of ["roads","markings","lawns"]) if (native[key]) native[key] = native[key].filter(item => !Layout.planGenerated(s,item));
+  delete native.layout;
+  assert.deepEqual(native,source,"adding graph streets rewrote native source data");
+};
+const layout = Layout.ensureEditablePlan(scene);
+assert(layout.preserveSource);
+assert.equal(Layout.controlsPlayer(scene),false);
+assert.equal(Layout.playerPlan(scene),null);
+assert.equal(Layout.setPlayerMode(scene,"free"),false);
+const empty = clone(Layout.apply(scene)); unchanged(scene);
+const ids = Layout.addStreet(scene,[-60,-25],[0,-25],"street");
+assert.equal(ids.length,1);
+Layout.apply(scene); unchanged(scene);
+assert(scene.roads.some(r => r.planGenerated));
+assert(scene.markings.some(r => r.planGenerated));
+const added = clone(scene);
+const street = Layout.streetOf(scene.layout,ids[0]);
+street.bend = [-30,-50];
+Layout.apply(scene); unchanged(scene);
+const bent = clone(scene);
+Layout.moveNodes(scene,[street.a,street.b],[5,2]);
+Layout.apply(scene); unchanged(scene);
+Layout.refreshPlayerRoutes(scene); unchanged(scene);
+const before = JSON.stringify(scene);
+Layout.setPlayerRouteManual(scene,scene.routes.find(r=>r.kind==="approach"),false);
+assert.equal(JSON.stringify(scene),before,"native approach was made automatic without a controlling plan");
+const roundtrip = JSON.parse(JSON.stringify(scene));
+Layout.apply(roundtrip);
+assert.equal(JSON.stringify(roundtrip),JSON.stringify(scene),"save/reopen/regenerate changed an overlay scene");
+for (const id of [...scene.layout.streets.map(st=>st.id)]) Layout.removeStreet(scene,id);
+Layout.apply(scene); unchanged(scene);
+assert.deepEqual(scene.roads,source.roads);
+assert.deepEqual(scene.markings,source.markings);
+assert.deepEqual(scene.routes,source.routes);
+assert.equal(scene.layout.preserveSource,true);
+const deleted = clone(scene);
+// Undo/redo restores the source and ownership namespace together.
+const undo = clone(added); Layout.apply(undo); assert.equal(JSON.stringify(undo),JSON.stringify(added));
+const redo = clone(deleted); Layout.apply(redo); assert.equal(JSON.stringify(redo),JSON.stringify(deleted));
+
+// Existing auto tags are not evidence that a newly added graph owns an item.
+// IDs may also occupy an entire earlier namespace; neither case permits loss.
+const tagged = clone(source);
+tagged.roads[0].auto = true;
+tagged.markings[0].auto = true;
+tagged.routes[0].auto = true;
+tagged.roads.push({id:"plan_road_s1",auto:true,planGenerated:true,outer:[[30,30],[35,30],[35,35],[30,35]],holes:[]});
+const taggedArrays = clone({roads:tagged.roads,markings:tagged.markings,routes:tagged.routes});
+Layout.ensureEditablePlan(tagged);
+assert.equal(tagged.layout.generatedPrefix,"plan2_");
+Layout.addStreet(tagged,[-60,-25],[0,-25]); Layout.apply(tagged);
+assert.deepEqual(tagged.roads.filter(r=>!Layout.planGenerated(tagged,r)),taggedArrays.roads);
+assert.deepEqual(tagged.markings.filter(r=>!Layout.planGenerated(tagged,r)),taggedArrays.markings);
+assert.deepEqual(tagged.routes,taggedArrays.routes);
+assert.equal(new Set(tagged.roads.map(r=>r.id)).size,tagged.roads.length);
+const nativeApproach = tagged.routes.find(r=>r.kind==="approach");
+Layout.editPlayerRoute(tagged,nativeApproach);
+assert(nativeApproach.manual);
+assert.equal(nativeApproach.playerApproachEdited,undefined);
+assert.equal(tagged.layout.approachPath,undefined);
+assert.equal(tagged.layout.paths,undefined);
+
+const plain = {roads:[],markings:[],lawns:[],routes:[]};
+Layout.ensureEditablePlan(plain);
+assert.equal(Layout.controlsPlayer(plain),true,"a genuinely empty scene retains normal construction");
+const existing = {layout:Layout.template("cross"),roads:[]};
+const existingLayout = JSON.stringify(existing.layout);
+Layout.ensureEditablePlan(existing);
+assert.equal(JSON.stringify(existing.layout),existingLayout);
+assert.equal(Layout.controlsPlayer(existing),true);
+assert.equal(JSON.stringify(source),original);
+if (process.argv.includes("--fixtures")) process.stdout.write(JSON.stringify({source,empty,added,bent,deleted,tagged}));
+else console.log("Native overlay PASS: ticket 9·14 contours, paint, routes and player intact; auto-tagged originals, unique IDs, add/edit/remove/undo/reload and normal graph compatibility");
