@@ -1,0 +1,249 @@
+{
+ "schema": 1,
+ "id": "ticket_4_10",
+ "crop": 45,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     -46
+    ],
+    [
+     7,
+     -45
+    ],
+    [
+     7,
+     45
+    ],
+    [
+     7,
+     46
+    ],
+    [
+     -7,
+     46
+    ],
+    [
+     -7,
+     45
+    ],
+    [
+     -7,
+     -45
+    ],
+    [
+     -7,
+     -46
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "solid",
+   "points": [
+    [
+     0,
+     -46
+    ],
+    [
+     0,
+     46
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     -46
+    ],
+    [
+     -3.5,
+     46
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_3",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     -46
+    ],
+    [
+     3.5,
+     46
+    ]
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -5.25,
+     -46
+    ],
+    [
+     -5.25,
+     -13.1
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -5.25,
+     -13.1
+    ],
+    [
+     -5.25,
+     45
+    ]
+   ],
+   "exitYaw": 0
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 4 · Вопрос 10",
+    "title": "По какой полосе проезжей части разрешено движение в населённом пункте, если по техническим причинам транспортное средство не может развивать скорость более 40 км/ч?",
+    "options": [
+     "Только по крайней правой",
+     "Не далее второй полосы",
+     "По любой, кроме крайней левой"
+    ],
+    "explanation": "Транспортные средства, скорость которых не должна превышать 40 км/ч или которые по техническим причинам не могут развивать такую скорость, должны двигаться по крайней правой полосе вне зависимости от того, где и по какой дороге происходит движение. Исключением являются случаи объезда, обгона или перестроения перед поворотом или разворотом.(Пункт 9.5 ПДД)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 4 · Question 10",
+    "title": "On which lane of the carriageway is traffic allowed in the locality, if for technical reasons the vehicle cannot reach a speed of more than 40 km/h?",
+    "options": [
+     "Only on the far right",
+     "No further than the second lane",
+     "On any but the extreme left"
+    ],
+    "explanation": "Vehicles whose speed should not exceed 40 km/h or which, for technical reasons, cannot reach such a speed, must move in the far right lane, regardless of where and on what road the traffic is taking place. The exception is cases of detour, overtaking or changing lanes before a turn or U-turn. (Clause 9.5 of traffic rules)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "4-билет · 10-сұрақ",
+    "title": "Техникалық себептерге байланысты көлік 40 км/сағ-тан жоғары жылдамдыққа жете алмаса, елді мекенде жолдың қай жолағында қозғалысқа рұқсат етіледі?",
+    "options": [
+     "Тек оң жақта",
+     "Екінші жолақтан артық емес",
+     "Сол жақтан басқа кез келген жолақпен"
+    ],
+    "explanation": "Жылдамдығы 40 км/сағ аспауы тиіс немесе техникалық себептер бойынша мұндай жылдамдыққа жете алмайтын көлік құралдары қозғалыс қай жерде және қандай жолда жүріп жатқанына қарамастан оң жақ шеткі жолақпен қозғалуы керек. Айналып өту, басып озу, сондай-ақ бұрылыс немесе кері бұрылыс алдында жолақты ауыстыру ерекшелік болып табылады. (Жол қозғалысы ережелерінің 9.5 тармағы)",
+    "pddRule": ""
+   }
+  },
+  "correct": 0,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "b03c3f13419646bac5d004b0c1cc184a",
+  "sourceCategory": "ab",
+  "sourceImage": null
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "s",
+    "x": 0,
+    "z": -45
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 45
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "n",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "n",
+   "questionAt": 58.1,
+   "lane": 1
+  }
+ },
+ "stop": {
+  "x": -5.25,
+  "z": -13.1,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 14
+ },
+ "approachWidth": 14,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": true,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "sceneFormat": "compact",
+ "questionView": {
+  "centre": [
+   0,
+   4.108
+  ],
+  "height": 25.28,
+  "yaw": 0,
+  "pitch": 0.547,
+  "elevation": 0
+ }
+}

@@ -1,0 +1,91 @@
+{
+ "id": "ticket_5_3",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 5 · Вопрос 3",
+   "title": "Разрешена ли Вам стоянка в указанном месте?",
+   "options": [
+    "Разрешена",
+    "Разрешена только в светлое время суток",
+    "Запрещена"
+   ],
+   "explanation": "Действие знака 3.27 «Остановка запрещена» распространяется от места установки до ближайшего перекрёстка, а при отсутствии перекрестка - до конца населённого пункта. В данном случае до знака 5.24.1 «Конец населённого пункта». Вы имеете право остановиться на обочине за знаком.(«Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 5 · Question 3",
+   "title": "Are you allowed to park in the indicated location?",
+   "options": [
+    "Allowed",
+    "Allowed only during daylight hours",
+    "Prohibited"
+   ],
+   "explanation": "The effect of sign 3.27 “Stopping is prohibited” extends from the installation site to the nearest intersection, and in the absence of an intersection, to the end of the populated area. In this case, up to sign 5.24.1 “End of a populated area.” You have the right to stop on the side of the road behind the sign. (“Road Signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "5-билет · 3-сұрақ",
+   "title": "Сізге көрсетілген жерде тұрақ қоюға рұқсат етілген бе?",
+   "options": [
+    "Рұқсат етілген",
+    "Тек күндізгі уақытта рұқсат етіледі",
+    "Тыйым салынған"
+   ],
+   "explanation": "3.27 «Тоқтауға тыйым салынады» белгісінің әрекеті орнату орнынан ең жақын қиылысқа дейін, ал қиылыс болмаған жағдайда елді мекеннің соңына дейін таралады. Бұл жағдайда 5.24.1 «Елді мекеннің соңы» деген белгіге дейін. Белгінің артындағы жолдың шетінде тоқтауға құқығыңыз бар. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 99,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": true,
+ "sourceQuestionId": "0409a86f19100ec27cfc4ebdf7c3e715",
+ "sourceCategory": "ab",
+ "sourceImage": "3a5beeaca034a8b445f7031a56cb3fb2"
+}

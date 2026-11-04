@@ -1,0 +1,506 @@
+{
+ "schema": 1,
+ "id": "ticket_4_9",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     -91
+    ],
+    [
+     7,
+     -90
+    ],
+    [
+     7,
+     0
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -7,
+     -90
+    ],
+    [
+     -7,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     7,
+     90
+    ],
+    [
+     7,
+     91
+    ],
+    [
+     -7,
+     91
+    ],
+    [
+     -7,
+     90
+    ],
+    [
+     -7,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     6.914,
+     1.095
+    ],
+    [
+     6.657,
+     2.163
+    ],
+    [
+     6.237,
+     3.178
+    ],
+    [
+     5.663,
+     4.114
+    ],
+    [
+     4.95,
+     4.95
+    ],
+    [
+     4.114,
+     5.663
+    ],
+    [
+     3.178,
+     6.237
+    ],
+    [
+     2.163,
+     6.657
+    ],
+    [
+     1.095,
+     6.914
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     -1.095,
+     6.914
+    ],
+    [
+     -2.163,
+     6.657
+    ],
+    [
+     -3.178,
+     6.237
+    ],
+    [
+     -4.114,
+     5.663
+    ],
+    [
+     -4.95,
+     4.95
+    ],
+    [
+     -5.663,
+     4.114
+    ],
+    [
+     -6.237,
+     3.178
+    ],
+    [
+     -6.657,
+     2.163
+    ],
+    [
+     -6.914,
+     1.095
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -6.914,
+     -1.095
+    ],
+    [
+     -6.657,
+     -2.163
+    ],
+    [
+     -6.237,
+     -3.178
+    ],
+    [
+     -5.663,
+     -4.114
+    ],
+    [
+     -4.95,
+     -4.95
+    ],
+    [
+     -4.114,
+     -5.663
+    ],
+    [
+     -3.178,
+     -6.237
+    ],
+    [
+     -2.163,
+     -6.657
+    ],
+    [
+     -1.095,
+     -6.914
+    ],
+    [
+     0,
+     -7
+    ],
+    [
+     1.095,
+     -6.914
+    ],
+    [
+     2.163,
+     -6.657
+    ],
+    [
+     3.178,
+     -6.237
+    ],
+    [
+     4.114,
+     -5.663
+    ],
+    [
+     4.95,
+     -4.95
+    ],
+    [
+     5.663,
+     -4.114
+    ],
+    [
+     6.237,
+     -3.178
+    ],
+    [
+     6.657,
+     -2.163
+    ],
+    [
+     6.914,
+     -1.095
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -5.25,
+     -91
+    ],
+    [
+     -5.25,
+     -17.25
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -5.25,
+     -17.25
+    ],
+    [
+     -5.25,
+     0
+    ],
+    [
+     -5.25,
+     90
+    ],
+    [
+     -5.25,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  },
+  {
+   "id": "choice_А",
+   "kind": "choice",
+   "label": "А",
+   "points": [
+    [
+     -5.5,
+     -15.5
+    ],
+    [
+     -4.5,
+     7
+    ],
+    [
+     3.5,
+     9
+    ],
+    [
+     5,
+     1.5
+    ]
+   ],
+   "labelPosition": [
+    -5.108,
+    2.109
+   ],
+   "manual": true
+  },
+  {
+   "id": "choice_Б",
+   "kind": "choice",
+   "label": "Б",
+   "points": [
+    [
+     -5.5,
+     -16
+    ],
+    [
+     -2.5,
+     -9
+    ],
+    [
+     -1.5,
+     -0.5
+    ],
+    [
+     4,
+     -0.5
+    ],
+    [
+     4.838,
+     -6.894
+    ]
+   ],
+   "labelPosition": [
+    4.559,
+    -3.6
+   ],
+   "manual": true
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 4 · Вопрос 9",
+    "title": "Вам можно выполнить разворот:",
+    "options": [
+     "Только по траектории А",
+     "Только по траектории Б",
+     "По любой траектории из указанных"
+    ],
+    "explanation": "При наличии слева трамвайных путей попутного направления, расположенных на одном уровне с проезжей частью, для выполнения разворота необходимо заблаговременно выехать на трамвайные пути, после чего выполнить маневр. При этом не должно создаваться помех трамваю. Вам можно выполнить разворот только по траектории «Б».(Пункты 8.5, 9.6 ПДД)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 4 · Question 9",
+    "title": "You can make a U-turn:",
+    "options": [
+     "Only along trajectory А",
+     "Only along trajectory Б",
+     "Along any trajectory of the specified"
+    ],
+    "explanation": "If there are tram tracks on the left in the same direction, located at the same level as the roadway, to make a U-turn, you must drive onto the tram tracks in advance and then perform the maneuver. In this case, there should be no interference with the tram. You can only make a turn along trajectory “Б”. (Clause 8.5, 9.6 of traffic rules)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "4-билет · 9-сұрақ",
+    "title": "Сіз кері бұрыла аласыз:",
+    "options": [
+     "Тек А траекториясы бойынша",
+     "Тек Б траекториясы бойынша",
+     "Көрсетілген жолдардың кез келгенінде"
+    ],
+    "explanation": "Егер сол жақта бір бағытта трамвай жолдары болса, жол бөлігімен бір деңгейде орналасқан болса, кері бұрылу үшін алдын ала трамвай жолдарына шығып, содан кейін маневр жасау керек. Бұл жағдайда трамвайға кедергі болмауы керек. Сіз тек «Б» траекториясы бойынша кері бұрылыс жасай аласыз. (Жол қозғалысы ережелерінің 8.5, 9.6 тармақтары)",
+    "pddRule": ""
+   }
+  },
+  "correct": 1,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "5ccc967d70f19d41f276ce69b2ad1334",
+  "sourceCategory": "ab",
+  "sourceImage": "verified_ab_4_9"
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "none",
+    "median": 0,
+    "manualMarks": true
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "none",
+    "median": 0,
+    "manualMarks": true
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c",
+   "questionAt": 17.25,
+   "lane": 1
+  }
+ },
+ "stop": {
+  "x": -5.25,
+  "z": -17.25,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 14
+ },
+ "approachWidth": 14,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": true,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [
+  {
+   "id": "track_1",
+   "points": [
+    [
+     -2,
+     -90.5
+    ],
+    [
+     -2,
+     90.5
+    ]
+   ],
+   "render": true,
+   "railType": "tram"
+  },
+  {
+   "id": "track_2",
+   "points": [
+    [
+     2,
+     90.5
+    ],
+    [
+     2,
+     -90.5
+    ]
+   ],
+   "render": true,
+   "railType": "tram"
+  }
+ ],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionView": {
+  "centre": [
+   -0.217,
+   1.488
+  ],
+  "height": 23.556,
+  "yaw": -0.002,
+  "pitch": 0.453,
+  "elevation": 0
+ }
+}

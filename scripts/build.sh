@@ -18,6 +18,12 @@ esac
 cd "$(dirname "$0")/.."
 source scripts/android_env.sh
 
+# Store builds must use the calendar, never the development winter preview.
+if [[ "${EXTRA_DEFINES:-}" == *GAME_DEBUG* || "${EXTRA_DEFINES:-}" == *DEV_SEASON* ]]; then
+  echo "Ошибка: GAME_DEBUG и DEV_SEASON разрешены только в dev-сборках." >&2
+  exit 1
+fi
+
 # Shared studio recordings must exist before Flutter packs its assets.
 python3 tools/godot_export/export_question_audio.py
 

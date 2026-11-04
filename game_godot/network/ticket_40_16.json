@@ -1,0 +1,1637 @@
+{
+ "schema": 1,
+ "id": "ticket_40_16",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": false,
+   "edge": false,
+   "surface": "asphalt",
+   "shoulder": 2.5
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": false,
+   "edge": false,
+   "surface": "asphalt",
+   "shoulder": 2.5
+  },
+  {
+   "id": "road_s3",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     -4.2
+    ],
+    [
+     90,
+     -4.2
+    ],
+    [
+     91,
+     -4.2
+    ],
+    [
+     91,
+     4.2
+    ],
+    [
+     90,
+     4.2
+    ],
+    [
+     0,
+     4.2
+    ]
+   ],
+   "holes": [],
+   "walk": false,
+   "edge": false,
+   "surface": "asphalt",
+   "shoulder": 2.5
+  },
+  {
+   "id": "road_s4",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     4.2
+    ],
+    [
+     -90,
+     4.2
+    ],
+    [
+     -91,
+     4.2
+    ],
+    [
+     -91,
+     -4.2
+    ],
+    [
+     -90,
+     -4.2
+    ],
+    [
+     0,
+     -4.2
+    ]
+   ],
+   "holes": [],
+   "walk": false,
+   "edge": false,
+   "surface": "asphalt",
+   "shoulder": 2.5
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.148,
+     0.657
+    ],
+    [
+     3.994,
+     1.298
+    ],
+    [
+     3.742,
+     1.907
+    ],
+    [
+     3.398,
+     2.469
+    ],
+    [
+     2.97,
+     2.97
+    ],
+    [
+     2.469,
+     3.398
+    ],
+    [
+     1.907,
+     3.742
+    ],
+    [
+     1.298,
+     3.994
+    ],
+    [
+     0.657,
+     4.148
+    ],
+    [
+     0,
+     4.2
+    ],
+    [
+     -0.657,
+     4.148
+    ],
+    [
+     -1.298,
+     3.994
+    ],
+    [
+     -1.907,
+     3.742
+    ],
+    [
+     -2.469,
+     3.398
+    ],
+    [
+     -2.97,
+     2.97
+    ],
+    [
+     -3.398,
+     2.469
+    ],
+    [
+     -3.742,
+     1.907
+    ],
+    [
+     -3.994,
+     1.298
+    ],
+    [
+     -4.148,
+     0.657
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.148,
+     -0.657
+    ],
+    [
+     -3.994,
+     -1.298
+    ],
+    [
+     -3.742,
+     -1.907
+    ],
+    [
+     -3.398,
+     -2.469
+    ],
+    [
+     -2.97,
+     -2.97
+    ],
+    [
+     -2.469,
+     -3.398
+    ],
+    [
+     -1.907,
+     -3.742
+    ],
+    [
+     -1.298,
+     -3.994
+    ],
+    [
+     -0.657,
+     -4.148
+    ],
+    [
+     0,
+     -4.2
+    ],
+    [
+     0.657,
+     -4.148
+    ],
+    [
+     1.298,
+     -3.994
+    ],
+    [
+     1.907,
+     -3.742
+    ],
+    [
+     2.469,
+     -3.398
+    ],
+    [
+     2.97,
+     -2.97
+    ],
+    [
+     3.398,
+     -2.469
+    ],
+    [
+     3.742,
+     -1.907
+    ],
+    [
+     3.994,
+     -1.298
+    ],
+    [
+     4.148,
+     -0.657
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [],
+ "lawns": [
+  {
+   "id": "auto_lawn_s1_r",
+   "auto": true,
+   "outer": [
+    [
+     -4.2,
+     -91
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -7.6,
+     0
+    ],
+    [
+     -7.6,
+     -90
+    ],
+    [
+     -7.6,
+     -91
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s1_l",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     7.6,
+     0
+    ],
+    [
+     7.6,
+     -90
+    ],
+    [
+     7.6,
+     -91
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s2_r",
+   "auto": true,
+   "outer": [
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -7.6,
+     91
+    ],
+    [
+     -7.6,
+     90
+    ],
+    [
+     -7.6,
+     0
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s2_l",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     7.6,
+     91
+    ],
+    [
+     7.6,
+     90
+    ],
+    [
+     7.6,
+     0
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s3_r",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     4.2
+    ],
+    [
+     90,
+     4.2
+    ],
+    [
+     91,
+     4.2
+    ],
+    [
+     91,
+     7.6
+    ],
+    [
+     90,
+     7.6
+    ],
+    [
+     0,
+     7.6
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s3_l",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     -4.2
+    ],
+    [
+     90,
+     -4.2
+    ],
+    [
+     91,
+     -4.2
+    ],
+    [
+     91,
+     -7.6
+    ],
+    [
+     90,
+     -7.6
+    ],
+    [
+     0,
+     -7.6
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s4_r",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     -4.2
+    ],
+    [
+     -90,
+     -4.2
+    ],
+    [
+     -91,
+     -4.2
+    ],
+    [
+     -91,
+     -7.6
+    ],
+    [
+     -90,
+     -7.6
+    ],
+    [
+     0,
+     -7.6
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s4_l",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     4.2
+    ],
+    [
+     -90,
+     4.2
+    ],
+    [
+     -91,
+     4.2
+    ],
+    [
+     -91,
+     7.6
+    ],
+    [
+     -90,
+     7.6
+    ],
+    [
+     0,
+     7.6
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.8,
+     -91
+    ],
+    [
+     -1.8,
+     -32
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "straight",
+   "points": [
+    [
+     -1.8,
+     -32
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.8,
+     4.7
+    ],
+    [
+     -1.8,
+     5.2
+    ],
+    [
+     -1.8,
+     24.7
+    ]
+   ],
+   "exitYaw": 0
+  },
+  {
+   "id": "manoeuvre_left",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "left",
+   "points": [
+    [
+     -1.8,
+     -32
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.709,
+     -3.101
+    ],
+    [
+     -1.431,
+     -1.745
+    ],
+    [
+     -0.955,
+     -0.624
+    ],
+    [
+     -0.274,
+     0.274
+    ],
+    [
+     0.624,
+     0.955
+    ],
+    [
+     1.745,
+     1.431
+    ],
+    [
+     3.101,
+     1.709
+    ],
+    [
+     4.7,
+     1.8
+    ],
+    [
+     5.2,
+     1.8
+    ],
+    [
+     24.7,
+     1.8
+    ]
+   ],
+   "exitYaw": 1.571
+  },
+  {
+   "id": "manoeuvre_right",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "right",
+   "points": [
+    [
+     -1.8,
+     -32
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.841,
+     -3.987
+    ],
+    [
+     -1.965,
+     -3.382
+    ],
+    [
+     -2.177,
+     -2.881
+    ],
+    [
+     -2.481,
+     -2.481
+    ],
+    [
+     -2.881,
+     -2.177
+    ],
+    [
+     -3.382,
+     -1.965
+    ],
+    [
+     -3.987,
+     -1.841
+    ],
+    [
+     -4.7,
+     -1.8
+    ],
+    [
+     -5.2,
+     -1.8
+    ],
+    [
+     -24.7,
+     -1.8
+    ]
+   ],
+   "exitYaw": -1.571
+  },
+  {
+   "id": "manoeuvre_uturn",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "uturn",
+   "points": [
+    [
+     -1.8,
+     -32
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -2.6,
+     -1.7
+    ],
+    [
+     -2.402,
+     -0.705
+    ],
+    [
+     -1.838,
+     0.138
+    ],
+    [
+     -0.995,
+     0.702
+    ],
+    [
+     0,
+     0.9
+    ],
+    [
+     0.995,
+     0.702
+    ],
+    [
+     1.838,
+     0.138
+    ],
+    [
+     2.402,
+     -0.705
+    ],
+    [
+     2.6,
+     -1.7
+    ],
+    [
+     1.8,
+     -7.7
+    ],
+    [
+     1.8,
+     -27.7
+    ]
+   ],
+   "exitYaw": 3.142
+  },
+  {
+   "id": "actor_truck_1",
+   "kind": "actor",
+   "points": [
+    [
+     -2.135,
+     -12.449
+    ],
+    [
+     -1.8,
+     44.7
+    ]
+   ],
+   "manual": true
+  },
+  {
+   "id": "actor_car_1",
+   "kind": "actor",
+   "points": [
+    [
+     10,
+     -2
+    ],
+    [
+     -44.7,
+     -1.8
+    ]
+   ],
+   "manual": true
+  }
+ ],
+ "actors": [
+  {
+   "id": "truck_1",
+   "type": "truck",
+   "name": "Грузовик",
+   "asset": "ticket_10_14/actor_1.glb",
+   "route": "actor_truck_1",
+   "pos": [
+    -2.135,
+    -12.449
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "maxSpeed": 10,
+   "clearDistance": 18.415,
+   "halfLength": 2.915,
+   "halfWidth": 1.046,
+   "behaviour": {
+    "staysPut": false,
+    "waitsForPlayer": false,
+    "hazards": false
+   },
+   "way": "straight",
+   "paint": "#C0392B"
+  },
+  {
+   "id": "car_1",
+   "type": "car",
+   "name": "Легковая",
+   "asset": "ticket_10_15/actor_0.glb",
+   "route": "actor_car_1",
+   "pos": [
+    10,
+    -2
+   ],
+   "yaw": -1.571,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "maxSpeed": 15,
+   "clearDistance": 24.151,
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "behaviour": {
+    "staysPut": false,
+    "waitsForPlayer": false
+   },
+   "way": "straight"
+  }
+ ],
+ "lights": [],
+ "decor": [
+  {
+   "id": "decor_1",
+   "prop": "trees/pine_0",
+   "pos": [
+    -20.503,
+    13.422
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_2",
+   "prop": "trees/pine_0",
+   "pos": [
+    -10.931,
+    17.834
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_3",
+   "prop": "trees/pine_0",
+   "pos": [
+    -13.17,
+    24.564
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_4",
+   "prop": "trees/pine_0",
+   "pos": [
+    -28.461,
+    22.896
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_5",
+   "prop": "trees/pine_0",
+   "pos": [
+    -21.131,
+    25.737
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_6",
+   "prop": "trees/pine_0",
+   "pos": [
+    -14.78,
+    49.492
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_7",
+   "prop": "trees/pine_0",
+   "pos": [
+    -10.35,
+    46.409
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_8",
+   "prop": "trees/pine_0",
+   "pos": [
+    -23.154,
+    39.538
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_9",
+   "prop": "trees/pine_0",
+   "pos": [
+    -13.1,
+    35.981
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_10",
+   "prop": "trees/pine_0",
+   "pos": [
+    13.361,
+    47.886
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_11",
+   "prop": "trees/pine_0",
+   "pos": [
+    29.889,
+    44.192
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_12",
+   "prop": "trees/pine_0",
+   "pos": [
+    31.12,
+    30.247
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_13",
+   "prop": "trees/pine_0",
+   "pos": [
+    35.166,
+    19.081
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_14",
+   "prop": "trees/pine_0",
+   "pos": [
+    19.691,
+    17.849
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_15",
+   "prop": "trees/pine_0",
+   "pos": [
+    15.921,
+    33.46
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_16",
+   "prop": "trees/pine_0",
+   "pos": [
+    12.793,
+    62.289
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_17",
+   "prop": "trees/pine_0",
+   "pos": [
+    7.962,
+    8.836
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_18",
+   "prop": "trees/pine_0",
+   "pos": [
+    19.798,
+    10.563
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_19",
+   "prop": "trees/pine_0",
+   "pos": [
+    9.549,
+    14.688
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_20",
+   "prop": "trees/pine_0",
+   "pos": [
+    17.724,
+    -27.487
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_21",
+   "prop": "trees/pine_0",
+   "pos": [
+    24.701,
+    -12.135
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_22",
+   "prop": "trees/pine_0",
+   "pos": [
+    -11.362,
+    -31.91
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_23",
+   "prop": "trees/pine_0",
+   "pos": [
+    -17.27,
+    -27.007
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_24",
+   "prop": "trees/pine_0",
+   "pos": [
+    -11.144,
+    -27.331
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_25",
+   "prop": "trees/pine_0",
+   "pos": [
+    -12.018,
+    -10.031
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_26",
+   "prop": "trees/pine_0",
+   "pos": [
+    16.045,
+    -11.462
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_27",
+   "prop": "trees/pine_0",
+   "pos": [
+    -11.831,
+    10.218
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_28",
+   "prop": "trees/pine_0",
+   "pos": [
+    8.333,
+    40.006
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_29",
+   "prop": "trees/pine_0",
+   "pos": [
+    30.362,
+    73.099
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_30",
+   "prop": "trees/pine_0",
+   "pos": [
+    13.389,
+    87.861
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_31",
+   "prop": "trees/pine_0",
+   "pos": [
+    -15.133,
+    71.35
+   ],
+   "yaw": 0,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_32",
+   "prop": "trees/pine_0",
+   "pos": [
+    -22.111,
+    49.93
+   ],
+   "yaw": 0,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_33",
+   "prop": "trees/pine_0",
+   "pos": [
+    -8.65,
+    68.067
+   ],
+   "yaw": 0,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    12,
+    -79.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_34"
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    20.5,
+    -41
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_35"
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    11.756,
+    -49.81
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_36"
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -7.992,
+    -70.291
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_37"
+  }
+ ],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 40 · Вопрос 16",
+    "title": "Можно ли Вам въехать на железнодорожный переезд?",
+    "options": [
+     "Можно",
+     "Можно, если отсутствует приближающийся поезд",
+     "Нельзя"
+    ],
+    "explanation": "Водитель грузовика остановился, чтобы уступить дорогу. Выехав на железнодорожный переезд, Вы будете вынуждены на нём остановиться, дожидаясь освобождения места за переездом. Выезд на железнодорожный переезд в такой ситуации запрещён.(Пункт 15.3 ПДД)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 40 · Question 16",
+    "title": "Can you enter a railway crossing?",
+    "options": [
+     "Can",
+     "Possible if there is no approaching train",
+     "It is forbidden"
+    ],
+    "explanation": "The truck driver stopped to give way. Having arrived at a railway crossing, you will be forced to stop there, waiting for the space behind the crossing to become free. Traveling to a railway crossing in such a situation is prohibited. (Clause 15.3 of traffic rules)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "40-билет · 16-сұрақ",
+    "title": "Сіз темір жол өткеліне кіре аласыз ба?",
+    "options": [
+     "Иә",
+     "Жақындап келе жатқан пойыз болмаса, рұқсат етіледі.",
+     "Ол тыйым салынған"
+    ],
+    "explanation": "Жүк көлігінің жүргізушісі жол беру үшін тоқтады. Темір жол өткеліне келген соң, сіз өткелдің артындағы кеңістіктің босағанын күтіп, сол жерде тоқтауға мәжбүр боласыз. Мұндай жағдайда темір жол өткеліне баруға тыйым салынады. (Жол қозғалысы ережелерінің 15.3 тармағы)",
+    "pddRule": ""
+   }
+  },
+  "correct": 2,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "6ae445efd94ccf774f586391384059c7",
+  "sourceCategory": "ab",
+  "sourceImage": "031ee339b5c4588d0f70898f99180468"
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   },
+   {
+    "id": "e",
+    "x": 90,
+    "z": 0
+   },
+   {
+    "id": "w",
+    "x": -90,
+    "z": 0
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "none",
+    "walk": false,
+    "shoulder": 2.5
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "none",
+    "walk": false,
+    "shoulder": 2.5
+   },
+   {
+    "id": "s3",
+    "a": "c",
+    "b": "e",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "none",
+    "walk": false,
+    "shoulder": 2.5
+   },
+   {
+    "id": "s4",
+    "a": "c",
+    "b": "w",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "none",
+    "walk": false,
+    "shoulder": 2.5
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c",
+   "questionAt": 32,
+   "lane": 0
+  }
+ },
+ "stop": {
+  "x": -1.8,
+  "z": -32,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 8.4,
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "approachWidth": 8.4,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": false,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [
+  {
+   "id": "sign_1",
+   "code": "1.3.1",
+   "pos": [
+    -5.447,
+    -26.747
+   ],
+   "yaw": 3.142
+  },
+  {
+   "id": "sign_2",
+   "code": "2.4",
+   "pos": [
+    -5.401,
+    -10.5
+   ],
+   "yaw": 3.142
+  }
+ ],
+ "officers": [],
+ "tracks": [
+  {
+   "id": "track_1",
+   "points": [
+    [
+     90.5,
+     -18
+    ],
+    [
+     -90,
+     -18.5
+    ]
+   ],
+   "render": true,
+   "railType": "railway"
+  }
+ ],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionPool": {
+  "sourceQuestionId": "6ae445efd94ccf774f586391384059c7",
+  "category": "ab",
+  "ticket": 40,
+  "number": 16
+ },
+ "questionView": {
+  "centre": [
+   0.613,
+   14.632
+  ],
+  "height": 30.257,
+  "yaw": -0.07,
+  "pitch": 0.292,
+  "elevation": 0
+ }
+}

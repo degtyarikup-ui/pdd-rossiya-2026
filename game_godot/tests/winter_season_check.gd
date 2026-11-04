@@ -58,53 +58,36 @@ func run() -> void:
 	var crossroads_sc: Node = load("res://scripts/crossroads.gd").new()
 	crossroads_sc.season_name = "winter"
 	root.add_child(crossroads_sc)
-	crossroads_sc._setup_args()
-	crossroads_sc.season_name = "winter"
-	crossroads_sc._setup_environment()
-	crossroads_sc._setup_scene_nodes()
 	expect(crossroads_sc.snow != null, "Crossroads spawns Snow in winter")
 	expect(crossroads_sc.leaves == null, "Crossroads does NOT spawn Leaves in winter")
 	expect(crossroads_sc.junction.sc.season.precipitation == "snow", "Crossroads junction uses winter scenery")
-	crossroads_sc.queue_free()
+	await dispose_game(crossroads_sc)
 
 	# 5. Regulator winter check
 	var regulator_sc: Node = load("res://scripts/regulator.gd").new()
 	regulator_sc.season_name = "winter"
 	root.add_child(regulator_sc)
-	regulator_sc._setup_args()
-	regulator_sc.season_name = "winter"
-	regulator_sc._setup_environment()
-	regulator_sc._setup_scene_objects()
 	expect(regulator_sc.snow != null, "Regulator spawns Snow in winter")
 	expect(regulator_sc.leaves == null, "Regulator does NOT spawn Leaves in winter")
 	expect(regulator_sc.junction.sc.season.precipitation == "snow", "Regulator junction uses winter scenery")
-	regulator_sc.queue_free()
+	await dispose_game(regulator_sc)
 
 	# 6. Violator winter check
 	var violator_sc: Node = load("res://scripts/violator.gd").new()
 	violator_sc.season_name = "winter"
 	root.add_child(violator_sc)
-	violator_sc._setup_args()
-	violator_sc.season_name = "winter"
-	violator_sc._setup_environment()
-	violator_sc._setup_road_geometry()
 	expect(violator_sc.snow != null, "Violator spawns Snow in winter")
 	expect(violator_sc.sc.season.precipitation == "snow", "Violator uses winter scenery")
 	expect(violator_sc.lawn_grass_mat.albedo_color == Color("#e4e8ec"), "Violator lawn grass is winter snow (#e4e8ec)")
 	expect(violator_sc.grass_mat.albedo_color == Color("#e4e8ec"), "Violator surrounding terrain is winter snow (#e4e8ec)")
 	expect(violator_sc.sidewalk_mat.albedo_color == Color("#616668"), "Violator sidewalk has winter tone (#616668)")
-	violator_sc.queue_free()
+	await dispose_game(violator_sc)
 
 	# 7. Parking winter check
 	var parking_sc: Node = load("res://scripts/parking.gd").new()
 	parking_sc.season_name = "winter"
 	parking_sc.vehicle_id = "sedan"
 	root.add_child(parking_sc)
-	parking_sc._setup_args()
-	parking_sc.season_name = "winter"
-	parking_sc.geo = ParkingLevels.geometry("sedan")
-	parking_sc.sc = Scenery.new("winter")
-	parking_sc._setup_environment()
 	parking_sc._load_level(0) # level 0 is hotel (outdoor)
 	expect(parking_sc.snow != null, "Parking spawns Snow on outdoor level in winter")
 	expect(parking_sc.snow.visible, "Parking snow is visible on outdoor level")
@@ -113,7 +96,7 @@ func run() -> void:
 	# Test indoor/underground level
 	parking_sc._load_level(16) # level 16 is underground
 	expect(not parking_sc.snow.visible, "Parking snow is hidden on underground indoor level")
-	parking_sc.queue_free()
+	await dispose_game(parking_sc)
 
 	# 8. Tree color override in winter check (authored tints must yield to winter palette)
 	var sit := Situation.load_scene("ticket_18_9", sc_winter)
@@ -125,8 +108,20 @@ func run() -> void:
 		var authored_tint := Color("#d98a2b")
 		expect(absf(c0.r - authored_tint.r) > 0.05 or absf(c0.g - authored_tint.g) > 0.05, "Winter tree does not retain authored autumn tint")
 		expect(c0.a == 1.0, "Winter tree instance custom data has snow enabled (a = 1.0)")
+	Models.release_geometry(sit)
+	await process_frame
 	sit.queue_free()
 	Situation.forget("ticket_18_9")
 
+	await process_frame
+	await process_frame
 	print("Winter season check: %d passed, %d failed" % [checks - failures, failures])
 	quit(1 if failures > 0 else 0)
+
+
+func dispose_game(game: Node) -> void:
+	game._exiting = true
+	Models.release_geometry(game)
+	await process_frame
+	game.queue_free()
+	await process_frame

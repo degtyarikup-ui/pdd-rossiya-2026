@@ -1,0 +1,97 @@
+{
+ "id": "ticket_4_6",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -20.9,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 24,
+  "left": 14,
+  "right": 14,
+  "uturn": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 4 · Вопрос 6",
+   "title": "Каким транспортным средствам разрешено движение прямо?",
+   "options": [
+    "Только грузовому автомобилю",
+    "Легковому и грузовому автомобилям",
+    "Грузовому автомобилю и автобусу",
+    "Всем перечисленным транспортным средствам"
+   ],
+   "explanation": "Перекрёсток регулируемый. С данной проезжей части осуществляется регулирование по полосам. Красный сигнал крайнего правого светофора запрещает движение с крайней правой полосы. Со средней полосы разрешается движение прямо. С крайней левой полосы разрешается движение налево и разворот. При таких сигналах светофора разрешено движение прямо только грузовому автомобилю.(Пункт 6.2 и пункт 6.3 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 4 · Question 6",
+   "title": "Which vehicles are allowed to drive straight ahead?",
+   "options": [
+    "Truck only",
+    "Cars and trucks",
+    "Truck and bus",
+    "All listed vehicles"
+   ],
+   "explanation": "The intersection is controlled. This roadway is controlled by lanes. The red signal of the far right traffic light prohibits movement from the far right lane. Driving straight from the middle lane is allowed. Driving left and turning around are allowed from the leftmost lane. With such traffic signals, only a truck is allowed to move straight ahead. (Clause 6.2 and paragraph 6.3 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "4-билет · 6-сұрақ",
+   "title": "Қандай көліктерге тура алға жүруге рұқсат етіледі?",
+   "options": [
+    "Тек жүк көлігіне",
+    "Жеңіл және жүк көліктері",
+    "Жүк көлігі мен автобус",
+    "Барлық тізімделген көліктер"
+   ],
+   "explanation": "Қиылыс реттелетін. Бұл жолда жолақтар бойынша реттеу жүргізіледі. Ең оң жақ бағдаршамның қызыл сигналы ең оң жақ жолақтан қозғалуға тыйым салады. Ортаңғы жолақтан тура жүруге рұқсат етіледі. Ең сол жақ жолақтан солға бұрылуға және кері бұрылуға рұқсат етіледі. Мұндай бағдаршам сигналдарында тек жүк көлігіне тікелей алға жүруге рұқсат етіледі. (Жол қозғалысы ережелерінің 6.2 және 6.3 тармақтары)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 186,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "0cc812096bd97923077666071b2b2f2a",
+ "sourceCategory": "ab",
+ "sourceImage": "256b840e4be021b012af1a6ff470f707"
+}
