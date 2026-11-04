@@ -42,7 +42,7 @@ func run() -> void:
 	var sc_winter := Scenery.new("winter")
 	expect(sc_winter.season.precipitation == "snow", "Winter precipitation is snow")
 	expect(sc_winter.color("ground") == Color("#e4e8ec"), "Winter ground is snow white (#e4e8ec)")
-	expect(sc_winter.color("sidewalk") == Color("#b9c0c6"), "Winter sidewalk has snow tone (#b9c0c6)")
+	expect(sc_winter.color("sidewalk") == Color("#616668"), "Winter sidewalk has concrete tone (#616668)")
 	expect(sc_winter.season.roof == "#c7d0d8", "Winter roof has snow cover tone (#c7d0d8)")
 
 	# 3. Snow particle class check
@@ -92,7 +92,7 @@ func run() -> void:
 	expect(violator_sc.sc.season.precipitation == "snow", "Violator uses winter scenery")
 	expect(violator_sc.lawn_grass_mat.albedo_color == Color("#e4e8ec"), "Violator lawn grass is winter snow (#e4e8ec)")
 	expect(violator_sc.grass_mat.albedo_color == Color("#e4e8ec"), "Violator surrounding terrain is winter snow (#e4e8ec)")
-	expect(violator_sc.sidewalk_mat.albedo_color == Color("#b9c0c6"), "Violator sidewalk has winter tone (#b9c0c6)")
+	expect(violator_sc.sidewalk_mat.albedo_color == Color("#616668"), "Violator sidewalk has winter tone (#616668)")
 	violator_sc.queue_free()
 
 	# 7. Parking winter check
@@ -114,6 +114,19 @@ func run() -> void:
 	parking_sc._load_level(16) # level 16 is underground
 	expect(not parking_sc.snow.visible, "Parking snow is hidden on underground indoor level")
 	parking_sc.queue_free()
+
+	# 8. Tree color override in winter check (authored tints must yield to winter palette)
+	var sit := Situation.load_scene("ticket_18_9", sc_winter)
+	root.add_child(sit)
+	var tree_multi: MultiMesh = sit._pools.get("trees/round_0")
+	expect(tree_multi != null, "Situation ticket_18_9 loaded trees/round_0 pool")
+	if tree_multi:
+		var c0: Color = tree_multi.get_instance_custom_data(0)
+		var authored_tint := Color("#d98a2b")
+		expect(absf(c0.r - authored_tint.r) > 0.05 or absf(c0.g - authored_tint.g) > 0.05, "Winter tree does not retain authored autumn tint")
+		expect(c0.a == 1.0, "Winter tree instance custom data has snow enabled (a = 1.0)")
+	sit.queue_free()
+	Situation.forget("ticket_18_9")
 
 	print("Winter season check: %d passed, %d failed" % [checks - failures, failures])
 	quit(1 if failures > 0 else 0)

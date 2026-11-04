@@ -734,12 +734,14 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 		closed_root.add_child(block_root)
 
 		var d_offset := HALF_ROAD + 4.0
+		var birch_c := sc.color("birch")
+		var pine_c := sc.color("pine")
 		_add_closed_arm_building(block_root, "buildings/home_0", Vector3(0.0, 0.02, d_offset + 8.0), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), rot_y)
-		_add_closed_arm_building(block_root, "trees/birch_0", Vector3(-7.5, 0.02, d_offset + 6.0), 0.0, Vector3.ONE * 1.1, Color("#C8E8B2"), rot_y)
-		_add_closed_arm_building(block_root, "trees/pine_0", Vector3(7.5, 0.02, d_offset + 6.0), 0.0, Vector3.ONE * 1.2, Color("#2D4D2E"), rot_y)
+		_add_closed_arm_building(block_root, "trees/birch_0", Vector3(-7.5, 0.02, d_offset + 6.0), 0.0, Vector3.ONE * 1.1, birch_c, rot_y)
+		_add_closed_arm_building(block_root, "trees/pine_0", Vector3(7.5, 0.02, d_offset + 6.0), 0.0, Vector3.ONE * 1.2, pine_c, rot_y)
 		_add_closed_arm_building(block_root, "buildings/home_3", Vector3(-8.5, 0.02, d_offset + 28.0), PI, Vector3.ONE * 0.95, Color("#E8CFA8"), rot_y)
 		_add_closed_arm_building(block_root, "buildings/home_1", Vector3(8.5, 0.02, d_offset + 28.0), PI, Vector3.ONE * 0.95, Color("#DDE1EA"), rot_y)
-		_add_closed_arm_building(block_root, "trees/pine_0", Vector3(0.0, 0.02, d_offset + 48.0), 0.0, Vector3.ONE * 2.2, Color("#2D4D2E"), rot_y)
+		_add_closed_arm_building(block_root, "trees/pine_0", Vector3(0.0, 0.02, d_offset + 48.0), 0.0, Vector3.ONE * 2.2, pine_c, rot_y)
 		return
 
 	var crossing_active := _has_crossing(arm)
@@ -815,8 +817,8 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 	# T-junction urban terminus:
 	# Front apartment block closing the street corridor (width 10.4m, cleanly centered within 14.4m road)
 	_add_closed_arm_building(block_root, "buildings/block_0", Vector3(0.0, 0.15, d_offset + 8.5), PI, Vector3.ONE * 1.05, Color("#F5F6FA"), rot_y)
-	_add_closed_arm_building(block_root, "trees/birch_0", Vector3(-6.2, 0.15, d_offset + 5.0), 0.0, Vector3.ONE * 1.1, Color("#C8E8B2"), rot_y)
-	_add_closed_arm_building(block_root, "trees/round_0", Vector3(6.2, 0.15, d_offset + 5.0), 0.0, Vector3.ONE * 1.1, Color("#76B852"), rot_y)
+	_add_closed_arm_building(block_root, "trees/birch_0", Vector3(-6.2, 0.15, d_offset + 5.0), 0.0, Vector3.ONE * 1.1, sc.color("birch"), rot_y)
+	_add_closed_arm_building(block_root, "trees/round_0", Vector3(6.2, 0.15, d_offset + 5.0), 0.0, Vector3.ONE * 1.1, Color(sc.season.canopy[0]), rot_y)
 
 	# Deep urban skyline layer:
 	# Middle tower placed 24m behind the front block

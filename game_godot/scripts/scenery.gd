@@ -64,6 +64,11 @@ func _init(season_name: String) -> void:
 	material.set_shader_parameter("gain", gains)
 	material.set_shader_parameter("texture_periods", periods)
 	material.set_shader_parameter("detail_texels", detail_texels)
+	var winter: bool = season.get("precipitation", "") == "snow"
+	if winter:
+		var roof_col := Color(season.get("roof", "#c7d0d8"))
+		material.set_shader_parameter("snow_color", Vector3(roof_col.r, roof_col.g, roof_col.b))
+		material.set_shader_parameter("plain_snow", 1.0)
 	occluder_material = material
 	building_material = material.duplicate()
 	building_material.shader = load("res://shaders/buildings.gdshader")

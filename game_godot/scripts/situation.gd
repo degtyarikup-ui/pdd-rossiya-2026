@@ -647,8 +647,8 @@ func _place_props(scenery: Scenery, frames: SceneTree = null) -> void:
 			multi.set_instance_color(i, Color.WHITE)
 			var tint := Color(p.tint) if p.get("tint") else Color.WHITE
 			# Editor brushes leave tint unset: foliage meshes store neutral RGB and
-			# need the season palette, while an explicit author swatch takes priority.
-			if not p.get("tint"):
+			# need the season palette, while an explicit author swatch takes priority (in non-winter).
+			if not p.get("tint") or winter:
 				if prop.begins_with("trees/"):
 					var kind: String = scenery.index.props[prop].get("kind", "round")
 					tint = scenery.color("pine" if kind == "pine" else "birch" if kind == "birch" else "canopy", i)

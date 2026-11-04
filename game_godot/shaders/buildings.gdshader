@@ -19,6 +19,7 @@ uniform float gain[24];               // contrast of the detail per kind: the ma
 uniform float detail_texels[24];      // feature density: grain 256, broad window frames 16
 uniform vec2 detail_fade = vec2(180.0, 450.0);  // metres: the grain fades to a flat tone with distance, where it would only shimmer
 uniform vec3 plain_tint = vec3(1.0);   // tint of a non-instanced mesh (roads)
+uniform float plain_snow = 0.0;
 uniform vec3 snow_color = vec3(0.78, 0.82, 0.85);  // sRGB, like COLOR
 
 // Procedural regulator surfaces use the same maps on the world metre grid.
@@ -41,17 +42,21 @@ void vertex() {
 	surface_position = (surface_frame * MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	surface_side = abs(NORMAL.y) < 0.5 ? 1.0 : 0.0;
 	tint = INSTANCE_CUSTOM.rgb;
-	snow = floor(INSTANCE_CUSTOM.a + 0.001);
+	snow = INSTANCE_CUSTOM.a > 0.0001 ? floor(INSTANCE_CUSTOM.a + 0.001) : plain_snow;
 	building_opacity = INSTANCE_CUSTOM.a > 0.0001 ? fract(INSTANCE_CUSTOM.a) * 2.0 : uniform_alpha;
 }
 
 void fragment() {
 	vec3 t = tint;
+	float s = snow;
 	// Non-instanced meshes read zero custom data.
-	if (t.r + t.g + t.b <= 0.0) t = plain_tint;
+	if (t.r + t.g + t.b <= 0.0) {
+		t = plain_tint;
+		s = plain_snow;
+	}
 	vec3 base = COLOR.rgb;
 	if (COLOR.a > 0.75) base *= t;
-	else if (COLOR.a > 0.25) base = mix(base, snow_color, snow);
+	else if (COLOR.a > 0.25) base = mix(base, snow_color, s);
 	int layer = world_uv ? surface_layer - 1 : int(UV2.x + 0.5) - 1;
 	if (world_uv) base = surface_colour;
 	vec2 detail_uv = world_uv ? (surface_side > 0.5 ? vec2(surface_position.x + surface_position.z, surface_position.y) : surface_position.xz) / texture_period : (grid_uv && layer >= 0 ? surface_position.xz / texture_periods[layer] : UV);
