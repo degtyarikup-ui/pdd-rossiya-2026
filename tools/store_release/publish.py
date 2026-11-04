@@ -196,6 +196,20 @@ class Play:
                 except (OSError, HTTPException):
                     pass
 
+    def commit_edit(self, edit, attempts=30):
+        # A resumed upload can return its bundle before Play finishes processing
+        # it. Keep this edit alive and retry only that transient validation error.
+        for attempt in range(attempts):
+            try:
+                return self.call('POST', f'/edits/{edit}:commit')
+            except HttpError as error:
+                pending = (error.status == 400 and
+                           'Some of the Android App Bundle uploads are not completed yet.' in str(error))
+                if not pending or attempt == attempts - 1:
+                    raise
+                print('Google Play: пакет ещё обрабатывается, повтор завершения релиза через 20 с', flush=True)
+                time.sleep(20)
+
     def publish(self, aab, notes):
         edit = self.call('POST', '/edits')['id']
         try:
@@ -212,7 +226,7 @@ class Play:
             })
             # Without managed publishing changes go to review on commit; the
             # changesNotSentForReview flag is rejected in this state.
-            self.call('POST', f'/edits/{edit}:commit')
+            self.commit_edit(edit)
             print('Google Play: релиз', notes['version'], f'({code}) отправлен на проверку')
         except BaseException:
             try:
