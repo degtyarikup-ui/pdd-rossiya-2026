@@ -53,7 +53,7 @@ const QuestionPlan = (() => {
   }
   function homeHtml(text = query) {
     if (!state.questionsLoaded) return loadingHtml();
-    return `<div class="question-home-tools">${filterHtml()}</div><div class="home-grid">${list(text).map(question => `<div class="scene-card-item"><button class="card-scene" data-plan-question="${esc(question.id)}" ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="card-pic question-card-pic">${photo(question)}</span><span class="card-body"><b>${esc(title(question))} · ${esc(category(question))}</b><span class="question-card-text">${esc(question.question)}</span><span class="badges">${badge(question)}</span></span></button>${App.sceneDeleteButton(question.id)}</div>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
+    return `<div class="question-home-tools">${filterHtml()}</div><div class="scene-list question-list question-home-list">${list(text).map(question => `<div class="scene-row-item"><button class="scene-row" data-plan-question="${esc(question.id)}" ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="scene-text"><b>${esc(title(question))} · ${esc(category(question))}</b><span class="question-row-text">${esc(question.question)}</span><span class="badges">${badge(question)}</span></span></button>${App.sceneDeleteButton(question.id)}</div>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
   }
   function remember() {
     try { localStorage.setItem(STORE, JSON.stringify({ filter })); } catch (_) { /* Optional view preference. */ }
