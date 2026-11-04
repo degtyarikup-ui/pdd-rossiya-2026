@@ -12,12 +12,15 @@ const fixture = [
   { id: 'ticket_1_5', ticket: 1, number: 5, category: 'ab', question: 'Дорожная задача', decision: null, status: 'game', hasScene: false },
   { id: 'ticket_1_6', ticket: 1, number: 6, category: 'ab', question: 'Вариант ИИ', decision: null, status: 'ai', hasScene: true },
   { id: 'ticket_1_7', ticket: 1, number: 7, category: 'ab', question: 'Начатый черновик', decision: null, status: 'plan', hasScene: true },
+  { id: 'ticket_1_8', ticket: 1, number: 8, category: 'ab', question: 'Удалённая сцена', decision: 'no', status: 'game', hasScene: true },
+  { id: 'ticket_1_9', ticket: 1, number: 9, category: 'ab', question: 'Удалённый черновик', decision: 'no', status: 'plan', hasScene: true },
 ];
 function mount() {
   const listeners = {}, requests = [], opened = [], storage = new Map(), urls = [];
   const home = { hidden: true };
   const App = { state: { id: 'ticket_16_15', S: { unsaved: 'author draft' }, dirty: true },
     ic: () => '', esc: value => String(value ?? '').replaceAll('<', '&lt;').replaceAll('"', '&quot;'),
+    sceneDeleteButton: id => `<button data-delete-scene="${id}">Удалить вопрос из игры</button>`,
     renderPanels() {}, renderHome() {}, toast: message => { App.error = message; },
     showHome: on => { home.hidden = !on; },
     async openScene(id) { opened.push(id); if (!App.cancel) { App.state.id = id; home.hidden = true; } },
@@ -49,6 +52,7 @@ function mount() {
   assert.equal(ui.plan.visibleCount(), 5);
   assert.equal(ui.plan.count('game'), 2);
   assert.equal(ui.plan.count('ai'), 1);
+  assert.doesNotMatch(ui.plan.sidebarHtml()+ui.plan.homeHtml(), /data-plan-question="ticket_1_[89]"/, 'deleted questions stay hidden even when archived scenes remain');
   assert.match(ui.plan.sidebarHtml(), /data-plan-question="ticket_1_1"/);
   assert.match(ui.plan.sidebarHtml('', { filtersCollapsed: true }), /id="question-filter-options" hidden/);
   assert.doesNotMatch(ui.plan.sidebarHtml() + ui.plan.homeHtml(), /data-qr|Не просмотрен|для отбора|Да —|Нет —|Отменить решение/);
@@ -86,6 +90,8 @@ function mount() {
   const beforeRoad = ui.opened.length;
   await ui.plan.open('ticket_1_5');
   assert.equal(ui.opened.length, beforeRoad, 'road questions cannot generate a duplicate scene');
+  await ui.plan.open('ticket_1_8');
+  assert.equal(ui.opened.length, beforeRoad, 'deep links do not reopen a deleted question');
   assert.equal(ui.requests.length, 1, 'navigation neither creates scenes nor changes saved decisions');
   assert.deepEqual(copy(ui.App.state.questions), fixture, 'all source records and decisions remain unchanged');
   let release;

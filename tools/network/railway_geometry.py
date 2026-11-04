@@ -77,20 +77,28 @@ def geometry(scene, road, raised, triangulate, sample):
 
     sleepers, fixings, joints = [[], []], [], []
     for line in paths:
+        length = line.length
+        last_at, frame = None, None
         def rectangle(at, half_width, half_length, lateral=0):
-            p = line.interpolate(at)
-            a, b = line.interpolate(max(0, at - .04)), line.interpolate(min(line.length, at + .04))
-            dx, dz = b.x - a.x, b.y - a.y
-            size = math.hypot(dx, dz) or 1
-            tx, tz, nx, nz = dx / size, dz / size, -dz / size, dx / size
-            return Polygon([(p.x + nx * (lateral + w) + tx * l, p.y + nz * (lateral + w) + tz * l)
+            nonlocal last_at, frame
+            # A sleeper and its two fasteners share one sampled frame. Reusing
+            # it removes repeated GEOS interpolation without changing a vertex.
+            if at != last_at:
+                p = line.interpolate(at)
+                a, b = line.interpolate(max(0, at - .04)), line.interpolate(min(length, at + .04))
+                dx, dz = b.x - a.x, b.y - a.y
+                size = math.hypot(dx, dz) or 1
+                frame = (p.x, p.y, dx / size, dz / size, -dz / size, dx / size)
+                last_at = at
+            px, pz, tx, tz, nx, nz = frame
+            return Polygon([(px + nx * (lateral + w) + tx * l, pz + nz * (lateral + w) + tz * l)
                             for w, l in [(-half_width, -half_length), (half_width, -half_length),
                                          (half_width, half_length), (-half_width, half_length)]])
 
         # Even spacing along arc length also works around curves and reversed paths.
-        for n in range(max(1, math.floor(line.length / .68))):
+        for n in range(max(1, math.floor(length / .68))):
             at = .34 + n * .68
-            if at > line.length - .12:
+            if at > length - .12:
                 break
             sleeper = rectangle(at, 1.26, .12)
             # Keep whole sleepers clear of paved crossings, including oblique ones.
@@ -98,7 +106,7 @@ def geometry(scene, road, raised, triangulate, sample):
                 sleepers[n % 2].append(sleeper.intersection(open_bed))
                 for side in (-1, 1):
                     fixings.append(rectangle(at, .14, .075, side * GAUGE / 2).intersection(open_bed))
-        for n in range(math.ceil(line.length / 1.2)):
+        for n in range(math.ceil(length / 1.2)):
             joints.append(rectangle(n * 1.2, HALF_BED, .014).intersection(crossing))
 
     for i in range(2):

@@ -11,6 +11,7 @@ const App = (() => {
     S: null, id: null, build: null, findings: [], edges: null, source: null, playable: false,
     scenes: [], questions: [], questionsLoaded: false, catalog: null, sel: [], hidden: new Set(), locked: new Set(),
     undo: [], redo: [], savedJson: "", dirty: false, clipboard: null, testing: false,
+    deletedSceneIds: new Set(),
   };
 
   // ---- api and messages ---------------------------------------------------------------------
@@ -281,7 +282,7 @@ const App = (() => {
     // keep following the handle even when the pointer never comes to rest.
     if (live && (previewTimer !== null || previewFlight)) return;
     clearTimeout(previewTimer);
-    previewTimer = setTimeout(runPreview, live ? 40 : 100);
+    previewTimer = setTimeout(runPreview, live ? 40 : 0);
   }
   async function runPreview() {
     previewTimer = null;
@@ -319,8 +320,10 @@ const App = (() => {
   }
 
   // ---- scenes ------------------------------------------------------------------------------
+  let sceneListRequest = 0;
   async function loadList() {
-    state.scenes = await api("/api/scenes");
+    const request = ++sceneListRequest, scenes = await api("/api/scenes");
+    if (request === sceneListRequest) state.scenes = scenes.filter(scene => !state.deletedSceneIds.has(scene.id));
   }
   let openRequest = 0, saving = null;
   function queueWrite(text, write) {
@@ -424,6 +427,7 @@ const App = (() => {
   }
 
   function save() {
+    if (state.deleting?.includes(state.id)) return false;
     // Textures are not part of a scene: they reach the game by their own "Применить в игре".
     if (!state.S || (!state.dirty && !state.virtual && !saving)) { toast("Всё сохранено"); renderTop(); return true; }
     const sid = state.id, text = snapshotText();
@@ -472,8 +476,59 @@ const App = (() => {
   }
   const thumbRev = {};
 
+  async function deleteScene(sid) {
+    if (state.deleting || !/^ticket_\d+_\d+$/.test(sid)) return false;
+    const request = ++openRequest;
+    state.deleting = [sid];
+    cancelConfirmation?.();
+    try {
+      // A save already in progress finishes before we describe the files being
+      // deleted. New writes to this question are blocked until deletion ends.
+      while (saving) await saving.done.catch(() => {});
+      if (request !== openRequest) return false;
+      const info = await api(`/api/scene/${sid}/deletion`);
+      if (request !== openRequest) return false;
+      state.deleting = info.ids;
+      renderTop();
+      const copies = info.ids.filter(id => id !== sid);
+      const text = `${sceneTitle(sid)}. ${info.hasScene ? "Сцена, её файлы и вопрос будут удалены из игры и списка." : "Вопрос будет удалён из игры и плана."}`
+        + (copies.length ? ` Копии этого вопроса: ${copies.map(sceneTitle).join("; ")}.` : "")
+        + (info.ids.includes(state.id) && state.dirty ? " Несохранённые изменения этой сцены тоже будут удалены." : "");
+      if (!await confirmBox("Удалить вопрос?", text, "Удалить") || request !== openRequest) return false;
+      const result = await queueWrite(null, () => api(`/api/scene/${sid}/delete`, {revision:info.revision}));
+      const removed = new Set(result.ids);
+      sceneListRequest++;
+      removed.forEach(id => state.deletedSceneIds.add(id));
+      state.scenes = state.scenes.filter(scene => !removed.has(scene.id));
+      state.questions = state.questions.filter(question => !removed.has(question.id));
+      if (removed.has(state.lastTicket)) state.lastTicket = null;
+      if (removed.has(state.id)) {
+        previewEpoch++; previewRevision++; previewPending = false;
+        clearTimeout(previewTimer); previewTimer = null; dragBase = null;
+        Tools.set("select");
+        Object.assign(state, {S:null, id:null, build:null, plan:null, source:null, edges:null,
+          sel:[], undo:[], redo:[], findings:[], savedJson:"", dirty:false, virtual:false, playable:false});
+        App.selectionChanged?.();
+        showHome(true, true);
+        history.replaceState(null, "", App.sceneFilter?.() === "questions" ? "?filter=questions" : "/");
+      }
+      renderTop(); App.renderPanels?.(); App.renderHome?.();
+      toast("Вопрос удалён", "good");
+      // Refresh counts independently of the completed deletion. A temporary
+      // list failure must not leave a deleted document open or invite a retry.
+      loadList().then(async () => {
+        if (typeof QuestionPlan !== "undefined") await QuestionPlan.load({refresh:true});
+        App.renderPanels?.(); App.renderHome?.();
+      }).catch(() => {});
+      return true;
+    } catch (error) {
+      toast(`Не удалено: ${error.message}`, "bad");
+      return false;
+    } finally { state.deleting = null; renderTop(); }
+  }
+
   async function setPlayable(on) {
-    if (!state.S || state.including) return;
+    if (!state.S || state.including || state.deleting?.includes(state.id)) return;
     const sid = state.id, request = openRequest;
     state.including = true;
     try {
@@ -501,7 +556,7 @@ const App = (() => {
   }
 
   async function runInGame(auto = false) {
-    if (!state.S) return;
+    if (!state.S || state.deleting?.includes(state.id)) return;
     const sid = state.id, request = openRequest;
     if (state.dirty || state.virtual || saving) { await save(); if (state.dirty || state.virtual) return; }
     if (request !== openRequest || state.id !== sid) return;
@@ -843,7 +898,7 @@ const App = (() => {
     chip.innerHTML = !s ? "" : err ? `${ic("error")}${err} ${plural(err, ["ошибка", "ошибки", "ошибок"])}` : state.playable ? `${ic("check-circle")}в игре` : "не в игре";
     if (state.id === "mini_regulator" && !err) chip.textContent = "мини-игра";
     chip.dataset.tip = err ? "Открыть проверку" : "";
-    $("#save").disabled = !state.dirty && !state.virtual && !App.hasPendingInspectorField?.();
+    $("#save").disabled = !!state.deleting?.includes(state.id) || (!state.dirty && !state.virtual && !App.hasPendingInspectorField?.());
     $("#save").classList.toggle("pulse", state.dirty || state.virtual);
     $("#undo").disabled = !state.undo.length;
     $("#redo").disabled = !state.redo.length;
@@ -1034,7 +1089,7 @@ const App = (() => {
 
   return {
     state, planScene, hasPlayerPlan, api, toast, confirm: confirmBox, esc, ic, r3, objectOf, pointsOfRef, shapeCenter, isGeneratedSurface, isPaint, layerOf, catalogSize, sameRef, nameOf,
-    edit, beginDrag, dragMove, endDrag, cancelDrag, undo, redo, changed, openScene, sceneTitle, save, setPlayable, runInGame,
+    edit, beginDrag, dragMove, endDrag, cancelDrag, undo, redo, changed, openScene, sceneTitle, save, deleteScene, setPlayable, runInGame,
     select, toggle, pickable, isLocked, moveRef, nudge, canRotate, canCopy, canRemoveObject, rotate, copy, paste, duplicate, remove, setPlayerGuideVisible, selectPlayerPath, resetPlayerGuide, uniqueId, toggleHidden, toggleLocked,
     renderTop, showHome, setView, plural, thumbRev, boot, loadList,
     get S() { return state.S; },

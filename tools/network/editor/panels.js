@@ -3,6 +3,7 @@
 (() => {
   const $ = (s) => document.querySelector(s);
   const { esc, ic, state } = App;
+  App.sceneDeleteButton = id => id === "mini_regulator" ? "" : `<button type="button" class="icon-btn scene-delete" data-delete-scene="${esc(id)}" title="Удалить вопрос из игры" aria-label="Удалить вопрос из игры · ${esc(App.sceneTitle(id))}">${ic("trash")}</button>`;
   state.ltab = "scenes";
   state.texSel = null;
   let query = "", filter = "all", libQuery = "", libraryCategory = "all", filtersCollapsed = false, open = { decor: false };
@@ -152,10 +153,10 @@
     return `${state.section === "regulator" ? "" : `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="scene-q" aria-label="Поиск сцен" placeholder="Билет или текст вопроса" value="${esc(query)}"></label>
       ${sectionNav()}<div class="scene-filter-bar"><span class="scene-filter-current" ${filtersCollapsed || questions ? "" : "hidden"}>${questions && QuestionPlan.filterSummary ? esc(QuestionPlan.filterSummary().label) : filter === "assistant" ? esc(APPROVAL_FILTERS.find(([key]) => key === approvalFilter)[1]) : esc(FILTERS.find(([key]) => key === filter)[1])} <em>${questions && QuestionPlan.filterSummary ? QuestionPlan.filterSummary(query).count : list.length}</em></span>
       <div id="scene-filters" ${filtersCollapsed ? "hidden" : ""}>${statusOptions()}</div><button class="scene-filter-toggle" data-toggle-scene-filters aria-expanded="${!filtersCollapsed}" aria-controls="scene-filters" aria-label="${filtersCollapsed ? "Показать фильтры" : "Скрыть фильтры"}" title="Фильтры">${ic("sliders")}</button></div></div>`}
-      ${questions ? QuestionPlan.sidebarHtml(query, { filtersCollapsed }) : `<div class="scene-list">${list.map((s) => `<button class="scene-row ${s.id === state.id ? "on" : ""}" data-scene="${esc(s.id)}" ${s.id === state.id ? 'aria-current="true"' : ""}>
+      ${questions ? QuestionPlan.sidebarHtml(query, { filtersCollapsed }) : `<div class="scene-list">${list.map((s) => `<div class="scene-row-item"><button class="scene-row ${s.id === state.id ? "on" : ""}" data-scene="${esc(s.id)}" ${s.id === state.id ? 'aria-current="true"' : ""}>
         <span class="scene-pic">${scenePicture(s)}</span>
         <span class="scene-text"><b>${esc(App.sceneTitle(s.id))}</b>
-        <span class="badges">${badges(s)}</span></span></button>`).join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`}`;
+        <span class="badges">${badges(s)}</span></span></button>${App.sceneDeleteButton(s.id)}</div>`).join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`}`;
   }
   function badges(s) {
     const out = [];
@@ -182,10 +183,10 @@
         ${state.S ? `<button class="btn ghost" id="home-back">${ic("map")}К сцене</button>` : ""}
       </div>
       ${regulator ? "" : `<div class="home-scene-navigation">${sectionNav()}${statusOptions()}</div>`}
-      ${questions ? QuestionPlan.homeHtml(query) : `<div class="home-grid">${list.map((s) => `<button class="card-scene ${s.id === state.id ? "current" : ""}" data-scene="${esc(s.id)}">
+      ${questions ? QuestionPlan.homeHtml(query) : `<div class="home-grid">${list.map((s) => `<div class="scene-card-item"><button class="card-scene ${s.id === state.id ? "current" : ""}" data-scene="${esc(s.id)}">
         <span class="card-pic">${scenePicture(s)}<span class="card-badges badges">${badges(s)}</span></span>
         <span class="card-body"><b>${esc(App.sceneTitle(s.id))}</b>${s.questionText ? `<small>${esc(s.questionText)}</small>` : ""}</span>
-      </button>`).join("") || `<p class="empty-note">${ic("search")}Ничего не нашлось</p>`}</div>`}</div>`;
+      </button>${App.sceneDeleteButton(s.id)}</div>`).join("") || `<p class="empty-note">${ic("search")}Ничего не нашлось</p>`}</div>`}</div>`;
     const q = $("#home-q");
     if (renderHome.focus && q) { q.focus(); q.setSelectionRange(...renderHome.focus); }
     else if (focused) home.querySelector(focused)?.focus({ preventScroll: true });
@@ -232,6 +233,12 @@
     if (e.target.id === "lib-q") { libQuery = e.target.value; renderLeft.focus = caret(); renderLeft(); $("#left-body").scrollTop = 0; }
   });
   document.addEventListener("click", (e) => {
+    const deletion = e.target.closest("[data-delete-scene]");
+    if (deletion) {
+      e.preventDefault();
+      if (!deletion.disabled && deletion.dataset.deleteScene !== "mini_regulator") Promise.resolve(App.deleteScene(deletion.dataset.deleteScene)).catch(err => App.toast(err.message, "bad"));
+      return;
+    }
     if (e.target.closest("[data-toggle-scene-filters]")) { App.setSceneFiltersCollapsed(!filtersCollapsed); return; }
     const navigation = e.target.closest("[data-scene-section]");
     if (navigation) {

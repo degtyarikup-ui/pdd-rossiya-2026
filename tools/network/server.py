@@ -29,6 +29,7 @@ import check  # noqa: E402
 import engine_sync  # noqa: E402
 import question_pool  # noqa: E402
 import number_sign  # noqa: E402
+import scene_delete  # noqa: E402
 
 HERE = Path(__file__).parent
 EDITOR = HERE / "editor"
@@ -324,6 +325,10 @@ class Handler(BaseHTTPRequestHandler):
     def guarded(self, route):
         try:
             route()
+        except scene_delete.SceneDeleteConflict as e:
+            self.send(409, {"error": str(e)})
+        except scene_delete.SceneDeleteNotFound as e:
+            self.send(404, {"error": str(e)})
         except Exception as e:  # noqa: BLE001 - reported to the editor, the server goes on
             self.send(422, {"error": f"Сцена не собралась: {type(e).__name__}: {e}"})
 
@@ -385,7 +390,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, self.catalog())
         if path == "/api/textures":
             return self.send(200, self.texture_list())
+        m = re.fullmatch(r"/api/scene/(ticket_\d+_\d+)/deletion", path)
+        if m:
+            return self.send(200, scene_delete.describe(m[1], QUESTION_POOL, SIT, HISTORY))
         m = re.match(r"^/api/scene/([a-z0-9_]+)$", path)
+        if m and scene_delete.is_deleted(m[1], HISTORY, NET):
+            return self.send(410, {"error": "Этот вопрос удалён из игры"})
         if m and self.scene_exists(m[1]):
             s = check.load(m[1])
             built = build.build(s)
@@ -400,8 +410,19 @@ class Handler(BaseHTTPRequestHandler):
 
     def route_post(self):
         path = self.path.split("?")[0]
+        m = re.fullmatch(r"/api/scene/(ticket_\d+_\d+)/delete", path)
+        if m:
+            body = self.body()
+            return self.send(200, scene_delete.delete(m[1], body.get("revision"), QUESTION_POOL, SIT, HISTORY))
+        # An old tab or a delayed thumbnail callback must not recreate deleted
+        # files after the question has been removed in another tab.
+        m = re.fullmatch(r"/api/(?:scene|game/include|thumb)/(ticket_\d+_\d+)", path)
+        if m and scene_delete.is_deleted(m[1], HISTORY, NET):
+            return self.send(410, {"error": "Этот вопрос удалён из игры. Обновите список сцен."})
         m = re.match(r"^/api/questions/([a-z0-9_]+)/decision$", path)
         if m:
+            if scene_delete.is_deleted(m[1], HISTORY, NET):
+                return self.send(410, {"error": "Этот вопрос удалён из игры"})
             body = self.body()
             if "decision" not in body or body["decision"] not in (None, "yes", "no"):
                 return self.send(400, {"error": "Выберите yes, no или null"})
@@ -482,6 +503,8 @@ class Handler(BaseHTTPRequestHandler):
                         "questionPool": scene.get("questionPool")})
 
     def question_scene(self, sid: str):
+        if scene_delete.is_deleted(sid, HISTORY, NET):
+            return self.send(410, {"error": "Этот вопрос удалён из игры"})
         candidate = QUESTION_POOL.draft_source(sid)
         if candidate is None:
             return self.send(404, {"error": "Для этого вопроса нет сцены в редакторе"})

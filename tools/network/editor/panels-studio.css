@@ -115,3 +115,19 @@
   .card-body b { font-size: 12px; }
   .card-body small { font-size: 11px; }
 }
+
+/* Opening a scene and deleting it are sibling controls, including on touch screens. */
+.scene-row-item, .scene-card-item { position: relative; min-width: 0; }
+#left-body .scene-row-item:has(.scene-delete) > .scene-row { padding-right: 34px; }
+.scene-row-item > .scene-delete { position: absolute; top: 50%; right: 3px; transform: translateY(-50%); }
+.scene-card-item > .card-scene { width: 100%; height: 100%; }
+.scene-card-item > .scene-delete { position: absolute; top: 7px; right: 7px; background: #17242bef; border: 1px solid #ffffff25; }
+.scene-delete.icon-btn { width: 28px; height: 28px; color: var(--ink-3); border-radius: 5px; }
+.scene-card-item > .scene-delete { color: #dce5e9; }
+.scene-delete.icon-btn:hover:not(:disabled), .scene-delete.icon-btn:focus-visible { color: var(--red); background: var(--red-soft); }
+.scene-delete.icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.scene-delete .i { width: 15px; height: 15px; }
+@media (pointer: coarse) {
+  .scene-delete.icon-btn { width: 34px; height: 34px; }
+  #left-body .scene-row-item:has(.scene-delete) > .scene-row { padding-right: 40px; }
+}

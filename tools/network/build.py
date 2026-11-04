@@ -45,11 +45,14 @@ the kerb; the traced paint is cut back from the kerb (EDGE_BAND) to make room fo
 import json
 import math
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
 import triangle
-from shapely import set_precision
+from shapely import (set_precision, distance as geometry_distance, points as geometry_points,
+                     polygons as geometry_polygons, contains as geometry_contains,
+                     intersects as geometry_intersects)
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import substring, unary_union
 import direction_marking
@@ -349,7 +352,19 @@ def edge_lines(roads, box: Polygon):
 def disabled_edge_mask(scene: dict, roads_all):
     """Arm edges and the roundabout's two contours have independent switches."""
     roads = scene.get("roads", [])
-    disabled = unary_union([polygon_of(r) for r in roads if r.get("edge") is False])
+    layout = scene.get("layout") or {}
+    # The layout adds circular filler at dead ends, bends and junctions. Those
+    # polygons have no edge switch of their own: inherit it from their arms.
+    # Read the graph here as well as freshly generated polygons, so previously
+    # saved scenes do not need rewriting to remove their orphaned white arcs.
+    disabled_nodes = set()
+    for node in layout.get("nodes", []):
+        if node.get("ring"):
+            continue  # A ring deliberately owns its inner/outer edge switches.
+        arms = [street for street in layout.get("streets", []) if node["id"] in (street["a"], street["b"])]
+        if arms and all(street.get("edge") is False or street.get("surface") == "sand" for street in arms):
+            disabled_nodes.add(plan_road_id(scene, node["id"]))
+    disabled = unary_union([polygon_of(r) for r in roads if r.get("edge") is False or r.get("id") in disabled_nodes])
     # Include rounded joins between disabled arms, just like the carriageway.
     mask = disabled.buffer(CURB_RADIUS, quad_segs=32).buffer(-CURB_RADIUS, quad_segs=32).buffer(0.6)
     # Arm rectangles reach into the island. They must not interrupt its enabled line.
@@ -657,30 +672,118 @@ def soft_ground(sand, paved, solid, box):
     return out, shoulder
 
 
-def blended_shoulder(region, weights):
+def blended_shoulder(region, weights, weights_many=None):
     """Closely spaced vertices interpolate continuous asphalt/earth/grass shares."""
     from shapely.prepared import prep
-    covered = prep(region)
     verts, indices, shares, lookup = [], [], [], {}
     x0, z0, x1, z1 = region.bounds
+    # Line-only remnants of a polygon difference draw no surface, but prevent
+    # GEOS from using its prepared polygon fast path on the collection.
+    if region.geom_type == "GeometryCollection":
+        def polygon_parts(geometry):
+            if geometry.geom_type == "Polygon":
+                yield geometry
+            elif hasattr(geometry, "geoms"):
+                for child in geometry.geoms:
+                    yield from polygon_parts(child)
+        region = unary_union(list(polygon_parts(region)))
     step = .4
     def vertex(x, z):
         key = (round(x, 3), round(z, 3))
         if key not in lookup:
             lookup[key] = len(verts) // 2
             verts.extend(key)
-            shares.extend(weights(Point(*key)))
+            if weights_many is None:
+                shares.extend(weights(Point(*key)))
         return lookup[key]
-    for ix in range(math.ceil((x1-x0)/step)):
-        for iz in range(math.ceil((z1-z0)/step)):
-            x, z = x0+ix*step, z0+iz*step
-            cell = Polygon([(x,z),(x+step,z),(x+step,z+step),(x,z+step)])
-            if not covered.intersects(cell): continue
-            v, t = triangulate(cell if covered.contains(cell) else cell.intersection(region))
-            ids = [vertex(v[i],v[i+1]) for i in range(0,len(v),2)]
-            indices.extend(ids[i] for i in t)
+    nx, nz = math.ceil((x1-x0)/step), math.ceil((z1-z0)/step)
+    for ix in range(nx):
+        x = x0 + ix * step
+        # A thin shoulder may surround a large junction: scanning its whole
+        # bounding square used to allocate hundreds of thousands of empty cells.
+        # Intersect one column first, then visit only its occupied Z intervals.
+        # The final cells, clipping and iteration order remain exactly the same.
+        column = region.intersection(Polygon([(x,z0),(x+step,z0),(x+step,z1),(x,z1)]))
+        prep(column)
+        intervals = []
+        for part in getattr(column, "geoms", [column]):
+            if part.is_empty:
+                continue
+            bounds = part.bounds
+            # Include touching neighbours despite floating-point boundary noise.
+            start = max(0, math.floor((bounds[1]-z0)/step)-1)
+            end = min(nz, math.floor((bounds[3]-z0)/step)+2)
+            intervals.append((start, end))
+        candidates, cursor = [], 0
+        for start, end in sorted(intervals):
+            candidates.extend(range(max(start, cursor), end))
+            cursor = max(cursor, end)
+        if not candidates:
+            continue
+        zs = z0 + np.asarray(candidates) * step
+        coordinates = np.empty((len(candidates), 4, 2))
+        coordinates[:, :, 0] = (x, x+step, x+step, x)
+        coordinates[:, :, 1] = np.column_stack((zs, zs, zs+step, zs+step))
+        cells = geometry_polygons(coordinates)
+        # GEOS evaluates a column in one call instead of thousands of Python
+        # polygon constructors/predicate wrappers. Original cell order is kept.
+        occupied = geometry_intersects(column, cells)
+        inside = geometry_contains(column, cells)
+        for i in np.flatnonzero(occupied):
+            if inside[i]:
+                # Same diagonal/rounding as the constrained triangulator for
+                # an axis-aligned CCW square, without invoking it per cell.
+                v = np.round(coordinates[i], 3).ravel().tolist()
+                t = (3, 0, 1, 1, 2, 3)
+            else:
+                v, t = triangulate(cells[i].intersection(region))
+            ids = [vertex(v[j],v[j+1]) for j in range(0,len(v),2)]
+            indices.extend(ids[j] for j in t)
+    if weights_many is not None and verts:
+        shares = weights_many(np.asarray(verts).reshape((-1, 2)))
     return {"id":"rural_shoulder", "y":ROAD_Y, "layer":"field", "soil_colour":"#96846b",
             "soil_kind":"gravel", "colour":"#96846b", "verts":verts, "idx":indices, "shares":shares}
+
+
+@lru_cache(maxsize=8)
+def _rural_shoulder_mesh(region, roads, ends, box):
+    """Pure derived mesh; every geometry used for shape and blend weights is a key.
+
+    Shapely geometries are immutable. An eight-result bound avoids retaining
+    whole edit histories, and callers receive their own mutable vertex lists.
+    """
+    border = box.boundary
+    has_ends = not ends.is_empty
+    def weights(point):
+        end_distance = border.distance(point)
+        if has_ends:
+            end_distance = min(end_distance, ends.distance(point))
+        fade = _smooth(0, 7, end_distance)
+        distance = roads.distance(point)
+        width = 2.5 * fade
+        earth = (1 - _smooth(max(0, width - .9), max(.001, width), distance)) * fade
+        asphalt = (1 - _smooth(0, .5, distance)) * earth
+        return (asphalt, earth - asphalt, 1 - earth)
+    def weights_many(coordinates):
+        points = geometry_points(coordinates)
+        end_distance = geometry_distance(border, points)
+        if has_ends:
+            end_distance = np.minimum(end_distance, geometry_distance(ends, points))
+        def smooth(e0, e1, x):
+            t = np.clip((x-e0)/(e1-e0), 0.0, 1.0)
+            return t*t*(3-2*t)
+        fade = smooth(0, 7, end_distance)
+        distance = geometry_distance(roads, points)
+        width = 2.5*fade
+        earth = (1-smooth(np.maximum(0, width-.9), np.maximum(.001, width), distance))*fade
+        asphalt = (1-smooth(0, .5, distance))*earth
+        return np.column_stack((asphalt, earth-asphalt, 1-earth)).ravel().tolist()
+    return blended_shoulder(region, weights, weights_many)
+
+
+def rural_shoulder_mesh(region, roads, ends, box):
+    cached = _rural_shoulder_mesh(region, roads, ends, box)
+    return {key: list(value) if isinstance(value, list) else value for key, value in cached.items()}
 
 
 def build(scene: dict) -> dict:
@@ -778,17 +881,7 @@ def build(scene: dict) -> dict:
         disabled = unary_union([polygon_of(r) for r in scene.get("roads", [])
                                 if r not in shoulder_items])
         ends = shoulder_roads.boundary.intersection(disabled.buffer(.06)).difference(roads_all.boundary.buffer(.1))
-        def shoulder_shares(point):
-            end_distance = box.boundary.distance(point)
-            if not ends.is_empty:
-                end_distance = min(end_distance, ends.distance(point))
-            fade = _smooth(0, 7, end_distance)
-            distance = roads_all.distance(point)
-            width = 2.5 * fade
-            earth = (1 - _smooth(max(0, width - .9), max(.001, width), distance)) * fade
-            asphalt = (1 - _smooth(0, .5, distance)) * earth
-            return (asphalt, earth - asphalt, 1 - earth)
-        surfaces.append(blended_shoulder(rural_shoulder, shoulder_shares))
+        surfaces.append(rural_shoulder_mesh(rural_shoulder, roads_all, ends, box))
     visible_rails = authored_rails(scene).intersection(box)
     if not visible_rails.is_empty:
         v, t = triangulate(visible_rails)

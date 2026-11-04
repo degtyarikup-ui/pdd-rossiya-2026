@@ -12,9 +12,9 @@ const QuestionPlan = (() => {
     if (FILTERS.some(([key]) => key === preference.filter)) filter = preference.filter;
   } catch (_) { /* Optional view preference. */ }
   const pool = () => state.questions || [];
-  // Preserve every selected question and existing scene. Unsorted questions no
-  // longer form a review queue; their original records remain on the server.
-  const kept = () => pool().filter(question => question.decision === 'yes' || question.hasScene || question.status !== 'plan');
+  // A rejected question stays hidden even when its archived scene still exists.
+  // Unsorted questions no longer form a review queue; records remain on the server.
+  const kept = () => pool().filter(question => !state.deletedSceneIds?.has(question.id) && question.decision !== 'no' && (question.decision === 'yes' || question.hasScene || question.status !== 'plan'));
   const title = question => `Билет ${question.ticket} · вопрос ${question.number}`;
   const category = question => (question.categories || [question.category]).filter(Boolean).map(key => ({ab:'A/B',cd:'C/D'}[key] || key)).join(' · ');
   const normalized = value => String(value || '').toLowerCase().replace(/ё/g, 'е').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
@@ -49,11 +49,11 @@ const QuestionPlan = (() => {
   function sidebarHtml(text = query, { filtersCollapsed = false } = {}) {
     if (!state.questionsLoaded) return loadingHtml();
     return `<div class="question-pane-tools"><div id="question-filter-options" ${filtersCollapsed ? 'hidden' : ''}>${filterHtml()}</div></div>
-      <div class="scene-list question-list">${list(text).map(question => `<button class="scene-row ${question.id === state.id ? 'on' : ''}" data-plan-question="${esc(question.id)}" aria-label="${esc(title(question))}" ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="scene-pic question-pic">${photo(question)}</span><span class="scene-text"><b>${esc(title(question))}</b><span class="badges">${badge(question)}</span></span></button>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
+      <div class="scene-list question-list">${list(text).map(question => `<div class="scene-row-item"><button class="scene-row ${question.id === state.id ? 'on' : ''}" data-plan-question="${esc(question.id)}" aria-label="${esc(title(question))}" ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="scene-pic question-pic">${photo(question)}</span><span class="scene-text"><b>${esc(title(question))}</b><span class="badges">${badge(question)}</span></span></button>${App.sceneDeleteButton(question.id)}</div>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
   }
   function homeHtml(text = query) {
     if (!state.questionsLoaded) return loadingHtml();
-    return `<div class="question-home-tools">${filterHtml()}</div><div class="home-grid">${list(text).map(question => `<button class="card-scene" data-plan-question="${esc(question.id)}" ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="card-pic question-card-pic">${photo(question)}</span><span class="card-body"><b>${esc(title(question))} · ${esc(category(question))}</b><span class="question-card-text">${esc(question.question)}</span><span class="badges">${badge(question)}</span></span></button>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
+    return `<div class="question-home-tools">${filterHtml()}</div><div class="home-grid">${list(text).map(question => `<div class="scene-card-item"><button class="card-scene" data-plan-question="${esc(question.id)}" ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="card-pic question-card-pic">${photo(question)}</span><span class="card-body"><b>${esc(title(question))} · ${esc(category(question))}</b><span class="question-card-text">${esc(question.question)}</span><span class="badges">${badge(question)}</span></span></button>${App.sceneDeleteButton(question.id)}</div>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
   }
   function remember() {
     try { localStorage.setItem(STORE, JSON.stringify({ filter })); } catch (_) { /* Optional view preference. */ }
@@ -94,7 +94,7 @@ const QuestionPlan = (() => {
         return;
       }
       const question = pool().find(item => item.id === id);
-      if (!question || !editable(question)) { App.showHome(true); return; }
+      if (!question || question.decision === 'no' || !editable(question)) { App.showHome(true); return; }
       await App.openScene(id);
       if (state.id === id) { filter = question.status; remember(); refresh(); }
     } catch (reason) {
