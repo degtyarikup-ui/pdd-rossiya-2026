@@ -33,8 +33,9 @@ async function api(env, path, body, method = 'POST', overrides = {}) {
 test('defaults and saved zero settings survive reload and calculations', async () => {
   const env = environment();
   assert.equal((await getEconomyConfig(env)).nikitaSharePercent, 6.7);
+  assert.equal((await getEconomyConfig(env)).paymentFeePercent, 8);
   await saveEconomyConfig(env, { cloudflareMonthlyUsd: 0, domainMonthlyRub: 0, reinvestPercent: 0,
-    nikitaSharePercent: 0, targetMonthlyProfit: 0 });
+    nikitaSharePercent: 0, targetMonthlyProfit: 0, paymentFeePercent: 0 });
   await order(env, 'real', { amount: 1000 });
   const result = await stats(env);
   assert.equal(result.config.nikitaSharePercent, 0);
@@ -164,7 +165,7 @@ test('infrastructure is a period-aware monthly budget with explicit metadata', a
   await order(env, 'history', { confirmedAt: '2026-09-01T12:00:00Z' });
   const all = await stats(env, 'all');
   assert.equal(all.periodInfo.from, '2026-09-01');
-  assert.equal(all.expenses.totalRub, 821.74);
+  assert.equal(all.expenses.totalRub, 829.66); // 821.74 budget + 7.92 payment fee
   assert.equal(all.periodInfo.allTimeStartBasis, 'earliest_known_record');
 });
 
@@ -274,10 +275,11 @@ test('positive profit distributes only after expenses and reserve, payouts sum e
   await seedConfig(env, { reinvestPercent: 15, extraExpenses: [{ id: 'once', title: 'Покупка', amount: 50.01, date: '2026-10-01', frequency: 'once' }] });
   await order(env, 'income', { amount: 1000 });
   const result = await stats(env);
-  assert.equal(result.profit.operatingRub, 949.99);
-  assert.equal(result.profit.reinvestRub, 142.5);
-  assert.equal(result.profit.distributableNetRub, 807.49);
-  assert.equal(Math.round((result.partners.sergey.payoutRub + result.partners.nikita.payoutRub) * 100), 80749);
+  assert.equal(result.expenses.paymentFeesRub, 80);
+  assert.equal(result.profit.operatingRub, 869.99);
+  assert.equal(result.profit.reinvestRub, 130.5);
+  assert.equal(result.profit.distributableNetRub, 739.49);
+  assert.equal(Math.round((result.partners.sergey.payoutRub + result.partners.nikita.payoutRub) * 100), 73949);
   assert.equal(result.breakEven.isProfitable, true);
 });
 
@@ -466,9 +468,10 @@ test('all store sales enter income and profit alongside SBP and other receipts',
   assert.equal(result.revenue.gplayRub, 290);
   assert.equal(result.revenue.rustoreRub, 290);
   assert.equal(result.receipts.length, 6);
-  assert.equal(result.profit.reinvestRub, 534.5);
-  assert.equal(result.partners.nikita.payoutRub, 53.45);
-  assert.equal(result.partners.sergey.payoutRub, 481.05);
+  assert.equal(result.expenses.paymentFeesRub, 7.92);
+  assert.equal(result.profit.reinvestRub, 530.54);
+  assert.equal(result.partners.nikita.payoutRub, 53.05);
+  assert.equal(result.partners.sergey.payoutRub, 477.49);
   await saveEconomyConfig(env, { excludeTestOrders: false });
   assert.equal((await stats(env, 'month', { listUserSummaries: async () => users })).revenue.grossRub, 1359);
 });
@@ -501,4 +504,180 @@ test('store payouts remain informational across periods', async () => {
   assert.equal(all.revenue.includedStoreSalesRub, 580);
   assert.equal(all.receipts.find(row => row.type === 'manual').includedInRevenue, false);
   assert.equal(all.estimatedReceipts.find(row => row.storeKey === 'googleplay').includedInRevenue, true);
+});
+
+test('payment commission applies only to included web income, per payment rounded to kopeks', async () => {
+  const env = environment();
+  await seedConfig(env, { manualRevenues: [
+    { id: 'manual-web', title: 'СБП', amountRub: 1000, store: 'web', date: '2026-10-10' },
+    { id: 'other', title: 'Другое', amountRub: 50, store: 'other', date: '2026-10-10' },
+    { id: 'payout', title: 'Apple', amountRub: 100, store: 'appstore', date: '2026-10-10' },
+  ] });
+  await order(env, 'actual', { amount: 99 });
+  await order(env, 'test', { amount: 100, isTest: true });
+  await order(env, 'refunded', { amount: 100, status: 'refunded' });
+  await order(env, 'tiny-a', { amount: 0.06 });
+  await order(env, 'tiny-b', { amount: 0.06 });
+  const result = await stats(env);
+  assert.equal(result.revenue.grossRub, 1149.12);
+  assert.equal(result.expenses.paymentFeesRub, 87.92);
+  assert.equal(result.expenses.totalRub, 87.92);
+  assert.equal(result.receipts.find(row => row.id === 'actual').feeRub, 7.92);
+  assert.equal(result.receipts.find(row => row.id === 'actual').netRub, 91.08);
+  assert.equal(result.receipts.find(row => row.id === 'test').feeRub, 0);
+  assert.equal(result.receipts.find(row => row.id === 'other').feeRub, 0);
+  assert.equal(result.receipts.find(row => row.id === 'payout').feeRub, 0);
+  assert.equal(result.receipts.find(row => row.id === 'tiny-a').feeRub, 0);
+  await saveEconomyConfig(env, { excludeTestOrders: false });
+  assert.equal((await stats(env)).expenses.paymentFeesRub, 95.92);
+  await saveEconomyConfig(env, { paymentFeePercent: 0 });
+  assert.equal((await stats(env)).expenses.paymentFeesRub, 0);
+  for (const paymentFeePercent of [-1, 101, '8', null]) {
+    assert.equal((await api(env, 'settings', { paymentFeePercent })).status, 400);
+    assert.equal((await getEconomyConfig(env)).paymentFeePercent, 0);
+  }
+});
+
+test('withdrawal CRUD records the transfer and counts only its fee as expense', async () => {
+  const env = environment();
+  await seedConfig(env, { reinvestPercent: 0 });
+  await order(env, 'income', { amount: 1000 });
+  const before = await stats(env);
+  const added = await api(env, 'withdrawals/add', { amount: 25, currency: 'USD', fee: 1.5, feeMode: 'additional', date: '2026-10-10' });
+  assert.equal(added.status, 200);
+  const item = added.data.withdrawal;
+  assert.equal(item.usdRate, 95);
+  assert.equal(item.store, 'web');
+  let result = await stats(env);
+  assert.equal(result.revenue.grossRub, before.revenue.grossRub);
+  assert.equal(result.expenses.paymentFeesRub, 80);
+  assert.equal(result.expenses.withdrawalFeesRub, 142.5);
+  assert.equal(result.expenses.totalRub, 222.5);
+  assert.equal(result.profit.operatingRub, 777.5);
+  assert.deepEqual(result.withdrawalSummary, { amountRub: 2375, feeRub: 142.5, receivedRub: 2375, debitedRub: 2517.5, count: 1 });
+  assert.equal(result.expenses.lines.some(row => row.id === item.id), false, 'transfer is not an expense line');
+  const updated = await api(env, 'withdrawals/update', { id: item.id, feeMode: 'included' });
+  assert.equal(updated.status, 200);
+  assert.equal(updated.data.withdrawal.createdAt, item.createdAt);
+  result = await stats(env);
+  assert.equal(result.withdrawals[0].receivedRub, 2232.5);
+  assert.equal(result.withdrawals[0].debitedRub, 2375);
+  assert.equal(result.profit.operatingRub, 777.5, 'fee mode changes transfer amounts, not profit');
+  await saveEconomyConfig(env, { usdRate: 120 });
+  result = await stats(env);
+  assert.equal(result.withdrawals[0].usdRate, 95, 'historical exchange rate stays fixed');
+  assert.equal(result.expenses.withdrawalFeesRub, 142.5);
+  assert.equal((await api(env, 'withdrawals/delete', { id: item.id })).status, 200);
+  assert.equal((await stats(env)).expenses.withdrawalFeesRub, 0);
+  assert.equal((await stats(env)).profit.operatingRub, before.profit.operatingRub);
+  assert.equal((await api(env, 'withdrawals/delete', { id: item.id })).status, 404);
+});
+
+test('withdrawal validation rejects invalid data without replacing prior entries', async () => {
+  const env = environment();
+  await seedConfig(env);
+  const base = { title: 'Вывод', amount: 25, currency: 'USD', fee: 1.5, feeMode: 'included', date: '2026-10-10' };
+  for (const patch of [{ title: null }, { title: 42 }, { title: {} }, { title: 'x'.repeat(161) }, { amount: 0 }, { amount: -1 }, { amount: '25' }, { fee: -1 }, { fee: 26 },
+    { fee: '1.5' }, { feeMode: 'unknown' }, { currency: 'EUR' }, { usdRate: 0 }, { usdRate: '95' },
+    { date: '2026-02-30' }, { date: '2026-10-17' }, { store: '__proto__' }]) {
+    assert.equal((await api(env, 'withdrawals/add', { ...base, ...patch })).status, 400, JSON.stringify(patch));
+    assert.equal((await getEconomyConfig(env)).withdrawals.length, 0);
+  }
+  assert.equal((await api(env, 'withdrawals/update', { amount: 10 })).status, 400);
+  assert.equal((await api(env, 'settings', { withdrawals: [] })).status, 400);
+  const added = await api(env, 'withdrawals/add', { ...base, fee: 0 });
+  assert.equal(added.status, 200);
+  assert.equal((await stats(env)).expenses.withdrawalFeesRub, 0);
+  assert.equal((await api(env, 'withdrawals/update', { id: added.data.withdrawal.id, fee: 30 })).status, 400);
+  assert.equal((await getEconomyConfig(env)).withdrawals[0].fee, 0);
+});
+
+test('quick withdrawal accepts an empty optional title and stores a useful default', async () => {
+  const env = environment();
+  await seedConfig(env);
+  for (const title of ['', '  \t ', undefined]) {
+    const added = await api(env, 'withdrawals/add', { title, amount: 25, currency: 'USD', fee: 1.5, date: '2026-10-10' });
+    assert.equal(added.status, 200);
+    assert.equal(added.data.withdrawal.title, 'Вывод средств');
+  }
+  assert.equal((await getEconomyConfig(env)).withdrawals.length, 3);
+});
+
+test('withdrawal fees follow Moscow period boundaries and future legacy rows stay excluded', async () => {
+  const env = environment();
+  await seedConfig(env, { withdrawals: [
+    { id: 'old', amount: 10, fee: 1, currency: 'RUB', date: '2026-09-20' },
+    { id: 'current', amount: 20, fee: 2, currency: 'RUB', date: '2026-10-15' },
+    { id: 'future', amount: 30, fee: 3, currency: 'RUB', date: '2099-01-01' },
+  ] });
+  const month = await stats(env);
+  assert.equal(month.withdrawalSummary.count, 1);
+  assert.equal(month.expenses.withdrawalFeesRub, 2);
+  assert.deepEqual(month.withdrawals.map(row => row.id), ['current']);
+  const rolling = await stats(env, '30d');
+  assert.equal(rolling.withdrawalSummary.count, 2);
+  assert.equal(rolling.expenses.withdrawalFeesRub, 3);
+  assert.equal((await stats(env, 'all')).expenses.withdrawalFeesRub, 3);
+  await saveEconomyConfig(env, { usdRate: 100 });
+  assert.equal((await getEconomyConfig(env)).withdrawals.length, 3);
+  const midnight = Date.parse('2026-10-31T21:01:00Z');
+  const added = await api(env, 'withdrawals/add', { amount: 5, fee: 1, currency: 'RUB', date: '2026-11-01' }, 'POST', { now: midnight });
+  assert.equal(added.status, 200);
+  const november = await stats(env, 'month', { now: midnight });
+  assert.equal(november.withdrawalSummary.count, 1);
+  assert.equal(november.expenses.withdrawalFeesRub, 1);
+  assert.equal(november.revenue.grossRub, 0);
+  assert.equal(november.profit.operatingRub, -1);
+  assert.equal(november.partners.sergey.payoutRub, 0);
+});
+
+test('manual foreign currency income freezes its rate and legacy RUB edits remain compatible', async () => {
+  const env = environment();
+  await seedConfig(env);
+  const added = await api(env, 'revenues/add', { title: 'Доход', amount: 10, currency: 'USD', store: 'other', date: '2026-10-10' });
+  assert.equal(added.status, 200);
+  const id = added.data.revenue.id;
+  assert.equal(added.data.revenue.usdRate, 95);
+  assert.equal(added.data.revenue.amountRub, 950);
+  await saveEconomyConfig(env, { usdRate: 120 });
+  assert.equal((await stats(env)).revenue.grossRub, 950);
+  const updated = await api(env, 'revenues/update', { id, amount: 20 });
+  assert.equal(updated.data.revenue.amountRub, 1900);
+  const legacy = await api(env, 'revenues/update', { id, amountRub: 123 });
+  assert.equal(legacy.data.revenue.currency, 'RUB');
+  assert.equal(legacy.data.revenue.amountRub, 123);
+  assert.equal((await stats(env)).revenue.grossRub, 123);
+  const changedCurrency = await api(env, 'revenues/update', { id, amount: 1, currency: 'USD' });
+  assert.equal(changedCurrency.data.revenue.usdRate, 120);
+  assert.equal(changedCurrency.data.revenue.amountRub, 120);
+});
+
+test('standalone commissions retain their type and recur without duplicate expense entries', async () => {
+  const env = environment();
+  await seedConfig(env);
+  const added = await api(env, 'expenses/add', { title: 'Банк', amount: 10, currency: 'RUB', frequency: 'monthly', category: 'commission', date: '2026-09-01' });
+  assert.equal(added.status, 200);
+  assert.equal(added.data.expense.category, 'commission');
+  const result = await stats(env, 'all');
+  assert.equal(result.expenses.totalRub, 20);
+  assert.equal(result.expenses.extraList[0].category, 'commission');
+  assert.equal(result.expenses.extraList[0].occurrences, 2);
+  assert.equal(result.expenses.paymentFeesRub, 0);
+  assert.equal(result.expenses.withdrawalFeesRub, 0);
+  assert.equal((await api(env, 'expenses/add', { title: 'Bad', amount: 1, category: 'income' })).status, 400);
+});
+
+test('record limit returns a validation response without modifying any saved records', async () => {
+  for (const [kind, key, item] of [
+    ['withdrawals', 'withdrawals', { amount: 1, date: '2026-10-01' }],
+    ['revenues', 'manualRevenues', { title: 'Income', amountRub: 1, date: '2026-10-01' }],
+    ['expenses', 'extraExpenses', { title: 'Expense', amount: 1, date: '2026-10-01' }],
+  ]) {
+    const env = environment();
+    await seedConfig(env, { [key]: Array.from({ length: 1000 }, (_, index) => ({ ...item, id: String(index) })) });
+    const before = await env.INSTALLS.get('economy_config');
+    const result = await api(env, kind + '/add', item);
+    assert.equal(result.status, 400, kind);
+    assert.equal(await env.INSTALLS.get('economy_config'), before);
+  }
 });

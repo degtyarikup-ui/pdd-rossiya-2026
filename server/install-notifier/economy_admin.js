@@ -1,7 +1,10 @@
 // Админский учёт экономики. Платежи и сроки Premium здесь не изменяются.
 // Доход включает продажи магазинов по тарифу; выплаты магазинов — справочные.
+import { handlePlategaBalances } from './economy_platega.js';
+
 export const DEFAULT_ECONOMY_CONFIG = {
   usdRate: 95,
+  paymentFeePercent: 8,
   cloudflareMonthlyUsd: 5,
   cloudflareEnabled: true,
   domainMonthlyRub: 67,
@@ -13,6 +16,7 @@ export const DEFAULT_ECONOMY_CONFIG = {
   excludeTestOrders: true,
   extraExpenses: [],
   manualRevenues: [],
+  withdrawals: [],
 };
 const CONFIG_KEY = 'economy_config';
 const DAY = 86400000;
@@ -21,7 +25,7 @@ const DAY = 86400000;
 const MOSCOW_OFFSET = 3 * 3600000;
 const stores = { web: 'СБП (Platega)', appstore: 'App Store', googleplay: 'Google Play', rustore: 'RuStore', other: 'Другое' };
 const numericRules = {
-  usdRate: [0.0001, 100000], cloudflareMonthlyUsd: [0, 100000000],
+  usdRate: [0.0001, 100000], paymentFeePercent: [0, 100], cloudflareMonthlyUsd: [0, 100000000],
   domainMonthlyRub: [0, 100000000], reinvestPercent: [0, 100],
   nikitaSharePercent: [0, 100], sergeySharePercent: [0, 100],
   targetMonthlyProfit: [0, 1000000000],
@@ -70,25 +74,53 @@ function normalizeExpense(input, now = Date.now()) {
   const currency = input.currency ?? 'RUB';
   if (!['RUB', 'USD'].includes(currency)) throw new Error('Укажите валюту RUB или USD');
   const amount = number(input.amount ?? input.amountRub, 'сумма расхода', 0.01);
+  const category = input.category ?? 'expense';
+  if (!['expense', 'commission'].includes(category)) throw new Error('Укажите вид расхода');
   const starts = date(input.date ?? input.createdAt, 'расход', reportDay(now));
   const endDate = input.endDate ? date(input.endDate, 'окончание') : null;
   if (endDate && endDate < starts) throw new Error('Дата окончания раньше даты начала');
   return {
     id: typeof input.id === 'string' ? input.id : crypto.randomUUID(),
-    title: title(input.title), amount, currency, frequency, date: starts, endDate,
+    title: title(input.title), amount, currency, category, frequency, date: starts, endDate,
     // Совместимость с сохранёнными расходами и предыдущей версией панели.
     amountRub: currency === 'RUB' ? amount : undefined, monthly: frequency === 'monthly',
     createdAt: input.createdAt || new Date(now).toISOString(),
   };
 }
-function normalizeRevenue(input, now = Date.now(), allowFuture = false) {
+function fixedMoney(input, defaultRate) {
+  const currency = input.currency ?? 'RUB';
+  if (!['RUB', 'USD'].includes(currency)) throw new Error('Укажите валюту RUB или USD');
+  const amount = round(number(input.amount ?? input.amountRub, 'сумма', 0.01));
+  const usdRate = currency === 'USD' ? number(input.usdRate ?? defaultRate, 'курс доллара', ...numericRules.usdRate) : 1;
+  const amountRub = number(round(amount * usdRate), 'сумма в рублях', 0.01);
+  return { amount, currency, usdRate, amountRub };
+}
+function normalizeRevenue(input, now = Date.now(), allowFuture = false, defaultRate = DEFAULT_ECONOMY_CONFIG.usdRate) {
   if (!object(input)) throw new Error('Некорректное поступление');
   const store = input.store ?? 'other';
   if (!Object.hasOwn(stores, store)) throw new Error('Укажите источник поступления');
   const received = date(input.date ?? input.createdAt, 'поступление', reportDay(now));
   if (!allowFuture && received > reportDay(now)) throw new Error('Поступление не может быть в будущем');
   return { id: typeof input.id === 'string' ? input.id : crypto.randomUUID(),
-    title: title(input.title), amountRub: number(input.amountRub, 'сумма поступления', 0.01), store,
+    title: title(input.title), ...fixedMoney(input, defaultRate), store,
+    date: received, createdAt: input.createdAt || new Date(now).toISOString() };
+}
+function normalizeWithdrawal(input, now = Date.now(), allowFuture = false, defaultRate = DEFAULT_ECONOMY_CONFIG.usdRate) {
+  if (!object(input)) throw new Error('Некорректный вывод');
+  const store = input.store ?? 'web';
+  if (!Object.hasOwn(stores, store)) throw new Error('Укажите источник вывода');
+  const received = date(input.date ?? input.createdAt, 'вывод', reportDay(now));
+  if (!allowFuture && received > reportDay(now)) throw new Error('Вывод не может быть в будущем');
+  const money = fixedMoney(input, defaultRate);
+  const fee = round(number(input.fee ?? 0, 'комиссия вывода'));
+  const feeMode = input.feeMode ?? 'additional';
+  if (!['additional', 'included'].includes(feeMode)) throw new Error('Укажите способ списания комиссии');
+  if (feeMode === 'included' && fee > money.amount) throw new Error('Комиссия больше суммы вывода');
+  number(round(fee * money.usdRate), 'комиссия в рублях');
+  const withdrawalTitle = input.title === undefined || (typeof input.title === 'string' && !input.title.trim())
+    ? 'Вывод средств' : input.title;
+  return { id: typeof input.id === 'string' ? input.id : crypto.randomUUID(),
+    title: title(withdrawalTitle), ...money, fee, feeMode, store,
     date: received, createdAt: input.createdAt || new Date(now).toISOString() };
 }
 function normalizeList(items, normalize) {
@@ -96,7 +128,7 @@ function normalizeList(items, normalize) {
   return items.flatMap(item => { try { return [normalize(item)]; } catch (_) { return []; } });
 }
 function safeConfig(parsed = {}) {
-  const result = { ...DEFAULT_ECONOMY_CONFIG, extraExpenses: [], manualRevenues: [] };
+  const result = { ...DEFAULT_ECONOMY_CONFIG, extraExpenses: [], manualRevenues: [], withdrawals: [] };
   for (const [key, [min, max]] of Object.entries(numericRules)) {
     const value = parsed[key];
     if (typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max) result[key] = value;
@@ -107,7 +139,8 @@ function safeConfig(parsed = {}) {
     if (typeof parsed[key] === 'boolean') result[key] = parsed[key];
   }
   result.extraExpenses = normalizeList(parsed.extraExpenses, normalizeExpense);
-  result.manualRevenues = normalizeList(parsed.manualRevenues, item => normalizeRevenue(item, Date.now(), true));
+  result.manualRevenues = normalizeList(parsed.manualRevenues, item => normalizeRevenue(item, Date.now(), true, result.usdRate));
+  result.withdrawals = normalizeList(parsed.withdrawals, item => normalizeWithdrawal(item, Date.now(), true, result.usdRate));
   return result;
 }
 export function isTestOrder(order) {
@@ -132,9 +165,11 @@ export async function saveEconomyConfig(env, updates) {
     else if (booleanSettings.includes(key)) {
       if (typeof value !== 'boolean') throw new Error('Некорректное значение: ' + key);
       next[key] = value;
-    } else if (key === 'extraExpenses' || key === 'manualRevenues') {
+    } else if (key === 'extraExpenses' || key === 'manualRevenues' || key === 'withdrawals') {
       if (!Array.isArray(value) || value.length > 1000) throw new Error('Слишком много записей');
-      next[key] = value.map(item => key === 'extraExpenses' ? normalizeExpense(item) : normalizeRevenue(item, Date.now(), true));
+      next[key] = value.map(item => key === 'extraExpenses' ? normalizeExpense(item)
+        : key === 'manualRevenues' ? normalizeRevenue(item, Date.now(), true, next.usdRate)
+        : normalizeWithdrawal(item, Date.now(), true, next.usdRate));
     } else throw new Error('Неизвестная настройка: ' + key);
   }
   const hasNikita = Object.hasOwn(updates, 'nikitaSharePercent');
@@ -282,6 +317,7 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
     }
     receipts.push({ id: revenue.id, date: revenue.date, customer: revenue.title, email: '', store: stores[revenue.store],
       storeKey: revenue.store, tier: 'Поступление', amountRub: revenue.amountRub, txId: revenue.id,
+      amount: revenue.amount, currency: revenue.currency, usdRate: revenue.usdRate,
       isTest: false, status: 'confirmed', type: 'manual', includedInRevenue: !isStorePayout, editable: true });
   }
   let includedStoreSalesRub = 0;
@@ -293,6 +329,30 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
     }
     receipts.push(receipt);
   }
+  let paymentFeesRub = 0;
+  for (const receipt of receipts) {
+    receipt.paymentFeePercent = receipt.storeKey === 'web' ? config.paymentFeePercent : 0;
+    receipt.feeRub = receipt.includedInRevenue ? round(receipt.amountRub * receipt.paymentFeePercent / 100) : 0;
+    receipt.netRub = round(receipt.amountRub - receipt.feeRub);
+    paymentFeesRub += receipt.feeRub;
+  }
+  paymentFeesRub = round(paymentFeesRub);
+  const withdrawals = [];
+  const withdrawalSummary = { amountRub: 0, feeRub: 0, receivedRub: 0, debitedRub: 0, count: 0 };
+  for (const withdrawal of config.withdrawals) {
+    const time = remember(withdrawal.date);
+    if (!inPeriod(time, periodStart, now)) continue;
+    const feeRub = round(withdrawal.fee * withdrawal.usdRate);
+    // Вывод — перевод уже заработанных денег. Расходом является только комиссия.
+    const receivedRub = withdrawal.feeMode === 'included' ? round(withdrawal.amountRub - feeRub) : withdrawal.amountRub;
+    const debitedRub = withdrawal.feeMode === 'additional' ? round(withdrawal.amountRub + feeRub) : withdrawal.amountRub;
+    const row = { ...withdrawal, feeRub, receivedRub, debitedRub };
+    withdrawals.push(row);
+    for (const key of ['amountRub', 'feeRub', 'receivedRub', 'debitedRub']) withdrawalSummary[key] += row[key];
+  }
+  for (const key of ['amountRub', 'feeRub', 'receivedRub', 'debitedRub']) withdrawalSummary[key] = round(withdrawalSummary[key]);
+  withdrawalSummary.count = withdrawals.length;
+  withdrawals.sort((a, b) => timestamp(b.date) - timestamp(a.date));
   config.extraExpenses.forEach(expense => remember(expense.date));
   const budgetStart = period === 'all'
     ? (knownDates.length ? Date.parse(reportDay(Math.min(...knownDates))) : monthStart)
@@ -332,7 +392,7 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
   const aiIncluded = period === 'all' && aiValues[0] !== null && aiValues[0] !== undefined;
   // В KV есть только накопительная стоимость ИИ. Не приписываем её месяцу.
   const aiPeriodRub = aiIncluded ? aiCostRub : 0;
-  const totalExpensesRub = round(recurringRub + oneOffRub + aiPeriodRub);
+  const totalExpensesRub = round(recurringRub + oneOffRub + aiPeriodRub + paymentFeesRub + withdrawalSummary.feeRub);
   const grossRevenueRub = round(Object.values(revenueByStore).reduce((sum, value) => sum + value, 0));
   const operatingProfitRub = round(grossRevenueRub - totalExpensesRub);
   const reinvestRub = round(Math.max(0, operatingProfitRub) * config.reinvestPercent / 100);
@@ -354,8 +414,9 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
       manualRub: round(manualRevenuesRub), ordersCount: webConfirmedOrdersCount, activePayingCount, storeCounts,
       estimatedStoresRub, includedStoreSalesRub: round(includedStoreSalesRub),
       estimatesIncludedInGross: estimatedReceipts.some(receipt => receipt.includedInRevenue) },
-    receipts, estimatedReceipts,
+    receipts, estimatedReceipts, withdrawals, withdrawalSummary,
     expenses: { totalRub: totalExpensesRub, monthlyRub: round(monthlyRub), recurringRub: round(recurringRub), oneOffRub: round(oneOffRub),
+      paymentFeesRub, withdrawalFeesRub: withdrawalSummary.feeRub,
       lines, cloudflare: { usd: config.cloudflareMonthlyUsd, rub: cloudflarePeriodRub, monthlyRub: cloudflareMonthlyRub, enabled: config.cloudflareEnabled, basis: 'budget' },
       domain: { rub: domainPeriodRub, monthlyRub: domainMonthlyRub, enabled: config.domainEnabled, basis: 'budget' },
       ai: { usd: Number(aiCostUsd.toFixed(6)), rub: aiCostRub, periodRub: aiPeriodRub, scope: 'all',
@@ -378,24 +439,25 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
 }
 export async function handleEconomyAdmin(request, env, url, deps = {}) {
   const path = url.pathname;
+  if (path === '/api/admin/economy/platega' && request.method === 'GET') return handlePlategaBalances(env, deps);
   if (path === '/api/admin/economy/stats' && request.method === 'GET') {
     const period = url.searchParams.get('period') || 'month';
     if (!['month', '30d', 'all'].includes(period)) return reply({ error: 'Неизвестный период' }, 400);
     return reply({ ok: true, ...await computeEconomyStats(env, period, deps) });
   }
-  const match = path.match(/^\/api\/admin\/economy\/(expenses|revenues)\/(add|update|delete)$/);
+  const match = path.match(/^\/api\/admin\/economy\/(expenses|revenues|withdrawals)\/(add|update|delete)$/);
   if (request.method !== 'POST' || (!match && path !== '/api/admin/economy/settings')) return reply({ error: 'not found' }, 404);
   let body;
   try { body = await request.json(); } catch (_) { return reply({ error: 'Некорректный JSON' }, 400); }
   if (!object(body)) return reply({ error: 'Некорректные данные' }, 400);
   if (!env?.INSTALLS) return reply({ error: 'Хранилище недоступно' }, 503);
   if (path.endsWith('/settings')) {
-    if (Object.hasOwn(body, 'extraExpenses') || Object.hasOwn(body, 'manualRevenues')) return reply({ error: 'Изменяйте записи через список расходов и поступлений' }, 400);
+    if (['extraExpenses', 'manualRevenues', 'withdrawals'].some(key => Object.hasOwn(body, key))) return reply({ error: 'Изменяйте записи через журнал операций' }, 400);
     try { return reply({ ok: true, config: await saveEconomyConfig(env, body) }); }
     catch (error) { return reply({ error: error.message }, 400); }
   }
   const [, kind, action] = match;
-  const key = kind === 'expenses' ? 'extraExpenses' : 'manualRevenues';
+  const key = kind === 'expenses' ? 'extraExpenses' : kind === 'revenues' ? 'manualRevenues' : 'withdrawals';
   const config = await getEconomyConfig(env);
   const list = config[key];
   const id = typeof body.id === 'string' ? body.id : '';
@@ -407,6 +469,7 @@ export async function handleEconomyAdmin(request, env, url, deps = {}) {
   const index = list.findIndex(item => item.id === id);
   if (action !== 'add' && !id) return reply({ error: 'Не указан ID' }, 400);
   if (action !== 'add' && index < 0) return reply({ error: 'Запись не найдена' }, 404);
+  if (action === 'add' && list.length >= 1000) return reply({ error: 'Достигнут лимит: 1000 записей' }, 400);
   if (action === 'delete') {
     await saveEconomyConfig(env, { [key]: list.filter(item => item.id !== id) });
     return reply({ ok: true, id });
@@ -415,11 +478,17 @@ export async function handleEconomyAdmin(request, env, url, deps = {}) {
   try {
     const input = action === 'update' ? { ...list[index], ...body, id, createdAt: list[index].createdAt } : { ...body, id: crypto.randomUUID(), createdAt: new Date(deps.now ?? Date.now()).toISOString() };
     // Обновление старым клиентом не оставляет новое amount/frequency поверх legacy.
-    if (Object.hasOwn(body, 'amountRub') && !Object.hasOwn(body, 'amount')) input.amount = body.amountRub;
+    if (Object.hasOwn(body, 'amountRub') && !Object.hasOwn(body, 'amount')) {
+      input.amount = body.amountRub;
+      if (kind !== 'expenses') { input.currency = 'RUB'; input.usdRate = 1; }
+    }
+    if (kind !== 'expenses' && body.currency === 'USD' && input.usdRate === 1 && list[index]?.currency === 'RUB' && !Object.hasOwn(body, 'usdRate')) input.usdRate = config.usdRate;
     if (Object.hasOwn(body, 'monthly') && !Object.hasOwn(body, 'frequency')) input.frequency = body.monthly ? 'monthly' : 'once';
-    item = kind === 'expenses' ? normalizeExpense(input, deps.now ?? Date.now()) : normalizeRevenue(input, deps.now ?? Date.now());
+    item = kind === 'expenses' ? normalizeExpense(input, deps.now ?? Date.now())
+      : kind === 'revenues' ? normalizeRevenue(input, deps.now ?? Date.now(), false, config.usdRate)
+      : normalizeWithdrawal(input, deps.now ?? Date.now(), false, config.usdRate);
   } catch (error) { return reply({ error: error.message }, 400); }
   if (action === 'add') list.unshift(item); else list[index] = item;
   await saveEconomyConfig(env, { [key]: list });
-  return reply({ ok: true, [kind === 'expenses' ? 'expense' : 'revenue']: item });
+  return reply({ ok: true, [kind === 'expenses' ? 'expense' : kind === 'revenues' ? 'revenue' : 'withdrawal']: item });
 }

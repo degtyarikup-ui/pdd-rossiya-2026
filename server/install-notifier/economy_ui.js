@@ -1,126 +1,63 @@
-// Экономика: фактические поступления, календарь расходов и распределение прибыли.
-// Разметка и клиентский код подключаются оболочкой admin_ui.js.
+// Экономика: итог периода и единый журнал с отдельным учётом переводов и комиссий.
 export const ECONOMY_NAV_HTML = String.raw`
 <button class="nav-item" data-feature="economy"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Экономика</span></button>`;
 
 export const ECONOMY_VIEW_HTML = String.raw`
 <div id="economy-view" style="display:none">
 <style>
-#economy-view{color:var(--text,#17191E);--ec-muted:#747B88;--ec-blue:#0574F8;--ec-green:#15966B;--ec-red:#C54C35;--ec-soft:#F4F6F9}
-#economy-view [hidden]{display:none!important}
-#economy-view button{cursor:pointer}#economy-view button:disabled{cursor:default}
-.ec-toolbar,.ec-actions,.ec-head,.ec-inline{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.ec-toolbar{justify-content:space-between;margin-bottom:18px}.ec-actions{gap:8px}.ec-period-note{font-size:11px;color:var(--ec-muted);margin:0 0 16px}
-.ec-seg{display:flex;gap:3px;padding:4px;background:#E9ECF1;border-radius:11px;max-width:100%;width:fit-content}
-#economy-view .ec-seg button{border:0;padding:8px 13px;min-height:32px;border-radius:8px;background:transparent;color:var(--ec-muted);font-size:11.5px;font-weight:550;white-space:nowrap}
-#economy-view .ec-seg button.active{background:#17191E;color:#fff}
-#economy-view .ec-seg.ec-small{background:var(--ec-soft);padding:3px}#economy-view .ec-seg.ec-small button{padding:6px 10px;min-height:28px;font-size:11px}
-#economy-view .ec-seg.ec-small button.active{background:#fff;color:#17191E}
-.ec-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:16px}
-#economy-view .ec-card{background:#fff;padding:22px 24px;border-radius:20px;min-width:0}
-.ec-kpi-label{font-size:12px;color:var(--ec-muted);font-weight:500;display:flex;align-items:center;gap:7px}
-.ec-value{font-size:34px;font-weight:580;letter-spacing:-1.2px;line-height:1.15;margin:18px 0 10px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.ec-caption{font-size:11px;color:var(--ec-muted);line-height:1.5}.ec-caption:empty{display:none}
-#economy-view .ec-net{background:var(--ec-blue);color:#fff}.ec-net .ec-kpi-label,.ec-net .ec-caption{color:#D8E8FF}
-#economy-view .ec-net.is-loss{background:#FCEDE8;color:var(--ec-red)}.ec-net.is-loss .ec-kpi-label,.ec-net.is-loss .ec-caption{color:#A35A4B}
-.ec-main-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(310px,1fr);gap:16px;align-items:start;margin-bottom:16px}
-.ec-head{justify-content:space-between;margin-bottom:18px;min-height:34px}.ec-head h2,.ec-head h3{margin:0;font-size:15px;letter-spacing:-.3px;font-weight:600}
-.ec-head-title{display:flex;align-items:center;gap:8px}.ec-head .ec-caption{margin-left:auto}
-.ec-table-wrap{overflow:auto;max-width:100%}.ec-table{border-collapse:collapse;width:100%;font-size:12px;line-height:1.5}
-#economy-view .ec-table th{font-size:10px;color:#89919F;font-weight:500;letter-spacing:.3px;text-align:left;padding:0 10px 11px 0;white-space:nowrap}
-#economy-view .ec-table td{border-top:1px solid #EDF0F3;padding:13px 10px 13px 0;vertical-align:middle;font-weight:450}
-#economy-view .ec-table th:last-child,#economy-view .ec-table td:last-child{padding-right:0}
-.ec-table strong{font-weight:550}.ec-table .ec-money{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:600}.ec-table .ec-cell-action{width:30px;text-align:right}
-.ec-sub{display:block;color:var(--ec-muted);font-size:10.5px;font-weight:400;margin-top:3px}.ec-name{min-width:120px;max-width:240px;overflow-wrap:anywhere}
-.ec-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border-radius:6px;font-size:10px;font-weight:500;white-space:nowrap;background:#F0F2F6;color:#737C8C}
-.ec-pill.blue{background:#E8F1FF;color:var(--ec-blue)}.ec-pill.green{background:#E9F6EF;color:var(--ec-green)}.ec-pill.amber{background:#FFF3DC;color:#A66A12}
-#economy-view .ec-edit{display:inline-flex;align-items:center;justify-content:center;border:0;background:#F3F5F8;color:#717D90;width:30px;height:30px;border-radius:8px;padding:6px;flex-shrink:0}
-#economy-view .ec-edit:hover{background:#E8F1FF;color:var(--ec-blue)}.ec-edit svg{width:14px;height:14px}
-.ec-row-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px}
-#economy-view .ec-remove{color:var(--ec-red);background:#FCF1EE}#economy-view .ec-remove:hover{color:#A93A25;background:#F9DFD7}
-.ec-delete-summary{grid-column:1/-1;background:#F4F6F9;border-radius:12px;padding:15px;overflow-wrap:anywhere}.ec-delete-summary strong{font-size:14px;font-weight:550;display:block}.ec-delete-summary span{display:block;font-size:12px;color:#747B88;margin-top:5px}
-.ec-expense-foot{display:flex;gap:14px;justify-content:space-between;flex-wrap:wrap;border-top:1px solid #EDF0F3;padding-top:14px;margin-top:2px;font-size:11px;color:var(--ec-muted)}.ec-expense-foot b{color:#343B49;font-weight:550;margin-left:5px}
-.ec-ai-note{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;margin-top:16px;background:var(--ec-soft);border-radius:10px;padding:11px 12px;color:var(--ec-muted)}.ec-ai-note strong{color:#424C5B;font-weight:550}
-.ec-split{display:flex;overflow:hidden;height:8px;border-radius:10px;margin:0 0 20px;background:#EDF0F4}.ec-split i{display:block;background:var(--ec-blue);transition:width .2s}.ec-split i+i{background:var(--ec-green)}
-.ec-partner{display:flex;align-items:center;gap:11px;padding:14px 0}.ec-partner+.ec-partner{border-top:1px solid #EDF0F3}.ec-avatar{width:36px;height:36px;display:grid;place-items:center;border-radius:12px;background:#E8F1FF;color:var(--ec-blue);font-weight:600;font-size:13px;flex:none}.ec-avatar.green{background:#E9F6EF;color:var(--ec-green)}
-.ec-partner-info{flex:1;min-width:0}.ec-partner-info strong{font-size:13px;font-weight:550}.ec-partner-amount{font-size:21px;font-weight:580;letter-spacing:-.5px;white-space:nowrap;font-variant-numeric:tabular-nums}.ec-partner-percent{font-size:11px;color:var(--ec-muted);margin-left:7px}
-.ec-distribution-foot{margin-top:15px;padding:14px;background:var(--ec-soft);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px;color:var(--ec-muted)}.ec-distribution-foot b{font-size:14px;font-weight:600;color:#343B49;white-space:nowrap}
-.ec-profit-path{font-size:10.5px;color:#8B94A2;margin-top:14px;text-align:center}.ec-empty{padding:28px 10px!important;text-align:center;color:var(--ec-muted);font-size:12px}
-.ec-feedback{display:flex;justify-content:space-between;gap:14px;padding:12px 16px;border-radius:12px;background:#E9F6EF;color:#16774F;font-size:12px;margin-bottom:16px}.ec-feedback.error{background:#FCEDE8;color:#B1432D}.ec-feedback button{border:0;background:none;color:inherit;padding:0;font-size:18px;line-height:1}
-.ec-ledger-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}.ec-search{flex:1;min-width:180px;padding:9px 12px}.ec-ledger-tools select{padding:9px 11px;max-width:170px}.ec-check{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ec-muted);cursor:pointer;white-space:nowrap}
-.ec-ledger-tools input[type=checkbox]{margin:0}.ec-ledger-top{margin-bottom:14px}.ec-receipt-id{border:0;background:none;padding:3px 0;font-size:10px;color:#8791A0;max-width:150px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;font-family:monospace}
-.ec-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:15px;font-size:11px;color:var(--ec-muted)}.ec-pager .ec-actions{gap:6px}
-.ec-planning{background:#fff;border-radius:20px;margin-top:16px}.ec-planning>summary{display:flex;align-items:center;justify-content:space-between;list-style:none;cursor:pointer;padding:19px 24px;font-weight:550;font-size:13px}.ec-planning>summary::-webkit-details-marker{display:none}.ec-planning>summary:after{content:'+';font-size:20px;font-weight:400;color:var(--ec-muted)}.ec-planning[open]>summary:after{content:'−'}
-.ec-plan-grid{display:grid;grid-template-columns:1fr 1.3fr;gap:24px;padding:0 24px 24px}.ec-plan-block+.ec-plan-block{border-left:1px solid #EDF0F3;padding-left:24px}.ec-plan-title{font-size:12px;font-weight:550;margin-bottom:13px}.ec-plan-amount{font-size:26px;letter-spacing:-.8px;font-weight:580;margin:8px 0}.ec-progress{height:5px;background:#EDF0F3;border-radius:9px;margin:14px 0 8px;overflow:hidden}.ec-progress i{height:100%;display:block;background:var(--ec-green)}.ec-plan-numbers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}.ec-plan-numbers strong{display:block;font-size:17px;font-weight:600;color:#343B49;margin-top:5px}.ec-plan-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ec-plan-controls label{font-size:11px;color:var(--ec-muted);display:flex;flex-direction:column;gap:6px}.ec-plan-controls input{padding:9px 12px;width:100%;box-sizing:border-box}
-#ec-dialog{margin:auto;padding:0;border:0;border-radius:22px;width:min(460px,calc(100% - 32px));max-height:calc(100svh - 40px);overflow:auto;color:#17191E;background:#fff;box-shadow:0 20px 80px #17223622}
-#ec-dialog::backdrop{background:#17223655;backdrop-filter:blur(3px)}#ec-form{padding:26px}#ec-dialog h2{font-size:21px;font-weight:600;letter-spacing:-.6px;margin:0 0 22px}.ec-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.ec-field{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:11px;font-weight:500;color:#6D7583}.ec-field.full{grid-column:1/-1}.ec-field input,.ec-field select{box-sizing:border-box;width:100%;padding:11px 12px;font-weight:450}.ec-field input[type=checkbox]{width:auto;min-height:auto}.ec-form-check{display:flex;align-items:center;gap:8px;grid-column:1/-1;font-size:12px;color:#555E6E}.ec-form-preview{grid-column:1/-1;background:#F4F6F9;border-radius:10px;padding:12px;font-size:11px;color:#747B88;min-height:16px}.ec-form-preview b{font-weight:600;color:#343B49}
-.ec-form-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:24px;flex-wrap:wrap}.ec-form-actions #ec-delete{margin-right:auto}.ec-form-error{font-size:12px;color:#B1432D;background:#FCEDE8;padding:11px 12px;border-radius:10px;margin-top:16px}.ec-form-note{font-size:11px;color:#747B88;margin:16px 0 0;line-height:1.5}
-@media(max-width:1150px){.ec-main-grid{grid-template-columns:minmax(0,1fr)}.ec-value{font-size:29px}#economy-view .ec-card{padding:20px}.ec-partner-amount{font-size:23px}}
-@media(max-width:1050px){.ec-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:850px){.ec-plan-grid{grid-template-columns:1fr}.ec-plan-block+.ec-plan-block{border-left:0;border-top:1px solid #EDF0F3;padding:22px 0 0}}
-@media(max-width:600px){
- #economy-view .ec-table{display:block}#economy-view .ec-table tbody{display:block}
- #economy-view .ec-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
- #economy-view .ec-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto 30px;gap:5px 10px;padding:14px 0;border-top:1px solid #EDF0F3;align-items:center}
- #economy-view .ec-table td{border:0;padding:0;min-width:0}
- #economy-view .ec-table td.ec-empty{grid-column:1/-1;padding:20px 0!important}
- #economy-view .ec-table .ec-name{min-width:0;max-width:none}
- #economy-view .ec-table .ec-money{white-space:normal;overflow-wrap:anywhere;font-size:12px;max-width:105px}
- #economy-view #ec-expenses-body td:first-child{grid-column:1;grid-row:1}
- #economy-view #ec-expenses-body td:nth-child(2){grid-column:1;grid-row:2;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
- #economy-view #ec-expenses-body td:nth-child(2) .ec-sub{margin:0}
- #economy-view #ec-expenses-body td:nth-child(3){grid-column:2;grid-row:1/3}
- #economy-view #ec-expenses-body td:nth-child(4){grid-column:3;grid-row:1/3}#economy-view #ec-expenses-body .ec-row-actions{flex-direction:column}
- #economy-view #ec-receipts-body tr{grid-template-columns:minmax(0,1fr) auto;gap:7px 10px}
- #economy-view #ec-receipts-body td:nth-child(2){grid-column:1;grid-row:1}
- #economy-view #ec-receipts-body td:nth-child(5){grid-column:2;grid-row:1;align-self:start;padding-top:1px}
- #economy-view #ec-receipts-body td:nth-child(1){grid-column:1;grid-row:2;font-size:10.5px;color:var(--ec-muted)}
- #economy-view #ec-receipts-body td:nth-child(6){grid-column:2;grid-row:2;text-align:right;width:auto}
- #economy-view #ec-receipts-body td:nth-child(3){grid-column:1;grid-row:3}
- #economy-view #ec-receipts-body td:nth-child(4){grid-column:2;grid-row:3;text-align:right}
-}
-@media(max-width:480px){.ec-kpis{gap:10px}.ec-value{font-size:27px;margin-top:14px}#economy-view .ec-card{padding:17px}.ec-kpi-label{font-size:11px}.ec-caption{font-size:10.5px}.ec-toolbar{gap:13px}.ec-toolbar>.ec-actions{width:100%;justify-content:flex-end}.ec-toolbar .admin-data-state{display:inline;margin-right:auto;padding-left:0}.ec-head{gap:10px}.ec-ledger-tools select{flex:1;max-width:none}.ec-search{flex-basis:100%}.ec-form-grid{gap:14px 10px}#ec-form{padding:22px}.ec-partner-amount{font-size:21px}.ec-plan-grid{padding:0 17px 20px}.ec-planning>summary{padding:18px 17px}}
+#economy-view{color:var(--text,#17191E);--ec-muted:#747B88;--ec-line:#EDF0F3;--ec-soft:#F4F6F9;--ec-blue:#0574F8;--ec-red:#C54C35}
+#economy-view [hidden]{display:none!important}#economy-view button{cursor:pointer}#economy-view button:disabled{cursor:default}
+.ec-toolbar,.ec-actions,.ec-head,.ec-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.ec-actions{justify-content:flex-end;gap:8px}.ec-toolbar{margin-bottom:16px}.ec-toolbar .admin-data-state{padding:0;font-size:10.5px}.ec-period-note{font-size:11px;color:var(--ec-muted);margin:0 0 15px}.ec-seg{display:flex;gap:3px;padding:4px;background:#E9ECF1;border-radius:11px;width:fit-content;max-width:100%}
+#economy-view .ec-seg button{border:0;padding:8px 12px;min-height:34px;border-radius:8px;background:transparent;color:var(--ec-muted);font-size:11.5px;font-weight:550;white-space:nowrap}#economy-view .ec-seg button.active{background:#17191E;color:white}
+#economy-view .ec-card{background:#fff;border-radius:20px;padding:23px 24px;min-width:0}.ec-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:14px}.ec-kpi-label{font-size:12px;color:var(--ec-muted);font-weight:500}.ec-value{font-size:34px;font-weight:590;letter-spacing:-1.1px;line-height:1.2;font-variant-numeric:tabular-nums;margin:14px 0 7px;overflow-wrap:anywhere}.ec-caption{font-size:11px;color:var(--ec-muted);line-height:1.5}.ec-caption:empty{display:none}
+#economy-view .ec-net{background:#E8F1FF}.ec-net .ec-value{color:#0867D9}#economy-view .ec-net.is-loss{background:#FCEDE8}.ec-net.is-loss .ec-value{color:var(--ec-red)}
+.ec-allocation{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;align-items:center;gap:20px;margin-bottom:24px;padding:9px 22px}.ec-allocation-item{min-width:0}.ec-allocation-item+.ec-allocation-item{padding-left:20px;border-left:1px solid #E0E5EC}.ec-allocation-label{font-size:11px;color:var(--ec-muted)}.ec-allocation-label span{margin-left:5px;color:#9098A5}.ec-allocation-amount{font-size:18px;font-weight:570;letter-spacing:-.35px;font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:3px}.ec-head{margin-bottom:18px;min-height:34px}.ec-head h2{font-size:15px;letter-spacing:-.3px;font-weight:600;margin:0}.ec-head-title{display:flex;align-items:center;gap:8px}.ec-head-title .ec-caption{font-variant-numeric:tabular-nums}
+.ec-ledger-tabs{display:flex;gap:20px;border-bottom:1px solid var(--ec-line);margin-bottom:17px;overflow-x:auto;scrollbar-width:none}.ec-ledger-tabs::-webkit-scrollbar{display:none}#economy-view .ec-ledger-tabs button{border:0;border-bottom:2px solid transparent;background:none;color:var(--ec-muted);font-size:12px;font-weight:500;padding:0 0 12px;white-space:nowrap;min-height:34px}#economy-view .ec-ledger-tabs button.active{color:#17191E;border-bottom-color:#17191E;font-weight:600}
+.ec-ledger-tools{display:flex;gap:10px;align-items:center;margin-bottom:18px}.ec-search{width:100%;min-width:0;flex:1;padding:9px 12px}.ec-ledger-tools select{padding:9px 11px;max-width:160px}.ec-check{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ec-muted);white-space:nowrap}.ec-check input{margin:0}
+.ec-table-wrap{max-width:100%;overflow:auto}.ec-table{border-collapse:collapse;width:100%;font-size:12px;line-height:1.5}#economy-view .ec-table th{font-size:10px;color:#89919F;font-weight:500;letter-spacing:.3px;text-align:left;padding:0 12px 11px 0;white-space:nowrap}#economy-view .ec-table td{border-top:1px solid var(--ec-line);padding:14px 12px 14px 0;vertical-align:middle;font-weight:450}#economy-view .ec-table th:last-child,#economy-view .ec-table td:last-child{padding-right:0}.ec-table .ec-money{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:550}.ec-table .ec-date{font-size:11px;color:var(--ec-muted);white-space:nowrap;width:100px}.ec-table .ec-cell-action{width:32px;text-align:right}.ec-name{min-width:120px;max-width:420px;overflow-wrap:anywhere}.ec-sub{display:block;color:var(--ec-muted);font-size:10.5px;font-weight:400;margin-top:3px}.ec-kind{font-size:11px;color:var(--ec-muted);white-space:nowrap}.ec-money.income{color:#16865F}.ec-money.commission,.ec-money.expense{color:#444C59}
+#economy-view .ec-row-title{border:0;background:none;padding:0;color:inherit;font-size:12px;font-weight:550;text-align:left;line-height:1.5;max-width:100%;overflow-wrap:anywhere}#economy-view .ec-row-title:hover{color:var(--ec-blue)}.ec-badge{display:inline-block;font-size:10px;color:#8791A0;font-weight:400;margin-left:6px}.ec-badge.test{color:#A66A12}#economy-view .ec-edit{display:inline-flex;align-items:center;justify-content:center;border:0;background:#F3F5F8;color:#717D90;width:32px;height:32px;border-radius:9px;padding:7px;flex-shrink:0}#economy-view .ec-edit:hover{background:#E8F1FF;color:var(--ec-blue)}.ec-edit svg{width:14px;height:14px}.ec-empty{text-align:center;padding:36px 12px!important;color:var(--ec-muted);font-size:12px}.ec-pager{margin-top:15px;font-size:11px;color:var(--ec-muted)}.ec-pager .ec-actions{gap:6px}
+.ec-disclosure{background:#fff;border-radius:18px;margin-top:14px}.ec-disclosure>summary{display:flex;align-items:center;gap:12px;list-style:none;cursor:pointer;padding:18px 24px;font-size:12px;font-weight:550}.ec-disclosure>summary::-webkit-details-marker{display:none}.ec-disclosure>summary:after{content:'+';margin-left:auto;color:#89919F;font-size:18px;font-weight:400}.ec-disclosure[open]>summary:after{content:'−'}.ec-disclosure-body{padding:0 24px 22px}.ec-register-tools{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:0 0 14px}.ec-register-tools select{padding:8px 12px}.ec-register-note{font-size:11px;color:var(--ec-muted);margin-top:13px}.ec-planner-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}.ec-planner-grid>div+div{border-left:1px solid var(--ec-line);padding-left:24px}.ec-plan-title{font-size:12px;font-weight:550;margin-bottom:10px}.ec-plan-amount{font-size:25px;font-weight:580;letter-spacing:-.7px;margin-bottom:8px}.ec-plan-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ec-plan-numbers{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}.ec-plan-numbers strong{display:block;font-size:18px;font-weight:570;margin-top:4px;color:#343B49}.ec-plan-controls label{font-size:11px;color:var(--ec-muted);display:flex;flex-direction:column;gap:6px}.ec-plan-controls input{padding:9px 12px;box-sizing:border-box;width:100%}
+.ec-platega-balances{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.ec-platega-balance{padding:14px 16px;background:var(--ec-soft);border-radius:12px}.ec-platega-balance strong{display:block;font-size:21px;font-weight:570;letter-spacing:-.4px;margin:4px 0;font-variant-numeric:tabular-nums}.ec-platega-status{font-size:11px;color:var(--ec-muted);min-width:0}.ec-platega-status.error{color:var(--ec-red)}.ec-feedback{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#E9F6EF;color:#16774F;font-size:12px;padding:12px 16px;margin-bottom:15px;border-radius:12px}.ec-feedback.error{background:#FCEDE8;color:#B1432D}.ec-feedback button{border:0;background:none;color:inherit;font-size:18px;padding:0;line-height:1}
+#ec-dialog{margin:auto;padding:0;border:0;border-radius:22px;width:min(460px,calc(100% - 32px));max-height:calc(100svh - 32px);overflow:auto;color:#17191E;background:#fff;box-shadow:0 20px 80px #17223622}#ec-dialog::backdrop{background:#17223655;backdrop-filter:blur(3px)}#ec-form{padding:26px}#ec-dialog h2{font-size:21px;font-weight:600;letter-spacing:-.6px;margin:0 0 21px}.ec-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.ec-field{display:flex;flex-direction:column;gap:7px;font-size:11px;font-weight:500;color:#6D7583;min-width:0}.ec-field.full{grid-column:1/-1}.ec-field input,.ec-field select{width:100%;box-sizing:border-box;padding:11px 12px;font-weight:450}.ec-form-check{display:flex;align-items:center;gap:8px;grid-column:1/-1;font-size:12px;color:#555E6E}.ec-form-preview{grid-column:1/-1;background:var(--ec-soft);border-radius:11px;padding:13px;font-size:12px;color:var(--ec-muted);line-height:1.65}.ec-preview-line{display:flex;align-items:center;justify-content:space-between;gap:10px}.ec-form-preview b{font-weight:600;color:#343B49;font-variant-numeric:tabular-nums}.ec-form-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:23px}.ec-form-actions #ec-delete{margin-right:auto}.ec-form-error{font-size:12px;color:#B1432D;background:#FCEDE8;padding:11px 12px;border-radius:10px;margin-top:16px}.ec-form-note{font-size:11px;color:var(--ec-muted);margin:13px 0 0;line-height:1.5}.ec-settings-extra{grid-column:1/-1;border-top:1px solid var(--ec-line);padding-top:12px}.ec-settings-extra summary{cursor:pointer;font-size:12px;font-weight:500;color:#555E6E}.ec-settings-extra .ec-form-grid{margin-top:16px}.ec-detail-list{grid-column:1/-1;margin:0;display:grid;grid-template-columns:1fr auto;gap:12px 18px;font-size:12px}.ec-detail-list dt{color:var(--ec-muted)}.ec-detail-list dd{margin:0;text-align:right;overflow-wrap:anywhere;min-width:0;max-width:240px}.ec-detail-list .ec-wide{grid-column:1/-1;text-align:left}.ec-detail-copy{font:inherit;background:var(--ec-soft);border:0;padding:8px 10px;border-radius:8px;max-width:100%;overflow-wrap:anywhere;color:#576476;text-align:left}
+@media(max-width:1150px){.ec-value{font-size:29px}.ec-allocation{gap:14px;padding:8px 17px}.ec-allocation-item+.ec-allocation-item{padding-left:14px}.ec-allocation-amount{font-size:17px}}
+@media(max-width:900px){.ec-toolbar .admin-data-state{display:none}.ec-value{font-size:26px}.ec-allocation{grid-template-columns:repeat(3,minmax(0,1fr));position:relative;padding-right:8px;padding-bottom:42px}.ec-allocation>#ec-edit-shares{position:absolute;bottom:0;right:0}.ec-planner-grid{grid-template-columns:1fr}.ec-planner-grid>div+div{border-left:0;border-top:1px solid var(--ec-line);padding:20px 0 0}}
+@media(max-width:600px){.ec-toolbar{gap:12px}.ec-toolbar>.ec-actions{width:100%;justify-content:flex-end}.ec-toolbar .ec-seg{width:100%}.ec-toolbar .ec-seg button{flex:1}.ec-toolbar #ec-add-operation{margin-left:auto}.ec-kpis{grid-template-columns:1fr 1fr;gap:10px}#economy-view .ec-card{padding:18px}.ec-kpis>.ec-net{grid-column:1/-1;display:grid;grid-template-columns:1fr auto;align-items:center;gap:3px 10px}.ec-net .ec-value{grid-column:2;grid-row:1/3;margin:0}.ec-net .ec-caption{grid-column:1}.ec-value{font-size:27px;margin:12px 0 7px}.ec-kpi-label{font-size:11px}.ec-allocation{gap:9px;padding-left:5px;margin-bottom:18px}.ec-allocation-item+.ec-allocation-item{padding-left:10px}.ec-allocation-amount{font-size:16px}.ec-allocation-label{font-size:10px}.ec-allocation-label span{display:block;margin:0}.ec-ledger-tabs{gap:18px}.ec-ledger-tabs button{font-size:11px!important}.ec-ledger-tools{flex-wrap:wrap;gap:9px}.ec-search{flex-basis:100%}.ec-ledger-tools select{flex:1;max-width:none}.ec-ledger-tools .ec-check{padding:8px 0 8px 6px}.ec-disclosure>summary{padding:18px}.ec-disclosure-body{padding:0 18px 20px}
+ #economy-view .ec-table,#economy-view .ec-table tbody{display:block}#economy-view .ec-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}#economy-view .ec-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto 28px;gap:5px 9px;padding:14px 0;border-top:1px solid var(--ec-line);align-items:center}#economy-view .ec-table td{border:0;padding:0;min-width:0}#economy-view .ec-table .ec-name{min-width:0;max-width:none;grid-column:1;grid-row:1}#economy-view .ec-table .ec-date{grid-column:1;grid-row:2;font-size:10.5px;width:auto}#economy-view .ec-table .ec-kind{grid-column:1;grid-row:3;font-size:10px}#economy-view .ec-table .ec-money{grid-column:2;grid-row:1/3;white-space:normal;overflow-wrap:anywhere;max-width:112px;font-size:12px}#economy-view .ec-table .ec-cell-action{grid-column:3;grid-row:1/3;width:auto}#economy-view .ec-table .ec-empty{grid-column:1/-1}.ec-table .ec-edit{width:28px!important;height:30px!important}#ec-form{padding:22px}.ec-detail-list dd{max-width:180px}}
+@media(max-width:370px){.ec-allocation-amount{font-size:14px}.ec-value{font-size:24px}.ec-form-grid{gap:14px 10px}.ec-ledger-tabs{gap:14px}}
 </style>
-
 <div class="ec-toolbar">
  <div class="ec-seg" id="ec-period-tabs" aria-label="Период"><button type="button" data-period="month" class="active" aria-pressed="true">Этот месяц</button><button type="button" data-period="30d" aria-pressed="false">30 дней</button><button type="button" data-period="all" aria-pressed="false">Всё время</button></div>
- <div class="ec-actions"><span class="admin-data-state loading" id="ec-data-state" role="status">Загрузка…</span><button type="button" class="btn-action" id="ec-refresh">Обновить</button><button type="button" class="btn-action" id="ec-settings" disabled>Параметры</button></div>
+ <div class="ec-actions"><span class="admin-data-state loading" id="ec-data-state" role="status">Загрузка…</span><button type="button" class="btn-action" id="ec-refresh" aria-label="Обновить данные">Обновить</button><button type="button" class="btn-action" id="ec-settings" disabled>Настройки</button><button type="button" class="btn-action btn-primary" id="ec-add-operation" disabled>+ Операция</button></div>
 </div>
 <div id="ec-feedback" class="ec-feedback" role="status" hidden><span></span><button type="button" aria-label="Закрыть сообщение">×</button></div>
 <p class="ec-period-note" id="ec-period-note">&nbsp;</p>
 <div class="ec-kpis" aria-label="Итоги периода">
- <div class="ec-card"><div class="ec-kpi-label">Поступления</div><div class="ec-value" id="ec-gross-val">—</div><div class="ec-caption" id="ec-gross-sub">Все источники · продажи магазинов по тарифу</div></div>
- <div class="ec-card"><div class="ec-kpi-label">Расходы</div><div class="ec-value" id="ec-costs-val">—</div><div class="ec-caption" id="ec-costs-sub">За выбранный период</div></div>
- <div class="ec-card"><div class="ec-kpi-label">В развитие</div><div class="ec-value" id="ec-reinvest-val">—</div><div class="ec-caption" id="ec-reinvest-sub">От прибыли после расходов</div></div>
- <div class="ec-card ec-net" id="ec-net-card"><div class="ec-kpi-label" id="ec-net-label">К распределению</div><div class="ec-value" id="ec-net-val">—</div><div class="ec-caption" id="ec-net-sub">Сергей и Никита</div></div>
+ <div class="ec-card"><div class="ec-kpi-label">Доход</div><div class="ec-value" id="ec-gross-val">—</div><div class="ec-caption" id="ec-gross-sub"></div></div>
+ <div class="ec-card"><div class="ec-kpi-label">Расходы</div><div class="ec-value" id="ec-costs-val">—</div><div class="ec-caption" id="ec-costs-sub"></div></div>
+ <div class="ec-card ec-net" id="ec-net-card"><div class="ec-kpi-label" id="ec-net-label">Прибыль</div><div class="ec-value" id="ec-net-val">—</div><div class="ec-caption" id="ec-net-sub">После расходов и комиссий</div></div>
 </div>
-<div class="ec-main-grid">
- <section class="ec-card" aria-labelledby="ec-expenses-title">
-  <div class="ec-head"><h2 id="ec-expenses-title">Расходы проекта</h2><button type="button" class="btn-action btn-primary" id="ec-add-expense" disabled>+ Расход</button></div>
-  <div class="ec-head"><div class="ec-seg ec-small" id="ec-expense-filter" aria-label="Вид расходов"><button type="button" class="active" data-filter="all" aria-pressed="true">Все</button><button type="button" data-filter="recurring" aria-pressed="false">Постоянные</button><button type="button" data-filter="once" aria-pressed="false">Разовые</button></div><span class="ec-caption">В периоде, ₽</span></div>
-  <div class="ec-table-wrap"><table class="ec-table"><thead><tr><th>Статья</th><th>Периодичность</th><th class="ec-money">Сумма</th><th aria-label="Действия"></th></tr></thead><tbody id="ec-expenses-body"><tr><td colspan="4" class="ec-empty">Загрузка расходов…</td></tr></tbody></table></div>
-  <div class="ec-expense-foot"><span>Постоянные <b id="ec-recurring-total">—</b></span><span>Разовые <b id="ec-once-total">—</b></span></div>
-  <div class="ec-ai-note" id="ec-ai-note" hidden><span>Gemini · за всё время <strong id="ec-ai-total"></strong></span><span class="ec-pill" id="ec-ai-scope">Вне периода</span></div>
- </section>
- <section class="ec-card" aria-labelledby="ec-partners-title">
-  <div class="ec-head"><h2 id="ec-partners-title">Распределение прибыли</h2><button type="button" class="btn-action" id="ec-edit-shares" disabled>Изменить</button></div>
-  <div class="ec-split" aria-hidden="true"><i id="ec-bar-s" style="width:93.3%"></i><i id="ec-bar-n" style="width:6.7%"></i></div>
-  <div class="ec-partner"><div class="ec-avatar">С</div><div class="ec-partner-info"><strong>Сергей</strong><span class="ec-partner-percent" id="ec-share-s">—</span><span class="ec-sub">Разработка</span></div><div class="ec-partner-amount" id="ec-payout-s">—</div></div>
-  <div class="ec-partner"><div class="ec-avatar green">Н</div><div class="ec-partner-info"><strong>Никита</strong><span class="ec-partner-percent" id="ec-share-n">—</span><span class="ec-sub">Развитие</span></div><div class="ec-partner-amount" id="ec-payout-n">—</div></div>
-  <div class="ec-distribution-foot"><span>Фонд развития <span id="ec-fund-pct">—</span></span><b id="ec-fund-total">—</b></div>
-  <div class="ec-profit-path">Поступления → Расходы → Развитие → Доли</div>
- </section>
-</div>
+<section class="ec-allocation" aria-label="Распределение прибыли">
+ <div class="ec-allocation-item"><div class="ec-allocation-label">В развитие <span id="ec-fund-pct"></span></div><div class="ec-allocation-amount" id="ec-fund-total">—</div></div>
+ <div class="ec-allocation-item"><div class="ec-allocation-label">Сергей <span id="ec-share-s"></span></div><div class="ec-allocation-amount" id="ec-payout-s">—</div></div>
+ <div class="ec-allocation-item"><div class="ec-allocation-label">Никита <span id="ec-share-n"></span></div><div class="ec-allocation-amount" id="ec-payout-n">—</div></div>
+ <button type="button" class="btn-action" id="ec-edit-shares" disabled>Изменить доли</button>
+</section>
 <section class="ec-card" aria-labelledby="ec-income-title">
- <div class="ec-head ec-ledger-top"><div class="ec-head-title"><h2 id="ec-income-title">Поступления и покупки</h2><span class="ec-caption" id="ec-receipts-count"></span></div><button type="button" class="btn-action btn-primary" id="ec-add-revenue" disabled>+ Поступление</button></div>
- <div class="ec-head"><div class="ec-seg ec-small" id="ec-receipt-mode" aria-label="Тип записей"><button type="button" class="active" data-mode="actual" aria-pressed="true">Поступления</button><button type="button" data-mode="estimated" aria-pressed="false">Покупки в сторах</button></div><span class="ec-caption" id="ec-ledger-note">Учтены в доходе</span></div>
- <div class="ec-ledger-tools"><input type="search" class="ec-search" id="ec-search" placeholder="Имя, email или номер заказа" aria-label="Поиск поступлений"><select id="ec-store-filter" aria-label="Источник поступления"><option value="all">Все источники</option><option value="web">СБП</option><option value="appstore">App Store</option><option value="googleplay">Google Play</option><option value="rustore">RuStore</option><option value="other">Другие</option></select><label class="ec-check"><input type="checkbox" id="ec-show-tests">Тестовые</label></div>
- <div class="ec-table-wrap"><table class="ec-table"><thead><tr><th>Дата · МСК</th><th>Описание</th><th>Источник</th><th>Статус</th><th class="ec-money">Сумма</th><th aria-label="Действия"></th></tr></thead><tbody id="ec-receipts-body"><tr><td colspan="6" class="ec-empty">Загрузка поступлений…</td></tr></tbody></table></div>
+ <div class="ec-head"><div class="ec-head-title"><h2 id="ec-income-title">Операции</h2><span class="ec-caption" id="ec-receipts-count"></span></div><span class="ec-caption" id="ec-withdrawn-total"></span></div>
+ <div class="ec-ledger-tabs" id="ec-receipt-mode" aria-label="Вид операций"><button type="button" class="active" data-mode="all" aria-pressed="true">Все</button><button type="button" data-mode="income" aria-pressed="false">Поступления</button><button type="button" data-mode="expense" aria-pressed="false">Расходы</button><button type="button" data-mode="withdrawal" aria-pressed="false">Выводы</button><button type="button" data-mode="commission" aria-pressed="false">Комиссии</button></div>
+ <div class="ec-ledger-tools"><input type="search" class="ec-search" id="ec-search" placeholder="Поиск операций" aria-label="Поиск операций"><select id="ec-store-filter" aria-label="Источник операции"><option value="all">Все источники</option><option value="web">СБП · Platega</option><option value="appstore">App Store</option><option value="googleplay">Google Play</option><option value="rustore">RuStore</option><option value="other">Другие</option></select><label class="ec-check"><input type="checkbox" id="ec-show-tests">Тестовые</label></div>
+ <div class="ec-table-wrap"><table class="ec-table"><thead><tr><th>Дата</th><th>Операция</th><th>Тип</th><th class="ec-money">Сумма</th><th aria-label="Действия"></th></tr></thead><tbody id="ec-receipts-body"><tr><td colspan="5" class="ec-empty">Загрузка операций…</td></tr></tbody></table></div>
  <div class="ec-pager"><span id="ec-page-info"></span><div class="ec-actions"><button type="button" class="btn-action" id="ec-prev" aria-label="Предыдущая страница" disabled>←</button><button type="button" class="btn-action" id="ec-next" aria-label="Следующая страница" disabled>→</button></div></div>
 </section>
-<details class="ec-planning"><summary>Планирование <span class="ec-caption">Окупаемость и цель на месяц</span></summary><div class="ec-plan-grid">
- <div class="ec-plan-block"><div class="ec-plan-title">Постоянные расходы в месяц</div><div class="ec-plan-amount" id="ec-monthly-cost">—</div><div class="ec-caption">Без разовых расходов и ИИ</div><div class="ec-progress"><i id="ec-coverage-bar" style="width:0"></i></div><div class="ec-caption" id="ec-coverage">—</div><div class="ec-plan-numbers"><span class="ec-caption">По 99 ₽<strong id="ec-be-week">—</strong></span><span class="ec-caption">По 290 ₽<strong id="ec-be-quarter">—</strong></span></div></div>
- <div class="ec-plan-block"><div class="ec-plan-title">Цель к распределению</div><div class="ec-plan-controls"><label>Прибыль, ₽ / мес<input type="number" id="ec-plan-target" min="0" max="100000000" step="1000" value="50000"></label><label>Среднее поступление, ₽<input type="number" id="ec-plan-average" min="1" max="1000000" step="1" value="190"></label></div><div class="ec-plan-numbers"><span class="ec-caption">Поступления<strong id="ec-plan-revenue">—</strong></span><span class="ec-caption">Продажи в месяц<strong id="ec-plan-sales">—</strong></span></div><div class="ec-caption" id="ec-plan-split" style="margin-top:14px"></div></div>
+<details class="ec-disclosure" id="ec-platega-panel"><summary>Platega <span class="ec-caption">Баланс сейчас</span></summary><div class="ec-disclosure-body"><div class="ec-head"><span class="ec-platega-status" id="ec-platega-status" role="status"></span><button type="button" class="btn-action" id="ec-platega-refresh">Обновить баланс</button></div><div class="ec-platega-balances" id="ec-platega-body"></div></div></details>
+<details class="ec-disclosure" id="ec-expense-register"><summary>Регулярные расходы и архив <span class="ec-caption" id="ec-monthly-cost"></span></summary><div class="ec-disclosure-body">
+ <div class="ec-register-tools"><select id="ec-expense-filter" aria-label="Вид расходов"><option value="all">Все записи</option><option value="recurring">Регулярные</option><option value="once">Разовые</option></select><button type="button" class="btn-action" id="ec-add-expense" disabled>+ Расход</button></div>
+ <div class="ec-table-wrap"><table class="ec-table"><thead><tr><th>Дата</th><th>Статья</th><th>Повторение</th><th class="ec-money">Сумма</th><th aria-label="Действия"></th></tr></thead><tbody id="ec-expenses-body"></tbody></table></div>
+ <div class="ec-register-note" id="ec-ai-note" hidden></div>
+</div></details>
+<details class="ec-disclosure" id="ec-planning"><summary>Планирование</summary><div class="ec-disclosure-body ec-planner-grid">
+ <div><div class="ec-plan-title">Окупить регулярные расходы</div><div class="ec-plan-amount" id="ec-plan-cost">—</div><div class="ec-caption" id="ec-plan-fee"></div><div class="ec-plan-numbers"><span class="ec-caption">Тариф 99 ₽<strong id="ec-be-week">—</strong></span><span class="ec-caption">Тариф 290 ₽<strong id="ec-be-quarter">—</strong></span></div></div>
+ <div><div class="ec-plan-title">Прибыль к распределению</div><div class="ec-plan-controls"><label>Цель, ₽ / мес<input type="number" id="ec-plan-target" min="0" max="100000000" step="1000" value="50000"></label><label>Средний платёж, ₽<input type="number" id="ec-plan-average" min="1" max="1000000" step="1" value="190"></label></div><div class="ec-plan-numbers"><span class="ec-caption">Нужен доход<strong id="ec-plan-revenue">—</strong></span><span class="ec-caption">Продаж в месяц<strong id="ec-plan-sales">—</strong></span></div></div>
 </div></details>
 <dialog id="ec-dialog" aria-labelledby="ec-dialog-title"><form id="ec-form"><h2 id="ec-dialog-title"></h2><div class="ec-form-grid" id="ec-fields"></div><p class="ec-form-note" id="ec-form-note" hidden></p><div class="ec-form-error" id="ec-form-error" role="alert" hidden></div><div class="ec-form-actions"><button type="button" class="btn-action btn-danger" id="ec-delete" hidden>Удалить</button><button type="button" class="btn-action" id="ec-cancel">Отмена</button><button type="submit" class="btn-action btn-primary" id="ec-submit">Сохранить</button></div></form></dialog>
 </div>`;
@@ -128,182 +65,223 @@ export const ECONOMY_VIEW_HTML = String.raw`
 export const ECONOMY_CLIENT_JS = String.raw`
 (function() {
  'use strict';
- var stats = null, period = 'month', expenseFilter = 'all', receiptMode = 'actual', page = 0;
- var requestId = 0, loading = null, dialogContext = null, saving = false, returnFocus = null;
- var stores = {web:'СБП',appstore:'App Store',googleplay:'Google Play',rustore:'RuStore',other:'Другое'};
- var frequencies = {once:'Разовый',monthly:'Ежемесячно',yearly:'Ежегодно'};
- var editIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z M14 5l5 5"/></svg>';
- var deleteIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg>';
- function el(id) { return document.getElementById(id); }
- function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
- function num(n, decimals) { return Number(n || 0).toLocaleString('ru-RU',{maximumFractionDigits:decimals == null ? 2 : decimals}); }
- function rub(n) { return num(n) + ' ₽'; }
- function pct(n) { return num(n) + '%'; }
- function set(id,value) { var node=el(id); if(node) node.textContent=value; }
- function today() { return new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Moscow'}).format(new Date()); }
- function dateText(value, year) { var d=new Date(value); return Number.isFinite(d.getTime()) ? d.toLocaleDateString('ru-RU',{timeZone:'Europe/Moscow',day:'numeric',month:'short',year:year?'numeric':undefined}) : '—'; }
- function field(name) { return el('ec-form').elements.namedItem(name); }
- function feedback(message,error) { var node=el('ec-feedback'); node.hidden=false; node.classList.toggle('error',!!error); node.querySelector('span').textContent=message; }
- function activate(container,attribute,value) { el(container).querySelectorAll('button').forEach(function(button){var active=button.getAttribute(attribute)===value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));}); }
- function enableActions() { ['ec-settings','ec-edit-shares','ec-add-expense','ec-add-revenue'].forEach(function(id){el(id).disabled=!stats||saving;}); }
-
- async function loadEconomy(force) {
-  if (loading && force !== true) return loading;
-  var id=++requestId, selectedPeriod=period;
-  el('ec-data-state').className='admin-data-state loading';set('ec-data-state','Загрузка…');
-  el('economy-view').setAttribute('aria-busy','true');
+ var stats=null,period='month',receiptMode='all',page=0,requestId=0,loading=null,dialogContext=null,saving=false,returnFocus=null,journal=[],plategaData=null,plategaLoading=false;
+ var stores={web:'СБП · Platega',appstore:'App Store',googleplay:'Google Play',rustore:'RuStore',other:'Другое'};
+ var frequencies={once:'Без повторения',monthly:'Ежемесячно',yearly:'Ежегодно'};
+ var operationTypes={revenue:'Поступление',expense:'Расход',withdrawal:'Вывод',commission:'Комиссия'};
+ var kindLabels={income:'Поступление',expense:'Расход',withdrawal:'Вывод',commission:'Комиссия'};
+ var editIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z M14 5l5 5"/></svg>';
+ var infoIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></svg>';
+ function el(id){return document.getElementById(id);}
+ function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+ function num(value){return Number(value||0).toLocaleString('ru-RU',{maximumFractionDigits:2});}
+ function rub(value){return num(value)+' ₽';}
+ function money(value,currency){return currency==='USD'?'$'+num(value):rub(value);}
+ function pct(value){return num(value)+'%';}
+ function set(id,value){var node=el(id);if(node)node.textContent=value;}
+ function today(){return new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Moscow'}).format(new Date());}
+ function dateText(value,year){var date=new Date(value);return Number.isFinite(date.getTime())?date.toLocaleDateString('ru-RU',{timeZone:'Europe/Moscow',day:'numeric',month:'short',year:year?'numeric':undefined}):'—';}
+ function field(name){return el('ec-form').elements.namedItem(name);}
+ function feedback(message,error){el('ec-feedback').hidden=false;el('ec-feedback').classList.toggle('error',!!error);el('ec-feedback').querySelector('span').textContent=message;}
+ function activate(container,attribute,value){el(container).querySelectorAll('button').forEach(function(button){var active=button.getAttribute(attribute)===value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});}
+ function enableActions(){['ec-settings','ec-edit-shares','ec-add-operation','ec-add-expense'].forEach(function(id){el(id).disabled=!stats||saving||stats.period!==period;});}
+ async function loadEconomy(force){
+  if(loading&&force!==true)return loading;
+  var id=++requestId,selectedPeriod=period;
+  el('ec-data-state').className='admin-data-state loading';set('ec-data-state','Загрузка…');el('economy-view').setAttribute('aria-busy','true');enableActions();
   var task=(async function(){
-   try {
+   try{
     var response=await fetch('/api/admin/economy/stats?period='+selectedPeriod);
     if(response.status===401){if(typeof checkAuthAndLoad==='function')checkAuthAndLoad();throw new Error('Войдите в админку заново');}
-    var data=await response.json();if(!response.ok || !data.ok)throw new Error(data.error||'Не удалось загрузить данные');
-    if(id!==requestId)return;
-    var first=!stats;stats=data;
-    if(first)el('ec-plan-target').value=data.config.targetMonthlyProfit ?? 50000;
-    render();enableActions();
-    el('ec-data-state').className='admin-data-state ready';set('ec-data-state','Обновлено '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}));
-    return true;
-   } catch(error) {
-    if(id!==requestId)return;
-    el('ec-data-state').className='admin-data-state error';set('ec-data-state','Ошибка загрузки');
-    feedback(error.message+(stats?' · показаны предыдущие данные':''),true);
-    if(!stats){el('ec-expenses-body').innerHTML='<tr><td colspan="4" class="ec-empty">Не удалось загрузить расходы</td></tr>';el('ec-receipts-body').innerHTML='<tr><td colspan="6" class="ec-empty">Нажмите «Обновить», чтобы повторить</td></tr>';}
-    return false;
-   } finally {if(id===requestId){el('economy-view').setAttribute('aria-busy','false');loading=null;}}
+    var data=await response.json();if(!response.ok||!data.ok)throw new Error(data.error||'Не удалось загрузить данные');if(id!==requestId)return;
+    var first=!stats;stats=data;if(first)el('ec-plan-target').value=data.config.targetMonthlyProfit??50000;
+    render();enableActions();el('ec-data-state').className='admin-data-state ready';set('ec-data-state','Обновлено '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}));return true;
+   }catch(error){if(id!==requestId)return;el('ec-data-state').className='admin-data-state error';set('ec-data-state','Ошибка загрузки');feedback(error.message+(stats?' · показаны предыдущие данные':''),true);if(!stats)el('ec-receipts-body').innerHTML='<tr><td colspan="5" class="ec-empty">Нажмите «Обновить», чтобы повторить</td></tr>';return false;}
+   finally{if(id===requestId){el('economy-view').setAttribute('aria-busy','false');loading=null;}}
   })();loading=task;return task;
  }
- function render() {
+ async function loadPlatega(force){
+  if(plategaLoading||(plategaData&&!force))return;plategaLoading=true;el('ec-platega-refresh').disabled=true;el('ec-platega-status').classList.remove('error');set('ec-platega-status','Загрузка…');
+  try{
+   var response=await fetch('/api/admin/economy/platega'),data=await response.json();if(!response.ok||!data.ok)throw new Error(data.error||'Не удалось загрузить баланс');
+   plategaData=data;
+   if(!data.configured){set('ec-platega-status','Platega не подключена');el('ec-platega-body').innerHTML='';return;}
+   set('ec-platega-status','Обновлено '+new Date(data.updatedAt||Date.now()).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}));
+   var balances=(data.balances||[]).filter(function(item){return Number.isFinite(Number(item.amount));});
+   el('ec-platega-body').innerHTML=balances.length?balances.map(function(item){return '<div class="ec-platega-balance"><span class="ec-caption">'+esc(item.currency)+'</span><strong>'+esc(num(item.amount))+'</strong>'+(item.frozenBalance!=null?'<span class="ec-caption">Заморожено '+esc(num(item.frozenBalance))+'</span>':'')+'</div>';}).join(''):'<div class="ec-caption">Балансы не получены</div>';
+  }catch(error){el('ec-platega-status').classList.add('error');set('ec-platega-status',(plategaData?.configured?'Показан предыдущий баланс. ':'')+(error.message||'Не удалось загрузить баланс'));}
+  finally{plategaLoading=false;el('ec-platega-refresh').disabled=false;}
+ }
+ function render(){
   var rev=stats.revenue,exp=stats.expenses,profit=stats.profit,cfg=stats.config;
-  set('ec-gross-val',rub(rev.grossRub));set('ec-costs-val',rub(exp.totalRub));set('ec-reinvest-val',rub(profit.reinvestRub));set('ec-net-val',rub(profit.distributableNetRub));
-  var byStore={web:rev.webRub,appstore:rev.appstoreRub,googleplay:rev.gplayRub,rustore:rev.rustoreRub,other:rev.otherRub};
-  set('ec-gross-sub',Object.keys(stores).filter(function(key){return key==='web'||Number(byStore[key])>0;}).map(function(key){return stores[key]+' '+rub(byStore[key]);}).join(' · ')+(rev.includedStoreSalesRub>0?' · магазины по тарифу':''));
-  set('ec-costs-sub','Разовые '+rub(exp.oneOffRub)+' · постоянные '+rub(exp.recurringRub)+(exp.ai?.includedInTotal?' · ИИ '+rub(exp.ai.periodRub):''));
-  set('ec-reinvest-sub',pct(cfg.reinvestPercent)+' от прибыли после расходов');
-  var loss=profit.distributableNetRub<0;el('ec-net-card').classList.toggle('is-loss',loss);set('ec-net-label',loss?'Убыток':'К распределению');set('ec-net-sub',loss?'Выплаты — 0 ₽':'Сергей и Никита');
-  ['sergey','nikita'].forEach(function(key,index){var p=stats.partners[key],suffix=index?'n':'s';set('ec-share-'+suffix,pct(p.percent));set('ec-payout-'+suffix,rub(p.payoutRub));el('ec-bar-'+suffix).style.width=p.percent+'%';});
-  set('ec-fund-pct','· '+pct(cfg.reinvestPercent));set('ec-fund-total',rub(profit.reinvestRub));
-  set('ec-recurring-total',rub(exp.recurringRub));set('ec-once-total',rub(exp.oneOffRub));
-  el('ec-ai-note').hidden=!exp.ai;set('ec-ai-total',exp.ai?.available?rub(exp.ai.rub):'—');set('ec-ai-scope',!exp.ai?.available?'Нет данных':exp.ai.includedInTotal?'В расходах':'Вне итога');
-  var range=stats.periodInfo || {};
-  var start=range.from, end=range.to;
-  set('ec-period-note',(start?dateText(start,true)+' — '+dateText(end,true):({month:'Текущий месяц', '30d':'Последние 30 дней',all:'За всё время'})[period])+' · инфраструктура по бюджету');
-  renderExpenses();renderReceipts();updatePlanner();
+  set('ec-gross-val',rub(rev.grossRub));set('ec-costs-val',rub(exp.totalRub));set('ec-net-val',rub(profit.operatingRub));
+  set('ec-gross-sub',rev.includedStoreSalesRub>0?'Оценка продаж магазинов: '+rub(rev.includedStoreSalesRub):rev.ordersCount?num(rev.ordersCount)+' оплат СБП':'За выбранный период');
+  var commissions=(exp.paymentFeesRub||0)+(exp.withdrawalFeesRub||0)+(exp.lines||[]).filter(function(line){return line.category==='commission';}).reduce(function(sum,line){return sum+line.periodRub;},0);
+  set('ec-costs-sub','Комиссии '+rub(commissions)+' · Platega '+pct(cfg.paymentFeePercent));
+  var loss=profit.operatingRub<0;el('ec-net-card').classList.toggle('is-loss',loss);set('ec-net-label',loss?'Убыток':'Прибыль');set('ec-net-sub',loss?'Распределение — 0 ₽':'После расходов и комиссий');
+  set('ec-fund-pct',pct(cfg.reinvestPercent));set('ec-fund-total',rub(profit.reinvestRub));
+  ['sergey','nikita'].forEach(function(key,index){var partner=stats.partners[key],suffix=index?'n':'s';set('ec-share-'+suffix,pct(partner.percent)+' доли');set('ec-payout-'+suffix,rub(partner.payoutRub));});
+  var range=stats.periodInfo||{};set('ec-period-note',range.from?dateText(range.from,true)+' — '+dateText(range.to,true):'');
+  set('ec-withdrawn-total',stats.withdrawalSummary?.count?'Выведено '+rub(stats.withdrawalSummary.receivedRub):'');
+  set('ec-monthly-cost',rub(exp.monthlyRub)+' / мес');
+  el('ec-ai-note').hidden=!exp.ai?.available;set('ec-ai-note','Gemini: '+rub(exp.ai?.rub)+(exp.ai?.includedInTotal?' · учтено в расходах':' за всё время · вне итога периода'));
+  journal=buildJournal();renderReceipts();renderExpenses();updatePlanner();
  }
- function editButton(kind,id,title) { return '<button type="button" class="ec-edit" data-'+kind+'-id="'+esc(id)+'" aria-label="'+esc(title)+'" title="'+esc(title)+'">'+editIcon+'</button>'; }
- function renderExpenses() {
-  if(!stats)return;
-  var lines=(stats.expenses.lines||[]).filter(function(line){return expenseFilter==='all'||(expenseFilter==='once'?line.frequency==='once':line.frequency!=='once');});
-  el('ec-expenses-body').innerHTML=lines.length?lines.map(function(line){
-   var builtin=!!line.builtin || line.source==='builtin',amount=Number(line.amount ?? line.amountRub ?? 0),currency=line.currency||'RUB';
-   var frequency=line.frequency||(line.monthly?'monthly':'once');
-   var rate=(currency==='USD'?'$'+num(amount):rub(amount));
-   var meta=builtin?'Бюджет':frequency==='once'?dateText(line.date||line.createdAt,true):'С '+dateText(line.date||line.createdAt,true)+(line.endDate?' · до '+dateText(line.endDate,true):'');
-   var count=Number(line.occurrences)||0;
-   return '<tr><td class="ec-name"><strong>'+esc(line.title)+'</strong><span class="ec-sub">'+esc(meta)+'</span></td><td><span class="ec-pill '+(frequency==='once'?'':'blue')+'">'+esc(frequencies[frequency]||'По расходу')+'</span><span class="ec-sub">'+rate+(frequency==='monthly'?' / мес':frequency==='yearly'?' / год':'')+'</span></td><td class="ec-money">'+rub(line.periodRub)+'<span class="ec-sub">'+(builtin?'По дням периода':count===0?'Вне периода':count>1?count+' платежа':'')+'</span></td><td class="ec-cell-action"><div class="ec-row-actions">'+(builtin?'<button type="button" class="ec-edit" data-builtin="true" aria-label="Изменить бюджет '+esc(line.title)+'" title="Изменить">'+editIcon+'</button>':editButton('expense',line.id,'Редактировать '+line.title))+'<button type="button" class="ec-edit ec-remove" data-delete-expense-id="'+esc(line.id)+'" aria-label="Удалить расход '+esc(line.title)+'" title="Удалить">'+deleteIcon+'</button></div></td></tr>';
-  }).join(''):'<tr><td colspan="4" class="ec-empty">'+(expenseFilter==='once'?'Разовых расходов пока нет':'Расходов пока нет')+'</td></tr>';
+ function buildJournal(){
+  var range=stats.periodInfo||{},rows=[];
+  (stats.receipts||[]).forEach(function(receipt){
+   var manual=(stats.config.manualRevenues||[]).find(function(item){return item.id===receipt.id;});
+   rows.push({key:'receipt:'+receipt.id,id:receipt.id,kind:receipt.includedInRevenue||receipt.isTest?'income':'withdrawal',date:receipt.date,title:receipt.customer||receipt.title||'Поступление',sourceKey:receipt.storeKey,source:stores[receipt.storeKey]||receipt.store,amountRub:receipt.amountRub,amount:manual?.amount,currency:manual?.currency,sub:receipt.type==='estimate'?'По тарифу, до комиссии':receipt.isTest?(receipt.includedInRevenue?'Тест · учтён':'Тест · не учтён'):!receipt.includedInRevenue?'Выплата магазина · доход уже учтён':'',search:[receipt.email,receipt.txId,receipt.tier].join(' '),isTest:receipt.isTest,editKind:manual?'revenue':null,original:receipt});
+  });
+  (stats.expenses.lines||[]).filter(function(line){return line.periodRub>0;}).forEach(function(line){
+   var recurring=line.frequency!=='once';rows.push({key:'expense:'+line.id,id:line.id,kind:line.category==='commission'?'commission':'expense',date:recurring?range.to:line.date,dateLabel:recurring?'За период':null,title:line.title,sourceKey:'other',source:'Проект',amountRub:line.periodRub,amount:!recurring?line.amount:null,currency:line.currency,sub:line.builtin?'Бюджет':recurring?frequencies[line.frequency]+(line.occurrences>1?' · '+num(line.occurrences)+' списаний':''):'',editKind:line.builtin?'builtin':line.category==='commission'?'commission':'expense',original:line});
+  });
+  if(stats.expenses.paymentFeesRub>0)rows.push({key:'payment-fees',kind:'commission',date:range.to,dateLabel:'За период',title:'Комиссия Platega',sourceKey:'web',source:stores.web,amountRub:stats.expenses.paymentFeesRub,sub:pct(stats.config.paymentFeePercent)+' с платежей',original:{}});
+  (stats.withdrawals||[]).forEach(function(item){
+   var received=item.currency==='USD'?item.receivedRub/item.usdRate:item.receivedRub;
+   rows.push({key:'withdrawal:'+item.id,id:item.id,kind:'withdrawal',date:item.date,title:item.title||'Вывод средств',sourceKey:item.store,source:stores[item.store]||'Другое',amountRub:item.receivedRub,amount:received,currency:item.currency,sub:item.fee>0?'Комиссия '+money(item.fee,item.currency):'Без комиссии',editKind:'withdrawal',original:item});
+   if(item.feeRub>0)rows.push({key:'withdrawal-fee:'+item.id,id:item.id,kind:'commission',date:item.date,title:'Комиссия за вывод',sourceKey:item.store,source:stores[item.store]||'Другое',amountRub:item.feeRub,amount:item.fee,currency:item.currency,sub:item.title||'Вывод средств',editKind:'withdrawal',original:item,hiddenInAll:true});
+  });
+  if(stats.expenses.ai?.includedInTotal&&stats.expenses.ai.periodRub>0)rows.push({key:'ai',kind:'expense',date:range.to,dateLabel:'За всё время',title:'Gemini',sourceKey:'other',source:'Проект',amountRub:stats.expenses.ai.periodRub,sub:'',original:{}});
+  return rows.sort(function(a,b){return Date.parse(b.date)-Date.parse(a.date)||a.key.localeCompare(b.key);});
  }
- function renderReceipts() {
+ function rowAction(row){return row.editKind?'data-edit-kind="'+esc(row.editKind)+'" data-id="'+esc(row.id)+'"':'data-detail-key="'+esc(row.key)+'"';}
+ function renderReceipts(){
   if(!stats)return;
-  var q=el('ec-search').value.trim().toLowerCase(),store=el('ec-store-filter').value,showTests=el('ec-show-tests').checked;
-  var rows=(receiptMode==='actual'?stats.receipts:stats.estimatedReceipts)||[];
-  rows=rows.filter(function(row){return (showTests||!row.isTest)&&(store==='all'||row.storeKey===store)&&(!q||[row.customer,row.title,row.email,row.txId,row.id,row.store].join(' ').toLowerCase().includes(q));});
-  var pageSize=12,pages=Math.max(1,Math.ceil(rows.length/pageSize));page=Math.min(page,pages-1);
-  set('ec-receipts-count',num(rows.length));set('ec-ledger-note',receiptMode==='actual'?'Все источники · покупки магазинов по тарифу':'По тарифу · учтены в доходе');
-  el('ec-show-tests').closest('label').hidden=false;
-  el('ec-receipts-body').innerHTML=rows.length?rows.slice(page*pageSize,(page+1)*pageSize).map(function(row){
-   var manual=(stats.config.manualRevenues||[]).some(function(r){return r.id===row.id;});
-   var status=row.isTest?'<span class="ec-pill amber">'+(row.includedInRevenue?'Тест · в доходе':'Тест · вне дохода')+'</span>':row.type==='estimate'?'<span class="ec-pill">'+'По тарифу · в доходе'+'</span>':'<span class="ec-pill '+(row.includedInRevenue?'green':'')+'">'+(row.includedInRevenue?'Получено':'Выплата · справочно')+'</span>';
-   var title=row.customer||row.title||'Поступление';
-   return '<tr><td style="white-space:nowrap">'+esc(dateText(row.date,true))+'</td><td class="ec-name"><strong>'+esc(title)+'</strong>'+(row.email?'<span class="ec-sub">'+esc(row.email)+'</span>':'')+'<span class="ec-sub">'+esc(row.tier||'')+'</span>'+(row.txId?'<button type="button" class="ec-receipt-id" data-copy="'+esc(row.txId)+'" title="Скопировать '+esc(row.txId)+'" aria-label="Скопировать номер заказа">'+esc(row.txId)+'</button>':'')+'</td><td><span class="ec-pill '+(row.storeKey==='web'?'blue':'')+'">'+esc(stores[row.storeKey]||row.store||'Другое')+'</span></td><td>'+status+'</td><td class="ec-money">'+rub(row.amountRub)+'</td><td class="ec-cell-action">'+(manual?editButton('revenue',row.id,'Редактировать '+title):'')+'</td></tr>';
-  }).join(''):'<tr><td colspan="6" class="ec-empty">'+(q||store!=='all'?'Ничего не найдено':receiptMode==='actual'?'Поступлений за этот период пока нет':'Покупок за этот период пока нет')+'</td></tr>';
-  set('ec-page-info',rows.length?(page*pageSize+1)+'–'+Math.min((page+1)*pageSize,rows.length)+' из '+rows.length:'');el('ec-prev').disabled=page===0;el('ec-next').disabled=page>=pages-1;
+  var query=el('ec-search').value.trim().toLowerCase(),source=el('ec-store-filter').value,showTests=el('ec-show-tests').checked;
+  var rows=journal.filter(function(row){return (showTests||!row.isTest)&&(source==='all'||source===row.sourceKey)&&(receiptMode==='all'?!row.hiddenInAll:receiptMode==='expense'?row.kind==='expense'||row.kind==='commission':row.kind===receiptMode)&&(!query||[row.title,row.sub,row.source,row.id,row.search].join(' ').toLowerCase().includes(query));});
+  var size=10,pages=Math.max(1,Math.ceil(rows.length/size));page=Math.min(page,pages-1);set('ec-receipts-count',num(rows.length));
+  el('ec-receipts-body').innerHTML=rows.length?rows.slice(page*size,(page+1)*size).map(function(row){
+   var sign=row.kind==='income'?'+':row.kind==='expense'||row.kind==='commission'?'−':'';
+   var sub=[row.source,row.sub].filter(Boolean).join(' · ');
+   return '<tr data-row-kind="'+row.kind+'"><td class="ec-date">'+esc(row.dateLabel||dateText(row.date,true))+'</td><td class="ec-name"><button type="button" class="ec-row-title" '+rowAction(row)+'>'+esc(row.title)+'</button><span class="ec-sub">'+esc(sub)+'</span></td><td class="ec-kind">'+kindLabels[row.kind]+'</td><td class="ec-money '+row.kind+'">'+sign+rub(row.amountRub)+(row.currency==='USD'&&row.amount!=null?'<span class="ec-sub">'+money(row.amount,'USD')+'</span>':'')+'</td><td class="ec-cell-action"><button type="button" class="ec-edit" '+rowAction(row)+' aria-label="'+esc((row.editKind?'Редактировать ':'Подробнее: ')+row.title)+'" title="'+(row.editKind?'Редактировать':'Подробнее')+'">'+(row.editKind?editIcon:infoIcon)+'</button></td></tr>';
+  }).join(''):'<tr><td colspan="5" class="ec-empty">'+(query||source!=='all'?'Ничего не найдено':'За этот период операций нет')+'</td></tr>';
+  set('ec-page-info',rows.length?(page*size+1)+'–'+Math.min((page+1)*size,rows.length)+' из '+rows.length:'');el('ec-prev').disabled=page===0;el('ec-next').disabled=page>=pages-1;
  }
- function updatePlanner() {
-  if(!stats)return;
-  var monthly=Number(stats.expenses.monthlyRub)||0,target=Math.max(0,Number(el('ec-plan-target').value)||0),average=Math.max(1,Number(el('ec-plan-average').value)||1),factor=1-stats.config.reinvestPercent/100;
-  var possible=factor>0 || target===0,required=possible?monthly+(target===0?0:target/factor):0;
-  set('ec-monthly-cost',rub(monthly));set('ec-be-week',num(Math.ceil(monthly/99))+' продаж');set('ec-be-quarter',num(Math.ceil(monthly/290))+' продаж');
-  var coverage=stats.expenses.totalRub>0?Math.max(0,Math.round(stats.revenue.grossRub/stats.expenses.totalRub*100)):100;el('ec-coverage-bar').style.width=Math.min(100,coverage)+'%';set('ec-coverage','Покрытие расходов периода · '+num(coverage)+'%');
+ function renderExpenses(){
+  if(!stats)return;var filter=el('ec-expense-filter').value;
+  var lines=(stats.expenses.lines||[]).filter(function(line){return filter==='all'||(filter==='once'?line.frequency==='once':line.frequency!=='once');});
+  el('ec-expenses-body').innerHTML=lines.length?lines.map(function(line){var kind=line.builtin?'builtin':line.category==='commission'?'commission':'expense',amount=money(line.amount??line.amountRub,line.currency);return '<tr><td class="ec-date">'+(line.builtin?'Бюджет':esc(dateText(line.date,true)))+'</td><td class="ec-name"><button type="button" class="ec-row-title" data-edit-kind="'+kind+'" data-id="'+esc(line.id)+'">'+esc(line.title)+'</button>'+(line.endDate?'<span class="ec-sub">До '+esc(dateText(line.endDate,true))+'</span>':'')+'</td><td class="ec-kind">'+(line.frequency==='once'?'Разовый':frequencies[line.frequency])+'</td><td class="ec-money">'+amount+'</td><td class="ec-cell-action"><button type="button" class="ec-edit" data-edit-kind="'+kind+'" data-id="'+esc(line.id)+'" aria-label="Редактировать '+esc(line.title)+'">'+editIcon+'</button></td></tr>';}).join(''):'<tr><td colspan="5" class="ec-empty">Расходов пока нет</td></tr>';
+ }
+ function updatePlanner(){
+  if(!stats)return;var monthly=Number(stats.expenses.monthlyRub)||0,target=Math.max(0,Number(el('ec-plan-target').value)||0),average=Math.max(1,Number(el('ec-plan-average').value)||1),reinvestFactor=1-stats.config.reinvestPercent/100,feeFactor=1-stats.config.paymentFeePercent/100;
+  var possible=feeFactor>0&&(reinvestFactor>0||target===0),required=possible?(monthly+(target===0?0:target/reinvestFactor))/feeFactor:0;
+  set('ec-plan-cost',rub(monthly)+' / мес');set('ec-plan-fee','С учётом комиссии Platega '+pct(stats.config.paymentFeePercent));
+  set('ec-be-week',feeFactor>0?num(Math.ceil(monthly/(99*feeFactor)))+' продаж':'—');set('ec-be-quarter',feeFactor>0?num(Math.ceil(monthly/(290*feeFactor)))+' продаж':'—');
   set('ec-plan-revenue',possible?rub(Math.ceil(required)):'—');set('ec-plan-sales',possible?num(Math.ceil(required/average)):'—');
-  set('ec-plan-split',possible?'Сергей '+rub(target*stats.partners.sergey.percent/100)+' · Никита '+rub(target*stats.partners.nikita.percent/100):'При фонде развития 100% прибыль не распределяется');
  }
- function input(name,label,value,options) { options=options||{};return '<label class="ec-field '+(options.full?'full':'')+'">'+esc(label)+'<input name="'+name+'" type="'+(options.type||'number')+'" value="'+esc(value)+'" '+(options.required===false?'':'required')+' '+(options.type==='text'?'maxlength="120"':options.type==='date'?'':'min="'+(options.min??0)+'" max="'+(options.max??100000000)+'" step="'+(options.step||'0.01')+'"')+'></label>'; }
- function select(name,label,value,choices,full) {return '<label class="ec-field '+(full?'full':'')+'">'+esc(label)+'<select name="'+name+'">'+Object.keys(choices).map(function(key){return '<option value="'+esc(key)+'" '+(key===value?'selected':'')+'>'+esc(choices[key])+'</option>';}).join('')+'</select></label>';}
- function showForm(kind,item) {
-  if(!stats||saving)return;item=item||{};returnFocus=document.activeElement;dialogContext={kind:kind,id:item.id||null,confirmDelete:false};
-  var html='',title='',cfg=stats.config,note='';
-  if(kind==='expense') {
-   title=item.id?'Редактировать расход':'Новый расход';
-   html=input('title','Название',item.title||'',{type:'text',full:true})+input('amount','Сумма',item.amount??item.amountRub??'',{min:0.01})+select('currency','Валюта',item.currency||'RUB',{RUB:'Рубли · ₽',USD:'Доллары · $'})+select('frequency','Повторение',item.frequency||(item.monthly?'monthly':'once'),frequencies,true)+input('date','Дата платежа',(item.date||item.createdAt||today()).slice(0,10),{type:'date'})+input('endDate','Дата окончания',item.endDate?item.endDate.slice(0,10):'',{type:'date',required:false})+'<div class="ec-form-preview" id="ec-form-preview"></div>';
-  } else if(kind==='shares') {
-   title='Распределение прибыли';html=input('sergeySharePercent','Сергей, %',cfg.sergeySharePercent,{max:100})+input('nikitaSharePercent','Никита, %',cfg.nikitaSharePercent,{max:100})+input('reinvestPercent','Фонд развития, %',cfg.reinvestPercent,{max:100,full:true})+'<div class="ec-form-preview" id="ec-form-preview"></div>';note='Доли применяются ко всем периодам расчёта.';
-  } else if(kind==='settings') {
-   title='Параметры экономики';html=input('usdRate','Курс доллара, ₽',cfg.usdRate,{min:0.01,full:true})+input('cloudflareMonthlyUsd','Cloudflare, $ / мес',cfg.cloudflareMonthlyUsd)+input('domainMonthlyRub','Домен, ₽ / мес',cfg.domainMonthlyRub)+'<label class="ec-form-check"><input type="checkbox" name="cloudflareEnabled" '+(cfg.cloudflareEnabled!==false?'checked':'')+'>Учитывать бюджет Cloudflare</label><label class="ec-form-check"><input type="checkbox" name="domainEnabled" '+(cfg.domainEnabled!==false?'checked':'')+'>Учитывать бюджет домена</label><label class="ec-form-check"><input type="checkbox" name="excludeTestOrders" '+(cfg.excludeTestOrders?'checked':'')+'>Не учитывать тестовые оплаты в доходе</label>';note='Для точных списаний отключите бюджет и добавьте расходы с датой.';
-  } else if(kind==='delete-expense') {
-   title='Удалить расход?';html='<div class="ec-delete-summary"><strong>'+esc(item.title)+'</strong><span>'+rub(item.periodRub)+' в выбранном периоде</span></div>';note=item.builtin?'Можно вернуть в параметрах экономики.':'Расход будет исключён из расчётов за все периоды.';
-  } else {
-   title=item.id?'Редактировать поступление':'Новое поступление';html=input('title','Описание',item.title||'',{type:'text',full:true})+input('amountRub','Получено, ₽',item.amountRub??'',{min:0.01})+input('date','Дата получения',(item.date||today()).slice(0,10),{type:'date'})+select('store','Источник',item.store||'appstore',{appstore:'App Store',googleplay:'Google Play',rustore:'RuStore',other:'Другое'},true);note='Выплаты магазинов сохраняются справочно: продажи уже учтены по тарифу. Источник «Другое» добавляет сумму к доходу.';
+ function input(name,label,value,options){options=options||{};return '<label class="ec-field '+(options.full?'full':'')+'"><span>'+esc(label)+'</span><input name="'+name+'" type="'+(options.type||'number')+'" value="'+esc(value)+'" '+(options.required===false?'':'required')+' '+(options.type==='text'?'maxlength="160"':options.type==='date'?(options.max?'max="'+esc(options.max)+'"':''):'min="'+(options.min??0)+'" max="'+(options.max??100000000)+'" step="'+(options.step||'0.01')+'"')+'></label>';}
+ function select(name,label,value,choices,full){return '<label class="ec-field '+(full?'full':'')+'"><span>'+esc(label)+'</span><select name="'+name+'">'+Object.keys(choices).map(function(key){return '<option value="'+esc(key)+'" '+(key===value?'selected':'')+'>'+esc(choices[key])+'</option>';}).join('')+'</select></label>';}
+ function formNote(note){el('ec-form-note').hidden=!note;set('ec-form-note',note);}
+ function operationFields(kind,item){
+  var cfg=stats.config,expense=kind==='expense'||kind==='commission',currency=item.currency||(kind==='withdrawal'?'USD':'RUB');
+  var html=select('operationType','Тип операции',kind,operationTypes,true)+input('amount',kind==='withdrawal'?'Сумма вывода':'Сумма',item.amount??item.amountRub??'',{min:0.01})+select('currency','Валюта',currency,{RUB:'Рубли · ₽',USD:'Доллары · $'});
+  if(kind==='withdrawal')html+=input('fee','Комиссия',item.fee??0)+select('feeMode','Как списана',item.feeMode||'additional',{additional:'Сверх суммы',included:'Из суммы вывода'});
+  html+=input('date',expense?'Дата платежа':'Дата',(item.date||today()).slice(0,10),{type:'date',max:expense?undefined:today()});
+  if(expense)html+=select('frequency','Повторение',item.frequency||'once',frequencies);
+  else html+=select('store',kind==='withdrawal'?'Откуда':'Источник',item.store||(kind==='withdrawal'?'web':'other'),stores);
+  html+=input('title',kind==='withdrawal'?'Название (необязательно)':'Название',item.title||'',{type:'text',full:true,required:kind!=='withdrawal'});
+  if(expense)html+=input('endDate','Повторять до',item.endDate||'',{type:'date',required:false,full:true});
+  if(!expense)html+=input('usdRate','Курс на дату операции, ₽ / $',item.id&&item.currency!=='USD'?cfg.usdRate:item.usdRate??cfg.usdRate,{min:0.0001,step:'0.0001',max:100000,full:true});
+  html+='<div class="ec-form-preview" id="ec-form-preview"></div>';
+  return html;
+ }
+ function showForm(kind,item){
+  if(!stats||saving||stats.period!==period)return;item=item||{};returnFocus=document.activeElement;dialogContext={kind:kind,id:item.id||null,confirmDelete:false,item:item};var html='',heading='',note='';
+  if(Object.hasOwn(operationTypes,kind)){heading=item.id?'Изменить операцию':'Новая операция';html=operationFields(kind,item);}
+  else if(kind==='shares'){heading='Распределение прибыли';html=input('reinvestPercent','В развитие, %',stats.config.reinvestPercent,{max:100,full:true})+input('sergeySharePercent','Сергей, %',stats.config.sergeySharePercent,{max:100})+input('nikitaSharePercent','Никита, %',stats.config.nikitaSharePercent,{max:100})+'<div class="ec-form-preview" id="ec-form-preview"></div>';note='Доли делят остаток после отчисления в развитие.';}
+  else if(kind==='settings'){
+   heading='Настройки экономики';var cfg=stats.config;
+   html=input('paymentFeePercent','Комиссия Platega, %',cfg.paymentFeePercent??8,{max:100})+input('usdRate','Курс доллара, ₽',cfg.usdRate,{min:0.0001,step:'0.0001',max:100000})+'<details class="ec-settings-extra"><summary>Бюджет инфраструктуры</summary><div class="ec-form-grid">'+input('cloudflareMonthlyUsd','Cloudflare, $ / мес',cfg.cloudflareMonthlyUsd)+input('domainMonthlyRub','Домен, ₽ / мес',cfg.domainMonthlyRub)+'<label class="ec-form-check"><input type="checkbox" name="cloudflareEnabled" '+(cfg.cloudflareEnabled!==false?'checked':'')+'>Учитывать Cloudflare</label><label class="ec-form-check"><input type="checkbox" name="domainEnabled" '+(cfg.domainEnabled!==false?'checked':'')+'>Учитывать домен</label><p class="ec-form-note" style="grid-column:1/-1;margin:0">Бюджет распределяется по дням. При учёте реальных списаний отключите его.</p></div></details><label class="ec-form-check"><input type="checkbox" name="excludeTestOrders" '+(cfg.excludeTestOrders?'checked':'')+'>Исключать тестовые оплаты</label>';
+   note='Комиссия применяется к платежам СБП. Курс по умолчанию — для новых операций и бюджета.';
+  }else if(kind==='builtin'){
+   heading=item.title;html=input('amount',item.currency==='USD'?'Бюджет, $ / мес':'Бюджет, ₽ / мес',item.amount,{full:true})+'<div class="ec-form-preview">В выбранном периоде <b>'+rub(item.periodRub)+'</b></div>';note='Бюджет распределяется по дням месяца.';
   }
-  set('ec-dialog-title',title);el('ec-fields').innerHTML=html;el('ec-form-error').hidden=true;el('ec-form-note').hidden=!note;set('ec-form-note',note);el('ec-delete').hidden=!item.id||kind==='delete-expense';set('ec-delete','Удалить');set('ec-submit',kind==='delete-expense'?'Удалить':item.id||kind==='shares'||kind==='settings'?'Сохранить':'Добавить');el('ec-submit').classList.toggle('btn-danger',kind==='delete-expense');el('ec-submit').classList.toggle('btn-primary',kind!=='delete-expense');el('ec-dialog').showModal();updateFormPreview();
+  set('ec-dialog-title',heading);el('ec-fields').innerHTML=html;el('ec-form-error').hidden=true;formNote(note);el('ec-delete').hidden=!item.id;set('ec-delete',kind==='builtin'?'Отключить':'Удалить');el('ec-submit').hidden=false;set('ec-submit',item.id||kind==='shares'||kind==='settings'?'Сохранить':'Добавить');set('ec-cancel','Отмена');el('ec-dialog').showModal();if(item.id&&field('operationType'))field('operationType').disabled=true;updateFormPreview();
  }
- function updateFormPreview(changed) {
-  if(!dialogContext)return;
-  if(dialogContext.kind==='shares') {
-   if(changed==='sergeySharePercent'||changed==='nikitaSharePercent'){var other=changed==='sergeySharePercent'?'nikitaSharePercent':'sergeySharePercent';var value=Number(field(changed).value);if(field(changed).value!==''&&Number.isFinite(value)&&value>=0&&value<=100)field(other).value=Number((100-value).toFixed(2));}
-   el('ec-form-preview').innerHTML='В развитие <b>'+pct(field('reinvestPercent').value)+'</b> · доли <b>'+pct(Number(field('sergeySharePercent').value)+Number(field('nikitaSharePercent').value))+'</b>';
+ function updateFormPreview(changed){
+  if(!dialogContext)return;var kind=dialogContext.kind;
+  if(kind==='shares'){
+   if(changed==='sergeySharePercent'||changed==='nikitaSharePercent'){var other=changed==='sergeySharePercent'?'nikitaSharePercent':'sergeySharePercent',value=Number(field(changed).value);if(field(changed).value!==''&&Number.isFinite(value)&&value>=0&&value<=100)field(other).value=Number((100-value).toFixed(2));}
+   var profit=Math.max(0,stats.profit.operatingRub),fund=profit*Number(field('reinvestPercent').value)/100,payout=profit-fund;
+   el('ec-form-preview').innerHTML=previewLine('В развитие',rub(fund))+previewLine('Сергей',rub(payout*Number(field('sergeySharePercent').value)/100))+previewLine('Никита',rub(payout*Number(field('nikitaSharePercent').value)/100));return;
   }
-  if(dialogContext.kind==='expense') {
-   var frequency=field('frequency').value,isOnce=frequency==='once',amount=Number(field('amount').value)||0,rubles=amount*(field('currency').value==='USD'?stats.config.usdRate:1);field('endDate').disabled=isOnce;field('endDate').closest('label').hidden=isOnce;field('date').closest('label').firstChild.textContent=isOnce?'Дата платежа':'Первый платёж';field('endDate').min=field('date').value;
-   el('ec-form-preview').innerHTML=isOnce?'Разовый расход · <b>'+rub(rubles)+'</b>':'Бюджет в месяц · <b>'+rub(frequency==='yearly'?rubles/12:rubles)+'</b>';
+  if(!Object.hasOwn(operationTypes,kind))return;
+  var amount=Number(field('amount').value)||0,currency=field('currency').value,expense=kind==='expense'||kind==='commission',rate=expense?stats.config.usdRate:Number(field('usdRate').value)||0,rubles=amount*(currency==='USD'?rate:1),note='';
+  if(field('usdRate')){field('usdRate').closest('label').hidden=currency!=='USD';field('usdRate').disabled=currency!=='USD';}
+  if(expense){var once=field('frequency').value==='once';field('endDate').closest('label').hidden=once;field('endDate').disabled=once;field('endDate').min=field('date').value;field('date').closest('label').querySelector('span').textContent=once?'Дата платежа':'Первый платёж';el('ec-form-preview').innerHTML=previewLine(once?'В расходах':field('frequency').value==='yearly'?'Каждый год':'Каждый месяц',rub(rubles));if(currency==='USD')note='Расход пересчитывается по курсу в настройках: '+rub(rate)+' / $.';}
+  if(kind==='withdrawal'){
+   var fee=Number(field('fee').value)||0,included=field('feeMode').value==='included',received=included?amount-fee:amount,debited=included?amount:amount+fee;
+   el('ec-form-preview').innerHTML=previewLine('Получено',money(received,currency))+previewLine('Списано',money(debited,currency))+previewLine('В расходах только комиссия',rub(fee*(currency==='USD'?rate:1)));
+   field('fee').max=included?amount:100000000;
   }
+  if(kind==='revenue'){
+   var store=field('store').value,isPayout=['appstore','googleplay','rustore'].includes(store),fee=store==='web'?rubles*stats.config.paymentFeePercent/100:0;
+   el('ec-form-preview').innerHTML=isPayout?previewLine('Выплата магазина',rub(rubles)):previewLine('В доходе',rub(rubles))+(fee?previewLine('Комиссия '+pct(stats.config.paymentFeePercent),rub(fee)):'');
+   note=isPayout?'Продажи уже учтены. Выплата сохранится без повторного дохода.':'';
+  }
+  formNote(note);
  }
- function closeForm() {if(saving)return;el('ec-dialog').close();dialogContext=null;if(returnFocus?.isConnected)returnFocus.focus();}
- async function mutate(path,body) {
-  var response=await fetch('/api/admin/economy/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  var data;try{data=await response.json();}catch(_){throw new Error('Не удалось получить ответ сервера');}
-  if(!response.ok||!data.ok)throw new Error(data.error||'Не удалось сохранить');return data;
+ function previewLine(label,value){return '<div class="ec-preview-line"><span>'+esc(label)+'</span><b>'+esc(value)+'</b></div>';}
+ function formDraft(){var result={};['title','date','amount','currency','usdRate','fee','feeMode','store','frequency','endDate'].forEach(function(name){var node=field(name);if(node)result[name]=node.value;});return result;}
+ function detailLine(label,value,raw){return '<dt>'+esc(label)+'</dt><dd>'+ (raw?value:esc(value))+'</dd>';}
+ function showDetails(key){
+  var row=journal.find(function(item){return item.key===key;});if(!row||saving)return;
+  returnFocus=document.activeElement;dialogContext={kind:'detail'};set('ec-dialog-title',row.title);var receipt=row.original||{},html=detailLine('Сумма',rub(row.amountRub))+detailLine('Дата',row.dateLabel||dateText(row.date,true))+detailLine('Источник',row.source);
+  if(receipt.type==='estimate')html+=detailLine('Учёт','По тарифу, до комиссии');
+  if(receipt.email)html+=detailLine('Email',receipt.email);
+  if(receipt.tier)html+=detailLine('Тариф',receipt.tier);
+  if(receipt.feeRub>0)html+=detailLine('Комиссия '+pct(receipt.paymentFeePercent??stats.config.paymentFeePercent),rub(receipt.feeRub))+detailLine('После комиссии',rub(receipt.netRub));
+  if(receipt.isTest)html+=detailLine('Тестовая оплата',receipt.includedInRevenue?'Включена в доход':'Исключена из дохода');
+  if(receipt.txId)html+='<dt class="ec-wide">Номер заказа</dt><dd class="ec-wide"><button type="button" class="ec-detail-copy" data-copy="'+esc(receipt.txId)+'" title="Скопировать номер заказа">'+esc(receipt.txId)+'</button></dd>';
+  el('ec-fields').innerHTML='<dl class="ec-detail-list">'+html+'</dl>';formNote(key==='payment-fees'?'Рассчитывается автоматически по каждому платежу СБП.':receipt.type==='estimate'?'Сумма по тарифу. Комиссии и выплаты магазина могут отличаться.':'');el('ec-form-error').hidden=true;el('ec-delete').hidden=true;el('ec-submit').hidden=true;set('ec-cancel','Закрыть');el('ec-dialog').showModal();
  }
- async function submitForm(event,deleting) {
-  if(event)event.preventDefault();if(saving||!dialogContext)return;
-  var context=dialogContext,body={},path='',kind=context.kind;
-  deleting=deleting===true||kind==='delete-expense';
-  if(deleting){path=(kind==='expense'||kind==='delete-expense'?'expenses':'revenues')+'/delete';body.id=context.id;}
-  else {
+ function closeForm(){if(saving)return;el('ec-dialog').close();dialogContext=null;if(returnFocus?.isConnected)returnFocus.focus();}
+ async function mutate(path,body){var response=await fetch('/api/admin/economy/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});var data;try{data=await response.json();}catch(_){throw new Error('Не удалось получить ответ сервера');}if(!response.ok||!data.ok)throw new Error(data.error||'Не удалось сохранить');return data;}
+ async function submitForm(event,deleting){
+  if(event)event.preventDefault();if(saving||!dialogContext||dialogContext.kind==='detail')return;
+  var context=dialogContext,kind=context.kind,body={},path='',expense=kind==='expense'||kind==='commission',group=expense||kind==='builtin'?'expenses':kind==='withdrawal'?'withdrawals':'revenues';
+  if(deleting===true){path=group+'/delete';body.id=context.id;}
+  else{
    if(!el('ec-form').reportValidity())return;
-   if(kind==='expense'){body={title:field('title').value.trim(),amount:Number(field('amount').value),currency:field('currency').value,frequency:field('frequency').value,date:field('date').value,endDate:field('frequency').value==='once'?null:field('endDate').value||null};path='expenses/'+(context.id?'update':'add');}
-   else if(kind==='revenue'){body={title:field('title').value.trim(),amountRub:Number(field('amountRub').value),store:field('store').value,date:field('date').value};path='revenues/'+(context.id?'update':'add');}
-   else if(kind==='shares'){body={nikitaSharePercent:Number(field('nikitaSharePercent').value),reinvestPercent:Number(field('reinvestPercent').value)};if(Math.abs(Number(field('sergeySharePercent').value)+body.nikitaSharePercent-100)>.001){formError('Сумма долей должна быть 100%');return;}path='settings';}
-   else{body={usdRate:Number(field('usdRate').value),cloudflareMonthlyUsd:Number(field('cloudflareMonthlyUsd').value),domainMonthlyRub:Number(field('domainMonthlyRub').value),cloudflareEnabled:field('cloudflareEnabled').checked,domainEnabled:field('domainEnabled').checked,excludeTestOrders:field('excludeTestOrders').checked};path='settings';}
-   if(context.id)body.id=context.id;
+   if(Object.hasOwn(operationTypes,kind)){
+    body={title:field('title').value.trim(),amount:Number(field('amount').value),currency:field('currency').value,date:field('date').value};
+    if(expense){body.frequency=field('frequency').value;body.endDate=body.frequency==='once'?null:field('endDate').value||null;body.category=kind==='commission'?'commission':'expense';}
+    else{body.store=field('store').value;if(body.currency==='USD')body.usdRate=Number(field('usdRate').value);}
+    if(kind==='withdrawal'){body.fee=Number(field('fee').value);body.feeMode=field('feeMode').value;}
+    path=group+'/'+(context.id?'update':'add');if(context.id)body.id=context.id;
+   }else if(kind==='shares'){body={nikitaSharePercent:Number(field('nikitaSharePercent').value),reinvestPercent:Number(field('reinvestPercent').value)};if(Math.abs(Number(field('sergeySharePercent').value)+body.nikitaSharePercent-100)>.001){formError('Сумма долей должна быть 100%');return;}path='settings';}
+   else if(kind==='builtin'){body[context.item.source==='cloudflare'?'cloudflareMonthlyUsd':'domainMonthlyRub']=Number(field('amount').value);path='settings';}
+   else{body={paymentFeePercent:Number(field('paymentFeePercent').value),usdRate:Number(field('usdRate').value),cloudflareMonthlyUsd:Number(field('cloudflareMonthlyUsd').value),domainMonthlyRub:Number(field('domainMonthlyRub').value),cloudflareEnabled:field('cloudflareEnabled').checked,domainEnabled:field('domainEnabled').checked,excludeTestOrders:field('excludeTestOrders').checked};path='settings';}
   }
-  saving=true;enableActions();el('ec-form-error').hidden=true;var submitLabel=el('ec-submit').textContent;el('ec-form').querySelectorAll('button').forEach(function(button){button.disabled=true;});set('ec-submit',deleting?'Удаление…':'Сохранение…');
-  try{await mutate(path,body);saving=false;closeForm();saving=true;feedback(deleting?(kind==='revenue'?'Поступление удалено':'Расход удалён'):'Сохранено');await loadEconomy(true);}
+  saving=true;enableActions();el('ec-form-error').hidden=true;var submitLabel=el('ec-submit').textContent,controls=Array.from(el('ec-form').querySelectorAll('button,input,select')).map(function(node){var state={node:node,disabled:node.disabled};node.disabled=true;return state;});set('ec-submit',deleting?'Удаление…':'Сохранение…');
+  try{await mutate(path,body);saving=false;closeForm();saving=true;feedback(deleting?(kind==='builtin'?'Бюджет отключён':'Операция удалена'):'Сохранено');await loadEconomy(true);}
   catch(error){formError(error.message);}
-  finally{saving=false;enableActions();el('ec-form').querySelectorAll('button').forEach(function(button){button.disabled=false;});set('ec-submit',submitLabel);if(deleting&&!dialogContext&&!returnFocus?.isConnected)el(kind==='revenue'?'ec-add-revenue':'ec-add-expense').focus();}
+  finally{saving=false;enableActions();controls.forEach(function(state){state.node.disabled=state.disabled;});set('ec-submit',submitLabel);if(!dialogContext&&!returnFocus?.isConnected)el('ec-add-operation').focus();}
  }
  function formError(message){el('ec-form-error').hidden=false;set('ec-form-error',message);}
- function init() {
-  if(!el('economy-view'))return;
-  window.loadEconomy=loadEconomy;
+ function openRow(event){var button=event.target.closest('button');if(!button||!stats)return;if(button.dataset.detailKey)return showDetails(button.dataset.detailKey);var kind=button.dataset.editKind,id=button.dataset.id;if(!kind)return;var list=kind==='builtin'?stats.expenses.lines:kind==='revenue'?stats.config.manualRevenues:kind==='withdrawal'?stats.config.withdrawals:stats.config.extraExpenses;var item=(list||[]).find(function(row){return row.id===id;});if(item)showForm(kind,item);}
+ function init(){
+  if(!el('economy-view'))return;window.loadEconomy=loadEconomy;
   el('ec-period-tabs').addEventListener('click',function(event){var button=event.target.closest('[data-period]');if(!button)return;period=button.dataset.period;page=0;activate('ec-period-tabs','data-period',period);loadEconomy(true);});
-  el('ec-refresh').addEventListener('click',function(){loadEconomy(true);});
-  el('ec-expense-filter').addEventListener('click',function(event){var button=event.target.closest('[data-filter]');if(!button)return;expenseFilter=button.dataset.filter;activate('ec-expense-filter','data-filter',expenseFilter);renderExpenses();});
+  el('ec-refresh').onclick=function(){loadEconomy(true);};el('ec-settings').onclick=function(){showForm('settings');};el('ec-edit-shares').onclick=function(){showForm('shares');};el('ec-add-operation').onclick=function(){showForm('expense');};el('ec-add-expense').onclick=function(){showForm('expense');};
   el('ec-receipt-mode').addEventListener('click',function(event){var button=event.target.closest('[data-mode]');if(!button)return;receiptMode=button.dataset.mode;page=0;activate('ec-receipt-mode','data-mode',receiptMode);renderReceipts();});
+  el('ec-expense-filter').addEventListener('change',renderExpenses);
+  el('ec-platega-panel').addEventListener('toggle',function(){if(this.open)loadPlatega(false);});el('ec-platega-refresh').onclick=function(){loadPlatega(true);};
   ['ec-search','ec-store-filter','ec-show-tests'].forEach(function(id){el(id).addEventListener(id==='ec-search'?'input':'change',function(){page=0;renderReceipts();});});
-  el('ec-prev').onclick=function(){page--;renderReceipts();};el('ec-next').onclick=function(){page++;renderReceipts();};
-  el('ec-settings').onclick=function(){showForm('settings');};el('ec-edit-shares').onclick=function(){showForm('shares');};el('ec-add-expense').onclick=function(){showForm('expense');};el('ec-add-revenue').onclick=function(){showForm('revenue');};
-  el('ec-expenses-body').addEventListener('click',function(event){var button=event.target.closest('button');if(!button||!stats)return;if(button.dataset.deleteExpenseId){var line=stats.expenses.lines.find(function(expense){return expense.id===button.dataset.deleteExpenseId;});if(line)showForm('delete-expense',line);return;}if(button.hasAttribute('data-builtin'))return showForm('settings');var item=stats.config.extraExpenses.find(function(expense){return expense.id===button.dataset.expenseId;});if(item)showForm('expense',item);});
-  el('ec-receipts-body').addEventListener('click',async function(event){var button=event.target.closest('button');if(!button)return;if(button.dataset.revenueId){var item=stats.config.manualRevenues.find(function(revenue){return revenue.id===button.dataset.revenueId;});if(item)showForm('revenue',item);}else if(button.dataset.copy){try{await navigator.clipboard.writeText(button.dataset.copy);feedback('Номер заказа скопирован');}catch(_){feedback('Не удалось скопировать номер заказа',true);}}});
-  el('ec-feedback').querySelector('button').onclick=function(){el('ec-feedback').hidden=true;};
-  ['ec-plan-target','ec-plan-average'].forEach(function(id){el(id).addEventListener('input',updatePlanner);});
-  el('ec-form').addEventListener('input',function(event){updateFormPreview(event.target.name);});el('ec-form').addEventListener('change',function(event){updateFormPreview(event.target.name);});
+  el('ec-prev').onclick=function(){page--;renderReceipts();};el('ec-next').onclick=function(){page++;renderReceipts();};el('ec-receipts-body').addEventListener('click',openRow);el('ec-expenses-body').addEventListener('click',openRow);
+  el('ec-feedback').querySelector('button').onclick=function(){el('ec-feedback').hidden=true;};['ec-plan-target','ec-plan-average'].forEach(function(id){el(id).addEventListener('input',updatePlanner);});
+  el('ec-form').addEventListener('input',function(event){if(event.target.name!=='operationType')updateFormPreview(event.target.name);});
+  el('ec-form').addEventListener('change',function(event){
+   if(event.target.name==='operationType'&&!dialogContext.id){var draft=formDraft(),kind=event.target.value;dialogContext.kind=kind;if(kind==='withdrawal'&&!draft.title&&draft.amount==='')draft.currency='USD';el('ec-fields').innerHTML=operationFields(kind,draft);field('operationType').focus();}
+   updateFormPreview(event.target.name);
+  });
   el('ec-form').addEventListener('submit',submitForm);el('ec-cancel').onclick=closeForm;
-  el('ec-delete').onclick=function(){if(!dialogContext.confirmDelete){dialogContext.confirmDelete=true;set('ec-delete','Подтвердить удаление');return;}submitForm(null,true);};
+  el('ec-delete').onclick=function(){if(!dialogContext.confirmDelete){dialogContext.confirmDelete=true;set('ec-delete',dialogContext.kind==='builtin'?'Подтвердить отключение':'Подтвердить удаление');return;}submitForm(null,true);};
+  el('ec-fields').addEventListener('click',async function(event){var button=event.target.closest('[data-copy]');if(!button)return;try{await navigator.clipboard.writeText(button.dataset.copy);set('ec-form-note','Номер заказа скопирован');el('ec-form-note').hidden=false;}catch(_){formError('Не удалось скопировать номер заказа');}});
   el('ec-dialog').addEventListener('cancel',function(event){event.preventDefault();closeForm();});
   el('ec-dialog').addEventListener('click',function(event){if(event.target===el('ec-dialog')){var rect=el('ec-dialog').getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)closeForm();}});
   if(location.hash.split('/')[0]==='#economy'||localStorage.getItem('pdd-admin-feature')==='economy')loadEconomy();
  }
- // Оболочка вызывает loadEconomy при восстановлении вкладки и переходах навигации.
- window.loadEconomy=loadEconomy;
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+ window.loadEconomy=loadEconomy;if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();`;

@@ -137,7 +137,7 @@ if (process.argv.includes('--serve')) {
     async function field(name, value) { await page.locator(`#ec-form [name="${name}"]`).fill(String(value)); }
     async function select(name, value) { await page.locator(`#ec-form [name="${name}"]`).selectOption(value); }
     async function open(button) {
-      await page.locator(button).click();
+      await page.locator(button).first().click();
       await page.locator('#ec-dialog').waitFor({ state: 'visible' });
       assert.equal(await page.locator('#ec-dialog').evaluate(node => node instanceof HTMLDialogElement && node.open), true);
       assert.equal(await page.locator('#ec-dialog').evaluate(node => node.contains(document.activeElement)), true);
@@ -155,51 +155,75 @@ if (process.argv.includes('--serve')) {
       await page.locator('#ec-dialog').waitFor({ state: 'hidden' });
       await settled();
     }
+    async function add(kind) {
+      await open('#ec-add-operation');
+      await select('operationType', kind);
+    }
+    async function mode(value) {
+      await page.locator(`#ec-receipt-mode [data-mode="${value}"]`).click();
+    }
+    const edit = (kind, id) => `#ec-receipts-body .ec-edit[data-edit-kind="${kind}"][data-id="${id}"]`;
     try {
       await page.goto(`${preview.url}/admin#economy`);
       await page.locator('#economy-view').waitFor({ state: 'visible' });
       await settled();
-      assert.equal((await stats()).revenue.grossRub, 580);
-      assert.match(await page.locator('#ec-gross-sub').innerText(), /App Store/);
-      assert.equal(await page.locator('#ec-receipts-body [data-copy="fixture-ios"]').count(), 1);
-      assert.match(await page.locator('#ec-receipts-body').innerText(), /По тарифу · в доходе/);
-      assert.match(await page.locator('#ec-receipts-body').innerText(), /Выплата · справочно/);
+      let initial = await stats();
+      assert.equal(initial.revenue.grossRub, 580);
+      assert.equal(initial.expenses.paymentFeesRub, 23.2);
+      assert.match(await page.locator('#ec-receipts-body').innerText(), /Анна/);
+      assert.equal(await page.locator('#ec-expense-register').getAttribute('open'), null);
       await screenshot('desktop');
+      // Provider balances are current reference values and never become revenue.
+      assert.equal(preview.requests.some(request => request.path.endsWith('/economy/platega')), false, 'provider reads are lazy');
+      await page.route('**/api/admin/economy/platega', route => route.fulfill({
+        contentType: 'application/json', body: JSON.stringify({ ok: true, configured: true, updatedAt: new Date().toISOString(),
+          balances: [{ currency: 'RUB', amount: 1250.5 }, { currency: 'USDT', amount: 12.35, frozenBalance: 1.5 }] }),
+      }), { times: 1 });
+      await page.locator('#ec-platega-panel > summary').click();
+      await page.waitForFunction(() => document.querySelector('#ec-platega-body')?.textContent.includes('USDT'));
+      assert.match(await page.locator('#ec-platega-body').innerText(), /12,35/);
+      assert.match(await page.locator('#ec-platega-body').innerText(), /1,5/);
+      assert.equal((await stats()).revenue.grossRub, initial.revenue.grossRub);
+      await screenshot('platega-balances');
+      await page.route('**/api/admin/economy/platega', route => route.fulfill({
+        status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'Platega временно недоступна' }),
+      }), { times: 1 });
+      await page.locator('#ec-platega-refresh').click();
+      await page.waitForFunction(() => document.querySelector('#ec-platega-status')?.textContent.includes('недоступна'));
+      assert.match(await page.locator('#ec-platega-body').innerText(), /12,35/, 'provider failure retains last known balance');
+      await page.locator('#ec-platega-panel > summary').click();
 
+      // Filters change the journal only, including test visibility and source search.
       await page.locator('#ec-show-tests').check();
-      assert.equal(await page.locator('#ec-receipts-body [data-copy="fixture-test"]').count(), 1);
-      assert.equal((await stats()).revenue.grossRub, 580, 'showing test receipts never changes income');
-      await page.locator('#ec-show-tests').uncheck();
-      await page.locator('#ec-store-filter').selectOption('rustore');
-      assert.equal(await page.locator('#ec-receipts-body tr').count(), 1);
-      assert.equal(await page.locator('#ec-receipts-body [data-revenue-id="fixture-income"]').count(), 1);
-      await page.locator('#ec-search').fill('нет такого поступления');
-      assert.match(await page.locator('#ec-receipts-body').innerText(), /Ничего не найдено/);
-      await page.locator('#ec-search').clear(); await page.locator('#ec-store-filter').selectOption('all');
-      await page.locator('#ec-receipt-mode [data-mode="estimated"]').click();
-      assert.equal(await page.locator('#ec-receipts-body [data-copy="fixture-ios"]').count(), 1);
-      assert.equal(await page.locator('#ec-receipts-body [data-revenue-id]').count(), 0);
-      assert.match(await page.locator('#ec-ledger-note').innerText(), /учтены в доходе/);
       assert.equal((await stats()).revenue.grossRub, 580);
-      await page.locator('#ec-receipt-mode [data-mode="actual"]').click();
+      await page.locator('#ec-show-tests').uncheck();
+      await mode('withdrawal');
+      await page.locator('#ec-store-filter').selectOption('rustore');
+      assert.equal(await page.locator(edit('revenue', 'fixture-income')).count(), 1);
+      await open(edit('revenue', 'fixture-income'));
+      await select('currency', 'USD');
+      assert.equal(await page.locator('#ec-form [name="usdRate"]').inputValue(), '95', 'RUB to USD starts at the configured rate');
+      await page.locator('#ec-cancel').click();
+      await page.locator('#ec-search').fill('нет такой операции');
+      assert.match(await page.locator('#ec-receipts-body').innerText(), /Ничего не найдено/);
+      await page.locator('#ec-search').clear();
+      await page.locator('#ec-store-filter').selectOption('all');
+      await mode('all');
 
-      // Shares are saved together; zero must survive a reload and recalculation.
       await open('#ec-edit-shares');
       await field('nikitaSharePercent', 0);
       assert.equal(await page.locator('#ec-form [name="sergeySharePercent"]').inputValue(), '100');
-      await field('reinvestPercent', 0);
-      await save();
+      await field('reinvestPercent', 0); await save();
       assert.equal((await config()).nikitaSharePercent, 0);
-      assert.equal((await stats()).partners.sergey.percent, 100);
       await page.reload(); await settled();
       await open('#ec-edit-shares');
       assert.equal(await page.locator('#ec-form [name="nikitaSharePercent"]').inputValue(), '0');
       await field('nikitaSharePercent', 25); await field('reinvestPercent', 10); await save();
       assert.equal((await config()).sergeySharePercent, 75);
 
-      await open('#ec-add-expense');
+      await add('expense');
       await field('title', 'Дизайн и иллюстрации'); await field('amount', 2500);
-      await select('frequency', 'once'); await select('currency', 'RUB'); await field('date', day());
+      await field('date', day());
       await screenshot('expense-dialog');
       await page.route('**/api/admin/economy/expenses/add', route => route.fulfill({
         status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'Не удалось сохранить расход' }),
@@ -212,148 +236,102 @@ if (process.argv.includes('--serve')) {
       assert.equal((await config()).extraExpenses.some(item => item.title === 'Дизайн и иллюстрации'), false);
       await save();
       let expense = (await config()).extraExpenses.find(item => item.title === 'Дизайн и иллюстрации');
-      assert.ok(expense); assert.equal(expense.frequency, 'once');
-      await open(`[data-expense-id="${expense.id}"]`);
+      assert.equal(expense.frequency, 'once');
+      await open(edit('expense', expense.id));
       await field('title', 'Облачный сервис'); await field('amount', 12);
-      await select('frequency', 'monthly'); await select('currency', 'USD'); await field('date', day());
+      await select('frequency', 'monthly'); await select('currency', 'USD');
       await save();
       expense = (await config()).extraExpenses.find(item => item.id === expense.id);
       assert.equal(expense.amount, 12); assert.equal(expense.currency, 'USD'); assert.equal(expense.frequency, 'monthly');
-      await page.locator('#ec-expense-filter [data-filter="once"]').click();
-      assert.equal(await page.locator(`[data-expense-id="${expense.id}"]`).count(), 0);
-      await page.locator('#ec-expense-filter [data-filter="recurring"]').click();
-      await open(`[data-expense-id="${expense.id}"]`); await remove();
+      await open(edit('expense', expense.id)); await remove();
       assert.equal((await config()).extraExpenses.some(item => item.id === expense.id), false);
-      await page.locator('#ec-expense-filter [data-filter="all"]').click();
 
-      await open('#ec-add-expense');
-      await field('title', 'Годовая лицензия'); await field('amount', 3000);
-      await select('frequency', 'yearly'); await field('date', day()); await field('endDate', day(365));
-      await save();
-      const yearly = (await config()).extraExpenses.find(item => item.title === 'Годовая лицензия');
-      assert.equal(yearly.frequency, 'yearly'); assert.equal(yearly.endDate, day(365));
-      const writesBeforeCancel = preview.requests.filter(request => request.method === 'POST').length;
-      await open(`[data-delete-expense-id="${yearly.id}"]`);
-      assert.equal(await page.locator('#ec-dialog-title').innerText(), 'Удалить расход?');
-      assert.equal(await page.locator('#ec-form [name="title"]').count(), 0, 'trash opens confirmation instead of editing');
-      assert.equal(await page.locator('#ec-submit').innerText(), 'Удалить');
-      await screenshot('delete-expense-dialog');
-      await page.locator('#ec-cancel').click();
-      await page.locator('#ec-dialog').waitFor({ state: 'hidden' });
-      assert.equal(preview.requests.filter(request => request.method === 'POST').length, writesBeforeCancel, 'cancel never writes');
-      assert.equal((await config()).extraExpenses.some(item => item.id === yearly.id), true);
-      await open(`[data-delete-expense-id="${yearly.id}"]`); await save();
-      assert.equal((await config()).extraExpenses.some(item => item.id === yearly.id), false);
+      // The withdrawal principal is a transfer. Only its fee changes profit.
+      const beforeWithdrawal = await stats();
+      await add('withdrawal');
+      await field('title', ''); await field('amount', 25);
+      await select('currency', 'USD'); await field('usdRate', 95);
+      await field('fee', 1.5); await select('feeMode', 'additional');
+      await field('date', day()); await screenshot('withdrawal-dialog'); await save();
+      let withdrawal = (await config()).withdrawals.find(item => item.title === 'Вывод средств');
+      assert.ok(withdrawal);
+      let afterWithdrawal = await stats();
+      assert.equal(afterWithdrawal.revenue.grossRub, beforeWithdrawal.revenue.grossRub);
+      assert.equal(afterWithdrawal.withdrawalSummary.receivedRub, 2375);
+      assert.equal(afterWithdrawal.withdrawalSummary.debitedRub, 2517.5);
+      assert.equal(afterWithdrawal.expenses.withdrawalFeesRub, 142.5);
+      assert.ok(Math.abs(afterWithdrawal.profit.operatingRub - beforeWithdrawal.profit.operatingRub + 142.5) < .01);
+      await mode('withdrawal');
+      assert.equal(await page.locator(edit('withdrawal', withdrawal.id)).count(), 1);
+      await open(edit('withdrawal', withdrawal.id)); await select('feeMode', 'included'); await save();
+      assert.equal((await stats()).withdrawalSummary.receivedRub, 2232.5);
+      await page.reload(); await settled();
+      assert.equal((await config()).withdrawals[0].feeMode, 'included');
+      await mode('all');
 
-      // Built-in budgets use the same direct action and retain their configured amount.
-      const beforeBuiltinDeletion = await stats();
-      for (const [id, flag, amountField] of [
-        ['builtin-cloudflare', 'cloudflareEnabled', 'cloudflareMonthlyUsd'],
-        ['builtin-domain', 'domainEnabled', 'domainMonthlyRub'],
-      ]) {
-        const before = await stats();
-        const line = before.expenses.lines.find(item => item.id === id);
-        const originalAmount = (await config())[amountField];
-        assert.ok(line);
-        await open(`[data-delete-expense-id="${id}"]`); await save();
-        const deletedConfig = await config(), after = await stats();
-        assert.equal(deletedConfig[flag], false);
-        assert.equal(deletedConfig[amountField], originalAmount, 'deletion preserves the amount for restoration');
-        assert.equal(after.expenses.lines.some(item => item.id === id), false);
-        assert.ok(Math.abs(after.expenses.totalRub - (before.expenses.totalRub - line.periodRub)) <= 0.01);
-        assert.ok(Math.abs(after.expenses.monthlyRub - (before.expenses.monthlyRub - line.monthlyRub)) <= 0.01);
-        await page.reload(); await settled();
-        assert.equal(await page.locator(`[data-delete-expense-id="${id}"]`).count(), 0, 'removed budget stays absent after reload');
-      }
-      await open('#ec-settings');
-      assert.equal(await page.locator('#ec-form [name="cloudflareMonthlyUsd"]').inputValue(), '5');
-      assert.equal(await page.locator('#ec-form [name="domainMonthlyRub"]').inputValue(), '67');
-      await page.locator('#ec-form [name="cloudflareEnabled"]').check();
-      await page.locator('#ec-form [name="domainEnabled"]').check();
-      await save();
-      const restored = await stats();
-      assert.equal(restored.expenses.totalRub, beforeBuiltinDeletion.expenses.totalRub);
-      assert.equal(restored.expenses.monthlyRub, beforeBuiltinDeletion.expenses.monthlyRub);
-      for (const id of ['builtin-cloudflare', 'builtin-domain']) {
-        assert.equal(await page.locator(`[data-delete-expense-id="${id}"]`).count(), 1, 'settings restore the expense row');
-      }
+      // A standalone fee and a manual payment are independently editable.
+      await add('commission');
+      await field('title', 'Банковская комиссия'); await field('amount', 100); await save();
+      const commission = (await config()).extraExpenses.find(item => item.title === 'Банковская комиссия');
+      assert.equal(commission.category, 'commission');
+      await mode('commission');
+      assert.match(await page.locator('#ec-receipts-body').innerText(), /Банковская комиссия/);
+      assert.match(await page.locator('#ec-receipts-body').innerText(), /Platega/);
+      await mode('all');
+      await add('revenue');
+      await field('title', 'Партнёрское поступление'); await field('amount', 10);
+      await select('currency', 'USD'); await field('usdRate', 100); await select('store', 'other'); await save();
+      const revenue = (await config()).manualRevenues.find(item => item.title === 'Партнёрское поступление');
+      assert.equal(revenue.amountRub, 1000);
+      assert.equal((await stats()).revenue.grossRub, 1580);
 
-      await open('#ec-add-revenue');
-      await field('title', 'Выплата Google Play'); await field('amountRub', 4500);
-      await select('store', 'googleplay'); await field('date', day()); await save();
-      let revenue = (await config()).manualRevenues.find(item => item.title === 'Выплата Google Play');
-      assert.ok(revenue); assert.equal((await stats()).revenue.grossRub, 580);
-      await open(`[data-revenue-id="${revenue.id}"]`);
-      await field('title', 'Уточнённая выплата Google Play'); await field('amountRub', 4800); await save();
-      revenue = (await config()).manualRevenues.find(item => item.id === revenue.id);
-      assert.equal(revenue.amountRub, 4800); assert.equal((await stats()).revenue.grossRub, 580);
-      await open(`[data-revenue-id="${revenue.id}"]`); await remove();
-      assert.equal((await config()).manualRevenues.some(item => item.id === revenue.id), false);
+      // Later settings edits do not revalue already recorded FX transactions.
+      await open('#ec-settings'); await field('usdRate', 110); await field('paymentFeePercent', 8); await save();
+      assert.equal((await stats()).withdrawalSummary.feeRub, 142.5);
+      assert.equal((await stats()).revenue.grossRub, 1580);
+      await open(edit('revenue', revenue.id)); await remove();
+      assert.equal((await stats()).revenue.grossRub, 580);
+      await open(edit('withdrawal', withdrawal.id)); await remove();
+      assert.equal((await config()).withdrawals.length, 0);
+      assert.equal((await stats()).expenses.withdrawalFeesRub, 0);
 
+      // Date filters include old transactions only for the all-time view.
       const allResponse = page.waitForResponse(response => response.url().includes('/economy/stats?period=all'));
       await page.locator('#ec-period-tabs [data-period="all"]').click(); await allResponse; await settled();
-      assert.equal((await stats('all')).revenue.grossRub, 580);
-      assert.equal(await page.locator('[data-revenue-id="fixture-old-income"]').count(), 1);
+      await page.locator('#ec-search').fill('Прошлая выплата');
+      assert.equal(await page.locator(edit('revenue', 'fixture-old-income')).count(), 1);
       const recentResponse = page.waitForResponse(response => response.url().includes('/economy/stats?period=30d'));
       await page.locator('#ec-period-tabs [data-period="30d"]').click(); await recentResponse; await settled();
-      assert.equal(await page.locator('[data-revenue-id="fixture-old-income"]').count(), 0);
+      assert.equal(await page.locator(edit('revenue', 'fixture-old-income')).count(), 0);
+      await page.locator('#ec-search').clear();
 
-      await open('#ec-settings');
-      await field('usdRate', 100); await field('cloudflareMonthlyUsd', 0); await field('domainMonthlyRub', 0);
-      let releaseReload, markReloadRequested;
-      const reloadGate = new Promise(resolve => { releaseReload = resolve; });
-      const reloadRequested = new Promise(resolve => { markReloadRequested = resolve; });
-      await page.route('**/api/admin/economy/stats?period=*', async route => {
-        markReloadRequested(); await reloadGate; await route.continue();
-      }, { times: 1 });
-      const savedSettings = page.waitForResponse(response => response.url().endsWith('/economy/settings') && response.request().method() === 'POST');
-      await page.locator('#ec-submit').click(); assert.equal((await savedSettings).status(), 200);
-      await reloadRequested; await page.locator('#ec-dialog').waitFor({ state: 'hidden' });
-      for (const id of ['ec-settings', 'ec-edit-shares', 'ec-add-expense', 'ec-add-revenue']) {
-        assert.equal(await page.locator(`#${id}`).isDisabled(), true, `${id} waits for the refreshed snapshot`);
-      }
-      await page.locator('[data-expense-id="fixture-once"]').evaluate(button => button.click());
-      assert.equal(await page.locator('#ec-dialog').isVisible(), false, 'row editing also waits for the new snapshot');
-      await page.locator('[data-delete-expense-id="fixture-once"]').evaluate(button => button.click());
-      assert.equal(await page.locator('#ec-dialog').isVisible(), false, 'direct deletion also waits for the new snapshot');
-      releaseReload(); await settled();
-      await page.waitForFunction(() => !document.querySelector('#ec-add-expense').disabled);
-      assert.equal((await config()).domainMonthlyRub, 0); assert.equal((await config()).cloudflareMonthlyUsd, 0);
+      // Future/old expenses remain accessible for edits in the collapsed register.
+      await add('expense'); await field('title', 'Годовая лицензия'); await field('amount', 3000);
+      await select('frequency', 'yearly'); await field('date', day(2)); await field('endDate', day(365)); await save();
+      const yearly = (await config()).extraExpenses.find(item => item.title === 'Годовая лицензия');
+      assert.equal(await page.locator(edit('expense', yearly.id)).count(), 0);
+      await page.locator('#ec-expense-register > summary').click();
+      await open(`#ec-expenses-body [data-edit-kind="expense"][data-id="${yearly.id}"]`); await remove();
+      assert.equal((await config()).extraExpenses.some(item => item.id === yearly.id), false);
+      await page.locator('#ec-expense-register > summary').click();
 
-      await page.setViewportSize({ width: 900, height: 1000 });
-      const clippedKpis = await page.locator('#economy-view .ec-value').evaluateAll(nodes => nodes.filter(node => node.scrollWidth > node.clientWidth + 1).map(node => node.textContent));
-      assert.deepEqual(clippedKpis, [], 'tablet KPI amounts fit their cards');
-      const wrappedKpis = await page.locator('#economy-view .ec-value').evaluateAll(nodes => nodes.filter(node => {
-        const range = document.createRange(); range.selectNodeContents(node); return range.getClientRects().length > 1;
-      }).map(node => node.textContent));
-      assert.deepEqual(wrappedKpis, [], 'tablet amounts keep their currency on the same line');
-      await screenshot('tablet-900');
-
+      await page.setViewportSize({ width: 900, height: 1000 }); await screenshot('tablet-900');
       for (const width of [390, 320]) {
         await page.setViewportSize({ width, height: 844 });
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `page fits ${width}px`);
-        const controls = await page.locator('#economy-view button:visible').evaluateAll(nodes => nodes.filter(node => !node.closest('table')).map(node => {
-          const r = node.getBoundingClientRect(); return { text: node.textContent.trim(), left: r.left, right: r.right };
-        }));
-        assert.deepEqual(controls.filter(r => r.left < -1 || r.right > width + 1), [], `controls fit ${width}px`);
-        const rowActions = await page.locator('#ec-expenses-body .ec-money:visible, #ec-expenses-body .ec-edit:visible, #ec-expenses-body [data-delete-expense-id]:visible, #ec-receipts-body .ec-money:visible, #ec-receipts-body .ec-edit:visible').evaluateAll(nodes => nodes.map(node => {
+        const clipped = await page.locator('#economy-view .ec-value').evaluateAll(nodes => nodes.filter(node => node.scrollWidth > node.clientWidth + 1).map(node => node.textContent));
+        assert.deepEqual(clipped, [], `KPI values fit ${width}px`);
+        const rowActions = await page.locator('#ec-receipts-body .ec-money:visible, #ec-receipts-body .ec-edit:visible').evaluateAll(nodes => nodes.map(node => {
           const r = node.getBoundingClientRect(); return { text: node.textContent.trim() || node.getAttribute('aria-label'), left: r.left, right: r.right };
         }));
-        assert.deepEqual(rowActions.filter(r => r.left < -1 || r.right > width + 1), [], `amounts, edit and trash controls fit ${width}px`);
-        assert.equal(await page.locator('#ec-expenses-body [data-delete-expense-id]:visible').count(), 4, 'every expense has a visible delete action');
-        await open('[data-delete-expense-id="fixture-once"]');
-        assert.equal(await page.locator('#ec-dialog-title').innerText(), 'Удалить расход?');
-        await screenshot(`mobile-${width}-delete-dialog`);
-        await page.keyboard.press('Escape');
-        await page.locator('#ec-dialog').waitFor({ state: 'hidden' });
-        assert.equal(await page.locator('[data-delete-expense-id="fixture-once"]').evaluate(node => node === document.activeElement), true);
-        await open('#ec-add-expense');
+        assert.deepEqual(rowActions.filter(r => r.left < -1 || r.right > width + 1), [], `amounts and edit controls fit ${width}px`);
+        await add('withdrawal'); await select('currency', 'USD');
         const bounds = await page.locator('#ec-dialog').boundingBox();
         assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width + 1);
         await screenshot(`mobile-${width}-dialog`);
         await page.keyboard.press('Escape');
         await page.locator('#ec-dialog').waitFor({ state: 'hidden' });
-        assert.equal(await page.locator('#ec-add-expense').evaluate(node => node === document.activeElement), true, 'Escape restores focus');
+        assert.equal(await page.locator('#ec-add-operation').evaluate(node => node === document.activeElement), true, 'Escape restores focus');
       }
       await page.setViewportSize({ width: 390, height: 844 }); await screenshot('mobile');
       assert.deepEqual(pageErrors, []);
