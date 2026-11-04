@@ -39,7 +39,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   <link rel="preload" href="/assets/fonts/onest-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/assets/style.css?v=7">
+  <link rel="stylesheet" href="/assets/style.css?v=8">
   <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
   <script type="application/ld+json">
   {
@@ -141,7 +141,6 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
   <link rel="stylesheet" href="/assets/support-form.css">
 </head>
 <body>
-<a class="skip-link" href="#main-content">К содержимому</a>
 
 <header class="site-header">
   <div class="container">
@@ -149,7 +148,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
       <img src="/assets/icon-192.png" alt="ПДД Россия 2026 — логотип" width="32" height="32" loading="eager">
       ПДД Россия 2026
     </a>
-    <nav class="site-nav" aria-label="Основная навигация">
+    <nav class="site-nav">
       <a href="/#features">Возможности</a>
       <a href="/proverit-znaniya/">Проверить себя</a>
       <a href="/blog/">Блог</a>
@@ -159,33 +158,47 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
   </div>
 </header>
 
-<main id="main-content">
+<main>
 
   <!-- Hero -->
   <section class="hero">
     <div class="container">
       <div class="hero-copy">
-        <p class="eyebrow">Билеты ПДД · Категории A/B и C/D</p>
-        <h1>Подготовка<br>к экзамену ПДД</h1>
-        <p class="subtitle">Решайте билеты, разбирайте ошибки и проверяйте себя в режиме экзамена. С пояснениями к каждому вопросу.</p>
-        <div class="hero-actions">
-          <a class="btn btn-primary btn-lg" href="/app/">Открыть билеты <span aria-hidden="true">→</span></a>
-          <a class="hero-test-link" href="/proverit-znaniya/">Проверить себя</a>
+        <span class="eyebrow"><i></i>Билеты обновлены на 2026 год</span>
+        <h1>ПДД Россия 2026: <em>от билетов к пониманию дорожных ситуаций</em></h1>
+        <p class="subtitle">Готовьтесь к теории: решайте вопросы, читайте пояснения и повторяйте сложные темы.</p>
+        <div class="hero-actions" id="download">
+          <a class="btn btn-primary btn-lg" href="https://apps.apple.com/ru/app/id6792369533" rel="noopener">Скачать для iPhone</a>
+          <a class="btn btn-ghost btn-lg" href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Скачать для Android</a>
         </div>
-        <p class="hero-note">Бесплатно, без рекламы и регистрации</p>
-        <div class="hero-stores" id="download">
-          <span>Приложение для телефона</span>
-          <a href="https://apps.apple.com/ru/app/id6792369533" rel="noopener">iPhone <span aria-hidden="true">↗</span></a>
-          <a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Android <span aria-hidden="true">↗</span></a>
+        <div class="hero-stores">
+          <a href="/app/">Открыть веб-версию без установки →</a>
         </div>
-        <p class="hero-premium">Дополнительные возможности — в <a href="/tarify/">Премиуме</a>.</p>
+        <ul class="hero-points">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Билеты бесплатно</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Без рекламы</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Без регистрации</li>
+        </ul>
+        <p>Базовая подготовка бесплатна. Есть <a href="/tarify/">Премиум с дополнительными возможностями</a>.</p>
       </div>
-      <figure class="hero-stage">
-        <img class="hero-shot" src="/assets/screenshots/shot-answered.jpg"
-             alt="Вопрос в приложении: выбранный ответ выделен красным, правильный зелёным; ниже показан разбор со ссылкой на ПДД"
-             width="600" height="1298" loading="eager" fetchpriority="high">
-        <figcaption>Разбор каждого ответа<span>Пояснение к вопросу в приложении</span></figcaption>
-      </figure>
+      <div class="hero-stage">
+        <div class="hero-chip c1" aria-hidden="true">
+          <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          <span><b>20 из 20</b><small>без ошибок</small></span>
+        </div>
+        <div class="hero-chip c2" aria-hidden="true">
+          <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></span>
+          <span><b>7 дней</b><small>серия занятий</small></span>
+        </div>
+        <div class="phone">
+          <div class="phone-screen">
+            <img class="phone-shot" src="/assets/screenshots/shot-answered.jpg"
+                 alt="Экран приложения «ПДД Россия 2026»: вопрос билета с пояснением — выбранный ответ отмечен красным, правильный зелёным"
+                 width="600" height="1298" loading="eager" fetchpriority="high">
+            <span class="phone-notch" aria-hidden="true"></span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -202,30 +215,37 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
   <!-- Возможности -->
   <section class="section alt" id="features">
     <div class="container">
-      <div class="study-layout">
-        <div class="section-head">
-          <h2 class="section-title">Учитесь на своих ошибках</h2>
-          <p class="section-lead">После ответа откройте пояснение. Затем вернитесь к теме, которая вызвала трудности.</p>
-          <a class="text-link" href="/app/">Перейти к подготовке <span aria-hidden="true">→</span></a>
-        </div>
-        <div class="study-topics">
-          <article>
-            <h3>Билеты с пояснениями</h3>
-            <p>По 40 билетов A/B и C/D. В разборе каждого вопроса есть ссылка на пункт ПДД.</p>
-          </article>
-          <article>
-            <h3>26 тем и работа над ошибками</h3>
-            <p>Тренируйте сложную тему отдельно. Неверные ответы собираются для повторения.</p>
-          </article>
-          <article>
-            <h3>Знаки, разметка и правила</h3>
-            <p>Справочник всегда под рукой. В приложении на Android он доступен и без интернета.</p>
-          </article>
-          <article>
-            <h3>Ваш прогресс</h3>
-            <p>Следите за результатами по темам и возвращайтесь к занятиям в своём темпе.</p>
-          </article>
-        </div>
+      <div class="section-head reveal">
+        <p class="kicker">Что внутри</p>
+        <h2 class="section-title">Всё для теории — в одном приложении</h2>
+      </div>
+      <div class="bento">
+        <article class="tile t-span-4 blue with-shot reveal">
+          <div class="tile-ico ico-white" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <h3>Билеты A/B и C/D</h3>
+          <p>По 40 официальных билетов в каждом комплекте. К каждому вопросу — понятное пояснение со ссылкой на пункт ПДД.</p>
+          <img class="tile-shot" src="/assets/screenshots/shot-question.jpg" alt="Экран вопроса билета в приложении" width="600" height="1298" loading="lazy">
+        </article>
+        <article class="tile t-span-2 reveal">
+          <div class="tile-ico ico-green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></div>
+          <h3>Работает офлайн</h3>
+          <p>Билеты и справочник доступны без интернета.</p>
+        </article>
+        <article class="tile t-span-2 reveal">
+          <div class="big">26</div>
+          <h3>тем и работа над ошибками</h3>
+          <p>Ошибки собираются в отдельный режим повторения.</p>
+        </article>
+        <article class="tile t-span-2 reveal">
+          <div class="tile-ico ico-gold" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+          <h3>Знаки, разметка, ПДД</h3>
+          <p>8 групп знаков, разметка и полный текст правил.</p>
+        </article>
+        <article class="tile t-span-2 ink reveal">
+          <div class="tile-ico ico-white" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></div>
+          <h3>Серия и статистика</h3>
+          <p>Прогресс по темам и серия, которая не даёт бросить.</p>
+        </article>
       </div>
     </div>
   </section>
@@ -233,11 +253,12 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
   <!-- Экзамен -->
   <section class="section" id="exam">
     <div class="container">
-      <div class="exam-panel">
+      <div class="exam-panel reveal">
         <div>
-          <h2>Проверьте готовность к экзамену</h2>
+          <p class="kicker">Режим экзамена</p>
+          <h2>Экзамен — как в ГИБДД</h2>
           <p>20 вопросов за 20 минут. Допустимы не более двух ошибок только в разных тематических блоках. За каждую — ещё 5 вопросов и 5 минут; в дополнительных вопросах ошибаться нельзя.</p>
-          <a class="btn btn-primary btn-lg" href="/app/">Открыть режимы подготовки <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a class="btn btn-primary btn-lg" href="/app/">Сдать пробный экзамен <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         </div>
         <div class="exam-grid">
           <div class="exam-cell hot"><b>20</b><span>вопросов</span></div>
@@ -252,9 +273,9 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
   <!-- Скриншоты -->
   <section class="section alt" id="screenshots">
     <div class="container">
-      <div class="section-head">
-        <h2 class="section-title">Как устроено приложение</h2>
-        <p class="section-lead">Вопросы с пояснениями, экзамен с таймером и дорожные знаки.</p>
+      <div class="section-head reveal">
+        <p class="kicker">Скриншоты</p>
+        <h2 class="section-title">Реальные экраны, без прикрас</h2>
       </div>
       <div class="shot-grid">
         <div class="shot-card">
@@ -280,15 +301,15 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
   <!-- Мини-экзамен -->
   <section class="section" id="quiz">
     <div class="container">
-      <div class="quiz-panel">
+      <div class="quiz-panel reveal">
         <div class="qp-copy">
-          <h2>Начните с 12 вопросов</h2>
+          <p class="kicker">Мини-тест</p>
+          <h2>Проверьте себя <em>за 2 минуты</em></h2>
           <p>12 реальных вопросов из билетов ГИБДД с разбором каждого ответа. Без регистрации.</p>
           <div><a class="btn btn-primary btn-lg" href="/proverit-znaniya/">Пройти мини-тест <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
         </div>
-        <div class="qp-details">
-          <p>В мини-тесте</p>
-          <ul><li>Правильный вариант</li><li>Пояснение со ссылкой на правила</li><li>Темы, которые стоит повторить</li></ul>
+        <div class="qp-photo">
+          <img src="/assets/photos/driving-lesson.jpg" alt="Ученица автошколы за рулём учебного автомобиля рядом с инструктором на городской улице" width="1200" height="630" loading="lazy">
         </div>
       </div>
     </div>
@@ -339,7 +360,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
   <!-- FAQ -->
   <section class="section" id="faq">
     <div class="container faq-wrap">
-      <div class="faq-aside">
+      <div class="faq-aside reveal">
         <p class="kicker">FAQ</p>
         <h2 class="section-title">Частые вопросы</h2>
         <p class="section-lead">Не нашли ответ? Напишите нам через форму.</p>
@@ -389,8 +410,8 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
 
   <section class="section" style="padding-top:0">
     <div class="container">
-      <div class="cta-box">
-        <h2>Продолжайте на телефоне</h2>
+      <div class="cta-box reveal">
+        <h2>Начните готовиться сегодня</h2>
         <p>Билеты, экзамен и справочник — бесплатно. Дополнительные возможности — в <a href="/tarify/">Премиуме</a>.</p>
         <div class="hero-badges">
           <a class="btn btn-store" href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">
@@ -448,7 +469,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
 })();
 </script>
 <script src="/assets/support-form.js" defer></script>
-<script src="/assets/site.js" defer></script>
+<script src="/assets/site.js?v=8" defer></script>
 <script src="/assets/tracker.js" defer></script>
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript">

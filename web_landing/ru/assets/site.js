@@ -1,4 +1,5 @@
-// Навигация по разделам сайта на узких экранах.
+// Общие интерактивы сайта: тень шапки при прокрутке, разделы-чипы на телефоне,
+// плавное появление блоков. Без зависимостей; сайт работает и без этого файла.
 (function () {
   var header = document.querySelector('.site-header');
   if (header) {
@@ -17,4 +18,16 @@
     }
   }
 
+  var items = document.querySelectorAll('.reveal');
+  if (!items.length) return;
+  if (!('IntersectionObserver' in window)) {
+    items.forEach(function (el) { el.classList.add('in'); });
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { rootMargin: '0px 0px -8% 0px' });
+  items.forEach(function (el) { io.observe(el); });
 })();
