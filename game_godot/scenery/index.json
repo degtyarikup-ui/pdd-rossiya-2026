@@ -498,6 +498,228 @@
     5.199999809265137,
     0.3400000035762787
    ]
+  },
+  "parking/air_stand": {
+   "size": [
+    0.5,
+    1.2,
+    0.5
+   ],
+   "title": "Подкачка шин",
+   "source": "parking"
+  },
+  "parking/barrier": {
+   "size": [
+    5.31,
+    1.22,
+    0.52
+   ],
+   "title": "Шлагбаум",
+   "source": "parking"
+  },
+  "parking/bench": {
+   "size": [
+    1.8,
+    0.9,
+    0.485
+   ],
+   "title": "Скамейка",
+   "source": "parking"
+  },
+  "parking/bin": {
+   "size": [
+    0.56,
+    0.9,
+    0.56
+   ],
+   "title": "Урна",
+   "source": "parking"
+  },
+  "parking/bollard": {
+   "size": [
+    0.2,
+    0.85,
+    0.2
+   ],
+   "title": "Защитный столбик",
+   "source": "parking"
+  },
+  "parking/cone": {
+   "size": [
+    0.34,
+    0.65,
+    0.34
+   ],
+   "title": "Дорожный конус",
+   "source": "parking"
+  },
+  "parking/containers": {
+   "size": [
+    4.8,
+    1.5,
+    2.4
+   ],
+   "title": "Мусорная площадка",
+   "source": "parking"
+  },
+  "parking/fence": {
+   "size": [
+    5.1,
+    1.6,
+    0.1
+   ],
+   "title": "Ограждение площадки",
+   "source": "parking"
+  },
+  "parking/flower_pot": {
+   "size": [
+    1.1,
+    0.62,
+    1.1
+   ],
+   "title": "Вазон",
+   "source": "parking"
+  },
+  "parking/fuel_canopy": {
+   "size": [
+    14.25,
+    5.5,
+    18.434375
+   ],
+   "title": "Навес АЗС — каркас",
+   "source": "parking"
+  },
+  "parking/fuel_glass_screen": {
+   "size": [
+    0.15,
+    2.6,
+    10.0
+   ],
+   "title": "Стеклянное ограждение АЗС",
+   "source": "parking"
+  },
+  "parking/fuel_pump": {
+   "size": [
+    1.1,
+    2.15,
+    0.7
+   ],
+   "title": "Топливная колонка",
+   "source": "parking"
+  },
+  "parking/fuel_pylon": {
+   "size": [
+    1.6,
+    4.4,
+    0.7
+   ],
+   "title": "Стела АЗС",
+   "source": "parking"
+  },
+  "parking/fuel_roof": {
+   "size": [
+    14.0,
+    0.12,
+    18.0
+   ],
+   "title": "Навес АЗС — прозрачная крыша",
+   "source": "parking",
+   "opacity": 0.30196078431372547
+  },
+  "parking/fuel_shop": {
+   "size": [
+    10.3,
+    4.97,
+    19.549999
+   ],
+   "title": "Магазин АЗС",
+   "source": "parking",
+   "occluder": true
+  },
+  "parking/garage_closed": {
+   "size": [
+    3.7,
+    2.75,
+    6.75
+   ],
+   "title": "Гараж — закрытый",
+   "source": "parking",
+   "occluder": true
+  },
+  "parking/garage_open": {
+   "size": [
+    3.7,
+    2.75,
+    6.75
+   ],
+   "title": "Гараж — открытый",
+   "source": "parking",
+   "occluder": true
+  },
+  "parking/planter": {
+   "size": [
+    4.2,
+    0.55,
+    0.7
+   ],
+   "title": "Клумба — борта",
+   "source": "parking"
+  },
+  "parking/sandbox": {
+   "size": [
+    2.96,
+    0.28,
+    2.96
+   ],
+   "title": "Песочница",
+   "source": "parking"
+  },
+  "parking/table": {
+   "size": [
+    1.8,
+    0.8,
+    1.8
+   ],
+   "title": "Стол со скамейками",
+   "source": "parking"
+  },
+  "parking/tent": {
+   "size": [
+    2.12132,
+    1.6,
+    2.12132
+   ],
+   "title": "Палатка",
+   "source": "parking"
+  },
+  "parking/umbrella": {
+   "size": [
+    2.5,
+    2.35,
+    2.5
+   ],
+   "title": "Зонт кафе",
+   "source": "parking"
+  },
+  "parking/wash_bay": {
+   "size": [
+    4.8,
+    3.41,
+    7.84
+   ],
+   "title": "Бокс автомойки",
+   "source": "parking",
+   "occluder": true
+  },
+  "parking/wash_roof": {
+   "size": [
+    4.8,
+    0.12,
+    8.0
+   ],
+   "title": "Крыша автомойки",
+   "source": "parking",
+   "opacity": 0.34901960784313724
   }
  },
  "seasons": {

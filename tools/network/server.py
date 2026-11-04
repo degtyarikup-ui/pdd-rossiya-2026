@@ -30,6 +30,7 @@ import engine_sync  # noqa: E402
 import question_pool  # noqa: E402
 import number_sign  # noqa: E402
 import scene_delete  # noqa: E402
+import parking_catalog  # noqa: E402
 
 HERE = Path(__file__).parent
 EDITOR = HERE / "editor"
@@ -614,6 +615,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def catalog(self):
         index = scenery_index()
+        parking = parking_catalog.load(GAME / "scenery" / "parking" / "catalog.json", index["props"])
         models = {}
         appearances = {}
         for p in sorted(SIT.glob("*/engine.json")):
@@ -639,7 +641,8 @@ class Handler(BaseHTTPRequestHandler):
                 light_models["tram"] = "ticket_6_13/light_0.glb"
             elif (SIT / "ticket_13_13" / "parts" / "light_0.glb").exists():
                 light_models["tram"] = "ticket_13_13/light_0.glb"
-        return {"props": [{"id": k, "size": v.get("size")} for k, v in index["props"].items()], "signs": signs,
+        return {"props": [{"id": k, "size": v.get("size"), "title": parking["names"].get(k)} for k, v in index["props"].items()], "signs": signs,
+                "presets": parking["presets"],
                 "signInfo": json.loads((GAME / "signs" / "catalog.json").read_text(encoding="utf-8")),
                 "actorTypes": {t: v[0] for t, v in models.items()}, "actorAppearances": appearances,
                 "lightAsset": light_models.get("", "ticket_11_15/light_0.glb"),

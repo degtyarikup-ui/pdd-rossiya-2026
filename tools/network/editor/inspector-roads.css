@@ -70,3 +70,5 @@
 #inspector .shape-point-fields .point-index input { flex: 1; width: 0; padding-inline: 4px; }
 #inspector .shape-point-fields + .path-actions .btn { min-width: 0; }
 #inspector .shape-point-fields + .path-actions .btn:disabled { opacity: .4; }
+
+.road-summary { margin: 10px 0 0; color: var(--ink-3); font-size: 12px; line-height: 1.45; }

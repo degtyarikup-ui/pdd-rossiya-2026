@@ -663,12 +663,12 @@ func _place_props(scenery: Scenery, frames: SceneTree = null) -> void:
 		node.set_meta("instance_transforms",poses)
 		node.set_meta("authored_transforms",poses.duplicate())
 		node.set_meta("instance_tints",tints)
-		node.material_override = Models.traffic_material() if parked else scenery.occluder_material if prop.begins_with("buildings/") else scenery.material
+		node.material_override = Models.traffic_material() if parked else preload("res://scripts/parking_prop_material.gd").material(scenery, prop)
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if prop.begins_with("trees/") else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(node)
 		_pools[prop] = multi
 		_pool_nodes[prop] = node
-		if prop.begins_with("buildings/"): scenery.register_building_pool(node)
+		if preload("res://scripts/parking_prop_material.gd").is_occluder(scenery, prop): scenery.register_building_pool(node)
 
 	var trees: Array = data.props.filter(func(p): return str(p.prop).begins_with("trees/"))
 	if not trees.is_empty():

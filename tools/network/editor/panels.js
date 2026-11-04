@@ -288,7 +288,8 @@
     if (!s) return [];
     switch (layer) {
       case "roads": {
-        const tracks = (s.tracks || []).map(track => ({ t: "track", id: track.id }));
+        const tracks = [...(s.tracks || []).map(track => ({ t: "track", id: track.id })),
+          ...(s.pockets || []).map(pocket => ({t:"pocket",id:pocket.id}))];
         if (s.layout) {
           return [...s.layout.nodes.filter((n) => Layout.nodeKind(s.layout, n, s.crop || 90) === "junction" || n.ring).map((n) => ({ t: "node", id: n.id })),
             ...s.layout.streets.map((st) => ({ t: "street", id: st.id })), ...s.roads.filter((r) => !App.isGeneratedSurface(r)).map((r) => ({ t: "road", id: r.id, part: -1 })),
@@ -311,7 +312,7 @@
     if (ref.t === "decor") return Thumbs.img("prop", o.prop, "mini");
     if (ref.t === "sign") return `<img class="thumb mini" src="/asset/sign/${SignMount.textureCode(o)}.svg" alt="">`;
     if (ref.t === "actor") return Thumbs.img("actor", o.type, "mini");
-    return ic({ node: o?.ring ? "ring" : "junction", street: "road", road: ref.part >= 0 ? "lawn" : "road", lawn: "lawn", marking: "marking",
+    return ic({ pocket: "parked", node: o?.ring ? "ring" : "junction", street: "road", road: ref.part >= 0 ? "lawn" : "road", lawn: "lawn", marking: "marking",
       route: "route", track: "rails", light: "light", stop: "flag", officer: "person" }[ref.t] || "info");
   }
   function updateSelectedRows() {
@@ -401,7 +402,8 @@
     if (lib) {
       const item = JSON.parse(lib.dataset.lib);
       if (!state.S) return App.toast("Сначала откройте сцену", "warn");
-      if (item.kind === "prop") Tools.pickProp(item.id);
+      if (item.kind === "preset") Tools.pickPreset(item.id);
+      else if (item.kind === "prop") Tools.pickProp(item.id);
       else if (item.kind === "actor") Tools.pickActor(item.id);
       else if (item.kind === "officer") Tools.set("officer", { keepLibrary: true });
       else if (item.kind === "sign") Tools.pickSign(item.id);
@@ -452,10 +454,14 @@
         ${cat.lightTramAsset ? tile({ kind: "light", id: "light_tram", tram: true }, "С трамвайной секцией", Thumbs.img("light", "light_tram"), Tools.current() === "light" && Tools.opts.tram) : ""}
       </div>`);
     }
+    if (inCategory("decor") && typeof ParkingPresets !== "undefined") {
+      const presets=ParkingPresets.list(cat).filter(p=>hit(`${p.name} ${p.id === 'fuel_station' ? 'заправка автозаправочная станция' : ''}`));
+      if(presets.length) sections.push(`<h4>${ic("shop")}Готовые локации</h4><div class="lib-grid">${presets.map(p=>tile({kind:"preset",id:p.id},p.name,Thumbs.img("prop",p.previewProp),Tools.current()==="preset" && Tools.opts.preset===p.id)).join("")}</div>`);
+    }
     const props = [...cat.props.map((p) => p.id), ...(state.id === "mini_regulator" ? [] : ["parked"])];
     for (const g of Catalog.PROP_GROUPS) {
       if (!inCategory("decor")) continue;
-      const items = props.filter((p) => g.match(p) && hit(Catalog.propName(p)));
+      const items = props.filter((p) => g.match(p) && hit(Catalog.propSearch?.(p) || Catalog.propName(p)));
       if (!items.length) continue;
       sections.push(`<h4>${ic(g.icon)}${g.title}</h4><div class="lib-grid">${items.map((p) => tile({ kind: "prop", id: p }, Catalog.propName(p), Thumbs.img("prop", p), Tools.current() === "prop" && Tools.opts.prop === p)).join("")}</div>`);
     }

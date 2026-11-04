@@ -123,7 +123,7 @@
     if (sel.length > 1) return multiInspector(p);
     const ref = sel[0], o = App.objectOf(ref);
     if (!o && ref.t !== "stop") return sceneInspector(p);
-    const view = { decor: decorInspector, actor: actorInspector, officer: officerInspector, sign: signInspector, track: trackInspector, light: lightInspector, street: streetInspector, node: nodeInspector,
+    const view = { pocket: pocketInspector, decor: decorInspector, actor: actorInspector, officer: officerInspector, sign: signInspector, track: trackInspector, light: lightInspector, street: streetInspector, node: nodeInspector,
       route: routeInspector, marking: markingInspector, lawn: shapeInspector, road: shapeInspector, stop: stopInspector }[ref.t];
     view(p, ref, o);
     Thumbs.fillAll(p);
@@ -512,6 +512,32 @@
       "chip:bulk-signal": value => { if (["auto","left","right","off"].includes(value)) changeSelected(refs,"actor",a => { if (ActorSignals.supports(a.type)) ActorSignals.setTurn(a,value); },{rebuild:false}); },
     });
     Thumbs.fillAll(p);
+  }
+
+  function pocketInspector(p, ref, value) {
+    const pocket=RoadPocket.normalized(value);
+    const fields=[["length","Прямая часть"],["width","Ширина"],["entryLength","Плавный заезд"],["exitLength","Плавный выезд"]];
+    const input=(key,label,val,min,max)=>`<label>${label}, м<input type="number" data-text="pocket-${key}" aria-label="${label}, м" min="${min}" max="${max}" step="0.1" value="${r3(val)}" required></label>`;
+    p.innerHTML=`${head(`<span class="ibadge">${ic("parked")}</span>`,"Дорожный карман","Для стоянки и автобусной остановки")}
+      ${card("Размеры",`<div class="road-coordinates">${fields.map(([key,label])=>input(key,label,pocket[key],...RoadPocket.limits[key])).join("")}</div><p class="road-summary">Полная длина с заездом и выездом: ${r3(pocket.length+pocket.entryLength+pocket.exitLength)} м</p>`,{cls:"road-sheet"})}
+      ${card("Сторона",chips("pocket-side",[{value:"right",title:"Справа"},{value:"left",title:"Слева"}],pocket.side))}
+      ${card("Край дороги",toggle("pocket-walk","Тротуар и бордюр",pocket.walk!==false)+toggle("pocket-edge","Краевая линия",pocket.edge!==false))}
+      ${card("Положение",`<div class="road-coordinates">${input("x","X",pocket.pos[0],-10000,10000)}${input("z","Z",pocket.pos[1],-10000,10000)}</div>${objectHeading(pocket.yaw,true)}`,{cls:"road-sheet"})}
+      ${card("",deleteRow())}`;
+    const change=(key,v)=>{
+      const n=Number(v),bounds=RoadPocket.limits[key] || [-10000,10000];
+      if(!String(v).trim() || !Number.isFinite(n) || n<bounds[0] || n>bounds[1])return false;
+      App.edit(sc=>{const current=sc.pockets.find(item=>item.id===ref.id);if(key==='x'||key==='z')current.pos[key==='x'?0:1]=r3(n);else current[key]=r3(n);});
+      return true;
+    };
+    bind({...common,
+      ...Object.fromEntries([...fields.map(([key])=>key),'x','z'].map(key=>['text:pocket-'+key,v=>change(key,v)])),
+      "chip:pocket-side":side=>{if(['right','left'].includes(side))App.edit(()=>{value.side=side;});},
+      "toggle:pocket-walk":on=>App.edit(()=>{value.walk=on;}),
+      "toggle:pocket-edge":on=>App.edit(()=>{value.edge=on;}),
+      rotl:()=>App.rotate(-15),rotr:()=>App.rotate(15),rot90:()=>App.rotate(90),
+    });
+    bindDial(p,value);
   }
 
   // ---- a prop ---------------------------------------------------------------------------------
@@ -1514,6 +1540,7 @@
     };
     const surface = chips("shape-surface", [
       {value:"asphalt", title:"Асфальт", html:'<i class="surface-preview asphalt"></i>'},
+      {value:"pavement", title:"Тротуар", html:'<i class="surface-preview"></i>'},
       {value:"sand", title:"Грунт", html:'<i class="surface-preview sand"></i>'},
     ], o.surface || "asphalt", {cls:"road-surfaces"});
     const ringChoices = road && o.holes?.length ? `<label class="road-row"><span>Контур</span><select data-text="shape-contour" aria-label="Контур дороги">${[[-1,"Внешний"],...o.holes.map((_,i)=>[i,`Островок ${i+1}`])].map(([value,label])=>`<option value="${value}" ${value === (hole ? ref.part : -1) ? "selected" : ""}>${label}</option>`).join("")}</select></label>` : "";
@@ -1521,8 +1548,8 @@
       ${card("", `<div class="road-coordinates">${shapeField("shape-center-x","X центра, м",center[0])}${shapeField("shape-center-z","Z центра, м",center[1])}</div>
         <div class="road-row"><span>Поворот</span><div class="insp-actions">${button("rotl","−15°","rotl","ghost small")}${button("rot90","90°","","ghost small")}${button("rotr","+15°","rotr","ghost small")}</div></div>`, {cls:"road-sheet"})}
       ${road && !hole ? card("", `<div class="road-row"><span>Покрытие</span>${surface}</div>
-        ${o.surface !== "sand" ? toggle("shape-edge","Краевая линия",o.edge !== false) + toggle("shape-walk","Тротуары",o.walk !== false) : ""}
-        ${toggle("shape-shoulder","Обочина",!!o.shoulder)}`, {cls:"road-sheet"}) : ""}
+        ${!["sand","pavement"].includes(o.surface) ? toggle("shape-edge","Краевая линия",o.edge !== false) + toggle("shape-walk","Тротуары",o.walk !== false) : ""}
+        ${o.surface !== "pavement" ? toggle("shape-shoulder","Обочина",!!o.shoulder) : ""}`, {cls:"road-sheet"}) : ""}
       ${card("", `${ringChoices}<div class="shape-point-fields">
         <label>Точка<span class="point-index"><input type="number" data-text="shape-index" aria-label="Номер точки контура" min="1" max="${points.length}" step="1" value="${index+1}" required><small>/ ${points.length}</small></span></label>
         ${shapeField("shape-point-x","X точки, м",point[0])}${shapeField("shape-point-z","Z точки, м",point[1])}
@@ -1544,7 +1571,7 @@
         if (Number.isInteger(value) && value >= -1 && value < (o.holes?.length || 0)) App.select({t:"road", id:ref.id, part:value});
       },
       "chip:shape-surface": value => {
-        if (road && !hole && ["asphalt","sand"].includes(value)) edit(() => { o.surface = value; });
+        if (road && !hole && ["asphalt","sand","pavement"].includes(value)) edit(() => { o.surface = value; });
       },
       "toggle:shape-edge": on => { if (road && !hole && o.surface !== "sand") edit(() => { o.edge = on; }); },
       "toggle:shape-walk": on => { if (road && !hole && o.surface !== "sand") edit(() => { o.walk = on; if (on) delete o.shoulder; }); },

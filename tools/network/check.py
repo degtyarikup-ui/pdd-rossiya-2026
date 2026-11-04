@@ -20,6 +20,7 @@ from shapely import make_valid
 from shapely.ops import unary_union
 import direction_marking
 import bus_stop_marking
+import pocket_geometry
 
 ROOT = Path(__file__).resolve().parents[2]
 NET = ROOT / "game_godot" / "network"
@@ -31,13 +32,15 @@ DRIVEN_TYPES = ("car", "truck", "bus", "motorcycle", "tram", "van", "special", "
 def road_area(scene: dict):
     # make_valid: an outline that crosses itself (a drawn road doubling back) is repaired for the sums;
     # its own finding (road-invalid) tells the user what is wrong.
-    polys = []
+    scene = pocket_geometry.with_roads(scene)
+    polys, pavement = [], []
     for r in scene.get("roads", []):
         outer = make_valid(Polygon(r["outer"]))
         for h in r.get("holes", []):
             outer = outer.difference(make_valid(Polygon(h)))
-        polys.append(outer)
-    return unary_union(polys) if polys else Polygon()
+        (pavement if r.get("surface") == "pavement" else polys).append(outer)
+    area = unary_union(polys) if polys else Polygon()
+    return area.difference(unary_union(pavement)) if pavement else area
 
 
 def finding(out, level, code, message, ref=None):
@@ -137,12 +140,13 @@ def check_scene(scene: dict) -> list:
     if scene.get("schema") != 1:
         finding(out, "error", "schema", f"неизвестная версия схемы: {scene.get('schema')!r}")
     roads = scene.get("roads", [])
-    if not roads:
+    if not roads and not scene.get("pockets"):
         finding(out, "error", "no-road", "в сцене нет ни одной дороги")
     for r in roads:
         raw = Polygon(r["outer"])
         p = make_valid(raw)
-        if len(r["outer"]) < 3 or not raw.is_valid or p.area < 1.0:
+        min_area = .0001 if r.get("surface") == "pavement" else 1.0
+        if len(r["outer"]) < 3 or not raw.is_valid or p.area < min_area:
             finding(out, "error", "road-invalid", f"{r.get('id')}: контур дороги не является корректным многоугольником",
                     {"type": "road", "id": r.get("id")})
         for h in r.get("holes", []):
@@ -257,8 +261,13 @@ def check_scene(scene: dict) -> list:
         elif a.get("type") in DRIVEN_TYPES and not area.buffer(0.5).covers(Point(a["pos"])):
             finding(out, "warn", "actor-off-road", f"{a['id']}: машина стоит вне дороги",
                     {"type": "actor", "id": a["id"]})
+    # These structures have an open drive-through centre or deliberately stand
+    # on an apron. A centre-point test would flag every correctly placed canopy.
+    apron_props = {"parking/fuel_canopy", "parking/fuel_roof", "parking/fuel_pump",
+                   "parking/wash_bay", "parking/wash_roof", "parking/garage_open",
+                   "parking/bollard", "parking/barrier", "parking/cone"}
     for d in scene.get("decor", []):
-        if area.buffer(0.5).covers(Point(d["pos"])):
+        if d["prop"] not in apron_props and area.buffer(0.5).covers(Point(d["pos"])):
             finding(out, "warn", "prop-on-road", f"{d['prop']} стоит на проезжей части", {"type": "prop", "id": d.get("id")})
 
     check_layers(scene, area, out)

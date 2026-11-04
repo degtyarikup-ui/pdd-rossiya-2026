@@ -7,6 +7,7 @@ const Catalog = (() => {
     { id: "trees", title: "Деревья и кусты", icon: "tree", match: (p) => p.startsWith("trees/") || p === "street/bush" },
     { id: "homes", title: "Дома", icon: "home", match: (p) => p.startsWith("buildings/home") },
     { id: "blocks", title: "Многоэтажки", icon: "building", match: (p) => p.startsWith("buildings/block") || p.startsWith("buildings/tower") },
+    { id: "parking", title: "АЗС, гаражи и парковка", icon: "shop", match: (p) => p.startsWith("parking/") },
     { id: "street", title: "Улица", icon: "lamp", match: (p) => p.startsWith("street/") && p !== "street/bush" },
     { id: "parked", title: "Стоящие машины", icon: "parked", match: (p) => p === "parked" },
   ];
@@ -23,6 +24,8 @@ const Catalog = (() => {
     if (m) return { home: "Дом", block: "Жилой дом", tower: "Высотка" }[m[1]] + " " + (Number(m[2]) + 1);
     return id;
   }
+  const setPropCatalog = props => { for (const prop of props || []) if (prop.title) PROP_NAMES[prop.id] = prop.title; };
+  const propSearch = id => propName(id) + (id.startsWith("parking/fuel_") || id === "parking/air_stand" ? " АЗС заправка автозаправочная станция" : "");
   const groupOf = (id) => PROP_GROUPS.find((g) => g.match(id)) || PROP_GROUPS[0];
 
   // Participants: name, icon, how fast they go by default (m/s) and whether they drive on lanes.
@@ -54,6 +57,7 @@ const Catalog = (() => {
     homes: [null, "#f3e3c3", "#e9d5cc", "#e8cfa8", "#d9b99b", "#c8d9c0", "#e8e8e8", "#b86a2a"],
     blocks: [null, "#f3e3c3", "#e9d5cc", "#e8cfa8", "#d9b99b", "#c8d9c0", "#e8e8e8"],
     street: [null, "#e8e8e8", "#b86a2a", "#3e7c42"],
+    parking: [null, "#e8e8e8", "#b86a2a", "#3e7c42"],
     parked: [null, "#e8e8e8", "#c94f2b", "#3e63dd", "#2b2f36", "#e0b33c"],
   };
 
@@ -102,5 +106,5 @@ const Catalog = (() => {
   const signName = (code) => SIGN_NAMES[code] || `Знак ${code}`;
   const setSignCatalog = info => { for (const [code, sign] of Object.entries(info || {})) SIGN_NAMES[code] = sign.title; };
 
-  return { signName, setSignCatalog, PROP_TINTS, PROP_GROUPS, propName, groupOf, ACTORS, ACTOR_ORDER, SPEEDS, speedOf, TINTS, EXITS, LETTERS, LETTER_COLOUR, LIGHTS, MARKS };
+  return { signName, setSignCatalog, setPropCatalog, PROP_TINTS, PROP_GROUPS, propName, propSearch, groupOf, ACTORS, ACTOR_ORDER, SPEEDS, speedOf, TINTS, EXITS, LETTERS, LETTER_COLOUR, LIGHTS, MARKS };
 })();

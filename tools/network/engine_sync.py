@@ -251,7 +251,7 @@ def sync(sid: str) -> dict:
         actors.append((asset, a))
     out["actors"] = [a for _, a in actors]
 
-    out["props"] = [{"prop": p["prop"], "pos": [p["pos"][0], 0.0, p["pos"][1]], "yaw": p["yaw"],
+    out["props"] = [{"prop": p["prop"], "pos": [p["pos"][0], support.height(*p["pos"]) if p["prop"].startswith("parking/") else 0.0, p["pos"][1]], "yaw": p["yaw"],
                      "scale": p["scale"], "tint": p.get("tint")} for p in net.get("decor", [])]
 
     q = net.get("question") or {}

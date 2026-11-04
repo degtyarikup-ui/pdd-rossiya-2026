@@ -58,6 +58,7 @@ from shapely.ops import substring, unary_union
 import direction_marking
 import bus_stop_marking
 import railway_geometry
+import pocket_geometry
 
 ROOT = Path(__file__).resolve().parents[2]
 NET = ROOT / "game_godot" / "network"
@@ -269,6 +270,7 @@ def road_geometry(scene: dict):
     """(road without islands, islands, all roads) as shapely geometry, inside the crop square.
     A tram track is paved too: where it leaves the road (into a depot) the kerb and the pavement
     open for it, the way a driveway does."""
+    scene = pocket_geometry.with_roads(scene)
     if (scene.get("layout") or {}).get("preserveSource"):
         # Keep the native contours' original regularisation, edge alignment and
         # islands. An added street contributes its own surface without shaving
@@ -284,10 +286,19 @@ def road_geometry(scene: dict):
         extra_road, extra_islands, extra_all = road_geometry(overlay)
         return (road.union(extra_road).difference(islands),
                 islands.union(extra_islands.difference(road)), all_roads.union(extra_all))
-    filled, holes = [], []
+    filled, holes, exact_roads, exact_holes, paved_areas, pocket_mouths = [], [], [], [], [], []
     for line in track_lines(scene):
         filled.append(line.buffer(TRACK_BED / 2, cap_style=2, join_style=1))
     for r in scene.get("roads", []):
+        if r.get("surface") == "pavement":
+            paved_areas.append(polygon_of(r))
+            continue
+        if r.get("pocket") or r.get("exact"):
+            exact_roads.append(Polygon(r["outer"]).buffer(0))
+            exact_holes.extend(Polygon(h).buffer(0) for h in r.get("holes", []))
+            if r.get("pocket"):
+                pocket_mouths.append(LineString([r["outer"][0], r["outer"][-1]]))
+            continue
         filled.append(Polygon(r["outer"]).buffer(0))
         for h in r.get("holes", []):
             holes.append(Polygon(h).buffer(0))
@@ -305,7 +316,25 @@ def road_geometry(scene: dict):
     custom_profile = any(st.get("lanes") for st in (scene.get("layout") or {}).get("streets", []))
     if not custom_profile and not (scene.get("layout") and any(r.get("surface") == "sand" for r in scene.get("roads", []))):
         roads = street_ends(roads, box)
+    # Pockets already have tangent entry/exit curves. Keep their exact profile
+    # and join the open mouth before deriving the pavement, kerbs and edge line.
+    if exact_roads:
+        # Legacy closing/opening shifts straight edges by about a millimetre.
+        # Bridge that numerical seam only at a mouth near existing asphalt;
+        # otherwise a correctly snapped bay would become a separate island.
+        if pocket_mouths and not roads.is_empty:
+            mouth = unary_union(pocket_mouths).buffer(.02, cap_style=2)
+            roads = roads.union(mouth.intersection(roads.buffer(.02)))
+        roads = set_precision(roads.union(unary_union(exact_roads)).intersection(box), .001)
     islands = tidy(unary_union(holes)).intersection(roads) if holes else Polygon()
+    # Preset kerb islands may be narrower than TIDY_RADIUS (e.g. pump islands).
+    # Their explicit contours are already clean and must retain their width.
+    if exact_holes:
+        islands = islands.union(unary_union(exact_holes)).intersection(roads)
+    if paved_areas:
+        paved = unary_union(paved_areas).intersection(box)
+        islands = islands.union(paved)
+        roads = roads.union(paved)
     return roads.difference(islands), islands, roads
 
 
@@ -353,6 +382,7 @@ def edge_lines(roads, box: Polygon):
 
 def disabled_edge_mask(scene: dict, roads_all):
     """Arm edges and the roundabout's two contours have independent switches."""
+    scene = pocket_geometry.with_roads(scene)
     roads = scene.get("roads", [])
     layout = scene.get("layout") or {}
     # The layout adds circular filler at dead ends, bends and junctions. Those
@@ -586,6 +616,7 @@ def ground(scene: dict):
 
 def roadside_roads(scene, key):
     """Include junction fillers only when all adjoining arms share the roadside."""
+    scene = pocket_geometry.with_roads(scene)
     layout = scene.get("layout") or {}
     nodes = {plan_road_id(scene, n['id']): n['id'] for n in layout.get("nodes", [])}
     def enabled(r):
@@ -607,6 +638,7 @@ def sidewalk_support(scene: dict):
     through street. Node discs are junction filler, not independent sidewalks.
     Smoothing only the enabled roads keeps normal corners between enabled arms.
     """
+    scene = pocket_geometry.with_roads(scene)
     roads = scene.get("roads", [])
     if not any(r.get("walk") is False for r in roads):
         return None
@@ -789,6 +821,7 @@ def rural_shoulder_mesh(region, roads, ends, box):
 
 
 def build(scene: dict) -> dict:
+    scene = pocket_geometry.with_roads(scene)
     road, islands, roads_all, ring = ground(scene)
     box = crop_box(scene)
     crop = float(scene.get("crop", 90.0))
@@ -822,7 +855,7 @@ def build(scene: dict) -> dict:
         islands = islands.difference(railway["opening"])
     no_edge = disabled_edge_mask(scene, roads_all)
     sand_raw = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") == "sand"])
-    asphalt_raw = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") != "sand"]
+    asphalt_raw = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") not in ("sand", "pavement")]
                               + [line.buffer(TRACK_BED / 2, cap_style=2) for line in track_lines(scene)])
     # Give the smoothed shoulder the same material as its road. Only genuine asphalt
     # roads can create an asphalt transition; a contour adjustment must not create one.
@@ -922,6 +955,22 @@ def build(scene: dict) -> dict:
     kerb_segments = [v for i in range(0, len(kerb_segments), 4)
                      if pavement.buffer(0.04).union(islands.buffer(0.04)).intersects(LineString([(kerb_segments[i], kerb_segments[i+1]), (kerb_segments[i+2], kerb_segments[i+3])]))
                      for v in kerb_segments[i:i+4]]
+    # Explicit preset sidewalks can stand beyond the asphalt perimeter. Their
+    # free sides need walls too; the road already emitted every shared side.
+    raised = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") == "pavement"]).intersection(box)
+    if not raised.is_empty:
+        existing = road.boundary.buffer(.002)
+        for poly in polygons_json(islands):
+            for contour in [poly["outer"], *poly["holes"]]:
+                for a, b in zip(contour, contour[1:] + contour[:1]):
+                    if on_crop_edge(a, b, crop):
+                        continue
+                    remainder = LineString([a, b]).difference(existing)
+                    for part in getattr(remainder, "geoms", [remainder]):
+                        if part.is_empty or part.geom_type != "LineString" or part.length < .002:
+                            continue
+                        coords = list(part.coords)
+                        kerb_segments.extend(round(v, 3) for point in (coords[0], coords[-1]) for v in point)
     if not no_walk.is_empty and not pavement.is_empty:
         # Close the pavement ends with a kerb too; the old outer/road outlines already
         # have their own boundaries and must not be emitted a second time.

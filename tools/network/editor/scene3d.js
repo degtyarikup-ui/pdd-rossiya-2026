@@ -914,7 +914,7 @@ const Scene3D = (() => {
       g.rotation.y = model.stop.yaw || 0;
       return;
     }
-    const y = t === "actor" ? SurfaceSupport.at(build, o.pos[0], o.pos[1]).y : 0;
+    const y = t === "actor" || (t === "decor" && o.prop?.startsWith("parking/")) ? SurfaceSupport.at(build, o.pos[0], o.pos[1]).y : 0;
     g.position.set(o.pos[0], y + (o.y || 0), o.pos[1]);
     g.rotation.y = o.yaw || 0;
     if (t === "light") g.scale.setScalar(o.scale || 1);
@@ -1039,6 +1039,12 @@ const Scene3D = (() => {
   // ---- selection: outlines, points, the turn handle -------------------------------------
   function footprintOf(ref) {
     if (!model) return null;
+    if (ref.t === "pocket") {
+      const o=(model.pockets || []).find(p=>p.id===ref.id);
+      if(!o)return null;
+      const p=RoadPocket.normalized(o);
+      return {x:p.pos[0],z:p.pos[1],yaw:p.yaw,hx:p.width,hz:p.length/2+p.exitLength};
+    }
     if (ref.t === "decor") {
       const d = model.decor.find((x) => x.id === ref.id);
       if (!d) return null;
@@ -1100,7 +1106,10 @@ const Scene3D = (() => {
     const draw = (ref, colour, px) => {
       if (hiddenPlayerGuideRef(ref)) return null;
       const f = footprintOf(ref);
-      if (f) { g.add(polyline(rect(f, 0.35), 0.2, colour, px)); return f; }
+      if (f) {
+        const ring=ref.t === "pocket" ? RoadPocket.outline(App.objectOf(ref)) : rect(f,.35);
+        g.add(polyline(ref.t === "pocket" ? [...ring,ring[0]] : ring,0.2,colour,px)); return f;
+      }
       const pts = App.pointsOfRef(ref);
       if (pts && pts.length > 1) {
         const closed = ref.t === "road" || ref.t === "lawn" || (ref.t === "marking" && App.isPaint(ref));
@@ -1154,7 +1163,13 @@ const Scene3D = (() => {
       return;
     }
     const pts = draft.cursor ? [...draft.points, draft.cursor] : draft.points;
-    if (draft.kind === "road" && pts.length >= 2) {
+    if (draft.kind === "pocket" && pts.length >= 3) {
+      const shape=new THREE.Shape(pts.map(p=>new THREE.Vector2(p[0],p[1])));
+      const geo=new THREE.ShapeGeometry(shape);geo.rotateX(Math.PI/2);
+      const mesh=new THREE.Mesh(geo,basic(ACCENT,{side:THREE.DoubleSide,transparent:true,opacity:.35,depthWrite:false}));
+      mesh.position.y=.25;mesh.userData.own=true;g.add(mesh);
+      g.add(polyline([...pts,pts[0]],.29,0x98e5ff,2));
+    } else if (draft.kind === "road" && pts.length >= 2) {
       const w = draft.width || 8.4;
       const ribbon = [...Layout.offsetRight(pts, -w / 2), ...Layout.offsetRight(pts, w / 2).reverse()];
       const shape = new THREE.Shape(ribbon.map((p) => new THREE.Vector2(p[0], p[1])));
@@ -1230,7 +1245,7 @@ const Scene3D = (() => {
       }
     }
     if (ghostObj && gh) {
-      ghostObj.position.set(gh.x, gh.kind === "actor" ? SurfaceSupport.at(build, gh.x, gh.z).y : 0, gh.z);
+      ghostObj.position.set(gh.x, gh.kind === "actor" || gh.url?.includes("/scenery/parking/") ? SurfaceSupport.at(build, gh.x, gh.z).y : 0, gh.z);
       ghostObj.rotation.y = gh.yaw || 0;
       ghostObj.scale.setScalar(gh.scale || 1);
     }
@@ -1751,6 +1766,10 @@ const Scene3D = (() => {
       }
     }
     if (hidden.has("roads")) return null;
+    for (const pocket of [...(model.pockets || [])].reverse()) {
+      const ref={t:"pocket",id:pocket.id}, ring=RoadPocket.outline(pocket);
+      if(!skip(ref) && (inside(w,ring) || lineHit([...ring,ring[0]],wpp*5)))return ref;
+    }
     if (L) {
       let bestSt = null, bestD = Infinity;
       for (const st of L.streets) {
@@ -1807,6 +1826,7 @@ const Scene3D = (() => {
       const s = screenOf(p[0], p[1], 0.3);
       if (s.x >= x0 && s.x <= x1 && s.y >= y0 && s.y <= y1) out.push(ref);
     };
+    (model.pockets || []).forEach(p => take({t:"pocket",id:p.id},p.pos,"roads"));
     model.decor.forEach((d) => take({ t: "decor", id: d.id }, d.pos, "decor"));
     model.actors.forEach((a) => take({ t: "actor", id: a.id }, a.pos, "actors"));
     model.lights.forEach((l) => take({ t: "light", id: l.id }, l.pos, "lights"));

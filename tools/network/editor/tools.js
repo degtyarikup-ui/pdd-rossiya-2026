@@ -7,6 +7,8 @@ const Tools = (() => {
     { id: "select", key: "V", title: "Выбор", icon: "cursor" },
     { id: "hand", key: "H", title: "Рука", icon: "hand" },
     { id: "road", key: "R", title: "Дорога", icon: "road" },
+    { id: "pocket", key: "K", title: "Дорожный карман", icon: "parked" },
+    { id: "preset", key: "", title: "Готовые локации", icon: "shop" },
     { id: "junction", key: "J", title: "Готовые перекрёстки", icon: "junction" },
     { id: "marking", key: "M", title: "Разметка", icon: "marking" },
     { id: "track", key: "T", title: "Рельсы", icon: "rails" },
@@ -19,16 +21,16 @@ const Tools = (() => {
     { id: "prop", key: "O", title: "Объект", icon: "tree" },
     { id: "brush", key: "B", title: "Кисть окружения", icon: "brush" },
   ];
-  const opts = { sign: "2.4", roadKind: "street", railType: "tram", mark: "dashed", markDirection: "straight", actorType: "car", prop: "trees/round_0", brushMode: "forest", brushScale: 1, brushYaw: 0, brushSpacing: 1, brushVariation: 0, tram: false, answerMode: "answer", answerLetter: null, answerArrowhead: true, annotationStyle: "line" };
+  const opts = { preset:"fuel_station", pocketSide:"right", sign: "2.4", roadKind: "street", railType: "tram", mark: "dashed", markDirection: "straight", actorType: "car", prop: "trees/round_0", brushMode: "forest", brushScale: 1, brushYaw: 0, brushSpacing: 1, brushVariation: 0, tram: false, answerMode: "answer", answerLetter: null, answerArrowhead: true, annotationStyle: "line" };
   const GROUPS = [
-    { title: "Дорога", tools: ["road", "junction", "track"] },
+    { title: "Дорога", tools: ["road", "pocket", "junction", "track"] },
     { title: "Разметка", tools: ["marking"] },
     { title: "Транспорт", tools: ["actor", "officer"] },
     { title: "Знаки", tools: ["sign", "light"] },
-    { title: "Окружение", tools: ["prop", "brush", "lawn"] },
+    { title: "Окружение", tools: ["prop", "preset", "brush", "lawn"] },
     { title: "Ответы", tools: ["answer"] },
   ];
-  const TAB_NAMES = { road: "Улицы", junction: "Перекрёстки", track: "Рельсы", actor: "Участники", officer: "Регулировщик", sign: "Знаки", light: "Светофоры", prop: "Объекты", brush: "Кисть", lawn: "Газон" };
+  const TAB_NAMES = { pocket:"Карманы", preset:"Локации", road: "Улицы", junction: "Перекрёстки", track: "Рельсы", actor: "Участники", officer: "Регулировщик", sign: "Знаки", light: "Светофоры", prop: "Объекты", brush: "Кисть", lawn: "Газон" };
   const definition = id => LIST.find(t => t.id === id);
   const groupOf = id => GROUPS.find(g => g.tools.includes(id));
   let tool = "select", drag = null, draft = null, placeYaw = null, hoverRef = null, lastWorld = null, pointerInView = false;
@@ -92,7 +94,7 @@ const Tools = (() => {
     $("#view").style.cursor = "";
     Scene3D.setPanTool(id === "hand");
     Scene3D.setPlanHandles(["select", "road"].includes(id));
-    const libraryCategory = { prop: "decor", brush: "decor", actor: "traffic", officer: "traffic", light: "traffic", sign: "signs" }[id];
+    const libraryCategory = { preset:"decor", prop: "decor", brush: "decor", actor: "traffic", officer: "traffic", light: "traffic", sign: "signs" }[id];
     if (libraryCategory && !keepLibrary) {
       if (App.setLibraryCategory) App.setLibraryCategory(libraryCategory, {open: false});
       else if (App.state.ltab !== "library") App.setLeftTab?.("library");
@@ -138,6 +140,13 @@ const Tools = (() => {
     let html = "", extra = "", action = "";
     if (tool === "road") {
       html = Object.entries(Layout.KINDS).map(([k,v]) => tile("road", k, v.title, roadPicture(k), k === opts.roadKind, `${v.title} · ${String(v.width).replace(".", ",")} м`)).join("");
+    } else if (tool === "pocket") {
+      html = tile("pocket-side", "right", "Справа", RoadPocket.picture(), opts.pocketSide === "right") + tile("pocket-side", "left", "Слева", RoadPocket.picture(), opts.pocketSide === "left");
+      extra = `<p class="empty-note">Кликните у края дороги. Потяните, чтобы повернуть. ⌥ — свободное размещение. Размеры — справа после установки.</p>`;
+    } else if (tool === "preset") {
+      html = (typeof ParkingPresets !== "undefined" ? ParkingPresets.list(cat) : []).map(p => tile("preset", p.id, p.name, Thumbs.img("prop",p.previewProp), opts.preset === p.id)).join("");
+      extra = `<p class="empty-note">Кликните для установки, потяните для поворота. После установки каждый объект можно менять отдельно.</p>`;
+      action = libraryButton("decor");
     } else if (tool === "track") {
       html = [["tram", "Трамвайные"], ["railway", "Железнодорожные"]].map(([k,title]) => tile("rail-type", k, title, railPicture(k === "railway"), k === opts.railType)).join("");
     } else if (tool === "junction") {
@@ -315,6 +324,8 @@ const Tools = (() => {
         renderPopover();
         return;
       }
+      if (d.pocketSide) opts.pocketSide = d.pocketSide;
+      if (d.preset) opts.preset = d.preset;
       if (d.railType) opts.railType = d.railType;
       if (d.road) opts.roadKind = d.road;
       if (d.mark) { opts.mark = d.mark; finishDraft(true); }
@@ -398,11 +409,11 @@ const Tools = (() => {
       if (drag) { App.cancelDrag(); drag = null; $("#marquee").hidden = true; clearEditPreview(); }
       return;
     }
-    if (e.type === "leave") { $("#hint").hidden = true; pointerInView = false; if (tool === "answer" && !draft) Scene3D.setDraft(null); Scene3D.setGhost(null); Scene3D.setBrushPreview?.(null); if (tool === "brush") Scene3D.setDraft(null); setHover(null); return; }
+    if (e.type === "leave") { $("#hint").hidden = true; pointerInView = false; if (tool === "answer" && !draft) Scene3D.setDraft(null); Scene3D.setGhost(null); Scene3D.setBrushPreview?.(null); if (["brush","pocket"].includes(tool)) Scene3D.setDraft(null); setHover(null); return; }
     if (e.world) { lastWorld = e.world; pointerInView = true; }
     const handler = HANDLERS[tool] || HANDLERS.select;
     const before = draft?.points.length;
-    if (e.type === "down" && ["road", "track", "lawn"].includes(tool) && App.state.locked.has("roads")) return App.toast("Слой дорог заблокирован", "warn");
+    if (e.type === "down" && ["road", "pocket", "track", "lawn"].includes(tool) && App.state.locked.has("roads")) return App.toast("Слой дорог заблокирован", "warn");
     handler[e.type]?.(e);
     if (draft && !draft.owner) draft.owner = S();
     if (before !== draft?.points.length) renderPopover();
@@ -451,7 +462,7 @@ const Tools = (() => {
       if (e.shift) { App.toggle(h); return; }
       // Road bodies and handles can be grabbed immediately. The screen-space threshold keeps
       // an ordinary click from moving them; lawns still select first.
-      const thing = h === e.labelRef || ["decor", "sign", "actor", "officer", "light", "node", "street", "road", "stop"].includes(h.t);
+      const thing = h === e.labelRef || ["pocket", "decor", "sign", "actor", "officer", "light", "node", "street", "road", "stop"].includes(h.t);
       if (!already) App.select(h);
       if (!already && !thing) return;
       // Alt copies objects; for road geometry it temporarily disables snapping.
@@ -864,7 +875,11 @@ const Tools = (() => {
   function ghostFor(kind, w, yaw) {
     const s = S();
     let x = w.x, z = w.z, y = yaw ?? 0, url = null, half = [1, 1], scale = 1;
-    if (kind === "actor") {
+    if (kind === "preset") {
+      const preset = typeof ParkingPresets !== "undefined" && ParkingPresets.get(App.state.catalog,opts.preset);
+      half = preset ? [preset.half[1],preset.half[0]] : [10,10];
+      // The full site footprint previews the space required by all its parts.
+    } else if (kind === "actor") {
       const tpl = App.state.catalog.actorTypes[opts.actorType];
       url = tpl ? `/asset/scene/${tpl.asset}` : null;
       half = [tpl?.halfLength || 2, tpl?.halfWidth || 0.9];
@@ -955,7 +970,13 @@ const Tools = (() => {
   function place(kind, g, yaw) {
     const s = S(), cat = App.state.catalog;
     let ref = null;
-    if (kind === "actor") {
+    if (kind === "preset") {
+      const preset = typeof ParkingPresets !== "undefined" && ParkingPresets.get(cat,opts.preset);
+      if (!preset) return;
+      if (["decor","roads","marks"].some(layer => App.state.locked.has(layer))) return App.toast("Разблокируйте дороги, разметку и окружение для установки локации", "warn");
+      ref = App.edit(sc => ParkingPresets.place(sc,preset,[r3(g.x),r3(g.z)],yaw));
+      set("select");
+    } else if (kind === "actor") {
       const tpl = cat.actorTypes[opts.actorType];
       if (!tpl) return App.toast("Для этого типа нет модели", "bad");
       ref = App.edit((sc) => {
@@ -1020,6 +1041,46 @@ const Tools = (() => {
     }
     if (ref) App.select(ref);
   }
+
+  // A pocket is placed by its mouth, then sized independently in the inspector.
+  function pocketAt(e) {
+    const p = RoadPocket.placement(S(),[e.world.x,e.world.z],placeYaw,e.alt);
+    // When snapped, the polygon winding chooses the outside of the road.
+    if (p.side !== opts.pocketSide) p.yaw += Math.PI;
+    p.side = opts.pocketSide;
+    return p;
+  }
+  function pocketPreview(p) {
+    Scene3D.setDraft({kind:"pocket", points:RoadPocket.outline(p), closed:true, bare:true});
+  }
+  const pocket = {
+    move(e) {
+      if (!e.world) return;
+      if (drag?.kind === "pocket") {
+        const dx=e.world.x-drag.p.pos[0],dz=e.world.z-drag.p.pos[1];
+        if (Math.hypot(dx,dz)>.8) {drag.p.yaw=Math.atan2(dx,dz);drag.turned=true;}
+        pocketPreview(drag.p);
+      } else pocketPreview(pocketAt(e));
+    },
+    down(e) {
+      if (!e.world || !App.pickable({t:"pocket"})) return;
+      drag={kind:"pocket",p:pocketAt(e),turned:false};
+      pocketPreview(drag.p);
+    },
+    up() {
+      if (drag?.kind !== "pocket") return;
+      const value=drag.p;
+      drag=null;
+      if (!App.pickable({t:"pocket"})) return;
+      const ref=App.edit(sc=>{
+        sc.pockets ||= [];
+        const id=App.uniqueId("pocket_",sc.pockets.map(p=>p.id));
+        sc.pockets.push({...value,id});
+        return {t:"pocket",id};
+      });
+      set("select"); App.select(ref);
+    },
+  };
 
   // ---- environment brush: preview and placement share one collision-checked plan ------------
   let lastBrushPreview = 0;
@@ -1109,7 +1170,7 @@ const Tools = (() => {
     dblclick() { finishDraft(); },
   };
 
-  const HANDLERS = { select, hand, road, junction: select, marking, lawn, track, answer, actor: placer("actor"), light: placer("light"), officer: placer("officer"), sign: placer("sign"), prop: placer("prop"), brush };
+  const HANDLERS = { select, hand, road, pocket, preset:placer("preset"), junction: select, marking, lawn, track, answer, actor: placer("actor"), light: placer("light"), officer: placer("officer"), sign: placer("sign"), prop: placer("prop"), brush };
 
   // ---- finishing a drawing ------------------------------------------------------------------------
   function sameDraftPoint(p) {
@@ -1214,7 +1275,8 @@ const Tools = (() => {
     for (const ref of sel) {
       const o = App.objectOf(ref);
       if (!o) continue;
-      if (o.pos) pts.push(o.pos);
+      if (ref.t === "pocket") pts.push(...RoadPocket.outline(o));
+      else if (o.pos) pts.push(o.pos);
       else if (ref.t === "node") pts.push([o.x, o.z]);
       else if (ref.t === "street") Layout.centreline(S().layout, o).forEach((p) => pts.push(p));
       else if (o.kind === "choice" && o.display === "letter" && o.labelPosition) pts.push(o.labelPosition);
@@ -1236,6 +1298,7 @@ const Tools = (() => {
       refreshBrushPreview();
     } else set("prop", { keepLibrary: true });
   }
+  function pickPreset(id) { opts.preset=id; set("preset",{keepLibrary:true}); }
   function pickSign(code) {
     opts.sign = code;
     set("sign", { keepLibrary: true });
@@ -1268,7 +1331,8 @@ const Tools = (() => {
   function dropAt(sx, sy, item) {
     const w = Scene3D.worldAt(sx, sy);
     if (!w || !S()) return;
-    if (item.kind === "prop") { opts.prop = item.id; place("prop", ghostFor("prop", w, null), 0); }
+    if (item.kind === "preset") { opts.preset=item.id; place("preset",ghostFor("preset",w,null),0); }
+    else if (item.kind === "prop") { opts.prop = item.id; place("prop", ghostFor("prop", w, null), 0); }
     else if (item.kind === "actor") { opts.actorType = item.id; const g = ghostFor("actor", w, null); place("actor", g, g.yaw); }
     else if (item.kind === "light") { opts.tram = !!(item.tram || item.id === "light_tram"); const g = ghostFor("light", w, null); place("light", g, g.yaw); }
     else if (item.kind === "officer") place("officer", ghostFor("officer", w, null), 0);
@@ -1315,7 +1379,7 @@ const Tools = (() => {
     input.addEventListener('pointerdown',e=>e.stopPropagation());
     input.addEventListener('blur',()=>finish(false));input.focus();input.select();
   }
-  return { editText, init, set, current, list: () => LIST, escape, enter, fitSelection, pickProp, pickActor, pickSign, pickLight, drawPathFor, drawAnswerRoute, editRoads, convertScene,
+  return { editText, init, set, current, list: () => LIST, escape, enter, fitSelection, pickProp, pickPreset, pickActor, pickSign, pickLight, drawPathFor, drawAnswerRoute, editRoads, convertScene,
     get touchDraggable() { return tool !== "answer" && !!HANDLERS[tool]?.up; },
     applyTemplate, applySceneFormat, renderBar, lightSpot, rotateBrush, get opts() { return opts; } };
 })();

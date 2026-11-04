@@ -72,6 +72,7 @@ const App = (() => {
     const s = state.S;
     if (!s || !ref) return null;
     switch (ref.t) {
+      case "pocket": return (s.pockets || []).find((x) => x.id === ref.id);
       case "decor": return s.decor.find((x) => x.id === ref.id);
       case "actor": return s.actors.find((x) => x.id === ref.id);
       case "light": return s.lights.find((x) => x.id === ref.id);
@@ -108,7 +109,7 @@ const App = (() => {
     ? Layout.planGenerated(scene, item) : !!item.auto);
   const isNativeShape = ref => ["road", "lawn"].includes(ref.t) && !isGeneratedSurface(objectOf(ref));
   const isPaint = (ref) => objectOf(ref)?.type === "paint";
-  const layerOf = (ref) => ({ decor: "decor", track: "roads", sign: "signs", actor: "actors", officer: "actors", light: "lights", route: "routes", marking: "marks", lawn: "roads",
+  const layerOf = (ref) => ({ pocket: "roads", decor: "decor", track: "roads", sign: "signs", actor: "actors", officer: "actors", light: "lights", route: "routes", marking: "marks", lawn: "roads",
     road: "roads", street: "roads", node: "roads", bend: "roads", stop: "actors" }[ref.t]);
   const catalogSize = (prop) => prop === "parked" ? [1.9, 1.4, 4.2] : state.catalog?.props.find((p) => p.id === prop)?.size;
   const sameRef = (a, b) => a && b && a.t === b.t && (a.id ?? null) === (b.id ?? null) && (a.part ?? -1) === (b.part ?? -1);
@@ -131,8 +132,9 @@ const App = (() => {
         if (o.kind === "approach") return "Подъезд игрока";
         return `Путь: ${objectOf({ t: "actor", id: o.id.replace(/^actor_/, "") })?.name || "участник"}`;
       case "marking": return o.type === "paint" ? "Разметка сцены" : Catalog.MARKS[o.type]?.title || o.type;
+      case "pocket": return "Дорожный карман";
       case "lawn": return "Газон";
-      case "road": return ref.part >= 0 ? "Островок" : "Дорога";
+      case "road": return ref.part >= 0 ? "Островок" : o.name || "Дорога";
       case "street": return Layout.KINDS[o.kind || "street"].title;
       case "node": return o.ring ? "Кольцо" : "Перекрёсток";
       case "stop": return "Игрок и стоп-линия";
@@ -593,6 +595,7 @@ const App = (() => {
     if (!s) return;
     const kinds = new Set(state.sel.map((r) => r.t));
     const all = [];
+    if (!kinds.size || kinds.has("pocket")) (s.pockets || []).forEach(p => all.push({t:"pocket",id:p.id}));
     if (!kinds.size || kinds.has("street")) (s.layout?.streets || []).forEach(st => all.push({t:"street",id:st.id}));
     if (!kinds.size || kinds.has("road")) s.roads.filter(r => !isGeneratedSurface(r)).forEach(r => all.push({t:"road",id:r.id,part:-1}));
     if (!kinds.size || kinds.has("sign")) (s.signs || []).forEach(o => all.push({t:"sign",id:o.id}));
@@ -604,12 +607,12 @@ const App = (() => {
   }
 
   // ---- moving, turning, copying, deleting ------------------------------------------------------
-  const movable = (ref) => ["decor", "track", "sign", "actor", "officer", "light", "marking", "lawn", "road", "route", "stop", "node", "street"].includes(ref.t);
+  const movable = (ref) => ["pocket", "decor", "track", "sign", "actor", "officer", "light", "marking", "lawn", "road", "route", "stop", "node", "street"].includes(ref.t);
   function moveRef(s, ref, dx, dz) {
     const o = objectOf(ref);
     if (!o) return;
     const shift = (p) => { p[0] = r3(p[0] + dx); p[1] = r3(p[1] + dz); };
-    if (ref.t === "decor" || ref.t === "actor" || ref.t === "light" || ref.t === "officer" || ref.t === "sign") {
+    if (ref.t === "pocket" || ref.t === "decor" || ref.t === "actor" || ref.t === "light" || ref.t === "officer" || ref.t === "sign") {
       o.pos = [r3(o.pos[0] + dx), r3(o.pos[1] + dz)];
       if (ref.t === "actor") {
         const rid = o.route || `actor_${o.id}`;
@@ -677,6 +680,36 @@ const App = (() => {
     nudge(r3((R[0] * right + U[0] * up) * step), r3((R[1] * right + U[1] * up) * step));
   }
 
+  // A complete inserted location keeps its parts aligned when rotated or copied.
+  // Selecting only some of its parts retains ordinary independent object editing.
+  const PRESET_LISTS = [["decor","decor"],["roads","road"],["markings","marking"]];
+  function completePresetGroups(refs) {
+    const selected = new Set(refs.filter(r => !(r.t === "road" && r.part >= 0)).map(r => `${r.t}:${r.id}`));
+    const groups = new Map();
+    for (const [key,t] of PRESET_LISTS) for (const o of state.S?.[key] || []) {
+      if (!o.presetInstance) continue;
+      if (!groups.has(o.presetInstance)) groups.set(o.presetInstance,[]);
+      groups.get(o.presetInstance).push({t,id:o.id,o});
+    }
+    return [...groups].filter(([,members]) => members.length > 1 && members.every(r => selected.has(`${r.t}:${r.id}`)))
+      .map(([id,members]) => ({id,members}));
+  }
+  function presetCoordinates(o) {
+    return [...(o.pos ? [o.pos] : []), ...(o.points || []), ...(o.outer || []), ...(o.holes || []).flat(),
+      ...(o.polygons || []).flatMap(p => [...p.outer,...(p.holes || []).flat()])];
+  }
+  function rotatePreset(group, angle) {
+    const points = group.members.flatMap(({o}) => presetCoordinates(o));
+    if (!points.length) return;
+    const [cx,cz] = [0,1].map(axis => (Math.min(...points.map(p => p[axis])) + Math.max(...points.map(p => p[axis]))) / 2);
+    const c = Math.cos(angle), n = Math.sin(angle);
+    for (const p of points) {
+      const x = p[0]-cx, z = p[1]-cz;
+      p[0] = r3(cx+x*c-z*n); p[1] = r3(cz+x*n+z*c);
+    }
+    for (const {o} of group.members) if (o.pos) o.yaw = r3(wrap((o.yaw || 0)-angle));
+  }
+
   // Turns the selection by `deg` degrees: each object about itself; a shape about its middle.
   function canRotate(ref) {
     const o = objectOf(ref);
@@ -684,7 +717,7 @@ const App = (() => {
     if (ref.t === "stop") return Layout.isFreePlayer(state.S);
     if (ref.t === "route") return o.kind === "annotation";
     if (ref.t === "street") return state.sel.length === 1;
-    return ["decor","sign","actor","officer","light","marking","lawn","road"].includes(ref.t) && !isGeneratedSurface(o);
+    return ["pocket","decor","sign","actor","officer","light","marking","lawn","road"].includes(ref.t) && !isGeneratedSurface(o);
   }
   function rotate(deg) {
     const list = state.sel.filter(canRotate);
@@ -699,8 +732,12 @@ const App = (() => {
       }
       return;
     }
+    const presets = completePresetGroups(list);
+    const grouped = new Set(presets.flatMap(group => group.members.map(r => `${r.t}:${r.id}`)));
     edit((s) => {
+      presets.forEach(group => rotatePreset(group,a));
       for (const ref of list) {
+        if (grouped.has(`${ref.t}:${ref.id}`)) continue;
         const o = objectOf(ref);
         if (ref.t === "stop") { if (Layout.isFreePlayer(s)) Layout.rotatePlayer(s, (s.stop.yaw || 0) - a); continue; }
         if (ref.t === "route" && o.style === "text") { o.textAngle = ((o.textAngle || 0) + deg + 540) % 360 - 180; continue; }
@@ -727,16 +764,21 @@ const App = (() => {
   }
 
   // Copies of things: props, participants (with their path), lights, markings, lawns.
-  const COPYABLE = ["decor", "sign", "actor", "officer", "light", "marking", "lawn"];
+  const COPYABLE = ["pocket", "decor", "sign", "actor", "officer", "light", "marking", "lawn"];
   function canCopy(ref) {
     const o = objectOf(ref);
-    return o && !isLocked(ref) && (COPYABLE.includes(ref.t) && !isGeneratedSurface(o) || ref.t === "route" && o.kind === "annotation");
+    if (!o || isLocked(ref)) return false;
+    if (ref.t === "road" && !(ref.part >= 0) && !isGeneratedSurface(o) && o.presetInstance)
+      return completePresetGroups(state.sel.filter(r => !isLocked(r))).some(group => group.id === o.presetInstance);
+    return COPYABLE.includes(ref.t) && !isGeneratedSurface(o) || ref.t === "route" && o.kind === "annotation";
   }
   function selectionCopies() {
-    return state.sel.filter(canCopy).map(ref => {
+    const refs = state.sel.filter(canCopy);
+    const complete = new Set(completePresetGroups(refs).map(group => group.id));
+    return refs.map(ref => {
       const o = objectOf(ref);
       const route = ref.t === "actor" && state.S.routes.find(r => r.id === (o.route || `actor_${o.id}`));
-      return JSON.parse(JSON.stringify({t:ref.t, o, route:route && (route.manual || !o.way) ? route : null}));
+      return JSON.parse(JSON.stringify({t:ref.t, o, presetGroup:complete.has(o.presetInstance), route:route && (route.manual || !o.way) ? route : null}));
     });
   }
   function copy() {
@@ -748,14 +790,23 @@ const App = (() => {
   }
   function insertCopies(copies, offset) {
     if (!copies?.length || copies.some(isLocked)) return false;
-    select(edit(s => copies.map(c => pasteOne(s, c, offset))));
+    select(edit(s => {
+      const used = PRESET_LISTS.flatMap(([key]) => (s[key] || []).map(o => o.presetInstance).filter(Boolean));
+      const instances = new Map();
+      for (const c of copies) if (c.presetGroup && c.o.presetInstance && !instances.has(c.o.presetInstance)) {
+        const id = uniqueId("preset_",used); used.push(id); instances.set(c.o.presetInstance,id);
+      }
+      return copies.map(c => pasteOne(s,c,offset,c.presetGroup ? instances.get(c.o.presetInstance) : null));
+    }));
     return true;
   }
   function paste(offset = 4) { return insertCopies(state.clipboard, offset); }
-  function pasteOne(s, c, offset) {
+  function pasteOne(s, c, offset, presetInstance = null) {
     const o = JSON.parse(JSON.stringify(c.o));
-    const listKey = { decor: "decor", sign: "signs", actor: "actors", officer: "officers", light: "lights", marking: "markings", lawn: "lawns", route: "routes" }[c.t];
-    const prefix = c.t === "actor" ? `${o.type}_` : { decor: "decor_", sign: "sign_", officer: "officer_", light: "light_", marking: "mark_", lawn: "lawn_", route: "annotation_" }[c.t];
+    if (presetInstance) o.presetInstance = presetInstance;
+    else delete o.presetInstance;
+    const listKey = { road:"roads", pocket: "pockets", decor: "decor", sign: "signs", actor: "actors", officer: "officers", light: "lights", marking: "markings", lawn: "lawns", route: "routes" }[c.t];
+    const prefix = c.t === "actor" ? `${o.type}_` : { road:"road_", pocket: "pocket_", decor: "decor_", sign: "sign_", officer: "officer_", light: "light_", marking: "mark_", lawn: "lawn_", route: "annotation_" }[c.t];
     s[listKey] = s[listKey] || [];
     const taken = s[listKey].map(x => x.id);
     if (c.t === "actor") {
@@ -856,7 +907,7 @@ const App = (() => {
         if (ref.t === "street") { Layout.removeStreet(s, ref.id); continue; }
         if (ref.t === "node") { Layout.removeNode(s, ref.id); continue; }
         if (ref.t === "road" && ref.part >= 0) { objectOf(ref)?.holes.splice(ref.part, 1); continue; }
-        const key = { decor: "decor", track: "tracks", sign: "signs", actor: "actors", officer: "officers", light: "lights", route: "routes", marking: "markings", lawn: "lawns", road: "roads" }[ref.t];
+        const key = { pocket: "pockets", decor: "decor", track: "tracks", sign: "signs", actor: "actors", officer: "officers", light: "lights", route: "routes", marking: "markings", lawn: "lawns", road: "roads" }[ref.t];
         const o = objectOf(ref);
         if (!o) continue;
         s[key] = s[key].filter((x) => x !== o);
@@ -1064,6 +1115,7 @@ const App = (() => {
     try {
       [state.catalog] = await Promise.all([api("/api/catalog"), Textures.load(), loadList(), DirectionMark.load()]);
       Catalog.setSignCatalog(state.catalog.signInfo);
+      Catalog.setPropCatalog?.(state.catalog.props);
     } catch (e) {
       startupError("Не удалось загрузить сцены", e);
       return;
