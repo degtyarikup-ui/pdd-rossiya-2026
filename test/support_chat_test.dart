@@ -1,3 +1,4 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/models/support_chat_message.dart';
@@ -108,6 +109,7 @@ void main() {
   group('SupportChatService Storage Tests', () {
     setUp(() {
       SharedPreferences.setMockInitialValues({});
+      FlutterSecureStorage.setMockInitialValues({});
     });
 
     test('Генерация и сохранение уникального clientId', () async {
@@ -156,6 +158,7 @@ void main() {
   group('SupportChatScreen Widget Tests', () {
     setUp(() {
       SharedPreferences.setMockInitialValues({});
+      FlutterSecureStorage.setMockInitialValues({});
     });
 
     testWidgets('Отображение экрана поддержки и элементов управления', (tester) async {

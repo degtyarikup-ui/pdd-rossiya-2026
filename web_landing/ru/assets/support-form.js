@@ -6,7 +6,10 @@
   var status = document.getElementById('support-status');
   var sending = false;
   // One random ID per page visit; no contact details are kept in browser storage.
-  var clientId = 'website_' + crypto.randomUUID();
+  var secret = Array.from(crypto.getRandomValues(new Uint8Array(32)), function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+  var identity = crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret)).then(function (hash) {
+    return 'guest_v2_' + Array.from(new Uint8Array(hash), function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+  });
 
   form.addEventListener('submit', async function (event) {
     event.preventDefault();
@@ -28,10 +31,10 @@
     try {
       var response = await fetch('https://pdd-install-notifier.sergei-pdd.workers.dev/api/support/send', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-support-secret': secret },
         signal: controller.signal,
         body: JSON.stringify({
-          clientId: clientId,
+          clientId: await identity,
           userName: name || 'Посетитель сайта',
           platform: 'Сайт pdd-drive.ru',
           text: 'Обращение с сайта pdd-drive.ru\nКонтакт для ответа: ' + contact + '\n\n' + message

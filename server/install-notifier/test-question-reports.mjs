@@ -1,3 +1,4 @@
+const adminCredential = crypto.randomUUID();
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { reportQuestionDetails, reportSourceLabel } from './report_questions.js';
@@ -18,14 +19,14 @@ class Storage {
   async transaction(fn) { return fn(this); }
 }
 function setup() {
-  const env = { INSTALLS: new Storage(), BOT_TOKEN: 'test', CHAT_ID: 'test', SHARED_SECRET: 'test', SESSION_SECRET: 'test', TELEGRAM_TOPIC_ERRORS: '7', TELEGRAM_TOPIC_PURCHASES: '8', TELEGRAM_TOPIC_REGISTRATIONS: '9' };
+  const env = { ADMIN_PASSWORD: adminCredential, INSTALLS: new Storage(), BOT_TOKEN: 'test', CHAT_ID: 'test', SHARED_SECRET: 'test', SESSION_SECRET: 'test', TELEGRAM_TOPIC_ERRORS: '7', TELEGRAM_TOPIC_PURCHASES: '8', TELEGRAM_TOPIC_REGISTRATIONS: '9' };
   const state = { storage: new Storage() }, queue = new TelegramQueue(state, env);
   env.TELEGRAM = { idFromName: name => name, get: () => ({ fetch: (url, options) => queue.fetch(new Request(url, options)) }) };
   return { env, state };
 }
 const request = (body, token, path = '/') => new Request('https://test' + path, {
   method: body === undefined ? 'GET' : 'POST',
-  headers: { 'content-type': 'application/json', 'x-install-secret': 'test', ...(token ? { authorization: 'Bearer ' + token } : {}) },
+  headers: { 'content-type': 'application/json', 'x-install-secret': 'test', ...(path.startsWith('/api/admin/') ? { authorization: 'Bearer ' + adminCredential } : token ? { authorization: 'Bearer ' + token } : {}) },
   ...(body === undefined ? {} : { body: JSON.stringify(body) }),
 });
 const session = (env, user, expiresAt = Date.now() + 60000) => signSession(env, { user, expiresAt, generation: '' });

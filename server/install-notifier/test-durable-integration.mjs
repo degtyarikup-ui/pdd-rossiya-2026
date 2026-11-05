@@ -1,3 +1,6 @@
+import { digest as supportDigest } from './request_security.js';
+const supportSecret = 'a'.repeat(64);
+const supportGuest = 'guest_v2_' + await supportDigest(supportSecret);
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPair, exportPKCS8, SignJWT } from 'jose';
@@ -135,12 +138,12 @@ test('notifications retry named reads but never publishing or the mutating GET a
 test('support list resets obtain a fresh stub, while legacy seed writes are never retried', async () => {
   const message = { id: 'reply', ts: 2000, text: 'reply' };
   const namespace = faultBinding([{ error: transient() }, { body: { initialized: true, messages: [message] } }]);
-  const response = await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=fixture'), { SUPPORT: namespace });
+  const response = await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=' + supportGuest + '', { headers: { 'x-support-secret': supportSecret } }), { SUPPORT: namespace });
   assert.deepEqual((await response.json()).messages, [message]);
   assert.equal(namespace.calls.length, 2);
   assert.equal(new Set(namespace.calls.map(call => call.stubNumber)).size, 2);
   const error = transient(), uninitialized = faultBinding([{ body: { initialized: false, messages: [] } }, { error }]);
-  await assert.rejects(handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=fixture'), {
+  await assert.rejects(handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=' + supportGuest + '', { headers: { 'x-support-secret': supportSecret } }), {
     SUPPORT: uninitialized, INSTALLS: { get: async () => [] },
   }), caught => caught === error);
   assert.deepEqual(uninitialized.calls.map(call => new URL(call.request.url).pathname), ['/list', '/seed']);

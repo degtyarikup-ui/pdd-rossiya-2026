@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
@@ -24,46 +26,75 @@ class SupportChatService {
   static final SupportChatService instance = SupportChatService._();
 
   static const String _prefSupportClientId = 'support_client_id';
-  static const String _prefInstallId = 'install_id';
   static const String _prefCachePrefix = 'support_chat_msgs_';
 
+  static const _guestStorage = FlutterSecureStorage();
+  static const _guestSecretKey = 'pdd_support_guest_secret_v2';
   String? _cachedClientId;
+  String? _guestSecret;
+  Future<void>? _guestLoading;
   String? _cachedAppVersion;
 
-  /// Получить стабильный ID клиента для обращений в поддержку.
+  Future<void> _loadGuest() async {
+    var secret = await _guestStorage.read(key: _guestSecretKey);
+    if (secret == null || !RegExp(r'^[a-f0-9]{64}$').hasMatch(secret)) {
+      final random = Random.secure();
+      secret = List.generate(
+        32,
+        (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+      ).join();
+      await _guestStorage.write(key: _guestSecretKey, value: secret);
+    }
+    _guestSecret = secret;
+    _cachedClientId = 'guest_v2_${sha256.convert(utf8.encode(secret))}';
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefSupportClientId, _cachedClientId!);
+  }
+
   Future<String> getClientId() async {
     final user = AuthService.instance.currentUser;
-    if (user != null && user.id.isNotEmpty) {
-      _cachedClientId = user.id;
-      return user.id;
-    }
+    if (user != null && user.id.isNotEmpty) return user.id;
+    _guestLoading ??= _loadGuest().catchError((Object error) {
+      _guestLoading = null;
+      throw error;
+    });
+    await _guestLoading;
+    return _cachedClientId!;
+  }
 
-    if (_cachedClientId != null && _cachedClientId!.isNotEmpty) {
-      return _cachedClientId!;
-    }
+  Map<String, String> get requestHeaders => {
+    ...AuthService.instance.serverHeaders,
+    if (AuthService.instance.currentUser == null && _guestSecret != null)
+      'x-support-secret': _guestSecret!,
+  };
 
+  String? authenticatedImageUrl(String raw) {
+    final url = Uri.tryParse(raw);
+    if (url == null ||
+        url.path != '/api/support/file' ||
+        !BackendConfig.notifierHosts.any(
+          (host) => Uri.parse(host).origin == url.origin,
+        )) {
+      return null;
+    }
+    final id = AuthService.instance.currentUser?.id ?? _cachedClientId;
+    if (id == null) return null;
+    return url
+        .replace(queryParameters: {...url.queryParameters, 'clientId': id})
+        .toString();
+  }
+
+  static Future<void> clearAccountCache(String? userId) async {
+    if (userId == null) return;
     final prefs = await SharedPreferences.getInstance();
-    var clientId = prefs.getString(_prefSupportClientId);
-    if (clientId != null && clientId.isNotEmpty) {
-      _cachedClientId = clientId;
-      return clientId;
+    for (final prefix in [
+      'support_chat_msgs_',
+      'support_inbox_seen_',
+      'support_inbox_active_',
+      'support_inbox_closed_',
+    ]) {
+      await prefs.remove('$prefix$userId');
     }
-
-    final installId = prefs.getString(_prefInstallId);
-    if (installId != null && installId.isNotEmpty) {
-      _cachedClientId = installId;
-      await prefs.setString(_prefSupportClientId, installId);
-      return installId;
-    }
-
-    // Генерируем уникальный случайный 16-байтный hex ID
-    final rand = Random.secure();
-    final bytes = List<int>.generate(16, (_) => rand.nextInt(256));
-    clientId =
-        'guest_${bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join()}';
-    await prefs.setString(_prefSupportClientId, clientId);
-    _cachedClientId = clientId;
-    return clientId;
   }
 
   /// Получить имя текущего пользователя (или null)
@@ -134,11 +165,7 @@ class SupportChatService {
               if (since != null && since > 0) 'since': since.toString(),
             },
           ),
-          headers: {
-            'content-type': 'application/json',
-            if (BackendConfig.notifierSecret.isNotEmpty)
-              'x-install-secret': BackendConfig.notifierSecret,
-          },
+          headers: requestHeaders,
         ),
         hosts: BackendConfig.notifierHosts,
         attempts: const [Duration(seconds: 4), Duration(seconds: 6)],
@@ -206,7 +233,7 @@ class SupportChatService {
       final response = await sendWithRetry(
         (host) => http.post(
           Uri.parse('$host/api/support/send'),
-          headers: AuthService.instance.serverHeaders,
+          headers: requestHeaders,
           body: jsonEncode(payload),
         ),
         hosts: BackendConfig.notifierHosts,

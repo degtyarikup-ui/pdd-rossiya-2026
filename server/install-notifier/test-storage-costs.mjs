@@ -1,3 +1,6 @@
+import { digest as supportDigest } from './request_security.js';
+const supportSecret = 'a'.repeat(64);
+const supportGuest = 'guest_v2_' + await supportDigest(supportSecret);
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from './worker.js';
@@ -122,7 +125,7 @@ test('idle support polls migrate KV once and never reseed on an empty incrementa
       SUPPORT: { idFromName: id => id, get: () => ({ fetch: (url, options) => {
         invocations++; return thread.fetch(new Request(url, options));
       } }) } };
-    const poll = () => handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=test&since=1000'), env);
+    const poll = () => handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=' + supportGuest + '&since=1000', { headers: { 'x-support-secret': supportSecret } }), env);
     assert.equal((await poll()).status, 200);
     assert.equal(reads, 1);
     invocations = 0;
@@ -142,7 +145,7 @@ test('idle support polls read the active webhook flag once per minute, never cac
   const env = { BOT_TOKEN: 'fixture', CHAT_ID: 'fixture', INSTALLS: {
     get: async key => { assert.equal(key, 'tg:webhook_active'); reads++; return '1'; },
   }, SUPPORT: { idFromName: id => id, get: () => ({ fetch: (url, options) => thread.fetch(new Request(url, options)) }) } };
-  const poll = () => handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=test'), env);
+  const poll = () => handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=' + supportGuest + '', { headers: { 'x-support-secret': supportSecret } }), env);
   for (let i = 0; i < 100; i++) assert.equal((await poll()).status, 200);
   assert.equal(reads, 1);
   await thread.fetch(new Request('https://support/append', { method: 'POST', body: JSON.stringify({ id: 'reply', ts: start + 1, text: 'reply' }) }));

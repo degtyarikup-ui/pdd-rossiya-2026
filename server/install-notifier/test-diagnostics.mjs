@@ -1,3 +1,6 @@
+import { digest as supportDigest } from './request_security.js';
+const supportSecret = 'a'.repeat(64);
+const supportGuest = 'guest_v2_' + await supportDigest(supportSecret);
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import worker from './worker.js';
@@ -196,7 +199,7 @@ test('support read protocol failures return retryable 503 with safe stage and up
       if (supportStage === 'seed' && path === '/list') return Response.json({ ok: true, initialized: false, messages: [] });
       return new Response('TOP_SECRET raw provider response', { status: upstreamStatus });
     } }) };
-    const response = await worker.fetch(new Request('https://test/api/support/messages?clientId=TOP_SECRET'), env);
+    const response = await worker.fetch(new Request('https://test/api/support/messages?clientId=' + supportGuest + '', { headers: { 'x-support-secret': supportSecret } }), env);
     assert.equal(response.status, 503);
     assert.equal(response.headers.get('Retry-After'), '1');
     assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');

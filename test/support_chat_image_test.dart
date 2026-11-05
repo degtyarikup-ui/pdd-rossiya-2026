@@ -27,6 +27,11 @@ const _reply = SupportChatMessage(
 );
 
 class _ChatService extends Fake implements SupportChatService {
+  @override
+  String? authenticatedImageUrl(String raw) => raw;
+  @override
+  Map<String, String> get requestHeaders => const {};
+
   List<SupportChatMessage> cached = [];
   List<SupportChatMessage> incoming = [_photo, _reply];
   List<SupportChatMessage> saved = [];

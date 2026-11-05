@@ -36,9 +36,9 @@ test('real workerd acknowledges primary state independently of repair and persis
   const signingSecret = crypto.randomUUID();
   const config = join(directory, 'wrangler.toml');
   const entry = join(directory, 'entry.mjs');
-  const classes = ['AccountState', 'AiQuotaState', 'StatsBuffer', 'PurchaseClaims', 'TrafficState',
+  const classes = ['SecurityState', 'AccountState', 'AiQuotaState', 'StatsBuffer', 'PurchaseClaims', 'TrafficState',
     'TelegramQueue', 'NotificationsState', 'SupportThread', 'TelegramAuthState'];
-  const bindings = ['ACCOUNTS', 'AI_QUOTAS', 'STATS', 'PURCHASE_CLAIMS', 'TRAFFIC',
+  const bindings = ['SECURITY', 'ACCOUNTS', 'AI_QUOTAS', 'STATS', 'PURCHASE_CLAIMS', 'TRAFFIC',
     'TELEGRAM', 'NOTIFICATIONS', 'SUPPORT', 'TG_AUTH'];
   // This entry exists only inside the ignored fixture directory. All normal
   // routes execute the real production handler, with the real exported DOs.
@@ -345,14 +345,14 @@ new_sqlite_classes = [${classes.map(JSON.stringify).join(', ')}]
     assert.equal(counters.usage.tickets.starts,50);
     t.diagnostic('real SQLite paginated 61 expirations and bounded projections; 50 usage events deduplicated atomically');
 
-    const client = 'runtime-empty-support';
+    const client = userId;
     const statePath = '/__runtime_fixture/support-state?clientId=' + client;
     assert.equal((await api(statePath, { fixture: true })).initialized, false);
-    assert.deepEqual((await api('/api/support/messages?clientId=' + client)).messages, []);
+    assert.deepEqual((await api('/api/support/messages?clientId=' + client, { token })).messages, []);
     assert.equal((await api(statePath, { fixture: true })).initialized, true);
     await api('/__runtime_fixture/kv?key=support:messages:' + client, { fixture: true,
       body: [{ id: 'late-stale-kv', ts: stamp, text: 'Must never be re-imported' }] });
-    assert.deepEqual((await api('/api/support/messages?clientId=' + client)).messages, []);
+    assert.deepEqual((await api('/api/support/messages?clientId=' + client, { token })).messages, []);
     t.diagnostic('empty support poll initialized DO once; subsequent stale KV was not imported');
 
     await stop();
@@ -360,7 +360,7 @@ new_sqlite_classes = [${classes.map(JSON.stringify).join(', ')}]
     assert.equal((await api('/api/user/status', { token })).user.id, userId);
     assert.deepEqual((await api('/api/user/progress?userId=' + userId, { token })).progress, written.progress);
     assert.equal((await api(statePath, { fixture: true })).initialized, true);
-    assert.deepEqual((await api('/api/support/messages?clientId=' + client)).messages, []);
+    assert.deepEqual((await api('/api/support/messages?clientId=' + client, { token })).messages, []);
     t.diagnostic('process restart preserved profile, large Unicode progress and support initialization');
 
     assert.equal((await api('/api/auth/logout', { token, body: {} })).ok, true);

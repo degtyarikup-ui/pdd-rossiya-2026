@@ -1,5 +1,8 @@
+import 'package:pdd_app/data/services/support_chat_service.dart';
+
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:pdd_app/data/services/auth_session_store.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:pdd_app/data/services/install_reporter.dart';
@@ -394,8 +397,7 @@ class AuthService extends ChangeNotifier {
   // A browser must use a Web application OAuth client, never the iOS client.
   static const String googleWebClientId = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
-    defaultValue:
-        '513938972930-a7sh1di6odgf77ijltu31lvpuhijcis1.apps.googleusercontent.com',
+    defaultValue: '513938972930-a7sh1di6odgf77ijltu31lvpuhijcis1.apps.googleusercontent.com',
   );
 
   /// Debug builds only (`--dart-define=GAME_DEBUG=true`): a local account
@@ -436,9 +438,9 @@ class AuthService extends ChangeNotifier {
   @visibleForTesting
   static Future<int?> Function() googleServicesStatus = () async {
     try {
-      return await const MethodChannel(
-        'pdd/google_services',
-      ).invokeMethod<int>('status').timeout(const Duration(seconds: 2));
+      return await const MethodChannel('pdd/google_services')
+          .invokeMethod<int>('status')
+          .timeout(const Duration(seconds: 2));
     } catch (_) {
       return null;
     }
@@ -950,6 +952,7 @@ class AuthService extends ChangeNotifier {
 
   Future<void> signOut() async {
     if (_signingOut) return;
+    final oldUserId = _currentUser?.id;
     final oldHeaders = serverHeaders;
     final hadSession = hasServerSession;
     cancelSignIn();
@@ -962,6 +965,7 @@ class AuthService extends ChangeNotifier {
       _currentUser = null;
       sessionIsTemporary = false;
       ProgressSyncService.instance.cancel();
+      await SupportChatService.clearAccountCache(oldUserId);
       if (hadSession) {
         unawaited(
           http
@@ -974,9 +978,8 @@ class AuthService extends ChangeNotifier {
         );
       }
       try {
-        await _queueSessionOperation(
-          _clearSession,
-        ).timeout(const Duration(seconds: 5));
+        await _queueSessionOperation(_clearSession)
+            .timeout(const Duration(seconds: 5));
       } catch (_) {}
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
         try {

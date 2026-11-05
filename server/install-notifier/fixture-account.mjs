@@ -1,3 +1,4 @@
+import { SecurityState } from './request_security.js';
 import { AccountState } from './account_state.js';
 import { AiQuotaState } from './ai_quota.js';
 import { signSession } from './user_auth.js';
@@ -33,6 +34,8 @@ export class MemoryKV {
 }
 export function fixture() {
   const env={INSTALLS:new MemoryKV(),SHARED_SECRET:appCredential,SESSION_SECRET:crypto.randomUUID(),ADMIN_PASSWORD:adminCredential,PLATEGA_SECRET:paymentCredential,PLATEGA_MERCHANT_ID:crypto.randomUUID(),ACCOUNT_STATE_REQUIRED:'true'};
+  const security = new SecurityState({ storage: new MemoryStorage() }, env);
+  env.SECURITY = { idFromName: id => id, get: () => ({ fetch: (url, options) => security.fetch(new Request(url, options)) }) };
   const states=new Map(),objects=new Map();
   env.ACCOUNTS={idFromName:id=>id,get:id=>({fetch:(request,options)=>{if(!states.has(id))states.set(id,new MemoryStorage());if(!objects.has(id))objects.set(id,new AccountState({storage:states.get(id)},env));return objects.get(id).fetch(typeof request==='string'?new Request(request,options):request);}})};
   const quotaStorage=new MemoryStorage(),quota=new AiQuotaState({storage:quotaStorage});

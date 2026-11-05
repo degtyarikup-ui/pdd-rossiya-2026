@@ -1,3 +1,6 @@
+import { digest as supportDigest } from './request_security.js';
+const supportSecret = 'a'.repeat(64);
+const supportGuest = 'guest_v2_' + await supportDigest(supportSecret);
 // Выгрузка журнала ошибок: команды, порядок записей, время и CSV для Excel.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -190,7 +193,7 @@ test('cron detects active webhook and does not call the incompatible getUpdates 
 
 test('without webhook one durable poll handles both exports and support replies', async () => {
   const { queue, env, storage } = exportSetup(), original = globalThis.fetch;
-  await env.INSTALLS.put('support:thread:22', 'client-1');
+  await env.INSTALLS.put('support:thread:22', supportGuest);
   const support = exportUpdate(43, 'Ответ оператора'); support.message.message_thread_id = 22;
   const updates = [exportUpdate(), support];
   const calls = [];
@@ -204,12 +207,12 @@ test('without webhook one durable poll handles both exports and support replies'
   try {
     assert.deepEqual(await queue.pollErrorCommands(), { ok: true, updates: 2, handled: 1 });
     assert.equal(await storage.get('tg:offset'), 44);
-    const messages = JSON.parse(await env.INSTALLS.get('support:messages:client-1'));
+    const messages = JSON.parse(await env.INSTALLS.get('support:messages:' + supportGuest));
     assert.equal(messages[0].text, 'Ответ оператора');
     // The app fallback uses the same DO poll, rather than a competing offset.
     const count = calls.length;
     resetSupportPollThrottle();
-    await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=client-1'), env);
+    await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=' + supportGuest + '', { headers: { 'x-support-secret': supportSecret } }), env);
     assert.ok(calls.slice(count).some(url => url.endsWith('/getWebhookInfo')));
     assert.equal(await env.INSTALLS.get('tg:support_offset'), undefined);
   } finally { globalThis.fetch = original; }
@@ -224,11 +227,11 @@ test('app polls remember a found webhook and stop asking the durable queue', asy
   };
   try {
     resetSupportPollThrottle();
-    const first = await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=c1'), env);
+    const first = await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=' + supportGuest + '', { headers: { 'x-support-secret': supportSecret } }), env);
     assert.equal(first.status, 200);
     assert.equal(await env.INSTALLS.get('tg:webhook_active'), '1');
     resetSupportPollThrottle();
-    await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=c1'), env);
+    await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=' + supportGuest + '', { headers: { 'x-support-secret': supportSecret } }), env);
     assert.equal(calls.length, 1);
   } finally { globalThis.fetch = original; }
 });
@@ -244,7 +247,7 @@ test('app polls ask the durable queue at most once per interval', async () => {
   try {
     resetSupportPollThrottle();
     for (let i = 0; i < 3; i++) {
-      await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=c1'), env);
+      await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=' + supportGuest + '', { headers: { 'x-support-secret': supportSecret } }), env);
     }
     assert.equal(calls.filter(url => url.endsWith('/getWebhookInfo')).length, 1);
   } finally { globalThis.fetch = original; }
@@ -252,10 +255,10 @@ test('app polls ask the durable queue at most once per interval', async () => {
 
 test('a failing durable queue still returns stored support replies', async () => {
   const { env } = exportSetup();
-  await env.INSTALLS.put('support:messages:c2', JSON.stringify([{ id: 'm1', text: 'Ответ', from: 'support', ts: 1 }]));
+  await env.INSTALLS.put('support:messages:' + supportGuest, JSON.stringify([{ id: 'm1', text: 'Ответ', from: 'support', ts: 1 }]));
   env.TELEGRAM.get = () => ({ fetch: async () => { throw new Error('Durable Object is overloaded'); } });
   resetSupportPollThrottle();
-  const response = await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=c2'), env);
+  const response = await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=' + supportGuest + '', { headers: { 'x-support-secret': supportSecret } }), env);
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.messages[0].text, 'Ответ');

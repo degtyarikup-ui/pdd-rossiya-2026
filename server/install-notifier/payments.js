@@ -1,3 +1,4 @@
+import { boundedJson, abuseBudget } from './request_security.js';
 import { reportIncident, errorCode, markIncidentReported } from './diagnostics.js';
 // Оплата премиума на сайте: СБП через агрегатора Platega (docs.platega.io).
 // Покупка периода — разовая, без автопродления; срок начисляется через
@@ -460,8 +461,8 @@ export async function handlePayCheck(request, env, user, deps) {
  * пишется (бесплатный KV — 1000 записей в сутки).
  */
 export async function handlePayLead(request, env, { jsonResponse, sendTelegram, esc }) {
-  let body;
-  try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
+  const body = await boundedJson(request, 8192);
+  await abuseBudget(request, env, 'payment-leads', { limit: 5, windowMs: 3600000, globalLimit: 200 });
   const email = String(body?.email || '').trim().toLowerCase();
   const tier = body?.tier;
   // Скрытое поле-ловушка: его заполняют только боты.

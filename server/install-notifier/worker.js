@@ -1,3 +1,7 @@
+import { purgeSupport } from './support_access.js';
+import { adminLogin, verifyAdminAuth, adminCookieToken, adminCsrfToken, ADMIN_SECURITY_CLIENT_JS } from './admin_security.js';
+import { HttpFailure, abuseBudget } from './request_security.js';
+export { SecurityState } from './request_security.js';
 import { acceptNoticeMetrics, noticeMetricsForAdmin } from './notice_metrics.js';
 import { serverErrorContext } from './diagnostic_context.js';
 import { reportSourceLabel, reportQuestionDetails } from './report_questions.js';
@@ -103,7 +107,7 @@ const FLAGS = { ru: '🇷🇺', by: '🇧🇾', rs: '🇷🇸' };
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'content-type, x-install-secret, authorization',
+  'Access-Control-Allow-Headers': 'content-type, x-install-secret, authorization, x-support-secret, x-admin-csrf',
   'Access-Control-Expose-Headers': 'Retry-After, x-auth-diagnostic-id',
   'Access-Control-Max-Age': '86400',
 };
@@ -1970,85 +1974,12 @@ function htmlResponse(html) {
   } });
 }
 
-// Сессия админки живёт год и продлевается при заходах — пароль вводится один
-// раз на устройство. В куке лежит случайный токен, а не пароль, поэтому долгий
-// срок не означает, что пароль где-то хранится в браузере.
-const ADMIN_SESSION_TTL_SEC = 365 * 24 * 3600;
-// Чаще раза в неделю продлевать смысла нет — это лишняя запись в KV.
-const ADMIN_SESSION_RENEW_AFTER_SEC = 7 * 24 * 3600;
-// Порог перебора: после стольких неудач с одного адреса вход блокируется.
-const ADMIN_LOGIN_MAX_FAILS = 8;
-const ADMIN_LOGIN_BLOCK_SEC = 900;
-
-// Потолок для неподписанных запросов к ИИ (старые сборки приложения).
-const AI_LEGACY_DAILY_LIMIT = 40;
-
-/** Сравнение без утечки времени: длина ответа не должна зависеть от пароля. */
+// Application-key comparison; administrative sessions and limits live in admin_security.js.
 function safeEquals(a, b) {
-  const enc = new TextEncoder();
-  const left = enc.encode(String(a || ''));
-  const right = enc.encode(String(b || ''));
-  if (left.length !== right.length) return false;
-  let diff = 0;
-  for (let i = 0; i < left.length; i += 1) diff |= left[i] ^ right[i];
-  return diff === 0;
-}
-
-async function createAdminSession(env) {
-  const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
-  await env.INSTALLS.put(
-    'admin_session:' + token,
-    JSON.stringify({ created: Date.now() }),
-    { expirationTtl: ADMIN_SESSION_TTL_SEC }
-  );
-  return token;
-}
-
-function adminCookieToken(request) {
-  const cookie = request.headers.get('cookie') || '';
-  const match = cookie.match(/pdd_admin_token=([^;]+)/);
-  if (!match) return null;
-  const token = decodeURIComponent(match[1]);
-  return /^[a-f0-9]{32,128}$/.test(token) ? token : null;
-}
-
-/**
- * Пароль берётся ТОЛЬКО из секрета ADMIN_PASSWORD.
- *
- * Раньше здесь лежали два запасных пароля прямо в коде, а исходник воркера
- * открыт на GitHub — то есть войти в админку мог кто угодно. Никаких значений
- * по умолчанию: без заданного секрета вход закрыт для всех.
- */
-async function verifyAdminAuth(request, env) {
-  if (!env.ADMIN_PASSWORD || !env.INSTALLS) return false;
-
-  // Bearer с паролем — для локальных скриптов и тестов, браузер его не шлёт.
-  const authHeader = request.headers.get('authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    if (safeEquals(authHeader.slice(7), env.ADMIN_PASSWORD)) return true;
-  }
-
-  const token = adminCookieToken(request);
-  if (!token) return false;
-
-  const raw = await env.INSTALLS.get('admin_session:' + token);
-  if (!raw) return false;
-
-  // Продлеваем «на ходу»: пока панелью пользуются, вход не будет спрашивать
-  // пароль вообще никогда.
-  try {
-    const session = JSON.parse(raw);
-    const age = Date.now() - (session.created || 0);
-    if (age > ADMIN_SESSION_RENEW_AFTER_SEC * 1000) {
-      await env.INSTALLS.put(
-        'admin_session:' + token,
-        JSON.stringify({ created: Date.now() }),
-        { expirationTtl: ADMIN_SESSION_TTL_SEC }
-      );
-    }
-  } catch (_) { /* сессия старого формата — просто не продлеваем */ }
-
-  return true;
+  const left = new TextEncoder().encode(String(a || '')), right = new TextEncoder().encode(String(b || ''));
+  let diff = left.length ^ right.length;
+  for (let i = 0; i < Math.max(left.length, right.length); i++) diff |= (left[i] || 0) ^ (right[i] || 0);
+  return diff === 0 && left.length > 0;
 }
 
 // ────────────────────── Аналитика соцсетей и кликов ──────────────────────
@@ -2808,7 +2739,7 @@ function renderAdminPage() {
     .replace('<button class="nav-item" data-feature="links">', TASKS_NAV_HTML + '\n      <button class="nav-item" data-feature="links">')
     .replace('</nav>', ECONOMY_NAV_HTML + '\n      ' + NOTIFICATIONS_NAV_HTML + '    </nav>')
     .replace('\n\n  </main>', '\n' + TASKS_VIEW_HTML + '\n' + ECONOMY_VIEW_HTML + '\n' + NOTIFICATIONS_VIEW_HTML + '\n' + SOCIAL_VIEW_HTML + '\n' + THREADS_VIEW_HTML + '\n' + PUBLICATIONS_VIEW_HTML + '\n  </main>')));
-  return html + ADMIN_THEME_HTML + ADMIN_DATA_STYLES + "<script>" + ADMIN_DATA_CLIENT_JS + BRAND_SVGS_CLIENT_JS + clientJs + ANALYTICS_CLIENT_JS + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + ECONOMY_CLIENT_JS + NOTIFICATIONS_CLIENT_JS + TASKS_CLIENT_JS + BLOG_CLIENT_JS + PUBLICATIONS_CLIENT_JS + ADMIN_UI_CLIENT_JS + ADMIN_THEME_CLIENT_JS + "</script></body></html>";
+  return html + ADMIN_THEME_HTML + ADMIN_DATA_STYLES + "<script>" + ADMIN_SECURITY_CLIENT_JS + ADMIN_DATA_CLIENT_JS + BRAND_SVGS_CLIENT_JS + clientJs + ANALYTICS_CLIENT_JS + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + ECONOMY_CLIENT_JS + NOTIFICATIONS_CLIENT_JS + TASKS_CLIENT_JS + BLOG_CLIENT_JS + PUBLICATIONS_CLIENT_JS + ADMIN_UI_CLIENT_JS + ADMIN_THEME_CLIENT_JS + "</script></body></html>";
 }
 
 
@@ -3062,39 +2993,11 @@ const workerHandlers = {
       return htmlResponse(renderAdminPage());
     }
 
-    if (url.pathname === '/api/admin/login' && request.method === 'POST') {
-      let body = {};
-      try { body = await request.json(); } catch (_) {}
-
-      if (!env.ADMIN_PASSWORD || !env.INSTALLS) {
-        return jsonResponse({ error: 'admin password is not configured' }, 503);
-      }
-
-      // Пароль подбирается автоматикой за минуты, поэтому считаем неудачи
-      // по адресу и после ADMIN_LOGIN_MAX_FAILS закрываем вход на 15 минут.
-      const clientIp = request.headers.get('cf-connecting-ip') || 'unknown';
-      const failsKey = 'admin_login_fails:' + clientIp;
-      const fails = parseInt((await env.INSTALLS.get(failsKey)) || '0', 10);
-      if (fails >= ADMIN_LOGIN_MAX_FAILS) {
-        return jsonResponse({ error: 'too many attempts' }, 429);
-      }
-
-      const pwd = String(body.password || '').trim();
-      if (safeEquals(pwd, env.ADMIN_PASSWORD)) {
-        await env.INSTALLS.delete(failsKey);
-        const token = await createAdminSession(env);
-        return jsonResponse({ ok: true }, 200, {
-          'Set-Cookie': `pdd_admin_token=${token}; Path=/; Max-Age=${ADMIN_SESSION_TTL_SEC}; HttpOnly; Secure; SameSite=Lax`,
-        });
-      }
-
-      await env.INSTALLS.put(failsKey, String(fails + 1), { expirationTtl: ADMIN_LOGIN_BLOCK_SEC });
-      return jsonResponse({ error: 'invalid password' }, 401);
-    }
+    if (url.pathname === '/api/admin/login' && request.method === 'POST') return adminLogin(request, env);
 
     if (url.pathname === '/api/admin/logout' && request.method === 'POST') {
       const sessionToken = adminCookieToken(request);
-      if (sessionToken && env.INSTALLS) await env.INSTALLS.delete('admin_session:' + sessionToken);
+      if (sessionToken && env.INSTALLS && await verifyAdminAuth(request, env)) await env.INSTALLS.delete('admin_session:' + sessionToken);
       return jsonResponse({ ok: true }, 200, {
         'Set-Cookie': 'pdd_admin_token=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax',
       });
@@ -3114,7 +3017,7 @@ const workerHandlers = {
 
     if (url.pathname === '/api/admin/session' && request.method === 'GET') {
       const ok = await verifyAdminAuth(request, env);
-      return jsonResponse(ok ? { ok: true } : { error: 'unauthorized' }, ok ? 200 : 401, { 'Cache-Control': 'no-store' });
+      return jsonResponse(ok ? { ok: true, csrfToken: adminCookieToken(request) ? await adminCsrfToken(env, adminCookieToken(request)) : null } : { error: 'unauthorized' }, ok ? 200 : 401, { 'Cache-Control': 'no-store' });
     }
 
     if (url.pathname === '/api/admin/stats' && request.method === 'GET') {
@@ -3798,6 +3701,17 @@ const workerHandlers = {
       return handlePlategaCallback(request, env, { jsonResponse, sendTelegram, esc, trackStats });
     }
 
+    if (url.pathname === '/api/admin/reports/send' && request.method === 'POST') {
+      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
+      await flushStatsBuffer(env);
+      const queued = await sendDailyReport(env);
+      return jsonResponse({ ok: queued.ok }, queued.ok ? 200 : 502);
+    }
+    if (url.pathname === '/api/admin/reviews/check' && request.method === 'POST') {
+      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
+      await pollReviews(env); return jsonResponse({ ok: true });
+    }
+
     if (url.pathname === '/api/admin/pay-intents' && request.method === 'GET') {
       if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
       if (!env.INSTALLS) return jsonResponse({ error: 'storage unavailable' }, 503);
@@ -3805,15 +3719,13 @@ const workerHandlers = {
     }
 
     if (url.pathname === '/api/admin/telegram/topics' && request.method === 'GET') {
-      const isAuthorized = await verifyAdminAuth(request, env) ||
-        (Boolean(env.SHARED_SECRET) && request.headers.get('x-install-secret') === env.SHARED_SECRET);
+      const isAuthorized = await verifyAdminAuth(request, env);
       if (!isAuthorized) return jsonResponse({ error: 'unauthorized' }, 401);
       return jsonResponse({ ok: true, topics: await readTelegramTopics(env) });
     }
 
     if (url.pathname === '/api/admin/telegram/setup-topics' && request.method === 'POST') {
-      const isAuthorized = await verifyAdminAuth(request, env) ||
-        (Boolean(env.SHARED_SECRET) && request.headers.get('x-install-secret') === env.SHARED_SECRET);
+      const isAuthorized = await verifyAdminAuth(request, env);
       if (!isAuthorized) return jsonResponse({ error: 'unauthorized' }, 401);
       // The chat's durable queue serializes setup as well as delivery, so
       // concurrent setup requests cannot create duplicate forum topics.
@@ -3843,15 +3755,13 @@ const workerHandlers = {
     }
 
     if (url.pathname === '/api/admin/support/setup-webhook' && request.method === 'POST') {
-      const isAuthorized = (await verifyAdminAuth(request, env)) ||
-        (Boolean(env.SHARED_SECRET) && request.headers.get('x-install-secret') === env.SHARED_SECRET);
+      const isAuthorized = await verifyAdminAuth(request, env);
       if (!isAuthorized) return jsonResponse({ error: 'unauthorized' }, 401);
       return handleSupportSetupWebhook(request, env);
     }
 
     if (url.pathname === '/api/admin/support/webhook-info' && request.method === 'GET') {
-      const isAuthorized = (await verifyAdminAuth(request, env)) ||
-        (Boolean(env.SHARED_SECRET) && request.headers.get('x-install-secret') === env.SHARED_SECRET);
+      const isAuthorized = await verifyAdminAuth(request, env);
       if (!isAuthorized) return jsonResponse({ error: 'unauthorized' }, 401);
       return handleSupportWebhookInfo(request, env);
     }
@@ -4143,25 +4053,12 @@ const workerHandlers = {
           && !await verifyAdminAuth(request, env)) {
         return jsonResponse({ error: 'unauthorized' }, 401);
       }
-      if (url.searchParams.get('reviews') === 'check') {
-        await pollReviews(env);
-        return jsonResponse({ ok: true, checked: 'reviews' });
-      }
+      if (url.searchParams.get('reviews') === 'check' || url.searchParams.get('send') === 'true') return jsonResponse({ error: 'use authenticated POST' }, 405);
 
       // Предпросмотр или ручной запуск суточного отчёта
       const reportParam = url.searchParams.get('report');
       if (reportParam === 'daily' || reportParam === 'evening') {
-        await flushStatsBuffer(env);
         const msg = await buildDailyReport(env);
-
-        if (url.searchParams.get('send') === 'true') {
-          const queued = await sendDailyReport(env);
-          if (!queued.ok) return new Response('Telegram queue unavailable', { status: 502 });
-          return new Response(`Sent to Telegram:\n\n${msg}`, {
-            status: 200,
-            headers: { 'content-type': 'text/plain; charset=utf-8' },
-          });
-        }
 
         return new Response(msg, {
           status: 200,
@@ -4338,6 +4235,7 @@ const workerHandlers = {
 };
 
 export async function executeAccountEffect(effect, env) {
+  if (effect.kind === 'support-delete') return purgeSupport(env, effect.userId, effect.deletedAt);
   if (effect.kind === 'apple-revoke') return executeAppleRevocation(env, effect.authorization);
   if (effect.kind === 'telegram') {
     const response = await sendTelegram(env, effect.text, effect.dedupKey, effect.options);
@@ -4429,6 +4327,7 @@ export default {
       }
       return response;
     } catch (error) {
+      if (error instanceof HttpFailure) return error.response();
       const code = errorCode(error), context = serverErrorContext(error);
       const status = ['durable_storage_timeout', 'durable_overloaded', 'durable_retryable', 'durable_memory_exhausted', 'cloudflare_internal_error', 'support_read_unavailable'].includes(code) ? 503 : 500;
       console.error('Worker request failed', JSON.stringify({ operation, code, ...context }));

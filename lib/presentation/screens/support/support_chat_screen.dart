@@ -1,4 +1,5 @@
 import 'package:pdd_app/core/layout/app_content_frame.dart';
+
 import 'dart:async';
 import 'dart:io';
 
@@ -298,7 +299,14 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       return FileImage(File(msg.localImagePath!));
     }
     if (msg.fullImageUrl != null) {
-      return NetworkImage(msg.fullImageUrl!);
+      final url = _service.authenticatedImageUrl(
+        msg.fullImageUrl!,
+      );
+      if (url == null) return null;
+      return NetworkImage(
+        url,
+        headers: _service.requestHeaders,
+      );
     }
     return null;
   }

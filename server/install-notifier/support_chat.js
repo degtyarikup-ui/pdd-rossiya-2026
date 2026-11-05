@@ -1,3 +1,5 @@
+import { supportIdentity, supportImageUrl } from './support_access.js';
+import { boundedJson, abuseBudget, HttpFailure } from './request_security.js';
 // Чат техподдержки: создание отдельной ветки (Forum Topic) в Telegram на каждого
 // пользователя, отправка сообщений и приём ответов от команды через Webhook/Updates.
 import { telegramChatId, handleErrorExportUpdate, pollErrorCommands } from './telegram_queue.js';
@@ -11,14 +13,14 @@ import { errorCode } from './diagnostics.js';
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'content-type, x-install-secret, authorization',
+  'Access-Control-Allow-Headers': 'content-type, x-install-secret, authorization, x-support-secret',
   'Access-Control-Max-Age': '86400',
 };
 
 function jsonResponse(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'content-type': 'application/json', ...CORS_HEADERS, ...extraHeaders },
+    headers: { 'content-type': 'application/json', 'Cache-Control': 'no-store', ...CORS_HEADERS, ...extraHeaders },
   });
 }
 
@@ -220,7 +222,7 @@ async function closeSupportTicket(env, clientId, messageId, threadId) {
     client.closed = true;
     client.closedAt = ts;
     client.lastMsgAt = ts;
-    await env.INSTALLS.put(clientKey, JSON.stringify(client));
+    await env.INSTALLS.put(clientKey, JSON.stringify(client), { expirationTtl: 90 * 86400 });
   }
   await sendToTelegram(env, '✅ Обращение завершено, пользователю отправлено уведомление. Новое сообщение откроет тему снова.', threadId);
   if (env.BOT_TOKEN) {
@@ -320,7 +322,7 @@ export async function processTelegramMessageUpdate(msg, env) {
     const client = await env.INSTALLS.get(clientKey, { type: 'json' });
     if (client) {
       client.lastMsgAt = replyMsg.ts;
-      await env.INSTALLS.put(clientKey, JSON.stringify(client));
+      await env.INSTALLS.put(clientKey, JSON.stringify(client), { expirationTtl: 90 * 86400 });
     }
   }
 
@@ -415,13 +417,7 @@ async function checkPendingTelegramUpdates(env) {
 export async function handleSupportSendMessage(request, env) {
   if (request.method !== 'POST') return jsonResponse({ error: 'method_not_allowed' }, 405);
 
-  let body = {};
-  try {
-    body = await request.json();
-  } catch (_) {
-    return jsonResponse({ error: 'invalid_json' }, 400);
-  }
-
+  const body = await boundedJson(request, 16 * 1024 * 1024);
   const clientId = String(body.clientId || '').trim();
   const text = String(body.text || '').trim();
   const imageBase64 = body.imageBase64 ? String(body.imageBase64).trim() : null;
@@ -437,8 +433,13 @@ export async function handleSupportSendMessage(request, env) {
     return jsonResponse({ error: 'image_too_large' }, 400);
   }
 
+  const identity = await supportIdentity(request, env, clientId);
+  await abuseBudget(request, env, 'support-send', { identity: identity.session?.user.id, limit: 6, windowMs: 60000, globalLimit: 300 });
+  await abuseBudget(request, env, 'support-daily', { identity: identity.session?.user.id, limit: 50, windowMs: 86400000, globalLimit: 2000 });
+  if (imageBase64 && !['image/jpeg', 'image/png', 'image/webp'].includes(imageMimeType)) throw new HttpFailure(400, 'unsupported image type');
+
   const rawName = String(body.userName || '').trim();
-  const displayName = rawName || 'Пользователь';
+  const displayName = String(identity.session?.user.name || rawName || 'Пользователь').slice(0, 120);
   const platform = String(body.platform || 'unknown').trim();
   const appVersion = String(body.appVersion || '').trim();
   const isPremium = Boolean(body.isPremium);
@@ -448,8 +449,7 @@ export async function handleSupportSendMessage(request, env) {
   let threadId = client?.threadId || null;
   // Ответ пушем — только если переписка точно этого аккаунта (сессия входа),
   // приложение умеет такие пуши и они у него включены.
-  let session = null;
-  try { session = await readSession(request, env); } catch (_) {}
+  const session = identity.session;
   const replyPush = body.replyPush === true && Boolean(session?.user?.id) && session.user.id === clientId;
 
   // Если у пользователя ещё нет топика в Telegram — создаём его
@@ -492,8 +492,8 @@ export async function handleSupportSendMessage(request, env) {
         replyPush,
       };
       if (env.INSTALLS) {
-        await env.INSTALLS.put(clientKey, JSON.stringify(client));
-        await env.INSTALLS.put('support:thread:' + threadId, clientId);
+        await env.INSTALLS.put(clientKey, JSON.stringify(client), { expirationTtl: 90 * 86400 });
+        await env.INSTALLS.put('support:thread:' + threadId, clientId, { expirationTtl: 90 * 86400 });
       }
 
       // Отправляем карточку с информацией о пользователе
@@ -513,7 +513,7 @@ export async function handleSupportSendMessage(request, env) {
     if (env.BOT_TOKEN) {
       await telegramCall(env, 'reopenForumTopic', { chat_id: telegramChatId(env), message_thread_id: Number(threadId) });
     }
-    if (env.INSTALLS) await env.INSTALLS.put(clientKey, JSON.stringify(client));
+    if (env.INSTALLS) await env.INSTALLS.put(clientKey, JSON.stringify(client), { expirationTtl: 90 * 86400 });
   }
 
   let imageUrl = null;
@@ -551,10 +551,10 @@ export async function handleSupportSendMessage(request, env) {
   if (env.INSTALLS && client) {
     client.lastMsgAt = Date.now();
     client.replyPush = replyPush;
-    await env.INSTALLS.put(clientKey, JSON.stringify(client));
+    await env.INSTALLS.put(clientKey, JSON.stringify(client), { expirationTtl: 90 * 86400 });
   }
 
-  return jsonResponse({ ok: true, message: newMsg });
+  return jsonResponse({ ok: true, message: { ...newMsg, ...(newMsg.imageUrl ? { imageUrl: supportImageUrl(newMsg.imageUrl, clientId) } : {}) } });
 }
 
 /**
@@ -565,13 +565,15 @@ export async function handleSupportGetMessages(request, env) {
   const clientId = String(url.searchParams.get('clientId') || '').trim();
   if (!clientId) return jsonResponse({ error: 'missing_client_id' }, 400);
 
+  await supportIdentity(request, env, clientId);
+
   // Проверяем новые сообщения из Telegram через getUpdates, если webhook не настроен
   await checkPendingTelegramUpdates(env);
 
   const since = Number(url.searchParams.get('since') || 0);
   const result = await listSupportMessages(env, clientId, since);
 
-  return jsonResponse({ ok: true, messages: result });
+  return jsonResponse({ ok: true, messages: result.map(m => ({ ...m, ...(m.imageUrl ? { imageUrl: supportImageUrl(m.imageUrl, clientId) } : {}) })) });
 }
 
 /**
@@ -580,12 +582,8 @@ export async function handleSupportGetMessages(request, env) {
 export async function handleTelegramWebhook(request, env) {
   if (request.method !== 'POST') return jsonResponse({ error: 'method_not_allowed' }, 405);
 
-  let update = null;
-  try {
-    update = await request.json();
-  } catch (_) {
-    return jsonResponse({ error: 'invalid_json' }, 400);
-  }
+  if (!await telegramWebhookVerified(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
+  const update = await boundedJson(request, 1024 * 1024);
 
   if (env.INSTALLS) {
     // Вебхук присылает сообщения — пока они идут, getUpdates не нужен.
@@ -651,14 +649,13 @@ export async function handleSupportGetFile(request, env) {
     return jsonResponse({ error: 'invalid_request' }, 400);
   }
 
-  // Проверяем кэш Cloudflare (при наличии)
-  const cacheKey = new Request(url.toString(), request);
-  let cache = null;
-  try {
-    cache = caches.default;
-    const cached = await cache.match(cacheKey);
-    if (cached) return cached;
-  } catch (_) {}
+  const clientId = url.searchParams.get('clientId');
+  await supportIdentity(request, env, clientId);
+  const messages = await listSupportMessages(env, clientId, 0);
+  const belongs = messages.some(m => {
+    try { return m.imageUrl && new URL(m.imageUrl, 'https://support.internal').searchParams.get('fileId') === fileId; } catch { return false; }
+  });
+  if (!belongs) return jsonResponse({ error: 'file_not_found' }, 404);
 
   try {
     // 1. Получаем путь к файлу у Telegram Bot API
@@ -681,10 +678,12 @@ export async function handleSupportGetFile(request, env) {
       return jsonResponse({ error: 'failed_to_fetch_file' }, imgRes.status);
     }
 
-    const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+    const contentType = imgRes.headers.get('content-type')?.split(';')[0] || 'image/jpeg';
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(contentType)) return jsonResponse({ error: 'unsupported image type' }, 415);
     const responseHeaders = {
       'content-type': contentType,
-      'cache-control': 'public, max-age=604800, s-maxage=604800, immutable',
+      'cache-control': 'private, no-store',
+      'x-content-type-options': 'nosniff',
       ...CORS_HEADERS,
     };
 
@@ -692,12 +691,6 @@ export async function handleSupportGetFile(request, env) {
       status: 200,
       headers: responseHeaders,
     });
-
-    if (cache) {
-      try {
-        await cache.put(cacheKey, response.clone());
-      } catch (_) {}
-    }
 
     return response;
   } catch (err) {

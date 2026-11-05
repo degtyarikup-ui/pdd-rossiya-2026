@@ -1,10 +1,13 @@
+import { digest as supportDigest } from './request_security.js';
+const supportSecret = 'a'.repeat(64);
+const supportGuest = 'guest_v2_' + await supportDigest(supportSecret);
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import worker from './worker.js';
 import { handleSupportGetMessages, resetSupportPollThrottle } from './support_chat.js';
 
 const messages = [{ id: 'fixture-reply', sender: 'support', text: 'Saved reply', ts: 2000 }];
-const request = () => new Request('https://fixture.invalid/api/support/messages?clientId=fixture&since=1000');
+const request = () => new Request('https://fixture.invalid/api/support/messages?clientId=' + supportGuest + '&since=1000', { headers: { 'x-support-secret': supportSecret } });
 
 function fixture(reply) {
   const legacy = JSON.stringify(messages), calls = [], kvReads = [];
@@ -12,7 +15,7 @@ function fixture(reply) {
     INSTALLS: {
       get: async (key, options) => {
         kvReads.push(key);
-        return key === 'support:messages:fixture' ? (options?.type === 'json' ? JSON.parse(legacy) : legacy) : null;
+        return key === 'support:messages:' + supportGuest ? (options?.type === 'json' ? JSON.parse(legacy) : legacy) : null;
       },
       put: async () => { throw new Error('Unexpected KV write'); },
     },
@@ -57,7 +60,7 @@ test('an unavailable internal list returns HTTP 503 through the Worker without s
   assert.equal(response.status, 503);
   assert.deepEqual(await response.json(), { error: 'server unavailable' });
   assert.deepEqual(calls, ['/list']);
-  assert.equal(kvReads.includes('support:messages:fixture'), false);
+  assert.equal(kvReads.includes('support:messages:' + supportGuest), false);
 });
 
 test('overload remains the same exception and is not immediately retried', async t => {
@@ -89,7 +92,7 @@ test('malformed list JSON or schema is an explicit failure, never an empty conve
       return true;
     });
     assert.deepEqual(calls, ['/list']);
-    assert.equal(kvReads.includes('support:messages:fixture'), false);
+    assert.equal(kvReads.includes('support:messages:' + supportGuest), false);
   }
 });
 
@@ -114,7 +117,7 @@ test('malformed message elements return HTTP 503 rather than a successful empty 
     assert.equal(body.error, 'server unavailable');
     assert.equal(Object.hasOwn(body, 'messages'), false);
     assert.deepEqual(calls, ['/list']);
-    assert.equal(kvReads.includes('support:messages:fixture'), false);
+    assert.equal(kvReads.includes('support:messages:' + supportGuest), false);
   }
 });
 
@@ -136,7 +139,7 @@ test('a failed seed preserves legacy history and an ambiguous committed seed is 
       assert.equal(error.upstreamStatus, failure === 'status' ? 503 : undefined);
       return true;
     });
-    assert.equal(await env.INSTALLS.get('support:messages:fixture'), legacy);
+    assert.equal(await env.INSTALLS.get('support:messages:' + supportGuest), legacy);
     assert.deepEqual(calls, ['/list', '/seed']);
     if (failure !== 'status') {
       const response = await handleSupportGetMessages(request(), env);

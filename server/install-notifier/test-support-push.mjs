@@ -45,9 +45,8 @@ test('a push request without the account session is not honoured', async () => {
   globalThis.fetch = async () => new Response(JSON.stringify({ ok: true, result: {} }));
   const kv = fakeKv({ 'support:client:google_1': JSON.stringify({ threadId: 7, replyPush: true }) });
   const env = { BOT_TOKEN: 't', CHAT_ID: '-100', INSTALLS: kv };
-  const response = await handleSupportSendMessage(new Request('https://x/api/support/send', {
+  await assert.rejects(handleSupportSendMessage(new Request('https://x/api/support/send', {
     method: 'POST', body: JSON.stringify({ clientId: 'google_1', text: 'Привет', replyPush: true }),
-  }), env);
-  assert.equal(response.status, 200);
-  assert.equal(JSON.parse(kv.data.get('support:client:google_1')).replyPush, false);
+  }), env), error => error.status === 401);
+  assert.equal(JSON.parse(kv.data.get('support:client:google_1')).replyPush, true);
 });

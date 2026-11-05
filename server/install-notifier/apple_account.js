@@ -1,3 +1,4 @@
+import { purgeSupport } from './support_access.js';
 import { SignJWT, importPKCS8, decodeJwt } from 'jose';
 import { accountRead, accountWrite, accountRpc } from './account_state.js';
 export const APPLE_MANAGE_URL = 'https://account.apple.com/account/manage';
@@ -68,5 +69,7 @@ export async function deleteAccountDocuments(env, userId) {
   await env.INSTALLS.put('account_deleted:' + userId, JSON.stringify({ at: Date.now() }));
   for (const prefix of ['user:', 'user_progress:', 'user_admin:', 'pay_intent:', 'apple_auth:']) await env.INSTALLS.delete(prefix + userId);
   if (user?.email) await env.INSTALLS.delete('user_email:' + user.email.toLowerCase().trim());
+  if (env.__DURABLE_EFFECTS) env.__DURABLE_EFFECTS.push({ kind: 'support-delete', userId, deletedAt: Date.now() });
+  else await purgeSupport(env, userId);
   return apple;
 }
