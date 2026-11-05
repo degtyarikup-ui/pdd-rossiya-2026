@@ -2,8 +2,9 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-  <script>
+<meta http-equiv="Content-Security-Policy" content="default-src &#x27;self&#x27;; script-src &#x27;self&#x27; &#x27;wasm-unsafe-eval&#x27; &#x27;sha256-7YmAo2pq/lM0vzL+tDNcBLTwdaOLX/s3tu1OR7PQNlo=&#x27; &#x27;sha256-GAyAFmIY/qQRSPlS53/QEH3lD1fotAdmU9l6fQqeCIg=&#x27; &#x27;sha256-GnfjswmED1bWJbvfMYvbBaUz0wgnuyIj/zl/ibJ29Do=&#x27; &#x27;sha256-cui6b5CQp08PUA30a0mv3Ox0HDwxXX0IxwbvTF70bcg=&#x27; https://accounts.google.com https://apis.google.com https://mc.yandex.ru https://mc.yandex.com https://yastatic.net https://www.gstatic.com; script-src-attr &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;self&#x27;; style-src &#x27;self&#x27; &#x27;unsafe-inline&#x27; https://fonts.googleapis.com https://accounts.google.com; font-src &#x27;self&#x27; data: https://fonts.gstatic.com; img-src &#x27;self&#x27; data: blob: https:; media-src &#x27;self&#x27; blob: https:; worker-src &#x27;self&#x27; blob:; frame-src &#x27;self&#x27; https://accounts.google.com https://www.youtube.com https://www.youtube-nocookie.com; connect-src &#x27;self&#x27; https://pdd-install-notifier.sergei-pdd.workers.dev https://api.pdd-drive.app https://accounts.google.com https://*.googleapis.com https://*.gstatic.com https://mc.yandex.ru https://mc.yandex.com https://yandex.ru; form-action &#x27;self&#x27;; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<script>
     if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
       location.replace('https://' + location.host + location.pathname + location.search + location.hash);
     }
@@ -15,13 +16,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Словарь терминов ПДД — определения простыми словами</title>
   <meta name="description" content="35 терминов ПДД с точными определениями: обгон и опережение, остановка и стоянка, главная и второстепенная дорога, разметка, манёвры и документы.">
-  <link rel="canonical" href="https://pdd-drive.ru/slovar-pdd/">
+  <link rel="canonical" href="https://pdd-drive.app/slovar-pdd/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ПДД Россия 2026">
   <meta property="og:title" content="Словарь терминов ПДД — определения простыми словами">
   <meta property="og:description" content="35 терминов ПДД с точными определениями: обгон и опережение, остановка и стоянка, главная и второстепенная дорога, разметка, манёвры и документы.">
-  <meta property="og:url" content="https://pdd-drive.ru/slovar-pdd/">
-  <meta property="og:image" content="https://pdd-drive.ru/assets/og-image.png">
+  <meta property="og:url" content="https://pdd-drive.app/slovar-pdd/">
+  <meta property="og:image" content="https://pdd-drive.app/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="ru_RU">
@@ -37,253 +38,253 @@
     "@type": "DefinedTermSet",
     "name": "Словарь терминов ПДД",
     "description": "Определения ключевых терминов Правил дорожного движения РФ: знаки, разметка, манёвры, скорость и документы.",
-    "url": "https://pdd-drive.ru/slovar-pdd/",
+    "url": "https://pdd-drive.app/slovar-pdd/",
     "inLanguage": "ru-RU",
     "hasDefinedTerm": [
       {
         "@type": "DefinedTerm",
         "name": "Обгон",
         "description": "Обгон — это опережение одного или нескольких транспортных средств, связанное с выездом на полосу (сторону проезжей части), предназначенную для встречного движения, и последующим возвращением на ранее занимаемую полосу. Ключевое отличие от простого опережения — именно выезд на встречную полосу: без него манёвр обгоном не считается, даже если водитель едет быстрее соседних машин.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#obgon",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#obgon",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Опережение",
         "description": "Опережение — это движение транспортного средства со скоростью, большей скорости попутного транспортного средства. Понятие шире обгона: опередить можно и в своей полосе (например, при трёхполосном движении в одну сторону), а вот обгон — это всегда опережение, но с выездом на полосу встречного движения.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#operezhenie",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#operezhenie",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Главная дорога",
         "description": "Главная дорога — это дорога, обозначенная знаками приоритета 2.1, 2.3.1–2.3.7 или 5.1 по отношению к пересекаемой (примыкающей), либо дорога с твёрдым покрытием по отношению к грунтовой, либо любая дорога по отношению к выездам с прилегающих территорий. При этом наличие на второстепенной дороге непосредственно перед перекрёстком короткого участка с покрытием не делает её равной по значению пересекаемой дороге.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#glavnaya-doroga",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#glavnaya-doroga",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Второстепенная дорога",
         "description": "Второстепенная дорога — это дорога, которая на конкретном перекрёстке или примыкании уступает по приоритету главной: например, не обозначена знаками приоритета, является грунтовой по отношению к дороге с твёрдым покрытием, или представляет собой выезд с прилегающей территории. Отдельного определения в перечне терминов ПДД у неё нет — понятие всегда определяется через противопоставление главной дороге.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#vtorostepennaya-doroga",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#vtorostepennaya-doroga",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Равнозначные дороги (перекрёсток)",
         "description": "Равнозначные дороги — это дороги, ни одна из которых не имеет преимущества перед другой: на перекрёстке нет светофора или регулировщика, отсутствуют знаки приоритета, а обе дороги имеют одинаковый тип покрытия (обе с твёрдым покрытием либо обе грунтовые). На таком перекрёстке действует правило «помехи справа» — водитель обязан уступить дорогу транспортному средству, приближающемуся справа.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#ravnoznachny-perekrestok",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#ravnoznachny-perekrestok",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Преимущество (приоритет)",
         "description": "Преимущество (приоритет) — это право на первоочередное движение в намеченном направлении по отношению к другим участникам движения. Приоритет одного участника перед другим устанавливают знаки приоритета, сигналы светофора или регулировщика, а также конкретная дорожная ситуация — например, правило «помехи справа» на равнозначном перекрёстке.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#preimushchestvo-prioritet",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#preimushchestvo-prioritet",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Полоса движения",
         "description": "Полоса движения — любая из продольных полос проезжей части, обозначенная разметкой или нет, шириной, достаточной для движения автомобилей в один ряд. Проезжая часть дороги может состоять из одной или нескольких таких полос — например, «по одной полосе в каждом направлении» означает две полосы движения на дороге.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#polosa-dvizheniya",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#polosa-dvizheniya",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Разделительная полоса",
         "description": "Разделительная полоса — элемент дороги, выделенный конструктивно (бордюром, газоном) и/или разметкой, который разделяет соседние проезжие части, отделяет проезжую часть от трамвайных путей либо отделяет полосы для маршрутных транспортных средств или велосипедистов от остальных полос движения в пределах одной проезжей части. Двигаться, останавливаться и стоять на разделительной полосе запрещено.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#razdelitelnaya-polosa",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#razdelitelnaya-polosa",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Реверсивное движение",
         "description": "Реверсивное движение — режим, при котором направление движения по одной или нескольким полосам может меняться на противоположное в течение суток (например, чтобы разгрузить дорогу в час пик). Такие полосы обозначены с обеих сторон разметкой 1.9 (двойная прерывистая линия) и управляются реверсивным светофором: красный Х-образный сигнал запрещает выезд на полосу, зелёная стрелка вниз — разрешает, жёлтая диагональная стрелка предупреждает о необходимости перестроиться. Если реверсивный светофор выключен, выезд на такую полосу запрещён.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#reversivnoe-dvizhenie",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#reversivnoe-dvizhenie",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Обочина",
         "description": "Обочина — элемент дороги, примыкающий непосредственно к проезжей части, отличающийся типом покрытия или выделенный разметкой; используется для движения, остановки и стоянки транспортных средств в соответствии с требованиями Правил. Само это определение не ограничивает, чьё именно движение имеется в виду, — ограничение вводит отдельная норма: водителям механических транспортных средств движение по обочине в общем случае запрещено, кроме нескольких прямо оговорённых Правилами случаев (например, поворот или разворот, объезд препятствия при отсутствии другой возможности). А для пешеходов (при отсутствии тротуара), гужевых повозок, велосипедистов и водителей мопедов движение по обочине, напротив, разрешено при отсутствии выделенных для них полос или дорожек.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#obochina",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#obochina",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Тротуар",
         "description": "Тротуар — элемент дороги, предназначенный для движения пешеходов, примыкающий к проезжей части или к велосипедной дорожке либо отделённый от них газоном. Механическим транспортным средствам движение и стоянка на тротуаре запрещены, кроме случаев, отдельно разрешённых Правилами.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#trotuar",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#trotuar",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Прилегающая территория",
         "description": "Прилегающая территория — территория, непосредственно примыкающая к дороге и не предназначенная для сквозного (транзитного) движения транспортных средств: дворы, жилые массивы, автостоянки, АЗС, территории предприятий и тому подобное. Движение по прилегающей территории регулируется теми же Правилами дорожного движения, что и движение по дороге.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#prilegayushchaya-territoriya",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#prilegayushchaya-territoriya",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Перестроение",
         "description": "Перестроение — выезд из занимаемой полосы или ряда в соседнюю полосу (ряд) с сохранением первоначального направления движения. Это не поворот и не разворот: автомобиль продолжает ехать в ту же сторону, просто меняет ряд — например, чтобы обогнать медленный транспорт или заранее занять нужный ряд перед поворотом.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#perestroenie",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#perestroenie",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Разворот",
         "description": "Разворот — манёвр, при котором транспортное средство меняет направление движения на противоположное, в отличие от обычного поворота, где направление меняется примерно на 90°. Отдельного определения этому термину пункт 1.2 ПДД не даёт, но сам манёвр строго регулируется правилами: например, на перекрёстке он выполняется из крайнего левого положения, а в ряде мест — на пешеходных переходах, у остановок маршрутных транспортных средств, при ограниченной видимости — разворот прямо запрещён.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#razvorot",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#razvorot",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Остановка",
         "description": "Остановка — преднамеренное прекращение движения транспортного средства на время до 5 минут, а также на большее время, если это необходимо для посадки или высадки пассажиров либо для погрузки или разгрузки. Ключевое отличие от стоянки — либо короткая продолжительность, либо цель (посадка/высадка/погрузка), даже если на неё ушло больше 5 минут.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#ostanovka",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#ostanovka",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Стоянка",
         "description": "Стоянка — преднамеренное прекращение движения транспортного средства на время более 5 минут по причинам, не связанным с посадкой или высадкой пассажиров либо погрузкой или разгрузкой. Если водитель оставил машину дольше 5 минут не по этим причинам, по ПДД это уже стоянка, а не остановка, — что важно, например, для знаков, запрещающих именно стоянку, но разрешающих кратковременную остановку.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#stoyanka",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#stoyanka",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Вынужденная остановка",
         "description": "Вынужденная остановка — прекращение движения транспортного средства из-за его технической неисправности, опасности, создаваемой перевозимым грузом, состояния водителя (пассажира) или появления препятствия на дороге. От обычной остановки отличается тем, что происходит не по желанию водителя, а вследствие непредвиденной ситуации, — поэтому при ней действуют особые обязанности: включить аварийную сигнализацию и выставить знак аварийной остановки.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#vynuzhdennaya-ostanovka",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#vynuzhdennaya-ostanovka",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Дистанция",
         "description": "Дистанция — это расстояние до движущегося впереди транспортного средства, которое водитель обязан соблюдать, чтобы успеть затормозить и избежать столкновения при внезапной остановке едущего впереди. Отдельного пункта-определения для этого термина в разделе 1.2 ПДД нет: обязанность держать дистанцию закреплена в правилах расположения транспортных средств на проезжей части, и конкретной величины в метрах Правила не устанавливают — водитель выбирает её исходя из скорости, дорожных условий и видимости.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#distantsiya",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#distantsiya",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Боковой интервал",
         "description": "Боковой интервал — это расстояние по ширине дороги между попутными или встречными транспортными средствами, обеспечивающее безопасность движения и запас пространства для манёвра. Как и дистанцию, водитель обязан соблюдать боковой интервал, ориентируясь на конкретную дорожную обстановку: точных нормативов в метрах ПДД для него тоже не задают.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#bokovoy-interval",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#bokovoy-interval",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Остановочный путь",
         "description": "Остановочный путь — это расстояние, которое автомобиль проходит с момента, когда водитель заметил опасность, до полной остановки. Он складывается из пути, пройденного за время реакции водителя, за время срабатывания тормозного привода и собственно тормозного пути, поэтому всегда заметно больше одного лишь тормозного пути.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#ostanovochny-put",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#ostanovochny-put",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Населённый пункт",
         "description": "Населённый пункт — застроенная территория, въезды на которую и выезды с которой обозначены дорожными знаками 5.23.1–5.26. Знаки 5.23.1 и 5.23.2 (белый фон) означают, что в границах населённого пункта действуют все требования ПДД для населённых пунктов, включая ограничение скорости 60 км/ч и запрет звукового сигнала. Знаки 5.25 и 5.26 (синий фон), напротив, лишь информируют о названии населённого пункта — скоростной режим и прочие «городские» требования при этом не действуют, движение регулируется как вне населённого пункта.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#naselenny-punkt",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#naselenny-punkt",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Автомагистраль",
         "description": "Автомагистраль — дорога, обозначенная знаком 5.1 «Автомагистраль», у которой для каждого направления движения есть отдельная проезжая часть, отделённая от встречной разделительной полосой (а при её отсутствии — дорожным ограждением), и нет пересечений в одном уровне с другими дорогами, железнодорожными или трамвайными путями, пешеходными или велосипедными дорожками. Легковым автомобилям и мотоциклам на автомагистрали разрешена скорость до 110 км/ч — выше, чем на обычных дорогах.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#avtomagistral",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#avtomagistral",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Дорога",
         "description": "Дорога — обустроенная или приспособленная и используемая для движения транспортных средств полоса земли либо поверхность искусственного сооружения. В понятие «дорога» входит не только проезжая часть (или несколько проезжих частей), но и трамвайные пути, тротуары, обочины и разделительные полосы, если они есть.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#doroga",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#doroga",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Водительское удостоверение",
         "description": "Водительское удостоверение — официальный документ, подтверждающий право управлять транспортным средством одной или нескольких категорий (категория и подкатегории указаны в самом удостоверении). Выдаётся подразделением Госавтоинспекции после обучения в автошколе, медицинской справки и успешной сдачи теоретического и практического экзаменов. Категории транспортных средств, на управление которыми выдаётся удостоверение, устанавливаются законодательством о безопасности дорожного движения.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#voditelskoe-udostoverenie",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#voditelskoe-udostoverenie",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Теоретический экзамен в ГИБДД",
         "description": "Теоретический экзамен — первый этап экзамена на право управления транспортным средством: компьютерное тестирование по билетам ПДД в экзаменационном подразделении Госавтоинспекции. Кандидат отвечает на вопросы одного билета за отведённое время, при этом действует ограничение по числу допустимых ошибок — при его превышении экзамен считается несданным. К практическому экзамену допускаются только кандидаты, успешно сдавшие теорию; порядок проведения устанавливает Госавтоинспекция.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#teoreticheskiy-ekzamen",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#teoreticheskiy-ekzamen",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Практический экзамен в ГИБДД",
         "description": "Практический экзамен — второй, завершающий этап экзамена на право управления транспортным средством: проверка навыков вождения в реальных дорожных условиях (для большинства категорий с 2021 года — по утверждённому маршруту в городе; для отдельных категорий сохраняется отдельный этап на закрытой площадке или автодроме). Кандидат допускается к нему только после успешной сдачи теоретического экзамена. Порядок и критерии оценки устанавливает Госавтоинспекция.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#prakticheskiy-ekzamen",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#prakticheskiy-ekzamen",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Категории транспортных средств",
         "description": "Категории транспортных средств — деление транспортных средств по типу, массе и назначению, которому соответствует отдельная отметка в водительском удостоверении. Основные категории: «A» — мотоциклы, «B» — автомобили массой до 3500 кг и не более 8 мест, помимо места водителя, «C» — автомобили массой свыше 3500 кг, «D» — автобусы (свыше 8 мест), «M» — мопеды и лёгкие квадрициклы, «Tm»/«Tb» — трамваи/троллейбусы; отдельно выделены подкатегории (A1, B1, C1, D1) и категории с тяжёлым прицепом (BE, CE, DE). Устанавливаются законодательством о безопасности дорожного движения.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#kategorii-transportnyh-sredstv",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#kategorii-transportnyh-sredstv",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Медицинская справка для водителей (003-В/у)",
         "description": "Медицинская справка формы № 003-В/у — документ, подтверждающий отсутствие у водителя медицинских противопоказаний к управлению транспортным средством нужной категории. Требуется при получении, замене или восстановлении водительского удостоверения, а также при открытии новой категории; выдаётся после прохождения медицинской комиссии. Справка действует 12 месяцев со дня выдачи.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#medspravka-003-vu",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#medspravka-003-vu",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Автошкола",
         "description": "Автошкола — организация, осуществляющая профессиональное обучение по программам подготовки водителей транспортных средств соответствующей категории: теоретическую часть (ПДД, основы безопасности дорожного движения) и практическое вождение. После завершения обучения выпускник допускается к экзамену в ГИБДД. Примерные программы профессионального обучения водителей утверждает Минпросвещения России.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#avtoshkola",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#avtoshkola",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Железнодорожный переезд",
         "description": "Железнодорожный переезд — пересечение дороги с железнодорожными путями на одном уровне. Это одно из самых опасных мест на дороге, поэтому проезд через него регулируется отдельными правилами (запрет объезда, выезда на переезд при заторе и т.д.), а дежурный на переезде при исполнении обязанностей приравнивается к регулировщику.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#zheleznodorozhnyy-pereezd",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#zheleznodorozhnyy-pereezd",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Регулировщик",
         "description": "Регулировщик — лицо, наделённое полномочиями регулировать дорожное движение сигналами, установленными ПДД, и непосредственно осуществляющее это регулирование (например, сотрудник полиции с жезлом на перекрёстке, а также дежурный на железнодорожном переезде или паромной переправе при исполнении обязанностей). Регулировщик обязательно должен быть в форменной одежде и (или) иметь отличительный знак и экипировку, а его сигналы имеют приоритет над сигналами светофора и требованиями дорожных знаков.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#regulirovshchik",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#regulirovshchik",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Сигналы светофора",
         "description": "Круглые сигналы светофора имеют строго определённые значения: зелёный разрешает движение, жёлтый запрещает движение (кроме отдельных оговорённых случаев) и предупреждает о скорой смене сигнала, красный запрещает движение. Мигающий зелёный сигнализирует, что скоро включится запрещающий сигнал, а мигающий жёлтый разрешает движение и предупреждает о нерегулируемом перекрёстке или пешеходном переходе. Если на перекрёстке одновременно работает светофор и стоит регулировщик, водители подчиняются именно сигналам регулировщика.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#signaly-svetofora",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#signaly-svetofora",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Механическое транспортное средство",
         "description": "Механическое транспортное средство — транспортное средство, приводимое в движение двигателем: легковой и грузовой автомобиль, автобус, а также любой трактор или самоходная машина. Термин не распространяется на средства индивидуальной мобильности (например, электросамокаты) и велосипеды — они механическими транспортными средствами не считаются.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#mekhanicheskoe-transportnoe-sredstvo",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#mekhanicheskoe-transportnoe-sredstvo",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Участник дорожного движения",
         "description": "Участник дорожного движения — лицо, непосредственно принимающее участие в процессе движения в качестве водителя, пешехода или пассажира транспортного средства. Именно на участников движения распространяются требования ПДД, включая обязанность уступать дорогу тем, кто имеет преимущество.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#uchastnik-dorozhnogo-dvizheniya",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#uchastnik-dorozhnogo-dvizheniya",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       },
       {
         "@type": "DefinedTerm",
         "name": "Уступить дорогу",
         "description": "«Уступить дорогу» (не создавать помех) — требование не начинать, не возобновлять и не продолжать движение, а также не выполнять манёвр, если это может вынудить других участников движения, имеющих по отношению к нему преимущество, изменить направление или скорость. Это не равнозначно полной остановке: уступить дорогу можно и продолжая двигаться, если это никому не мешает.",
-        "url": "https://pdd-drive.ru/slovar-pdd/#ustupit-dorogu",
-        "inDefinedTermSet": "https://pdd-drive.ru/slovar-pdd/"
+        "url": "https://pdd-drive.app/slovar-pdd/#ustupit-dorogu",
+        "inDefinedTermSet": "https://pdd-drive.app/slovar-pdd/"
       }
     ]
   }
@@ -297,13 +298,13 @@
         "@type": "ListItem",
         "position": 1,
         "name": "Главная",
-        "item": "https://pdd-drive.ru/"
+        "item": "https://pdd-drive.app/"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Словарь терминов",
-        "item": "https://pdd-drive.ru/slovar-pdd/"
+        "item": "https://pdd-drive.app/slovar-pdd/"
       }
     ]
   }
@@ -579,7 +580,7 @@
       <span class="age-badge">16+</span> © 2026 ПДД Россия 2026
     </div>
     <div class="footer-disclaimer">
-      Сайт pdd-drive.ru носит исключительно информационно-справочный и образовательный характер и не является официальным сайтом ГУОБДД МВД России или портала Госуслуг. Официальная информация и первоисточники нормативно-правовых актов РФ публикуются на гибдд.рф и pravo.gov.ru.
+      Сайт pdd-drive.app носит исключительно информационно-справочный и образовательный характер и не является официальным сайтом ГУОБДД МВД России или портала Госуслуг. Официальная информация и первоисточники нормативно-правовых актов РФ публикуются на гибдд.рф и pravo.gov.ru.
     </div>
   </div>
 </footer>

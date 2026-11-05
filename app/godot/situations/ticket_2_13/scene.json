@@ -3353,7 +3353,8 @@
       1.8,
       -56.0
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.992,
    "halfWidth": 1.046,
@@ -3397,7 +3398,12 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#4D7768",
+   "way": null,
+   "driverSignal": "none",
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "pedestrian",
@@ -3417,7 +3423,7 @@
     ],
     "position": [
      8,
-     0.0,
+     0.18,
      -5.5
     ],
     "rotationY": 0,
@@ -3438,7 +3444,8 @@
       5.5,
       21
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 0.229,
    "halfWidth": 0.411,
@@ -3453,7 +3460,7 @@
    },
    "pos": [
     8,
-    0.0,
+    0.18,
     -5.5
    ],
    "yaw": 0,
@@ -3465,22 +3472,22 @@
    "path": [
     [
      8,
-     0.0,
+     0.18,
      -5.5
     ],
     [
      8,
-     0.0,
+     0.18,
      5
     ],
     [
      5.5,
-     0.0,
+     0.18,
      8.5
     ],
     [
      5.5,
-     0.0,
+     0.18,
      21
     ]
    ],
@@ -3492,7 +3499,14 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "driverSignal": "none",
+   "pedestrianPose": "stand",
+   "poseArm": "right",
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "pedestrian_2",
@@ -3512,7 +3526,7 @@
     ],
     "position": [
      10.13,
-     0.0,
+     0.18,
      -6.107
     ],
     "rotationY": 0,
@@ -3533,14 +3547,15 @@
       51.266,
       4.869
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 0.25,
    "halfWidth": 0.381,
    "badge": null,
    "pos": [
     10.13,
-    0.0,
+    0.18,
     -6.107
    ],
    "yaw": 0,
@@ -3552,7 +3567,7 @@
    "path": [
     [
      10.13,
-     0.0,
+     0.18,
      -6.107
     ],
     [
@@ -3562,12 +3577,12 @@
     ],
     [
      22.266,
-     0.0,
+     0.18,
      4.769
     ],
     [
      51.266,
-     0.0,
+     0.18,
      4.869
     ]
    ],
@@ -3579,7 +3594,14 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "driverSignal": "none",
+   "pedestrianPose": "stand",
+   "poseArm": "right",
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "pedestrian_3",
@@ -3599,7 +3621,7 @@
     ],
     "position": [
      11.747,
-     0.0,
+     0.18,
      -6.591
     ],
     "rotationY": 0,
@@ -3620,14 +3642,15 @@
       53.947,
       6.509
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 0.25,
    "halfWidth": 0.381,
    "badge": null,
    "pos": [
     11.747,
-    0.0,
+    0.18,
     -6.591
    ],
    "yaw": 0,
@@ -3639,22 +3662,22 @@
    "path": [
     [
      11.747,
-     0.0,
+     0.18,
      -6.591
     ],
     [
      11.624,
-     0.0,
+     0.18,
      5.213
     ],
     [
      24.472,
-     0.0,
+     0.18,
      6.448
     ],
     [
      53.947,
-     0.0,
+     0.18,
      6.509
     ]
    ],
@@ -3666,10 +3689,19 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "driverSignal": "none",
+   "pedestrianPose": "stand",
+   "poseArm": "right",
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "annotations": [],
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    0.844,

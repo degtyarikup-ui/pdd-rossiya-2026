@@ -1,0 +1,191 @@
+{
+ "id": "ticket_4_9",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -17.25,
+ "playerStartX": -5.25,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -5.25,
+     -17.25
+    ],
+    [
+     -5.25,
+     0
+    ],
+    [
+     -5.25,
+     90
+    ],
+    [
+     -5.25,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [
+  {
+   "letter": "А",
+   "pos": [
+    -5.108,
+    0.8,
+    2.109
+   ]
+  },
+  {
+   "letter": "Б",
+   "pos": [
+    4.559,
+    0.8,
+    -3.6
+   ]
+  }
+ ],
+ "trajectories": [
+  {
+   "label": "А",
+   "points": [
+    [
+     -5.5,
+     -15.5
+    ],
+    [
+     -4.5,
+     7
+    ],
+    [
+     3.5,
+     9
+    ],
+    [
+     5,
+     1.5
+    ]
+   ],
+   "arrowhead": true
+  },
+  {
+   "label": "Б",
+   "points": [
+    [
+     -5.5,
+     -16
+    ],
+    [
+     -2.5,
+     -9
+    ],
+    [
+     -1.5,
+     -0.5
+    ],
+    [
+     4,
+     -0.5
+    ],
+    [
+     4.838,
+     -6.894
+    ]
+   ],
+   "arrowhead": true
+  }
+ ],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 4 · Вопрос 9",
+   "title": "Вам можно выполнить разворот:",
+   "options": [
+    "Только по траектории А",
+    "Только по траектории Б",
+    "По любой траектории из указанных"
+   ],
+   "explanation": "При наличии слева трамвайных путей попутного направления, расположенных на одном уровне с проезжей частью, для выполнения разворота необходимо заблаговременно выехать на трамвайные пути, после чего выполнить маневр. При этом не должно создаваться помех трамваю. Вам можно выполнить разворот только по траектории «Б».(Пункты 8.5, 9.6 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 4 · Question 9",
+   "title": "You can make a U-turn:",
+   "options": [
+    "Only along trajectory А",
+    "Only along trajectory Б",
+    "Along any trajectory of the specified"
+   ],
+   "explanation": "If there are tram tracks on the left in the same direction, located at the same level as the roadway, to make a U-turn, you must drive onto the tram tracks in advance and then perform the maneuver. In this case, there should be no interference with the tram. You can only make a turn along trajectory “Б”. (Clause 8.5, 9.6 of traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "4-билет · 9-сұрақ",
+   "title": "Сіз кері бұрыла аласыз:",
+   "options": [
+    "Тек А траекториясы бойынша",
+    "Тек Б траекториясы бойынша",
+    "Көрсетілген жолдардың кез келгенінде"
+   ],
+   "explanation": "Егер сол жақта бір бағытта трамвай жолдары болса, жол бөлігімен бір деңгейде орналасқан болса, кері бұрылу үшін алдын ала трамвай жолдарына шығып, содан кейін маневр жасау керек. Бұл жағдайда трамвайға кедергі болмауы керек. Сіз тек «Б» траекториясы бойынша кері бұрылыс жасай аласыз. (Жол қозғалысы ережелерінің 8.5, 9.6 тармақтары)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 105,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "5ccc967d70f19d41f276ce69b2ad1334",
+ "sourceCategory": "ab",
+ "sourceImage": "verified_ab_4_9",
+ "playerPlacement": "street",
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   -0.217,
+   1.488
+  ],
+  "height": 23.556,
+  "yaw": -0.002,
+  "pitch": 0.453,
+  "elevation": 0
+ }
+}

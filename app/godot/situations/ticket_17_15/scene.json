@@ -3147,8 +3147,8 @@
      -11.5
     ],
     [
-     -9.5,
-     -5
+     -10,
+     -4.5
     ],
     [
      -8.5,
@@ -3505,11 +3505,13 @@
    "staysPut": false,
    "paint": "#4D7768",
    "way": null,
+   "driverSignal": "none",
    "turnSignal": "auto",
    "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "annotations": [],
  "showPlayerGuide": true,
  "questionView": {
   "centre": [

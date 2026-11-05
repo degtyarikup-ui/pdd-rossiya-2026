@@ -1,0 +1,208 @@
+{
+ "id": "ticket_5_4",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     0
+    ],
+    [
+     -1.8,
+     90
+    ],
+    [
+     -1.8,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [],
+ "actors": [
+  {
+   "id": "van_1",
+   "type": "van",
+   "name": "Фургон",
+   "config": {
+    "id": "van_1",
+    "type": "van",
+    "name": "Фургон",
+    "side": "ring",
+    "ringRadius": 10.3,
+    "ringAngle": -1.7,
+    "color": "#9DA4AB",
+    "concurrentWith": [
+     "ring_moto"
+    ],
+    "position": [
+     -6.84,
+     0.0,
+     9.131
+    ],
+    "rotationY": 1.571,
+    "route": [
+     [
+      -6.84,
+      9.131
+     ],
+     [
+      -6.84,
+      9.131
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.454,
+   "halfWidth": 1.09,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#9DA4AB",
+    "height": 3
+   },
+   "pos": [
+    -6.84,
+    0.0,
+    9.131
+   ],
+   "yaw": 1.571,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -6.84,
+     0.0,
+     9.131
+    ],
+    [
+     -6.84,
+     0.0,
+     9.131
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 47.265,
+   "maxSpeed": 12,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "paint": "#1F3A5F",
+   "way": null,
+   "driverSignal": "none",
+   "turnSignal": "auto",
+   "hazards": false
+  }
+ ],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 5 · Вопрос 4",
+   "title": "Нарушил ли водитель грузового автомобиля правила стоянки?",
+   "options": [
+    "Нарушил",
+    "Не нарушил, если разрешенная максимальная масса автомобиля не более 3,5 т",
+    "Не нарушил"
+   ],
+   "explanation": "На околотротуарную стоянку, обозначенную знаками 6.4 «Парковка (парковочное место)» и 8.6.4 «Способ постановки транспортного средства на стоянку» можно поставить указанным способом только легковой автомобиль или мотоцикл. Грузовым автомобилям, независимо от их р.м.м (разрешенной максимальной массы) стоянка в данном месте не разрешается. Данный водитель нарушил Правила. Не путайте табл. 8.6.4 «Способ постановки ТС на стоянку» с табл. 8.4.3 «Вид транспортного средства», иначе допустите ошибку.(«Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 5 · Question 4",
+   "title": "Did the truck driver violate the parking rules?",
+   "options": [
+    "Violated",
+    "Did not violate if the permissible maximum weight of the vehicle is not more than 3.5 tons",
+    "Didn't violate"
+   ],
+   "explanation": "In a sidewalk parking lot marked with signs 6.4 “Parking (parking space)” and 8.6.4 “Method of parking a vehicle,” only a passenger car or motorcycle can be parked in this manner. Trucks, regardless of their permissible maximum weight (permitted maximum weight), are not allowed to park in this place. This driver violated the Rules. Don't confuse the table. 8.6.4 “Method of parking the vehicle” from table. 8.4.3 “Type of vehicle”, otherwise make a mistake. (“Road signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "5-билет · 4-сұрақ",
+   "title": "Жүк көлігінің жүргізушісі тұрақ ережесін бұзды ма?",
+   "options": [
+    "Бұзылған",
+    "Көлік құралының рұқсат етілген максималды салмағы 3,5 тоннадан аспайтын болса, бұзбаған",
+    "Бұзған жоқ"
+   ],
+   "explanation": "6.4 «Тұрақ (тұрақ)» және 8.6.4 «Көлік құралын тұраққа қою әдісі» белгілерімен белгіленген тротуар маңындағы тұрақта мұндай тәсілмен тек жеңіл автомобильді немесе мотоциклді қоюға болады. Жүк көліктерінің рұқсат етілген ең жоғары массасына қарамастан, бұл жерде тұрақтауға рұқсат етілмейді. Бұл жүргізуші Ережені бұзған. 8.6.4 кестесіндегі «Көлік құралын тұраққа қою әдісі» мен 8.4.3 кестесіндегі «Көлік түрі» шатастырылмауы керек, әйтпесе қате жіберіледі. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 147,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "19e0c1237409e47951528ade0d1e2667",
+ "sourceCategory": "ab",
+ "sourceImage": "504b46e9c726ae266f448703767c59fd",
+ "playerPlacement": "street",
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   -7.332,
+   7.77
+  ],
+  "height": 19.907,
+  "yaw": -0.29,
+  "pitch": 0.463,
+  "elevation": 0
+ }
+}

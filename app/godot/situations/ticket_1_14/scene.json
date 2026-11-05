@@ -3223,6 +3223,9 @@
    "waitsForPlayer": true,
    "staysPut": false,
    "paint": "#E8C547",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "auto",
    "hazards": false
   },
   {
@@ -3359,10 +3362,15 @@
    "waitsForPlayer": true,
    "staysPut": false,
    "paint": "#F08A24",
+   "way": "left",
+   "driverSignal": "none",
+   "turnSignal": "auto",
    "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "annotations": [],
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    2.173,

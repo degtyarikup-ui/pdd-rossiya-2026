@@ -3096,7 +3096,7 @@
     ],
     [
      -5,
-     -14
+     -13.5
     ],
     [
      -9,
@@ -3403,6 +3403,7 @@
    "staysPut": false,
    "paint": "#1F3A5F",
    "way": "straight",
+   "driverSignal": "none",
    "turnSignal": "auto",
    "hazards": false
   },
@@ -3512,11 +3513,13 @@
    "staysPut": false,
    "paint": "#C0392B",
    "way": "straight",
+   "driverSignal": "none",
    "turnSignal": "auto",
    "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "annotations": [],
  "showPlayerGuide": true,
  "questionView": {
   "centre": [

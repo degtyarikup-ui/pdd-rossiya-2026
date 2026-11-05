@@ -31,7 +31,9 @@
  },
  "spec": {
   "maneuver": "straight",
-  "yieldTo": [],
+  "yieldTo": [
+   "van_1"
+  ],
   "paths": null,
   "pathRules": null
  },
@@ -435,14 +437,14 @@
    ],
    "length": 80.602,
    "clearDistance": 47.265,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "signalPlan": null,
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,
-   "waitsForPlayer": true,
+   "waitsForPlayer": false,
    "staysPut": false,
-   "paint": null,
+   "paint": "#317ED4",
    "way": "left",
    "driverSignal": "none",
    "turnSignal": "auto",

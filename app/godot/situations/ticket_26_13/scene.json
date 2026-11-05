@@ -3295,6 +3295,9 @@
   }
  ],
  "actors": [],
+ "playerPlacement": "street",
+ "annotations": [],
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    -0.375,
@@ -3302,6 +3305,5 @@
   ],
   "height": 39.24
  },
- "officers": [],
- "playerPlacement": "street"
+ "officers": []
 }

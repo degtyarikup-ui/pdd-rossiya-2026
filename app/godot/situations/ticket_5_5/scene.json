@@ -1,0 +1,223 @@
+{
+ "id": "ticket_5_5",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -12.438,
+ "playerStartX": -6.334,
+ "playerStartRotY": 0.117,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "right": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "right",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "right": {
+   "points": [
+    [
+     -6.334,
+     -12.438
+    ],
+    [
+     -6.274,
+     -11.921
+    ],
+    [
+     -5.944,
+     -8.769
+    ],
+    [
+     -5.662,
+     -5.684
+    ],
+    [
+     -5.428,
+     -2.664
+    ],
+    [
+     -5.24,
+     0.33
+    ],
+    [
+     -5.218,
+     3.616
+    ],
+    [
+     -5.321,
+     7.09
+    ],
+    [
+     -5.559,
+     10.573
+    ],
+    [
+     -5.932,
+     14.066
+    ],
+    [
+     -6.44,
+     17.57
+    ],
+    [
+     -7.084,
+     21.085
+    ],
+    [
+     -7.864,
+     24.611
+    ],
+    [
+     -8.781,
+     28.15
+    ],
+    [
+     -9.836,
+     31.701
+    ],
+    [
+     -11.028,
+     35.266
+    ],
+    [
+     -12.358,
+     38.844
+    ],
+    [
+     -13.828,
+     42.435
+    ],
+    [
+     -15.437,
+     46.041
+    ],
+    [
+     -17.186,
+     49.659
+    ],
+    [
+     -19.076,
+     53.292
+    ],
+    [
+     -21.107,
+     56.938
+    ],
+    [
+     -23.279,
+     60.597
+    ],
+    [
+     -25.593,
+     64.269
+    ],
+    [
+     -28.05,
+     67.955
+    ],
+    [
+     -30.648,
+     71.653
+    ],
+    [
+     -33.39,
+     75.363
+    ],
+    [
+     -36.274,
+     79.086
+    ],
+    [
+     -39.302,
+     82.821
+    ],
+    [
+     -42.507,
+     86.608
+    ],
+    [
+     -43.153,
+     87.372
+    ]
+   ],
+   "exitYaw": -0.819
+  }
+ },
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 5 · Вопрос 5",
+   "title": "О чем предупреждает Вас вертикальная разметка, нанесенная на ограждение дороги?",
+   "options": [
+    "О приближении к железнодорожному переезду",
+    "О приближении к опасному перекрестку",
+    "О движении по опасному участку дороги"
+   ],
+   "explanation": "Вертикальная разметка 2.5 обозначает боковые поверхности ограждений дорог на закруглениях малого радиуса, крутых спусках, других опасных участках.",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 5 · Question 5",
+   "title": "What does the vertical marking on the road fence warn you about?",
+   "options": [
+    "About approaching a railway crossing",
+    "About approaching a dangerous intersection",
+    "About driving on a dangerous section of the road"
+   ],
+   "explanation": "Vertical markings 2.5 indicate the side surfaces of road fences on small radius curves, steep slopes, and other dangerous areas.",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "5-билет · 5-сұрақ",
+   "title": "Жол қоршауындағы тік белгі сізге не туралы ескертеді?",
+   "options": [
+    "Темір жол өткеліне жақындау туралы",
+    "Қауіпті қиылысқа жақындау туралы",
+    "Жолдың қауіпті бөлігінде жүру туралы"
+   ],
+   "explanation": "Тік таңбалар 2.5 шағын радиусы қисықтардағы, тік беткейлердегі және басқа да қауіпті аймақтардағы жол қоршауларының бүйірлік беттерін көрсетеді.",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 193,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "e5acbb3fe1e735ec7d5c4a1822a9786a",
+ "sourceCategory": "ab",
+ "sourceImage": "6f817d0ef695944185768921913eb549",
+ "playerPlacement": "street",
+ "annotations": []
+}
