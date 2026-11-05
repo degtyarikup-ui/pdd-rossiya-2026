@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -126,9 +127,42 @@ class GameLeaderboardService {
     Duration(seconds: 8),
   ];
 
-  static String newRunId() =>
-      '${DateTime.now().microsecondsSinceEpoch}-'
-      '${Random.secure().nextInt(0x7FFFFFFF).toRadixString(16)}';
+  static String newRunId() {
+    final id =
+        '${DateTime.now().microsecondsSinceEpoch}-'
+        '${Random.secure().nextInt(0x7FFFFFFF).toRadixString(16)}';
+    unawaited(instance._startRankedRun(id));
+    return id;
+  }
+
+  final Map<String, Future<void>> _registrations = {};
+  Future<void> _startRankedRun(String id) async {
+    final auth = AuthService.instance;
+    if (!auth.hasServerSession || !BackendConfig.hasNotifier) return;
+    final operation = () async {
+      try {
+        await http
+            .post(
+              Uri.parse('${BackendConfig.notifierUrl}/api/game/run'),
+              headers: auth.serverHeaders,
+              body: jsonEncode({'runId': id}),
+            )
+            .timeout(const Duration(seconds: 8));
+      } catch (_) {
+        /* Unranked offline play remains available. */
+      }
+    }();
+    _registrations[id] = operation;
+    if (_registrations.length > 64) {
+      _registrations.remove(_registrations.keys.first);
+    }
+    await operation;
+  }
+
+  Future<void> _waitForRegistration(String id) async {
+    await (_registrations[id] ??
+        _registrations[id.replaceFirst(RegExp(r'-\d+$'), '')]);
+  }
 
   Map<String, String> get _headers => AuthService.instance.serverHeaders;
 
@@ -143,6 +177,7 @@ class GameLeaderboardService {
       return null;
     }
     try {
+      await _waitForRegistration(runId);
       final resp = await http
           .post(
             Uri.parse('${BackendConfig.notifierUrl}/api/game/score'),
@@ -181,6 +216,7 @@ class GameLeaderboardService {
       return false;
     }
     try {
+      await _waitForRegistration(runId);
       final resp = await http
           .post(
             Uri.parse('${BackendConfig.notifierUrl}/api/game/score'),

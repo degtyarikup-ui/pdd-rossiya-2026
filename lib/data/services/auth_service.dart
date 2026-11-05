@@ -397,7 +397,8 @@ class AuthService extends ChangeNotifier {
   // A browser must use a Web application OAuth client, never the iOS client.
   static const String googleWebClientId = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
-    defaultValue: '513938972930-a7sh1di6odgf77ijltu31lvpuhijcis1.apps.googleusercontent.com',
+    defaultValue:
+        '513938972930-a7sh1di6odgf77ijltu31lvpuhijcis1.apps.googleusercontent.com',
   );
 
   /// Debug builds only (`--dart-define=GAME_DEBUG=true`): a local account
@@ -438,9 +439,9 @@ class AuthService extends ChangeNotifier {
   @visibleForTesting
   static Future<int?> Function() googleServicesStatus = () async {
     try {
-      return await const MethodChannel('pdd/google_services')
-          .invokeMethod<int>('status')
-          .timeout(const Duration(seconds: 2));
+      return await const MethodChannel(
+        'pdd/google_services',
+      ).invokeMethod<int>('status').timeout(const Duration(seconds: 2));
     } catch (_) {
       return null;
     }
@@ -557,7 +558,7 @@ class AuthService extends ChangeNotifier {
 
   Future<bool> signInWithApple() => _runSignIn('apple', (attempt) async {
     if (kIsWeb) {
-      final state = newWebOAuthState();
+      final state = webOAuthReturnState(newWebOAuthState());
       await startWebOAuth(
         'apple',
         Uri.https('appleid.apple.com', '/auth/authorize', {
@@ -978,8 +979,9 @@ class AuthService extends ChangeNotifier {
         );
       }
       try {
-        await _queueSessionOperation(_clearSession)
-            .timeout(const Duration(seconds: 5));
+        await _queueSessionOperation(
+          _clearSession,
+        ).timeout(const Duration(seconds: 5));
       } catch (_) {}
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
         try {

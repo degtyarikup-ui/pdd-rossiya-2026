@@ -22,6 +22,11 @@ export function supportImageUrl(imageUrl, clientId) {
   return url.pathname + url.search;
 }
 export async function purgeSupport(env, clientId, deletedAt = Date.now()) {
+  if (env.RANKED_RUNS) {
+    const key = await digest('ranked-v1:' + clientId);
+    const r = await env.RANKED_RUNS.get(env.RANKED_RUNS.idFromName(key)).fetch('https://ranking/delete', { method: 'POST', body: JSON.stringify({ before: deletedAt }) });
+    if (!r.ok) throw new Error('ranked game deletion unavailable');
+  }
   if (env.SUPPORT) {
     const r = await env.SUPPORT.get(env.SUPPORT.idFromName(clientId)).fetch('https://support.internal/delete', { method: 'POST', body: JSON.stringify({ before: deletedAt }) });
     if (!r.ok) throw new Error('support deletion unavailable');

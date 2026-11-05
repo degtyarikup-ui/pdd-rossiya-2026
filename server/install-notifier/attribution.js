@@ -103,6 +103,6 @@ export function attributedDestination(destination, source, campaign, context = {
   if (url.hostname === 'play.google.com') url.searchParams.set('referrer', tags.toString());
   else if (['rustore.ru', 'www.rustore.ru'].includes(url.hostname)) url.searchParams.set('referrerId', tags.toString());
   else if (url.hostname === 'apps.apple.com' && m.marketingSource !== 'direct') url.searchParams.set('ct', m.marketingCampaign || m.marketingSource);
-  else if (['app.pdd-drive.ru', 'pdd-drive.ru', 'pdd-drive.online', 'rs.pdd-drive.online'].includes(url.hostname)) for (const [k, v] of tags) url.searchParams.set(k, v);
+  else if (['pdd-drive.app', 'www.pdd-drive.app', 'app.pdd-drive.ru', 'pdd-drive.ru', 'pdd-drive.online', 'rs.pdd-drive.online'].includes(url.hostname)) for (const [k, v] of tags) url.searchParams.set(k, v);
   return url.href;
 }

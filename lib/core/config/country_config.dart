@@ -225,13 +225,13 @@ class CountryConfig {
     language: 'ru',
     assetsRoot: 'assets/countries/ru',
     hasCdCategory: true,
-    webUrl: 'https://pdd-drive.ru',
+    webUrl: 'https://pdd-drive.app',
     shareCardHost: 'pdd-drive.app',
     androidPackageName: 'ru.pdd.pdd_app',
     appStoreId: '6792369533',
-    privacyUrl: 'https://pdd-drive.ru/privacy.html',
-    termsUrl: 'https://pdd-drive.ru/terms.html',
-    tariffsUrl: 'https://pdd-drive.ru/tarify/',
+    privacyUrl: 'https://pdd-drive.app/privacy.html',
+    termsUrl: 'https://pdd-drive.app/terms.html',
+    tariffsUrl: 'https://pdd-drive.app/tarify/',
     pddPointMarker: _pddPointMarkerRu,
     // Регламент ГИБДД (пост. Правительства РФ № 1097, приказ МВД № 80):
     // 20 вопросов / 20 минут, 4 тематических блока по 5 вопросов.

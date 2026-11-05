@@ -145,7 +145,7 @@ assets/countries/ru/images/     questions_ab/, questions_cd/, signs/, markup/
 
 ```bash
 ./scripts/build.sh ru aab|apk|rustore-apk|ipa|web  # сборка (rustore-apk — для RuStore)
-./scripts/deploy_web.sh ru             # веб-деплой приложения (pdd-drive.ru/app/)
+./scripts/deploy_web.sh ru             # веб-деплой приложения (pdd-drive.app/app/)
 ./scripts/deploy_landing.sh ru         # деплой лендинга/блога
 flutter gen-l10n                       # регенерация локализаций из ARB
 flutter test                           # все тесты
@@ -218,12 +218,12 @@ flutter test                           # все тесты
       не менялись; цифры в админке отстают до 10 минут, перед Telegram-отчётом
       буфер сбрасывается принудительно. Новые счётчики — только через
       `trackStats`, никаких `put` на каждый запрос.
-  - **Копия приложения на pdd-drive.ru/app/** (на неё ведут все кнопки сайта,
+  - **Копия приложения на pdd-drive.app/app/** (на неё ведут все кнопки сайта,
     т.к. у app.pdd-drive.ru нет HTTPS-сертификата): `WEB_BASE_HREF=/app/
     ./scripts/build.sh ru web`, затем `APP_BUILD=build/web ./scripts/deploy_landing.sh ru`.
     Обычный деплой лендинга `/app/` не трогает (исключён из `--delete`).
   - **app.pdd-drive.ru** (репо `pdd-rossiya-app`, в архиве с 2026-10-07) —
-    только перенаправление на pdd-drive.ru/app/ (HTTPS там так и не появился).
+    только перенаправление на pdd-drive.app/app/ (HTTPS там так и не появился).
     `deploy_web.sh ru` выкладывает приложение в `/app/` репо лендинга.
 
 ## 3D-игра «Живой город» (Godot)

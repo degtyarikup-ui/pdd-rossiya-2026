@@ -45,7 +45,11 @@ test('account support rejects anonymous, cross-account and app-key-only reads an
   const other = await session(e, 'google_other'), own = await session(e);
   for (const headers of [{}, { 'x-install-secret': e.SHARED_SECRET }, other]) {
     const status = headers === other ? 403 : 401;
-    assert.equal((await worker.fetch(req('/api/support/messages?clientId=google_fixture', undefined, headers), e)).status, status);
+    const read = await worker.fetch(req('/api/support/messages?clientId=google_fixture', undefined, headers), e);
+    if (headers['x-install-secret']) {
+      assert.equal(read.status, 200);
+      assert.deepEqual(await read.json(), { ok: true, messages: [], requiresUpdate: true });
+    } else assert.equal(read.status, status);
     assert.equal((await worker.fetch(req('/api/support/send', { clientId: 'google_fixture', text: 'impersonation' }, headers), e)).status, status);
   }
   const r = await worker.fetch(req('/api/support/messages?clientId=google_fixture', undefined, own), e);

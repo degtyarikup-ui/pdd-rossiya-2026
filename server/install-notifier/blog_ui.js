@@ -98,9 +98,9 @@ function blToday() {
   var values = {}; parts.forEach(function(part) { values[part.type] = part.value; });
   return values.year + '-' + values.month + '-' + values.day;
 }
-function blArticleUrl(article) { return 'https://pdd-drive.ru/blog/' + encodeURIComponent(article.slug) + '/'; }
+function blArticleUrl(article) { return 'https://pdd-drive.app/blog/' + encodeURIComponent(article.slug) + '/'; }
 function blCoverUrl(article) {
-  if (!article.cover) return 'https://pdd-drive.ru/assets/og-image.png';
+  if (!article.cover) return 'https://pdd-drive.app/assets/og-image.png';
   return blArticleUrl(article) + String(article.cover).split('/').map(encodeURIComponent).join('/');
 }
 function blVisibleArticles() {
@@ -152,7 +152,7 @@ function blRenderArticles() {
     var status = date === today ? 'Сегодня' : date > today ? 'Запланирована' : 'Дата прошла';
     var statusClass = date === today ? ' today' : date < today ? ' past' : '';
     return '<article class="bl-row" data-blog-slug="' + slug + '">'
-      + '<a class="bl-cover" href="' + adminEsc(blArticleUrl(article)) + '" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"><img src="' + adminEsc(blCoverUrl(article)) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'https://pdd-drive.ru/assets/og-image.png\';"></a>'
+      + '<a class="bl-cover" href="' + adminEsc(blArticleUrl(article)) + '" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"><img src="' + adminEsc(blCoverUrl(article)) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'https://pdd-drive.app/assets/og-image.png\';"></a>'
       + '<div class="bl-copy"><a class="bl-title" href="' + adminEsc(blArticleUrl(article)) + '" target="_blank" rel="noopener">' + adminEsc(article.title || article.slug) + '</a>'
       + '<div class="bl-meta"><span class="bl-status' + statusClass + '">' + status + '</span><span>' + adminEsc(article.readingMinutes || 5) + ' мин. чтения</span></div>'
       + '<details class="bl-detail"><summary>Описание</summary><p>' + adminEsc(article.description || 'Описание не добавлено.') + '</p></details></div>'

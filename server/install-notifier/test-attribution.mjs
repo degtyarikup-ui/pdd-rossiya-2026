@@ -31,11 +31,11 @@ test('server redirects keep article/search tags through real /app, Play and RuSt
     const tags = target === 'web' ? destination.searchParams : new URLSearchParams(destination.searchParams.get(target === 'rustore' ? 'referrerId' : 'referrer'));
     assert.equal(tags.get('utm_source'), 'yandex'); assert.equal(tags.get('utm_medium'), 'organic');
     assert.equal(tags.get('landing_page'), acquisition.landingPage);
-    if (target === 'web') assert.equal(destination.origin + destination.pathname, 'https://pdd-drive.ru/app/');
+    if (target === 'web') assert.equal(destination.origin + destination.pathname, 'https://pdd-drive.app/app/');
   }
-  assert.equal(new URL(attributedDestination('https://pdd-drive.ru/app/', 'google_play_organic', '')).searchParams.get('utm_source'), 'google_play_organic');
-  assert.equal(new URL(attributedDestination('https://pdd-drive.ru/app/', 'google', '')).searchParams.get('utm_medium'), 'referral', 'a Google link tag alone does not prove search');
-  assert.equal(new URL(attributedDestination('https://pdd-drive.ru/app/', 'chatgpt', '')).searchParams.get('utm_medium'), 'ai');
+  assert.equal(new URL(attributedDestination('https://pdd-drive.app/app/', 'google_play_organic', '')).searchParams.get('utm_source'), 'google_play_organic');
+  assert.equal(new URL(attributedDestination('https://pdd-drive.app/app/', 'google', '')).searchParams.get('utm_medium'), 'referral', 'a Google link tag alone does not prove search');
+  assert.equal(new URL(attributedDestination('https://pdd-drive.app/app/', 'chatgpt', '')).searchParams.get('utm_medium'), 'ai');
   const noGuess = acquisitionFields({ installStore: 'App Store' });
   assert.equal(noGuess.marketingSource, 'unknown');
 });

@@ -36,8 +36,8 @@
         body: JSON.stringify({
           clientId: await identity,
           userName: name || 'Посетитель сайта',
-          platform: 'Сайт pdd-drive.ru',
-          text: 'Обращение с сайта pdd-drive.ru\nКонтакт для ответа: ' + contact + '\n\n' + message
+          platform: 'Сайт pdd-drive.app',
+          text: 'Обращение с сайта pdd-drive.app\nКонтакт для ответа: ' + contact + '\n\n' + message
         })
       });
       var result = await response.json();

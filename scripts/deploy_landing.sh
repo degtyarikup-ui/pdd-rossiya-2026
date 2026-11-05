@@ -2,7 +2,7 @@
 # Деплой лендинга (маркетинговый сайт + блог + SEO-файлы) на главный домен:
 #   ./scripts/deploy_landing.sh ru ["commit message"]
 #
-# ru → репо pdd-rossiya-2026, ветка gh-pages, домен pdd-drive.ru
+# ru → pdd-drive.app; origin / legacy pdd-drive.ru stays on GitHub Pages.
 # Источник: web_landing/ru/ — чистая статика, без сборки.
 # Web application: /app/, updated separately by deploy_web.sh ru.
 # (scripts/deploy_web.sh ru).
@@ -59,6 +59,8 @@ if [ -n "${APP_BUILD:-}" ]; then
   grep -q '<base href="/app/"' "$APP_BUILD/index.html" || { echo "APP_BUILD собран не с --base-href /app/"; exit 1; }
   rsync -rc --delete "$APP_BUILD/" "$WORKTREE/app/"
 fi
+
+python3 "$ROOT/tools/web_security.py" "$WORKTREE"
 
 touch "$WORKTREE/.nojekyll"
 printf '%s' "$CNAME_DOMAIN" > "$WORKTREE/CNAME"

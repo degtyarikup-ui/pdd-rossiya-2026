@@ -48,7 +48,7 @@
       // Authentication referrers are never acquisition search results.
       if (['accounts.google.com', 'oauth.yandex.ru', 'id.yandex.ru', 'appleid.apple.com'].indexOf(host) !== -1) return null;
       // Internal navigation is never a new acquisition.
-      if (host === window.location.hostname || host === 'pdd-drive.ru' || host === 'app.pdd-drive.ru') return null;
+      if (host === window.location.hostname || host === 'pdd-drive.app' || host === 'pdd-drive.ru' || host === 'app.pdd-drive.ru') return null;
       if (isHost('chatgpt.com') || host === 'chat.openai.com') return 'chatgpt';
       if (isHost('perplexity.ai')) return 'perplexity';
       if (host === 'copilot.microsoft.com') return 'copilot';
@@ -186,7 +186,7 @@
       if (url.hostname === 'play.google.com') return 'gplay';
       if (url.hostname === 'apps.apple.com') return 'appstore';
       if (url.hostname === 'app.pdd-drive.ru' ||
-          (url.hostname === window.location.hostname || url.hostname === 'pdd-drive.ru') && /^\/app(?:\/|$)/.test(url.pathname)) return 'web';
+          (url.hostname === window.location.hostname || url.hostname === 'pdd-drive.app' || url.hostname === 'pdd-drive.ru') && /^\/app(?:\/|$)/.test(url.pathname)) return 'web';
       if (url.hostname === 'youtube.com' || url.hostname === 'www.youtube.com') return 'social_youtube';
       if (url.hostname === 'instagram.com' || url.hostname === 'www.instagram.com') return 'social_instagram';
       if (url.hostname === 'tiktok.com' || url.hostname === 'www.tiktok.com') return 'social_tiktok';

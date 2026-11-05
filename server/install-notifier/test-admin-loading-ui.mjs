@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import { mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import worker from './worker.js';
+import { createAdminSession } from './admin_security.js';
 import { DEFAULT_ECONOMY_CONFIG } from './economy_admin.js';
 import { NotificationsState, DEFAULT_NOTIFICATION_CONFIG } from './notifications.js';
 
@@ -42,8 +43,7 @@ const USER_NAME = 'Приватный пользователь';
 async function preview() {
   const env = { INSTALLS: new MemoryKV(), ADMIN_PASSWORD: crypto.randomUUID() };
   await env.INSTALLS.put('economy_fx_usd_v1',JSON.stringify({rubPerUsd:95,effectiveDate:day(0),requestedDay:day(0),checkedAt:new Date().toISOString(),source:'CBR'}));
-  const token = crypto.randomUUID().replaceAll('-', ''), now = Date.now();
-  await env.INSTALLS.put(`admin_session:${token}`, JSON.stringify({ created: now }));
+  const token = await createAdminSession(env), now = Date.now();
   await env.INSTALLS.put('tasks:items', JSON.stringify([{ id: 'loading-task', text: TASK_TITLE, status: 'idea', priority: 'normal', version: '', attachments: [], createdAt: now }]));
   const user = { id: 'google_loading', name: USER_NAME, email: 'private@example.invalid', provider: 'google', createdAt: new Date(now).toISOString(), lastSeen: new Date(now).toISOString() };
   await env.INSTALLS.put('user:google_loading', JSON.stringify(user), { metadata: { ...user, v: 4 } });

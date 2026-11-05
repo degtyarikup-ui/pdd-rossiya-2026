@@ -117,7 +117,7 @@ export function normalizePublications(sources = {}, options = {}) {
     item.status = article.published === false ? 'draft' : date ? (date >= today ? 'scheduled' : 'dated') : 'draft';
     item.scheduleMode = date && article.published !== false ? 'date' : 'none';
     item.publicationVerified = false;
-    const base = 'https://pdd-drive.ru/blog/' + encodeURIComponent(item.sourceId) + '/';
+    const base = 'https://pdd-drive.app/blog/' + encodeURIComponent(item.sourceId) + '/';
     const cover = publicationText(article.cover);
     item.thumbnail = publicationSafeUrl(cover)
       || (cover && !/[\\/]/.test(cover) ? base + encodeURIComponent(cover) : null);

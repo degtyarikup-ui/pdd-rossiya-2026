@@ -88,7 +88,7 @@ test('оплата: платёж, уведомление, срок один ра
     const [tx] = fake.txs.values();
     assert.equal(tx.paymentDetails.amount, 290);
     assert.equal(tx.body.paymentMethod, 2);
-    assert.equal(tx.body.return, `https://pdd-drive.ru/app/?pay=done&order=${start.order}`);
+    assert.equal(tx.body.return, `https://pdd-drive.app/app/?pay=done&order=${start.order}`);
     assert.equal(tx.payload, start.order);
 
     // Повторное нажатие в течение 10 минут — та же форма оплаты, без нового платежа.
@@ -206,15 +206,15 @@ test('Android: после оплаты возврат на страницу «в
     const token = await login(env);
     const android = await (await worker.fetch(req('/api/user/pay-intent', { email: 'a@b.ru', tier: 'weekly', method: 'sbp', client: 'android' }, token), env)).json();
     const [txA] = [...fake.txs.values()].slice(-1);
-    assert.equal(txA.body.return, `https://pdd-drive.ru/pay-done/?order=${android.order}`);
-    assert.equal(txA.body.failedUrl, `https://pdd-drive.ru/pay-done/?order=${android.order}&failed=1`);
+    assert.equal(txA.body.return, `https://pdd-drive.app/pay-done/?order=${android.order}`);
+    assert.equal(txA.body.failedUrl, `https://pdd-drive.app/pay-done/?order=${android.order}&failed=1`);
     assert.equal(JSON.parse(env.INSTALLS.data.get('pay_order:' + android.order)).client, 'android');
 
     // Тот же тариф в вебе в пределах 10 минут — свой платёж, а не ссылка из Android.
     const web = await (await worker.fetch(req('/api/user/pay-intent', { email: 'a@b.ru', tier: 'weekly', method: 'sbp' }, token), env)).json();
     assert.notEqual(web.order, android.order);
     const txW = [...fake.txs.values()].slice(-1)[0];
-    assert.equal(txW.body.return, `https://pdd-drive.ru/app/?pay=done&order=${web.order}`);
+    assert.equal(txW.body.return, `https://pdd-drive.app/app/?pay=done&order=${web.order}`);
   } finally { fake.restore(); }
 });
 

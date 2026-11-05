@@ -565,7 +565,13 @@ export async function handleSupportGetMessages(request, env) {
   const clientId = String(url.searchParams.get('clientId') || '').trim();
   if (!clientId) return jsonResponse({ error: 'missing_client_id' }, 400);
 
-  await supportIdentity(request, env, clientId);
+  try { await supportIdentity(request, env, clientId); }
+  catch (error) {
+    // Installed clients sent only the public app key on GET. Keep their
+    // poll protocol valid, while never returning private history or touching a thread.
+    if (error instanceof HttpFailure && error.status === 401 && !request.headers.has('authorization') && env.SHARED_SECRET && request.headers.get('x-install-secret') === env.SHARED_SECRET) return jsonResponse({ ok: true, messages: [], requiresUpdate: true });
+    throw error;
+  }
 
   // Проверяем новые сообщения из Telegram через getUpdates, если webhook не настроен
   await checkPendingTelegramUpdates(env);

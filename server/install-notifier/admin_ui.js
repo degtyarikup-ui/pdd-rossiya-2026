@@ -292,7 +292,7 @@ export function enhanceAdminHtml(html) {
     /<div class="sidebar-brand">[\s\S]*?<\/div>(?=\s*(?:<div class="sidebar-context"|<nav class="sidebar-menu"))/,
     `<div class="sidebar-brand">
       <div class="brand-info" title="PDD Drive">
-        <img src="https://pdd-drive.ru/assets/icon-192.png" alt="PDD"><span class="admin-brand-name">PDD Drive</span>
+        <img src="https://pdd-drive.app/assets/icon-192.png" alt="PDD"><span class="admin-brand-name">PDD Drive</span>
       </div>
       <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" type="button" title="Свернуть меню (Cmd+B)" aria-label="Свернуть меню">
         <svg class="toggle-icon-collapse" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">

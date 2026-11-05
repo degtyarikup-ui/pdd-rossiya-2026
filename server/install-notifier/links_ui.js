@@ -95,11 +95,11 @@ var LN_SOURCES = [
   ['vk', 'vk'], ['threads', 'threads'], ['dzen', 'dzen']
 ];
 var LN_PAGES = [
-  ['https://pdd-drive.ru/links/', 'Все кнопки'],
-  ['https://pdd-drive.ru/', 'Сайт'],
-  ['https://pdd-drive.ru/go/gplay/', 'Google Play'],
-  ['https://pdd-drive.ru/go/rustore/', 'RuStore'],
-  ['https://pdd-drive.ru/go/appstore/', 'App Store']
+  ['https://pdd-drive.app/links/', 'Все кнопки'],
+  ['https://pdd-drive.app/', 'Сайт'],
+  ['https://pdd-drive.app/go/gplay/', 'Google Play'],
+  ['https://pdd-drive.app/go/rustore/', 'RuStore'],
+  ['https://pdd-drive.app/go/appstore/', 'App Store']
 ];
 var LN_PAGE_NAMES = {}; LN_PAGES.forEach(function (p) { LN_PAGE_NAMES[p[0]] = p[1]; });
 var lnState = { source: 'ig', custom: '', page: LN_PAGES[0][0], campaign: '', days: 30, links: [], stats: null, loaded: false };
@@ -133,7 +133,7 @@ function lnPageIcon(url) {
   if (url.indexOf('gplay') !== -1) return BRAND_SVGS.gplay || '';
   if (url.indexOf('rustore') !== -1) return BRAND_SVGS.rustore || '';
   if (url.indexOf('appstore') !== -1) return BRAND_SVGS.appstore || '';
-  if (url === 'https://pdd-drive.ru/') return BRAND_SVGS.web || '';
+  if (url === 'https://pdd-drive.app/') return BRAND_SVGS.web || '';
   return '';
 }
 

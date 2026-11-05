@@ -207,7 +207,7 @@ var AUDIENCES={guest:'Не зарегистрированные',registered:'З�
 function audiencesOf(m){return Array.isArray(m.audiences)?m.audiences:ALL_AUDIENCES;}
 function audienceLabel(m){var a=audiencesOf(m);return a.length===3?'Все пользователи':a.map(function(v){return AUDIENCES[v];}).join(' · ');}
 function storesOf(m){return m.store&&m.store!=='all'?[m.store]:['play','rustore'];}
-var ICON='https://pdd-drive.ru/assets/icon-192.png',BLUE='#0574F8';
+var ICON='https://pdd-drive.app/assets/icon-192.png',BLUE='#0574F8';
 var SVG={eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
  tap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11V5a2 2 0 0 1 4 0v6M13 10a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v4a7 7 0 0 1-7 7h-1a7 7 0 0 1-6-3.4L4 15a2 2 0 0 1 3.4-2.1L9 15"/></svg>',
  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',

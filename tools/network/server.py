@@ -291,7 +291,11 @@ def reimport_game() -> bool:
         return False
 
 
-class Handler(BaseHTTPRequestHandler):
+sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parents[1]))
+from local_http_security import LocalOnlyHandler  # noqa: E402
+
+
+class Handler(LocalOnlyHandler, BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
@@ -307,7 +311,10 @@ class Handler(BaseHTTPRequestHandler):
     def file(self, path: Path):
         if not path.is_file():
             return self.send(404, {"error": "not found"})
-        return self.send(200, path.read_bytes(), TYPES.get(path.suffix, "application/octet-stream"))
+        data = path.read_bytes()
+        if path.suffix == '.html':
+            data = data.replace(b'<head>', b'<head><script src="/local-security.js"></script>', 1)
+        return self.send(200, data, TYPES.get(path.suffix, "application/octet-stream"))
 
     def raw(self, limit=8_000_000) -> bytes:
         length = int(self.headers.get("Content-Length", 0))

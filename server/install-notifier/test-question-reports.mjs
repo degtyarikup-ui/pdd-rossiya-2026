@@ -250,7 +250,7 @@ test('picture reports enqueue full text and the canonical image in the same comp
   assert.match(text.text, /Верный ответ:<\/b> 1\. Разрешен/);
   assert.equal(text.threadId, 42);
   assert.equal(photo.threadId, 42);
-  assert.equal(photo.photoUrl, 'https://pdd-drive.ru/app/assets/assets/countries/ru/images/questions_ab/eca08a0e2b5ffcd12bdd8ffee34afcc3.webp');
+  assert.equal(photo.photoUrl, 'https://pdd-drive.app/app/assets/assets/countries/ru/images/questions_ab/eca08a0e2b5ffcd12bdd8ffee34afcc3.webp');
 });
 
 test('game IDs and variant IDs resolve their precise diagram and ambiguous legacy IDs never guess', () => {
@@ -311,7 +311,7 @@ test('queue delivers picture after the report, retries rate limits and falls bac
 
 test('queue rejects arbitrary image URLs and oversized photo captions', async () => {
   const { env, state } = setup(), queue = new TelegramQueue(state, env);
-  for (const photoUrl of ['https://attacker.test/x.webp', 'http://pdd-drive.ru/app/assets/assets/countries/ru/images/questions_ab/x.webp', 'https://pdd-drive.ru/app/assets/assets/countries/ru/images/questions_ab/../secret.webp']) {
+  for (const photoUrl of ['https://attacker.test/x.webp', 'http://pdd-drive.ru/app/assets/assets/countries/ru/images/questions_ab/x.webp', 'https://pdd-drive.app/app/assets/assets/countries/ru/images/questions_ab/../secret.webp']) {
     assert.equal((await queue.enqueue({ messages: [{ text: 'Photo', photoUrl }] })).status, 400);
   }
   const photoUrl = reportQuestionDetails({ question_id: 'ticket_1_2' }).photoUrl;

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { setImmediate as turn } from 'node:timers/promises';
+import { setImmediate as turn, setTimeout as pause } from 'node:timers/promises';
 import worker from './worker.js';
 import { computeEconomyStats, DEFAULT_ECONOMY_CONFIG } from './economy_admin.js';
 import { AI_DEFAULT_MODEL } from './ai_models.js';
@@ -43,11 +43,12 @@ class DelayedKV {
   async finish(promise) {
     let done = false, result, error;
     promise.then(value => { done = true; result = value; }, reason => { done = true; error = reason; });
-    for (let i = 0; i < 100 && !done; i++) {
+    for (let i = 0; i < 1000 && !done; i++) {
       await turn();
       if (done) break;
       const batch = this.pending.splice(0);
-      assert.ok(batch.length, 'request must finish or await a fixture read');
+      // WebCrypto and the atomic authentication boundary can finish between KV waves.
+      if (!batch.length) { await pause(1); continue; }
       this.waves.push(batch.map(item => item.key));
       for (const item of batch.reverse()) item.release();
     }

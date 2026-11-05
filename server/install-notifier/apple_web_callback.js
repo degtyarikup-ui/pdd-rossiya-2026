@@ -20,7 +20,7 @@ export async function handleAppleWebCallback(request) {
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
   const form = new URLSearchParams(new TextDecoder().decode(bytes));
   const state = form.get('state');
-  if (!/^[a-f0-9]{64}$/.test(state || '')) return new Response('Invalid state', { status: 400 });
+  if (!/^(app_)?[a-f0-9]{64}$/.test(state || '')) return new Response('Invalid state', { status: 400 });
   const params = new URLSearchParams({ provider: 'apple', state });
   const error = form.get('error');
   if (error) {
@@ -42,7 +42,7 @@ export async function handleAppleWebCallback(request) {
     }
   }
   return new Response(null, { status: 303, headers: {
-    Location: 'https://pdd-drive.ru/app/?oauth=2#pdd-oauth=' + encodeURIComponent(params.toString()),
+    Location: (state.startsWith('app_') ? 'https://pdd-drive.app' : 'https://pdd-drive.ru') + '/app/?oauth=2#pdd-oauth=' + encodeURIComponent(params.toString()),
     'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer',
   } });
 }

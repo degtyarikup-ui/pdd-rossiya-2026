@@ -37,3 +37,11 @@ test('provider cancellation preserves the state and never forwards arbitrary err
     assert.equal(params.get('error'),error === 'private provider error' ? 'provider_rejected' : 'access_denied');
   }
 });
+
+test('new .app and legacy .ru tabs return to fixed origins without an open redirect', async () => {
+  for (const [prefix, origin] of [['app_', 'https://pdd-drive.app'], ['', 'https://pdd-drive.ru']]) {
+    const response = await handleAppleWebCallback(request({ state: prefix + state, code: 'x', id_token: 'y', redirect_uri: 'https://evil.test' }));
+    assert.equal(new URL(response.headers.get('location')).origin, origin);
+  }
+  assert.equal((await handleAppleWebCallback(request({ state: 'https://evil.test_' + state, code: 'x', id_token: 'y' }))).status, 400);
+});

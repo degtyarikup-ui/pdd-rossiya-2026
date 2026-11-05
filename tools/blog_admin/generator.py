@@ -37,7 +37,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 SITE = os.path.join(REPO, "web_landing", "ru")
 BLOG = os.path.join(SITE, "blog")
-BASE = "https://pdd-drive.ru"
+BASE = "https://pdd-drive.app"
 PREAMBLE_PATH = os.path.join(HERE, "llms_preamble.md")
 MOSCOW_TZ = datetime.timezone(datetime.timedelta(hours=3))
 
@@ -83,7 +83,7 @@ FOOTER = """<footer class="site-footer">
       <span class="age-badge">16+</span> © 2026 ПДД Россия 2026
     </div>
     <div class="footer-disclaimer">
-      Сайт pdd-drive.ru носит исключительно информационно-справочный и образовательный характер и не является официальным сайтом ГУОБДД МВД России или портала Госуслуг. Официальная информация и первоисточники нормативно-правовых актов РФ публикуются на гибдд.рф и pravo.gov.ru.
+      Сайт pdd-drive.app носит исключительно информационно-справочный и образовательный характер и не является официальным сайтом ГУОБДД МВД России или портала Госуслуг. Официальная информация и первоисточники нормативно-правовых актов РФ публикуются на гибдд.рф и pravo.gov.ru.
     </div>
   </div>
 </footer>"""
@@ -694,13 +694,13 @@ def render_blog_index(arts=None):
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Блог о ПДД и экзамене в ГИБДД — ПДД Россия 2026</title>
   <meta name="description" content="Статьи о подготовке к теоретическому экзамену в ГИБДД: разборы правил дорожного движения, изменения законодательства и советы по обучению в автошколе.">
-  <link rel="canonical" href="https://pdd-drive.ru/blog/">
+  <link rel="canonical" href="https://pdd-drive.app/blog/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ПДД Россия 2026">
   <meta property="og:title" content="Блог о ПДД и экзамене в ГИБДД — ПДД Россия 2026">
   <meta property="og:description" content="Статьи о подготовке к теоретическому экзамену в ГИБДД: разборы правил дорожного движения, изменения законодательства и советы по обучению в автошколе.">
-  <meta property="og:url" content="https://pdd-drive.ru/blog/">
-  <meta property="og:image" content="https://pdd-drive.ru/assets/og-image.png">
+  <meta property="og:url" content="https://pdd-drive.app/blog/">
+  <meta property="og:image" content="https://pdd-drive.app/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="ru_RU">

@@ -8,6 +8,7 @@ const LIMIT = 200;
 const TOKEN_RE = /^[a-z0-9-]{1,32}$/;
 const CAMPAIGN_RE = /^[a-z0-9_-]{1,48}$/;
 const PAGES = new Set([
+  ...['/', '/links/', '/go/gplay/', '/go/rustore/', '/go/appstore/', '/go/web/', '/go/rs-gplay/'].map(path => 'https://pdd-drive.app' + path),
   'https://pdd-drive.ru/',
   'https://pdd-drive.ru/links/',
   'https://pdd-drive.ru/go/gplay/',

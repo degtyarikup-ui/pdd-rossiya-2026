@@ -32,10 +32,10 @@ const PLATEGA_API = 'https://app.platega.io';
 const PLATEGA_METHODS = { sbp: 2 }; // 2 — СБП (QR и оплата из приложения банка)
 // Куда Platega возвращает человека после оплаты: веб-версия приложения РФ.
 // Адрес фиксирован на сервере — клиент не может подставить свой.
-export const PAY_RETURN_URL = 'https://pdd-drive.ru/app/';
+export const PAY_RETURN_URL = 'https://pdd-drive.app/app/';
 // Для приложения Android: после оплаты человек попадает на нейтральную
 // страницу «вернитесь в приложение» — веб-версия в браузере ему не нужна.
-export const PAY_DONE_URL = 'https://pdd-drive.ru/pay-done/';
+export const PAY_DONE_URL = 'https://pdd-drive.app/pay-done/';
 
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/;
 const ORDER_RE = /^[0-9a-f-]{36}$/;
@@ -202,9 +202,10 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
   if (live) {
     const orderId = crypto.randomUUID();
     const attempt = { ...intent, orderId };
+    const webReturn = request.headers.get('origin') === 'https://pdd-drive.ru' ? 'https://pdd-drive.ru/app/' : PAY_RETURN_URL;
     const back = client === 'android'
       ? { ok: `${PAY_DONE_URL}?order=${orderId}`, fail: `${PAY_DONE_URL}?order=${orderId}&failed=1` }
-      : { ok: `${PAY_RETURN_URL}?pay=done&order=${orderId}`, fail: `${PAY_RETURN_URL}?pay=failed&order=${orderId}` };
+      : { ok: `${webReturn}?pay=done&order=${orderId}`, fail: `${webReturn}?pay=failed&order=${orderId}` };
     try {
       if (env.__ACCOUNT_CHECKPOINT) {
         order = { orderId, txId: null, userId: user.id, name: user.name || '', accountEmail: user.email || '', provider: user.provider || null,

@@ -35,7 +35,7 @@
 ## Публикация и ролики
 
 Лендинг и блог: `./scripts/deploy_landing.sh ru`.
-Веб-приложение: `./scripts/deploy_web.sh ru`, адрес `pdd-drive.ru/app/`.
+Веб-приложение: `./scripts/deploy_web.sh ru`, адрес `pdd-drive.app/app/`.
 Обычный деплой лендинга сохраняет `/app/`.
 Локальная админка — [инструкция](../admin/README.md).
 

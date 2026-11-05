@@ -27,13 +27,13 @@ export function reportQuestionDetails(body) {
   const [category, ticket, number, , , image, correctAnswer] = row;
   return {
     ticket, number, correctAnswer,
-    photoUrl: image && sameImage ? `https://pdd-drive.ru/app/assets/assets/countries/ru/images/questions_${category}/${image}.webp` : null,
+    photoUrl: image && sameImage ? `https://pdd-drive.app/app/assets/assets/countries/ru/images/questions_${category}/${image}.webp` : null,
   };
 }
 
 // Used at the durable queue boundary as well as by report lookup.
 export function isReportPhotoUrl(value) {
-  return typeof value === 'string' && /^https:\/\/pdd-drive\.ru\/app\/assets\/assets\/countries\/ru\/images\/questions_(?:ab|cd)\/[a-zA-Z0-9_-]+\.webp$/.test(value);
+  return typeof value === 'string' && /^https:\/\/pdd-drive\.(?:app|ru)\/app\/assets\/assets\/countries\/ru\/images\/questions_(?:ab|cd)\/[a-zA-Z0-9_-]+\.webp$/.test(value);
 }
 
 // Old game builds already send mode=city; never infer origin from a ticket ID,

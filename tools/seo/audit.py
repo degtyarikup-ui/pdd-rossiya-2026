@@ -24,7 +24,7 @@ from collections import defaultdict
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 SITE = os.path.join(REPO, "web_landing", "ru")
-BASE = "https://pdd-drive.ru"
+BASE = "https://pdd-drive.app"
 
 # /app/ — временная копия Flutter-приложения (в .gitignore, закрыта в robots),
 # /go/ — технические страницы быстрых редиректов в сторы с трекингом

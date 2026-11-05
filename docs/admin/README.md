@@ -342,3 +342,12 @@ python3 tools/blog_admin/build_worker_catalog.py --existing output/blog-catalog-
 Первое открытие без сохранённых данных требует загрузки с сервера. Чтение дней
 на сервере выполняется параллельно, максимум по 8 запросов к KV одновременно.
 Проверки: `npm run test:analytics:ui`, `npm run test:usage`, `npm run test:security`.
+
+
+Локальные редакторы проверяют Host и Origin, а для POST требуют случайный
+`X-Local-Token`. Браузер получает его с `/api/local-session`; загрузчик
+`/local-security.js` добавляется в HTML до скриптов редактора. Для локальных
+CLI-запросов сначала получить токен через GET и передавать его заголовком.
+Обложки блога допускают только проверенные растровые PNG/JPEG/WebP/GIF;
+HTML/SVG и выход за корень раздачи отклоняются. Проверки:
+`python3 -m unittest tools.test_local_http_security tools.test_web_security`.

@@ -30,7 +30,7 @@ test('blog past dates are plan metadata, not verified releases or failed posts',
   assert.deepEqual(items.map(item => item.status), ['dated', 'scheduled', 'scheduled', 'draft', 'draft']);
   assert.ok(items.every(item => item.publicationVerified === false));
   assert.ok(items.every(item => item.time === null));
-  assert.equal(items[0].thumbnail, 'https://pdd-drive.ru/blog/yesterday/cover.jpg');
+  assert.equal(items[0].thumbnail, 'https://pdd-drive.app/blog/yesterday/cover.jpg');
   assert.equal(items[0].publishedAt, null);
   const summary = summarizePublications(items, { now });
   assert.equal(summary.today, 1, 'today is still part of the blog plan');

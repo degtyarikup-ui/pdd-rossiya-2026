@@ -36,9 +36,9 @@ test('real workerd acknowledges primary state independently of repair and persis
   const signingSecret = crypto.randomUUID();
   const config = join(directory, 'wrangler.toml');
   const entry = join(directory, 'entry.mjs');
-  const classes = ['SecurityState', 'AccountState', 'AiQuotaState', 'StatsBuffer', 'PurchaseClaims', 'TrafficState',
+  const classes = ['RankedRuns', 'SecurityState', 'AccountState', 'AiQuotaState', 'StatsBuffer', 'PurchaseClaims', 'TrafficState',
     'TelegramQueue', 'NotificationsState', 'SupportThread', 'TelegramAuthState'];
-  const bindings = ['SECURITY', 'ACCOUNTS', 'AI_QUOTAS', 'STATS', 'PURCHASE_CLAIMS', 'TRAFFIC',
+  const bindings = ['RANKED_RUNS', 'SECURITY', 'ACCOUNTS', 'AI_QUOTAS', 'STATS', 'PURCHASE_CLAIMS', 'TRAFFIC',
     'TELEGRAM', 'NOTIFICATIONS', 'SUPPORT', 'TG_AUTH'];
   // This entry exists only inside the ignored fixture directory. All normal
   // routes execute the real production handler, with the real exported DOs.
@@ -345,6 +345,11 @@ new_sqlite_classes = [${classes.map(JSON.stringify).join(', ')}]
     assert.equal(counters.usage.tickets.starts,50);
     t.diagnostic('real SQLite paginated 61 expirations and bounded projections; 50 usage events deduplicated atomically');
 
+    await api('/api/game/run', { token, body: { runId: 'runtime-ranked-run' } });
+    await pause(1100);
+    const ranked = await api('/api/game/score', { token, body: { runId: 'runtime-ranked-run', score: 20 } });
+    assert.equal(ranked.weekScore, 20);
+
     const client = userId;
     const statePath = '/__runtime_fixture/support-state?clientId=' + client;
     assert.equal((await api(statePath, { fixture: true })).initialized, false);
@@ -361,6 +366,9 @@ new_sqlite_classes = [${classes.map(JSON.stringify).join(', ')}]
     assert.deepEqual((await api('/api/user/progress?userId=' + userId, { token })).progress, written.progress);
     assert.equal((await api(statePath, { fixture: true })).initialized, true);
     assert.deepEqual((await api('/api/support/messages?clientId=' + client, { token })).messages, []);
+    const rankedRetry = await api('/api/game/score', { token, body: { runId: 'runtime-ranked-run', score: 20 } });
+    assert.equal(rankedRetry.weekScore, 20);
+    assert.equal(rankedRetry.credited, 0);
     t.diagnostic('process restart preserved profile, large Unicode progress and support initialization');
 
     assert.equal((await api('/api/auth/logout', { token, body: {} })).ok, true);

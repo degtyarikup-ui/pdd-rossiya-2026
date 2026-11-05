@@ -178,7 +178,7 @@ export function bannerActionUrl(item) {
   if (item.action !== 'url' || !raw) return raw;
   try {
     const url = new URL(raw);
-    if (url.hostname !== 'pdd-drive.ru' && !url.hostname.endsWith('.pdd-drive.ru')) return raw;
+    if (!['pdd-drive.app', 'www.pdd-drive.app'].includes(url.hostname) && url.hostname !== 'pdd-drive.ru' && !url.hostname.endsWith('.pdd-drive.ru')) return raw;
     url.searchParams.set('utm_source', 'in_app_banner');
     url.searchParams.set('utm_medium', placement(item));
     url.searchParams.set('utm_campaign', String(item.id).replace(/[^A-Za-z0-9._-]/g, '').slice(0, 64));

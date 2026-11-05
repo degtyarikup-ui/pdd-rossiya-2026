@@ -69,6 +69,26 @@ void main() {
       }
     },
   );
+  test('new domain state preserves tab binding', () {
+    final appState = 'app_$state';
+    final saved = {...pending('apple'), 'state': appState};
+    expect(
+      validateWebOAuthReturn(
+        {'provider': 'apple', 'state': appState},
+        saved,
+        now,
+      )['expected_nonce'],
+      'expected-nonce',
+    );
+    expect(
+      validateWebOAuthReturn(
+        {'provider': 'apple', 'state': state},
+        saved,
+        now,
+      )['error'],
+      'invalid_state',
+    );
+  });
   test('Apple nonce comes from the saved request, not from the callback', () {
     final params = {
       'provider': 'apple',

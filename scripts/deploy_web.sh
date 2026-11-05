@@ -2,7 +2,7 @@
 # Деплой веб-версии приложения:
 #   ./scripts/deploy_web.sh ru ["commit message"]
 #
-# /app/ в репо pdd-rossiya-2026, ветка gh-pages, https://pdd-drive.ru/app/
+# /app/ в репо pdd-rossiya-2026, ветка gh-pages, https://pdd-drive.app/app/
 # (главный домен pdd-drive.ru занят лендингом — scripts/deploy_landing.sh)
 set -euo pipefail
 
@@ -62,6 +62,8 @@ if [ -d "$ROOT/web_static/$COUNTRY" ]; then
 fi
 touch "$WORKTREE/.nojekyll"
 printf 'User-agent: *\nDisallow: /\n' > "$DEST/robots.txt"
+python3 "$ROOT/tools/web_security.py" "$WORKTREE/app"
+
 git -C "$WORKTREE" add -A
 if git -C "$WORKTREE" diff --cached --quiet; then
   echo "Web deployment unchanged"
@@ -69,4 +71,4 @@ else
   git -C "$WORKTREE" -c user.email="degtyarik.up@gmail.com" -c user.name="degtyarikup-ui" commit -m "$MSG" >/dev/null
   git -C "$WORKTREE" push "$REMOTE_REPO" gh-pages:gh-pages
 fi
-echo "Deployed ru → https://pdd-drive.ru/app/"
+echo "Deployed ru → https://pdd-drive.app/app/"

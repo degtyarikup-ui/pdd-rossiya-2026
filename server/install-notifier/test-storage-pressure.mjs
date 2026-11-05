@@ -75,6 +75,7 @@ test('only explicit legacy 404 falls back to single-event acceptance',async()=>{
 });
 test('flush bounds a large backlog to 200 events and retains remaining events for its alarm',async t=>{
   const f=usageFixture(),base=Date.now();
+  t.mock.method(Date,'now',()=>base);
   for(let i=0;i<201;i++)await f.buffer.fetch(new Request('https://stats/enqueue',{method:'POST',body:JSON.stringify({id:'event'+i,kind:'usage',feature:'tickets',installation:'a'.repeat(32),ts:base})}));
   assert.equal(await f.buffer.flush(),false);
   assert.equal((await f.storage.list({prefix:'q:'})).size,1);

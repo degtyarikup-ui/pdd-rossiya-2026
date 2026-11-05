@@ -10,6 +10,11 @@ bool get appleWebNeedsSafariHint => needsAppleSafariHint(
   maxTouchPoints: web.window.navigator.maxTouchPoints,
 );
 
+String webOAuthReturnState(String randomState) =>
+    web.window.location.hostname == 'pdd-drive.app'
+    ? 'app_$randomState'
+    : randomState;
+
 Future<Never> startWebOAuth(String provider, Uri authorizationUrl) {
   // Capture first-touch tags while this page still has them. An existing
   // guest may have already reported installation and skip metadata collection.

@@ -199,6 +199,6 @@ test('admin page embeds tasks view, nav item under analytics, and complete clien
   assert.ok(tasksIdx < linksIdx, 'tasks must be before links');
 
   // Verify full script compiles
-  const scriptContent = html.match(/<script>([\s\S]*)<\/script>/)[1];
+  const scriptContent = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(match => match[1]).join('\n');
   new Function(scriptContent);
 });

@@ -36,14 +36,23 @@ class SupportChatService {
   String? _cachedAppVersion;
 
   Future<void> _loadGuest() async {
-    var secret = await _guestStorage.read(key: _guestSecretKey);
+    String? secret;
+    try {
+      secret = await _guestStorage.read(key: _guestSecretKey);
+    } catch (_) {
+      /* A temporary in-memory guest still has a private credential. */
+    }
     if (secret == null || !RegExp(r'^[a-f0-9]{64}$').hasMatch(secret)) {
       final random = Random.secure();
       secret = List.generate(
         32,
         (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
       ).join();
-      await _guestStorage.write(key: _guestSecretKey, value: secret);
+      try {
+        await _guestStorage.write(key: _guestSecretKey, value: secret);
+      } catch (_) {
+        /* Never fall back to storing the secret in preferences. */
+      }
     }
     _guestSecret = secret;
     _cachedClientId = 'guest_v2_${sha256.convert(utf8.encode(secret))}';

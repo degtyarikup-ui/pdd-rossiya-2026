@@ -73,7 +73,11 @@ def today():
         return TODAY
 
 
-class Handler(BaseHTTPRequestHandler):
+sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parents[1]))
+from local_http_security import LocalOnlyHandler  # noqa: E402
+
+
+class Handler(LocalOnlyHandler, BaseHTTPRequestHandler):
     server_version = "PddBlogAdmin/1.0"
 
     def log_message(self, *a):
@@ -99,6 +103,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def _body(self):
         n = int(self.headers.get("Content-Length", 0))
+        if n < 0 or n > 16 * 1024 * 1024:
+            raise ValueError("слишком большой файл")
         return self.rfile.read(n) if n else b""
 
     # --- routing ---
@@ -149,8 +155,8 @@ class Handler(BaseHTTPRequestHandler):
         rel = urlpath.lstrip("/")
         if rel == "" or rel.endswith("/"):
             rel += "index.html"
-        full = os.path.normpath(os.path.join(SITE, rel))
-        if not full.startswith(SITE):
+        full = os.path.realpath(os.path.join(SITE, rel))
+        if os.path.commonpath([os.path.realpath(SITE), full]) != os.path.realpath(SITE):
             return None
         return full
 
@@ -169,7 +175,10 @@ class Handler(BaseHTTPRequestHandler):
         ext = os.path.splitext(full)[1].lower()
         ctype = CONTENT_TYPES.get(ext, "application/octet-stream")
         with open(full, "rb") as f:
-            self._send(200, f.read(), ctype)
+            data = f.read()
+            if ext == '.html':
+                data = data.replace(b'<head>', b'<head><script src="/local-security.js"></script>', 1)
+            self._send(200, data, ctype)
 
     # --- API impl ---
     def _save_article(self):
@@ -233,6 +242,13 @@ class Handler(BaseHTTPRequestHandler):
         # Имя приходит percent-encoded (заголовки HTTP не переживают кириллицу).
         raw_name = unquote(self.headers.get("X-Filename", "image.png"))
         name = safe_filename(raw_name)
+        ext = name.rsplit('.', 1)[-1]
+        valid = ((ext in ('jpg', 'jpeg') and raw.startswith(b'\xff\xd8\xff'))
+                 or (ext == 'png' and raw.startswith(b'\x89PNG\r\n\x1a\n'))
+                 or (ext == 'webp' and raw[:4] == b'RIFF' and raw[8:12] == b'WEBP')
+                 or (ext == 'gif' and raw[:6] in (b'GIF87a', b'GIF89a')))
+        if not valid:
+            return self._err(415, "разрешены только PNG, JPEG, WebP и GIF с корректным содержимым")
         # не затирать уже загруженные картинки с тем же именем
         stem, _, ext = name.rpartition(".")
         n = 2
@@ -285,8 +301,8 @@ class Handler(BaseHTTPRequestHandler):
                 sm = open(os.path.join(SITE, "sitemap.xml"), encoding="utf-8").read()
                 urls = re.findall(r"<loc>(.*?)</loc>", sm)
                 payload = json.dumps({
-                    "host": "pdd-drive.ru", "key": key,
-                    "keyLocation": "https://pdd-drive.ru/%s" % keyfile, "urlList": urls,
+                    "host": "pdd-drive.app", "key": key,
+                    "keyLocation": "https://pdd-drive.app/%s" % keyfile, "urlList": urls,
                 }).encode("utf-8")
                 req = urllib.request.Request(
                     "https://api.indexnow.org/indexnow", data=payload,

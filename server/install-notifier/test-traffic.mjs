@@ -1,3 +1,4 @@
+import { RankedRuns } from './ranked_runs.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import worker, { sanitizeAnalyticsEvent } from './worker.js';
@@ -57,6 +58,7 @@ function setup() {
   env.STATS = namespace(StatsBuffer, env);
   env.TELEGRAM = namespace(TelegramQueue, env);
   env.TRAFFIC = namespace(TrafficState, env);
+  env.RANKED_RUNS = namespace(RankedRuns, env);
   return env;
 }
 async function alarm(record) { record.state.storage.alarm = null; return record.object.alarm(); }
@@ -187,11 +189,13 @@ test('Telegram 429 and temporary network failure preserve ordered messages and r
   } finally { globalThis.fetch = original; }
 });
 
-test('authenticated leaderboard response and deletion retain compatibility with installed clients', async () => {
+test('authenticated leaderboard response and deletion retain compatibility with registered runs', async t => {
+  let now = Date.now(); t.mock.method(Date, 'now', () => now);
   const e = setup(), userId = 'apple_test';
   const token = await signSession(e, { user: { id: userId, provider: 'apple', email: '' }, expiresAt: Date.now() + 60000, generation: '' });
   const call = (path, body) => worker.fetch(new Request('https://test' + path, { method: body ? 'POST' : 'GET', headers: { authorization: 'Bearer ' + token, 'x-install-secret': e.SHARED_SECRET, 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) }), e);
-  const score = await call('/api/game/score', { userId, delta: 14, newRun: true, runScore: 14 });
+  await call('/api/game/run', { runId: 'compat-run' }); now += 1000;
+  const score = await call('/api/game/score', { userId, runId: 'compat-run', delta: 14, newRun: true, runScore: 14 });
   assert.equal(score.status, 200); const result = await score.json(); assert.equal(result.weekScore, 14);
   const board = await call('/api/game/leaderboard?userId=' + userId);
   const publicBoard = await board.json();
@@ -235,7 +239,8 @@ test('concurrent cumulative reports all contribute and retries survive a Traffic
   assert.equal(await record.state.storage.get('ranking:' + userId), undefined);
 });
 
-test('score API exposes only my daily budget and applies unlimited daily legacy and cumulative rules in DO and KV', async () => {
+test('score API requires a registered run and exposes only my budget in DO and KV', async t => {
+  let now = Date.now(); t.mock.method(Date, 'now', () => now);
   for (const durable of [true, false]) {
     const e = setup(), userId = 'apple_ranked';
     if (!durable) delete e.TRAFFIC;
@@ -248,12 +253,16 @@ test('score API exposes only my daily budget and applies unlimited daily legacy 
       assert.equal(response.status, 200);
       return response.json();
     };
-    assert.equal((await score({ score: 100 })).credited, 100);
+    assert.equal((await score({ score: 100 })).ranked, false);
+    for (const runId of ['legacy-run', 'same-run', 'bounded-run']) assert.equal((await worker.fetch(new Request('https://test/api/game/run', { method: 'POST', headers, body: JSON.stringify({ runId }) }), e)).status, 200);
+    now += 10000;
+    assert.equal((await score({ runId: 'legacy-run', score: 100 })).credited, 100);
     assert.equal((await score({ runId: 'same-run', runScore: 200 })).credited, 200);
     assert.equal((await score({ runId: 'same-run', score: 200 })).credited, 0);
     assert.equal((await score({ runId: 'same-run', runScore: 80, delta: -120 })).weekScore, 300);
     assert.equal((await score({ runId: 'same-run', runScore: 260 })).credited, 60);
-    const clipped = await score({ score: 99999999 });
+    now += 40000;
+    const clipped = await score({ runId: 'bounded-run', score: 1500 });
     assert.equal(clipped.credited, 1500);
     assert.equal(clipped.weekScore, 1860);
     assert.equal(clipped.dailyLimit, null);

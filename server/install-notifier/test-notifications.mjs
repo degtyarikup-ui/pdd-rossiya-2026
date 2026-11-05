@@ -136,7 +136,7 @@ test('admin page embeds one functional notifications screen and complete client 
  new Function(NOTIFICATIONS_CLIENT_JS);
  const html=await(await worker.fetch(new Request('https://test/admin'),{})).text();
  assert.equal((html.match(/id="notifications-view"/g)||[]).length,1);
- new Function(html.match(/<script>([\s\S]*)<\/script>/)[1]);
+ new Function([...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(match => match[1]).join('\n'));
  assert.match(html,/data-feature="notifications"/);
 });
 

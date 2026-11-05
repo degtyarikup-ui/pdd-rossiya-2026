@@ -31,7 +31,7 @@ Map<String, String> validateWebOAuthReturn(
   if (!['apple', 'yandex'].contains(provider) ||
       params['provider'] != provider ||
       pending?['state'] is! String ||
-      (pending!['state'] as String).length != 64 ||
+      !RegExp(r'^(app_)?[a-f0-9]{64}$').hasMatch(pending!['state'] as String) ||
       params['state'] != pending['state'] ||
       started is! int ||
       now.millisecondsSinceEpoch - started < 0 ||

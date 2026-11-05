@@ -257,7 +257,7 @@ export async function handleAuth(request, env, verify = verifyIdentity, onFailur
 
 export async function authorizeUserRequest(request, env) {
   const url = new URL(request.url);
-  if (!url.pathname.startsWith('/api/user/') && url.pathname !== '/api/game/score') return { session: null };
+  if (!url.pathname.startsWith('/api/user/') && url.pathname !== '/api/game/score' && url.pathname !== '/api/game/run') return { session: null };
   const session = await readSession(request, env);
   if (!session) return { response: reply({ error: 'authentication required' }, 401) };
   let body = {};

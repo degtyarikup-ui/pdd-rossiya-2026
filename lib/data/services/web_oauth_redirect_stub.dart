@@ -1,3 +1,5 @@
+String webOAuthReturnState(String randomState) => randomState;
+
 Future<Never> startWebOAuth(String provider, Uri authorizationUrl) =>
     throw UnsupportedError('Web OAuth is only available in a browser');
 
