@@ -3866,7 +3866,7 @@ const workerHandlers = {
 
       if (!reply) {
         if (!userMessage && !messages.length && officialExplanation) return jsonResponse({ ok: true, reply: officialExplanation, generated: false, aiUnavailable: true, ...access.quota });
-        return jsonResponse({ error: 'ai_unavailable', generated: false, ...access.quota }, 503);
+        return jsonResponse({ error: 'ai_unavailable', generated: false, ...access.quota }, 503, { 'Retry-After': '10' });
       }
 
       return jsonResponse({

@@ -13,7 +13,16 @@ class DiagnosticContext {
     final result = <String, dynamic>{};
     for (final entry in {
       'phase': {'background', 'paywall', 'purchase'},
-      'stage': {'availability', 'query', 'framework', 'unhandled'},
+      'stage': {
+        'availability',
+        'query',
+        'framework',
+        'unhandled',
+        'telegram_request',
+        'telegram_check',
+        'provider',
+        'session',
+      },
       'sdkSource': {'app_store', 'google_play'},
     }.entries) {
       if (entry.value.contains(input[entry.key])) {
@@ -28,6 +37,10 @@ class DiagnosticContext {
     ]) {
       final v = input[key];
       if (v is int && v >= 0 && v <= 100) result[key] = v;
+    }
+    final status = input['httpStatus'];
+    if (status is int && status >= 400 && status <= 599) {
+      result['httpStatus'] = status;
     }
     final hash = input['sdkCodeHash'];
     if (hash is String && RegExp(r'^[a-f0-9]{16}$').hasMatch(hash)) {

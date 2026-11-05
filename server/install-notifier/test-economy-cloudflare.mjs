@@ -48,3 +48,10 @@ test('billing routes require admin auth before any network or storage work',asyn
  const e=env();const response=await worker.fetch(new Request('https://example.invalid/api/admin/economy/cloudflare/sync',{method:'POST'}),e,{waitUntil(){}});
  assert.equal(response.status,401);assert.equal(e.INSTALLS.store.size,0);
 });
+test('temporary billing HTTP failure retries reads without discarding verified invoices on cache write failure',async()=>{
+ const e=env();e.INSTALLS.put=async()=>{throw Error('cache unavailable');};let failed=false;
+ const result=await getCloudflareBilling(e,{now,sleep:async()=>{},fetch:async url=>{
+   if(url.includes('history')&&!failed){failed=true;return new Response('',{status:503});}return fakeFetch(url);
+ }});
+ assert.equal(result.invoices.length,3);assert.equal(result.stale,false);
+});

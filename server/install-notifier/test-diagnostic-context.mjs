@@ -135,3 +135,9 @@ test('support context accepts only fixed stages and integer error statuses, excl
     assert.deepEqual(sanitizeDiagnosticContext({ upstreamStatus }), {});
   }
 });
+
+test('auth transport preserves bounded HTTP status and stage without raw response data', () => {
+ const result = sanitizeDiagnosticContext({stage:'telegram_check',httpStatus:503,body:'SECRET',verifier:'SECRET',headers:{authorization:'SECRET'}});
+ assert.deepEqual(result,{stage:'telegram_check',httpStatus:503});
+ assert.equal(sanitizeDiagnosticContext({httpStatus:999}).httpStatus,undefined);
+});

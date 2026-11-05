@@ -480,7 +480,14 @@ export async function handleEconomyAdmin(request, env, url, deps = {}) {
   if (path === '/api/admin/economy/stats' && request.method === 'GET') {
     const period = url.searchParams.get('period') || 'month';
     if (!['month', '30d', 'all'].includes(period)) return reply({ error: 'Неизвестный период' }, 400);
-    return reply({ ok: true, ...await computeEconomyStats(env, period, deps) });
+    try { return reply({ ok: true, ...await computeEconomyStats(env, period, deps) }); }
+    catch (error) {
+      if (error.code !== 'economy_billing_unavailable') throw error;
+      // Never invent zero expenses when the verified invoice ledger is absent.
+      const response = reply({ error: 'Счета Cloudflare временно недоступны. Повторите обновление; предыдущие данные сохранены.' }, 503);
+      response.headers.set('Retry-After', '5');
+      return response;
+    }
   }
   const match = path.match(/^\/api\/admin\/economy\/(expenses|revenues|withdrawals)\/(add|update|delete)$/);
   if (request.method !== 'POST' || (!match && path !== '/api/admin/economy/settings')) return reply({ error: 'not found' }, 404);

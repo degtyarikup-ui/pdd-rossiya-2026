@@ -1306,6 +1306,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sign-in wasn\'t completed. Choose your account again.';
 
   @override
+  String get authErrorApple =>
+      'Apple could not complete sign-in. Check that you are signed in to your Apple Account on this device, then try again. If you already have Premium or saved progress, use your previous sign-in method.';
+
+  @override
   String get authErrorProvider =>
       'Couldn\'t sign in with the selected service. Try again or choose another way to sign in.';
 

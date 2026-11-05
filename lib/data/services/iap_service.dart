@@ -195,7 +195,7 @@ class IapService extends ChangeNotifier {
         },
       );
 
-      _isAvailable = await _iap.isAvailable();
+      _isAvailable = await _iap.isAvailable().timeout(productQueryTimeout);
       if (!_isAvailable) return;
       // Страна аккаунта Play нужна пейволлу: узнаём заранее, чтобы он не ждал.
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
@@ -342,19 +342,24 @@ class IapService extends ChangeNotifier {
 
   Future<void> _loadProducts() async {
     if (!supportsStoreBilling) return;
-    _productContext = {'stage': 'availability'};
-    try {
-      if (!_isAvailable) {
+    for (var attempt = 1; !_isAvailable; attempt++) {
+      _productContext = {'stage': 'availability', 'attempt': attempt};
+      String? failure;
+      StackTrace? failureStack;
+      try {
         _isAvailable = await _iap.isAvailable().timeout(productQueryTimeout);
-        if (!_isAvailable) {
-          _reportProducts('store_unavailable');
-          return;
-        }
+        if (_isAvailable) break;
+        failure = 'store_unavailable';
+      } catch (error, stack) {
+        _lastErrorMessage = error.toString();
+        failure = ErrorReporter.codeFor(error);
+        failureStack = stack;
       }
-    } catch (e, stack) {
-      _lastErrorMessage = e.toString();
-      _reportProducts(ErrorReporter.codeFor(e), stack: stack);
-      return;
+      if (attempt >= _productAttempts || _permanentProductFailure(failure)) {
+        _reportProducts(failure, stack: failureStack);
+        return;
+      }
+      await Future<void>.delayed(productRetryUnit * attempt);
     }
     for (var attempt = 1; ; attempt++) {
       _productContext = {
@@ -364,13 +369,20 @@ class IapService extends ChangeNotifier {
       };
       final failure = await _queryProducts();
       if (failure == null) return;
-      if (attempt == _productAttempts) {
+      if (attempt == _productAttempts || _permanentProductFailure(failure)) {
         _reportProducts(failure);
         return;
       }
       await Future<void>.delayed(productRetryUnit * attempt);
     }
   }
+
+  // Configuration/eligibility failures need user or console action, not a loop.
+  static bool _permanentProductFailure(String code) => {
+    'developer_error',
+    'billing_unavailable',
+    'item_unavailable',
+  }.contains(code);
 
   Future<String?> _queryProducts() async {
     // A previously loaded ProductDetails may contain an expired Google Play

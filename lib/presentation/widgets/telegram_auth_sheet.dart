@@ -131,6 +131,11 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
         ErrorCategory.auth,
         'telegram.request',
         error: e,
+        code: e is TelegramAuthHttpException ? e.code : null,
+        context: {
+          'stage': 'telegram_request',
+          if (e is TelegramAuthHttpException) 'httpStatus': e.statusCode,
+        },
         provider: 'telegram',
       );
       if (mounted) {
@@ -223,7 +228,13 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
     }
 
     try {
-      final response = await _transport.check(_challenge!);
+      final response = await _transport.check(
+        _challenge!,
+        stillWanted: () =>
+            mounted &&
+            revision == _flowRevision &&
+            (_foreground || _challenge?.verifier == null),
+      );
       if (!mounted || revision != _flowRevision) return;
 
       if (response.statusCode == 200) {
@@ -257,12 +268,14 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
           throw const FormatException('Invalid Telegram status');
         }
       } else {
-        throw StateError('Telegram check unavailable');
+        throw TelegramAuthHttpException(response.statusCode);
       }
-    } catch (e) {
-      if (!mounted || revision != _flowRevision) return;
-      // A response may have been lost after the one-time claim. Stop rather
-      // than replaying it; the visible retry explicitly starts a new challenge.
+    } catch (e, stack) {
+      if (!mounted || revision != _flowRevision || e is TelegramAuthCancelled) {
+        return;
+      }
+      // Transport exhausted safe v2 retries (or stopped an uncertain legacy
+      // claim). A visible retry starts a new challenge.
       timer.cancel();
       _pollTimer = null;
       _challenge = null;
@@ -271,6 +284,12 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
         ErrorCategory.auth,
         'telegram.check',
         error: e,
+        stack: stack,
+        code: e is TelegramAuthHttpException ? e.code : null,
+        context: {
+          'stage': 'telegram_check',
+          if (e is TelegramAuthHttpException) 'httpStatus': e.statusCode,
+        },
         provider: 'telegram',
       );
     }

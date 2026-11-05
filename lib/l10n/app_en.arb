@@ -462,6 +462,7 @@
   "authSuccess": "Login successful",
   "authFailed": "Sign-in didn't work. Please try again.",
   "authErrorCancelled": "Sign-in wasn't completed. Choose your account again.",
+  "authErrorApple": "Apple could not complete sign-in. Check that you are signed in to your Apple Account on this device, then try again. If you already have Premium or saved progress, use your previous sign-in method.",
   "authErrorProvider": "Couldn't sign in with the selected service. Try again or choose another way to sign in.",
   "authErrorGoogleServices": "Google sign-in isn't available on this phone: Google Play services are missing or need an update. Sign in with Yandex or Telegram.",
   "authErrorNetwork": "No internet connection. Check it and try again.",

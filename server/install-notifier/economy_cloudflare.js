@@ -32,9 +32,16 @@ export function normalizeUsage(rows) {
 }
 async function fetchBilling(env, deps) {
   const request = async path => {
-    const response = await (deps.fetch || fetch)('https://api.cloudflare.com/client/v4/accounts/' + env.CLOUDFLARE_BILLING_ACCOUNT_ID + '/' + path, {
-      method: 'GET', redirect: 'manual', headers: { Authorization: 'Bearer ' + env.CLOUDFLARE_BILLING_TOKEN, Accept: 'application/json' }, signal: AbortSignal.timeout(8000),
-    });
+    let response;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      response = await (deps.fetch || fetch)('https://api.cloudflare.com/client/v4/accounts/' + env.CLOUDFLARE_BILLING_ACCOUNT_ID + '/' + path, {
+        method: 'GET', redirect: 'manual', headers: { Authorization: 'Bearer ' + env.CLOUDFLARE_BILLING_TOKEN, Accept: 'application/json' }, signal: AbortSignal.timeout(8000),
+      });
+      if (![502, 503, 504].includes(response.status) || attempt === 1) break;
+      const cooldown = response.headers.get('retry-after');
+      if (cooldown && (!/^\d+$/.test(cooldown) || Number(cooldown) > 2)) break;
+      await (deps.sleep || (ms => new Promise(resolve => setTimeout(resolve, ms))))(cooldown ? Number(cooldown) * 1000 : 300);
+    }
     if (!response.ok) throw new Error('Billing unavailable');
     const data = await response.json();
     if (!data.success) throw new Error('Billing unavailable');
@@ -73,13 +80,17 @@ export async function getCloudflareBilling(env, deps = {}) {
   if (cached && !deps.force && (deps.now ?? Date.now()) - Date.parse(cached.updatedAt) < TTL) return { ...cached, configured: true, stale: false };
   let task = flights.get(env.INSTALLS);
   if (!task) {
-    task = fetchBilling(env, deps).then(async data => { await env.INSTALLS.put(KEY, JSON.stringify(data)); return data; });
+    task = fetchBilling(env, deps).then(async data => {
+      // A failed cache write must not discard already verified invoices.
+      try { await env.INSTALLS.put(KEY, JSON.stringify(data)); } catch (_) {}
+      return data;
+    });
     flights.set(env.INSTALLS, task);
   }
   try { return { ...await task, configured: true, stale: false }; }
   catch (_) {
     if (cached) return { ...cached, configured: true, stale: true, error: 'Cloudflare недоступен. Показаны последние счета.' };
-    throw new Error('Счета Cloudflare пока недоступны. Повторите обновление.');
+    throw Object.assign(new Error('Счета Cloudflare пока недоступны. Повторите обновление.'), { code: 'economy_billing_unavailable' });
   } finally { if (flights.get(env.INSTALLS) === task) flights.delete(env.INSTALLS); }
 }
 // Only unambiguous, exact date/currency/amount matches. Original manual entries

@@ -37,6 +37,68 @@ void main() {
   }
 
   test(
+    'service notices never become model answers in later requests',
+    () async {
+      final sent = await send(
+        history: [
+          AiChatMessage(
+            text: 'network error',
+            isUser: false,
+            isNotice: true,
+            timestamp: DateTime(2026),
+          ),
+          AiChatMessage(
+            text: 'question',
+            isUser: true,
+            timestamp: DateTime(2026),
+          ),
+        ],
+      );
+      expect(jsonDecode(sent.body)['messages'], [
+        {'text': 'question', 'isUser': true},
+      ]);
+    },
+  );
+
+  test(
+    'AI outage carries a bounded cooldown and never automatically replays the paid POST',
+    () async {
+      var calls = 0;
+      await http.runWithClient(
+        () async {
+          await expectLater(
+            GeminiAiService.instance.askAiQuestion(
+              questionId: 'q',
+              questionText: 'q',
+              answers: ['a'],
+              correctAnswerIndex: 0,
+              officialExplanation: null,
+              conversationHistory: [],
+              userMessage: 'why',
+            ),
+            throwsA(
+              isA<AiServiceException>().having(
+                (e) => e.retryAfterSeconds,
+                'cooldown',
+                10,
+              ),
+            ),
+          );
+        },
+        () => MockClient((_) async {
+          calls++;
+          return http.Response(
+            'upstream unavailable',
+            503,
+            headers: {'retry-after': '10'},
+          );
+        }),
+      );
+      expect(calls, 1);
+    },
+  );
+
+  test(
     'ordinary AI request preserves the question and recent conversation',
     () async {
       final history = [

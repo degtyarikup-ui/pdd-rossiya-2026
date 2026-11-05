@@ -2308,6 +2308,12 @@ abstract class AppLocalizations {
   /// **'Вход не завершён. Выберите аккаунт ещё раз.'**
   String get authErrorCancelled;
 
+  /// No description provided for @authErrorApple.
+  ///
+  /// In ru, this message translates to:
+  /// **'Apple не завершила вход. Проверьте, что на устройстве выполнен вход в Аккаунт Apple, и повторите попытку. Если у вас уже есть Премиум или прогресс, используйте прежний способ входа.'**
+  String get authErrorApple;
+
   /// No description provided for @authErrorProvider.
   ///
   /// In ru, this message translates to:

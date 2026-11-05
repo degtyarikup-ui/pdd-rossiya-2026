@@ -6,7 +6,7 @@ export function sanitizeDiagnosticContext(value) {
   const result = {};
   for (const [key, allowed] of Object.entries({
     phase: ['background', 'paywall', 'purchase'],
-    stage: ['availability', 'query', 'framework', 'unhandled', 'server'],
+    stage: ['availability', 'query', 'framework', 'unhandled', 'server', 'telegram_request', 'telegram_check', 'provider', 'session'],
     sdkSource: ['app_store', 'google_play'],
     errorType: ['Error', 'TypeError', 'RangeError', 'ReferenceError', 'SyntaxError'],
     supportStage: ['list', 'seed'],
@@ -16,6 +16,7 @@ export function sanitizeDiagnosticContext(value) {
   }
   for (const key of ['retryable', 'overloaded']) if (typeof input[key] === 'boolean') result[key] = input[key];
   if (Number.isInteger(input.upstreamStatus) && input.upstreamStatus >= 400 && input.upstreamStatus <= 599) result.upstreamStatus = input.upstreamStatus;
+  if (Number.isInteger(input.httpStatus) && input.httpStatus >= 400 && input.httpStatus <= 599) result.httpStatus = input.httpStatus;
   if (typeof input.sdkCodeHash === 'string' && /^[a-f0-9]{16}$/.test(input.sdkCodeHash)) result.sdkCodeHash = input.sdkCodeHash;
   if (Array.isArray(input.missingIds)) result.missingIds = [...new Set(input.missingIds.filter(v => products.has(v)))].slice(0, 4);
   if (Array.isArray(input.frames)) result.frames = input.frames.filter(v => typeof v === 'string' && v.length <= 160 && /^(?:package:pdd_app\/(?:[a-zA-Z0-9_]+\/)*[a-zA-Z0-9_]+\.dart(?::\d{1,6}(?::\d{1,5})?)?|[a-z_]{1,48}\.js:\d{1,6}:\d{1,5})$/.test(v)).slice(0, 6);

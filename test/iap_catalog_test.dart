@@ -33,8 +33,11 @@ class CatalogStore extends InAppPurchasePlatform {
 
   @override
   Stream<List<PurchaseDetails>> get purchaseStream => const Stream.empty();
+  int availabilityFailures = 0;
+  int availabilityChecks = 0;
   @override
-  Future<bool> isAvailable() async => true;
+  Future<bool> isAvailable() async =>
+      ++availabilityChecks > availabilityFailures;
   @override
   Future<ProductDetailsResponse> queryProductDetails(Set<String> ids) async {
     requests.add(Set.of(ids));
@@ -68,6 +71,30 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
     IapService.productRetryUnit = const Duration(seconds: 2);
   });
+
+  test(
+    'store reconnects before products load and unavailable store stays bounded',
+    () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      store.availabilityFailures = 1;
+      store.products = [
+        product('u.pdd.pddApp.premium.week'),
+        product('ru.pdd.pddApp.sub.3months'),
+      ];
+      final iap = IapService.forTesting();
+      addTearDown(iap.dispose);
+      await iap.loadProducts(phase: ProductLoadPhase.paywall);
+      expect(store.availabilityChecks, 2);
+      expect(iap.hasCompleteStoreProducts, true);
+      store.availabilityChecks = 0;
+      store.availabilityFailures = 100;
+      final unavailable = IapService.forTesting();
+      addTearDown(unavailable.dispose);
+      await unavailable.loadProducts(phase: ProductLoadPhase.paywall);
+      expect(store.availabilityChecks, 3);
+      expect(unavailable.isAvailable, false);
+    },
+  );
 
   for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
     test('$platform queries only its two verified storefront IDs', () async {

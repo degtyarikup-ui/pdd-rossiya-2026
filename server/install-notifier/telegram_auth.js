@@ -40,15 +40,30 @@ const SESSION_SECONDS = 30 * 86400;
 export class TelegramAuthState {
   constructor(state) { this.state = state; }
   async fetch(request) {
-    const { op, entry } = await request.json();
-    const cur = await this.state.storage.get('e');
+    const body = await request.json();
+    if (body.op === 'put') await this.state.storage.setAlarm(Date.now() + 300000);
+    return this.state.storage.transaction(storage => this.operate(body, storage));
+  }
+  async alarm() { await this.state.storage.deleteAll(); }
+  async operate({ op, entry }, storage) {
+    const cur = await storage.get('e');
     const alive = cur && cur.expiresAt > Date.now() ? cur : null;
+    if (op === 'complete') {
+      if (!alive || !alive.verifier || alive.verifier !== entry?.verifier || alive.status !== 'confirmed') return Response.json({ entry: null });
+      if (!alive.result) {
+        alive.result = entry.result;
+        await storage.put('e', alive);
+      }
+      return Response.json({ entry: alive });
+    }
     if (op === 'put') {
-      await this.state.storage.put('e', { ...entry, expiresAt: Date.now() + 300000 });
+      // A duplicate webhook cannot overwrite a confirmation or a saved result.
+      if (alive?.status === 'confirmed') return Response.json({ ok: true });
+      await storage.put('e', { ...entry, expiresAt: alive?.expiresAt || Date.now() + 300000 });
       return Response.json({ ok: true });
     }
-    if (!alive && cur) await this.state.storage.deleteAll();
-    if (op === 'claim' && alive?.status === 'confirmed') await this.state.storage.deleteAll();
+    if (!alive && cur) await storage.delete('e');
+    if (op === 'claim' && alive?.status === 'confirmed') await storage.delete('e');
     return Response.json({ entry: alive });
   }
 }
@@ -127,6 +142,13 @@ export async function handleTelegramAuthRequest(request, env, ctx) {
     return reply({ error: 'storage_not_configured' }, 503);
   }
 
+  let input = {};
+  try { const raw = await request.text(); input = raw ? JSON.parse(raw) : {}; }
+  catch { return reply({ error: 'invalid_json' }, 400); }
+  const resumable = input?.protocolVersion === 2;
+  if (resumable && !env.TG_AUTH) return reply({ error: 'storage_unavailable' }, 503);
+  const verifier = resumable ? Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2, '0')).join('') : null;
+
   // Фоном: ответ приложению не должен ждать Telegram.
   const warm = ensureWebhookSecret(request, env).catch(() => {});
   if (ctx?.waitUntil) ctx.waitUntil(warm);
@@ -134,9 +156,9 @@ export async function handleTelegramAuthRequest(request, env, ctx) {
   const username = telegramBotUsername(env);
 
   try {
-    await authPut(env, nonce, { status: 'pending', createdAt: Date.now() }); // 5 минут на подтверждение
+    await authPut(env, nonce, { status: 'pending', createdAt: Date.now(), ...(verifier ? { verifier } : {}) }); // 5 минут на подтверждение
   } catch (_) {
-    try { await authPut(env, nonce, { status: 'pending', createdAt: Date.now() }); } catch (e) {
+    try { await authPut(env, nonce, { status: 'pending', createdAt: Date.now(), ...(verifier ? { verifier } : {}) }); } catch (e) {
       return reply({ error: 'storage_unavailable' }, 503);
     }
   }
@@ -145,6 +167,7 @@ export async function handleTelegramAuthRequest(request, env, ctx) {
     ok: true,
     nonce,
     botUsername: username,
+    ...(verifier ? { protocolVersion: 2, verifier } : {}),
     botUrl: `https://t.me/${username}?start=${nonce}`,
     tgUrl: `tg://resolve?domain=${username}&start=${nonce}`,
   });
@@ -177,15 +200,16 @@ export async function handleTelegramAuthCheck(request, env, signSessionFn) {
 
   const entry = await authGet(env, nonce);
   if (!entry) return reply({ ok: false, status: 'expired' });
+  // The bot link never contains the verifier. Only the initiating client can
+  // retrieve the saved result after a lost response. Legacy claims stay one-use.
+  if (entry.verifier && entry.verifier !== body.verifier) return reply({ error: 'forbidden' }, 403);
+  if (entry.result) return reply(entry.result);
 
   if (entry?.status === 'pending') {
     return reply({ ok: false, status: 'pending' });
   }
 
   if (entry?.status === 'confirmed' && entry?.user?.id) {
-    // Однократное использование кода: забираем атомарно, повторный запрос получит expired.
-    if (!(await authClaim(env, nonce))) return reply({ ok: false, status: 'expired' });
-
     const user = entry.user;
     const expiresAt = Date.now() + SESSION_SECONDS * 1000;
     const generation = (await accountRead(env, user.id, 'auth_generation:' + user.id)) || '';
@@ -197,13 +221,15 @@ export async function handleTelegramAuthCheck(request, env, signSessionFn) {
       return reply({ error: 'session_secret_not_configured' }, 503);
     }
 
-    return reply({
-      ok: true,
-      status: 'confirmed',
-      token,
-      expiresAt: new Date(expiresAt).toISOString(),
-      user,
-    });
+    const result = { ok: true, status: 'confirmed', token, expiresAt: new Date(expiresAt).toISOString(), user };
+    if (entry.verifier) {
+      const saved = await authOp(env, nonce, 'complete', { verifier: body.verifier, result });
+      return reply(saved?.result || { ok: false, status: 'expired' });
+    }
+    // Finish fallible reads/signing before consuming a legacy one-time claim.
+    // Only the winner of the atomic claim may return its candidate session.
+    if (!(await authClaim(env, nonce))) return reply({ ok: false, status: 'expired' });
+    return reply(result);
   }
 
   return reply({ ok: false, status: 'invalid' });
@@ -249,7 +275,7 @@ export async function processTelegramAuthMessage(msg, env, verified = false) {
         createdAt: new Date().toISOString(),
       };
 
-      await authPut(env, param, { status: 'confirmed', user, confirmedAt: Date.now() });
+      await authPut(env, param, { ...entry, status: 'confirmed', user, confirmedAt: Date.now() });
 
       if (token) {
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {

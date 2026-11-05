@@ -74,6 +74,7 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
     final auth = _auth;
     final message = switch (auth.lastFailure) {
       AuthFailure.cancelled => appL10n.authErrorCancelled,
+      AuthFailure.appleProvider => appL10n.authErrorApple,
       AuthFailure.provider => appL10n.authErrorProvider,
       AuthFailure.googleServices => appL10n.authErrorGoogleServices,
       AuthFailure.network => appL10n.authErrorNetwork,

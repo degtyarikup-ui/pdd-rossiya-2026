@@ -12,23 +12,27 @@ import 'package:pdd_app/l10n/l10n.dart';
 class AiChatMessage {
   final String text;
   final bool isUser;
+  final bool isNotice;
   final DateTime timestamp;
 
   const AiChatMessage({
     required this.text,
     required this.isUser,
+    this.isNotice = false,
     required this.timestamp,
   });
 
   Map<String, dynamic> toJson() => {
     'text': text,
     'isUser': isUser,
+    if (isNotice) 'isNotice': true,
     'timestamp': timestamp.toIso8601String(),
   };
 
   factory AiChatMessage.fromJson(Map<String, dynamic> json) => AiChatMessage(
     text: json['text'] as String? ?? '',
     isUser: json['isUser'] == true,
+    isNotice: json['isNotice'] == true,
     timestamp: json['timestamp'] != null
         ? DateTime.tryParse(json['timestamp'] as String) ?? DateTime.now()
         : DateTime.now(),
@@ -55,8 +59,11 @@ class GeminiAiService {
   }) {
     String clip(String value, int limit) =>
         value.length <= limit ? value : value.substring(0, limit);
-    final recent = messages
-        .skip(messages.length > 20 ? messages.length - 20 : 0)
+    final conversation = messages
+        .where((message) => !message.isNotice)
+        .toList();
+    final recent = conversation
+        .skip(conversation.length > 20 ? conversation.length - 20 : 0)
         .map(
           (message) => {
             'text': clip(message.text, 2000),
@@ -149,6 +156,15 @@ class GeminiAiService {
           body: jsonEncode(payload),
         )
         .timeout(const Duration(seconds: 12));
+    if ([502, 503, 504].contains(response.statusCode)) {
+      throw AiServiceException(
+        retryAfterSeconds:
+            (int.tryParse(response.headers['retry-after'] ?? '') ?? 10).clamp(
+              1,
+              300,
+            ),
+      );
+    }
     final data = jsonDecode(response.body);
     if (revision != AuthService.instance.accountRevision) {
       throw const AiServiceException(authenticationRequired: true);

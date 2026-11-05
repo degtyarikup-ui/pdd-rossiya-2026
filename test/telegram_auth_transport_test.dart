@@ -163,6 +163,104 @@ void main() {
     },
   );
 
+  test(
+    'v2 retries lost responses and temporary HTTP errors with the same proof',
+    () async {
+      var checks = 0;
+      final bodies = <String>[];
+      final transport = TelegramAuthTransport(
+        hosts: hosts,
+        retryDelay: Duration.zero,
+        client: MockClient((request) async {
+          if (request.method == 'GET') return http.Response(healthBody, 200);
+          if (request.url.path.endsWith('/request')) {
+            expect(jsonDecode(request.body)['protocolVersion'], 2);
+            return http.Response(
+              jsonEncode({
+                ...jsonDecode(challenge().body),
+                'protocolVersion': 2,
+                'verifier': 'a' * 64,
+              }),
+              200,
+            );
+          }
+          checks++;
+          bodies.add(request.body);
+          if (checks == 1) {
+            throw http.ClientException('response lost after commit');
+          }
+          if (checks == 2) return http.Response('{}', 503);
+          return http.Response('{"ok":true,"status":"confirmed"}', 200);
+        }),
+      );
+      final c = await transport.createChallenge(stillWanted: () => true);
+      expect((await transport.check(c)).statusCode, 200);
+      expect(checks, 3);
+      expect(bodies.toSet().length, 1);
+      expect(jsonDecode(bodies.first)['verifier'], 'a' * 64);
+      transport.close();
+    },
+  );
+
+  test('v2 does not retry forbidden or a long server cooldown', () async {
+    for (final status in [403, 429]) {
+      var calls = 0;
+      final transport = TelegramAuthTransport(
+        hosts: hosts,
+        retryDelay: Duration.zero,
+        client: MockClient((_) async {
+          calls++;
+          return http.Response('{}', status, headers: {'retry-after': '60'});
+        }),
+      );
+      await expectLater(
+        transport.check(
+          TelegramAuthChallenge(
+            host: hosts.first,
+            nonce: 'auth_test',
+            botUsername: 'test_bot',
+            verifier: 'a' * 64,
+          ),
+        ),
+        throwsA(
+          isA<TelegramAuthHttpException>().having(
+            (e) => e.statusCode,
+            'HTTP',
+            status,
+          ),
+        ),
+      );
+      expect(calls, 1);
+      transport.close();
+    }
+  });
+
+  test('closed transport cannot resume a retry', () async {
+    var calls = 0;
+    late TelegramAuthTransport transport;
+    transport = TelegramAuthTransport(
+      hosts: hosts,
+      retryDelay: Duration.zero,
+      client: MockClient((_) async {
+        calls++;
+        transport.close();
+        throw http.ClientException('offline');
+      }),
+    );
+    await expectLater(
+      transport.check(
+        TelegramAuthChallenge(
+          host: hosts.first,
+          nonce: 'auth_test',
+          botUsername: 'test_bot',
+          verifier: 'a' * 64,
+        ),
+      ),
+      throwsA(isA<TelegramAuthCancelled>()),
+    );
+    expect(calls, 1);
+  });
+
   Future<void> open(
     WidgetTester tester,
     TelegramAuthTransport transport,

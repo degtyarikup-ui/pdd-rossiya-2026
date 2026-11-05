@@ -177,7 +177,7 @@ export async function reportIncident(env, incident) {
       authProvider: tag(user?.provider, null),
       installation: typeof incident.installation === 'string' && /^[a-f0-9]{16}$/.test(incident.installation) ? incident.installation : null,
       diagnosticId: typeof incident.diagnosticId === 'string' && /^[a-f0-9-]{36}$/.test(incident.diagnosticId) ? incident.diagnosticId : null,
-      status: Number.isInteger(incident.status) && incident.status >= 400 && incident.status <= 599 ? incident.status : null,
+      status: Number.isInteger(incident.status) && incident.status >= 400 && incident.status <= 599 ? incident.status : sanitizeDiagnosticContext(incident.context).httpStatus ?? null,
       payment: incident.origin === 'client' ? null : paymentContext(incident.payment),
       // A failed store re-check does not leave a payer without access when the
       // account already has Premium (see storeRecheckWithPremium).

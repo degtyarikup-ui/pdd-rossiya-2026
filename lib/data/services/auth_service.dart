@@ -30,6 +30,7 @@ import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
 enum AuthFailure {
   cancelled,
   provider,
+  appleProvider,
 
   /// Android without working Google Play services: Google sign-in cannot run.
   googleServices,
@@ -118,6 +119,9 @@ class AuthService extends ChangeNotifier {
         error: error,
         code: code,
         provider: attempt.provider,
+        context: {
+          'stage': operation == 'auth.provider' ? 'provider' : 'session',
+        },
       );
     } else {
       unawaited(
@@ -130,6 +134,9 @@ class AuthService extends ChangeNotifier {
                   ? 'operation_failed'
                   : ErrorReporter.codeFor(error)),
           provider: attempt.provider,
+          context: {
+            'stage': operation == 'auth.provider' ? 'provider' : 'session',
+          },
         ),
       );
     }
@@ -269,7 +276,9 @@ class AuthService extends ChangeNotifier {
       lastFailure = AuthFailure.cancelled;
       return;
     }
-    lastFailure = error is TimeoutException
+    lastFailure = error is SignInWithAppleAuthorizationException
+        ? AuthFailure.appleProvider
+        : error is TimeoutException
         ? AuthFailure.timeout
         : isRetryableNetworkError(error)
         ? AuthFailure.network

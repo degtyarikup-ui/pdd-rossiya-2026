@@ -208,8 +208,13 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
           });
         }
         setState(() {
+          // Keep the question ready for an explicit retry without duplicating
+          // it in history; never replace a draft typed during the request.
+          _chatMessages.remove(userMessage);
+          if (_textController.text.isEmpty) _textController.text = textToSend;
           _chatMessages.add(
             AiChatMessage(
+              isNotice: true,
               text: e is AiServiceException && e.authenticationRequired
                   ? appL10n.aiSignInRequired
                   : e is AiServiceException && e.quotaExceeded
