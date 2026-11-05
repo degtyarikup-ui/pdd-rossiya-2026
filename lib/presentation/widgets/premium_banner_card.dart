@@ -183,12 +183,16 @@ class PremiumBannerArtwork extends StatefulWidget {
     super.key,
     required this.isPremium,
     this.contained = false,
+    this.centered = false,
   });
 
   final bool isPremium;
 
   /// Checkout headers show the whole car; profile banners let it reach the edge.
   final bool contained;
+
+  /// A centered car with room for rays on the checkout success screen.
+  final bool centered;
 
   @override
   State<PremiumBannerArtwork> createState() => _PremiumBannerArtworkState();
@@ -228,17 +232,43 @@ class _PremiumBannerArtworkState extends State<PremiumBannerArtwork>
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final artWidth = width * (widget.contained ? 1 : 1.28);
+        final contained = widget.contained || widget.centered;
+        final artWidth =
+            width *
+            (widget.centered
+                ? .88
+                : contained
+                ? 1
+                : 1.28);
         final raySize = artWidth * 1.45;
+        final car = AnimatedBuilder(
+          animation: _driveIn,
+          child: RepaintBoundary(
+            child: Image.asset(
+              'assets/images/premium/car.png',
+              fit: BoxFit.contain,
+              cacheWidth: 768,
+              filterQuality: FilterQuality.medium,
+            ),
+          ),
+          builder: (context, child) => Transform.translate(
+            key: const ValueKey('premium-car-arrival'),
+            offset: Offset(artWidth * .16 * (1 - _driveIn.value), 0),
+            child: Opacity(
+              opacity: (_arrival.value / .4).clamp(0, 1),
+              child: child,
+            ),
+          ),
+        );
         return Stack(
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              right: widget.contained ? 0 : artWidth * -0.21,
-              bottom: widget.contained ? 0 : artWidth * -0.60,
-              width: widget.contained ? width : raySize,
-              height: widget.contained ? constraints.maxHeight : raySize,
-              child: widget.contained
+              right: contained ? 0 : artWidth * -0.21,
+              bottom: contained ? 0 : artWidth * -0.60,
+              width: contained ? width : raySize,
+              height: contained ? constraints.maxHeight : raySize,
+              child: contained
                   ? ShaderMask(
                       blendMode: BlendMode.dstIn,
                       shaderCallback: (rect) => const RadialGradient(
@@ -253,30 +283,19 @@ class _PremiumBannerArtworkState extends State<PremiumBannerArtwork>
                     )
                   : _RotatingPremiumRays(isPremium: widget.isPremium),
             ),
-            Positioned(
-              right: widget.contained ? 0 : artWidth * -0.28,
-              bottom: widget.contained ? 0 : artWidth * -0.11,
-              width: artWidth,
-              child: AnimatedBuilder(
-                animation: _driveIn,
-                child: RepaintBoundary(
-                  child: Image.asset(
-                    'assets/images/premium/car.png',
-                    fit: BoxFit.contain,
-                    cacheWidth: 768,
-                    filterQuality: FilterQuality.medium,
-                  ),
+            if (widget.centered)
+              Positioned.fill(
+                child: Center(
+                  child: SizedBox(width: artWidth, child: car),
                 ),
-                builder: (context, child) => Transform.translate(
-                  key: const ValueKey('premium-car-arrival'),
-                  offset: Offset(artWidth * .16 * (1 - _driveIn.value), 0),
-                  child: Opacity(
-                    opacity: (_arrival.value / .4).clamp(0, 1),
-                    child: child,
-                  ),
-                ),
+              )
+            else
+              Positioned(
+                right: widget.contained ? 0 : artWidth * -0.28,
+                bottom: widget.contained ? 0 : artWidth * -0.11,
+                width: artWidth,
+                child: car,
               ),
-            ),
           ],
         );
       },

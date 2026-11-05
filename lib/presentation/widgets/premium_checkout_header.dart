@@ -23,8 +23,10 @@ class PremiumCheckoutHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final complete = stage == 2;
-    final foreground = complete ? AppColors.primaryText : AppColors.white;
+    if (stage == 2) {
+      return _CheckoutSuccess(title: title, subtitle: subtitle);
+    }
+    const foreground = AppColors.white;
     final labels = [
       appL10n.checkoutTabAccount,
       appL10n.checkoutTabPayment,
@@ -51,7 +53,7 @@ class PremiumCheckoutHeader extends StatelessWidget {
                       Row(
                         children: [
                           SvgPicture.asset(
-                            'assets/images/premium/verified_${complete ? 'lime' : 'blue'}.svg',
+                            'assets/images/premium/verified_blue.svg',
                             width: 20,
                             height: 20,
                             excludeFromSemantics: true,
@@ -115,7 +117,7 @@ class PremiumCheckoutHeader extends StatelessWidget {
                         child: ExcludeSemantics(
                           child: IgnorePointer(
                             child: PremiumBannerArtwork(
-                              isPremium: complete,
+                              isPremium: false,
                               contained: true,
                             ),
                           ),
@@ -167,9 +169,7 @@ class PremiumCheckoutHeader extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: i == stage
-                                    ? complete
-                                          ? AppColors.white
-                                          : AppColors.premiumLime
+                                    ? AppColors.premiumLime
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(
                                   AppDimensions.buttonRadius,
@@ -239,4 +239,90 @@ class PremiumCheckoutHeader extends StatelessWidget {
       },
     );
   }
+}
+
+class _CheckoutSuccess extends StatelessWidget {
+  const _CheckoutSuccess({required this.title, required this.subtitle});
+
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final artWidth = constraints.maxWidth.clamp(0.0, 460.0);
+      return Column(
+        key: const ValueKey('checkout-success'),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ExcludeSemantics(
+            child: IgnorePointer(
+              child: SizedBox(
+                width: artWidth,
+                height: artWidth * .8,
+                child: const PremiumBannerArtwork(
+                  isPremium: false,
+                  centered: true,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                'assets/images/premium/verified_blue.svg',
+                width: 20,
+                height: 20,
+                excludeFromSemantics: true,
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  appL10n.premiumAccessTitle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.white,
+                    fontSize: 15,
+                    height: 1.3,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Semantics(
+            header: true,
+            liveRegion: true,
+            child: Text(
+              title,
+              key: const ValueKey('checkout-stage-title'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.white,
+                fontSize: constraints.maxWidth < 360 ? 28 : 32,
+                height: 1.12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              subtitle!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.white,
+                fontSize: 18,
+                height: 1.45,
+              ),
+            ),
+          ],
+        ],
+      );
+    },
+  );
 }

@@ -338,9 +338,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
   );
 
   Widget _result(AppThemeColors colors) {
-    final message = _paid
-        ? appL10n.checkoutPaid
-        : _terminal
+    final message = _terminal
         ? appL10n.checkoutCanceled
         : _review
         ? appL10n.webPayCreationReview(_order!)
@@ -349,11 +347,9 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
         : appL10n.webPayPending;
     return _card([
       Icon(
-        _paid ? Icons.check_circle_rounded : Icons.receipt_long_rounded,
+        Icons.receipt_long_rounded,
         size: 44,
-        color: _paid
-            ? colors.accent
-            : colors.primaryText.withValues(alpha: 0.7),
+        color: colors.primaryText.withValues(alpha: 0.7),
       ),
       const SizedBox(height: 12),
       Semantics(
@@ -369,21 +365,6 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
           ),
         ),
       ),
-      if (_paid) ...[
-        if (_premium.expiresAt != null) ...[
-          const SizedBox(height: 12),
-          Text(
-            appL10n.premiumCelebrationUntil(
-              MaterialLocalizations.of(
-                context,
-              ).formatMediumDate(_premium.expiresAt!.toLocal()),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-        const SizedBox(height: 12),
-        Text(appL10n.checkoutReturn, textAlign: TextAlign.center),
-      ],
       const SizedBox(height: 12),
       SelectableText(
         appL10n.checkoutOrder(_order!),
@@ -393,36 +374,34 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
           color: colors.primaryText.withValues(alpha: 0.7),
         ),
       ),
-      if (!_paid) ...[
-        const SizedBox(height: 12),
-        if (!_terminal)
-          OutlinedButton.icon(
-            onPressed: _busy
-                ? null
-                : () {
-                    _checks = 0;
-                    unawaited(_check());
-                  },
-            icon: const Icon(Icons.refresh_rounded),
-            label: Text(appL10n.checkoutCheck),
-          ),
-        if (_paymentUrl != null && _status == 'pending')
-          TextButton(
-            onPressed: _busy ? null : _openPayment,
-            child: Text(appL10n.checkoutContinue),
-          ),
-        if (_terminal)
-          TextButton(
-            onPressed: _busy
-                ? null
-                : () => setState(() {
-                    _order = null;
-                    _status = null;
-                    _error = null;
-                  }),
-            child: Text(appL10n.checkoutChooseAgain),
-          ),
-      ],
+      const SizedBox(height: 12),
+      if (!_terminal)
+        OutlinedButton.icon(
+          onPressed: _busy
+              ? null
+              : () {
+                  _checks = 0;
+                  unawaited(_check());
+                },
+          icon: const Icon(Icons.refresh_rounded),
+          label: Text(appL10n.checkoutCheck),
+        ),
+      if (_paymentUrl != null && _status == 'pending')
+        TextButton(
+          onPressed: _busy ? null : _openPayment,
+          child: Text(appL10n.checkoutContinue),
+        ),
+      if (_terminal)
+        TextButton(
+          onPressed: _busy
+              ? null
+              : () => setState(() {
+                  _order = null;
+                  _status = null;
+                  _error = null;
+                }),
+          child: Text(appL10n.checkoutChooseAgain),
+        ),
     ], colors);
   }
 
@@ -435,8 +414,8 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
         : _paid
         ? 2
         : 1;
-    final pageForeground = _paid ? AppColors.primaryText : AppColors.white;
-    final pageBackground = _paid ? AppColors.premiumLime : AppColors.accent;
+    const pageForeground = AppColors.white;
+    const pageBackground = AppColors.accent;
     final title = !_signedIn
         ? appL10n.checkoutSignInTitle
         : _paid
@@ -495,301 +474,342 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
         ),
         centerTitle: false,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          controller: _scroll,
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-          child: AppContentFrame(
-            maxWidth: 600,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TickerMode(
-                  enabled: _active,
-                  child: PremiumCheckoutHeader(
-                    stage: stage,
-                    title: title,
-                    subtitle: subtitle,
-                    onAccountTap: _signedIn && !_creating && !_changingAccount
-                        ? _changeAccount
-                        : null,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (!_signedIn)
-                  Theme(
-                    data: AppTheme.lightTheme.copyWith(
-                      platform: Theme.of(context).platform,
-                      extensions: [
-                        AppThemeColors.light.copyWith(
-                          searchFieldFill: AppColors.white,
-                        ),
-                      ],
-                    ),
-                    child: const AuthModalSheet(embedded: true),
-                  )
-                else ...[
-                  _card([
-                    Text(
-                      _paid
-                          ? appL10n.checkoutAccountPaid
-                          : appL10n.checkoutAccount,
-                      style: TextStyle(
-                        color: colors.primaryText.withValues(alpha: 0.7),
+      body: _paid
+          ? SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  controller: _scroll,
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: (constraints.maxHeight - 64).clamp(
+                        0.0,
+                        double.infinity,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ExcludeSemantics(
-                          child: UserAvatar(
-                            key: const ValueKey('checkout-avatar'),
-                            url: user!.avatarUrl,
-                            useDefault: user.useDefaultAvatar,
-                            size: 48,
+                    child: Center(
+                      child: AppContentFrame(
+                        maxWidth: 600,
+                        child: TickerMode(
+                          enabled: _active,
+                          child: PremiumCheckoutHeader(
+                            stage: stage,
+                            title: title,
+                            subtitle: subtitle,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user.name,
-                                style: const TextStyle(
-                                  fontSize: 19,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                key: const ValueKey('checkout-account'),
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Tooltip(
-                                    message: _provider(user.provider),
-                                    child: SvgPicture.asset(
-                                      'assets/icons/auth/${user.provider.name}.svg',
-                                      width: 18,
-                                      height: 18,
-                                      excludeFromSemantics: true,
-                                      colorFilter:
-                                          user.provider ==
-                                              AuthProviderType.apple
-                                          ? ColorFilter.mode(
-                                              colors.primaryText,
-                                              BlendMode.srcIn,
-                                            )
-                                          : null,
-                                    ),
-                                  ),
-                                  if (user.email.isNotEmpty) ...[
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        user.email,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          height: 1.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : SafeArea(
+              child: SingleChildScrollView(
+                controller: _scroll,
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+                child: AppContentFrame(
+                  maxWidth: 600,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TickerMode(
+                        enabled: _active,
+                        child: PremiumCheckoutHeader(
+                          stage: stage,
+                          title: title,
+                          subtitle: subtitle,
+                          onAccountTap:
+                              _signedIn && !_creating && !_changingAccount
+                              ? _changeAccount
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (!_signedIn)
+                        Theme(
+                          data: AppTheme.lightTheme.copyWith(
+                            platform: Theme.of(context).platform,
+                            extensions: [
+                              AppThemeColors.light.copyWith(
+                                searchFieldFill: AppColors.white,
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        Tooltip(
-                          message: appL10n.checkoutChangeAccount,
-                          child: AppChromeIconButton(
-                            key: const ValueKey('checkout-change-account'),
-                            icon: Icons.close_rounded,
-                            backgroundColor: colors.searchFieldFill,
-                            onTap: _creating || _changingAccount
-                                ? null
-                                : _changeAccount,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (_premium.isPremium && !_paid)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text(
-                          appL10n.checkoutExistingPremium,
-                          style: TextStyle(color: colors.accent),
-                        ),
-                      ),
-                  ], colors),
-                  const SizedBox(height: 16),
-                  if (_order != null)
-                    _result(colors)
-                  else
-                    _card([
-                      for (final tier in [
-                        PremiumTier.threeMonths,
-                        PremiumTier.weekly,
-                      ]) ...[
-                        PremiumPlanCard(
-                          key: ValueKey('checkout-plan-${tier.name}'),
-                          title: tier == PremiumTier.weekly
-                              ? appL10n.webWeek
-                              : appL10n.webQuarter,
-                          price: tier == PremiumTier.weekly ? '99 ₽' : '290 ₽',
-                          period: tier == PremiumTier.weekly
-                              ? appL10n.checkoutDurationWeek
-                              : appL10n.checkoutDurationQuarter,
-                          selected: _tier == tier,
-                          badge: tier == PremiumTier.threeMonths
-                              ? appL10n.paywallBadgeBest
-                              : null,
-                          onTap: _locked
-                              ? null
-                              : () => setState(() {
-                                  _tier = tier;
-                                  setWebCheckoutTier(tier.name);
-                                }),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      Form(
-                        key: _form,
-                        child: TextFormField(
-                          key: const ValueKey('checkout-email'),
-                          controller: _email,
-                          enabled: !_locked,
-                          keyboardType: TextInputType.emailAddress,
-                          autofillHints: const [AutofillHints.email],
-                          decoration: InputDecoration(
-                            labelText: appL10n.checkoutReceiptEmailLabel,
-                          ),
-                          validator: (value) =>
-                              RegExp(
-                                r'^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$',
-                              ).hasMatch(value?.trim() ?? '')
-                              ? null
-                              : appL10n.webPayEmailInvalid,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      if (_restoreFailed)
-                        TextButton(
-                          onPressed: _busy ? null : _check,
-                          child: Text(appL10n.checkoutCheck),
-                        ),
-                      if (!_available && !_loadingAvailability) ...[
-                        Text(
-                          appL10n.checkoutUnavailable,
-                          style: TextStyle(
-                            color: colors.primaryText.withValues(alpha: 0.7),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: _loadAvailability,
-                          child: Text(appL10n.checkoutRetryAvailability),
-                        ),
-                      ],
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        key: const ValueKey('checkout-pay'),
-                        onPressed: _restoreFailed || _busy || !_available
-                            ? null
-                            : _pay,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colors.accent,
-                          foregroundColor: AppColors.white,
-                          minimumSize: const Size.fromHeight(56),
-                          padding: const EdgeInsets.all(16),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppDimensions.buttonRadius,
+                          child: const AuthModalSheet(embedded: true),
+                        )
+                      else ...[
+                        _card([
+                          Text(
+                            _paid
+                                ? appL10n.checkoutAccountPaid
+                                : appL10n.checkoutAccount,
+                            style: TextStyle(
+                              color: colors.primaryText.withValues(alpha: 0.7),
                             ),
                           ),
-                        ),
-                        child: _creating || _loadingAvailability
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.white,
-                                ),
-                              )
-                            : Text(
-                                _uncertainCreate
-                                    ? appL10n.checkoutRetryCreate
-                                    : appL10n.webPayButton,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                          const SizedBox(height: 12),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ExcludeSemantics(
+                                child: UserAvatar(
+                                  key: const ValueKey('checkout-avatar'),
+                                  url: user!.avatarUrl,
+                                  useDefault: user.useDefaultAvatar,
+                                  size: 48,
                                 ),
                               ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        appL10n.checkoutPaymentTerms,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          height: 1.5,
-                          color: colors.primaryText.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ], colors),
-                ],
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: _card([
-                      Semantics(
-                        liveRegion: true,
-                        child: Text(
-                          _error!,
-                          key: const ValueKey('checkout-error'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                            height: 1.5,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      user.name,
+                                      style: const TextStyle(
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      key: const ValueKey('checkout-account'),
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Tooltip(
+                                          message: _provider(user.provider),
+                                          child: SvgPicture.asset(
+                                            'assets/icons/auth/${user.provider.name}.svg',
+                                            width: 18,
+                                            height: 18,
+                                            excludeFromSemantics: true,
+                                            colorFilter:
+                                                user.provider ==
+                                                    AuthProviderType.apple
+                                                ? ColorFilter.mode(
+                                                    colors.primaryText,
+                                                    BlendMode.srcIn,
+                                                  )
+                                                : null,
+                                          ),
+                                        ),
+                                        if (user.email.isNotEmpty) ...[
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              user.email,
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                height: 1.5,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Tooltip(
+                                message: appL10n.checkoutChangeAccount,
+                                child: AppChromeIconButton(
+                                  key: const ValueKey(
+                                    'checkout-change-account',
+                                  ),
+                                  icon: Icons.close_rounded,
+                                  backgroundColor: colors.searchFieldFill,
+                                  onTap: _creating || _changingAccount
+                                      ? null
+                                      : _changeAccount,
+                                ),
+                              ),
+                            ],
                           ),
+                          if (_premium.isPremium && !_paid)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Text(
+                                appL10n.checkoutExistingPremium,
+                                style: TextStyle(color: colors.accent),
+                              ),
+                            ),
+                        ], colors),
+                        const SizedBox(height: 16),
+                        if (_order != null)
+                          _result(colors)
+                        else
+                          _card([
+                            for (final tier in [
+                              PremiumTier.threeMonths,
+                              PremiumTier.weekly,
+                            ]) ...[
+                              PremiumPlanCard(
+                                key: ValueKey('checkout-plan-${tier.name}'),
+                                title: tier == PremiumTier.weekly
+                                    ? appL10n.webWeek
+                                    : appL10n.webQuarter,
+                                price: tier == PremiumTier.weekly
+                                    ? '99 ₽'
+                                    : '290 ₽',
+                                period: tier == PremiumTier.weekly
+                                    ? appL10n.checkoutDurationWeek
+                                    : appL10n.checkoutDurationQuarter,
+                                selected: _tier == tier,
+                                badge: tier == PremiumTier.threeMonths
+                                    ? appL10n.paywallBadgeBest
+                                    : null,
+                                onTap: _locked
+                                    ? null
+                                    : () => setState(() {
+                                        _tier = tier;
+                                        setWebCheckoutTier(tier.name);
+                                      }),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                            Form(
+                              key: _form,
+                              child: TextFormField(
+                                key: const ValueKey('checkout-email'),
+                                controller: _email,
+                                enabled: !_locked,
+                                keyboardType: TextInputType.emailAddress,
+                                autofillHints: const [AutofillHints.email],
+                                decoration: InputDecoration(
+                                  labelText: appL10n.checkoutReceiptEmailLabel,
+                                ),
+                                validator: (value) =>
+                                    RegExp(
+                                      r'^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$',
+                                    ).hasMatch(value?.trim() ?? '')
+                                    ? null
+                                    : appL10n.webPayEmailInvalid,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            if (_restoreFailed)
+                              TextButton(
+                                onPressed: _busy ? null : _check,
+                                child: Text(appL10n.checkoutCheck),
+                              ),
+                            if (!_available && !_loadingAvailability) ...[
+                              Text(
+                                appL10n.checkoutUnavailable,
+                                style: TextStyle(
+                                  color: colors.primaryText.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _loadAvailability,
+                                child: Text(appL10n.checkoutRetryAvailability),
+                              ),
+                            ],
+                            const SizedBox(height: 8),
+                            ElevatedButton(
+                              key: const ValueKey('checkout-pay'),
+                              onPressed: _restoreFailed || _busy || !_available
+                                  ? null
+                                  : _pay,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colors.accent,
+                                foregroundColor: AppColors.white,
+                                minimumSize: const Size.fromHeight(56),
+                                padding: const EdgeInsets.all(16),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.buttonRadius,
+                                  ),
+                                ),
+                              ),
+                              child: _creating || _loadingAvailability
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.white,
+                                      ),
+                                    )
+                                  : Text(
+                                      _uncertainCreate
+                                          ? appL10n.checkoutRetryCreate
+                                          : appL10n.webPayButton,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              appL10n.checkoutPaymentTerms,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                height: 1.5,
+                                color: colors.primaryText.withValues(
+                                  alpha: 0.7,
+                                ),
+                              ),
+                            ),
+                          ], colors),
+                      ],
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: _card([
+                            Semantics(
+                              liveRegion: true,
+                              child: Text(
+                                _error!,
+                                key: const ValueKey('checkout-error'),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                          ], colors),
                         ),
+                      const SizedBox(height: 32),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8,
+                        children: [
+                          _link(
+                            appL10n.paywallTerms,
+                            CountryConfig.current.termsUrl,
+                          ),
+                          _link(
+                            appL10n.paywallPrivacy,
+                            CountryConfig.current.privacyUrl,
+                          ),
+                          _link(
+                            appL10n.checkoutSupport,
+                            'mailto:${CountryConfig.current.supportEmail}',
+                          ),
+                        ],
                       ),
-                    ], colors),
+                    ],
                   ),
-                const SizedBox(height: 32),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  children: [
-                    _link(appL10n.paywallTerms, CountryConfig.current.termsUrl),
-                    _link(
-                      appL10n.paywallPrivacy,
-                      CountryConfig.current.privacyUrl,
-                    ),
-                    _link(
-                      appL10n.checkoutSupport,
-                      'mailto:${CountryConfig.current.supportEmail}',
-                    ),
-                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 
   Widget _link(String label, String url) => TextButton(
     onPressed: () =>
         launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
-    style: TextButton.styleFrom(
-      foregroundColor: _paid ? AppColors.primaryText : AppColors.white,
-    ),
+    style: TextButton.styleFrom(foregroundColor: AppColors.white),
     child: Text(
       label,
       textAlign: TextAlign.center,

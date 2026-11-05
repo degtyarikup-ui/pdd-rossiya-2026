@@ -338,7 +338,7 @@ void main() {
             isFalse,
           );
           expect(find.text(appL10n.checkoutCanceled), findsNothing);
-          expect(find.text(appL10n.checkoutPaid), findsNothing);
+          expect(key('checkout-success'), findsNothing);
           expect(PremiumService.instance.isPremium, isFalse);
           await tester.pumpWidget(const SizedBox());
         },
@@ -378,7 +378,7 @@ void main() {
           );
           delayed.complete(response({'status': 'confirmed', 'order': order}));
           await tester.pumpAndSettle();
-          expect(find.text(appL10n.checkoutPaid), findsNothing);
+          expect(key('checkout-success'), findsNothing);
           expect(auth.currentUser!.id, 'google_C');
           expect(PremiumService.instance.isPremium, isFalse);
           await tester.pumpWidget(const SizedBox());
@@ -410,23 +410,24 @@ void main() {
         // Package/device metadata may finish on the platform event loop.
         await tester.runAsync(() => Future<void>.delayed(Duration.zero));
         await tester.pumpAndSettle();
-        expect(
-          tester.widget<Semantics>(key('checkout-stage-2')).properties.selected,
-          isTrue,
-        );
-        expect(
-          tester.widget<Semantics>(key('checkout-stage-1')).properties.value,
-          appL10n.checkoutStageCompleted,
-        );
+        expect(key('checkout-success'), findsOneWidget);
+        expect(key('checkout-stage-0'), findsNothing);
+        expect(key('checkout-stage-1'), findsNothing);
+        expect(key('checkout-stage-2'), findsNothing);
         expect(
           tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
-          AppColors.premiumLime,
+          AppColors.accent,
         );
         expect(
           find.text(appL10n.premiumCelebrationPurchasedTitle),
           findsOneWidget,
         );
-        expect(find.text(appL10n.checkoutAccountPaid), findsOneWidget);
+        expect(find.text(appL10n.premiumAccessTitle), findsOneWidget);
+        expect(find.text(appL10n.checkoutStepReturn), findsOneWidget);
+        expect(key('checkout-account'), findsNothing);
+        expect(key('checkout-avatar'), findsNothing);
+        expect(key('checkout-result'), findsNothing);
+        expect(find.text(appL10n.checkoutOrder(order)), findsNothing);
         expect(key('checkout-pay'), findsNothing);
         expect(key('checkout-confirm-account'), findsNothing);
         await tester.pumpWidget(const SizedBox());
