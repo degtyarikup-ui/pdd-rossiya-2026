@@ -891,6 +891,8 @@ iOS и веб используют загрузчик приложения до 
 операции через JavaScriptBridge.get_interface; eval и динамически собранный JS
 не используются. Поэтому CSP игры допускает WebAssembly, но не unsafe-eval.
 Ответы на жалобы принимаются только от parent с тем же origin.
+PackFiles отключает повторную gzip-распаковку в HTTPRequest на Web:
+браузер уже декодирует Content-Encoding CDN. Нативная обработка не меняется.
 Проверка моста: `node --test tools/web/test_godot_bridge.cjs` и запуск
 экспортированной игры в Chromium с CSP.
 

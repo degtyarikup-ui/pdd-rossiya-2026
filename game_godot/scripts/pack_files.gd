@@ -190,6 +190,8 @@ static func _request_url(res_path: String, url: String, try_cd: bool = false) ->
 
 static func _start_request(res_path: String, url: String, try_cd: bool) -> void:
 	var req := HTTPRequest.new()
+	# Browser Fetch already decompresses CDN responses; do not decode gzip twice.
+	req.accept_gzip = not web()
 	(Engine.get_main_loop() as SceneTree).root.add_child(req)
 	req.request_completed.connect(_on_fetched.bind(req, res_path, try_cd))
 	if req.request(url) != OK:
