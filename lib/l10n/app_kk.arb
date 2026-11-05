@@ -1537,9 +1537,6 @@
   "gameParkingSignMall": "САУДА ОРТАЛЫҒЫ",
   "gameParkingSignSchoolBuilding": "МЕКТЕП",
   "progressSyncDeferred": "Үлгеріміңіз осы құрылғыда сақталды. Сервер қолжетімді болғанда синхрондау жалғасады.",
-  "checkoutHeading": "Премиум қолжетімділік",
-  "checkoutStepAccount": "Қолданбада пайдаланатын аккаунтыңызға кіріңіз.",
-  "checkoutStepPay": "Тарифті таңдап, төлеңіз",
   "checkoutStepReturn": "Қолданбаға оралыңыз",
   "checkoutAccount": "Премиум осы аккаунтқа қосылады",
   "checkoutChangeAccount": "Басқа аккаунтқа кіру",
@@ -1570,5 +1567,27 @@
       }
     }
   },
-  "checkoutYandex": "Яндекс ID"
+  "checkoutYandex": "Яндекс ID",
+  "checkoutTabAccount": "Кіру",
+  "checkoutTabPayment": "Төлем",
+  "checkoutTabDone": "Дайын",
+  "checkoutSignInTitle": "Аккаунтыңызға кіріңіз",
+  "checkoutSignInSubtitle": "Қолданбада пайдаланатын аккаунтты таңдаңыз.",
+  "checkoutPaymentSubtitle": "Бір рет төлеңіз — автоматты ұзартусыз.",
+  "checkoutWaitingTitle": "Төлемді тексеріп жатырмыз",
+  "checkoutIssueTitle": "Төлем күйін тексеріңіз",
+  "checkoutWaitingSubtitle": "Төлем тексерілгеннен кейін нәтиже осы жерде көрсетіледі.",
+  "checkoutAccountPaid": "Премиум қосылған аккаунт",
+  "checkoutStageLabel": "3 қадамның {step}-қадамы: {title}",
+  "checkoutStageCompleted": "Аяқталды",
+  "@checkoutStageLabel": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  }
 }

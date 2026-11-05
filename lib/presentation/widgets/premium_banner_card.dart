@@ -121,7 +121,7 @@ class PremiumBannerCard extends ConsumerWidget {
                     height: artWidth * .62,
                     child: ExcludeSemantics(
                       child: IgnorePointer(
-                        child: _PremiumBannerArtwork(isPremium: isPremium),
+                        child: PremiumBannerArtwork(isPremium: isPremium),
                       ),
                     ),
                   );
@@ -177,16 +177,24 @@ class PremiumBannerCard extends ConsumerWidget {
   }
 }
 
-class _PremiumBannerArtwork extends StatefulWidget {
-  const _PremiumBannerArtwork({required this.isPremium});
+/// Shared car and rays for Premium surfaces, including the web checkout.
+class PremiumBannerArtwork extends StatefulWidget {
+  const PremiumBannerArtwork({
+    super.key,
+    required this.isPremium,
+    this.contained = false,
+  });
 
   final bool isPremium;
 
+  /// Checkout headers show the whole car; profile banners let it reach the edge.
+  final bool contained;
+
   @override
-  State<_PremiumBannerArtwork> createState() => _PremiumBannerArtworkState();
+  State<PremiumBannerArtwork> createState() => _PremiumBannerArtworkState();
 }
 
-class _PremiumBannerArtworkState extends State<_PremiumBannerArtwork>
+class _PremiumBannerArtworkState extends State<PremiumBannerArtwork>
     with SingleTickerProviderStateMixin {
   late final AnimationController _arrival = AnimationController(
     vsync: this,
@@ -220,21 +228,34 @@ class _PremiumBannerArtworkState extends State<_PremiumBannerArtwork>
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final artWidth = width * 1.28;
+        final artWidth = width * (widget.contained ? 1 : 1.28);
         final raySize = artWidth * 1.45;
         return Stack(
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              right: artWidth * -0.21,
-              bottom: artWidth * -0.60,
-              width: raySize,
-              height: raySize,
-              child: _RotatingPremiumRays(isPremium: widget.isPremium),
+              right: widget.contained ? 0 : artWidth * -0.21,
+              bottom: widget.contained ? 0 : artWidth * -0.60,
+              width: widget.contained ? width : raySize,
+              height: widget.contained ? constraints.maxHeight : raySize,
+              child: widget.contained
+                  ? ShaderMask(
+                      blendMode: BlendMode.dstIn,
+                      shaderCallback: (rect) => const RadialGradient(
+                        colors: [
+                          Colors.white,
+                          Colors.white,
+                          Colors.transparent,
+                        ],
+                        stops: [0, .35, 1],
+                      ).createShader(rect),
+                      child: _RotatingPremiumRays(isPremium: widget.isPremium),
+                    )
+                  : _RotatingPremiumRays(isPremium: widget.isPremium),
             ),
             Positioned(
-              right: artWidth * -0.28,
-              bottom: artWidth * -0.11,
+              right: widget.contained ? 0 : artWidth * -0.28,
+              bottom: widget.contained ? 0 : artWidth * -0.11,
               width: artWidth,
               child: AnimatedBuilder(
                 animation: _driveIn,

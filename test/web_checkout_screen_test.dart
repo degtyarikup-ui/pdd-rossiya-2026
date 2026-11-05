@@ -8,10 +8,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
+import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/pending_payment.dart';
+import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/premium_web_checkout_screen.dart';
@@ -49,11 +52,19 @@ void main() {
   }
 
   setUpAll(() async {
+    PackageInfo.setMockInitialValues(
+      appName: 'PDD test',
+      packageName: 'pdd.test',
+      version: '1.0',
+      buildNumber: '1',
+      buildSignature: '',
+    );
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({});
     await http.runWithClient(() async {
       await PremiumService.instance.init();
       await auth.init();
+      await InstallReporter.clientMetadata();
     }, () => MockClient(standard));
   });
   setUp(() async {
@@ -81,16 +92,19 @@ void main() {
   Widget page({
     PremiumWebCheckoutScreen? screen,
     double scale = 1,
+    bool disableAnimations = true,
+    bool dark = false,
     Locale locale = const Locale('ru'),
   }) => MaterialApp(
-    theme: AppTheme.lightTheme,
+    theme: dark ? AppTheme.darkTheme : AppTheme.lightTheme,
     locale: locale,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     builder: (context, child) => MediaQuery(
-      data: MediaQuery.of(
-        context,
-      ).copyWith(textScaler: TextScaler.linear(scale)),
+      data: MediaQuery.of(context).copyWith(
+        textScaler: TextScaler.linear(scale),
+        disableAnimations: disableAnimations,
+      ),
       child: child!,
     ),
     home: screen ?? const PremiumWebCheckoutScreen(),
@@ -111,6 +125,14 @@ void main() {
         await tester.pumpWidget(page());
         await tester.pumpAndSettle();
         expect(find.text('Премиум доступ'), findsOneWidget);
+        expect(find.text(appL10n.checkoutSignInTitle), findsOneWidget);
+        expect(
+          tester.widget<Semantics>(key('checkout-stage-0')).properties.selected,
+          isTrue,
+        );
+        // Upcoming tabs describe progress; they cannot bypass sign-in.
+        await tester.tap(key('checkout-stage-1'));
+        await tester.pump();
         expect(key('checkout-plan-weekly'), findsNothing);
         expect(key('checkout-pay'), findsNothing);
         expect(key('checkout-email'), findsNothing);
@@ -120,6 +142,11 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(key('checkout-account'), findsOneWidget);
+        expect(
+          tester.widget<Semantics>(key('checkout-stage-1')).properties.selected,
+          isTrue,
+        );
+        expect(find.text(appL10n.checkoutSignInTitle), findsNothing);
         expect(key('checkout-plan-weekly'), findsOneWidget);
         expect(key('checkout-pay'), findsOneWidget);
         await tester.runAsync(auth.signOut);
@@ -243,6 +270,20 @@ void main() {
           );
           await tester.pumpAndSettle();
           expect(find.text(appL10n.webPayPending), findsOneWidget);
+          expect(
+            tester
+                .widget<Semantics>(key('checkout-stage-1'))
+                .properties
+                .selected,
+            isTrue,
+          );
+          expect(
+            tester
+                .widget<Semantics>(key('checkout-stage-2'))
+                .properties
+                .selected,
+            isFalse,
+          );
           expect(find.text(appL10n.checkoutCanceled), findsNothing);
           expect(find.text(appL10n.checkoutPaid), findsNothing);
           expect(PremiumService.instance.isPremium, isFalse);
@@ -306,6 +347,87 @@ void main() {
     },
   );
 
+  testWidgets('only server confirmation completes the final stage', (
+    tester,
+  ) async {
+    await http.runWithClient(
+      () async {
+        await tester.pumpWidget(
+          page(
+            screen: const PremiumWebCheckoutScreen(
+              paymentReturn: (result: 'done', order: order),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        // Package/device metadata may finish on the platform event loop.
+        await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<Semantics>(key('checkout-stage-2')).properties.selected,
+          isTrue,
+        );
+        expect(
+          tester.widget<Semantics>(key('checkout-stage-1')).properties.value,
+          appL10n.checkoutStageCompleted,
+        );
+        expect(
+          tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
+          AppColors.premiumLime,
+        );
+        expect(
+          find.text(appL10n.premiumCelebrationPurchasedTitle),
+          findsOneWidget,
+        );
+        expect(find.text(appL10n.checkoutAccountPaid), findsOneWidget);
+        expect(key('checkout-pay'), findsNothing);
+        expect(key('checkout-confirm-account'), findsNothing);
+        await tester.pumpWidget(const SizedBox());
+      },
+      () => MockClient((request) async {
+        if (request.url.path == '/api/user/pay-check') {
+          return response({'status': 'confirmed', 'order': order});
+        }
+        if (request.url.path == '/api/user/sync') {
+          return response({'ok': true, 'isPremium': true});
+        }
+        return standard(request);
+      }),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'animated artwork survives account changes and stops in background',
+    (tester) async {
+      await http.runWithClient(() async {
+        await tester.pumpWidget(page(disableAnimations: false));
+        await tester.pump(const Duration(seconds: 1));
+        expect(key('premium-car-arrival'), findsOneWidget);
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        await tester.pumpAndSettle();
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump(const Duration(seconds: 1));
+        await tester.runAsync(auth.signOut);
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.text(appL10n.checkoutSignInTitle), findsOneWidget);
+        expect(key('checkout-pay'), findsNothing);
+        await tester.pumpWidget(const SizedBox());
+      }, () => MockClient(standard));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   for (final locale in const [Locale('ru'), Locale('en'), Locale('kk')]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets('checkout fits 320px with $locale at text scale $scale', (
@@ -321,6 +443,10 @@ void main() {
           await tester.pumpAndSettle();
           await tester.ensureVisible(key('checkout-pay'));
           await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          await tester.runAsync(auth.signOut);
+          await tester.pumpAndSettle();
+          expect(find.text(appL10n.checkoutSignInTitle), findsOneWidget);
           expect(tester.takeException(), isNull);
           await tester.pumpWidget(const SizedBox());
         }, () => MockClient(standard));

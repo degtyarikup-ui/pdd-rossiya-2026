@@ -4554,16 +4554,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Прогресс сохранён на устройстве. Синхронизация продолжится, когда сервер станет доступен.';
 
   @override
-  String get checkoutHeading => 'Премиум доступ';
-
-  @override
-  String get checkoutStepAccount =>
-      'Войдите в аккаунт, который используете в приложении.';
-
-  @override
-  String get checkoutStepPay => 'Выберите тариф и оплатите';
-
-  @override
   String get checkoutStepReturn => 'Вернитесь в приложение';
 
   @override
@@ -4646,4 +4636,45 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get checkoutYandex => 'Яндекс ID';
+
+  @override
+  String get checkoutTabAccount => 'Вход';
+
+  @override
+  String get checkoutTabPayment => 'Оплата';
+
+  @override
+  String get checkoutTabDone => 'Готово';
+
+  @override
+  String get checkoutSignInTitle => 'Войдите в аккаунт';
+
+  @override
+  String get checkoutSignInSubtitle =>
+      'Выберите аккаунт, который используете в приложении.';
+
+  @override
+  String get checkoutPaymentSubtitle =>
+      'Оплатите один раз — без автопродления.';
+
+  @override
+  String get checkoutWaitingTitle => 'Проверяем оплату';
+
+  @override
+  String get checkoutIssueTitle => 'Проверьте статус оплаты';
+
+  @override
+  String get checkoutWaitingSubtitle =>
+      'Результат появится здесь после проверки платежа.';
+
+  @override
+  String get checkoutAccountPaid => 'Премиум подключён к аккаунту';
+
+  @override
+  String checkoutStageLabel(int step, String title) {
+    return 'Шаг $step из 3: $title';
+  }
+
+  @override
+  String get checkoutStageCompleted => 'Завершён';
 }

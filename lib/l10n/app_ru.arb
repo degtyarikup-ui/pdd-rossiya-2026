@@ -2218,9 +2218,6 @@
   "gameParkingSignMall": "ТОРГОВЫЙ ЦЕНТР",
   "gameParkingSignSchoolBuilding": "ШКОЛА",
   "progressSyncDeferred": "Прогресс сохранён на устройстве. Синхронизация продолжится, когда сервер станет доступен.",
-  "checkoutHeading": "Премиум доступ",
-  "checkoutStepAccount": "Войдите в аккаунт, который используете в приложении.",
-  "checkoutStepPay": "Выберите тариф и оплатите",
   "checkoutStepReturn": "Вернитесь в приложение",
   "checkoutAccount": "Премиум будет подключён к аккаунту",
   "checkoutChangeAccount": "Войти в другой аккаунт",
@@ -2251,5 +2248,27 @@
       }
     }
   },
-  "checkoutYandex": "Яндекс ID"
+  "checkoutYandex": "Яндекс ID",
+  "checkoutTabAccount": "Вход",
+  "checkoutTabPayment": "Оплата",
+  "checkoutTabDone": "Готово",
+  "checkoutSignInTitle": "Войдите в\u00a0аккаунт",
+  "checkoutSignInSubtitle": "Выберите аккаунт, который используете в\u00a0приложении.",
+  "checkoutPaymentSubtitle": "Оплатите один раз — без автопродления.",
+  "checkoutWaitingTitle": "Проверяем оплату",
+  "checkoutIssueTitle": "Проверьте статус оплаты",
+  "checkoutWaitingSubtitle": "Результат появится здесь после проверки платежа.",
+  "checkoutAccountPaid": "Премиум подключён к аккаунту",
+  "checkoutStageLabel": "Шаг {step} из 3: {title}",
+  "checkoutStageCompleted": "Завершён",
+  "@checkoutStageLabel": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  }
 }

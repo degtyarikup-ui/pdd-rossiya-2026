@@ -4535,16 +4535,6 @@ class AppLocalizationsKk extends AppLocalizations {
       'Үлгеріміңіз осы құрылғыда сақталды. Сервер қолжетімді болғанда синхрондау жалғасады.';
 
   @override
-  String get checkoutHeading => 'Премиум қолжетімділік';
-
-  @override
-  String get checkoutStepAccount =>
-      'Қолданбада пайдаланатын аккаунтыңызға кіріңіз.';
-
-  @override
-  String get checkoutStepPay => 'Тарифті таңдап, төлеңіз';
-
-  @override
   String get checkoutStepReturn => 'Қолданбаға оралыңыз';
 
   @override
@@ -4626,4 +4616,45 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get checkoutYandex => 'Яндекс ID';
+
+  @override
+  String get checkoutTabAccount => 'Кіру';
+
+  @override
+  String get checkoutTabPayment => 'Төлем';
+
+  @override
+  String get checkoutTabDone => 'Дайын';
+
+  @override
+  String get checkoutSignInTitle => 'Аккаунтыңызға кіріңіз';
+
+  @override
+  String get checkoutSignInSubtitle =>
+      'Қолданбада пайдаланатын аккаунтты таңдаңыз.';
+
+  @override
+  String get checkoutPaymentSubtitle =>
+      'Бір рет төлеңіз — автоматты ұзартусыз.';
+
+  @override
+  String get checkoutWaitingTitle => 'Төлемді тексеріп жатырмыз';
+
+  @override
+  String get checkoutIssueTitle => 'Төлем күйін тексеріңіз';
+
+  @override
+  String get checkoutWaitingSubtitle =>
+      'Төлем тексерілгеннен кейін нәтиже осы жерде көрсетіледі.';
+
+  @override
+  String get checkoutAccountPaid => 'Премиум қосылған аккаунт';
+
+  @override
+  String checkoutStageLabel(int step, String title) {
+    return '3 қадамның $step-қадамы: $title';
+  }
+
+  @override
+  String get checkoutStageCompleted => 'Аяқталды';
 }

@@ -4534,16 +4534,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Progress is saved on this device. Sync will resume when the server is available.';
 
   @override
-  String get checkoutHeading => 'Premium access';
-
-  @override
-  String get checkoutStepAccount =>
-      'Sign in to the account you use in the app.';
-
-  @override
-  String get checkoutStepPay => 'Choose a plan and pay';
-
-  @override
   String get checkoutStepReturn => 'Return to the app';
 
   @override
@@ -4626,4 +4616,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkoutYandex => 'Yandex ID';
+
+  @override
+  String get checkoutTabAccount => 'Sign in';
+
+  @override
+  String get checkoutTabPayment => 'Payment';
+
+  @override
+  String get checkoutTabDone => 'Done';
+
+  @override
+  String get checkoutSignInTitle => 'Sign in to your account';
+
+  @override
+  String get checkoutSignInSubtitle => 'Choose the account you use in the app.';
+
+  @override
+  String get checkoutPaymentSubtitle => 'Pay once. No automatic renewal.';
+
+  @override
+  String get checkoutWaitingTitle => 'Checking your payment';
+
+  @override
+  String get checkoutIssueTitle => 'Check your payment status';
+
+  @override
+  String get checkoutWaitingSubtitle =>
+      'The result will appear here once your payment is verified.';
+
+  @override
+  String get checkoutAccountPaid => 'Premium is active on this account';
+
+  @override
+  String checkoutStageLabel(int step, String title) {
+    return 'Step $step of 3: $title';
+  }
+
+  @override
+  String get checkoutStageCompleted => 'Completed';
 }

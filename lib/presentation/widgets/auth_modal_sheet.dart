@@ -146,7 +146,11 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          color: widget.embedded
+              ? Colors.transparent
+              : isDark
+              ? const Color(0xFF1C1C1E)
+              : Colors.white,
           borderRadius: widget.embedded
               ? BorderRadius.circular(AppDimensions.cardRadius)
               : const BorderRadius.vertical(top: Radius.circular(24)),
@@ -155,12 +159,14 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
           top: false,
           child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppDimensions.screenPadding,
-                12,
-                AppDimensions.screenPadding,
-                24,
-              ),
+              padding: widget.embedded
+                  ? EdgeInsets.zero
+                  : const EdgeInsets.fromLTRB(
+                      AppDimensions.screenPadding,
+                      12,
+                      AppDimensions.screenPadding,
+                      24,
+                    ),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -205,7 +211,7 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                         ),
                       ),
                     SizedBox(
-                      height: widget.embedded ? 12 : 24,
+                      height: widget.embedded ? (_busy ? 12 : 0) : 24,
                       child: _busy
                           ? const Center(child: LinearProgressIndicator())
                           : null,
@@ -214,7 +220,9 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                       Text(
                         _error!,
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
+                          color: widget.embedded
+                              ? AppColors.white
+                              : Theme.of(context).colorScheme.error,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -294,7 +302,7 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                         label: Text(appL10n.authDebug),
                       ),
                     ],
-                    const SizedBox(height: 12),
+                    if (!widget.embedded) const SizedBox(height: 12),
                   ],
                 ),
               ),

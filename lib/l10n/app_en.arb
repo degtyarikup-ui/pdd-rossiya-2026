@@ -1537,9 +1537,6 @@
   "gameParkingSignMall": "SHOPPING CENTRE",
   "gameParkingSignSchoolBuilding": "SCHOOL",
   "progressSyncDeferred": "Progress is saved on this device. Sync will resume when the server is available.",
-  "checkoutHeading": "Premium access",
-  "checkoutStepAccount": "Sign in to the account you use in the app.",
-  "checkoutStepPay": "Choose a plan and pay",
   "checkoutStepReturn": "Return to the app",
   "checkoutAccount": "Premium will be added to this account",
   "checkoutChangeAccount": "Use a different account",
@@ -1570,5 +1567,27 @@
       }
     }
   },
-  "checkoutYandex": "Yandex ID"
+  "checkoutYandex": "Yandex ID",
+  "checkoutTabAccount": "Sign in",
+  "checkoutTabPayment": "Payment",
+  "checkoutTabDone": "Done",
+  "checkoutSignInTitle": "Sign in to your account",
+  "checkoutSignInSubtitle": "Choose the account you use in the app.",
+  "checkoutPaymentSubtitle": "Pay once. No automatic renewal.",
+  "checkoutWaitingTitle": "Checking your payment",
+  "checkoutIssueTitle": "Check your payment status",
+  "checkoutWaitingSubtitle": "The result will appear here once your payment is verified.",
+  "checkoutAccountPaid": "Premium is active on this account",
+  "checkoutStageLabel": "Step {step} of 3: {title}",
+  "checkoutStageCompleted": "Completed",
+  "@checkoutStageLabel": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  }
 }

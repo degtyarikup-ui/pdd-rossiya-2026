@@ -5,6 +5,7 @@ import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/layout/app_content_frame.dart';
+import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/browser_info_stub.dart'
@@ -15,6 +16,7 @@ import 'package:pdd_app/data/services/web_checkout_route.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_plan_card.dart';
+import 'package:pdd_app/presentation/widgets/premium_checkout_header.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Browser-only entry point. Native apps retain their store/region policies.
@@ -41,6 +43,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
   final _premium = PremiumService.instance;
   final _email = TextEditingController();
   final _form = GlobalKey<FormState>();
+  final _scroll = ScrollController();
   late PremiumTier _tier;
   String? _owner;
   String? _confirmedOwner;
@@ -93,6 +96,12 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
     unawaited(_loadAvailability());
   }
 
+  void _showStageStart() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _scroll.hasClients) _scroll.jumpTo(0);
+    });
+  }
+
   void _premiumChanged() {
     if (mounted) setState(() {});
   }
@@ -103,6 +112,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
     final firstOwner = _owner == null && _revision == 0;
     _owner = owner;
     _revision++;
+    _showStageStart();
     _creating = false;
     _checking = false;
     _restoring = false;
@@ -208,6 +218,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
         _paymentUrl = result.url == null ? null : Uri.tryParse(result.url!);
         _uncertainCreate = false;
       });
+      _showStageStart();
       if (_paymentUrl != null) await _openPayment();
       _scheduleCheck();
     } finally {
@@ -242,6 +253,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
       final details = await _premium.checkWebPaymentDetails(order: order);
       final status = details?.status;
       if (!mounted || revision != _revision || order != _order) return;
+      final previousStatus = _status;
       setState(() {
         _restoreFailed = status == null && order == null;
         if (details != null && WebCheckoutRoute.validOrder(details.order)) {
@@ -252,6 +264,9 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
         _error = status == null ? appL10n.checkoutCheckFailed : null;
         _checks++;
       });
+      if (previousStatus != _status && (_paid || _terminal || _review)) {
+        _showStageStart();
+      }
       if (_paid || _terminal) {
         final pending = await PendingPayment.current(ownerId: _owner);
         if (mounted && revision == _revision && pending == order) {
@@ -281,7 +296,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    _active = state == AppLifecycleState.resumed;
+    setState(() => _active = state == AppLifecycleState.resumed);
     if (_active) {
       _checks = 0;
       if (!_paid && !_terminal && !_review) unawaited(_check());
@@ -297,6 +312,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
     _premium.removeListener(_premiumChanged);
     WidgetsBinding.instance.removeObserver(this);
     _email.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -311,7 +327,6 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
     color: colors.cardBackground,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-      side: BorderSide(color: colors.divider),
     ),
     child: Padding(
       padding: const EdgeInsets.all(AppDimensions.spacingL),
@@ -319,38 +334,6 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: children,
       ),
-    ),
-  );
-
-  Widget _step(String number, String title, AppThemeColors colors) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CircleAvatar(
-          radius: 14,
-          backgroundColor: colors.lightAccent,
-          child: Text(
-            number,
-            style: TextStyle(
-              color: colors.accent,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              height: 1.4,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
     ),
   );
 
@@ -448,68 +431,107 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final user = _auth.currentUser;
+    final stage = !_signedIn
+        ? 0
+        : _paid
+        ? 2
+        : 1;
+    final pageForeground = _paid ? AppColors.primaryText : AppColors.white;
+    final pageBackground = _paid ? AppColors.premiumLime : AppColors.accent;
+    final title = !_signedIn
+        ? appL10n.checkoutSignInTitle
+        : _paid
+        ? appL10n.premiumCelebrationPurchasedTitle
+        : _order != null
+        ? (_terminal || _review)
+              ? appL10n.checkoutIssueTitle
+              : appL10n.checkoutWaitingTitle
+        : appL10n.checkoutChoosePlan;
+    final subtitle = !_signedIn
+        ? appL10n.checkoutSignInSubtitle
+        : _paid
+        ? appL10n.checkoutStepReturn
+        : _order != null
+        ? appL10n.checkoutWaitingSubtitle
+        : appL10n.checkoutPaymentSubtitle;
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: pageBackground,
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        backgroundColor: pageBackground,
+        foregroundColor: pageForeground,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        titleSpacing: 16,
         toolbarHeight: MediaQuery.textScalerOf(context).scale(18) > 26
             ? 88
             : 64,
-        title: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                'assets/images/app_icon.png',
-                width: 32,
-                height: 32,
-                excludeFromSemantics: true,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                CountryConfig.current.appTitle,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+        title: AppContentFrame(
+          maxWidth: 600,
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  'assets/images/app_icon.png',
+                  width: 32,
+                  height: 32,
+                  excludeFromSemantics: true,
                 ),
-                maxLines: 2,
               ),
-            ),
-          ],
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  CountryConfig.current.appTitle,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: pageForeground,
+                  ),
+                  maxLines: 2,
+                ),
+              ),
+            ],
+          ),
         ),
         centerTitle: false,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+          controller: _scroll,
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
           child: AppContentFrame(
             maxWidth: 600,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _card([
-                  Text(
-                    appL10n.checkoutHeading,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      height: 1.2,
-                      fontWeight: FontWeight.w700,
-                    ),
+                TickerMode(
+                  enabled: _active,
+                  child: PremiumCheckoutHeader(
+                    stage: stage,
+                    title: title,
+                    subtitle: subtitle,
                   ),
-                  const SizedBox(height: 20),
-                  _step('1', appL10n.checkoutStepAccount, colors),
-                  _step('2', appL10n.checkoutStepPay, colors),
-                  _step('3', appL10n.checkoutStepReturn, colors),
-                ], colors),
+                ),
                 const SizedBox(height: 16),
                 if (!_signedIn)
-                  const AuthModalSheet(embedded: true)
+                  Theme(
+                    data: AppTheme.lightTheme.copyWith(
+                      platform: Theme.of(context).platform,
+                      extensions: [
+                        AppThemeColors.light.copyWith(
+                          searchFieldFill: AppColors.white,
+                        ),
+                      ],
+                    ),
+                    child: const AuthModalSheet(embedded: true),
+                  )
                 else ...[
                   _card([
                     Text(
-                      appL10n.checkoutAccount,
+                      _paid
+                          ? appL10n.checkoutAccountPaid
+                          : appL10n.checkoutAccount,
                       style: TextStyle(
                         color: colors.primaryText.withValues(alpha: 0.7),
                       ),
@@ -546,20 +568,30 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
                         child: Text(appL10n.checkoutChangeAccount),
                       ),
                     ),
+                    if (_order == null)
+                      CheckboxListTile(
+                        key: const ValueKey('checkout-confirm-account'),
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        value: _confirmedOwner == _owner,
+                        onChanged: _locked
+                            ? null
+                            : (value) => setState(
+                                () => _confirmedOwner = value == true
+                                    ? _owner
+                                    : null,
+                              ),
+                        title: Text(
+                          appL10n.checkoutConfirmAccount,
+                          style: const TextStyle(fontSize: 14, height: 1.4),
+                        ),
+                      ),
                   ], colors),
                   const SizedBox(height: 16),
                   if (_order != null)
                     _result(colors)
                   else
                     _card([
-                      Text(
-                        appL10n.checkoutChoosePlan,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
                       for (final tier in [
                         PremiumTier.threeMonths,
                         PremiumTier.weekly,
@@ -608,23 +640,6 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
                         ),
                       ),
                       const SizedBox(height: 8),
-                      CheckboxListTile(
-                        key: const ValueKey('checkout-confirm-account'),
-                        contentPadding: EdgeInsets.zero,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: _confirmedOwner == _owner,
-                        onChanged: _locked
-                            ? null
-                            : (value) => setState(
-                                () => _confirmedOwner = value == true
-                                    ? _owner
-                                    : null,
-                              ),
-                        title: Text(
-                          appL10n.checkoutConfirmAccount,
-                          style: const TextStyle(fontSize: 14, height: 1.4),
-                        ),
-                      ),
                       if (_restoreFailed)
                         TextButton(
                           onPressed: _busy ? null : _check,
@@ -698,21 +713,23 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
                 ],
                 if (_error != null)
                   Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Semantics(
-                      liveRegion: true,
-                      child: Text(
-                        _error!,
-                        key: const ValueKey('checkout-error'),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                          height: 1.5,
+                    padding: const EdgeInsets.only(top: 16),
+                    child: _card([
+                      Semantics(
+                        liveRegion: true,
+                        child: Text(
+                          _error!,
+                          key: const ValueKey('checkout-error'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                            height: 1.5,
+                          ),
                         ),
                       ),
-                    ),
+                    ], colors),
                   ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 32),
                 Wrap(
                   alignment: WrapAlignment.center,
                   spacing: 8,
@@ -739,6 +756,13 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
   Widget _link(String label, String url) => TextButton(
     onPressed: () =>
         launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
-    child: Text(label, textAlign: TextAlign.center),
+    style: TextButton.styleFrom(
+      foregroundColor: _paid ? AppColors.primaryText : AppColors.white,
+    ),
+    child: Text(
+      label,
+      textAlign: TextAlign.center,
+      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+    ),
   );
 }

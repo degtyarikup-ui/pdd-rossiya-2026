@@ -7594,24 +7594,6 @@ abstract class AppLocalizations {
   /// **'Прогресс сохранён на устройстве. Синхронизация продолжится, когда сервер станет доступен.'**
   String get progressSyncDeferred;
 
-  /// No description provided for @checkoutHeading.
-  ///
-  /// In ru, this message translates to:
-  /// **'Премиум доступ'**
-  String get checkoutHeading;
-
-  /// No description provided for @checkoutStepAccount.
-  ///
-  /// In ru, this message translates to:
-  /// **'Войдите в аккаунт, который используете в приложении.'**
-  String get checkoutStepAccount;
-
-  /// No description provided for @checkoutStepPay.
-  ///
-  /// In ru, this message translates to:
-  /// **'Выберите тариф и оплатите'**
-  String get checkoutStepPay;
-
   /// No description provided for @checkoutStepReturn.
   ///
   /// In ru, this message translates to:
@@ -7755,6 +7737,78 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Яндекс ID'**
   String get checkoutYandex;
+
+  /// No description provided for @checkoutTabAccount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход'**
+  String get checkoutTabAccount;
+
+  /// No description provided for @checkoutTabPayment.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата'**
+  String get checkoutTabPayment;
+
+  /// No description provided for @checkoutTabDone.
+  ///
+  /// In ru, this message translates to:
+  /// **'Готово'**
+  String get checkoutTabDone;
+
+  /// No description provided for @checkoutSignInTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Войдите в аккаунт'**
+  String get checkoutSignInTitle;
+
+  /// No description provided for @checkoutSignInSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите аккаунт, который используете в приложении.'**
+  String get checkoutSignInSubtitle;
+
+  /// No description provided for @checkoutPaymentSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплатите один раз — без автопродления.'**
+  String get checkoutPaymentSubtitle;
+
+  /// No description provided for @checkoutWaitingTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверяем оплату'**
+  String get checkoutWaitingTitle;
+
+  /// No description provided for @checkoutIssueTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте статус оплаты'**
+  String get checkoutIssueTitle;
+
+  /// No description provided for @checkoutWaitingSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Результат появится здесь после проверки платежа.'**
+  String get checkoutWaitingSubtitle;
+
+  /// No description provided for @checkoutAccountPaid.
+  ///
+  /// In ru, this message translates to:
+  /// **'Премиум подключён к аккаунту'**
+  String get checkoutAccountPaid;
+
+  /// No description provided for @checkoutStageLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Шаг {step} из 3: {title}'**
+  String checkoutStageLabel(int step, String title);
+
+  /// No description provided for @checkoutStageCompleted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Завершён'**
+  String get checkoutStageCompleted;
 }
 
 class _AppLocalizationsDelegate
