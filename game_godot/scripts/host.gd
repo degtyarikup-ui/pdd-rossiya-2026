@@ -139,7 +139,7 @@ static func user_args() -> Array:
 
 
 static func _query_args() -> Array:
-	return parse_query(str(JavaScriptBridge.eval("window.location.search", true)))
+	return parse_query(str(JavaScriptBridge.get_interface("window").location.search))
 
 
 static func parse_query(search: String) -> Array:
@@ -189,15 +189,7 @@ static func share(text: String, title := "", image := "") -> void:
 			file.close()
 			DirAccess.rename_absolute(path + ".tmp", path)
 	elif on_web():
-		JavaScriptBridge.eval("""
-		(function() {
-			if (navigator.share) {
-				navigator.share({title: %s, text: %s}).catch(function(){});
-			} else if (navigator.clipboard) {
-				navigator.clipboard.writeText(%s);
-			}
-		})();
-		""" % [JSON.stringify(title), JSON.stringify(text), JSON.stringify(text)], true)
+		JavaScriptBridge.get_interface("PddWebBridge").share(title, text)
 		_post_to_parent("send", JSON.stringify({
 			"event": "share",
 			"text": text,
@@ -348,6 +340,4 @@ static func _write(data: Dictionary) -> void:
 
 
 static func _post_to_parent(kind: String, json: String) -> void:
-	JavaScriptBridge.eval(
-		"if (window.parent !== window) window.parent.postMessage(JSON.stringify({bridge: 'pdd-godot', kind: %s, json: %s}), window.location.origin);"
-		% [JSON.stringify(kind), JSON.stringify(json)], true)
+	JavaScriptBridge.get_interface("PddWebBridge").post(kind, json)

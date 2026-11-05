@@ -31,17 +31,7 @@ func submit(payload: Dictionary) -> void:
 		file.close()
 		if DirAccess.rename_absolute(path + ".tmp", path) != OK: _finish(false)
 	elif Host.on_web():
-		JavaScriptBridge.eval("""
-		window.pddReportReply = null;
-		window.pddReportListener = function(e) {
-		  if (e.source !== window.parent || e.origin !== window.location.origin) return;
-		  try {
-		    const d = JSON.parse(e.data);
-		    if (d.bridge === 'pdd-godot' && d.kind === 'question_report_result') window.pddReportReply = e.data;
-		  } catch (_) {}
-		};
-		window.addEventListener('message', window.pddReportListener);
-		""", true)
+		JavaScriptBridge.get_interface("PddWebBridge").beginReport()
 		Host.send({"event": "question_report", "request_id": request_id, "payload": payload})
 	else:
 		_finish(false)
@@ -60,7 +50,7 @@ func _process(_delta: float) -> void:
 		var path := Host.io.path_join("report-result.json")
 		if FileAccess.file_exists(path): raw = FileAccess.get_file_as_string(path)
 	elif Host.on_web():
-		raw = str(JavaScriptBridge.eval("window.pddReportReply || ''", true))
+		raw = str(JavaScriptBridge.get_interface("PddWebBridge").reportReply())
 	if raw.is_empty(): return
 	var reply = JSON.parse_string(raw)
 	if reply is Dictionary and str(reply.get("request_id", "")) == request_id:
@@ -100,7 +90,7 @@ func _cleanup() -> void:
 		_plugin.disconnect("game_data_result", _on_data_result)
 	_plugin = null
 	if Host.on_web() and request_id != "":
-		JavaScriptBridge.eval("window.removeEventListener('message', window.pddReportListener); delete window.pddReportListener; delete window.pddReportReply;", true)
+		JavaScriptBridge.get_interface("PddWebBridge").endReport()
 
 
 func _exit_tree() -> void:

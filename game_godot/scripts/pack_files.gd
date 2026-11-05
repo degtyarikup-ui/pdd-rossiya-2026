@@ -165,19 +165,19 @@ static func fetch(res_path: String, on_done: Callable) -> void:
 		return
 	_waiting[res_path] = [on_done]
 	if _base.is_empty():
-		_base = str(JavaScriptBridge.eval("new URL('.', window.location.href).href", true))
+		_base = str(JavaScriptBridge.get_interface("PddWebBridge").resolve("."))
 	var url := _base + res_path.trim_prefix("res://")
 	if _is_picture(res_path):
 		if _picture_base.is_empty():
-			_picture_base = str(JavaScriptBridge.eval("new URL('../assets/assets/countries/ru/images/questions_ab/', window.location.href).href", true))
+			_picture_base = str(JavaScriptBridge.get_interface("PddWebBridge").resolve("../assets/assets/countries/ru/images/questions_ab/"))
 		url = _picture_base + res_path.get_file()
 	elif _is_answer_audio(res_path):
 		if _answer_audio_base.is_empty():
-			_answer_audio_base = str(JavaScriptBridge.eval("new URL('../assets/assets/audio/', window.location.href).href", true))
+			_answer_audio_base = str(JavaScriptBridge.get_interface("PddWebBridge").resolve("../assets/assets/audio/"))
 		url = _answer_audio_base + res_path.get_file()
 	elif _is_question_audio(res_path):
 		if _question_audio_base.is_empty():
-			_question_audio_base = str(JavaScriptBridge.eval("new URL('../assets/assets/audio/game_questions/', window.location.href).href", true))
+			_question_audio_base = str(JavaScriptBridge.get_interface("PddWebBridge").resolve("../assets/assets/audio/game_questions/"))
 		url = _question_audio_base + res_path.get_file()
 	_request_url(res_path, url, _is_picture(res_path))
 

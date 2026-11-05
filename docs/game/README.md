@@ -886,6 +886,14 @@ Android: оба `ResultReceiver` перед помещением в Intent/Bundl
 Host.loading сигнализирует готовый кадр, Android рисует нативный маскот,
 iOS и веб используют загрузчик приложения до готовности игрового окна.
 
+Веб-мост Godot использует статический `game_godot/web_bridge.js`,
+копируемый в `host_bridge.js` при экспорте. GDScript вызывает именованные
+операции через JavaScriptBridge.get_interface; eval и динамически собранный JS
+не используются. Поэтому CSP игры допускает WebAssembly, но не unsafe-eval.
+Ответы на жалобы принимаются только от parent с тем же origin.
+Проверка моста: `node --test tools/web/test_godot_bridge.cjs` и запуск
+экспортированной игры в Chromium с CSP.
+
 ## Документы
 
 - `crossroads-refinement-2026-10-15.md` — один формат «Разрули перекрёсток», интерфейс, общая атмосфера и аудит дорожной сцены

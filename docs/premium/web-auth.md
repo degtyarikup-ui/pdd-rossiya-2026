@@ -29,7 +29,7 @@ Legacy-передача в opener сохранена для уже открыт�
 
 В Apple Developer (команда `6T66V45XC7`) создан Services ID
 `ru.pdd.pddapp.auth`, связанный с primary App ID `ru.pdd.pddApp`.
-Домены: `pdd-drive.ru`, `pdd-install-notifier.sergei-pdd.workers.dev`.
+Домены: `pdd-drive.app` (основной), `pdd-drive.ru` (совместимость), `pdd-install-notifier.sergei-pdd.workers.dev`.
 Точный Return URL:
 
 ```

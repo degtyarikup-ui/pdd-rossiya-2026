@@ -36,6 +36,14 @@ fi
 for required in index.html index.js index.wasm index.pck; do
   [[ -s "$PACKAGE/$required" ]] || { echo "Ошибка экспорта Godot: отсутствует $required; журнал: $LOG"; exit 1; }
 done
+# The host bridge is static JS so CSP never needs unsafe-eval for GDScript.
+cp game_godot/web_bridge.js "$PACKAGE/host_bridge.js"
+python3 - "$PACKAGE/index.html" <<'PYBRIDGE'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+path.write_text(path.read_text().replace('</head>', '<script src="host_bridge.js"></script>\n</head>'))
+PYBRIDGE
 # PackFiles fetches each junction beside the pack; the Flutter assets hold the
 # original question pictures and shared answer/voice audio.
 (cd "$STAGE/game_godot/situations" && find . -mindepth 2 -maxdepth 2 -type f \

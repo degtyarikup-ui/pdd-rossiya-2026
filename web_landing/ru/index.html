@@ -132,7 +132,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
         "name": "На каких устройствах доступно?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "На Android — через Google Play, на iPhone — через App Store, в любом браузере — через веб-версию pdd-drive.ru/app/"
+          "text": "На Android — через Google Play, на iPhone — через App Store, в любом браузере — через веб-версию pdd-drive.app/app/"
         }
       }
     ]
@@ -402,7 +402,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
         </details>
         <details>
           <summary>На каких устройствах доступно?</summary>
-          <p>На Android — через Google Play, на iPhone — через App Store, в любом браузере — через веб-версию pdd-drive.ru/app/</p>
+          <p>На Android — через Google Play, на iPhone — через App Store, в любом браузере — через веб-версию pdd-drive.app/app/</p>
         </details>
       </div>
     </div>
@@ -457,7 +457,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
 </footer>
 
 <script>
-// Пока поддомен app.pdd-drive.ru не ожил (DNS), ведём на временную копию /app/.
+// Пока поддомен app.pdd-drive.app не ожил (DNS), ведём на временную копию /app/.
 (function () {
   var degrade = function () {
     document.querySelectorAll('a[href^="/app/"]').forEach(function (a) { a.href = '/app/'; });
