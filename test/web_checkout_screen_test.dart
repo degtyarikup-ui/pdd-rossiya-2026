@@ -242,7 +242,7 @@ void main() {
           find.text('Оплатите один раз — без автопродления.'),
           findsNothing,
         );
-        expect(find.text(appL10n.checkoutEmailHelp), findsOneWidget);
+        expect(find.text(appL10n.checkoutReceiptEmailLabel), findsOneWidget);
         await tester.ensureVisible(key(control));
         await tester.runAsync(() async {
           final signedOut = Completer<void>();

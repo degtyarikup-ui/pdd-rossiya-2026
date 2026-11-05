@@ -4551,7 +4551,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get checkoutChoosePlan => 'Қолжетімділік мерзімін таңдаңыз';
 
   @override
-  String get checkoutEmailHelp => 'Чек үшін';
+  String get checkoutReceiptEmailLabel => 'Чекке арналған пошта';
 
   @override
   String get checkoutPaymentTerms =>

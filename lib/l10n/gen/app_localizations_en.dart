@@ -4550,7 +4550,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkoutChoosePlan => 'Choose your access period';
 
   @override
-  String get checkoutEmailHelp => 'For your receipt';
+  String get checkoutReceiptEmailLabel => 'Email for receipt';
 
   @override
   String get checkoutPaymentTerms =>

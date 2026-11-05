@@ -7624,11 +7624,11 @@ abstract class AppLocalizations {
   /// **'Выберите срок доступа'**
   String get checkoutChoosePlan;
 
-  /// No description provided for @checkoutEmailHelp.
+  /// No description provided for @checkoutReceiptEmailLabel.
   ///
   /// In ru, this message translates to:
-  /// **'Для чека'**
-  String get checkoutEmailHelp;
+  /// **'Почта для чека'**
+  String get checkoutReceiptEmailLabel;
 
   /// No description provided for @checkoutPaymentTerms.
   ///

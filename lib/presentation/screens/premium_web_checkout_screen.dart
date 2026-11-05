@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -562,13 +563,40 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                '${_provider(user.provider)}${user.email.isEmpty ? '' : ' · ${user.email}'}',
+                              Row(
                                 key: const ValueKey('checkout-account'),
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  height: 1.5,
-                                ),
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Tooltip(
+                                    message: _provider(user.provider),
+                                    child: SvgPicture.asset(
+                                      'assets/icons/auth/${user.provider.name}.svg',
+                                      width: 18,
+                                      height: 18,
+                                      excludeFromSemantics: true,
+                                      colorFilter:
+                                          user.provider ==
+                                              AuthProviderType.apple
+                                          ? ColorFilter.mode(
+                                              colors.primaryText,
+                                              BlendMode.srcIn,
+                                            )
+                                          : null,
+                                    ),
+                                  ),
+                                  if (user.email.isNotEmpty) ...[
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        user.email,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ),
@@ -636,9 +664,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
                           keyboardType: TextInputType.emailAddress,
                           autofillHints: const [AutofillHints.email],
                           decoration: InputDecoration(
-                            labelText: appL10n.webPayEmailHint,
-                            helperText: appL10n.checkoutEmailHelp,
-                            helperMaxLines: 3,
+                            labelText: appL10n.checkoutReceiptEmailLabel,
                           ),
                           validator: (value) =>
                               RegExp(

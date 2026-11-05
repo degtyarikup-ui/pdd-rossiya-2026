@@ -1542,7 +1542,7 @@
   "checkoutChangeAccount": "Back to sign in",
   "checkoutExistingPremium": "You already have Premium. This purchase adds time after your current access ends. It does not cancel any App Store or Google Play auto-renewal.",
   "checkoutChoosePlan": "Choose your access period",
-  "checkoutEmailHelp": "For your receipt",
+  "checkoutReceiptEmailLabel": "Email for receipt",
   "checkoutPaymentTerms": "One-time payment with no auto-renewal. By choosing “Pay via SBP”, you accept the terms of service. Payment opens on Platega’s secure page; the total, including any fee, is shown before you confirm with your bank.",
   "checkoutUnavailable": "SBP availability could not be confirmed. Check your connection and refresh payment availability.",
   "checkoutRetryAvailability": "Check SBP availability",

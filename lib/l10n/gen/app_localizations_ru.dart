@@ -4570,7 +4570,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get checkoutChoosePlan => 'Выберите срок доступа';
 
   @override
-  String get checkoutEmailHelp => 'Для чека';
+  String get checkoutReceiptEmailLabel => 'Почта для чека';
 
   @override
   String get checkoutPaymentTerms =>
