@@ -18,6 +18,8 @@ import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/premium_web_checkout_screen.dart';
+import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -110,12 +112,6 @@ void main() {
     home: screen ?? const PremiumWebCheckoutScreen(),
   );
   Finder key(String name) => find.byKey(ValueKey(name));
-  Future<void> confirm(WidgetTester tester) async {
-    await tester.ensureVisible(key('checkout-confirm-account'));
-    await tester.tap(key('checkout-confirm-account'));
-    await tester.pump();
-    await tester.ensureVisible(key('checkout-pay'));
-  }
 
   testWidgets(
     'guests see sign-in only; successful login reveals profile and plans, logout hides them',
@@ -161,7 +157,7 @@ void main() {
   );
 
   testWidgets(
-    'explicit account confirmation and double tap create one charge for the selected plan',
+    'signed-in user can pay without confirmation and double tap creates one charge',
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       addTearDown(() => debugDefaultTargetPlatformOverride = null);
@@ -181,11 +177,8 @@ void main() {
             ),
           );
           await tester.pumpAndSettle();
-          expect(
-            tester.widget<ElevatedButton>(key('checkout-pay')).onPressed,
-            isNull,
-          );
-          await confirm(tester);
+          expect(key('checkout-confirm-account'), findsNothing);
+          await tester.ensureVisible(key('checkout-pay'));
           expect(
             tester.widget<ElevatedButton>(key('checkout-pay')).onPressed,
             isNotNull,
@@ -194,6 +187,16 @@ void main() {
           await tester.tap(key('checkout-pay'));
           await tester.pump();
           expect(creates, 1);
+          expect(
+            tester
+                .widget<AppChromeIconButton>(key('checkout-change-account'))
+                .onTap,
+            isNull,
+          );
+          expect(
+            tester.widget<Semantics>(key('checkout-stage-0')).properties.onTap,
+            isNull,
+          );
           pending.complete(
             response({
               'available': true,
@@ -225,6 +228,56 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  for (final control in ['checkout-change-account', 'checkout-stage-0']) {
+    testWidgets('$control returns to sign-in and hides the payment form', (
+      tester,
+    ) async {
+      await http.runWithClient(() async {
+        await tester.pumpWidget(page());
+        await tester.pumpAndSettle();
+        expect(find.byType(UserAvatar), findsOneWidget);
+        expect(find.byType(CheckboxListTile), findsNothing);
+        expect(
+          find.text('Оплатите один раз — без автопродления.'),
+          findsNothing,
+        );
+        expect(find.text(appL10n.checkoutEmailHelp), findsOneWidget);
+        await tester.ensureVisible(key(control));
+        await tester.runAsync(() async {
+          final signedOut = Completer<void>();
+          void completed() {
+            if (!auth.isSigningIn &&
+                !auth.hasServerSession &&
+                !signedOut.isCompleted) {
+              signedOut.complete();
+            }
+          }
+
+          auth.signInBusy.addListener(completed);
+          try {
+            await tester.tap(key(control));
+            completed();
+            await signedOut.future;
+          } finally {
+            auth.signInBusy.removeListener(completed);
+          }
+        });
+        await tester.pumpAndSettle();
+        expect(auth.hasServerSession, isFalse);
+        expect(find.text(appL10n.checkoutSignInTitle), findsOneWidget);
+        expect(key('checkout-account'), findsNothing);
+        expect(key('checkout-email'), findsNothing);
+        expect(key('checkout-pay'), findsNothing);
+        expect(
+          tester.widget<Semantics>(key('checkout-stage-0')).properties.selected,
+          isTrue,
+        );
+        await tester.pumpWidget(const SizedBox());
+      }, () => MockClient(standard));
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('server recovers a pending order after local storage is lost', (
     tester,
@@ -299,14 +352,14 @@ void main() {
   );
 
   testWidgets(
-    'switching accounts resets confirmation and ignores the old account result',
+    'switching accounts waits for recovery and ignores the old account result',
     (tester) async {
       final delayed = Completer<http.Response>();
       await http.runWithClient(
         () async {
           await tester.pumpWidget(page());
           await tester.pumpAndSettle();
-          await confirm(tester);
+          await tester.ensureVisible(key('checkout-pay'));
           expect(
             tester.widget<ElevatedButton>(key('checkout-pay')).onPressed,
             isNotNull,
@@ -316,12 +369,6 @@ void main() {
             () => auth.completeSignInForTesting(user('B'), 'B'),
           );
           await tester.pump();
-          expect(
-            tester
-                .widget<CheckboxListTile>(key('checkout-confirm-account'))
-                .value,
-            isFalse,
-          );
           expect(
             tester.widget<ElevatedButton>(key('checkout-pay')).onPressed,
             isNull,

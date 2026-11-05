@@ -15,6 +15,8 @@ import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/web_checkout_route.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/user_avatar.dart';
 import 'package:pdd_app/presentation/widgets/premium_plan_card.dart';
 import 'package:pdd_app/presentation/widgets/premium_checkout_header.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -46,7 +48,6 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
   final _scroll = ScrollController();
   late PremiumTier _tier;
   String? _owner;
-  String? _confirmedOwner;
   String? _order;
   String? _status;
   String? _error;
@@ -118,7 +119,6 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
     _restoring = false;
     _poll?.cancel();
     _checks = 0;
-    _confirmedOwner = null;
     _paymentUrl = null;
     _error = null;
     _status = null;
@@ -176,7 +176,6 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
         _order != null ||
         !_available ||
         !_signedIn ||
-        _confirmedOwner != _owner ||
         !(_form.currentState?.validate() ?? false)) {
       return;
     }
@@ -419,7 +418,6 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
                     _order = null;
                     _status = null;
                     _error = null;
-                    _confirmedOwner = null;
                   }),
             child: Text(appL10n.checkoutChooseAgain),
           ),
@@ -453,7 +451,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
         ? appL10n.checkoutStepReturn
         : _order != null
         ? appL10n.checkoutWaitingSubtitle
-        : appL10n.checkoutPaymentSubtitle;
+        : null;
     return Scaffold(
       backgroundColor: pageBackground,
       appBar: AppBar(
@@ -511,6 +509,9 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
                     stage: stage,
                     title: title,
                     subtitle: subtitle,
+                    onAccountTap: _signedIn && !_creating && !_changingAccount
+                        ? _changeAccount
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -536,19 +537,55 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
                         color: colors.primaryText.withValues(alpha: 0.7),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      user!.name,
-                      style: const TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${_provider(user.provider)}${user.email.isEmpty ? '' : ' · ${user.email}'}',
-                      key: const ValueKey('checkout-account'),
-                      style: const TextStyle(height: 1.5),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ExcludeSemantics(
+                          child: UserAvatar(
+                            key: const ValueKey('checkout-avatar'),
+                            url: user!.avatarUrl,
+                            useDefault: user.useDefaultAvatar,
+                            size: 48,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user.name,
+                                style: const TextStyle(
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_provider(user.provider)}${user.email.isEmpty ? '' : ' · ${user.email}'}',
+                                key: const ValueKey('checkout-account'),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Tooltip(
+                          message: appL10n.checkoutChangeAccount,
+                          child: AppChromeIconButton(
+                            key: const ValueKey('checkout-change-account'),
+                            icon: Icons.close_rounded,
+                            backgroundColor: colors.searchFieldFill,
+                            onTap: _creating || _changingAccount
+                                ? null
+                                : _changeAccount,
+                          ),
+                        ),
+                      ],
                     ),
                     if (_premium.isPremium && !_paid)
                       Padding(
@@ -556,34 +593,6 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
                         child: Text(
                           appL10n.checkoutExistingPremium,
                           style: TextStyle(color: colors.accent),
-                        ),
-                      ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton(
-                        key: const ValueKey('checkout-change-account'),
-                        onPressed: _creating || _changingAccount
-                            ? null
-                            : _changeAccount,
-                        child: Text(appL10n.checkoutChangeAccount),
-                      ),
-                    ),
-                    if (_order == null)
-                      CheckboxListTile(
-                        key: const ValueKey('checkout-confirm-account'),
-                        contentPadding: EdgeInsets.zero,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: _confirmedOwner == _owner,
-                        onChanged: _locked
-                            ? null
-                            : (value) => setState(
-                                () => _confirmedOwner = value == true
-                                    ? _owner
-                                    : null,
-                              ),
-                        title: Text(
-                          appL10n.checkoutConfirmAccount,
-                          style: const TextStyle(fontSize: 14, height: 1.4),
                         ),
                       ),
                   ], colors),
@@ -660,11 +669,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
                       const SizedBox(height: 8),
                       ElevatedButton(
                         key: const ValueKey('checkout-pay'),
-                        onPressed:
-                            _restoreFailed ||
-                                _busy ||
-                                !_available ||
-                                _confirmedOwner != _owner
+                        onPressed: _restoreFailed || _busy || !_available
                             ? null
                             : _pay,
                         style: ElevatedButton.styleFrom(

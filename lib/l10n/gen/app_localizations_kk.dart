@@ -4541,7 +4541,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get checkoutAccount => 'Премиум осы аккаунтқа қосылады';
 
   @override
-  String get checkoutChangeAccount => 'Басқа аккаунтқа кіру';
+  String get checkoutChangeAccount => 'Кіруге оралу';
 
   @override
   String get checkoutExistingPremium =>
@@ -4551,12 +4551,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get checkoutChoosePlan => 'Қолжетімділік мерзімін таңдаңыз';
 
   @override
-  String get checkoutEmailHelp =>
-      'Төлемді сәйкестендіру және төлем бойынша байланысу үшін. Бұл пошта таңдалған аккаунтты өзгертпейді.';
-
-  @override
-  String get checkoutConfirmAccount =>
-      'Қолданбада дәл осы аккаунтты пайдаланатынымды растаймын.';
+  String get checkoutEmailHelp => 'Чек үшін';
 
   @override
   String get checkoutPaymentTerms =>
@@ -4632,10 +4627,6 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get checkoutSignInSubtitle =>
       'Қолданбада пайдаланатын аккаунтты таңдаңыз.';
-
-  @override
-  String get checkoutPaymentSubtitle =>
-      'Бір рет төлеңіз — автоматты ұзартусыз.';
 
   @override
   String get checkoutWaitingTitle => 'Төлемді тексеріп жатырмыз';

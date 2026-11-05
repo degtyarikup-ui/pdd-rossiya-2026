@@ -4540,7 +4540,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkoutAccount => 'Premium will be added to this account';
 
   @override
-  String get checkoutChangeAccount => 'Use a different account';
+  String get checkoutChangeAccount => 'Back to sign in';
 
   @override
   String get checkoutExistingPremium =>
@@ -4550,12 +4550,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkoutChoosePlan => 'Choose your access period';
 
   @override
-  String get checkoutEmailHelp =>
-      'For payment identification and payment-related contact. This email does not change the selected account.';
-
-  @override
-  String get checkoutConfirmAccount =>
-      'I confirm that this is the account I use in the app.';
+  String get checkoutEmailHelp => 'For your receipt';
 
   @override
   String get checkoutPaymentTerms =>
@@ -4631,9 +4626,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkoutSignInSubtitle => 'Choose the account you use in the app.';
-
-  @override
-  String get checkoutPaymentSubtitle => 'Pay once. No automatic renewal.';
 
   @override
   String get checkoutWaitingTitle => 'Checking your payment';

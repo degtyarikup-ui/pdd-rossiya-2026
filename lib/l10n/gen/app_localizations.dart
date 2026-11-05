@@ -7609,7 +7609,7 @@ abstract class AppLocalizations {
   /// No description provided for @checkoutChangeAccount.
   ///
   /// In ru, this message translates to:
-  /// **'Войти в другой аккаунт'**
+  /// **'Вернуться к входу'**
   String get checkoutChangeAccount;
 
   /// No description provided for @checkoutExistingPremium.
@@ -7627,14 +7627,8 @@ abstract class AppLocalizations {
   /// No description provided for @checkoutEmailHelp.
   ///
   /// In ru, this message translates to:
-  /// **'Для идентификации платежа и связи по оплате. Эта почта не меняет выбранный аккаунт.'**
+  /// **'Для чека'**
   String get checkoutEmailHelp;
-
-  /// No description provided for @checkoutConfirmAccount.
-  ///
-  /// In ru, this message translates to:
-  /// **'Подтверждаю: именно этот аккаунт я использую в приложении.'**
-  String get checkoutConfirmAccount;
 
   /// No description provided for @checkoutPaymentTerms.
   ///
@@ -7767,12 +7761,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Выберите аккаунт, который используете в приложении.'**
   String get checkoutSignInSubtitle;
-
-  /// No description provided for @checkoutPaymentSubtitle.
-  ///
-  /// In ru, this message translates to:
-  /// **'Оплатите один раз — без автопродления.'**
-  String get checkoutPaymentSubtitle;
 
   /// No description provided for @checkoutWaitingTitle.
   ///

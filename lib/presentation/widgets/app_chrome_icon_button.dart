@@ -17,7 +17,7 @@ class AppChromeIconButton extends StatelessWidget {
   });
 
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Color? backgroundColor;
   final Color? iconColor;
 

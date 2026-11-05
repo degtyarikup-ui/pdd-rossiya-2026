@@ -6,18 +6,20 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/premium_banner_card.dart';
 
 /// Progress follows verified account/payment state; upcoming stages cannot be
-/// opened by tapping their labels. Changing accounts uses the explicit action.
+/// opened by tapping their labels. The completed sign-in stage allows going back.
 class PremiumCheckoutHeader extends StatelessWidget {
   const PremiumCheckoutHeader({
     super.key,
     required this.stage,
     required this.title,
-    required this.subtitle,
+    this.subtitle,
+    this.onAccountTap,
   });
 
   final int stage;
   final String title;
-  final String subtitle;
+  final String? subtitle;
+  final VoidCallback? onAccountTap;
 
   @override
   Widget build(BuildContext context) {
@@ -83,15 +85,17 @@ class PremiumCheckoutHeader extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          color: foreground.withValues(alpha: .9),
-                          fontSize: 16,
-                          height: 1.45,
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          subtitle!,
+                          style: TextStyle(
+                            color: foreground.withValues(alpha: .9),
+                            fontSize: 16,
+                            height: 1.45,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -136,79 +140,93 @@ class PremiumCheckoutHeader extends StatelessWidget {
                       child: Semantics(
                         key: ValueKey('checkout-stage-$i'),
                         selected: i == stage,
+                        button: i == 0 && stage > 0,
+                        enabled: i == 0 && stage > 0
+                            ? onAccountTap != null
+                            : null,
+                        onTap: i == 0 && stage > 0 ? onAccountTap : null,
                         label: appL10n.checkoutStageLabel(i + 1, labels[i]),
                         value: i < stage
                             ? appL10n.checkoutStageCompleted
                             : null,
                         excludeSemantics: true,
-                        child: AnimatedContainer(
-                          duration: MediaQuery.disableAnimationsOf(context)
-                              ? Duration.zero
-                              : const Duration(milliseconds: 220),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: i == stage
-                                ? complete
-                                      ? AppColors.white
-                                      : AppColors.premiumLime
-                                : Colors.transparent,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: i == 0 && stage > 0 ? onAccountTap : null,
                             borderRadius: BorderRadius.circular(
                               AppDimensions.buttonRadius,
                             ),
-                          ),
-                          child: LayoutBuilder(
-                            builder: (context, tabConstraints) {
-                              final color = i == stage
-                                  ? AppColors.primaryText
-                                  : foreground.withValues(
-                                      alpha: i < stage ? 1 : .8,
-                                    );
-                              final marker = i < stage
-                                  ? Icon(
-                                      Icons.check_rounded,
-                                      size: 18,
-                                      color: color,
-                                    )
-                                  : Text(
-                                      '${i + 1}',
-                                      style: TextStyle(
-                                        color: color,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    );
-                              final label = Text(
-                                labels[i],
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: color,
-                                  fontSize: 14,
-                                  height: 1.25,
-                                  fontWeight: FontWeight.w600,
+                            child: AnimatedContainer(
+                              duration: MediaQuery.disableAnimationsOf(context)
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 220),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: i == stage
+                                    ? complete
+                                          ? AppColors.white
+                                          : AppColors.premiumLime
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.buttonRadius,
                                 ),
-                              );
-                              if (tabConstraints.maxWidth < 95 ||
-                                  expandedText) {
-                                return Column(
-                                  children: [
-                                    marker,
-                                    const SizedBox(height: 6),
-                                    label,
-                                  ],
-                                );
-                              }
-                              return Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  marker,
-                                  const SizedBox(width: 8),
-                                  Flexible(child: label),
-                                ],
-                              );
-                            },
+                              ),
+                              child: LayoutBuilder(
+                                builder: (context, tabConstraints) {
+                                  final color = i == stage
+                                      ? AppColors.primaryText
+                                      : foreground.withValues(
+                                          alpha: i < stage ? 1 : .8,
+                                        );
+                                  final marker = i < stage
+                                      ? Icon(
+                                          Icons.check_rounded,
+                                          size: 18,
+                                          color: color,
+                                        )
+                                      : Text(
+                                          '${i + 1}',
+                                          style: TextStyle(
+                                            color: color,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        );
+                                  final label = Text(
+                                    labels[i],
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: color,
+                                      fontSize: 14,
+                                      height: 1.25,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  );
+                                  if (tabConstraints.maxWidth < 95 ||
+                                      expandedText) {
+                                    return Column(
+                                      children: [
+                                        marker,
+                                        const SizedBox(height: 6),
+                                        label,
+                                      ],
+                                    );
+                                  }
+                                  return Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      marker,
+                                      const SizedBox(width: 8),
+                                      Flexible(child: label),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
                           ),
                         ),
                       ),

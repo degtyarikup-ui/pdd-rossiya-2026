@@ -4560,7 +4560,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get checkoutAccount => 'Премиум будет подключён к аккаунту';
 
   @override
-  String get checkoutChangeAccount => 'Войти в другой аккаунт';
+  String get checkoutChangeAccount => 'Вернуться к входу';
 
   @override
   String get checkoutExistingPremium =>
@@ -4570,12 +4570,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get checkoutChoosePlan => 'Выберите срок доступа';
 
   @override
-  String get checkoutEmailHelp =>
-      'Для идентификации платежа и связи по оплате. Эта почта не меняет выбранный аккаунт.';
-
-  @override
-  String get checkoutConfirmAccount =>
-      'Подтверждаю: именно этот аккаунт я использую в приложении.';
+  String get checkoutEmailHelp => 'Для чека';
 
   @override
   String get checkoutPaymentTerms =>
@@ -4652,10 +4647,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get checkoutSignInSubtitle =>
       'Выберите аккаунт, который используете в приложении.';
-
-  @override
-  String get checkoutPaymentSubtitle =>
-      'Оплатите один раз — без автопродления.';
 
   @override
   String get checkoutWaitingTitle => 'Проверяем оплату';
