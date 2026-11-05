@@ -1,0 +1,6 @@
+{
+  "name": "pdd-site-security-edge",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test test-edge.mjs" }
+}
