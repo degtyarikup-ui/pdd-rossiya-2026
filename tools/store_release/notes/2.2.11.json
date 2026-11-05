@@ -1,0 +1,6 @@
+{
+  "version": "2.2.11",
+  "ru": "• Улучшено восстановление входа через Telegram при нестабильной связи.\n• Повышена надёжность загрузки тарифов и подключения к магазину.\n• Вопросы к ИИ сохраняются при временных сбоях.\n• Улучшены подсказки при входе и диагностика ошибок.",
+  "en": "• Improved Telegram sign-in recovery on unstable connections.\n• More reliable store connection and plan loading.\n• AI questions are preserved during temporary outages.\n• Improved sign-in guidance and error diagnostics.",
+  "kk": "• Тұрақсыз байланыста Telegram арқылы кіруді қалпына келтіру жақсартылды.\n• Дүкенге қосылу мен тарифтерді жүктеу сенімділігі артты.\n• Уақытша ақаулар кезінде ЖИ сұрақтары сақталады.\n• Кіру кеңестері мен қателер диагностикасы жақсартылды."
+}
