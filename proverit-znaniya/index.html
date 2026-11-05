@@ -11,7 +11,7 @@
     }
   </script>
   <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src &#x27;self&#x27;; script-src &#x27;self&#x27; &#x27;wasm-unsafe-eval&#x27; &#x27;sha256-+MSeo55og9QofrH/Q+KPCbzTeYL2BKvEUyu8sqdAmwM=&#x27; &#x27;sha256-GAyAFmIY/qQRSPlS53/QEH3lD1fotAdmU9l6fQqeCIg=&#x27; &#x27;sha256-GnfjswmED1bWJbvfMYvbBaUz0wgnuyIj/zl/ibJ29Do=&#x27; &#x27;sha256-jW2e+Vy5gSD897eWGuxScs0GTQCzKbvQjl95Ju5miAQ=&#x27; &#x27;sha256-nKOzjOn7zd6YcoC+Oc7xitI/hD3LTs4HfryETVUWYNI=&#x27; &#x27;sha256-rxkilVVa2Mhv1J/tLYboGtjW+agrknqvtbFmgWBGVTg=&#x27; https://accounts.google.com https://apis.google.com https://mc.yandex.ru https://mc.yandex.com https://yastatic.net https://www.gstatic.com; script-src-attr &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;self&#x27;; style-src &#x27;self&#x27; &#x27;unsafe-inline&#x27; https://fonts.googleapis.com https://accounts.google.com; font-src &#x27;self&#x27; data: https://fonts.gstatic.com; img-src &#x27;self&#x27; data: blob: https:; media-src &#x27;self&#x27; blob: https:; worker-src &#x27;self&#x27; blob:; frame-src &#x27;self&#x27; https://accounts.google.com https://www.youtube.com https://www.youtube-nocookie.com; connect-src &#x27;self&#x27; https://pdd-install-notifier.sergei-pdd.workers.dev https://api.pdd-drive.app https://accounts.google.com https://*.googleapis.com https://*.gstatic.com https://mc.yandex.ru https://mc.yandex.com https://yandex.ru; form-action &#x27;self&#x27;; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src &#x27;self&#x27;; script-src &#x27;self&#x27; &#x27;wasm-unsafe-eval&#x27; &#x27;sha256-+MSeo55og9QofrH/Q+KPCbzTeYL2BKvEUyu8sqdAmwM=&#x27; &#x27;sha256-2vqLsylei9HNUn36N27VacKZhJ7vol0sm8anU5moyn8=&#x27; &#x27;sha256-GAyAFmIY/qQRSPlS53/QEH3lD1fotAdmU9l6fQqeCIg=&#x27; &#x27;sha256-GnfjswmED1bWJbvfMYvbBaUz0wgnuyIj/zl/ibJ29Do=&#x27; &#x27;sha256-jW2e+Vy5gSD897eWGuxScs0GTQCzKbvQjl95Ju5miAQ=&#x27; &#x27;sha256-nKOzjOn7zd6YcoC+Oc7xitI/hD3LTs4HfryETVUWYNI=&#x27; https://accounts.google.com https://apis.google.com https://mc.yandex.ru https://mc.yandex.com https://yastatic.net https://www.gstatic.com; script-src-attr &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;self&#x27;; style-src &#x27;self&#x27; &#x27;unsafe-inline&#x27; https://fonts.googleapis.com https://accounts.google.com; font-src &#x27;self&#x27; data: https://fonts.gstatic.com; img-src &#x27;self&#x27; data: blob: https:; media-src &#x27;self&#x27; blob: https:; worker-src &#x27;self&#x27; blob:; frame-src &#x27;self&#x27; https://accounts.google.com https://www.youtube.com https://www.youtube-nocookie.com; connect-src &#x27;self&#x27; https://pdd-install-notifier.sergei-pdd.workers.dev https://api.pdd-drive.app https://accounts.google.com https://*.googleapis.com https://*.gstatic.com https://mc.yandex.ru https://mc.yandex.com https://yandex.ru; form-action &#x27;self&#x27;; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Проверьте знание ПДД — 12 вопросов из реальной базы ГИБДД</title>
@@ -114,7 +114,7 @@
 </footer>
 
 <script>
-// Пока поддомен app.pdd-drive.ru не ожил (DNS), ведём на временную копию /app/.
+// Пока поддомен app.pdd-drive.app не ожил (DNS), ведём на временную копию /app/.
 (function () {
   var degrade = function () {
     document.querySelectorAll('a[href^="/app/"]').forEach(function (a) { a.href = '/app/'; });
