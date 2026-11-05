@@ -3617,9 +3617,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get yandexPageRetry => 'Қайталау';
 
   @override
-  String get examSpeedUnit => 'км/сағ';
-
-  @override
   String get feedLoadFailed => 'Сұрақтарды жүктеу мүмкін болмады';
 
   @override

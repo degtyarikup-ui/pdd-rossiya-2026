@@ -3626,9 +3626,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get yandexPageRetry => 'Повторить';
 
   @override
-  String get examSpeedUnit => 'км/ч';
-
-  @override
   String get feedLoadFailed => 'Не удалось загрузить вопросы';
 
   @override

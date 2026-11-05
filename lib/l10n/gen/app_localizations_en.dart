@@ -3613,9 +3613,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yandexPageRetry => 'Try again';
 
   @override
-  String get examSpeedUnit => 'km/h';
-
-  @override
   String get feedLoadFailed => 'Couldn\'t load questions';
 
   @override

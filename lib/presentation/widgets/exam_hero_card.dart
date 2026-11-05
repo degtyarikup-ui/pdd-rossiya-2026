@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
+import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,7 +13,12 @@ enum ExamCardConcept {
   trafficLight(3),
   chronometer(4),
   overpass(5),
-  mainRoad(6);
+  mainRoad(6),
+  steeringWheel(7),
+  cone(8),
+  carKey(9),
+  car(10),
+  answerSheet(11);
 
   final int id;
   const ExamCardConcept(this.id);
@@ -42,6 +48,57 @@ class ExamHeroCard extends StatefulWidget {
   });
 
   static const String _prefKeyConcept = 'home_exam_concept_index';
+
+  /// Самое большое положение картинки, при котором она не задевает текст и
+  /// края карточки. Границы считаются по кругу вокруг рисунка: углы у всех
+  /// картинок свободны, поэтому она может подойти к бейджам по диагонали.
+  static Rect fitArt({
+    required Size card,
+    required Rect badges,
+    required Rect title,
+  }) {
+    const margin = 6.0;
+    const gap = 4.0;
+    const reach = _ExamArtPainter.artSize / 2;
+    const halfHeight = 54.0;
+    const maxScale = 1.2;
+    const minScale = 0.45;
+
+    double distance(Rect rect, Offset point) {
+      final dx = math.max(
+        math.max(rect.left - point.dx, point.dx - rect.right),
+        0.0,
+      );
+      final dy = math.max(
+        math.max(rect.top - point.dy, point.dy - rect.bottom),
+        0.0,
+      );
+      return math.sqrt(dx * dx + dy * dy);
+    }
+
+    Rect at(Offset center, double scale) =>
+        Rect.fromCircle(center: center, radius: reach * scale);
+
+    for (var scale = maxScale; scale >= minScale; scale -= 0.01) {
+      final x = card.width - margin - reach * scale;
+      final lowest = card.height - margin - halfHeight * scale;
+      for (final y in [math.min(card.height * 0.53, lowest), lowest]) {
+        final clear = reach * scale + gap;
+        if (y - halfHeight * scale >= margin &&
+            distance(badges, Offset(x, y)) >= clear &&
+            distance(title, Offset(x, y)) >= clear) {
+          return at(Offset(x, y), scale);
+        }
+      }
+    }
+    return at(
+      Offset(
+        card.width - margin - reach * minScale,
+        card.height - margin - halfHeight * minScale,
+      ),
+      minScale,
+    );
+  }
 
   /// Загрузить и инкрементировать индекс концепта для следующей сессии.
   static Future<ExamCardConcept> getAndRotateConcept() async {
@@ -106,23 +163,25 @@ class _ExamHeroCardState extends State<ExamHeroCard> {
               final cardW = constraints.maxWidth;
               final cardH = constraints.maxHeight;
 
-              // Динамический расчёт размера слота под арт:
-              // Арт занимает правую часть карточки и пропорционально масштабируется
-              final artW = (cardW * 0.46).clamp(130.0, 220.0);
-              final artH = cardH;
+              final compact = cardH < 130;
+              final verticalPadding = compact ? 10.0 : 14.0;
+              final titleStyle = _titleStyle(compact);
+              final art = _placeArt(
+                context,
+                card: Size(cardW, cardH),
+                verticalPadding: verticalPadding,
+                titleStyle: titleStyle,
+              );
 
               return Stack(
                 children: [
                   // Векторная иллюстрация в правом углу
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    width: artW,
-                    height: artH,
+                  Positioned.fromRect(
+                    rect: art,
                     child: IgnorePointer(
                       child: CustomPaint(
+                        key: const ValueKey('exam-hero-art'),
                         painter: _buildPainterForConcept(_concept),
-                        size: Size(artW, artH),
                       ),
                     ),
                   ),
@@ -130,8 +189,8 @@ class _ExamHeroCardState extends State<ExamHeroCard> {
                   // Текстовый контент (бейджи + заголовок)
                   Padding(
                     padding: EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: (cardH < 130) ? 10 : 14,
+                      horizontal: _horizontalPadding,
+                      vertical: verticalPadding,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,29 +203,16 @@ class _ExamHeroCardState extends State<ExamHeroCard> {
                           child: Row(
                             children: [
                               _buildBadge(widget.questionsBadge),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: _badgeGap),
                               _buildBadge(widget.timeBadge),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: _badgeGap),
                               _buildBadge(widget.categoryBadge),
                             ],
                           ),
                         ),
 
                         // Заголовок «Экзамен»
-                        Row(
-                          children: [
-                            Text(
-                              appL10n.exam,
-                              style: TextStyle(
-                                fontSize: (cardH < 130) ? 22 : 26,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: -0.3,
-                                height: 1.1,
-                              ),
-                            ),
-                          ],
-                        ),
+                        Row(children: [Text(appL10n.exam, style: titleStyle)]),
                       ],
                     ),
                   ),
@@ -179,22 +225,87 @@ class _ExamHeroCardState extends State<ExamHeroCard> {
     );
   }
 
+  static const double _horizontalPadding = 18;
+  static const double _badgeGap = 6;
+  static const EdgeInsets _badgePadding = EdgeInsets.symmetric(
+    horizontal: 10,
+    vertical: 5,
+  );
+  static const TextStyle _badgeStyle = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    color: Colors.white,
+    letterSpacing: 0.2,
+  );
+
+  static TextStyle _titleStyle(bool compact) => TextStyle(
+    fontSize: compact ? 22 : 26,
+    fontWeight: FontWeight.w700,
+    color: Colors.white,
+    letterSpacing: -0.3,
+    height: 1.1,
+  );
+
+  /// Измеряет бейджи и заголовок с учётом языка и масштаба шрифта в системе
+  /// и подбирает место картинки так, чтобы она их не задевала.
+  Rect _placeArt(
+    BuildContext context, {
+    required Size card,
+    required double verticalPadding,
+    required TextStyle titleStyle,
+  }) {
+    final textScaler = MediaQuery.textScalerOf(context);
+    final baseStyle = DefaultTextStyle.of(context).style;
+    Size measure(String text, TextStyle style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: baseStyle.merge(style)),
+        textDirection: TextDirection.ltr,
+        textScaler: textScaler,
+      )..layout();
+      final size = painter.size;
+      painter.dispose();
+      return size;
+    }
+
+    final badges = [
+      widget.questionsBadge,
+      widget.timeBadge,
+      widget.categoryBadge,
+    ].map((text) => measure(text, _badgeStyle));
+    final badgesWidth = badges.fold<double>(
+      _badgeGap * 2,
+      (sum, size) => sum + size.width + _badgePadding.horizontal,
+    );
+    final badgesHeight =
+        badges.map((size) => size.height).reduce(math.max) +
+        _badgePadding.vertical;
+    final title = measure(appL10n.exam, titleStyle);
+
+    return ExamHeroCard.fitArt(
+      card: card,
+      badges: Rect.fromLTWH(
+        _horizontalPadding,
+        verticalPadding,
+        math.min(badgesWidth, card.width - _horizontalPadding * 2),
+        badgesHeight,
+      ),
+      title: Rect.fromLTWH(
+        _horizontalPadding,
+        card.height - verticalPadding - title.height,
+        title.width,
+        title.height,
+      ),
+    );
+  }
+
   Widget _buildBadge(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: _badgePadding,
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-          letterSpacing: 0.2,
-        ),
-      ),
+      child: Text(text, style: _badgeStyle),
     );
   }
 
@@ -214,6 +325,16 @@ class _ExamHeroCardState extends State<ExamHeroCard> {
         return const _OverpassPainter();
       case ExamCardConcept.mainRoad:
         return const _MainRoadSignPainter();
+      case ExamCardConcept.steeringWheel:
+        return const _SteeringWheelPainter();
+      case ExamCardConcept.cone:
+        return const _ConePainter();
+      case ExamCardConcept.carKey:
+        return const _CarKeyPainter();
+      case ExamCardConcept.car:
+        return const _CarPainter();
+      case ExamCardConcept.answerSheet:
+        return const _AnswerSheetPainter();
     }
   }
 }
@@ -230,737 +351,480 @@ class ExamHeroArtwork extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Концепт 01: Знак «У» в изометрии (со скруглёнными углами)
+// Общий стиль иллюстраций: плоские формы без теней и контуров, одна палитра,
+// один размер в единицах рисунка. Мягкое свечение — только у того, что
+// светится на самом деле: сигналов, фар, подсветки приборов.
 // ---------------------------------------------------------------------------
-class _SignUPainter extends CustomPainter {
-  const _SignUPainter();
+abstract final class _ArtColors {
+  static const ink = Color(0xFF0B2C66);
+  static const paper = Color(0xFFFFFFFF);
+  static const mist = Color(0xFFCFE2FF);
+  static const orange = Color(0xFFFF8F1F);
+  static const red = Color(0xFFEF4A2B);
+  static const green = Color(0xFF2BC280);
+  static const yellow = Color(0xFFFFC233);
+}
+
+Paint _fill(Color color) => Paint()..color = color;
+
+Paint _stroke(Color color, double width) => Paint()
+  ..color = color
+  ..style = PaintingStyle.stroke
+  ..strokeWidth = width
+  ..strokeCap = StrokeCap.round
+  ..strokeJoin = StrokeJoin.round;
+
+RRect _rrect(double l, double t, double w, double h, double r) =>
+    RRect.fromRectAndRadius(Rect.fromLTWH(l, t, w, h), Radius.circular(r));
+
+abstract class _ExamArtPainter extends CustomPainter {
+  const _ExamArtPainter({this.tilt = 0});
+
+  /// Наклон картинки в градусах.
+  final double tilt;
+
+  /// Сторона квадрата в единицах рисунка; центр рисунка — в центре квадрата.
+  static const double artSize = 124;
+
+  void paintArt(Canvas canvas);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    // Центр знака (без артефактов дороги внизу)
-    final cx = w * 0.62;
-    final cy = h * 0.54;
-    final signScale = (h / 140.0).clamp(0.7, 1.2);
-
     canvas.save();
-    canvas.translate(cx, cy);
-    canvas.rotate(-8 * math.pi / 180);
-    canvas.scale(signScale);
+    canvas.translate(size.width / 2, size.height / 2);
+    canvas.scale(math.min(size.shortestSide / artSize, 1.25));
+    canvas.rotate(tilt * math.pi / 180);
+    paintArt(canvas);
+    canvas.restore();
+  }
 
-    // Внешний скруглённый красный треугольник
-    final redPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFFED4621), Color(0xFFC02A0B)],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(const Rect.fromLTWH(-55, -45, 110, 95))
-      ..style = PaintingStyle.fill;
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
 
-    final outerPath = _buildRoundedTriangle(
-      top: const Offset(0, -46),
-      bottomRight: const Offset(52, 42),
-      bottomLeft: const Offset(-52, 42),
-      radius: 9.0,
+void _drawGlow(
+  Canvas canvas,
+  Offset center,
+  double radius,
+  Color color, {
+  double alpha = 0.55,
+}) {
+  final rect = Rect.fromCircle(center: center, radius: radius);
+  canvas.drawCircle(
+    center,
+    radius,
+    Paint()
+      ..shader = RadialGradient(
+        colors: [
+          color.withValues(alpha: alpha),
+          color.withValues(alpha: 0),
+        ],
+      ).createShader(rect),
+  );
+}
+
+Path _roundedPolygon(List<Offset> points, double radius) {
+  final path = Path();
+  for (var i = 0; i < points.length; i++) {
+    final corner = points[i];
+    final previous = points[(i + points.length - 1) % points.length];
+    final next = points[(i + 1) % points.length];
+    final toPrevious = previous - corner;
+    final toNext = next - corner;
+    final entry = corner + toPrevious / toPrevious.distance * radius;
+    final exit = corner + toNext / toNext.distance * radius;
+    if (i == 0) {
+      path.moveTo(entry.dx, entry.dy);
+    } else {
+      path.lineTo(entry.dx, entry.dy);
+    }
+    path.quadraticBezierTo(corner.dx, corner.dy, exit.dx, exit.dy);
+  }
+  return path..close();
+}
+
+Path _diamond(double size, double radius) => _roundedPolygon([
+  Offset(0, -size),
+  Offset(size, 0),
+  Offset(0, size),
+  Offset(-size, 0),
+], radius);
+
+void _drawCheck(Canvas canvas, Offset center, double size, double width) {
+  canvas.drawPath(
+    Path()
+      ..moveTo(center.dx - size, center.dy + size * 0.05)
+      ..lineTo(center.dx - size * 0.28, center.dy + size * 0.72)
+      ..lineTo(center.dx + size, center.dy - size * 0.68),
+    _stroke(_ArtColors.paper, width),
+  );
+}
+
+// Знак «Учебное транспортное средство»
+class _SignUPainter extends _ExamArtPainter {
+  const _SignUPainter() : super(tilt: -6);
+
+  @override
+  void paintArt(Canvas canvas) {
+    canvas.drawPath(
+      _roundedPolygon(const [
+        Offset(0, -47),
+        Offset(50, 39),
+        Offset(-50, 39),
+      ], 9),
+      _fill(_ArtColors.red),
     );
-    canvas.drawPath(outerPath, redPaint);
-
-    // Внутренний скруглённый белый треугольник
-    final whitePaint = Paint()
-      ..color = const Color(0xFFF8FAFC)
-      ..style = PaintingStyle.fill;
-
-    final innerPath = _buildRoundedTriangle(
-      top: const Offset(0, -29),
-      bottomRight: const Offset(36, 33),
-      bottomLeft: const Offset(-36, 33),
-      radius: 5.5,
+    canvas.drawPath(
+      _roundedPolygon(const [
+        Offset(0, -28),
+        Offset(34, 30),
+        Offset(-34, 30),
+      ], 5),
+      _fill(_ArtColors.paper),
     );
-    canvas.drawPath(innerPath, whitePaint);
-
-    // Буква «У»
-    final textPainter = TextPainter(
+    final letter = TextPainter(
       text: const TextSpan(
         text: 'У',
         style: TextStyle(
-          fontSize: 38,
-          fontWeight: FontWeight.w900,
-          color: Color(0xFF1E293B),
-          fontFamily: 'sans-serif',
+          fontFamily: AppTheme.fontFamily,
+          fontSize: 34,
+          fontWeight: FontWeight.w800,
+          color: _ArtColors.ink,
         ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    textPainter.paint(canvas, Offset(-textPainter.width / 2, -10));
-
-    canvas.restore();
+    letter.paint(canvas, Offset(-letter.width / 2, -14));
   }
-
-  static Path _buildRoundedTriangle({
-    required Offset top,
-    required Offset bottomRight,
-    required Offset bottomLeft,
-    required double radius,
-  }) {
-    final path = Path();
-    final vLT = top - bottomLeft;
-    final dirLT = vLT / vLT.distance;
-    final vTR = bottomRight - top;
-    final dirTR = vTR / vTR.distance;
-    final vRL = bottomLeft - bottomRight;
-    final dirRL = vRL / vRL.distance;
-
-    final start = bottomLeft + dirLT * radius;
-    path.moveTo(start.dx, start.dy);
-    path.lineTo(top.dx - dirLT.dx * radius, top.dy - dirLT.dy * radius);
-    path.quadraticBezierTo(
-      top.dx,
-      top.dy,
-      top.dx + dirTR.dx * radius,
-      top.dy + dirTR.dy * radius,
-    );
-    path.lineTo(
-      bottomRight.dx - dirTR.dx * radius,
-      bottomRight.dy - dirTR.dy * radius,
-    );
-    path.quadraticBezierTo(
-      bottomRight.dx,
-      bottomRight.dy,
-      bottomRight.dx + dirRL.dx * radius,
-      bottomRight.dy + dirRL.dy * radius,
-    );
-    path.lineTo(
-      bottomLeft.dx - dirRL.dx * radius,
-      bottomLeft.dy - dirRL.dy * radius,
-    );
-    path.quadraticBezierTo(bottomLeft.dx, bottomLeft.dy, start.dx, start.dy);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// ---------------------------------------------------------------------------
-// 2. Концепт 02: Водительские права (License Card)
-// ---------------------------------------------------------------------------
-class _LicenseCardPainter extends CustomPainter {
-  const _LicenseCardPainter();
+// Водительское удостоверение
+class _LicenseCardPainter extends _ExamArtPainter {
+  const _LicenseCardPainter() : super(tilt: -10);
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.58;
-    final cy = h * 0.54;
-    final scale = (h / 140.0).clamp(0.7, 1.2);
-
-    canvas.save();
-    canvas.translate(cx, cy);
-    canvas.rotate(-12 * math.pi / 180);
-    canvas.scale(scale);
-
-    // Пластиковая карточка
-    final cardRect = RRect.fromRectAndRadius(
-      const Rect.fromLTWH(-60, -36, 120, 72),
-      const Radius.circular(8),
-    );
-    final cardPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ).createShader(const Rect.fromLTWH(-60, -36, 120, 72));
-    canvas.drawRRect(cardRect, cardPaint);
-
-    // Рамка фото
-    final photoRect = RRect.fromRectAndRadius(
-      const Rect.fromLTWH(-52, -26, 26, 32),
-      const Radius.circular(4),
-    );
-    canvas.drawRRect(photoRect, Paint()..color = const Color(0xFFCBD5E1));
-
-    // Силуэт на фото
-    final avatarHead = Paint()..color = const Color(0xFF64748B);
-    canvas.drawCircle(const Offset(-39, -15), 5.5, avatarHead);
-    final avatarBody = Path()..addOval(const Rect.fromLTWH(-48, -7, 18, 14));
-    canvas.drawPath(avatarBody, avatarHead);
-
-    // Строки текста
-    final linePaint = Paint()..color = const Color(0xFF475569);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTWH(-18, -24, 66, 4),
-        const Radius.circular(2),
-      ),
-      linePaint,
-    );
-    final subLinePaint = Paint()..color = const Color(0xFF94A3B8);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTWH(-18, -15, 48, 3.5),
-        const Radius.circular(2),
-      ),
-      subLinePaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTWH(-18, -7, 54, 3.5),
-        const Radius.circular(2),
-      ),
-      subLinePaint,
-    );
-
-    // Голографическая полоса
-    final holoPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0x99EC4899), Color(0x993B82F6), Color(0x9910B981)],
-      ).createShader(const Rect.fromLTWH(-60, 14, 120, 10));
-    canvas.drawRect(const Rect.fromLTWH(-60, 14, 120, 10), holoPaint);
-
-    // Золотая точка-герб
-    canvas.drawCircle(
-      const Offset(-46, 19),
-      3,
-      Paint()..color = const Color(0xFFF59E0B),
-    );
-
-    // Надпись RUS
-    final rusPainter = TextPainter(
-      text: const TextSpan(
-        text: 'RUS',
-        style: TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.w900,
-          color: Color(0xFF1E293B),
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    rusPainter.paint(canvas, const Offset(36, 14));
-
-    canvas.restore();
+  void paintArt(Canvas canvas) {
+    canvas.drawRRect(_rrect(-51, -33, 102, 66, 10), _fill(_ArtColors.paper));
+    canvas.drawRRect(_rrect(-42, -24, 30, 36, 6), _fill(_ArtColors.mist));
+    canvas.drawCircle(const Offset(-27, -12), 6.5, _fill(_ArtColors.ink));
+    canvas.drawRRect(_rrect(-36, -3, 18, 15, 6), _fill(_ArtColors.ink));
+    canvas.drawRRect(_rrect(-4, -23, 46, 6, 3), _fill(_ArtColors.ink));
+    canvas.drawRRect(_rrect(-4, -10, 38, 5, 2.5), _fill(_ArtColors.mist));
+    canvas.drawRRect(_rrect(-4, 1, 42, 5, 2.5), _fill(_ArtColors.mist));
+    canvas.drawRRect(_rrect(-42, 18, 84, 7, 3.5), _fill(_ArtColors.orange));
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// ---------------------------------------------------------------------------
-// 3. Концепт 03: Спидометр (Скорость 89 км/ч)
-// ---------------------------------------------------------------------------
-class _SpeedometerPainter extends CustomPainter {
+// Спидометр
+class _SpeedometerPainter extends _ExamArtPainter {
   const _SpeedometerPainter();
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.58;
-    final cy = h * 0.54;
-    final scale = (h / 140.0).clamp(0.7, 1.2);
+  void paintArt(Canvas canvas) {
+    const start = math.pi * 0.75;
+    const sweep = math.pi * 1.5;
+    const value = 0.68;
+    const arc = Rect.fromLTWH(-33, -33, 66, 66);
 
-    canvas.save();
-    canvas.translate(cx, cy);
-    canvas.scale(scale);
-
-    // Корпус спидометра (без артефактов полукругов слева)
-    final gaugePaint = Paint()
-      ..color = const Color(0xFF0F172A)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset.zero, 44, gaugePaint);
-    canvas.drawCircle(
-      Offset.zero,
-      44,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.16)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5,
-    );
-
-    // Фоновая шкала
-    final bgArc = Paint()
-      ..color = Colors.white.withValues(alpha: 0.18)
-      ..strokeWidth = 5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(Offset.zero, 47, _fill(_ArtColors.ink));
     canvas.drawArc(
-      const Rect.fromLTWH(-33, -33, 66, 66),
-      math.pi * 0.75,
-      math.pi * 1.5,
+      arc,
+      start,
+      sweep,
       false,
-      bgArc,
+      _stroke(Colors.white.withValues(alpha: 0.2), 7),
     );
-
-    // Цветная шкала скорости (~89 из 120 км/ч)
-    final speedArc = Paint()
-      ..shader = const SweepGradient(
-        colors: [Color(0xFF38BDF8), Color(0xFF10B981), Color(0xFFF59E0B)],
-        stops: [0.0, 0.6, 1.0],
-        transform: GradientRotation(math.pi * 0.75),
-      ).createShader(const Rect.fromLTWH(-33, -33, 66, 66))
-      ..strokeWidth = 5.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
     canvas.drawArc(
-      const Rect.fromLTWH(-33, -33, 66, 66),
-      math.pi * 0.75,
-      math.pi * 1.15,
+      arc,
+      start,
+      sweep * value,
       false,
-      speedArc,
+      _stroke(_ArtColors.orange.withValues(alpha: 0.7), 9)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+    canvas.drawArc(
+      arc,
+      start,
+      sweep * value,
+      false,
+      _stroke(_ArtColors.orange, 7),
     );
 
-    // Стрелка на 89 км/ч (угол ~ 20 градусов выше горизонтали справа)
-    final needleAngle = math.pi * 0.75 + math.pi * 1.15;
-    final needleLen = 25.0;
-    final needleEnd = Offset(
-      math.cos(needleAngle) * needleLen,
-      math.sin(needleAngle) * needleLen,
-    );
-    final needlePaint = Paint()
-      ..color = const Color(0xFFF59E0B)
-      ..strokeWidth = 3.2
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset.zero, needleEnd, needlePaint);
-
-    // Центральный колпачок
-    canvas.drawCircle(
-      Offset.zero,
-      6.0,
-      Paint()..color = const Color(0xFFF8FAFC),
-    );
-    canvas.drawCircle(
-      Offset.zero,
-      3.0,
-      Paint()..color = const Color(0xFF0F172A),
-    );
-
-    // Число скорости «89»
-    final speedPainter = TextPainter(
-      text: const TextSpan(
-        text: '89',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w900,
-          color: Colors.white,
-          letterSpacing: -0.5,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    speedPainter.paint(canvas, Offset(-speedPainter.width / 2, 10));
-
-    // Подпись «км/ч»
-    final unitPainter = TextPainter(
-      text: TextSpan(
-        text: appL10n.examSpeedUnit,
-        style: TextStyle(
-          fontSize: 8.5,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF94A3B8),
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    unitPainter.paint(canvas, Offset(-unitPainter.width / 2, 26));
-
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// ---------------------------------------------------------------------------
-// 4. Концепт 04: Зелёный светофор (3D Traffic Light)
-// ---------------------------------------------------------------------------
-class _TrafficLightPainter extends CustomPainter {
-  const _TrafficLightPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.60;
-    final cy = h * 0.52;
-    final scale = (h / 140.0).clamp(0.7, 1.2);
-
-    canvas.save();
-    canvas.translate(cx, cy);
-    canvas.rotate(-6 * math.pi / 180);
-    canvas.scale(scale);
-
-    // Зелёный светящийся ореол
-    final glowPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          const Color(0xFF34D399).withValues(alpha: 0.5),
-          const Color(0xFF2BC280).withValues(alpha: 0.0),
-        ],
-      ).createShader(const Rect.fromLTWH(-36, 10, 72, 72));
-    canvas.drawCircle(const Offset(0, 26), 36, glowPaint);
-
-    // Корпус светофора
-    final bodyRect = RRect.fromRectAndRadius(
-      const Rect.fromLTWH(-20, -46, 40, 92),
-      const Radius.circular(12),
-    );
-    canvas.drawRRect(bodyRect, Paint()..color = const Color(0xFF0F172A));
-    canvas.drawRRect(
-      bodyRect,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.18)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-
-    // Красный сигнал (выкл)
-    canvas.drawCircle(
-      const Offset(0, -28),
-      9.5,
-      Paint()..color = const Color(0xFF334155),
-    );
-    // Жёлтый сигнал (выкл)
-    canvas.drawCircle(
-      const Offset(0, -1),
-      9.5,
-      Paint()..color = const Color(0xFF334155),
-    );
-    // Зелёный сигнал (вкл, яркий)
-    canvas.drawCircle(
-      const Offset(0, 26),
-      10.5,
-      Paint()..color = const Color(0xFF2BC280),
-    );
-    canvas.drawCircle(
-      const Offset(0, 26),
-      6.5,
-      Paint()..color = const Color(0xFF6EE7B7),
-    );
-
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// ---------------------------------------------------------------------------
-// 5. Концепт 09: Хронометр и знаки
-// ---------------------------------------------------------------------------
-class _ChronometerPainter extends CustomPainter {
-  const _ChronometerPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.60;
-    final cy = h * 0.54;
-    final scale = (h / 140.0).clamp(0.7, 1.2);
-
-    canvas.save();
-    canvas.translate(cx, cy);
-    canvas.scale(scale);
-
-    // Маленький знак «Главная дорога» слева вверху
-    canvas.save();
-    canvas.translate(-42, -28);
-    canvas.rotate(-15 * math.pi / 180);
-    final diamondPath = Path()
-      ..moveTo(0, -11)
-      ..lineTo(11, 0)
-      ..lineTo(0, 11)
-      ..lineTo(-11, 0)
-      ..close();
-    canvas.drawPath(diamondPath, Paint()..color = const Color(0xFFF8FAFC));
-    final diamondInner = Path()
-      ..moveTo(0, -8)
-      ..lineTo(8, 0)
-      ..lineTo(0, 8)
-      ..lineTo(-8, 0)
-      ..close();
-    canvas.drawPath(diamondInner, Paint()..color = const Color(0xFFFFA53C));
-    canvas.restore();
-
-    // Маленький красный треугольник справа вверху
-    canvas.save();
-    canvas.translate(44, -20);
-    canvas.rotate(14 * math.pi / 180);
-    final triPath = Path()
-      ..moveTo(0, -10)
-      ..lineTo(10, 8)
-      ..lineTo(-10, 8)
-      ..close();
-    canvas.drawPath(triPath, Paint()..color = const Color(0xFFED4621));
-    final triInner = Path()
-      ..moveTo(0, -6)
-      ..lineTo(6, 5)
-      ..lineTo(-6, 5)
-      ..close();
-    canvas.drawPath(triInner, Paint()..color = Colors.white);
-    canvas.restore();
-
-    // Корпус секундомера
-    canvas.drawCircle(
-      Offset.zero,
-      36,
-      Paint()..color = const Color(0xFF0F172A),
-    );
-    canvas.drawCircle(
-      Offset.zero,
-      36,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.22)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
-
-    // Верхняя кнопка
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTWH(-5, -42, 10, 7),
-        const Radius.circular(2),
-      ),
-      Paint()..color = const Color(0xFF94A3B8),
-    );
-
-    // Пунктирный циферблат
-    canvas.drawCircle(
-      Offset.zero,
-      27,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.15)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
-    );
-
-    // Стрелка
+    final angle = start + sweep * value;
     canvas.drawLine(
       Offset.zero,
-      const Offset(14, -14),
-      Paint()
-        ..color = const Color(0xFF38BDF8)
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round,
+      Offset(math.cos(angle) * 22, math.sin(angle) * 22),
+      _stroke(_ArtColors.paper, 4),
     );
-    canvas.drawCircle(Offset.zero, 4, Paint()..color = const Color(0xFF38BDF8));
-
-    canvas.restore();
+    canvas.drawCircle(Offset.zero, 6.5, _fill(_ArtColors.paper));
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// ---------------------------------------------------------------------------
-// 6. Концепт 10: Парящая эстакада (С белой прерывистой разметкой и PIN-маркером)
-// ---------------------------------------------------------------------------
-class _OverpassPainter extends CustomPainter {
+// Светофор
+class _TrafficLightPainter extends _ExamArtPainter {
+  const _TrafficLightPainter() : super(tilt: -6);
+
+  @override
+  void paintArt(Canvas canvas) {
+    canvas.drawRRect(_rrect(-23, -50, 46, 100, 18), _fill(_ArtColors.ink));
+    final off = _fill(Colors.white.withValues(alpha: 0.18));
+    canvas.drawCircle(const Offset(0, -29), 11, off);
+    canvas.drawCircle(const Offset(0, 0), 11, off);
+    _drawGlow(canvas, const Offset(0, 29), 42, _ArtColors.green, alpha: 0.65);
+    canvas.drawCircle(const Offset(0, 29), 12, _fill(_ArtColors.green));
+  }
+}
+
+// Секундомер
+class _ChronometerPainter extends _ExamArtPainter {
+  const _ChronometerPainter() : super(tilt: 8);
+
+  @override
+  void paintArt(Canvas canvas) {
+    const center = Offset(0, 5);
+    canvas.drawRRect(_rrect(-5, -49, 10, 12, 3), _fill(_ArtColors.ink));
+    canvas.drawRRect(_rrect(-11, -53, 22, 8, 4), _fill(_ArtColors.ink));
+    canvas.drawCircle(center, 44, _fill(_ArtColors.ink));
+    canvas.drawCircle(center, 35, _fill(_ArtColors.paper));
+
+    // Заполненная часть циферблата показывает прошедшее время
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: 28),
+      -math.pi / 2,
+      math.pi * 0.72,
+      true,
+      _fill(_ArtColors.mist),
+    );
+    final angle = -math.pi / 2 + math.pi * 0.72;
+    canvas.drawLine(
+      center,
+      center + Offset(math.cos(angle) * 27, math.sin(angle) * 27),
+      _stroke(_ArtColors.orange, 4),
+    );
+    canvas.drawCircle(center, 5, _fill(_ArtColors.ink));
+  }
+}
+
+// Дорога с меткой
+class _OverpassPainter extends _ExamArtPainter {
   const _OverpassPainter();
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    // Нижняя трасса: плавно уходит за границы
-    final lowerRoad = Path()
-      ..moveTo(w * 0.30, -h * 0.1)
-      ..quadraticBezierTo(w * 0.65, h * 0.5, w * 0.92, h * 1.15);
+  void paintArt(Canvas canvas) {
+    // Дорога приходит снизу и уходит за правый край карточки
+    final road = Path()
+      ..moveTo(-34, 130)
+      ..cubicTo(-36, 50, -2, 46, 10, 14)
+      ..cubicTo(20, -12, 44, -26, 150, -24);
 
     canvas.drawPath(
-      lowerRoad,
-      Paint()
-        ..color = const Color(0xFF0F172A).withValues(alpha: 0.8)
-        ..strokeWidth = 18
-        ..style = PaintingStyle.stroke,
+      road,
+      _stroke(_ArtColors.ink, 28)..strokeCap = StrokeCap.butt,
     );
-    _drawDashedPath(
-      canvas,
-      lowerRoad,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.4)
-        ..strokeWidth = 1.6
-        ..style = PaintingStyle.stroke,
-      dashLen: 6,
-      spaceLen: 5,
-    );
+    _drawDashes(canvas, road, _stroke(_ArtColors.paper, 2.6));
 
-    // Верхняя парящая эстакада: плавно входит снизу-слева и уходит за правый верхний край
-    final upperRoad = Path()
-      ..moveTo(w * 0.05, h * 1.2)
-      ..cubicTo(w * 0.42, h * 0.98, w * 0.62, h * 0.48, w * 1.15, h * 0.15);
-
-    // Полотно эстакады
-    canvas.drawPath(
-      upperRoad,
-      Paint()
-        ..color = const Color(0xFF1E293B)
-        ..strokeWidth = 24
-        ..style = PaintingStyle.stroke,
-    );
-
-    // Белая прерывистая осевая разметка
-    _drawDashedPath(
-      canvas,
-      upperRoad,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.9)
-        ..strokeWidth = 2.2
-        ..style = PaintingStyle.stroke,
-      dashLen: 7,
-      spaceLen: 5,
-    );
-
-    // Локационный PIN (как на картах) на верхней трассе
-    _drawMapPin(canvas, Offset(w * 0.82, h * 0.38), 1.1);
+    // Метка на дороге
+    canvas.save();
+    canvas.translate(10, 14);
+    final pin = Path()
+      ..moveTo(0, 0)
+      ..cubicTo(-6, -8, -15, -17, -15, -28)
+      ..arcToPoint(const Offset(15, -28), radius: const Radius.circular(15))
+      ..cubicTo(15, -17, 6, -8, 0, 0)
+      ..close();
+    canvas.drawPath(pin, _fill(_ArtColors.red));
+    canvas.drawCircle(const Offset(0, -28), 6, _fill(_ArtColors.paper));
+    canvas.restore();
   }
 
-  static void _drawDashedPath(
-    Canvas canvas,
-    Path path,
-    Paint paint, {
-    required double dashLen,
-    required double spaceLen,
-  }) {
+  static void _drawDashes(Canvas canvas, Path path, Paint paint) {
     for (final metric in path.computeMetrics()) {
-      double distance = 0.0;
-      while (distance < metric.length) {
-        final double next = (distance + dashLen).clamp(0.0, metric.length);
-        final segment = metric.extractPath(distance, next);
-        canvas.drawPath(segment, paint);
-        distance += dashLen + spaceLen;
+      for (var d = 4.0; d < metric.length; d += 16) {
+        canvas.drawPath(metric.extractPath(d, d + 7), paint);
       }
     }
   }
-
-  static void _drawMapPin(Canvas canvas, Offset tip, double scale) {
-    canvas.save();
-    canvas.translate(tip.dx, tip.dy);
-    canvas.scale(scale);
-
-    // Форма PIN (остриё вниз в точку (0, 0))
-    final pinPath = Path()
-      ..moveTo(0, 0)
-      ..cubicTo(-4, -5, -8, -10, -8, -15)
-      ..arcToPoint(
-        const Offset(8, -15),
-        radius: const Radius.circular(8),
-        clockwise: true,
-      )
-      ..cubicTo(8, -10, 4, -5, 0, 0)
-      ..close();
-
-    // Тень под пином
-    canvas.drawOval(
-      const Rect.fromLTWH(-5, -1.5, 10, 3),
-      Paint()..color = Colors.black.withValues(alpha: 0.35),
-    );
-
-    // Красный корпус маркера
-    final pinPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFFED4621), Color(0xFFC02A0B)],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(const Rect.fromLTWH(-8, -23, 16, 23))
-      ..style = PaintingStyle.fill;
-    canvas.drawPath(pinPath, pinPaint);
-
-    // Белая точка внутри
-    canvas.drawCircle(const Offset(0, -15), 3.2, Paint()..color = Colors.white);
-
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// ---------------------------------------------------------------------------
-// 7. Концепт 11 (Новый): Знак «Главная дорога» (2.1 со скруглениями, крупнее)
-// ---------------------------------------------------------------------------
-class _MainRoadSignPainter extends CustomPainter {
-  const _MainRoadSignPainter();
+// Знак «Главная дорога»
+class _MainRoadSignPainter extends _ExamArtPainter {
+  const _MainRoadSignPainter() : super(tilt: -6);
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.60;
-    final cy = h * 0.54;
-    // Увеличенный масштаб
-    final scale = (h / 140.0).clamp(0.75, 1.25);
+  void paintArt(Canvas canvas) {
+    canvas.drawPath(_diamond(50, 8), _fill(_ArtColors.paper));
+    canvas.drawPath(_diamond(35, 5), _fill(_ArtColors.yellow));
+  }
+}
 
-    canvas.save();
-    canvas.translate(cx, cy);
-    canvas.rotate(-10 * math.pi / 180);
-    canvas.scale(scale);
+// Руль
+class _SteeringWheelPainter extends _ExamArtPainter {
+  const _SteeringWheelPainter() : super(tilt: -12);
 
-    // Внешний скруглённый белый ромб (без артефактов внизу)
-    const double outerSize = 47.0;
-    const double cornerRadius = 6.5;
-    final outerDiamond = _buildRoundedDiamond(outerSize, cornerRadius);
-
-    // Мягкая подсветка/тень
-    canvas.drawPath(
-      outerDiamond,
+  @override
+  void paintArt(Canvas canvas) {
+    final ink = _fill(_ArtColors.ink);
+    canvas.drawCircle(Offset.zero, 42, _stroke(_ArtColors.ink, 13));
+    canvas.drawRect(const Rect.fromLTWH(-40, -7, 80, 14), ink);
+    canvas.drawRect(const Rect.fromLTWH(-7, 0, 14, 40), ink);
+    canvas.drawCircle(Offset.zero, 18, ink);
+    canvas.drawPath(_diamond(10, 2), _fill(_ArtColors.yellow));
+    canvas.drawArc(
+      const Rect.fromLTWH(-42, -42, 84, 84),
+      -math.pi / 2 - 0.1,
+      0.2,
+      false,
       Paint()
-        ..color = const Color(0xFF0F172A).withValues(alpha: 0.25)
+        ..color = _ArtColors.orange
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
+        ..strokeWidth = 13,
     );
+  }
+}
 
-    canvas.drawPath(
-      outerDiamond,
-      Paint()
-        ..color = const Color(0xFFF8FAFC)
-        ..style = PaintingStyle.fill,
-    );
+// Дорожный конус
+class _ConePainter extends _ExamArtPainter {
+  const _ConePainter() : super(tilt: 4);
 
-    // Внутренний скруглённый насыщенный жёлтый ромб
-    const double innerSize = 34.0;
-    final innerDiamond = _buildRoundedDiamond(innerSize, 4.5);
-    final yellowPaint = Paint()
-      ..shader =
-          const LinearGradient(
-            colors: [Color(0xFFFDE047), Color(0xFFF59E0B)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ).createShader(
-            const Rect.fromLTWH(
-              -innerSize,
-              -innerSize,
-              innerSize * 2,
-              innerSize * 2,
-            ),
-          )
-      ..style = PaintingStyle.fill;
-    canvas.drawPath(innerDiamond, yellowPaint);
-
+  @override
+  void paintArt(Canvas canvas) {
+    final body = _roundedPolygon(const [
+      Offset(-6, -52),
+      Offset(6, -52),
+      Offset(35, 40),
+      Offset(-35, 40),
+    ], 5);
+    canvas.drawRRect(_rrect(-52, 35, 104, 15, 7.5), _fill(_ArtColors.orange));
+    canvas.save();
+    canvas.clipPath(body);
+    canvas.drawPath(body, _fill(_ArtColors.orange));
+    final stripe = _fill(_ArtColors.paper);
+    canvas.drawRect(const Rect.fromLTWH(-40, -24, 80, 15), stripe);
+    canvas.drawRect(const Rect.fromLTWH(-40, 8, 80, 15), stripe);
     canvas.restore();
   }
+}
 
-  static Path _buildRoundedDiamond(double s, double r) {
-    final path = Path();
-    final d = r / 1.4142;
-    path.moveTo(d, -s + d);
-    path.lineTo(s - d, -d);
-    path.quadraticBezierTo(s, 0, s - d, d);
-    path.lineTo(d, s - d);
-    path.quadraticBezierTo(0, s, -d, s - d);
-    path.lineTo(-s + d, d);
-    path.quadraticBezierTo(-s, 0, -s + d, -d);
-    path.lineTo(-d, -s + d);
-    path.quadraticBezierTo(0, -s, d, -s + d);
-    path.close();
-    return path;
-  }
+// Ключ от машины
+class _CarKeyPainter extends _ExamArtPainter {
+  const _CarKeyPainter() : super(tilt: 34);
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  void paintArt(Canvas canvas) {
+    canvas.drawCircle(const Offset(0, -46), 9, _stroke(_ArtColors.paper, 3.5));
+    canvas.drawPath(
+      _roundedPolygon(const [
+        Offset(-6.5, 14),
+        Offset(6.5, 14),
+        Offset(6.5, 42),
+        Offset(1.5, 42),
+        Offset(6.5, 49),
+        Offset(1.5, 54),
+        Offset(1.5, 60),
+        Offset(-6.5, 60),
+      ], 1.5),
+      _fill(_ArtColors.paper),
+    );
+    canvas.drawRRect(_rrect(-23, -40, 46, 62, 17), _fill(_ArtColors.ink));
+    _drawGlow(canvas, const Offset(0, -21), 22, _ArtColors.orange, alpha: 0.6);
+    canvas.drawCircle(const Offset(0, -21), 8, _fill(_ArtColors.orange));
+    canvas.drawCircle(
+      const Offset(0, 2),
+      8,
+      _fill(Colors.white.withValues(alpha: 0.22)),
+    );
+  }
+}
+
+// Красный автомобиль спереди с включёнными фарами
+class _CarPainter extends _ExamArtPainter {
+  const _CarPainter();
+
+  static const Color _redDark = Color(0xFFC9341A);
+
+  @override
+  void paintArt(Canvas canvas) {
+    canvas.translate(0, 2);
+
+    // Колёса
+    final ink = _fill(_ArtColors.ink);
+    canvas.drawRRect(_rrect(-47, 24, 19, 22, 7), ink);
+    canvas.drawRRect(_rrect(28, 24, 19, 22, 7), ink);
+
+    // Зеркала
+    final mirror = _fill(_redDark);
+    canvas.drawRRect(_rrect(-56, -12, 13, 9, 4.5), mirror);
+    canvas.drawRRect(_rrect(43, -12, 13, 9, 4.5), mirror);
+
+    // Кузов
+    final body = Path()
+      ..moveTo(-30, -38)
+      ..quadraticBezierTo(0, -43, 30, -38)
+      ..quadraticBezierTo(37, -36, 40, -29)
+      ..lineTo(45, -11)
+      ..quadraticBezierTo(54, -7, 54, 4)
+      ..lineTo(54, 23)
+      ..quadraticBezierTo(54, 34, 43, 34)
+      ..lineTo(-43, 34)
+      ..quadraticBezierTo(-54, 34, -54, 23)
+      ..lineTo(-54, 4)
+      ..quadraticBezierTo(-54, -7, -45, -11)
+      ..lineTo(-40, -29)
+      ..quadraticBezierTo(-37, -36, -30, -38)
+      ..close();
+    canvas.drawPath(body, _fill(_ArtColors.red));
+
+    // Лобовое стекло
+    canvas.drawPath(
+      Path()
+        ..moveTo(-27, -31)
+        ..quadraticBezierTo(0, -35, 27, -31)
+        ..quadraticBezierTo(31, -30, 32, -26)
+        ..lineTo(36, -13)
+        ..quadraticBezierTo(0, -8, -36, -13)
+        ..lineTo(-32, -26)
+        ..quadraticBezierTo(-31, -30, -27, -31)
+        ..close(),
+      ink,
+    );
+
+    // Фары
+    for (final x in const [-36.0, 36.0]) {
+      final center = Offset(x, 6);
+      _drawGlow(canvas, center, 19, _ArtColors.yellow, alpha: 0.5);
+      canvas.drawCircle(center, 9.5, _fill(_ArtColors.yellow));
+      canvas.drawCircle(center, 5, _fill(_ArtColors.paper));
+    }
+
+    // Решётка и номер
+    canvas.drawRRect(_rrect(-19, 0, 38, 11, 5.5), ink);
+    canvas.drawRRect(_rrect(-15, 18, 30, 9, 3), _fill(_ArtColors.paper));
+  }
+}
+
+// Экзаменационный лист с верными ответами
+class _AnswerSheetPainter extends _ExamArtPainter {
+  const _AnswerSheetPainter() : super(tilt: 7);
+
+  @override
+  void paintArt(Canvas canvas) {
+    canvas.drawRRect(_rrect(-42, -51, 76, 96, 10), _fill(_ArtColors.paper));
+    canvas.drawRRect(_rrect(-31, -40, 40, 6, 3), _fill(_ArtColors.ink));
+
+    const widths = [32.0, 24.0, 28.0];
+    for (var i = 0; i < widths.length; i++) {
+      final y = -20.0 + i * 17;
+      canvas.drawCircle(Offset(-25, y), 6.5, _fill(_ArtColors.green));
+      _drawCheck(canvas, Offset(-25, y), 3, 1.8);
+      canvas.drawRRect(
+        _rrect(-13, y - 2.5, widths[i], 5, 2.5),
+        _fill(_ArtColors.mist),
+      );
+    }
+
+    const seal = Offset(28, 32);
+    _drawGlow(canvas, seal, 34, _ArtColors.green, alpha: 0.55);
+    canvas.drawCircle(seal, 20, _fill(_ArtColors.green));
+    _drawCheck(canvas, seal, 9, 4.5);
+  }
 }

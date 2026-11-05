@@ -1187,7 +1187,6 @@
   "yandexSignInTitle": "Sign in with Yandex ID",
   "yandexPageLoadFailed": "The Yandex page didn't load. Check your internet connection and tap “Try again”, or close this window and choose another way to sign in.",
   "yandexPageRetry": "Try again",
-  "examSpeedUnit": "km/h",
   "feedLoadFailed": "Couldn't load questions",
   "feedEmpty": "No questions to show",
   "feedSwipeHint": "Swipe",

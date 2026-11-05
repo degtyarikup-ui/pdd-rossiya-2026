@@ -5992,12 +5992,6 @@ abstract class AppLocalizations {
   /// **'Повторить'**
   String get yandexPageRetry;
 
-  /// No description provided for @examSpeedUnit.
-  ///
-  /// In ru, this message translates to:
-  /// **'км/ч'**
-  String get examSpeedUnit;
-
   /// No description provided for @feedLoadFailed.
   ///
   /// In ru, this message translates to:
