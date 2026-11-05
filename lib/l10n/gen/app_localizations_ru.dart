@@ -4552,4 +4552,98 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get progressSyncDeferred =>
       'Прогресс сохранён на устройстве. Синхронизация продолжится, когда сервер станет доступен.';
+
+  @override
+  String get checkoutHeading => 'Премиум доступ';
+
+  @override
+  String get checkoutStepAccount =>
+      'Войдите в аккаунт, который используете в приложении.';
+
+  @override
+  String get checkoutStepPay => 'Выберите тариф и оплатите';
+
+  @override
+  String get checkoutStepReturn => 'Вернитесь в приложение';
+
+  @override
+  String get checkoutAccount => 'Премиум будет подключён к аккаунту';
+
+  @override
+  String get checkoutChangeAccount => 'Войти в другой аккаунт';
+
+  @override
+  String get checkoutExistingPremium =>
+      'У вас уже есть Премиум. Покупка добавит выбранный срок после действующего доступа. Автопродление в App Store или Google Play этой оплатой не отключается.';
+
+  @override
+  String get checkoutChoosePlan => 'Выберите срок доступа';
+
+  @override
+  String get checkoutEmailHelp =>
+      'Для идентификации платежа и связи по оплате. Эта почта не меняет выбранный аккаунт.';
+
+  @override
+  String get checkoutConfirmAccount =>
+      'Подтверждаю: именно этот аккаунт я использую в приложении.';
+
+  @override
+  String get checkoutPaymentTerms =>
+      'Разовая оплата без автопродления. Нажимая «Оплатить через СБП», вы принимаете пользовательское соглашение. Оплата откроется на защищённой странице Platega; итоговая сумма, включая возможную комиссию, будет показана до подтверждения в банке.';
+
+  @override
+  String get checkoutUnavailable =>
+      'Сейчас не удалось подтвердить доступность СБП. Проверьте подключение и попробуйте обновить страницу оплаты.';
+
+  @override
+  String get checkoutRetryAvailability => 'Проверить доступность СБП';
+
+  @override
+  String get checkoutCheck => 'Проверить оплату';
+
+  @override
+  String get checkoutContinue => 'Вернуться к этому платежу';
+
+  @override
+  String get checkoutChooseAgain => 'Выбрать тариф заново';
+
+  @override
+  String get checkoutPaid =>
+      'Оплата подтверждена. Премиум подключён к вашему аккаунту.';
+
+  @override
+  String get checkoutReturn =>
+      'Откройте приложение на телефоне и войдите в указанный выше аккаунт. При подключении к интернету статус обновится автоматически. Эту страницу можно закрыть.';
+
+  @override
+  String get checkoutCanceled =>
+      'Этот платёж не завершён или возвращён. Если вы видите списание, обратитесь в поддержку с номером заказа перед повторной оплатой.';
+
+  @override
+  String get checkoutCheckFailed =>
+      'Не удалось проверить платёж. Проверьте интернет и убедитесь, что вошли в аккаунт, с которого начали оплату. Не платите повторно до проверки результата.';
+
+  @override
+  String get checkoutCreateRetry =>
+      'Не удалось получить результат запроса. Выбранный тариф и почта сохранены: повторите тот же запрос, чтобы восстановить оплату. Если проблема остаётся, обратитесь в поддержку.';
+
+  @override
+  String get checkoutRetryCreate => 'Повторить тот же запрос';
+
+  @override
+  String get checkoutSupport => 'Поддержка по оплате';
+
+  @override
+  String checkoutOrder(String order) {
+    return 'Заказ: $order';
+  }
+
+  @override
+  String get checkoutDurationWeek => '7 дней доступа';
+
+  @override
+  String get checkoutDurationQuarter => '90 дней доступа';
+
+  @override
+  String get checkoutYandex => 'Яндекс ID';
 }

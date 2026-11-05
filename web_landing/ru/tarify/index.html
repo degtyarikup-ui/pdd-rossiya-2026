@@ -149,8 +149,8 @@
           <p class="pay-text">А пока можно заниматься бесплатно в <a href="/app/">веб-версии</a>.</p>
         </div>
         <div id="pay-live" hidden>
-          <p class="pay-text">Оплата проходит в веб-версии: войдите через Google или Яндекс, откройте Премиум и выберите этот тариф. Премиум привяжется к аккаунту и заработает на всех устройствах.</p>
-          <p><a class="btn btn-primary" href="/app/">Перейти к оплате</a></p>
+          <p class="pay-text">Войдите тем же способом и в тот же аккаунт, который используете в приложении. Затем оплатите через СБП и вернитесь в приложение.</p>
+          <p><a class="btn btn-primary" href="/app/?checkout=sbp">Перейти к оплате</a></p>
         </div>
       </dialog>
 
@@ -241,7 +241,7 @@
   var form = document.getElementById('pay-form');
   var email = document.getElementById('pay-email');
   var error = document.getElementById('pay-error');
-  var live = false, tier = null;
+  var live = null, tier = null;
   fetch(API + '/api/pay/status').then(function (r) { return r.json(); }).then(function (d) {
     live = d && d.available === true;
     if (live) { var note = document.getElementById('pay-soon-note'); if (note) note.hidden = true; }
@@ -252,6 +252,11 @@
   document.querySelectorAll('.plan-buy').forEach(function (button) {
     button.addEventListener('click', function () {
       tier = button.dataset.tier;
+      if (live !== false) {
+        if (typeof ym === 'function') ym(111960332, 'reachGoal', 'tariff_click', { tier: tier });
+        location.assign('/app/?checkout=sbp&tier=' + encodeURIComponent(tier));
+        return;
+      }
       document.getElementById('pay-title').textContent = button.dataset.title + ' — ' + button.dataset.price;
       error.textContent = '';
       show(live ? 'pay-live' : 'pay-soon');

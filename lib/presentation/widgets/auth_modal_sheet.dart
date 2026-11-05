@@ -13,7 +13,15 @@ import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 
 class AuthModalSheet extends StatefulWidget {
-  const AuthModalSheet({super.key, this.initialAction, this.authService});
+  const AuthModalSheet({
+    super.key,
+    this.initialAction,
+    this.authService,
+    this.embedded = false,
+  });
+
+  /// Reuse the same provider buttons and attempt ownership in the web checkout.
+  final bool embedded;
   final Future<bool> Function()? initialAction;
   @visibleForTesting
   final AuthService? authService;
@@ -105,7 +113,7 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
         setState(() => _isLoading = false);
         if (success) {
           HapticFeedbackHelper.success();
-          Navigator.of(context).pop(true);
+          if (!widget.embedded) Navigator.of(context).pop(true);
           AppToast.show(
             context,
             _auth.sessionIsTemporary
@@ -139,7 +147,9 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: widget.embedded
+              ? BorderRadius.circular(AppDimensions.cardRadius)
+              : const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SafeArea(
           top: false,
@@ -157,42 +167,45 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Close Button
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.close_rounded,
+                    if (!widget.embedded)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: colors.secondaryText,
+                          ),
+                          onPressed: () {
+                            _cancelOwnedAttempt();
+                            Navigator.of(context).pop(false);
+                          },
+                        ),
+                      ),
+                    if (!widget.embedded) const SizedBox(height: 4),
+
+                    if (!widget.embedded)
+                      Text(
+                        appL10n.authTitle,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: colors.primaryText,
+                        ),
+                      ),
+                    if (!widget.embedded) const SizedBox(height: 6),
+                    if (!widget.embedded)
+                      Text(
+                        appL10n.authDescription,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          height: 1.35,
                           color: colors.secondaryText,
                         ),
-                        onPressed: () {
-                          _cancelOwnedAttempt();
-                          Navigator.of(context).pop(false);
-                        },
                       ),
-                    ),
-                    const SizedBox(height: 4),
-
-                    Text(
-                      appL10n.authTitle,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: colors.primaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      appL10n.authDescription,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        height: 1.35,
-                        color: colors.secondaryText,
-                      ),
-                    ),
                     SizedBox(
-                      height: 24,
+                      height: widget.embedded ? 12 : 24,
                       child: _busy
                           ? const Center(child: LinearProgressIndicator())
                           : null,

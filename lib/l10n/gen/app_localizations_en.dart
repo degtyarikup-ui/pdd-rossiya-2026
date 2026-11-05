@@ -4532,4 +4532,98 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get progressSyncDeferred =>
       'Progress is saved on this device. Sync will resume when the server is available.';
+
+  @override
+  String get checkoutHeading => 'Premium access';
+
+  @override
+  String get checkoutStepAccount =>
+      'Sign in to the account you use in the app.';
+
+  @override
+  String get checkoutStepPay => 'Choose a plan and pay';
+
+  @override
+  String get checkoutStepReturn => 'Return to the app';
+
+  @override
+  String get checkoutAccount => 'Premium will be added to this account';
+
+  @override
+  String get checkoutChangeAccount => 'Use a different account';
+
+  @override
+  String get checkoutExistingPremium =>
+      'You already have Premium. This purchase adds time after your current access ends. It does not cancel any App Store or Google Play auto-renewal.';
+
+  @override
+  String get checkoutChoosePlan => 'Choose your access period';
+
+  @override
+  String get checkoutEmailHelp =>
+      'For payment identification and payment-related contact. This email does not change the selected account.';
+
+  @override
+  String get checkoutConfirmAccount =>
+      'I confirm that this is the account I use in the app.';
+
+  @override
+  String get checkoutPaymentTerms =>
+      'One-time payment with no auto-renewal. By choosing “Pay via SBP”, you accept the terms of service. Payment opens on Platega’s secure page; the total, including any fee, is shown before you confirm with your bank.';
+
+  @override
+  String get checkoutUnavailable =>
+      'SBP availability could not be confirmed. Check your connection and refresh payment availability.';
+
+  @override
+  String get checkoutRetryAvailability => 'Check SBP availability';
+
+  @override
+  String get checkoutCheck => 'Check payment';
+
+  @override
+  String get checkoutContinue => 'Continue this payment';
+
+  @override
+  String get checkoutChooseAgain => 'Choose a plan again';
+
+  @override
+  String get checkoutPaid =>
+      'Payment confirmed. Premium has been added to your account.';
+
+  @override
+  String get checkoutReturn =>
+      'Open the app on your phone and sign in to the account shown above. Your status updates automatically when online. You can close this page.';
+
+  @override
+  String get checkoutCanceled =>
+      'This payment was not completed or was refunded. If you see a charge, contact support with the order number before paying again.';
+
+  @override
+  String get checkoutCheckFailed =>
+      'Could not check payment. Check your connection and make sure you are signed in to the account that started it. Do not pay again until its result is checked.';
+
+  @override
+  String get checkoutCreateRetry =>
+      'The payment request result could not be received. Your plan and email are retained: retry the same request to recover payment. Contact support if the problem persists.';
+
+  @override
+  String get checkoutRetryCreate => 'Retry the same request';
+
+  @override
+  String get checkoutSupport => 'Payment support';
+
+  @override
+  String checkoutOrder(String order) {
+    return 'Order: $order';
+  }
+
+  @override
+  String get checkoutDurationWeek => '7 days of access';
+
+  @override
+  String get checkoutDurationQuarter => '90 days of access';
+
+  @override
+  String get checkoutYandex => 'Yandex ID';
 }

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:pdd_app/data/services/browser_info_web.dart';
 import 'package:web/web.dart' as web;
 import 'package:pdd_app/data/services/web_oauth_state.dart';
+import 'package:pdd_app/data/services/web_checkout_route.dart';
 
 bool get appleWebNeedsSafariHint => needsAppleSafariHint(
   web.window.navigator.userAgent,
@@ -27,6 +28,8 @@ Future<Never> startWebOAuth(String provider, Uri authorizationUrl) {
       'state': authorizationUrl.queryParameters['state'],
       'nonce': authorizationUrl.queryParameters['nonce'],
       'startedAt': DateTime.now().millisecondsSinceEpoch,
+      if (WebCheckoutRoute.fromUri(Uri.base) case final checkout?)
+        'checkoutTier': checkout.tier.name,
     }),
   );
   web.window.location.assign(authorizationUrl.toString());

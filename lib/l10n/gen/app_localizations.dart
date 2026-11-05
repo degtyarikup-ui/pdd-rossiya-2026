@@ -7593,6 +7593,168 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Прогресс сохранён на устройстве. Синхронизация продолжится, когда сервер станет доступен.'**
   String get progressSyncDeferred;
+
+  /// No description provided for @checkoutHeading.
+  ///
+  /// In ru, this message translates to:
+  /// **'Премиум доступ'**
+  String get checkoutHeading;
+
+  /// No description provided for @checkoutStepAccount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Войдите в аккаунт, который используете в приложении.'**
+  String get checkoutStepAccount;
+
+  /// No description provided for @checkoutStepPay.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите тариф и оплатите'**
+  String get checkoutStepPay;
+
+  /// No description provided for @checkoutStepReturn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вернитесь в приложение'**
+  String get checkoutStepReturn;
+
+  /// No description provided for @checkoutAccount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Премиум будет подключён к аккаунту'**
+  String get checkoutAccount;
+
+  /// No description provided for @checkoutChangeAccount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Войти в другой аккаунт'**
+  String get checkoutChangeAccount;
+
+  /// No description provided for @checkoutExistingPremium.
+  ///
+  /// In ru, this message translates to:
+  /// **'У вас уже есть Премиум. Покупка добавит выбранный срок после действующего доступа. Автопродление в App Store или Google Play этой оплатой не отключается.'**
+  String get checkoutExistingPremium;
+
+  /// No description provided for @checkoutChoosePlan.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите срок доступа'**
+  String get checkoutChoosePlan;
+
+  /// No description provided for @checkoutEmailHelp.
+  ///
+  /// In ru, this message translates to:
+  /// **'Для идентификации платежа и связи по оплате. Эта почта не меняет выбранный аккаунт.'**
+  String get checkoutEmailHelp;
+
+  /// No description provided for @checkoutConfirmAccount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подтверждаю: именно этот аккаунт я использую в приложении.'**
+  String get checkoutConfirmAccount;
+
+  /// No description provided for @checkoutPaymentTerms.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разовая оплата без автопродления. Нажимая «Оплатить через СБП», вы принимаете пользовательское соглашение. Оплата откроется на защищённой странице Platega; итоговая сумма, включая возможную комиссию, будет показана до подтверждения в банке.'**
+  String get checkoutPaymentTerms;
+
+  /// No description provided for @checkoutUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сейчас не удалось подтвердить доступность СБП. Проверьте подключение и попробуйте обновить страницу оплаты.'**
+  String get checkoutUnavailable;
+
+  /// No description provided for @checkoutRetryAvailability.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверить доступность СБП'**
+  String get checkoutRetryAvailability;
+
+  /// No description provided for @checkoutCheck.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверить оплату'**
+  String get checkoutCheck;
+
+  /// No description provided for @checkoutContinue.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вернуться к этому платежу'**
+  String get checkoutContinue;
+
+  /// No description provided for @checkoutChooseAgain.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать тариф заново'**
+  String get checkoutChooseAgain;
+
+  /// No description provided for @checkoutPaid.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата подтверждена. Премиум подключён к вашему аккаунту.'**
+  String get checkoutPaid;
+
+  /// No description provided for @checkoutReturn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Откройте приложение на телефоне и войдите в указанный выше аккаунт. При подключении к интернету статус обновится автоматически. Эту страницу можно закрыть.'**
+  String get checkoutReturn;
+
+  /// No description provided for @checkoutCanceled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот платёж не завершён или возвращён. Если вы видите списание, обратитесь в поддержку с номером заказа перед повторной оплатой.'**
+  String get checkoutCanceled;
+
+  /// No description provided for @checkoutCheckFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось проверить платёж. Проверьте интернет и убедитесь, что вошли в аккаунт, с которого начали оплату. Не платите повторно до проверки результата.'**
+  String get checkoutCheckFailed;
+
+  /// No description provided for @checkoutCreateRetry.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось получить результат запроса. Выбранный тариф и почта сохранены: повторите тот же запрос, чтобы восстановить оплату. Если проблема остаётся, обратитесь в поддержку.'**
+  String get checkoutCreateRetry;
+
+  /// No description provided for @checkoutRetryCreate.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторить тот же запрос'**
+  String get checkoutRetryCreate;
+
+  /// No description provided for @checkoutSupport.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поддержка по оплате'**
+  String get checkoutSupport;
+
+  /// No description provided for @checkoutOrder.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заказ: {order}'**
+  String checkoutOrder(String order);
+
+  /// No description provided for @checkoutDurationWeek.
+  ///
+  /// In ru, this message translates to:
+  /// **'7 дней доступа'**
+  String get checkoutDurationWeek;
+
+  /// No description provided for @checkoutDurationQuarter.
+  ///
+  /// In ru, this message translates to:
+  /// **'90 дней доступа'**
+  String get checkoutDurationQuarter;
+
+  /// No description provided for @checkoutYandex.
+  ///
+  /// In ru, this message translates to:
+  /// **'Яндекс ID'**
+  String get checkoutYandex;
 }
 
 class _AppLocalizationsDelegate

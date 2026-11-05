@@ -346,3 +346,77 @@ test('СБП: контекст Android сохраняется в заказе, H
     assert.match(buildSbpPurchaseMessage({ ...order, client: 'web', context: { platform: 'web' } }, null, esc), /Сайт \/ веб-приложение/);
   } finally { fake.restore(); }
 });
+
+test('dedicated checkout preserves plan on a fixed return URL and sends buyer metadata', async () => {
+  const fake = fakePlatega();
+  try {
+    for (const origin of ['https://pdd-drive.app', 'https://pdd-drive.ru']) {
+      const env = baseEnv(), token = await login(env);
+      const result = await (await worker.fetch(req('/api/user/pay-intent', {
+        email: 'Buyer@Example.com', tier: 'weekly', method: 'sbp', client: 'web', checkout: 'sbp',
+        returnUrl: 'https://attacker.invalid/',
+      }, token, { origin }), env)).json();
+      const tx = [...fake.txs.values()].at(-1);
+      const returnOrigin = origin === 'https://pdd-drive.ru' ? origin : 'https://pdd-drive.app';
+      assert.equal(tx.body.return, `${returnOrigin}/app/?checkout=sbp&tier=weekly&pay=done&order=${result.order}`);
+      assert.equal(tx.body.failedUrl, `${returnOrigin}/app/?checkout=sbp&tier=weekly&pay=failed&order=${result.order}`);
+      assert.deepEqual(tx.body.metadata, { userId: 'google_1', user_email: 'buyer@example.com' });
+      assert.equal(JSON.parse(env.INSTALLS.data.get('pay_order:' + result.order)).userId, 'google_1');
+      const again = await (await worker.fetch(req('/api/user/pay-intent', {
+        email: 'Buyer@Example.com', tier: 'weekly', method: 'sbp', client: 'web', checkout: 'sbp',
+      }, token, { origin }), env)).json();
+      assert.equal(again.order, result.order);
+      assert.equal(again.url, result.url);
+      assert.ok(!user(env)?.isPremium);
+      const spoof = await worker.fetch(req('/api/user/pay-intent', {
+        email: 'buyer@example.com', tier: 'weekly', method: 'sbp', client: 'web', checkout: 'sbp', userId: 'google_attacker',
+      }, token, { origin }), env);
+      assert.equal(spoof.status, 403);
+    }
+  } finally { fake.restore(); }
+});
+
+test('Android and ordinary web checkouts retain their existing return contracts', async () => {
+  const fake = fakePlatega();
+  try {
+    for (const client of ['android', 'web']) {
+      const env = baseEnv(), token = await login(env);
+      const start = await (await worker.fetch(req('/api/user/pay-intent', {
+        email: 'a@b.ru', tier: 'weekly', method: 'sbp', client,
+        checkout: client === 'android' ? 'sbp' : 'https://attacker.invalid',
+      }, token), env)).json();
+      const tx = [...fake.txs.values()].at(-1);
+      assert.equal(tx.body.return, client === 'android'
+        ? `https://pdd-drive.app/pay-done/?order=${start.order}`
+        : `https://pdd-drive.app/app/?pay=done&order=${start.order}`);
+    }
+  } finally { fake.restore(); }
+});
+
+test('recover current unfinished order without browser storage; never expose another account', async () => {
+  const fake = fakePlatega();
+  try {
+    const env = baseEnv(), token = await login(env), other = await login(env, 'google_2');
+    const readCurrent = async auth => (await worker.fetch(req('/api/user/pay-check', { current: true }, auth), env)).json();
+    assert.deepEqual(await readCurrent(token), { ok: true, status: 'none' });
+    const start = await (await worker.fetch(req('/api/user/pay-intent', {
+      email: 'a@b.ru', tier: 'weekly', method: 'sbp', client: 'web', checkout: 'sbp',
+    }, token), env)).json();
+    assert.deepEqual(await readCurrent(token), { ok: true, status: 'pending', order: start.order, url: start.url });
+    assert.deepEqual(await readCurrent(other), { ok: true, status: 'none' });
+    assert.equal((await worker.fetch(req('/api/user/pay-check', { order: start.order }, other), env)).status, 404);
+    // Another tab, changed tariff/email and lost client state reuse the same charge.
+    const retry = await (await worker.fetch(req('/api/user/pay-intent', {
+      email: 'changed@b.ru', tier: 'threeMonths', method: 'sbp', client: 'web', checkout: 'sbp',
+    }, token), env)).json();
+    assert.equal(retry.order, start.order);
+    assert.equal(fake.txs.size, 1);
+    const [tx] = fake.txs.values(); tx.status = 'CONFIRMED';
+    const recovered = await readCurrent(token);
+    assert.equal(recovered.status, 'confirmed');
+    assert.equal(recovered.url, undefined);
+    assert.ok(user(env).isPremium);
+    // A completed old purchase must not trap a later deliberate extension.
+    assert.deepEqual(await readCurrent(token), { ok: true, status: 'none' });
+  } finally { fake.restore(); }
+});

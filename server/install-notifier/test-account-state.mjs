@@ -173,3 +173,22 @@ test('unknown creation stays blocked after verified PENDING and unlocks only aft
  status='CANCELED';assert.equal((await(await recover()).json()).status,'canceled');assert.equal((await worker.fetch(request('/api/user/pay-intent',{email:'receipt@example.invalid',tier:'weekly',method:'sbp'},token),env)).status,200);assert.equal(creates,1);
  }finally{globalThis.fetch=original;}
 });
+
+test('current checkout recovery reads primary account intent after restart with stale KV', async () => {
+ const {env,restart}=fixture(),id='google_123';
+ await env.INSTALLS.put('user:'+id,JSON.stringify(identity()));
+ const order=await seedOrder(env,{url:'https://pay.platega.io/recovered'});
+ const token=await session(env),other=await session(env,'google_other');
+ await accountRpc(env,id,'/_account/write',{key:'pay_intent:'+id,value:JSON.stringify({lastOrder:{orderId:order.orderId}})});
+ // The projection deliberately has no intent; only authoritative DO knows it.
+ assert.equal(await env.INSTALLS.get('pay_intent:'+id),null);
+ restart(id);
+ const original=globalThis.fetch;
+ globalThis.fetch=async()=>Response.json({status:'PENDING',paymentDetails:{amount:99,currency:'RUB'}});
+ try {
+  const found=await(await worker.fetch(request('/api/user/pay-check',{current:true},token),env)).json();
+  assert.equal(found.status,'pending');assert.equal(found.order,order.orderId);assert.equal(found.url,order.url);
+  const foreign=await(await worker.fetch(request('/api/user/pay-check',{current:true},other),env)).json();
+  assert.deepEqual(foreign,{ok:true,status:'none'});
+ } finally {globalThis.fetch=original;}
+});

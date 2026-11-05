@@ -4533,4 +4533,97 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get progressSyncDeferred =>
       'Үлгеріміңіз осы құрылғыда сақталды. Сервер қолжетімді болғанда синхрондау жалғасады.';
+
+  @override
+  String get checkoutHeading => 'Премиум қолжетімділік';
+
+  @override
+  String get checkoutStepAccount =>
+      'Қолданбада пайдаланатын аккаунтыңызға кіріңіз.';
+
+  @override
+  String get checkoutStepPay => 'Тарифті таңдап, төлеңіз';
+
+  @override
+  String get checkoutStepReturn => 'Қолданбаға оралыңыз';
+
+  @override
+  String get checkoutAccount => 'Премиум осы аккаунтқа қосылады';
+
+  @override
+  String get checkoutChangeAccount => 'Басқа аккаунтқа кіру';
+
+  @override
+  String get checkoutExistingPremium =>
+      'Сізде Премиум бар. Сатып алу қазіргі қолжетімділік мерзімінен кейін таңдалған мерзімді қосады. Бұл төлем App Store немесе Google Play автоматты ұзартуын өшірмейді.';
+
+  @override
+  String get checkoutChoosePlan => 'Қолжетімділік мерзімін таңдаңыз';
+
+  @override
+  String get checkoutEmailHelp =>
+      'Төлемді сәйкестендіру және төлем бойынша байланысу үшін. Бұл пошта таңдалған аккаунтты өзгертпейді.';
+
+  @override
+  String get checkoutConfirmAccount =>
+      'Қолданбада дәл осы аккаунтты пайдаланатынымды растаймын.';
+
+  @override
+  String get checkoutPaymentTerms =>
+      'Автоматты ұзартусыз бір реттік төлем. «СБП арқылы төлеу» түймесін басу арқылы пайдаланушы келісімін қабылдайсыз. Төлем Platega қорғалған бетінде ашылады; комиссия болуы мүмкін жалпы сома банкте растағанға дейін көрсетіледі.';
+
+  @override
+  String get checkoutUnavailable =>
+      'СБП қолжетімділігін растау мүмкін болмады. Байланысты тексеріп, төлем қолжетімділігін жаңартыңыз.';
+
+  @override
+  String get checkoutRetryAvailability => 'СБП қолжетімділігін тексеру';
+
+  @override
+  String get checkoutCheck => 'Төлемді тексеру';
+
+  @override
+  String get checkoutContinue => 'Осы төлемге оралу';
+
+  @override
+  String get checkoutChooseAgain => 'Тарифті қайта таңдау';
+
+  @override
+  String get checkoutPaid => 'Төлем расталды. Премиум аккаунтыңызға қосылды.';
+
+  @override
+  String get checkoutReturn =>
+      'Телефоныңызда қолданбаны ашып, жоғарыда көрсетілген аккаунтқа кіріңіз. Интернетке қосылғанда мәртебе автоматты түрде жаңарады. Бұл бетті жабуға болады.';
+
+  @override
+  String get checkoutCanceled =>
+      'Бұл төлем аяқталмаған немесе қайтарылған. Ақша есептен шығарылса, қайта төлемес бұрын тапсырыс нөмірімен қолдау қызметіне хабарласыңыз.';
+
+  @override
+  String get checkoutCheckFailed =>
+      'Төлемді тексеру мүмкін болмады. Интернетті тексеріп, төлемді бастаған аккаунтқа кіргеніңізге көз жеткізіңіз. Нәтиже тексерілгенше қайта төлемеңіз.';
+
+  @override
+  String get checkoutCreateRetry =>
+      'Төлем сұрауының нәтижесін алу мүмкін болмады. Тариф пен пошта сақталды: төлемді қалпына келтіру үшін сол сұрауды қайталаңыз. Мәселе шешілмесе, қолдау қызметіне хабарласыңыз.';
+
+  @override
+  String get checkoutRetryCreate => 'Сол сұрауды қайталау';
+
+  @override
+  String get checkoutSupport => 'Төлем бойынша қолдау';
+
+  @override
+  String checkoutOrder(String order) {
+    return 'Тапсырыс: $order';
+  }
+
+  @override
+  String get checkoutDurationWeek => '7 күндік қолжетімділік';
+
+  @override
+  String get checkoutDurationQuarter => '90 күндік қолжетімділік';
+
+  @override
+  String get checkoutYandex => 'Яндекс ID';
 }

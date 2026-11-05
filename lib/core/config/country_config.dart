@@ -114,6 +114,8 @@ class CountryConfig {
   /// показывает только «оплата скоро». РФ: СБП через агрегатора.
   final String tariffsUrl;
 
+  String get supportEmail => 'degtyarik.up@gmail.com';
+
   /// Оплата премиума на сайте (веб-версия). Только веб: в приложениях из
   /// App Store / Google Play — покупки стора.
   bool get hasWebPayments => tariffsUrl.isNotEmpty;

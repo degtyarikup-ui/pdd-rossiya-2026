@@ -87,3 +87,14 @@ Map<String, String> browserAcquisitionFields() {
   web.window.history.replaceState(null, '', '${base.path}$query$fragment');
   return (result: result, order: order);
 }
+
+void setWebCheckoutTier(String tier) {
+  final uri = Uri.base;
+  final query = {...uri.queryParameters, 'checkout': 'sbp', 'tier': tier}
+    ..remove('oauth');
+  web.window.history.replaceState(
+    null,
+    '',
+    uri.replace(queryParameters: query).toString(),
+  );
+}

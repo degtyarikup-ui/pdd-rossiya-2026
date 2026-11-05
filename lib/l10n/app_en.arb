@@ -1536,5 +1536,39 @@
   "gameParkingSignExit": "EXIT",
   "gameParkingSignMall": "SHOPPING CENTRE",
   "gameParkingSignSchoolBuilding": "SCHOOL",
-  "progressSyncDeferred": "Progress is saved on this device. Sync will resume when the server is available."
+  "progressSyncDeferred": "Progress is saved on this device. Sync will resume when the server is available.",
+  "checkoutHeading": "Premium access",
+  "checkoutStepAccount": "Sign in to the account you use in the app.",
+  "checkoutStepPay": "Choose a plan and pay",
+  "checkoutStepReturn": "Return to the app",
+  "checkoutAccount": "Premium will be added to this account",
+  "checkoutChangeAccount": "Use a different account",
+  "checkoutExistingPremium": "You already have Premium. This purchase adds time after your current access ends. It does not cancel any App Store or Google Play auto-renewal.",
+  "checkoutChoosePlan": "Choose your access period",
+  "checkoutEmailHelp": "For payment identification and payment-related contact. This email does not change the selected account.",
+  "checkoutConfirmAccount": "I confirm that this is the account I use in the app.",
+  "checkoutPaymentTerms": "One-time payment with no auto-renewal. By choosing “Pay via SBP”, you accept the terms of service. Payment opens on Platega’s secure page; the total, including any fee, is shown before you confirm with your bank.",
+  "checkoutUnavailable": "SBP availability could not be confirmed. Check your connection and refresh payment availability.",
+  "checkoutRetryAvailability": "Check SBP availability",
+  "checkoutCheck": "Check payment",
+  "checkoutContinue": "Continue this payment",
+  "checkoutChooseAgain": "Choose a plan again",
+  "checkoutPaid": "Payment confirmed. Premium has been added to your account.",
+  "checkoutReturn": "Open the app on your phone and sign in to the account shown above. Your status updates automatically when online. You can close this page.",
+  "checkoutCanceled": "This payment was not completed or was refunded. If you see a charge, contact support with the order number before paying again.",
+  "checkoutCheckFailed": "Could not check payment. Check your connection and make sure you are signed in to the account that started it. Do not pay again until its result is checked.",
+  "checkoutCreateRetry": "The payment request result could not be received. Your plan and email are retained: retry the same request to recover payment. Contact support if the problem persists.",
+  "checkoutRetryCreate": "Retry the same request",
+  "checkoutSupport": "Payment support",
+  "checkoutOrder": "Order: {order}",
+  "checkoutDurationWeek": "7 days of access",
+  "checkoutDurationQuarter": "90 days of access",
+  "@checkoutOrder": {
+    "placeholders": {
+      "order": {
+        "type": "String"
+      }
+    }
+  },
+  "checkoutYandex": "Yandex ID"
 }

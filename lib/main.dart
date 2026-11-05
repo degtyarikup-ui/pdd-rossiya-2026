@@ -1,3 +1,5 @@
+import 'package:pdd_app/data/services/web_checkout_route.dart';
+import 'package:pdd_app/presentation/screens/premium_web_checkout_screen.dart';
 import 'package:pdd_app/data/services/notification_inbox_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 
@@ -343,6 +345,9 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     }
   }
 
+  WebCheckoutRoute? get _checkout =>
+      kIsWeb ? WebCheckoutRoute.resolve(Uri.base, widget.webAuthReturn) : null;
+
   @override
   Widget build(BuildContext context) {
     final appSettings = ref.watch(appSettingsProvider);
@@ -356,6 +361,10 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
         ? const String.fromEnvironment('SCREEN', defaultValue: 'home')
         : 'home';
     Widget getInitialWidget() {
+      final checkout = _checkout;
+      if (checkout != null) {
+        return PremiumWebCheckoutScreen(initialTier: checkout.tier);
+      }
       if (widget.webAuthReturn != null) {
         return const HomeScreen(initialIndex: 3);
       }

@@ -162,6 +162,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
 
   // С какого клиента платят: от этого зависит, куда вернуть человека.
   const client = body.client === 'android' ? 'android' : 'web';
+  const checkout = client === 'web' && body.checkout === 'sbp';
   const context = paymentContext(body, user);
   const live = webPaymentsLive(env);
   const key = 'pay_intent:' + user.id;
@@ -180,6 +181,12 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
       // An uncertain external create never becomes safe to repeat with age.
       // 409 commits the unknown marker and asks support to reconcile it.
       return jsonResponse({ error: reserved.status === 'creation_unknown' ? 'payment creation requires review' : 'payment creation pending', code: reserved.status === 'creation_unknown' ? 'payment_creation_unknown' : 'payment_creation_pending', order: reserved.orderId, status: reserved.status }, reserved.status === 'creation_unknown' ? 409 : 503);
+    }
+    // Dedicated checkout never creates another charge while this account has
+    // an unresolved payment, including a lost response or another browser tab.
+    if (checkout && live && reserved?.status === 'pending' && reserved.userId === user.id &&
+        typeof reserved.url === 'string' && reserved.url.startsWith('https://')) {
+      return jsonResponse({ ok: true, available: true, url: reserved.url, order: reserved.orderId });
     }
   }
   if (repeat && previous.lastOrder?.url && previous.lastOrder.tier === tier && previous.lastOrder.client === client) {
@@ -203,9 +210,10 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
     const orderId = crypto.randomUUID();
     const attempt = { ...intent, orderId };
     const webReturn = request.headers.get('origin') === 'https://pdd-drive.ru' ? 'https://pdd-drive.ru/app/' : PAY_RETURN_URL;
+    const checkoutQuery = checkout ? `checkout=sbp&tier=${tier}&` : '';
     const back = client === 'android'
       ? { ok: `${PAY_DONE_URL}?order=${orderId}`, fail: `${PAY_DONE_URL}?order=${orderId}&failed=1` }
-      : { ok: `${webReturn}?pay=done&order=${orderId}`, fail: `${webReturn}?pay=failed&order=${orderId}` };
+      : { ok: `${webReturn}?${checkoutQuery}pay=done&order=${orderId}`, fail: `${webReturn}?${checkoutQuery}pay=failed&order=${orderId}` };
     try {
       if (env.__ACCOUNT_CHECKPOINT) {
         order = { orderId, txId: null, userId: user.id, name: user.name || '', accountEmail: user.email || '', provider: user.provider || null,
@@ -222,7 +230,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
         return: back.ok,
         failedUrl: back.fail,
         payload: orderId,
-        metadata: { userId: user.id },
+        metadata: { userId: user.id, user_email: email },
       });
       const url = tx.url || tx.redirect;
       if (typeof tx.transactionId !== 'string' || typeof url !== 'string' || !url.startsWith('https://')) {
@@ -443,16 +451,23 @@ export async function handlePayCheck(request, env, user, deps) {
   const { jsonResponse } = deps;
   let body;
   try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
-  const orderId = String(body?.order || '');
+  const current = body?.current === true && !body?.order;
+  const intent = current ? await readJson(env, 'pay_intent:' + user.id) : null;
+  const orderId = String(current ? intent?.lastOrder?.orderId || '' : body?.order || '');
+  if (current && !orderId) return jsonResponse({ ok: true, status: 'none' });
   if (!ORDER_RE.test(orderId)) return jsonResponse({ error: 'invalid order' }, 400);
   const order = env.INSTALLS ? await readJson(env, 'pay_order:' + orderId) : null;
   if (!order || order.userId !== user.id) return jsonResponse({ error: 'order not found' }, 404);
+  if (current && !['pending', 'creating', 'creation_unknown', 'requires_refund', 'mismatch'].includes(order.status)) {
+    return jsonResponse({ ok: true, status: 'none' });
+  }
   if (['pending', 'confirmed', 'creating', 'creation_unknown'].includes(order.status) && order.txId && webPaymentsLive(env)) {
     try { await settleOrder(env, order, deps); } catch (error) {
       await reportPaymentFailure(env, 'payment.check', error, order, user);
     }
   }
-  return jsonResponse({ ok: true, status: order.status });
+  return jsonResponse({ ok: true, status: order.status, order: order.orderId,
+    ...(order.status === 'pending' && typeof order.url === 'string' && order.url.startsWith('https://') ? { url: order.url } : {}) });
 }
 
 /**

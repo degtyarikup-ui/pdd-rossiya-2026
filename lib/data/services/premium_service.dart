@@ -567,6 +567,7 @@ class PremiumService extends ChangeNotifier {
     required PremiumTier tier,
     required String email,
     String method = 'sbp',
+    bool checkout = false,
   }) async {
     if (!kIsWeb) {
       if (defaultTargetPlatform != TargetPlatform.android) return null;
@@ -594,6 +595,7 @@ class PremiumService extends ChangeNotifier {
           'tier': tier.name,
           'email': email.trim(),
           'method': method,
+          if (kIsWeb && checkout) 'checkout': 'sbp',
           'app': CountryConfig.current.code,
           // Android возвращает человека в приложение, а не на сайт.
           'client': kIsWeb ? 'web' : 'android',
@@ -648,7 +650,13 @@ class PremiumService extends ChangeNotifier {
   /// Возврат с формы оплаты: сервер перепроверяет платёж у платёжного
   /// сервиса и, если он оплачен, начисляет срок. Возвращает статус заказа
   /// (`confirmed`, `pending`, `canceled`, …) или null при ошибке сети.
-  Future<String?> checkWebPayment(String order) async {
+  Future<String?> checkWebPayment(String order) async =>
+      (await checkWebPaymentDetails(order: order))?.status;
+
+  /// Recover the current account's unfinished order even when browser storage
+  /// was lost. Only the authenticated server may choose its owner and URL.
+  Future<({String status, String? order, String? url})?>
+  checkWebPaymentDetails({String? order}) async {
     final auth = AuthService.instance;
     if (!auth.hasServerSession || !BackendConfig.hasNotifier) return null;
     final revision = auth.accountRevision;
@@ -657,16 +665,22 @@ class PremiumService extends ChangeNotifier {
         '/api/user/pay-check',
         idempotent: true,
         headers: auth.serverHeaders,
-        body: jsonEncode({'order': order}),
+        body: jsonEncode(order == null ? {'current': true} : {'order': order}),
       );
       if (response.statusCode != 200 || revision != auth.accountRevision) {
         return null;
       }
-      final status =
-          (jsonDecode(response.body) as Map<String, dynamic>)['status']
-              as String?;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final status = data['status'] as String?;
+      if (status == null) return null;
       if (status == 'confirmed') await syncWithServer();
-      return status;
+      if (revision != auth.accountRevision) return null;
+      final url = data['url'] as String?;
+      return (
+        status: status,
+        order: data['order'] as String? ?? order,
+        url: url != null && url.startsWith('https://') ? url : null,
+      );
     } catch (error) {
       ErrorReporter.report(
         ErrorCategory.purchase,
