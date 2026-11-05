@@ -245,7 +245,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 		if _staging_cancelled(s, frames): return null
 		var l: Dictionary = s.data.lights[i]
 		var light: Node3D = TrafficSignal.make(l) if TrafficSignal.supports(l) else PackFiles.instance(dir + "light_%d.glb" % i)
-		light = RoadBuild.light_with_signs(light, l.get("mountedSigns", []), l.get("mountedMainRoad", []))
+		light = RoadBuild.light_with_signs(light, l.get("mountedSigns", []), l.get("mountedMainRoad", []), l)
 		light.position = _v(l.pos)
 		light.rotation.y = l.yaw
 		light.scale = Vector3.ONE * float(l.scale)

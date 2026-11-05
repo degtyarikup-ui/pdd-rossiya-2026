@@ -407,7 +407,7 @@
       else if (item.kind === "actor") Tools.pickActor(item.id);
       else if (item.kind === "officer") Tools.set("officer", { keepLibrary: true });
       else if (item.kind === "sign") Tools.pickSign(item.id);
-      else if (item.kind === "light") Tools.pickLight(item.id === "light_tram" || !!item.tram);
+      else if (item.kind === "light") Tools.pickLight(item.id === "light_reversible" ? "reversible" : item.id === "light_tram" || !!item.tram);
       else Tools.set("light");
       App.dismissCompactDrawer?.();
       return renderLeft();
@@ -448,10 +448,11 @@
       sections.push(`<h4>${ic("flag")}Знаки · ${signs.length}${visible.length < signs.length ? `<button class="lib-more" data-library-category="signs" aria-label="Все знаки">Все знаки ${ic("chevron")}</button>` : ""}</h4><div class="lib-grid signs">${visible.map(c => tile({ kind: "sign", id: c }, `${c} · ${Catalog.signName(c)}`, `<img class="thumb sign-pic" src="/asset/sign/${c==='5.33'?'5.33_plain':c}.svg" alt="" loading="lazy">`, Tools.current() === "sign" && Tools.opts.sign === c, `<b>${esc(c)}</b><span>${esc(Catalog.signName(c))}</span>`)).join("")}</div>`);
     }
     if (inCategory("traffic") && hit("регулировщик")) sections.push(`<h4>${ic("person")}Регулировщик</h4><div class="lib-grid">${tile({ kind: "officer", id: "officer" }, "Регулировщик", `<span class="lib-icon">${ic("person")}</span>`, Tools.current() === "officer")}</div>`);
-    if (inCategory("traffic") && cat.lightAsset && hit("светофор")) {
+    if (inCategory("traffic") && cat.lightAsset && hit("светофор реверсивный трамвайный")) {
       sections.push(`<h4>${ic("light")}Светофоры</h4><div class="lib-grid">
-        ${tile({ kind: "light", id: "light" }, "Светофор", Thumbs.img("light", "light"), Tools.current() === "light" && !Tools.opts.tram)}
+        ${tile({ kind: "light", id: "light" }, "Светофор", Thumbs.img("light", "light"), Tools.current() === "light" && !Tools.opts.tram && !Tools.opts.reversible)}
         ${cat.lightTramAsset ? tile({ kind: "light", id: "light_tram", tram: true }, "С трамвайной секцией", Thumbs.img("light", "light_tram"), Tools.current() === "light" && Tools.opts.tram) : ""}
+        ${tile({kind:"light",id:"light_reversible"},"Реверсивный",'<span class="reversible-preview">× ↓</span>',Tools.current()==="light" && Tools.opts.reversible)}
       </div>`);
     }
     if (inCategory("decor") && typeof ParkingPresets !== "undefined") {

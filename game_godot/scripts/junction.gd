@@ -147,6 +147,8 @@ var spec: Dictionary
 var _signal_state := ""
 var _signal_clock := 0.0
 var _flash_on := true
+var _pedestrian_clock := 0.0
+var _pedestrian_phase := true
 const ANSWER_YELLOW_SECONDS := 3.0
 var _answer_signal_started := false
 var _answer_signal_elapsed := 0.0
@@ -386,6 +388,15 @@ func _release_lights() -> void:
 
 func _update_light_cycle(dt: float) -> void:
 	if dt <= 0.0: return
+	_pedestrian_clock += dt
+	var pedestrian_on := int(_pedestrian_clock * 2.0) % 2 == 0
+	if pedestrian_on != _pedestrian_phase:
+		_pedestrian_phase = pedestrian_on
+		for light in situation.lights:
+			var shared := TrafficSignal.in_assembly(light)
+			if shared != null and shared.has_meta("pedestrian_sections"):
+				TrafficSignal.set_pedestrian_phase(shared, pedestrian_on)
+
 	if _answer_signal_started:
 		_answer_signal_elapsed += dt
 		if _answer_signal_elapsed >= ANSWER_YELLOW_SECONDS and _signal_state != "red":

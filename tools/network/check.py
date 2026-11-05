@@ -207,6 +207,11 @@ def check_scene(scene: dict) -> list:
                     {"type": "stop"})
 
     for l in scene.get("lights", []):
+        if "reversible" in l and l["reversible"] not in ("off", "red", "green", "yellow_left", "yellow_right"):
+            finding(out, "error", "light-reversible", f"{l['id']}: выберите реверсивный сигнал", {"type": "light", "id": l['id']})
+        sections = l.get("pedestrianSections", {})
+        if not isinstance(sections, dict) or any(k not in ("left", "right") or v not in ("off", "on", "flashing") for k, v in sections.items()):
+            finding(out, "error", "light-pedestrian-sections", f"{l['id']}: проверьте нижние пешеходные секции", {"type": "light", "id": l['id']})
         signal = l.get("state")
         if signal is not None and signal not in ("red", "yellow", "green", "flashing_yellow", "flashing_green", "red_yellow", "off"):
             finding(out, "error", "light-state", f"{l['id']}: выберите сигнал светофора", {"type":"light", "id":l['id']})

@@ -1,0 +1,756 @@
+{
+ "schema": 1,
+ "id": "ticket_2_6",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s3",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     -2.5
+    ],
+    [
+     90,
+     -2.5
+    ],
+    [
+     91,
+     -2.5
+    ],
+    [
+     91,
+     2.5
+    ],
+    [
+     90,
+     2.5
+    ],
+    [
+     0,
+     2.5
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s4",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     2.5
+    ],
+    [
+     -90,
+     2.5
+    ],
+    [
+     -91,
+     2.5
+    ],
+    [
+     -91,
+     -2.5
+    ],
+    [
+     -90,
+     -2.5
+    ],
+    [
+     0,
+     -2.5
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.148,
+     0.657
+    ],
+    [
+     3.994,
+     1.298
+    ],
+    [
+     3.742,
+     1.907
+    ],
+    [
+     3.398,
+     2.469
+    ],
+    [
+     2.97,
+     2.97
+    ],
+    [
+     2.469,
+     3.398
+    ],
+    [
+     1.907,
+     3.742
+    ],
+    [
+     1.298,
+     3.994
+    ],
+    [
+     0.657,
+     4.148
+    ],
+    [
+     0,
+     4.2
+    ],
+    [
+     -0.657,
+     4.148
+    ],
+    [
+     -1.298,
+     3.994
+    ],
+    [
+     -1.907,
+     3.742
+    ],
+    [
+     -2.469,
+     3.398
+    ],
+    [
+     -2.97,
+     2.97
+    ],
+    [
+     -3.398,
+     2.469
+    ],
+    [
+     -3.742,
+     1.907
+    ],
+    [
+     -3.994,
+     1.298
+    ],
+    [
+     -4.148,
+     0.657
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.148,
+     -0.657
+    ],
+    [
+     -3.994,
+     -1.298
+    ],
+    [
+     -3.742,
+     -1.907
+    ],
+    [
+     -3.398,
+     -2.469
+    ],
+    [
+     -2.97,
+     -2.97
+    ],
+    [
+     -2.469,
+     -3.398
+    ],
+    [
+     -1.907,
+     -3.742
+    ],
+    [
+     -1.298,
+     -3.994
+    ],
+    [
+     -0.657,
+     -4.148
+    ],
+    [
+     0,
+     -4.2
+    ],
+    [
+     0.657,
+     -4.148
+    ],
+    [
+     1.298,
+     -3.994
+    ],
+    [
+     1.907,
+     -3.742
+    ],
+    [
+     2.469,
+     -3.398
+    ],
+    [
+     2.97,
+     -2.97
+    ],
+    [
+     3.398,
+     -2.469
+    ],
+    [
+     3.742,
+     -1.907
+    ],
+    [
+     3.994,
+     -1.298
+    ],
+    [
+     4.148,
+     -0.657
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     -91
+    ],
+    [
+     0,
+     -9.4
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     9.4
+    ],
+    [
+     0,
+     91
+    ]
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.8,
+     -91
+    ],
+    [
+     -1.8,
+     -13.1
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "straight",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.8,
+     4.7
+    ],
+    [
+     -1.8,
+     5.2
+    ],
+    [
+     -1.8,
+     24.7
+    ]
+   ],
+   "exitYaw": 0
+  },
+  {
+   "id": "manoeuvre_left",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "left",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.701,
+     -3.179
+    ],
+    [
+     -1.404,
+     -1.912
+    ],
+    [
+     -0.905,
+     -0.881
+    ],
+    [
+     -0.202,
+     -0.073
+    ],
+    [
+     0.707,
+     0.529
+    ],
+    [
+     1.826,
+     0.94
+    ],
+    [
+     3.156,
+     1.175
+    ],
+    [
+     4.7,
+     1.25
+    ],
+    [
+     5.2,
+     1.25
+    ],
+    [
+     24.7,
+     1.25
+    ]
+   ],
+   "exitYaw": 1.571
+  },
+  {
+   "id": "manoeuvre_right",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "right",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.832,
+     -3.905
+    ],
+    [
+     -1.936,
+     -3.21
+    ],
+    [
+     -2.123,
+     -2.618
+    ],
+    [
+     -2.405,
+     -2.13
+    ],
+    [
+     -2.792,
+     -1.747
+    ],
+    [
+     -3.296,
+     -1.472
+    ],
+    [
+     -3.928,
+     -1.306
+    ],
+    [
+     -4.7,
+     -1.25
+    ],
+    [
+     -5.2,
+     -1.25
+    ],
+    [
+     -24.7,
+     -1.25
+    ]
+   ],
+   "exitYaw": -1.571
+  },
+  {
+   "id": "manoeuvre_uturn",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "uturn",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -2.6,
+     -1.7
+    ],
+    [
+     -2.402,
+     -0.705
+    ],
+    [
+     -1.838,
+     0.138
+    ],
+    [
+     -0.995,
+     0.702
+    ],
+    [
+     0,
+     0.9
+    ],
+    [
+     0.995,
+     0.702
+    ],
+    [
+     1.838,
+     0.138
+    ],
+    [
+     2.402,
+     -0.705
+    ],
+    [
+     2.6,
+     -1.7
+    ],
+    [
+     1.8,
+     -7.7
+    ],
+    [
+     1.8,
+     -27.7
+    ]
+   ],
+   "exitYaw": 3.142
+  }
+ ],
+ "actors": [],
+ "lights": [
+  {
+   "id": "light_1",
+   "pos": [
+    -4.415,
+    -6.957
+   ],
+   "yaw": 3.142,
+   "scale": 1,
+   "arrow": null,
+   "tram": null,
+   "state": "green",
+   "asset": "ticket_11_15/light_0.glb",
+   "pedestrianSections": {
+    "left": "off",
+    "right": "flashing"
+   }
+  }
+ ],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 2 · Вопрос 6",
+    "title": "Информационная световая секция в виде силуэта пешехода и стрелки с мигающим сигналом бело-лунного цвета, расположенная под светофором, информирует водителя о том, что:",
+    "options": [
+     "На пешеходном переходе, в направлении которого он поворачивает, включен сигнал светофора, разрешающий движение пешеходам",
+     "На пешеходном переходе, в направлении которого он поворачивает, включен сигнал светофора, запрещающий движение пешеходам",
+     "Он поворачивает в направлении пешеходного перехода"
+    ],
+    "explanation": "Информационная световая секция в виде силуэта пешехода и стрелки с мигающим сигналом бело-лунного цвета, расположенная под светофором, информирует водителя о том, что на пешеходном переходе, в направлении которого он поворачивает, включен сигнал светофора, разрешающий движение пешеходам. Направление стрелки указывает на пешеходный переход, на котором включен сигнал светофора, разрешающий движение пешеходам (п. 6.4).",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 2 · Question 6",
+    "title": "The information light section in the form of a silhouette of a pedestrian and an arrow with a flashing white-lunar signal, located under the traffic light, informs the driver that:",
+    "options": [
+     "At the pedestrian crossing in the direction of which he is turning, a traffic light is turned on, allowing pedestrians to move",
+     "At the pedestrian crossing in the direction of which he is turning, a traffic light is turned on, prohibiting the movement of pedestrians",
+     "He turns towards the pedestrian crossing"
+    ],
+    "explanation": "An information light section in the form of a silhouette of a pedestrian and an arrow with a flashing white-lunar signal, located under the traffic light, informs the driver that at the pedestrian crossing in the direction of which he is turning, a traffic light is turned on, allowing the movement of pedestrians. The direction of the arrow indicates a pedestrian crossing where the traffic light is on, allowing pedestrians to move (clause 6.4).",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "2-билет · 6-сұрақ",
+    "title": "Бағдаршамның астында орналасқан жаяу жүргіншінің сұлбасы және жыпылықтайтын ақ-ай сигналы бар жебе түріндегі ақпараттық жарық бөлімі жүргізушіге мынаны хабарлайды:",
+    "options": [
+     "Ол бұрылып бара жатқан жаяу жүргіншілер өткелінде жаяу жүргіншілердің қозғалуына мүмкіндік беретін бағдаршам қосылады.",
+     "Жаяу жүргіншілер өткелінде ол бұрылып бара жатқан бағытта жаяу жүргіншілердің қозғалысына тыйым салатын бағдаршам қосылады.",
+     "Ол жаяу жүргіншілер өткелінің бағытына бұрылады"
+    ],
+    "explanation": "Бағдаршамның астында орналасқан жаяу жүргінші сұлбасы және жыпылықтайтын ақ-ай сигналы бар жебе түріндегі ақпараттық жарық бөлімі жүргізушіге ол бұрылып бара жатқан бағыттағы жаяу жүргіншілер өткелінде жаяу жүргіншілердің қозғалысына мүмкіндік беретін бағдаршамның қосылғаны туралы хабарлайды. Көрсеткі бағыты жаяу жүргіншілердің қозғалуына мүмкіндік беретін бағдаршам жанып тұрған жаяу жүргіншілер өткелін көрсетеді (6.4-тармақ).",
+    "pddRule": ""
+   }
+  },
+  "correct": 0,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "47fc6932668818a762e58903ef00bbf9",
+  "sourceCategory": "ab",
+  "sourceImage": "d67f11a6e67191503276e8e32a58f4f4"
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   },
+   {
+    "id": "e",
+    "x": 90,
+    "z": 0
+   },
+   {
+    "id": "w",
+    "x": -90,
+    "z": 0
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "solid",
+    "lineStyles": {
+     "centre": "dashed"
+    }
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "solid",
+    "lineStyles": {
+     "centre": "dashed"
+    }
+   },
+   {
+    "id": "s3",
+    "a": "c",
+    "b": "e",
+    "kind": "yard",
+    "ends": {},
+    "edge": false,
+    "centre": "solid",
+    "lineStyles": {
+     "centre": "none"
+    }
+   },
+   {
+    "id": "s4",
+    "a": "c",
+    "b": "w",
+    "kind": "yard",
+    "ends": {},
+    "edge": false,
+    "centre": "solid",
+    "lineStyles": {
+     "centre": "none"
+    }
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c"
+  }
+ },
+ "stop": {
+  "x": -1.8,
+  "z": -13.1,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 8.4,
+  "left": 5,
+  "right": 5,
+  "uturn": 8.4
+ },
+ "approachWidth": 8.4,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": true,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionView": {
+  "centre": [
+   -3.441,
+   -5.403
+  ],
+  "height": 10.125,
+  "yaw": 0,
+  "pitch": 0.509,
+  "elevation": 0
+ }
+}

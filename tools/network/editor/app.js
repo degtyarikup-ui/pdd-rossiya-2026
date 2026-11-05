@@ -100,6 +100,38 @@ const App = (() => {
     if (ref.t === "road") return ref.part >= 0 ? o.holes[ref.part] : o.outer;
     return null;
   }
+  const isMarkingVertex = ref => ref?.t === "marking" && Number.isInteger(ref.v)
+    && ["solid","dashed"].includes(objectOf(ref)?.type) && !isGeneratedSurface(objectOf(ref));
+  const sameSelectionRef = (a,b) => sameRef(a,b) && (a.t !== "marking" || (a.v ?? null) === (b.v ?? null));
+  function markingEditRefs(refs = state.sel) {
+    if (!refs.length || !refs.every(r=>r.t === "marking" && ["solid","dashed"].includes(objectOf(r)?.type) && !isGeneratedSurface(objectOf(r)))) return [];
+    return refs.filter((r,i)=>refs.findIndex(x=>sameRef(x,r))===i).map(r=>({t:"marking",id:r.id}));
+  }
+  // Five millimetres preserves the drawn curve; endpoints and reversals are retained.
+  function simplifyMarkingPoints(points, tolerance=.005) {
+    if (!points || points.length < 3) return points?.map(p=>[...p]) || [];
+    const keep=new Set([0,points.length-1]), todo=[[0,points.length-1]];
+    while(todo.length) {
+      const [a,b]=todo.pop(), p=points[a],q=points[b],dx=q[0]-p[0],dz=q[1]-p[1],length=dx*dx+dz*dz;
+      let far=tolerance*tolerance,index=-1;
+      for(let i=a+1;i<b;i++) {
+        const t=length ? Math.max(0,Math.min(1,((points[i][0]-p[0])*dx+(points[i][1]-p[1])*dz)/length)) : 0;
+        const d=(points[i][0]-p[0]-t*dx)**2+(points[i][1]-p[1]-t*dz)**2;
+        if(d>far){far=d;index=i;}
+      }
+      if(index>=0){keep.add(index);todo.push([a,index],[index,b]);}
+    }
+    const out=[...keep].sort((a,b)=>a-b).map(i=>[...points[i]]);
+    if(out.length===2 && Math.hypot(out[1][0]-out[0][0],out[1][1]-out[0][1])>.01)
+      out.splice(1,0,out[0].map((v,i)=>r3((v+out[1][i])/2)));
+    return out;
+  }
+  function simplifyMarkings(refs=state.sel) {
+    const targets=markingEditRefs(refs).filter(r=>!isLocked(r));
+    if(!targets.length)return;
+    edit(()=>targets.forEach(r=>{const m=objectOf(r);m.points=simplifyMarkingPoints(m.points);}),{rebuild:false});
+    select(targets);
+  }
   function shapeCenter(ref) {
     const points = pointsOfRef(ref) || [];
     if (!points.length) return [0, 0];
@@ -574,7 +606,10 @@ const App = (() => {
   // ---- selection ------------------------------------------------------------------------------
   function select(list, opts = {}) {
     const arr = (Array.isArray(list) ? list : list ? [list] : []).filter((r) => r && (objectOf(r) || r.t === "stop"));
-    state.sel = opts.add ? uniq([...state.sel, ...arr]) : arr;
+    const combined = opts.add ? [...state.sel, ...arr] : arr;
+    // Point and whole-object refs must never move the same line twice.
+    const vertices=combined.filter(isMarkingVertex);
+    state.sel = vertices.length ? uniq(vertices) : uniq(combined);
     lastMergedEdit = null;
     if (state.sel.length) state.texSel = null;   // the inspector shows what was picked, not the texture
     Scene3D.setSelection(state.sel);
@@ -582,10 +617,10 @@ const App = (() => {
     App.renderPanels?.({ only: ["inspector", "layers"] });
   }
   function toggle(ref) {
-    const has = state.sel.some((r) => sameRef(r, ref));
-    select(has ? state.sel.filter((r) => !sameRef(r, ref)) : [...state.sel, ref]);
+    const has = state.sel.some((r) => sameSelectionRef(r, ref));
+    select(has ? state.sel.filter((r) => !sameSelectionRef(r, ref)) : [...state.sel, ref]);
   }
-  const uniq = (list) => list.filter((r, i) => list.findIndex((x) => sameRef(x, r)) === i);
+  const uniq = (list) => list.filter((r, i) => list.findIndex((x) => sameSelectionRef(x, r)) === i);
   const isLocked = (ref) => state.locked.has(layerOf(ref));
   const isHidden = (ref) => state.hidden.has(layerOf(ref));
   const pickable = (ref) => !isLocked(ref) && !isHidden(ref);
@@ -612,6 +647,7 @@ const App = (() => {
     const o = objectOf(ref);
     if (!o) return;
     const shift = (p) => { p[0] = r3(p[0] + dx); p[1] = r3(p[1] + dz); };
+    if (isMarkingVertex(ref)) { if(o.points[ref.v])shift(o.points[ref.v]); return; }
     if (ref.t === "pocket" || ref.t === "decor" || ref.t === "actor" || ref.t === "light" || ref.t === "officer" || ref.t === "sign") {
       o.pos = [r3(o.pos[0] + dx), r3(o.pos[1] + dz)];
       if (ref.t === "actor") {
@@ -713,7 +749,7 @@ const App = (() => {
   // Turns the selection by `deg` degrees: each object about itself; a shape about its middle.
   function canRotate(ref) {
     const o = objectOf(ref);
-    if (!o || isLocked(ref)) return false;
+    if (!o || isLocked(ref) || isMarkingVertex(ref)) return false;
     if (ref.t === "stop") return Layout.isFreePlayer(state.S);
     if (ref.t === "route") return o.kind === "annotation";
     if (ref.t === "street") return state.sel.length === 1;
@@ -767,7 +803,7 @@ const App = (() => {
   const COPYABLE = ["pocket", "decor", "sign", "actor", "officer", "light", "marking", "lawn"];
   function canCopy(ref) {
     const o = objectOf(ref);
-    if (!o || isLocked(ref)) return false;
+    if (!o || isLocked(ref) || isMarkingVertex(ref)) return false;
     if (ref.t === "road" && !(ref.part >= 0) && !isGeneratedSurface(o) && o.presetInstance)
       return completePresetGroups(state.sel.filter(r => !isLocked(r))).some(group => group.id === o.presetInstance);
     return COPYABLE.includes(ref.t) && !isGeneratedSurface(o) || ref.t === "route" && o.kind === "annotation";
@@ -879,6 +915,12 @@ const App = (() => {
   async function remove() {
     const list = state.sel.filter(r => !isLocked(r));
     if (!list.length) return;
+    if (list.every(isMarkingVertex)) {
+      const refs=markingEditRefs(list), groups=refs.map(ref=>({ref,points:pointsOfRef(ref),indices:[...new Set(list.filter(r=>sameRef(r,ref)).map(r=>r.v))]}));
+      if(groups.some(g=>g.points.length-g.indices.length<2))return toast("У линии должны остаться хотя бы две точки", "warn");
+      edit(()=>groups.forEach(g=>g.indices.sort((a,b)=>b-a).forEach(i=>g.points.splice(i,1))),{rebuild:false});
+      return select(refs);
+    }
     // A point of a shape or route, when one is picked.
     if (list.length === 1 && list[0].v !== undefined) {
       const ref = list[0], pts = pointsOfRef(ref);
@@ -1140,6 +1182,7 @@ const App = (() => {
   }
 
   return {
+    isMarkingVertex, sameSelectionRef, markingEditRefs, simplifyMarkingPoints, simplifyMarkings,
     state, planScene, hasPlayerPlan, api, toast, confirm: confirmBox, esc, ic, r3, objectOf, pointsOfRef, shapeCenter, isGeneratedSurface, isPaint, layerOf, catalogSize, sameRef, nameOf,
     edit, beginDrag, dragMove, endDrag, cancelDrag, undo, redo, changed, openScene, sceneTitle, save, deleteScene, setPlayable, runInGame,
     select, toggle, pickable, isLocked, moveRef, nudge, canRotate, canCopy, canRemoveObject, rotate, copy, paste, duplicate, remove, setPlayerGuideVisible, selectPlayerPath, resetPlayerGuide, uniqueId, toggleHidden, toggleLocked,

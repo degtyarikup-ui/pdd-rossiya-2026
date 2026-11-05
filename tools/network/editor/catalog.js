@@ -79,6 +79,10 @@ const Catalog = (() => {
   const MARKS = {
     dashed: { title: "Прерывистая", icon: "marking" },
     solid: { title: "Сплошная", icon: "road" },
+    double: { title: "Двойная сплошная", icon: "marking" },
+    double_dashed: { title: "Двойная прерывистая", icon: "marking" },
+    solid_dashed: { title: "Сплошная + прерывистая", icon: "marking" },
+    dashed_solid: { title: "Прерывистая + сплошная", icon: "marking" },
     stop: { title: "Стоп-линия", icon: "stopline" },
     stop_text: { title: "Надпись СТОП", icon: "marking" },
     zebra: { title: "Зебра", icon: "zebra" },

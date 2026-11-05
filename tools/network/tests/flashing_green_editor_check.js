@@ -5,7 +5,7 @@ const pane={innerHTML:'',addEventListener:(name,fn)=>listeners[name]=fn,querySel
 const node={addEventListener(){},dataset:{},classList:{toggle(){}},textContent:''};
 const context=vm.createContext({document:{querySelector:key=>key==='#inspector'?pane:node},
   Scene3D:{refresh(){},setSelection(){}},Thumbs:{fillAll(){},img:()=>''},setTimeout:()=>0,clearTimeout(){}});
-for(const file of ['catalog.js','app.js','inspector.js'])vm.runInContext(fs.readFileSync(require.resolve('../editor/'+file),'utf8'),context);
+for(const file of ['catalog.js','signal_mount.js','app.js','inspector.js'])vm.runInContext(fs.readFileSync(require.resolve('../editor/'+file),'utf8'),context);
 const App=vm.runInContext('App',context),state=App.state;
 App.renderPanels=()=>App.renderInspector();state.catalog={signs:[]};
 state.S={id:'flashing-green-fixture',question:{redWait:5},roads:[],routes:[],markings:[],lawns:[],actors:[],decor:[],

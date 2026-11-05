@@ -14,6 +14,36 @@ const Layout = (() => {
     avenue: { width: 14.0, lanes: [1.75, 5.25], title: "Проспект" },
     highway: { width: 21.0, lanes: [1.75, 5.25, 8.75], title: "Трасса 3+3" },
   };
+  // Styles are editor choices; exported markings keep the established solid/dashed format.
+  const LINE_STYLES = {
+    none: "Без линии", dashed: "Прерывистая", solid: "Сплошная",
+    double: "Двойная сплошная", double_dashed: "Двойная прерывистая",
+    solid_dashed: "Сплошная + прерывистая", dashed_solid: "Прерывистая + сплошная",
+  };
+  function lineStyle(st, key) {
+    return st.lineStyles?.[key] ?? (key === "centre"
+      ? st.centre || (st.kind === "yard" ? "none" : ["avenue","highway"].includes(st.kind) ? "double" : "dashed")
+      : "dashed");
+  }
+  function lineBoundaries(st) {
+    const c = laneConfig(st), out = [];
+    for (let n = Math.max(c.a.left,c.b.left)-1; n > 0; n--) out.push({key:`left-${n}`,title:`Слева · ${n} / ${n+1}`});
+    if (!medianOf(st)) out.push({key:"centre",title:"Осевая"});
+    for (let n = 1; n < Math.max(c.a.right,c.b.right); n++) out.push({key:`right-${n}`,title:`Справа · ${n} / ${n+1}`});
+    return out;
+  }
+  function lineFields(style) {
+    if (style === "double") return {type:"solid",double:"solid",side:1};
+    if (style === "double_dashed") return {type:"dashed",double:"dashed",side:1};
+    if (style === "solid_dashed") return {type:"solid",double:"dashed",side:1};
+    if (style === "dashed_solid") return {type:"dashed",double:"solid",side:1};
+    return {type:style};
+  }
+  function markingStyle(m) {
+    if (!m.double) return m.type;
+    if (m.type === m.double) return m.type === "solid" ? "double" : "double_dashed";
+    return m.type === "solid" ? "solid_dashed" : "dashed_solid";
+  }
   const KERB_R = 5.0;
   const CAR_BACK = 2.4;        // the player's car centre behind its stop line (half a car and a gap)          // the kerb radius the builder rounds every inner corner with (build.py CURB_RADIUS)
   const ZEBRA_LEN = 4.0;       // zebra bars along the traffic (build.py ZEBRA_LENGTH)
@@ -449,6 +479,14 @@ const Layout = (() => {
     let streetId = null;
     const mark = (m) => markings.push({ id: `auto_mark_${++mid}`, auto: true, colour: "white", street: streetId, ...m });
 
+    const boundaryMark = (st,key,points,fallback="dashed") => {
+      const style = st.lineStyles?.[key] ?? fallback;
+      if (style === "none" || !points || points.length < 2) return;
+      const fields = lineFields(style);
+      // Centre the pair about the boundary; keep the legacy single-line path byte identical.
+      const path = fields.double ? offsetRight(points,-.14).map(P) : points;
+      mark({...fields,points:path});
+    };
     for (const st of L.streets) {
       streetId = st.id;
       const w = widthOf(st), custom = hasCustomLanes(st);
@@ -520,7 +558,7 @@ const Layout = (() => {
           if (island.length >= 3) roadItem.holes.push(island);
           roadItem.green = true;
         }
-        if (!custom && st.kind === "avenue") for (const side of [1, -1]) mark({ type: "dashed", points: offsetRight(body, side * (m / 2 + 3.5)).map(P) });
+        if (!custom && st.kind === "avenue") for (const side of [1, -1]) boundaryMark(st,`${side > 0 ? "right" : "left"}-1`,offsetRight(body, side * (m / 2 + 3.5)).map(P));
         // Where the strip has ended (towards the side of the scene) the plain street's centre line goes on.
         if (highway) {
           highwayEnds(L,st,crop).forEach((end,i) => {
@@ -539,15 +577,16 @@ const Layout = (() => {
         if (ext0) body[0] = add(body[0], mul(unit(sub(body[0], body[1])), ext0));
         if (ext1) body[body.length - 1] = add(body.at(-1), mul(unit(sub(body.at(-1), body.at(-2))), ext1));
         const c = st.manualMarks || st.surface === "sand" ? "none" : st.centre || (st.kind === "yard" ? "none" : ["avenue","highway"].includes(st.kind) ? "double" : "dashed");
-        if (c === "dashed") mark({ type: "dashed", points: body.map(P) });
+        if (st.lineStyles?.centre && !st.manualMarks && st.surface !== "sand") boundaryMark(st,"centre",body.map(P),c);
+        else if (c === "dashed") mark({ type: "dashed", points: body.map(P) });
         else if (c === "solid") mark({ type: "solid", points: body.map(P) });
         else if (c === "double") {
           mark({ type: "solid", points: offsetRight(body, 0.15).map(P) });
           mark({ type: "solid", points: offsetRight(body, -0.15).map(P) });
         }
         if (!custom && st.kind === "avenue" && !st.manualMarks && st.surface !== "sand") {
-          mark({ type: "dashed", points: offsetRight(body, 3.5).map(P) });
-          mark({ type: "dashed", points: offsetRight(body, -3.5).map(P) });
+          boundaryMark(st,"right-1",offsetRight(body, 3.5).map(P));
+          boundaryMark(st,"left-1",offsetRight(body, -3.5).map(P));
         }
       }
 
@@ -559,7 +598,7 @@ const Layout = (() => {
             const lateral = profile.median/2 + (boundary === 7 ? 7 + (profile.width/2-profile.median/2-7)* (1-profile.blend) : 3.5);
             return {p:P(add(p,mul(sub(normal[i],p),side*lateral))),blend:profile.blend};
           }).filter(v => boundary === 3.5 || v.blend > .06).map(v => v.p);
-          if (points.length >= 2) mark({type:"dashed",points});
+          if (points.length >= 2) boundaryMark(st,`${side > 0 ? "right" : "left"}-${boundary/3.5}`,points);
         }
       }
 
@@ -572,7 +611,7 @@ const Layout = (() => {
                 const i = samples.indexOf(p);
                 return P(add(p,mul(sub(normal[i],p),sign * (medianOf(st)/2 + boundary*config.width))));
               });
-            if (points.length >= 2) mark({type:"dashed",points});
+            if (points.length >= 2) boundaryMark(st,`${side}-${boundary}`,points);
           }
         }
       }
@@ -1921,6 +1960,7 @@ const Layout = (() => {
   }
 
   return {
+    LINE_STYLES, lineStyle, lineBoundaries, lineFields, markingStyle,
     controlsPlayer, ensureEditablePlan, planGenerated, hasCustomLanes, laneConfig, setLaneConfig, laneTransition,
     medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf, streetProfile, streetOutline, streetHitDistance, highwayPort, setHighwayPort,
     applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, pavedEnd, setPavedEnd, PAVED_MAX, snapPoint, overlapsStreet, addStreet, removeStreet, removeNode, moveNode, moveNodes, setStreetGeometry, mergeNodes, connectNode,

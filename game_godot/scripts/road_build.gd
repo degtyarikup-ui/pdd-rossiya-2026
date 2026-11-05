@@ -221,7 +221,7 @@ static func _cantilever(root: Node3D, board: Node3D, height: float, mounting: Di
 
 
 ## Raise the traffic light and mount a vertical board on the same continuous pole.
-static func light_with_signs(light: Node3D, codes: Array, main_road: Array = []) -> Node3D:
+static func light_with_signs(light: Node3D, codes: Array, main_road: Array = [], mounting: Dictionary = {}) -> Node3D:
 	var signs: Array[Node3D] = []
 	var heights: Array[float] = []
 	for code in codes.slice(0, 2):
@@ -239,7 +239,7 @@ static func light_with_signs(light: Node3D, codes: Array, main_road: Array = [])
 	var lift := 0.15 * (signs.size() - 1)
 	for height in heights:
 		lift += height
-	light.position.y += lift
+	if mounting.get("mount") != "cantilever": light.position.y += lift
 	root.add_child(light)
 	var offset := 0.0
 	for i in range(signs.size() - 1, -1, -1):
@@ -249,6 +249,7 @@ static func light_with_signs(light: Node3D, codes: Array, main_road: Array = [])
 		sign.rotation.y = -PI
 		root.add_child(sign)
 		offset += heights[i] + 0.15
+	if mounting.get("mount") == "cantilever": return root
 	var extension := MeshInstance3D.new()
 	var cylinder := CylinderMesh.new()
 	cylinder.top_radius = 0.07

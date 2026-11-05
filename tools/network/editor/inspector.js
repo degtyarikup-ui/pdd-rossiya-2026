@@ -120,6 +120,10 @@
     if (!state.S) { p.innerHTML = `<div class="empty-pane">${ic("map")}<p>Откройте сцену</p></div>`; bind({}); return; }
     const sel = state.sel;
     if (!sel.length) return sceneInspector(p);
+    if (sel.length > 1 && sel.every(App.isMarkingVertex)) {
+      p.innerHTML=head(ic("marking"),`Точки · ${sel.length}`)+card("",button("delete-points","Удалить точки","trash","danger ghost wide")+button("whole-lines","Выбрать линии целиком","marking","ghost wide"));
+      bind({"delete-points":()=>App.remove(),"whole-lines":()=>App.select(App.markingEditRefs())});return;
+    }
     if (sel.length > 1) return multiInspector(p);
     const ref = sel[0], o = App.objectOf(ref);
     if (!o && ref.t !== "stop") return sceneInspector(p);
@@ -365,6 +369,12 @@
     const edge = (side, sign) => profiles.map((profile,i) => [r3(centre+sign*width(profile,side)*scale),r3(bottom-i/32*(bottom-top))]);
     const left = edge("left",-1), right = edge("right",1);
     const outline = [...left,...right.reverse()].map(p => p.join(",")).join(" ");
+    const styledLine = (points,key) => {
+      const style = Layout.lineStyle(st,key); if(style === "none" || st.manualMarks || st.surface === "sand")return "";
+      const fields = Layout.lineFields(style);
+      const draw = (type,dx) => `<polyline points="${points}" transform="translate(${dx} 0)" fill="none" stroke="#e8eff2" stroke-width=".7" ${type === "dashed" ? `stroke-dasharray="3 ${style === 'double_dashed' ? 1.5 : 3}"` : ""}/>`;
+      return fields.double ? draw(fields.type,-.9)+draw(fields.double,.9) : draw(fields.type,0);
+    };
     const lines = ["left","right"].flatMap(side => {
       const sign = side === "left" ? -1 : 1;
       return Array.from({length:Math.max(0,Math.ceil(Math.max(...profiles.map(p=>count(p,side))))-1)}, (_, i) => {
@@ -372,7 +382,7 @@
           const n = Math.min(i+1,count(profile,side));
           return `${r3(centre+sign*(profile.median/2+n*config.width)*scale)},${r3(bottom-j/32*(bottom-top))}`;
         });
-        return `<polyline points="${points.join(" ")}" fill="none" stroke="#e8eff2" stroke-width=".7" stroke-dasharray="3 3"/>`;
+        return styledLine(points.join(" "),`${side}-${i+1}`);
       });
     }).join("");
     const median = [-1,1].flatMap(sign => {
@@ -381,8 +391,8 @@
     }).join(" ");
     return `<svg class="lane-diagram" viewBox="0 0 88 104" role="img" aria-label="Полосы от A к B: слева ${config.a.left} → ${config.b.left}, справа ${config.a.right} → ${config.b.right}">
       <polygon points="${outline}" fill="#3d4752" stroke="#92a3ae" stroke-width="1"/>${lines}
-      ${profiles.some(p=>p.median) ? `<polygon points="${median}" fill="#749b68"/>` : ""}
-      <path d="M44 84V20m-2 3 2-3 2 3" stroke="var(--accent)" stroke-width="1" fill="none"/>
+      ${profiles.some(p=>p.median) ? `<polygon points="${median}" fill="#749b68"/>` : styledLine("44,87 44,17","centre")}
+      <path d="M5 40V23m-2 3 2-3 2 3" stroke="var(--accent)" stroke-width="1" fill="none"/>
       <text x="44" y="11" text-anchor="middle">B</text><text x="44" y="101" text-anchor="middle">A</text></svg>`;
   }
   function laneSettings(streets, prefix) {
@@ -401,10 +411,46 @@
       <div class="lane-layout ${single ? "" : "lane-multiple"}">${single ? laneDiagram(streets[0],configs[0]) : ""}<div class="lane-counts"><span></span><span class="lane-side">← Слева</span><span class="lane-side">Справа →</span>${counts}</div></div>
       <div class="road-coordinates lane-dimensions"><label>Полоса, м${number("width","Ширина полосы, м",value("width"),2.5,4.5,.1)}</label><label>Переход, м${number("taper","Длина перехода, м",shownTaper,r3(taperMin),r3(taperMax),.001,!taper || taperMin>=taperMax)}</label></div></div>`;
   }
+  const boundaryFocus = new Map();
+  const boundaryFocusKey = (streets,prefix) => `${state.id}/${prefix}/${streets.map(st=>st.id).sort().join(",")}`;
+  function boundaryKeys(streets) {
+    return [...new Map(streets.flatMap(st=>Layout.lineBoundaries(st)).map(b=>[b.key,b])).values()].sort((a,b)=>{
+      const rank=k=>k==="centre" ? 0 : (k.startsWith("left") ? -1 : 1)*Number(k.split("-")[1]);
+      return rank(a.key)-rank(b.key);
+    });
+  }
+  function lineSample(style, vertical=false) {
+    if(style===undefined)return '<svg viewBox="0 0 48 32" aria-hidden="true"><path d="M14 16h20" stroke="currentColor" stroke-width="2" stroke-dasharray="2 3"/></svg>';
+    if(style==="none")return '<svg viewBox="0 0 48 32" aria-hidden="true"><path d="m19 11 10 10m0-10-10 10" stroke="currentColor" stroke-width="1.5" opacity=".5"/></svg>';
+    const fields=Layout.lineFields(style);
+    const stroke=(type,offset)=>`<path d="M4 ${16+offset}H44" stroke="currentColor" stroke-width="2" ${type==="dashed" ? `stroke-dasharray="7 ${style === 'double_dashed' ? 3.5 : 5}"` : ""}/>`;
+    return `<svg viewBox="0 0 48 32" aria-hidden="true" ${vertical ? 'class="vertical-sample"' : ""}>${fields.double ? stroke(fields.type,-3)+stroke(fields.double,3) : stroke(fields.type,0)}</svg>`;
+  }
+  function boundarySettings(streets,prefix) {
+    const editable = streets.filter(st=>!st.manualMarks && st.surface !== "sand");
+    if (!editable.length) return "";
+    const keys=boundaryKeys(editable), focusKey=boundaryFocusKey(streets,prefix);
+    let active=boundaryFocus.get(focusKey);
+    if(active!=="all" && !keys.some(b=>b.key===active))active=keys.some(b=>b.key==="centre") ? "centre" : keys[0]?.key;
+    boundaryFocus.set(focusKey,active);
+    const valueFor=key=>shared(editable.filter(st=>Layout.lineBoundaries(st).some(b=>b.key===key)),st=>Layout.lineStyle(st,key));
+    const values=active==="all" ? keys.map(b=>valueFor(b.key)) : [valueFor(active)];
+    const value=shared(values,v=>v);
+    let medianShown=false;
+    const samples=keys.map(({key,title})=>{
+      const median=!keys.some(b=>b.key==="centre") && key.startsWith("right") && !medianShown;
+      if(median)medianShown=true;
+      return `${median ? '<span class="boundary-median" aria-label="Разделитель"></span>' : ""}<button type="button" data-act="${prefix}boundary-pick" data-key="${key}" aria-label="${title}" title="${title}" aria-pressed="${active===key || active==='all'}">${lineSample(valueFor(key),true)}</button>`;
+    }).join("");
+    return `<div class="boundary-settings"><div class="setting-title"><span>Разметка по полосам</span><button class="ghost small" data-act="${prefix}boundary-pick" data-key="all" aria-pressed="${active==='all'}">Все</button></div>
+      <div class="boundary-road-scroll"><div class="boundary-road" style="min-width:${Math.max(160,keys.length*30+32)}px">${samples}</div></div>
+      ${chips(prefix+"boundary-style",Object.entries(Layout.LINE_STYLES).map(([value,title])=>({value,tip:title,html:lineSample(value)})),value,{cls:"boundary-palette"})}
+      ${button(prefix+"reversible-five","5 полос · реверсивная в центре","marking","ghost wide")}
+      ${editable.some(st=>st.lineStyles) ? button(prefix+"boundary-reset","Сбросить стили линий","restart","ghost wide") : ""}</div>`;
+  }
   function roadSettings(streets, prefix = "") {
     const val = key => shared(streets.filter(st => roadFieldApplies(st,key)), st => roadValue(st,key));
     const paved = streets.some(st => roadFieldApplies(st,"walk"));
-    const centre = streets.some(st => roadFieldApplies(st,"centre"));
     const manual = streets.some(st => st.manualMarks);
     const custom = streets.some(st => Layout.hasCustomLanes(st));
     const profile = chips(prefix+"kind", Object.entries(Layout.KINDS).map(([value, info]) => ({
@@ -415,16 +461,12 @@
       {value:"asphalt", title:"Асфальт", html:'<i class="surface-preview asphalt"></i>'},
       {value:"sand", title:"Грунт", html:'<i class="surface-preview sand"></i>'},
     ], val("surface"), {cls:"road-surfaces"});
-    const marks = [["none","Без линии"],["dashed","Прерывистая"],["solid","Сплошная"],["double","Двойная сплошная"]];
-    const markButtons = chips(prefix+"centre", marks.map(([value,title]) => ({
-      value, tip:title, title:value === "none" ? "Нет" : "", html:value === "none" ? "" : `<i class="mark-pic m-${value}"></i>`,
-    })), val("centre"), {cls:"road-lines"});
     return card(prefix ? `Дороги · ${streets.length}` : "", `
       ${custom ? '<div class="setting-title"><span>Профиль</span><span class="lane-custom">Своя ширина</span></div>' : fieldTitle("Профиль",val("kind"))}${profile}
       ${laneSettings(streets,prefix)}
       ${streets.some(st => roadFieldApplies(st,"median")) ? `<div class="road-row">${fieldTitle("Разделитель",val("median"))}${chips(prefix+"median",[{value:0,title:"Нет"},...[2,3,5].map(value=>({value,title:`${value} м`}))],val("median"))}</div>` : ""}
       <div class="road-row">${fieldTitle("Покрытие",val("surface"))}${surfaces}</div>
-      ${centre ? `<div class="road-row">${fieldTitle("Осевая",val("centre"))}${markButtons}</div>` : ""}
+      ${boundarySettings(streets,prefix)}
       ${[["edge","Краевая линия"],["walk","Тротуары"],["shoulder","Обочина"]].filter(([key]) => key === "shoulder" || paved).map(([key,title]) =>
         `<div class="road-switch">${toggle(prefix+key,title,val(key) === true)}${mixedBadge(val(key) === undefined)}</div>`).join("")}
       ${streets.some(st => st.kind !== "yard" && st.surface !== "sand" && !st.manualMarks) ? button(prefix+"marks-own","Редактировать линии отдельно","marking","ghost small") : ""}
@@ -447,6 +489,34 @@
       }
     });
     const h = {[prefix+"marks-auto"]: () => change("manualMarks",st => { delete st.manualMarks; })};
+    const editable = () => selectedOf(refs,"street").filter(st=>!st.manualMarks && st.surface !== "sand");
+    const boundaries = [...new Set(editable().flatMap(st=>Layout.lineBoundaries(st).map(b=>b.key)))];
+    for (const key of [...boundaries,"all"]) h["text:"+prefix+"boundary-"+key] = value => {
+      if (!Object.hasOwn(Layout.LINE_STYLES,value)) return;
+      const targets = editable().filter(st=>key === "all" || Layout.lineBoundaries(st).some(b=>b.key===key));
+      if (targets.length) App.edit(()=>targets.forEach(st=>{
+        st.lineStyles = {...st.lineStyles};
+        for (const b of Layout.lineBoundaries(st)) if (key === "all" || b.key===key) st.lineStyles[b.key]=value;
+      }));
+    };
+    h[prefix+"boundary-pick"] = d => {
+      if(d.key!=="all" && !boundaries.includes(d.key))return;
+      boundaryFocus.set(boundaryFocusKey(selectedOf(refs,"street"),prefix),d.key);App.renderInspector();
+    };
+    h["chip:"+prefix+"boundary-style"] = value => {
+      const key=boundaryFocus.get(boundaryFocusKey(selectedOf(refs,"street"),prefix));
+      h["text:"+prefix+"boundary-"+key]?.(value);
+    };
+    h[prefix+"boundary-reset"] = () => { const targets=editable(); if(targets.length) App.edit(()=>targets.forEach(st=>delete st.lineStyles)); };
+    h[prefix+"reversible-five"] = () => {
+      const targets=editable(); if(!targets.length)return;
+      App.edit(()=>targets.forEach(st=>{
+        st.median=0;
+        Layout.setLaneConfig(st,{a:{left:2,right:3},b:{left:2,right:3},width:3.5,taper:40});
+        st.lineStyles={"left-1":"dashed",centre:"double_dashed","right-1":"double_dashed","right-2":"dashed"};
+      }));
+    };
+
     for (const key of ["walk","edge","shoulder"]) h["toggle:"+prefix+key] = on => setFlag(key,on);
     for (const [key,values] of Object.entries({surface:["asphalt","sand"], kind:Object.keys(Layout.KINDS), centre:["none","dashed","solid","double"]})) {
       h["chip:"+prefix+key] = value => { if (values.includes(value)) change(key,st => { st[key] = value; if (key === "kind") delete st.lanes; }); };
@@ -460,7 +530,7 @@
       if (!streets.length) return;
       App.edit(sc => streets.forEach(st => {
         const own = sc.markings.filter(m => m.auto && m.street === st.id && ["solid","dashed"].includes(m.type));
-        for (const m of own) sc.markings.push({...JSON.parse(JSON.stringify(m)), id:App.uniqueId("mark_",sc.markings.map(x=>x.id)),auto:undefined,planGenerated:undefined,street:undefined});
+        for (const m of own) sc.markings.push({...JSON.parse(JSON.stringify(m)), points:App.simplifyMarkingPoints(m.points), id:App.uniqueId("mark_",sc.markings.map(x=>x.id)),auto:undefined,planGenerated:undefined,street:undefined});
         st.manualMarks = true;
       }));
     };
@@ -581,6 +651,7 @@
 
   function multiInspector(p) {
     const refs = [...state.sel], streets = selectedOf(refs,"street"), decor = selectedOf(refs,"decor"), actors = selectedOf(refs,"actor");
+    const lines = selectedOf(refs,"marking").filter(m=>["solid","dashed"].includes(m.type));
     const signalActors = actors.filter(actor => ActorSignals.supports(actor.type));
     const locked = refs.length - editableRefs(refs).length;
     const canRotate = refs.some(App.canRotate), canCopy = refs.some(App.canCopy), canDelete = refs.some(App.canRemoveObject);
@@ -590,6 +661,8 @@
       ${selectionActions()}
       ${locked ? `<p class="selection-status">${ic("lock")}Заблокировано: ${locked}</p>` : ""}
       ${streets.length ? roadSettings(streets,"bulk-road-")+bulkRoadSettings(streets) : ""}
+      ${lines.length ? card(`Линии · ${lines.length}`, chips("bulk-line-style",Object.entries(Layout.LINE_STYLES).filter(([k])=>k!=="none").map(([value,title])=>({value,tip:title,html:`<i class="mark-pic m-${value}"></i>`})),shared(lines,Layout.markingStyle),{cls:"path-marks"})
+        + button("simplify-lines","Упростить точки","marking","ghost wide") + chips("bulk-line-colour",[{value:"white",title:"Белые"},{value:"yellow",title:"Жёлтые"}],shared(lines,m=>m.colour || "white"))) : ""}
       ${decor.length ? card(`Окружение · ${decor.length}`, `${fieldTitle("Цвет",tint)}${tints(decor[0].prop,tint)}
         ${fieldTitle("Масштаб",scale)}${chips("bulk-scale",[.75,1,1.25,1.5].map(value => ({value,title:`×${value}`})),scale)}
         ${slider("scale","Множитель",1,.5,1.6,.05,"×1")}`, {cls:"road-sheet"}) : ""}
@@ -606,6 +679,9 @@
       dup: () => { App.select(editableRefs(refs)); App.duplicate(); },
       del: () => { App.select(editableRefs(refs)); App.remove(); },
       rotl: () => rotate(-15), rotr: () => rotate(15),
+      "simplify-lines": () => App.simplifyMarkings(refs),
+      "chip:bulk-line-style": value => { if(value === "none" || !Object.hasOwn(Layout.LINE_STYLES,value) || !lines.length)return; App.edit(()=>lines.forEach(m=>{delete m.double;delete m.side;Object.assign(m,Layout.lineFields(value));})); },
+      "chip:bulk-line-colour": value => { if(!["white","yellow"].includes(value)||!lines.length)return;App.edit(()=>lines.forEach(m=>m.colour=value)); },
       "chip:tint": value => changeSelected(refs,"decor",d => { d.tint = value || null; }),
       "chip:bulk-scale": value => { const n = Number(value); if ([.75,1,1.25,1.5].includes(n)) changeSelected(refs,"decor",d => { d.scale = [n,n,n]; }); },
       "slider:scale": live((_sc,value) => selectedOf(refs,"decor").forEach(d => { if (base.has(d.id)) d.scale = base.get(d.id).map(v => r3(v*value)); }), value => { const label = $("[data-shown=scale]"); if (label) label.textContent = `×${value.toFixed(2)}`; }),
@@ -991,7 +1067,7 @@
 
   // ---- a traffic light -------------------------------------------------------------------------
   function lightInspector(p, ref, l) {
-    const s = state.S, isTram = !!l.tram;
+    const s = state.S, reverse = !!l.reversible, isTram = !reverse && !!l.tram;
     const key = `${state.id}/light/${l.id}`, slot = signFaceSelection.get(key) || 0;
     const mounted = l.mountedSigns || [];
     const codes = [...new Set(["2.4", "8.13", ...(state.catalog.signs || [])])];
@@ -1000,26 +1076,49 @@
     const lamps = `<div class="signal-steady">${Catalog.LIGHTS.filter(x=>!x.id.startsWith("flashing_")).map(signalChoice).join("")}</div><div class="signal-flashing">${Catalog.LIGHTS.filter(x=>x.id.startsWith("flashing_")).map(signalChoice).join("")}</div>`;
     const tramChips = chips("tram", [{value:"",title:"Нет"},{value:"straight",tip:"Прямо",icon:"arrow-up"},{value:"left",tip:"Налево",icon:"arrow-left"},
       {value:"right",tip:"Направо",icon:"arrow-right"},{value:"stop",title:"Стоп"},{value:"off",title:"Выкл."}],l.tram || "",{cls:"tram-signals"});
+    const pedestrianInfo = ["left","right"].map(side => propertyRow(side === "left" ? "← Слева" : "Справа →",
+      chips("pedestrian-"+side,[{value:"",title:"Нет"},{value:"off",title:"Выкл."},{value:"on",title:"Горит"},{value:"flashing",title:"Мигает"}],l.pedestrianSections?.[side] || ""))).join("");
     const slots = [0,1].map(i => {
       const code = mounted[i], title = i ? "Нижний" : "Верхний";
       const pic = code ? `<img src="/asset/sign/${esc(code)}.svg" alt="">` : ic("plus");
       return `<button data-chip="mountSlot" data-value="${i}" aria-pressed="${slot===i}" aria-label="${title} знак · ${code || "нет"}">${pic}<span>${title}<small>${code || "Нет"}</small></span></button>`;
     }).join("");
-    p.innerHTML = `${head(Thumbs.img("light",isTram ? "light_tram" : "light","big"),"Светофор")}
-      ${card(s.lights.length>1 ? "Сигнал всех светофоров" : "Сигнал", `<div class="signal-picker">${lamps}</div>${l.state==="flashing_green" ? `<div class="signal-after-answer"><b>После ответа</b><span><i class="signal-dot yellow"></i>Жёлтый · 3 с ${ic("arrow-right")}<i class="signal-dot red"></i>Красный</span></div>` : ""}`)}
-      ${card("Секции",propertyRow("Трамвайная",tramChips) + (!isTram ? propertyRow("Стрелка",chips("arrow",[{value:"",title:"Нет"},{value:"left",tip:"Налево",icon:"arrow-left"},{value:"straight",tip:"Прямо",icon:"arrow-up"},{value:"right",tip:"Направо",icon:"arrow-right"}],l.arrow || "",{cls:"arrows"})) : ""))}
+    const reverseChoices = `<div class="reversible-choices">${SignalMount.states.map(x=>`<button data-chip="reversible" data-value="${x.value}" class="${l.reversible===x.value ? "on" : ""}" aria-pressed="${l.reversible===x.value}" title="${x.title}" aria-label="${x.title}"><span style="color:${x.colour || "#64727a"}">${x.glyph}</span><small>${x.title}</small></button>`).join("")}</div>`;
+    p.innerHTML = `${head(reverse ? '<span class="reversible-preview">× ↓</span>' : Thumbs.img("light",isTram ? "light_tram" : "light","big"),reverse ? "Реверсивный светофор" : "Светофор")}
+      ${card("Тип",chips("signal-type",[{value:"standard",title:"Обычный"},{value:"reversible",title:"Реверсивный"}],reverse ? "reversible" : "standard"))}
+      ${reverse ? card("Сигнал этой полосы",reverseChoices) : card(s.lights.filter(x=>!x.reversible).length>1 ? "Сигнал обычных светофоров" : "Сигнал", `<div class="signal-picker">${lamps}</div>${l.state==="flashing_green" ? `<div class="signal-after-answer"><b>После ответа</b><span><i class="signal-dot yellow"></i>Жёлтый · 3 с ${ic("arrow-right")}<i class="signal-dot red"></i>Красный</span></div>` : ""}`)}
+      ${!reverse ? card("Секции",propertyRow("Трамвайная",tramChips) + (!isTram ? propertyRow("Стрелка",chips("arrow",[{value:"",title:"Нет"},{value:"left",tip:"Налево",icon:"arrow-left"},{value:"straight",tip:"Прямо",icon:"arrow-up"},{value:"right",tip:"Направо",icon:"arrow-right"}],l.arrow || "",{cls:"arrows"})) : "")) : ""}
+      ${!isTram && !reverse ? card("Нижние секции · пешеходы", `<p class="boundary-help">Пешеход и стрелка поворота. Каждая секция включается отдельно.</p>${pedestrianInfo}`) : ""}
+      ${card("Крепление",propertyRow("Монтаж",chips("mount",[{value:"pole",title:"Стойка"},{value:"cantilever",title:"Консоль"}],l.mount || "pole"))
+        + (l.mount === "cantilever" ? slider("reach","Вылет",l.reach ?? 4.5,.5,15,.25,`${l.reach ?? 4.5} м`)
+          + propertyRow("Консоль",chips("armSide",[{value:"left",title:"Слева"},{value:"right",title:"Справа"}],l.armSide || "left"))
+          + slider("clearance","Нижний край",l.clearance ?? 5.5,5,8,.25,`${l.clearance ?? 5.5} м`) : ""))}
       ${card("Знаки на стойке",`<div class="mount-slots">${slots}${mounted[slot] ? `<button data-chip="mountedSign" data-value="" data-slot="${slot}" aria-label="Снять выбранный знак" title="Снять знак">${ic("trash")}</button>` : ""}</div>` + picker.html
         + (mounted.includes("8.13") ? propertyRow("Главная · 8.13",compass("mountedMainRoad",l.mountedMainRoad || [],"Главная дорога")) : ""))}
       ${card("Поворот",objectHeading(l.yaw))}${card("",deleteRow())}`;
     bind({
       ...common, ...picker.handlers,
+      "chip:signal-type": v => App.edit(()=>{if(v==="reversible")l.reversible="off";else delete l.reversible;}),
+      "chip:reversible": v => { if(SignalMount.states.some(x=>x.value===v))App.edit(()=>{l.reversible=v;}); },
+      "chip:mount": v => App.edit(()=>{if(v==="cantilever"){l.mount=v;l.reach??=4.5;l.armSide??="left";l.clearance??=5.5;}else delete l.mount;}),
+      "chip:armSide": v => App.edit(()=>{l.armSide=v;}),
+      "slider:reach": live((_s,v)=>{l.reach=r3(v);},v=>{const label=pane().querySelector('[data-shown="reach"]');if(label)label.textContent=`${v} м`;}),
+      "slider:clearance": live((_s,v)=>{l.clearance=r3(v);},v=>{const label=pane().querySelector('[data-shown="clearance"]');if(label)label.textContent=`${v} м`;}),
+      ...Object.fromEntries(["left","right"].map(side=>["chip:pedestrian-"+side,v=>{
+        if(App.isLocked(ref) || !["","off","on","flashing"].includes(v))return;
+        App.edit(()=>{
+          const sections={...l.pedestrianSections};
+          if(v)sections[side]=v;else delete sections[side];
+          if(Object.keys(sections).length)l.pedestrianSections=sections;else delete l.pedestrianSections;
+        });
+      }])),
       "chip:mountSlot": v => { signFaceSelection.set(key,Number(v)); App.renderInspector(); },
       "chip:mountedMainRoad": (v) => App.edit(() => { const roads = new Set(l.mountedMainRoad || []); roads.has(v) ? roads.delete(v) : roads.add(v); l.mountedMainRoad = [...roads]; }),
       "chip:mountedSign": (v, e) => App.edit(() => { const signs = [...(l.mountedSigns || [])]; signs[Number(e.target.closest("[data-chip]").dataset.slot)] = v; if (v === "8.13" && !(l.mountedMainRoad || []).length) l.mountedMainRoad = ["south", "west"]; if (signs.some(Boolean)) l.mountedSigns = signs; else delete l.mountedSigns; }),
       "chip:state": v => {
         if (App.isLocked(ref) || !Catalog.LIGHTS.some(x=>x.id === v)) return;
         App.edit(sc => {
-          sc.lights.forEach(x => {x.state=v;});
+          sc.lights.filter(x=>!x.reversible).forEach(x => {x.state=v;});
           if (v === "flashing_green") { sc.question = sc.question || {}; sc.question.redWait=null; }
         });
       },
@@ -1505,7 +1604,7 @@
       return `<div class="bus-stop-size"><label ${key === "step" ? 'title="Шаг равномерно подгоняется под длину"' : ""}>${title}<span><input type="number" min="${min}" max="${max}" step="${step}" data-text="bus-${key}" aria-label="${title}, м" value="${value}"> м</span></label><input type="range" min="${min}" max="${max}" step="${step}" data-slider="bus-${key}" aria-label="${title}" value="${value}"></div>`;
     };
     const setBusSize = (key,value) => { if(key === "length") BusStopMark.setLength(m,value); else m[key]=value; };
-    const typeOptions = paint ? "" : chips("type", Object.entries(Catalog.MARKS).map(([k,v]) => ({value:k,html:k === "bus_stop" ? BusStopMark.svg() : k === "stop_text" ? DirectionMark.svg("stop_text") : k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`,tip:v.title})),m.type,{cls:"path-marks"});
+    const typeOptions = paint ? "" : chips("type", Object.entries(Catalog.MARKS).map(([k,v]) => ({value:k,html:k === "bus_stop" ? BusStopMark.svg() : k === "stop_text" ? DirectionMark.svg("stop_text") : k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`,tip:v.title})),Layout.markingStyle(m),{cls:"path-marks"});
     const arrowLength = arrow && m.points?.length === 2 ? Math.hypot(m.points[1][0] - m.points[0][0], m.points[1][1] - m.points[0][1]) : 6;
     p.innerHTML = `${head(`<span class="ibadge">${bus ? BusStopMark.svg() : ic("marking")}</span>`, App.nameOf(ref), paint ? "снята с картинки билета" : "")}
       ${paint ? "" : card("Разметка", typeOptions, {cls:"path-sheet"})}
@@ -1518,7 +1617,7 @@
       ${m.type === "stop" ? card("Вид линии", chips("stop-style", stopStyles, m.stopStyle || "solid")
         + (m.stopStyle === "yield" ? button("yield-flip", "Развернуть треугольники", "rotr", "ghost wide") : "")) : ""}
       ${bus ? "" : card("Цвет", chips("colour", [{ value: "white", html: `<span class="paint w"></span>`, title: "Белая" }, { value: "yellow", html: `<span class="paint y"></span>`, title: "Жёлтая" }], m.colour || "white"), {cls:"path-inline"})}
-      ${m.type === "solid" || m.type === "dashed" ? card("Вторая линия рядом", chips("double", [{ value: "", title: "Нет" }, { value: "solid", html: `<span class="mark-pic m-solid"></span>`, tip: "Сплошная" }, { value: "dashed", html: `<span class="mark-pic m-dashed"></span>`, tip: "Прерывистая" }], m.double || "", { cls: "tiles" })
+      ${m.type === "solid" || m.type === "dashed" ? card("Параметры линии", button("simplify-points","Упростить точки","marking","ghost wide")+slider("line-width","Толщина",m.width ?? .13,.08,.4,.01,`${(m.width ?? .13).toFixed(2)} м`)
         + (m.double ? button("flip", "На другую сторону", "rotr", "ghost wide") : "")
         + (ref.v !== undefined && ref.v > 0 && ref.v < m.points.length - 1 ? button("split", "Разрезать в точке", "marking", "ghost wide") : "")) : ""}
       ${card("", `<div class="insp-actions">${button("rotl", "−15°", "rotl", "ghost")}${button("rotr", "+15°", "rotr", "ghost")}</div>${deleteRow()}`)}`;
@@ -1538,11 +1637,13 @@
         }],
       ])),
       "bus-side": () => { if(!App.isLocked(ref))App.edit(()=>{m.side=-(m.side ?? 1);}); },
-      "chip:type": (v) => { if(App.isLocked(ref))return; App.edit(() => {
-        m.type = v;
+      "chip:type": (v) => { if(App.isLocked(ref) || !Object.hasOwn(Catalog.MARKS,v) || Layout.markingStyle(m) === v)return; App.edit(() => {
+        const wasLine = ["solid","dashed"].includes(m.type);
+        delete m.double; delete m.side;
+        Object.assign(m,Layout.lineFields(v));
         if (["stop", "zebra", "arrow", "stop_text"].includes(v) && m.points) m.points = m.points.slice(0, 2);
         if (v === "zebra") m.length = m.length || 4; else delete m.length;
-        if (v === "stop") m.width = 0.4; else delete m.width;
+        if (v === "stop") m.width = 0.4; else if (!wasLine || !["solid","dashed"].includes(m.type)) delete m.width;
         if (v === "arrow") { m.direction = m.direction || "straight"; m.width = 2.6; }
         else delete m.direction;
         if (v === "stop_text") m.width = 2.6;
@@ -1567,6 +1668,8 @@
       "mark-flip": () => { if (!App.isLocked(ref)) App.rotate(180); },
       "yield-flip": () => { if (!App.isLocked(ref)) App.edit(() => { m.points.reverse(); }); },
       "chip:colour": (v) => App.edit(() => { m.colour = v; }),
+      "simplify-points": () => App.simplifyMarkings([ref]),
+      "slider:line-width": live((_sc,v)=>{ if(!App.isLocked(ref))m.width=v; },v=>{const label=p.querySelector('[data-shown="line-width"]');if(label)label.textContent=`${v.toFixed(2)} м`;}),
       "chip:double": (v) => App.edit(() => { if (v) { m.double = v; m.side = m.side || 1; } else { delete m.double; delete m.side; } }),
       flip: () => App.edit(() => { m.side = -(m.side || 1); }),
       split: () => {

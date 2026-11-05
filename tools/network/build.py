@@ -75,7 +75,8 @@ KERB_COLOUR = "#b9b4ab"
 LAWN_COLOUR = "#9ca66b"            # the game draws lawns in the season's ground colour (layer grass)
 MARK_COLOURS = {"white": "#f2f4f8", "yellow": "#f5b025", "rail": "#9ea6ae"}   # game.js BRAND.asphaltMarking / asphaltMarkingYellow
 MARK_WIDTH = {"solid": 0.13, "dashed": 0.13, "stop": 0.4}
-DASH, GAP = 2.0, 3.0                 # game.js corridorDashes: 2 m line, 3 m gap
+DASH, GAP = 2.0, 3.0                 # Ordinary broken line: 2 m stroke, 3 m gap
+DOUBLE_DASH_GAP = 1.0                # Paired broken lines have shorter breaks
 ZEBRA_LENGTH, ZEBRA_STRIPE = 4.0, 0.7
 YIELD_BASE, YIELD_DEPTH, YIELD_GAP = 0.5, 0.6, 0.3
 
@@ -520,19 +521,20 @@ def marking_geometry(m: dict):
     """One marking item as shapely geometry (before the cut to the carriageway). A line may carry a
     second one beside it ("double": "solid" | "dashed", "side": 1 or -1, DOUBLE_GAP apart): a double
     solid line, or a solid and a broken one side by side (1.11)."""
-    geom = single_marking(m)
     second = m.get("double")
+    gap = DOUBLE_DASH_GAP if m.get("type") == "dashed" and second == "dashed" else GAP
+    geom = single_marking(m, dash_gap=gap)
     if second in ("solid", "dashed") and m.get("type") in ("solid", "dashed") and len(m.get("points", [])) >= 2:
         line = LineString([tuple(p) for p in m["points"]]).offset_curve(DOUBLE_GAP * float(m.get("side", 1)))
         if not line.is_empty and line.geom_type == "LineString":
-            geom = unary_union([geom, single_marking({**m, "type": second, "points": list(line.coords)})])
+            geom = unary_union([geom, single_marking({**m, "type": second, "points": list(line.coords)}, dash_gap=gap)])
     return geom
 
 
 DOUBLE_GAP = 0.28    # centre to centre of the two lines of a double marking (m)
 
 
-def single_marking(m: dict):
+def single_marking(m: dict, *, dash_gap=GAP):
     kind = m.get("type", "solid")
     if kind == "bus_stop":
         return bus_stop_marking.geometry(m)
@@ -579,7 +581,7 @@ def single_marking(m: dict):
             end = min(at + DASH, line.length)
             if end - at > 0.05:
                 dashes.append(substring(line, at, end).buffer(w / 2, cap_style=2, join_style=2))
-            at += DASH + GAP
+            at += DASH + dash_gap
         return unary_union(dashes) if dashes else Polygon()
     if kind == "zebra":
         if len(pts) < 2:

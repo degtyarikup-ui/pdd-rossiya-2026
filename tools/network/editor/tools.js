@@ -172,8 +172,8 @@ const Tools = (() => {
       html = signs.map(k => tile("sign", k, k, `<img src="/asset/sign/${k === "5.33" ? "5.33_plain" : k}.svg" alt="" draggable="false">`, opts.sign === k, k + " · " + Catalog.signName(k))).join("");
       action = libraryButton("signs");
     } else if (tool === "light") {
-      const lights = [["std", "Обычный", "light"], ["tram", "С трамвайной секцией", "light_tram"]];
-      html = lights.map(([k,title,id]) => tile("light-type", k, title, Thumbs.img("light", id), opts.tram === (k === "tram"))).join("");
+      const lights = [["std", "Обычный", "light"], ["tram", "С трамвайной секцией", "light_tram"], ["reversible", "Реверсивный", "light_reversible"]];
+      html = lights.map(([k,title,id]) => tile("light-type", k, title, k === "reversible" ? '<span class="reversible-preview">× ↓</span>' : Thumbs.img("light", id), (opts.reversible ? "reversible" : opts.tram ? "tram" : "std") === k)).join("");
     }
     const tabs = group.tools.filter(allowed);
     const head = tabs.length > 1 ? tabs.map(id => `<button data-shelf-tool="${id}" class="shelf-tab ${id === tool ? "on" : ""}" aria-pressed="${id === tool}" title="${esc(definition(id).title)} · ${definition(id).key}">${ic(definition(id).icon)}${TAB_NAMES[id]}</button>`).join("") : `<b>${group.title}</b>`;
@@ -345,7 +345,7 @@ const Tools = (() => {
       if (d.brushSpacing) opts.brushSpacing = Number(d.brushSpacing);
       if (d.brushVariation) opts.brushVariation++;
       if (d.brushLibrary) return App.setLibraryCategory?.("decor");
-      if (d.lightType) { opts.tram = d.lightType === "tram"; Scene3D.requestRender?.(); }
+      if (d.lightType) { opts.tram = d.lightType === "tram"; opts.reversible = d.lightType === "reversible"; Scene3D.requestRender?.(); }
       renderPopover();
       refreshBrushPreview();
     });
@@ -433,7 +433,10 @@ const Tools = (() => {
   const select = {
     down(e) {
       const h = e.labelRef && App.pickable(e.labelRef) ? e.labelRef : Scene3D.hitAt(e.sx, e.sy, skipLocked);
-      if (!h) { drag = { kind: "marquee", x0: e.sx, y0: e.sy, add: e.shift }; return; }
+      const pointScope=App.markingEditRefs();
+      if (!h || pointScope.length && !h.point && ["street","road","lawn"].includes(h.t)) {
+        drag = { kind: "marquee", x0: e.sx, y0: e.sy, add: e.shift, pointScope, fallback:h }; return;
+      }
       if (h.t === "turn") return startTurn(e);
       if (e.alt && ["stop", "letter"].includes(h.t)) return;
       if (h.t === "letter") {
@@ -443,6 +446,15 @@ const Tools = (() => {
       }
       if (h.t === "stop" && Layout.controlsPlayer(S())) { App.select({ t: "stop" }); App.beginDrag(); drag = { kind: "stop" }; return; }
       if (h.point) {
+        if(App.isMarkingVertex(h)) {
+          if(e.shift){App.toggle(h);return;}
+          if(!App.state.sel.some(r=>App.sameSelectionRef(r,h)))App.select(h);
+          if(!e.world)return;
+          const refs=App.state.sel.filter(r=>App.isMarkingVertex(r)&&App.pickable(r));
+          App.beginDrag();
+          drag={kind:"vertices",refs,start:e.world,screen:[e.sx,e.sy],moved:false,rawSurface:true,
+            base:refs.map(r=>[...App.pointsOfRef(r)[r.v]])};return;
+        }
         App.select({ ...h, v: h.v });
         App.beginDrag();
         drag = { kind: "point", ref: h, moved: false, rawSurface: authoredSurface(h) };
@@ -534,6 +546,14 @@ const Tools = (() => {
           };
         });
       }
+      if (drag.kind === "vertices") {
+        if(!drag.moved && !pastDragThreshold(e))return;
+        drag.moved=true;
+        const dx=snapGrid(e.world.x-drag.start.x,e),dz=snapGrid(e.world.z-drag.start.z,e);
+        return App.dragMove(()=>drag.refs.forEach((r,i)=>{
+          const pts=App.pointsOfRef(r);if(pts?.[r.v])pts[r.v]=[r3(drag.base[i][0]+dx),r3(drag.base[i][1]+dz)];
+        }),{rebuild:false,surfaces:true});
+      }
       if (drag.kind === "point") {
         drag.moved = true;
         const ref = drag.ref;
@@ -615,9 +635,9 @@ const Tools = (() => {
       if (d.kind === "marquee") {
         $("#marquee").hidden = true;
         if (d.rect) {
-          const found = Scene3D.inRect(...d.rect, skipLocked);
-          App.select(found, { add: d.add });
-        } else if (!d.add) App.select([]);
+          const found = Scene3D.inRect(...d.rect, skipLocked, d.pointScope);
+          App.select(found.length || !d.pointScope?.length ? found : d.pointScope, { add: d.add });
+        } else if (!d.add) App.select(d.fallback || []);
         return;
       }
       if (d.kind === "move" && d.nodeRef && d.moved) {
@@ -905,6 +925,7 @@ const Tools = (() => {
       const asset = (isTram ? (App.state.catalog?.lightTramAsset || App.state.catalog?.lightAssets?.tram) : null) || App.state.catalog?.lightAsset;
       url = asset ? `/asset/scene/${asset}` : null;
       half = isTram ? [0.7, 0.5] : [0.5, 0.5];
+      if (opts.reversible) { url = "/asset/models/street/traffic_head_reversible.glb"; half = [1,.5]; }
       const spot = s.layout && yaw === null && !Layout.onMedian(s, [x, z]) ? lightSpot([x, z]) : null;
       if (spot) { x = spot.pos[0]; z = spot.pos[1]; y = spot.yaw; }
       else if (yaw === null) y = Math.PI;
@@ -914,7 +935,7 @@ const Tools = (() => {
       half = [size[2] / 2, size[0] / 2];
       x = snapGrid(x); z = snapGrid(z);
     }
-    return { url, x, z, yaw: y, half, scale, kind };
+    return { url, x, z, yaw: y, half, scale, kind, ...(kind === "light" && opts.reversible ? {signalMount:{reversible:"off",mount:"cantilever"}} : {}) };
   }
 
   // Where a traffic light stands for the arm of a junction nearest to p: on the right corner before the
@@ -1028,8 +1049,9 @@ const Tools = (() => {
       if (!asset) return App.toast("Нет модели светофора", "bad");
       ref = App.edit((sc) => {
         const id = App.uniqueId("light_", sc.lights.map((l) => l.id));
-        const state0 = sc.lights[0]?.state || "green";
-        sc.lights.push({ id, pos: [r3(g.x), r3(g.z)], yaw: r3(yaw), scale: 1, arrow: null, tram: isTram ? "straight" : null, state: state0, asset });
+        const state0 = sc.lights.find(l=>!l.reversible)?.state || "green";
+        sc.lights.push({ id, pos: [r3(g.x), r3(g.z)], yaw: r3(yaw), scale: 1, arrow: null, tram: isTram ? "straight" : null, state: state0, asset,
+          ...(opts.reversible ? {reversible:"off",mount:"cantilever",reach:4.5,armSide:"left",clearance:5.5} : {}) });
         return { t: "light", id };
       });
     } else {
@@ -1192,7 +1214,7 @@ const Tools = (() => {
       if (App.state.locked.has("marks")) return App.toast("Слой разметки заблокирован", "warn");
       const ref = App.edit((s) => {
         const id = App.uniqueId("mark_", s.markings.map((m) => m.id));
-        const m = { id, type: opts.mark, colour: "white", points: pts };
+        const m = { id, ...Layout.lineFields(opts.mark), colour: "white", points: pts };
         if (opts.mark === "stop") m.width = 0.4;
         if (opts.mark === "zebra") m.length = 4;
         if (opts.mark === "bus_stop") { Object.assign(m,BusStopMark.defaults); m.colour="yellow"; m.side=BusStopMark.chooseSide(s,m); }
@@ -1324,7 +1346,8 @@ const Tools = (() => {
   }
 
   function pickLight(tram = false) {
-    opts.tram = !!tram;
+    opts.reversible = tram === "reversible";
+    opts.tram = !opts.reversible && !!tram;
     set("light", { keepLibrary: true });
   }
 
@@ -1335,7 +1358,7 @@ const Tools = (() => {
     if (item.kind === "preset") { opts.preset=item.id; place("preset",ghostFor("preset",w,null),0); }
     else if (item.kind === "prop") { opts.prop = item.id; place("prop", ghostFor("prop", w, null), 0); }
     else if (item.kind === "actor") { opts.actorType = item.id; const g = ghostFor("actor", w, null); place("actor", g, g.yaw); }
-    else if (item.kind === "light") { opts.tram = !!(item.tram || item.id === "light_tram"); const g = ghostFor("light", w, null); place("light", g, g.yaw); }
+    else if (item.kind === "light") { opts.reversible = item.id === "light_reversible"; opts.tram = !opts.reversible && !!(item.tram || item.id === "light_tram"); const g = ghostFor("light", w, null); place("light", g, g.yaw); }
     else if (item.kind === "officer") place("officer", ghostFor("officer", w, null), 0);
     else if (item.kind === "sign") { opts.sign = item.id; const g = ghostFor("sign", w, null); place("sign", g, g.yaw); }
   }

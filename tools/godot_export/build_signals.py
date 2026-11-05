@@ -63,10 +63,11 @@ class SignalMesh(PropMesh):
             self.face([(x,y,.001)for x,y in head],LENS)
 
 
-def body(tram=False,arrow=''):
+def body(tram=False,arrow='',with_mast=True):
     m=SignalMesh()
     m.role=1 # mast: lets the smaller mini-game preserve its own mounting profile
-    m.stem((0,0,0),(0,5.4 if tram else 4.2,0),.08,.08,STEEL,None,8)
+    if with_mast:
+        m.stem((0,0,0),(0,5.4 if tram else 4.2,0),.08,.08,STEEL,None,8)
     m.role=2 # main housing, without a backing board or visors
     m.rounded_box(0,3.4,.25,.65,1.6,.4,.055,BLACK)
     if arrow:
@@ -82,10 +83,10 @@ def body(tram=False,arrow=''):
     return m
 
 
-def build(output):
+def build(output,head_only=False):
     for kind in ['standard','right','left','straight','tram']:
         tram=kind=='tram';arrow=kind if kind in ['right','left','straight']else ''
-        parts=[('body',body(tram,arrow),'signal_body',None)]
+        parts=[('body',body(tram,arrow,not head_only),'signal_body',None)]
         for name,y in [('red',3.85),('yellow',3.4),('green',2.95)]:
             m=SignalMesh();m.disk(0,0,0,.21,LENS)
             if name=='green' and arrow:
@@ -99,7 +100,7 @@ def build(output):
             for name,x,y in [('bottom',0,4.6),('mid',0,5.06),('left',-.42,5.06),('right',.42,5.06)]:
                 m=SignalMesh();m.disk(0,0,0,.18,LENS)
                 parts.append(('aperture_tram_'+name,m,'signal_lens',('lamp_tram_'+name,[x,y,.46])))
-        write_model(output/('traffic_light_'+kind+'.glb'),parts,{},'PDD shared traffic signals','tools/godot_export/build_signals.py')
+        write_model(output/(('traffic_head_' if head_only else 'traffic_light_')+kind+'.glb'),parts,{},'PDD shared traffic signals','tools/godot_export/build_signals.py')
 
 
 if __name__=='__main__':

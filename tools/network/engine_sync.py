@@ -164,13 +164,18 @@ def sync(sid: str) -> dict:
                           for r in net.get("routes", []) if r["kind"] == "annotation"]
 
     out["lights"] = [{"pos": [l["pos"][0], 0.0, l["pos"][1]], "yaw": l["yaw"], "scale": l["scale"],
-                      "arrow": l.get("arrow"), "tram": l.get("tram"), "mountedSigns": l.get("mountedSigns", []), "mountedMainRoad": l.get("mountedMainRoad", [])}
+                      "arrow": l.get("arrow"), "tram": l.get("tram"),
+                      **{key: l[key] for key in ("reversible", "mount", "reach", "armSide", "clearance") if key in l},
+                      **({"pedestrianSections": dict(l["pedestrianSections"])} if l.get("pedestrianSections") else {}), "mountedSigns": l.get("mountedSigns", []), "mountedMainRoad": l.get("mountedMainRoad", [])}
                      for l in net.get("lights", [])]
     if not net.get("lights"):
         out["trafficLights"] = None
-    if net.get("lights") and net["lights"][0].get("state") is not None:
-        out["trafficLights"] = {"state": net["lights"][0]["state"], "arrow": net["lights"][0].get("arrow"),
-                                "tram": net["lights"][0].get("tram")}
+    vehicle_lights = [l for l in net.get("lights", []) if not l.get("reversible")]
+    if vehicle_lights and vehicle_lights[0].get("state") is not None:
+        out["trafficLights"] = {"state": vehicle_lights[0]["state"], "arrow": vehicle_lights[0].get("arrow"),
+                                "tram": vehicle_lights[0].get("tram")}
+    elif net.get("lights") and not vehicle_lights:
+        out["trafficLights"] = {"state": "off", "arrow": None, "tram": None}
 
     actors = []
     for na in net.get("actors", []):

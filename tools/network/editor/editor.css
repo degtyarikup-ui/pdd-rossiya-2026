@@ -705,3 +705,40 @@ button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); 
   font-family:Onest,sans-serif; font-weight:700; text-shadow:none;
   paint-order:stroke fill; line-height:1.296875;
 }
+
+/* Explicit paired line styles in both the drawing palette and road inspector. */
+.mark-pic.m-double_dashed::after { top:9px; height:6px; background:repeating-linear-gradient(90deg,#fff 0 7px,transparent 7px 10.5px); mask:linear-gradient(#000 0 2px,transparent 2px 4px,#000 4px); }
+.mark-pic.m-solid_dashed::after,.mark-pic.m-dashed_solid::after { top:9px;height:6px;background:linear-gradient(#fff,#fff) top/100% 2px no-repeat,repeating-linear-gradient(90deg,#fff 0 7px,transparent 7px 12px) bottom/100% 2px no-repeat; }
+.mark-pic.m-dashed_solid::after { transform:scaleY(-1); }
+.mark-pic.m-none::after { display:none; }
+.boundary-settings { margin:12px 0;padding-top:10px;border-top:1px solid var(--line,#39444d); }
+.boundary-help { font-size:11px;line-height:1.5;opacity:.7;margin:4px 0 8px; }
+.boundary-row { display:flex;align-items:center;justify-content:space-between;gap:6px;margin:6px 0; }
+.boundary-row>span { display:flex;align-items:center;gap:4px;font-size:11px; }
+.boundary-row select { width:59%;min-width:0;font-size:11px;padding:7px 3px;background:#28343d;color:#e8eff2;border:1px solid #45545e;border-radius:5px; }
+.boundary-settings .wide { width:100%;margin-top:5px; }
+
+.boundary-road-scroll { overflow-x:auto;margin:6px 0 10px; }
+.boundary-road { display:flex;height:88px;padding:0 16px;background:#343d47;border-left:2px solid #d8e0e5;border-right:2px solid #d8e0e5; }
+.boundary-road button { display:flex;align-items:center;justify-content:center;flex:1;min-width:28px;padding:0;background:transparent;border:1px solid transparent;border-radius:5px;color:#e8eff2;cursor:pointer; }
+.boundary-road button[aria-pressed="true"] { color:#8ddaff;background:#60c9ff24;border-color:#6bcaff; }
+.boundary-road button:hover { background:#ffffff18; }
+.boundary-road .vertical-sample { width:72px;height:40px;flex-shrink:0;transform:rotate(-90deg); }
+.boundary-median { width:10px;flex-shrink:0;background:#648461;margin:0 10px;border-left:2px solid #acb5a4;border-right:2px solid #acb5a4; }
+.boundary-palette { display:grid !important;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px !important; }
+.boundary-palette button { min-width:0;padding:4px 0 !important;height:38px; }
+.boundary-palette svg { width:100%;height:30px; }
+.boundary-settings .setting-title button[aria-pressed="true"] { color:#8ddaff;background:#60c9ff24; }
+#inspector .boundary-settings { min-width:0;max-width:100%; }
+#inspector .boundary-road-scroll { min-width:0;max-width:100%; }
+#inspector .boundary-road { box-sizing:border-box; }
+#inspector .boundary-palette { width:100%;min-width:0; }
+#inspector .boundary-palette button { min-width:0;width:100%; }
+#inspector .boundary-palette svg { width:36px;max-width:100%;flex-shrink:1; }
+/* Visual lane-control states, including the switched-off two-cell face. */
+.reversible-preview { display:inline-flex; align-items:center; justify-content:center; border:2px solid #7a858c; border-radius:4px; background:#10151a; color:#c4ced4; font:700 26px/1.2 sans-serif; padding:3px 6px; white-space:nowrap; }
+#inspector .reversible-choices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
+#inspector .reversible-choices button { min-width:0; padding:6px 2px; display:flex; flex-direction:column; align-items:center; gap:5px; }
+#inspector .reversible-choices span { display:block; border:1px solid #68747c; border-radius:3px; background:#10151a; min-width:38px; font:700 30px/1.2 sans-serif; }
+#inspector .reversible-choices small { font-size:10px; line-height:1.2; white-space:normal; }
+#inspector .reversible-choices button.on { background:var(--accent-soft); box-shadow:inset 0 0 0 1.5px var(--accent); border-radius:6px; }
