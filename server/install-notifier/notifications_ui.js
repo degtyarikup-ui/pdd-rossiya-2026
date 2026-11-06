@@ -209,6 +209,7 @@ function audienceLabel(m){var a=audiencesOf(m);return a.length===3?'Все по�
 function storesOf(m){return m.store&&m.store!=='all'?[m.store]:['play','rustore'];}
 var ICON='https://pdd-drive.app/assets/icon-192.png',BLUE='#0574F8';
 var SVG={eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+ purchase:'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h16l1 13H3L4 8z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>',
  tap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11V5a2 2 0 0 1 4 0v6M13 10a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v4a7 7 0 0 1-7 7h-1a7 7 0 0 1-6-3.4L4 15a2 2 0 0 1 3.4-2.1L9 15"/></svg>',
  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
  off:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
@@ -540,14 +541,17 @@ function render(list){
   try {
    var dest=new URL(m.actionUrl);
    if(buyers||(m.action==='url'&&['pdd-drive.app','www.pdd-drive.app','pdd-drive.ru','www.pdd-drive.ru'].includes(dest.hostname)&&['/pay','/pay/'].includes(dest.pathname))){
-    sales='<small title="Аккаунты с подтверждённой оплатой СБП по ссылке этого сообщения. Повторная покупка считается один раз. Доступно с запуска учёта.">Купили: '+(m.buyerTracking?buyers:buyers?buyers+' (с начала учёта)':'нет данных')+'</small>'
-     +(m.buyerTracking&&c?'<small title="Оплатившие аккаунты / уникальные нажавшие. Клики могут приходить позже.">Из кликов: '+(100*buyers/c).toFixed(1)+'%</small>':'');
+    var count=m.buyerTracking||buyers?String(buyers):'—';
+    var label='Купили Премиум по СБП: '+(count==='—'?'нет данных':count);
+    if(!m.buyerTracking&&buyers)label+=' (с начала учёта)';
+    if(m.buyerTracking&&c)label+='. Из кликов: '+(100*buyers/c).toFixed(1)+'%';
+    sales='<span role="img" aria-label="'+label+'" title="'+label+'">'+SVG.purchase+count+'</span>';
    }
   }catch(_){}
   var who=m.target?'<span class="nf-tag test">Тест</span><small>'+esc(m.target)+'</small>':'<small>'+esc(audienceLabel(m))+'</small>';
   return '<div class="nf-msg" data-nt-message="'+m.id+'">'+thumb(m)+'<div style="min-width:0"><strong>'+esc(heading(m))+'</strong><small>'+esc(fmt(m.createdAt))+(ACTIONS[m.action]?' · → '+esc(ACTIONS[m.action]):'')+'</small><div class="nf-tags">'+tagsFor(m)+'<span data-nt-status>'+statusTag(m)+'</span></div><div class="nf-expiry" data-nt-lifetime>'+lifetimeHtml(m,now)+'</div>'+(m.error?'<small style="color:var(--danger)">'+esc(m.error)+'</small>':'')+'</div>'
    +'<div class="nf-who">'+who+'</div>'
-   +'<div class="nf-metric" title="Уникальные люди: увидели / нажали. Данные приходят с задержкой до 10 минут."><div class="nf-stat"><span>'+SVG.eye+v+'</span><span>'+SVG.tap+c+'</span></div><small>'+(v?'CTR '+(100*c/v).toFixed(1)+'%':'нет данных')+'</small>'+sales+'</div>'
+   +'<div class="nf-metric" title="Уникальные люди: увидели / нажали. Данные приходят с задержкой до 10 минут."><div class="nf-stat"><span>'+SVG.eye+v+'</span><span>'+SVG.tap+c+'</span>'+sales+'</div><small>'+(v?'CTR '+(100*c/v).toFixed(1)+'%':'нет данных')+'</small></div>'
    +'<div class="nf-acts">'+(m.target?'<button class="nf-ib primary" data-nt-promote="'+m.id+'" title="Подставить в форму и отправить всем">Всем</button>':'')
    +'<button class="nf-ib" data-nt-copy="'+m.id+'" title="Копия в форму">'+SVG.copy+'</button>'
    +(canToggle?'<button class="nf-ib" data-nt-toggle="'+m.id+'" data-enabled="'+(!m.enabled)+'" title="'+(m.enabled?(m.kind==='push'&&m.status!=='queued'?'Скрыть в приложении':'Выключить'):'Включить')+'">'+(m.enabled?SVG.off:SVG.on)+'</button>':'')
