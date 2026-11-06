@@ -1,4 +1,5 @@
 import { diagnosticNotificationPolicy, authTransportIdentity } from './diagnostic_context.js';
+import { incidentGuide } from './incident_copy.js';
 import { buildAuthTransportMessage } from './diagnostics.js';
 import { processTelegramMessageUpdate } from './support_chat.js';
 import { isReportPhotoUrl } from './report_questions.js';
@@ -144,6 +145,10 @@ export class TelegramQueue {
     const threadId = await getTopicThreadId(this.env, 'errors');
     const now = Date.now(), windowMs = 10 * 60000;
     const policy = diagnosticNotificationPolicy(incident);
+    const urgent = incidentGuide(incident).level === 'critical';
+    // Separate urgent cooldowns from lower-severity rechecks and isolate payers/orders.
+    if (urgent) fingerprint = JSON.stringify(['urgent', fingerprint, incident.payment?.orderId || incident.payment?.txId ||
+      (incident.category === 'purchase' ? incident.userId || incident.installation : null)]);
     const stored = await this.state.storage.get('errors:state') || { recent: [], groups: {}, window: now, count: 0, overflow: 0 };
     stored.recent = stored.recent.filter(item => now - item.at < 86400000);
     if (stored.recent.some(item => item.id === incident.id)) return Response.json({ ok: true, duplicate: true });
@@ -154,7 +159,7 @@ export class TelegramQueue {
     for (const [key, pending] of Object.entries(stored.pendingBatches)) if (pending.until <= now) delete stored.pendingBatches[key];
     const group = stored.groups[fingerprint];
     const transportIdentity = authTransportIdentity(incident);
-    const identity = transportIdentity || incidentBatchIdentity(incident);
+    const identity = urgent ? null : transportIdentity || incidentBatchIdentity(incident);
     // Related auth attempts may update an unattempted alert only during its
     // original three-second window. Thereafter the hour cooldown records each
     // repeat/provider for CSV and the next eligible warning, without live edits.
@@ -168,10 +173,13 @@ export class TelegramQueue {
     const combined = entries && entries.length < INCIDENT_BATCH_MAX
       ? buildMessage([...entries, entry]) : null;
     const merge = combined && combined.length <= 4096;
-    if (now - stored.window >= windowMs) { stored.window = now; stored.count = 0; }
+    if (now - stored.window >= windowMs) { stored.window = now; stored.count = 0; stored.urgentClientCount = 0; }
+    // Mobile diagnostics are client supplied. Their own budget cannot exhaust
+    // the urgent server lane, even if a device sends forged critical reports.
+    const limited = urgent ? incident.origin === 'client' && (stored.urgentClientCount || 0) >= 20 : stored.count >= 20;
     let text = null;
     let reason = 'sent';
-    if (!policy.notify) { reason = 'info_only'; }
+    if (!urgent && !policy.notify) { reason = 'info_only'; }
     else if (!merge && group && now - group.at < policy.windowMs) {
       group.repeats++;
       if (transportIdentity) {
@@ -180,9 +188,10 @@ export class TelegramQueue {
       }
       reason = 'grouped';
     }
-    else if (!merge && stored.count >= 20) { stored.overflow++; reason = 'burst_limit'; }
+    else if (!merge && limited) { stored.overflow++; reason = 'burst_limit'; }
     else {
-      if (!merge) stored.count++;
+      if (urgent && incident.origin === 'client') stored.urgentClientCount = (stored.urgentClientCount || 0) + 1;
+      if (!urgent && !merge) stored.count++;
       stored.groups[fingerprint] = { at: merge && transportIdentity && group ? group.at : now, repeats: 0 };
       text = merge ? combined : buildMessage([entry]);
       if (merge) reason = 'coalesced';
@@ -197,7 +206,9 @@ export class TelegramQueue {
           } });
         } else {
           const sequence = (await txn.get('sequence') || 0) + 1;
-          const key = 'q:' + String(sequence).padStart(16, '0');
+          // DO lists keys lexicographically: urgent server, urgent client, then legacy FIFO.
+          const prefix = urgent ? (incident.origin === 'server' ? 'q:!0:' : 'q:!1:') : 'q:';
+          const key = prefix + String(sequence).padStart(16, '0');
           const until = now + INCIDENT_BATCH_WINDOW_MS;
           await txn.put(key, { text, ...(threadId ? { threadId: Number(threadId) } : {}),
             ...(identity ? { notBefore: until, incidentBatch: { entries: [entry] } } : {}) });

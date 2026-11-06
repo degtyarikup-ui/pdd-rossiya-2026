@@ -309,3 +309,25 @@ test('topic fallback retains the entire collected incident message', async t => 
   assert.equal(f.delivered[0].message_thread_id, undefined);
   for (const event of [first, second]) assert.ok(f.delivered[0].text.includes(event.diagnosticId));
 });
+
+test('urgent storage and payment incidents lead a saturated queue across restart and Telegram backoff', async t => {
+  const f = fixture(t);
+  for (let i = 0; i < 20; i++) await f.enqueue(f.incident({code: 'noise_' + i}));
+  const memory = f.incident({code: 'durable_memory_exhausted', status: 503});
+  const payment = f.incident({category: 'purchase', operation: 'api.user.purchase'});
+  const second = {...payment, id: crypto.randomUUID(), userId: 'other', diagnosticId: crypto.randomUUID()};
+  for (const event of [memory, payment, second]) assert.equal((await f.enqueue(event)).suppressed, false);
+  assert.equal((await f.enqueue({...payment, id: crypto.randomUUID()})).suppressed, true);
+  f.response(() => Response.json({ok:false, parameters:{retry_after:30}}, {status:429}));
+  await f.fire();
+  assert.ok(f.calls[0].text.includes(memory.diagnosticId));
+  f.restart();
+  await f.fire();
+  assert.equal(f.calls.length, 1);
+  f.response(() => Response.json({ok:true}));
+  await f.drain();
+  for (const [index, event] of [memory, payment, second].entries()) {
+    assert.ok(f.delivered[index].text.startsWith('🔴'));
+    assert.ok(f.delivered[index].text.includes(event.diagnosticId));
+  }
+});

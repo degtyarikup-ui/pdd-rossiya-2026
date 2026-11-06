@@ -145,7 +145,7 @@ export function incidentCopy(event) {
 // Уровень показывает, насколько срочно реагировать, а шаги — что именно
 // сделать пользователю и нам. Тексты статические, без данных пользователя.
 const LEVELS = {
-  critical: ['🔴', 'Срочно', 'человек мог заплатить и не получить доступ'],
+  critical: ['🔴', 'Срочно', 'требуется немедленная проверка'],
   high: ['🟠', 'Важно', 'у человека не получилось войти или оплатить'],
   low: ['🟡', 'Не срочно', 'не мешает пользователям, приложение работает'],
   info: ['🟢', 'Для сведения', 'ошибки у пользователя не было'],
@@ -299,6 +299,8 @@ export function incidentGuide(event) {
   else if (LOW_OPERATIONS.test(operation)) level = 'low';
   else if (event.category === 'app' && !/^(flutter|dart)\./.test(operation) && !/^(startup\.(premium|auth)|auth\.dialog)$/.test(operation)) level = 'low';
   // Нехватка настройки на сервере блокирует всех — это срочно независимо от операции.
+  if (event.origin === 'server' && (baseCode === 'durable_memory_exhausted' ||
+      (event.status >= 500 && ['api.store.google.notifications', 'api.store.apple.notifications', 'api.user.pay-check'].includes(operation)))) level = 'critical';
   if (['session_secret_not_configured', 'store_verification_not_configured'].includes(baseCode)) level = 'critical';
 
   const steps = [];
