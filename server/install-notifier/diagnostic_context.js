@@ -56,7 +56,18 @@ export function storeRecheckWithPremium(event) {
   return STORE_CHECKS.has(event.operation) && Date.parse(event.premiumActiveUntil) > at;
 }
 
+// Older clients can surface a bare HttpException through Flutter's global
+// handler. Keep the first alert on each platform and every individual CSV row.
+export function isGenericFrameworkHttp(event) {
+  return event.origin === 'client' && event.category === 'app'
+    && event.operation === 'flutter.framework' && event.code === 'network:http'
+    && ['ios', 'android'].includes(event.platform?.toLowerCase()) && event.context?.stage === 'framework'
+    && !event.status && !event.context.frames?.length && !event.context.phase
+    && !event.context.sdkSource && !event.context.sdkCodeHash && !event.context.errorType;
+}
+
 export function diagnosticNotificationPolicy(event) {
+  if (isGenericFrameworkHttp(event)) return { notify: true, windowMs: 6 * 3600000 };
   // A recovered sign-in is a successful outcome; it remains in the CSV.
   if (event.operation === 'auth.recovered') return { notify: false, windowMs: 600000 };
   const expectedSlowStartup = event.operation === 'startup.premium' && event.code === 'timeout';

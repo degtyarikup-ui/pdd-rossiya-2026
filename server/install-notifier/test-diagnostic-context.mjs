@@ -141,3 +141,17 @@ test('auth transport preserves bounded HTTP status and stage without raw respons
  assert.deepEqual(result,{stage:'telegram_check',httpStatus:503});
  assert.equal(sanitizeDiagnosticContext({httpStatus:999}).httpStatus,undefined);
 });
+
+test('bare framework HTTP alerts group across builds per platform but keep actionable detail and CSV rows', async () => {
+  const {env, storage} = setup();
+  const event = {origin:'client', category:'app', operation:'flutter.framework', code:'network:http',
+    platform:'iOS', appVersion:'2.2.9', context:{stage:'framework'}};
+  for (const delta of [{}, {platform:'ios', appVersion:'2.2.10'}, {platform:'android'}, {status:403},
+    {context:{stage:'framework', frames:['package:pdd_app/main.dart:42']}}]) {
+    await reportIncident(env, {...event, ...delta, id:id()});
+  }
+  assert.deepEqual(entries(storage, 'log:').map(row => row.notificationReason),
+    ['sent', 'grouped', 'sent', 'sent', 'sent']);
+  assert.equal(entries(storage, 'q:').length, 4);
+  assert.equal(diagnosticNotificationPolicy(event).windowMs, 6 * 3600000);
+});

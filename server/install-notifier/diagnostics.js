@@ -1,4 +1,4 @@
-import { sanitizeDiagnosticContext, diagnosticOs, authTransportIdentity } from './diagnostic_context.js';
+import { sanitizeDiagnosticContext, diagnosticOs, authTransportIdentity, isGenericFrameworkHttp } from './diagnostic_context.js';
 import { readSession, tokenHash } from './user_auth.js';
 import { incidentCopy, incidentGuide, providerLabel, platformLabel, storeLabel } from './incident_copy.js';
 import { isCloudflareInternalError } from './durable_request.js';
@@ -191,7 +191,8 @@ export async function reportIncident(env, incident) {
     const contextKey = [event.context.phase || '', event.context.stage || '', event.context.sdkCodeHash || '', event.context.frames?.[0] || ''];
     // Preserve existing durable groups for clients that have no new context.
     const transportIdentity = authTransportIdentity(event);
-    const fingerprint = await tokenHash(transportIdentity || [event.origin, event.category, event.operation, event.code, event.provider, event.platform, event.appVersion, ...(contextKey.some(Boolean) ? contextKey : [])].join('|'));
+    const frameworkGroup = isGenericFrameworkHttp(event) ? 'framework-http-v1|' + event.platform.toLowerCase() : null;
+    const fingerprint = await tokenHash(transportIdentity || frameworkGroup || [event.origin, event.category, event.operation, event.code, event.provider, event.platform, event.appVersion, ...(contextKey.some(Boolean) ? contextKey : [])].join('|'));
     const response = await env.TELEGRAM.get(env.TELEGRAM.idFromName(String(env.CHAT_ID))).fetch('https://telegram/incident', {
       method: 'POST', body: JSON.stringify({ incident: event, fingerprint }),
     });
