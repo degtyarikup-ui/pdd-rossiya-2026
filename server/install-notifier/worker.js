@@ -2338,10 +2338,10 @@ export async function flushBufferedStats(env, items, persistBatch = null) {
       }
       // Live Feed — только клики/установки/кампании (экономия KV).
       if (event.type !== 'registration' && !(event.type === 'install' && ['returning', 'unclassified'].includes(event.kind)) && (event.type !== 'view' || event.campaign)) feed.push(liveFeedEntry(event, now));
-    } else if (item.kind === 'notice' && /^[a-f0-9-]{36}$/.test(item.campaignId) && ['view', 'click'].includes(item.event)) {
+    } else if (item.kind === 'notice' && /^[a-f0-9-]{36}$/.test(item.campaignId) && ['view', 'click', 'buyer'].includes(item.event)) {
       const key = 'notice_metrics:' + item.campaignId;
       const counts = await cachedKv(env, noticeMetrics, key, value => value || { view: 0, click: 0 });
-      counts[item.event]++;
+      counts[item.event] = (counts[item.event] || 0) + 1;
     } else if (item.kind === 'usage') {
       applyUsage(await dayOf(now), item);
     } else if (item.kind === 'ai') {

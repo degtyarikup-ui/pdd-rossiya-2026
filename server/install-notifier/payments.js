@@ -1,3 +1,4 @@
+import { privatePushTopic } from './notification_identity.js';
 import { boundedJson, abuseBudget } from './request_security.js';
 import { reportIncident, errorCode, markIncidentReported } from './diagnostics.js';
 // Оплата премиума на сайте: СБП через агрегатора Platega (docs.platega.io).
@@ -163,6 +164,9 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
   // С какого клиента платят: от этого зависит, куда вернуть человека.
   const client = body.client === 'android' ? 'android' : 'web';
   const checkout = client === 'web' && body.checkout === 'sbp';
+  const attribution = checkout && typeof body.noticeCampaignId === 'string' &&
+    /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(body.noticeCampaignId)
+    ? { noticeCampaignId: body.noticeCampaignId } : {};
   const context = paymentContext(body, user);
   const live = webPaymentsLive(env);
   const key = 'pay_intent:' + user.id;
@@ -217,7 +221,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
     try {
       if (env.__ACCOUNT_CHECKPOINT) {
         order = { orderId, txId: null, userId: user.id, name: user.name || '', accountEmail: user.email || '', provider: user.provider || null,
-          email, tier, days: tariff.days, amount: tariff.priceRub, currency: 'RUB', method, app, client, context, status: 'creating', createdAt: new Date(now).toISOString() };
+          email, tier, days: tariff.days, amount: tariff.priceRub, currency: 'RUB', method, app, client, context, ...attribution, status: 'creating', createdAt: new Date(now).toISOString() };
         intent.lastOrder = { orderId, tier, client };
         await env.INSTALLS.put('pay_order:' + orderId, JSON.stringify(order));
         await env.INSTALLS.put(key, JSON.stringify(intent));
@@ -240,7 +244,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
       order = {
         orderId, txId: tx.transactionId, userId: user.id, name: user.name || '', accountEmail: user.email || '',
         provider: user.provider || null, email, tier, days: tariff.days, amount: tariff.priceRub, currency: 'RUB',
-        method, app, client, context, status: 'pending', url, createdAt: new Date(now).toISOString(),
+        method, app, client, context, ...attribution, status: 'pending', url, createdAt: new Date(now).toISOString(),
       };
       await env.INSTALLS.put('pay_order:' + orderId, JSON.stringify(order));
       await env.INSTALLS.put('pay_tx:' + tx.transactionId, orderId);
@@ -351,6 +355,11 @@ export async function settleOrder(env, order, deps) {
     order.confirmedAt = order.confirmedAt || new Date().toISOString();
     await env.INSTALLS.put('pay_order:' + order.orderId, JSON.stringify(order));
     if (wasConfirmed) return order;
+    if (order.noticeCampaignId && env.SESSION_SECRET) {
+      const identity = await privatePushTopic(env, 'account:' + order.userId);
+      await deps.trackStats?.(env, null, { id: `notice:${order.noticeCampaignId}:${identity}:buyer`,
+        kind: 'notice', campaignId: order.noticeCampaignId, event: 'buyer' });
+    }
     await notify(env, deps, buildSbpPurchaseMessage(order, ledger.expiresAt, deps.esc, ledger.renewal), 'pay_paid:' + order.orderId);
     try {
       await deps.trackStats?.(env, null, { id: 'pay_paid:' + order.orderId, kind: 'analytics', event: { type: 'purchase', purchaseSource: 'web', app: order.app || 'ru', platform: (order.context ? order.context.platform : order.client) || 'unknown' } });

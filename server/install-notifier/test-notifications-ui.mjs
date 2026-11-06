@@ -56,7 +56,7 @@ export async function preview() {
   const now = Date.now(), day = 86400000;
   const seed = [
     { kind: 'push', inAppKind: 'news', title: 'Новые билеты 2026', body: 'Мы обновили все 40 билетов по новым правилам. Загляните в раздел «Билеты».', status: 'accepted', action: 'tickets', createdAt: now - 2 * 3600000 },
-    { kind: 'banner', layout: 'image', title: '', body: '', imageUrl: 'https://pdd-drive.ru/assets/icon-192.png', action: 'premium', createdAt: now - day, metrics: [140, 12] },
+    { kind: 'banner', layout: 'image', title: '', body: '', imageUrl: 'https://pdd-drive.ru/assets/icon-192.png', action: 'url', actionUrl: 'https://pdd-drive.app/pay', buyerTracking: true, createdAt: now - day, metrics: [140, 12, 3] },
     { kind: 'popup', title: 'Тест окна', body: 'Проверка на своём аккаунте', target: 'me@example.test', createdAt: now - 3 * day },
   ];
   for (const item of seed) {
@@ -64,7 +64,7 @@ export async function preview() {
     data.set('message:' + id, { id, app: 'ru', platform: 'all', store: 'all', enabled: true, startAt: item.createdAt, expiresAt: item.createdAt + 7 * day,
       layout: 'standard', button: true, buttonText: '', dismissText: '', imageUrl: '', accent: '', emoji: '', actionUrl: '', target: '', inApp: false,
       status: item.kind === 'push' ? 'accepted' : 'published', ...item, metrics: undefined });
-    if (item.metrics) await env.INSTALLS.put('notice_metrics:' + id, JSON.stringify({ view: item.metrics[0], click: item.metrics[1] }));
+    if (item.metrics) await env.INSTALLS.put('notice_metrics:' + id, JSON.stringify({ view: item.metrics[0], click: item.metrics[1], buyer: item.metrics[2] }));
   }
   await env.INSTALLS.put('user_email:me@example.test', 'google_preview');
   await env.INSTALLS.put('user_email:friend@example.test', 'google_friend');
@@ -100,6 +100,7 @@ if (process.argv.includes('--serve')) {
     await page.click('[data-feature="notifications"]');
     await page.waitForSelector('#nt-history .nf-msg');
     assert.equal(await page.locator('#nt-history .nf-msg').count(), 3);
+    assert.match(await page.textContent('#nt-history'), /Купили: 3Из кликов: 25.0%/);
     // Picture only: the window shows the picture, the list shows an entry.
     await choose(page, 'input[name="nt-place"][value="popup"]');
     await page.fill('#nt-title', 'Новая версия');

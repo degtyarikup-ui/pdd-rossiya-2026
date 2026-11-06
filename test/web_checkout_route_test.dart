@@ -41,11 +41,13 @@ void main() {
         'startedAt': now.millisecondsSinceEpoch,
         'nonce': 'nonce',
         'checkoutTier': 'weekly',
+        'checkoutCampaign': '11111111-1111-4111-8111-111111111111',
       };
       final params = {
         'provider': provider,
         'state': state,
         'checkout_tier': 'threeMonths',
+        'checkout_campaign': 'injected',
       };
       final result = validateWebOAuthReturn(params, pending, now);
       expect(
@@ -54,6 +56,13 @@ void main() {
           result,
         )?.tier,
         PremiumTier.weekly,
+      );
+      expect(
+        WebCheckoutRoute.resolve(
+          Uri.parse('https://pdd-drive.app/app/'),
+          result,
+        )?.campaignId,
+        '11111111-1111-4111-8111-111111111111',
       );
       final invalid = validateWebOAuthReturn(
         {...params, 'state': newWebOAuthState()},

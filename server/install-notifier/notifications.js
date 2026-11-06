@@ -146,6 +146,7 @@ export function validateCampaign(input, now = Date.now()) {
   value.actionUrl = value.action === 'url' ? httpsUrl(input.actionUrl, 'Ссылка действия') : '';
   if (value.action === 'url' && !value.actionUrl) throw new Error('Укажите ссылку для кнопки');
   if (profile && value.button && (!value.buttonText || value.action === 'none')) throw new Error('Для кнопки укажите текст и действие');
+  value.buyerTracking = true;
   value.createdAt = now;
   value.enabled = true;
   value.status = value.kind === 'push' ? 'queued' : (value.startAt > now ? 'scheduled' : 'published');
@@ -252,7 +253,7 @@ export function buildPushMessage(campaign, now = Date.now()) {
   const title = campaign.emoji && campaign.title ? campaign.emoji + ' ' + campaign.title : campaign.title;
   // Title-only and text-only pushes omit the empty line.
   const notification = { ...(title ? { title } : {}), ...(campaign.body ? { body: campaign.body } : {}), ...(campaign.imageUrl ? { image: campaign.imageUrl } : {}) };
-  const data = { campaignId: campaign.id, action: campaign.action || 'none', actionUrl: campaign.actionUrl || '', imageUrl: campaign.imageUrl || '', accent: campaign.accent || '' };
+  const data = { campaignId: campaign.id, action: campaign.action || 'none', actionUrl: bannerActionUrl(campaign), imageUrl: campaign.imageUrl || '', accent: campaign.accent || '' };
   const androidNotification = { tag: campaign.id, channel_id: 'admin_messages', icon: 'ic_notification', ...(campaign.accent ? { color: campaign.accent } : {}), ...(campaign.imageUrl ? { image: campaign.imageUrl } : {}) };
   return { condition: pushCondition(campaign), notification, data,
     android: { ttl: ttl + 's', notification: androidNotification },

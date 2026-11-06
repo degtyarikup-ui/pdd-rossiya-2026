@@ -28,8 +28,11 @@ Future<Never> startWebOAuth(String provider, Uri authorizationUrl) {
       'state': authorizationUrl.queryParameters['state'],
       'nonce': authorizationUrl.queryParameters['nonce'],
       'startedAt': DateTime.now().millisecondsSinceEpoch,
-      if (WebCheckoutRoute.fromUri(Uri.base) case final checkout?)
+      if (WebCheckoutRoute.fromUri(Uri.base) case final checkout?) ...{
         'checkoutTier': checkout.tier.name,
+        if (checkout.campaignId != null)
+          'checkoutCampaign': checkout.campaignId,
+      },
     }),
   );
   web.window.location.assign(authorizationUrl.toString());

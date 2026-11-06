@@ -363,7 +363,10 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     Widget getInitialWidget() {
       final checkout = _checkout;
       if (checkout != null) {
-        return PremiumWebCheckoutScreen(initialTier: checkout.tier);
+        return PremiumWebCheckoutScreen(
+          initialTier: checkout.tier,
+          campaignId: checkout.campaignId,
+        );
       }
       if (widget.webAuthReturn != null) {
         return const HomeScreen(initialIndex: 3);

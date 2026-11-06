@@ -536,10 +536,18 @@ function render(list){
  el('history').innerHTML=list.map(function(m){
   var expired=m.expiresAt<=now,canToggle=!expired&&(m.kind!=='push'||['queued','accepted','unknown'].indexOf(m.status)>=0||placeOf(m)!=='news');
   var v=Number(m.metrics&&m.metrics.view||0),c=Number(m.metrics&&m.metrics.click||0);
+  var buyers=Number(m.metrics&&m.metrics.buyer||0),sales='';
+  try {
+   var dest=new URL(m.actionUrl);
+   if(buyers||(m.action==='url'&&['pdd-drive.app','www.pdd-drive.app','pdd-drive.ru','www.pdd-drive.ru'].includes(dest.hostname)&&['/pay','/pay/'].includes(dest.pathname))){
+    sales='<small title="Аккаунты с подтверждённой оплатой СБП по ссылке этого сообщения. Повторная покупка считается один раз. Доступно с запуска учёта.">Купили: '+(m.buyerTracking?buyers:buyers?buyers+' (с начала учёта)':'нет данных')+'</small>'
+     +(m.buyerTracking&&c?'<small title="Оплатившие аккаунты / уникальные нажавшие. Клики могут приходить позже.">Из кликов: '+(100*buyers/c).toFixed(1)+'%</small>':'');
+   }
+  }catch(_){}
   var who=m.target?'<span class="nf-tag test">Тест</span><small>'+esc(m.target)+'</small>':'<small>'+esc(audienceLabel(m))+'</small>';
   return '<div class="nf-msg" data-nt-message="'+m.id+'">'+thumb(m)+'<div style="min-width:0"><strong>'+esc(heading(m))+'</strong><small>'+esc(fmt(m.createdAt))+(ACTIONS[m.action]?' · → '+esc(ACTIONS[m.action]):'')+'</small><div class="nf-tags">'+tagsFor(m)+'<span data-nt-status>'+statusTag(m)+'</span></div><div class="nf-expiry" data-nt-lifetime>'+lifetimeHtml(m,now)+'</div>'+(m.error?'<small style="color:var(--danger)">'+esc(m.error)+'</small>':'')+'</div>'
    +'<div class="nf-who">'+who+'</div>'
-   +'<div class="nf-metric" title="Уникальные люди: увидели / нажали. Данные приходят с задержкой до 10 минут."><div class="nf-stat"><span>'+SVG.eye+v+'</span><span>'+SVG.tap+c+'</span></div><small>'+(v?'CTR '+(100*c/v).toFixed(1)+'%':'нет данных')+'</small></div>'
+   +'<div class="nf-metric" title="Уникальные люди: увидели / нажали. Данные приходят с задержкой до 10 минут."><div class="nf-stat"><span>'+SVG.eye+v+'</span><span>'+SVG.tap+c+'</span></div><small>'+(v?'CTR '+(100*c/v).toFixed(1)+'%':'нет данных')+'</small>'+sales+'</div>'
    +'<div class="nf-acts">'+(m.target?'<button class="nf-ib primary" data-nt-promote="'+m.id+'" title="Подставить в форму и отправить всем">Всем</button>':'')
    +'<button class="nf-ib" data-nt-copy="'+m.id+'" title="Копия в форму">'+SVG.copy+'</button>'
    +(canToggle?'<button class="nf-ib" data-nt-toggle="'+m.id+'" data-enabled="'+(!m.enabled)+'" title="'+(m.enabled?(m.kind==='push'&&m.status!=='queued'?'Скрыть в приложении':'Выключить'):'Включить')+'">'+(m.enabled?SVG.off:SVG.on)+'</button>':'')

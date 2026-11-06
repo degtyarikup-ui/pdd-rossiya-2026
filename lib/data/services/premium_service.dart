@@ -568,6 +568,7 @@ class PremiumService extends ChangeNotifier {
     required String email,
     String method = 'sbp',
     bool checkout = false,
+    String? campaignId,
   }) async {
     if (!kIsWeb) {
       if (defaultTargetPlatform != TargetPlatform.android) return null;
@@ -596,6 +597,8 @@ class PremiumService extends ChangeNotifier {
           'email': email.trim(),
           'method': method,
           if (kIsWeb && checkout) 'checkout': 'sbp',
+          if (kIsWeb && checkout && campaignId != null)
+            'noticeCampaignId': campaignId,
           'app': CountryConfig.current.code,
           // Android возвращает человека в приложение, а не на сайт.
           'client': kIsWeb ? 'web' : 'android',

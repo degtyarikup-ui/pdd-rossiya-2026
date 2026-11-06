@@ -4,10 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, follow">
-  <meta http-equiv="refresh" content="0; url=/app/?checkout=sbp">
+  <noscript><meta http-equiv="refresh" content="0; url=/app/?checkout=sbp"></noscript>
   <link rel="canonical" href="https://pdd-drive.app/app/?checkout=sbp">
   <title>Оплата Премиума — ПДД Россия 2026</title>
-  <script>window.location.replace('/app/?checkout=sbp');</script>
+  <script>const target = new URL('/app/?checkout=sbp', location.origin);
+    const tags = new URLSearchParams(location.search);
+    if (tags.get('utm_source') === 'in_app_banner' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(tags.get('utm_campaign'))) {
+      target.searchParams.set('utm_source', 'in_app_banner');
+      target.searchParams.set('utm_campaign', tags.get('utm_campaign'));
+      if (['banner', 'popup', 'profile', 'news'].includes(tags.get('utm_medium'))) target.searchParams.set('utm_medium', tags.get('utm_medium'));
+    }
+    location.replace(target.href);</script>
 </head>
 <body>
   <a href="/app/?checkout=sbp">Перейти к оплате Премиума</a>

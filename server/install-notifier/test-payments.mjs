@@ -420,3 +420,23 @@ test('recover current unfinished order without browser storage; never expose ano
     assert.deepEqual(await readCurrent(token), { ok: true, status: 'none' });
   } finally { fake.restore(); }
 });
+
+test('banner buyers: pending checkout keeps original campaign and counts only a verified payment', async () => {
+  const fake = fakePlatega(), env = baseEnv(), campaign = crypto.randomUUID();
+  try {
+    const token = await login(env);
+    const start = async id => (await worker.fetch(req('/api/user/pay-intent', {
+      email: 'a@b.ru', tier: 'weekly', method: 'sbp', checkout: 'sbp', noticeCampaignId: id,
+    }, token), env)).json();
+    const { order } = await start(campaign);
+    assert.equal((await start(crypto.randomUUID())).order, order);
+    const key = 'notice_metrics:' + campaign, [tx] = fake.txs.values();
+    const notify = () => callback(env, { id: tx.id, status: 'CONFIRMED', payload: order });
+    await notify();
+    assert.equal(await env.INSTALLS.get(key), null);
+    tx.status = 'CONFIRMED';
+    await notify();
+    await notify();
+    assert.equal(JSON.parse(await env.INSTALLS.get(key)).buyer, 1);
+  } finally { fake.restore(); }
+});

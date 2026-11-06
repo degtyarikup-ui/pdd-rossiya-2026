@@ -40,11 +40,15 @@ Map<String, String> validateWebOAuthReturn(
     return {'provider': 'unknown', 'error': 'invalid_state'};
   }
   return {
-    ...({...params}..remove('checkout_tier')),
+    ...({...params}
+      ..remove('checkout_tier')
+      ..remove('checkout_campaign')),
     // The caller cannot inject a checkout destination through the callback.
     // Restore only the fixed choice saved by this tab before starting OAuth.
     if (['weekly', 'threeMonths'].contains(pending['checkoutTier']))
       'checkout_tier': pending['checkoutTier'] as String,
+    if (pending['checkoutCampaign'] is String)
+      'checkout_campaign': pending['checkoutCampaign'] as String,
     if (provider == 'apple')
       'expected_nonce': pending['nonce'] as String? ?? '',
   };

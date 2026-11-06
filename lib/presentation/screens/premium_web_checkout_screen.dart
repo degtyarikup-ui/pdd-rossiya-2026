@@ -27,11 +27,13 @@ class PremiumWebCheckoutScreen extends StatefulWidget {
   const PremiumWebCheckoutScreen({
     super.key,
     this.initialTier = PremiumTier.threeMonths,
+    this.campaignId,
     this.paymentReturn,
     this.openPayment,
   });
 
   final PremiumTier initialTier;
+  final String? campaignId;
   final ({String result, String order})? paymentReturn;
   final Future<bool> Function(Uri)? openPayment;
 
@@ -190,6 +192,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
         tier: _tier,
         email: _email.text.trim(),
         checkout: true,
+        campaignId: widget.campaignId,
       );
       if (!mounted || revision != _revision) return;
       if (result == null) {
