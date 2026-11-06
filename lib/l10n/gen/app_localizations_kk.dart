@@ -1308,23 +1308,20 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get authErrorApple =>
-      'Apple кіруді аяқтай алмады. Құрылғыда Apple аккаунтына кіргеніңізді тексеріп, қайталап көріңіз. Премиумыңыз немесе сақталған үлгеріміңіз болса, бұрынғы кіру әдісін пайдаланыңыз.';
+      'Apple арқылы кіру сәтсіз болды. Баптаулардан Apple аккаунтыңызды тексеріңіз.';
 
   @override
-  String get authErrorProvider =>
-      'Таңдалған қызмет арқылы кіру мүмкін болмады. Қайталап көріңіз немесе басқа жолмен кіріңіз.';
+  String get authErrorProvider => 'Кіру сәтсіз болды. Қайталап көріңіз.';
 
   @override
   String get authErrorGoogleServices =>
-      'Бұл телефонда Google арқылы кіру қолжетімсіз: Google Play қызметтері орнатылмаған немесе оларды жаңарту керек. Яндекс немесе Telegram арқылы кіріңіз.';
+      'Google арқылы кіру қолжетімсіз. Google Play қызметтерін тексеріңіз.';
 
   @override
-  String get authErrorNetwork =>
-      'Интернет байланысы жоқ. Байланысты тексеріп, қайталап көріңіз.';
+  String get authErrorNetwork => 'Байланыс жоқ. Басқа желіге қосылып көріңіз.';
 
   @override
-  String get authErrorTimeout =>
-      'Жауап алу мүмкін болмады. Интернетті тексеріңіз немесе басқа желіні (Wi‑Fi немесе мобильді интернет) байқап көріңіз. Билеттер мен емтихан кірмей де қолжетімді.';
+  String get authErrorTimeout => 'Жауап уақытында келмеді. Қайталап көріңіз.';
 
   @override
   String get authErrorAppKey =>
@@ -1332,15 +1329,14 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get authErrorCredential =>
-      'Кіруді растау мүмкін болмады. Қайталап көріңіз немесе басқа жолмен кіріңіз.';
+      'Кіруді растау мүмкін болмады. Аккаунтыңызды қайта таңдаңыз.';
 
   @override
   String get authErrorServer =>
-      'Біздің тарапта бір нәрсе дұрыс болмады. Бірнеше минуттан кейін қайталап көріңіз.';
+      'Кіру уақытша қолжетімсіз. Бірнеше минуттан кейін қайталап көріңіз.';
 
   @override
-  String get authErrorResponse =>
-      'Кіру аяқталмады. Қолданбаны қайта іске қосып, қайталап көріңіз. Көмектеспесе, телефондағы күн мен уақытты тексеріңіз.';
+  String get authErrorResponse => 'Кіру аяқталмады. Қайталап көріңіз.';
 
   @override
   String get paySuccessActivated => 'Премиум қосылды. Рақмет!';
@@ -1358,12 +1354,12 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String payErrorStoreUnavailable(String store) {
-    return 'Дүкен қазір қолжетімсіз. Интернетті және $store есептік жазбасына кіруді тексеріп, қайталап көріңіз.';
+    return '$store қазір қолжетімсіз. Кейінірек қайталап көріңіз.';
   }
 
   @override
   String payErrorStoreRefused(String store) {
-    return 'Дүкен төлемді өткізе алмады. $store ішіндегі төлем әдісін тексеріп, қайталап көріңіз.';
+    return 'Төлем өтпеді. $store дүкеніндегі төлем әдісін тексеріңіз.';
   }
 
   @override
@@ -1372,7 +1368,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get payErrorGeneric =>
-      'Сатып алу аяқталмады. Қайталап көріңіз. Ақша алынған болса, «Қалпына келтіру» түймесін басыңыз — қолжетімділік қайтады.';
+      'Сатып алу аяқталмады. Ақша алынса, «Қалпына келтіру» түймесін басыңыз.';
 
   @override
   String get payErrorUnexpected => 'Бірдеңе дұрыс болмады. Қайталап көріңіз.';
@@ -1842,6 +1838,15 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get achievementRankFirst => '1 орын';
+
+  @override
+  String get paywallPriceUnavailable => 'Бұл тарифтің бағасы жүктелмеді.';
+
+  @override
+  String get paywallLoadingPrice => 'Баға жүктелуде…';
+
+  @override
+  String get paywallReloadPrice => 'Бағаны жаңарту';
 
   @override
   String get paywallSubscribe => 'Жазылу';
@@ -3611,7 +3616,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get yandexPageLoadFailed =>
-      'Яндекс беті жүктелмеді. Интернетті тексеріп, «Қайталау» түймесін басыңыз немесе терезені жауып, басқа тәсілмен кіріңіз.';
+      'Яндекске кіру беті жүктелмеді. Байланысты тексеріңіз.';
 
   @override
   String get yandexPageRetry => 'Қайталау';

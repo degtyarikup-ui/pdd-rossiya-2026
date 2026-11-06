@@ -99,6 +99,31 @@ void main() {
     },
   );
 
+  testWidgets('обновление цены загружает выбранный тариф без начала покупки', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    await openPaywall(tester);
+
+    final reload = find.text('Обновить цену');
+    expect(
+      find.text('Не удалось загрузить цену этого тарифа.'),
+      findsOneWidget,
+    );
+    expect(reload, findsOneWidget);
+    store.selling = true;
+    await tester.tap(reload);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('290,00 ₽'), findsOneWidget);
+    expect(reload, findsNothing);
+    expect(find.text('Оформить подписку'), findsOneWidget);
+    expect(find.byType(PremiumPlansSheet), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    debugDefaultTargetPlatformOverride = null;
+  });
+
   testWidgets('iOS: прошлая цена магазина видна сразу, пока он не ответил', (
     tester,
   ) async {

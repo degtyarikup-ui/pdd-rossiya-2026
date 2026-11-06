@@ -2311,31 +2311,31 @@ abstract class AppLocalizations {
   /// No description provided for @authErrorApple.
   ///
   /// In ru, this message translates to:
-  /// **'Apple не завершила вход. Проверьте, что на устройстве выполнен вход в Аккаунт Apple, и повторите попытку. Если у вас уже есть Премиум или прогресс, используйте прежний способ входа.'**
+  /// **'Не удалось войти через Apple. Проверьте вход в Аккаунт Apple в настройках.'**
   String get authErrorApple;
 
   /// No description provided for @authErrorProvider.
   ///
   /// In ru, this message translates to:
-  /// **'Не получилось войти через выбранный сервис. Попробуйте ещё раз или выберите другой способ входа.'**
+  /// **'Не удалось войти. Попробуйте ещё раз.'**
   String get authErrorProvider;
 
   /// No description provided for @authErrorGoogleServices.
   ///
   /// In ru, this message translates to:
-  /// **'Вход через Google на этом телефоне недоступен: сервисы Google Play не установлены или их нужно обновить. Войдите через Яндекс или Telegram.'**
+  /// **'Вход через Google недоступен. Проверьте сервисы Google Play.'**
   String get authErrorGoogleServices;
 
   /// No description provided for @authErrorNetwork.
   ///
   /// In ru, this message translates to:
-  /// **'Нет связи с интернетом. Проверьте подключение и попробуйте ещё раз.'**
+  /// **'Нет связи. Попробуйте другую сеть.'**
   String get authErrorNetwork;
 
   /// No description provided for @authErrorTimeout.
   ///
   /// In ru, this message translates to:
-  /// **'Не удалось дождаться ответа. Проверьте интернет или попробуйте другую сеть (Wi‑Fi или мобильный интернет). Билеты и экзамен доступны и без входа.'**
+  /// **'Ответ не пришёл вовремя. Попробуйте ещё раз.'**
   String get authErrorTimeout;
 
   /// No description provided for @authErrorAppKey.
@@ -2347,19 +2347,19 @@ abstract class AppLocalizations {
   /// No description provided for @authErrorCredential.
   ///
   /// In ru, this message translates to:
-  /// **'Не удалось подтвердить вход. Попробуйте ещё раз или войдите другим способом.'**
+  /// **'Не удалось подтвердить вход. Выберите свой аккаунт ещё раз.'**
   String get authErrorCredential;
 
   /// No description provided for @authErrorServer.
   ///
   /// In ru, this message translates to:
-  /// **'Что-то пошло не так на нашей стороне. Попробуйте через пару минут.'**
+  /// **'Вход временно недоступен. Попробуйте через пару минут.'**
   String get authErrorServer;
 
   /// No description provided for @authErrorResponse.
   ///
   /// In ru, this message translates to:
-  /// **'Вход не завершился. Перезапустите приложение и попробуйте ещё раз. Если не помогло — проверьте дату и время на телефоне.'**
+  /// **'Не удалось завершить вход. Попробуйте ещё раз.'**
   String get authErrorResponse;
 
   /// No description provided for @paySuccessActivated.
@@ -2389,13 +2389,13 @@ abstract class AppLocalizations {
   /// No description provided for @payErrorStoreUnavailable.
   ///
   /// In ru, this message translates to:
-  /// **'Магазин сейчас недоступен. Проверьте интернет и вход в {store}, затем попробуйте снова.'**
+  /// **'{store} сейчас недоступен. Попробуйте позже.'**
   String payErrorStoreUnavailable(String store);
 
   /// No description provided for @payErrorStoreRefused.
   ///
   /// In ru, this message translates to:
-  /// **'Магазин не смог провести оплату. Проверьте способ оплаты в {store} и попробуйте ещё раз.'**
+  /// **'Оплата не прошла. Проверьте способ оплаты в {store}.'**
   String payErrorStoreRefused(String store);
 
   /// No description provided for @payErrorSwitchedToSbp.
@@ -2407,7 +2407,7 @@ abstract class AppLocalizations {
   /// No description provided for @payErrorGeneric.
   ///
   /// In ru, this message translates to:
-  /// **'Покупка не завершилась. Попробуйте ещё раз. Если деньги списались, нажмите «Восстановить»: доступ вернётся.'**
+  /// **'Покупка не завершилась. Если деньги списались, нажмите «Восстановить».'**
   String get payErrorGeneric;
 
   /// No description provided for @payErrorUnexpected.
@@ -3171,6 +3171,24 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'1 место'**
   String get achievementRankFirst;
+
+  /// No description provided for @paywallPriceUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить цену этого тарифа.'**
+  String get paywallPriceUnavailable;
+
+  /// No description provided for @paywallLoadingPrice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Загружаем цену…'**
+  String get paywallLoadingPrice;
+
+  /// No description provided for @paywallReloadPrice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновить цену'**
+  String get paywallReloadPrice;
 
   /// No description provided for @paywallSubscribe.
   ///
@@ -5983,7 +6001,7 @@ abstract class AppLocalizations {
   /// No description provided for @yandexPageLoadFailed.
   ///
   /// In ru, this message translates to:
-  /// **'Страница Яндекса не загрузилась. Проверьте интернет и нажмите «Повторить» или закройте окно и войдите другим способом.'**
+  /// **'Страница входа Яндекса не загрузилась. Проверьте соединение.'**
   String get yandexPageLoadFailed;
 
   /// No description provided for @yandexPageRetry.

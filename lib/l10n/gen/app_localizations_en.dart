@@ -1307,23 +1307,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authErrorApple =>
-      'Apple could not complete sign-in. Check that you are signed in to your Apple Account on this device, then try again. If you already have Premium or saved progress, use your previous sign-in method.';
+      'Apple sign-in failed. Check your Apple Account in Settings.';
 
   @override
-  String get authErrorProvider =>
-      'Couldn\'t sign in with the selected service. Try again or choose another way to sign in.';
+  String get authErrorProvider => 'Sign-in failed. Try again.';
 
   @override
   String get authErrorGoogleServices =>
-      'Google sign-in isn\'t available on this phone: Google Play services are missing or need an update. Sign in with Yandex or Telegram.';
+      'Google sign-in is unavailable. Check Google Play services.';
 
   @override
-  String get authErrorNetwork =>
-      'No internet connection. Check it and try again.';
+  String get authErrorNetwork => 'Couldn’t connect. Try another network.';
 
   @override
-  String get authErrorTimeout =>
-      'Couldn\'t get a response. Check your internet or try another network (Wi‑Fi or mobile data). Tickets and exams work without signing in.';
+  String get authErrorTimeout => 'Sign-in took too long. Try again.';
 
   @override
   String get authErrorAppKey =>
@@ -1331,15 +1328,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authErrorCredential =>
-      'Couldn\'t confirm your sign-in. Try again or sign in another way.';
+      'Couldn’t verify your sign-in. Select your account again.';
 
   @override
   String get authErrorServer =>
-      'Something went wrong on our side. Please try again in a couple of minutes.';
+      'Sign-in is temporarily unavailable. Try again in a few minutes.';
 
   @override
-  String get authErrorResponse =>
-      'Sign-in didn\'t finish. Restart the app and try again. If that doesn\'t help, check the date and time on your phone.';
+  String get authErrorResponse => 'Couldn’t finish signing in. Try again.';
 
   @override
   String get paySuccessActivated => 'Premium is on. Thank you!';
@@ -1357,12 +1353,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String payErrorStoreUnavailable(String store) {
-    return 'The store isn\'t available right now. Check your internet and your $store sign-in, then try again.';
+    return '$store is unavailable. Try again later.';
   }
 
   @override
   String payErrorStoreRefused(String store) {
-    return 'The store couldn\'t process the payment. Check your payment method in $store and try again.';
+    return 'Payment failed. Check your payment method in $store.';
   }
 
   @override
@@ -1371,7 +1367,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get payErrorGeneric =>
-      'The purchase didn\'t finish. Try again. If you were charged, tap “Restore” and your access will come back.';
+      'Purchase incomplete. If you were charged, tap Restore.';
 
   @override
   String get payErrorUnexpected => 'Something went wrong. Please try again.';
@@ -1841,6 +1837,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get achievementRankFirst => '1st place';
+
+  @override
+  String get paywallPriceUnavailable =>
+      'Couldn’t load the price for this plan.';
+
+  @override
+  String get paywallLoadingPrice => 'Loading price…';
+
+  @override
+  String get paywallReloadPrice => 'Reload price';
 
   @override
   String get paywallSubscribe => 'Subscribe';
@@ -3607,7 +3613,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get yandexPageLoadFailed =>
-      'The Yandex page didn\'t load. Check your internet connection and tap “Try again”, or close this window and choose another way to sign in.';
+      'The Yandex sign-in page didn’t load. Check your connection.';
 
   @override
   String get yandexPageRetry => 'Try again';

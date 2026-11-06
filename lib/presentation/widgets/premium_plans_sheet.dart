@@ -108,26 +108,38 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
     }
   }
 
-  // Пока магазин не отдал тарифы, тихо спрашиваем снова, пока экран открыт:
-  // человек видит заглушку цены (или прошлую цену магазина), а не ошибку.
-  static const _priceRetryDelay = Duration(seconds: 20);
   Timer? _priceRetry;
+  Duration _priceRetryDelay = const Duration(seconds: 20);
+  bool _pricesLoading = false;
+  bool _pricesIncomplete = false;
 
-  void _loadStorePrices() {
+  bool get _storeShown =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          _androidMode == PaymentMode.storeBilling);
+
+  Future<void> _loadStorePrices() async {
     _priceRetry?.cancel();
-    _priceRetry = null;
-    IapService.instance
-        .loadProducts(phase: ProductLoadPhase.paywall)
-        .whenComplete(() {
-          if (!mounted || IapService.instance.hasCompleteStoreProducts) return;
-          final storeShown =
-              !kIsWeb &&
-              (defaultTargetPlatform == TargetPlatform.iOS ||
-                  _androidMode == PaymentMode.storeBilling);
-          if (storeShown) {
-            _priceRetry = Timer(_priceRetryDelay, _loadStorePrices);
-          }
+    if (!_storeShown || _pricesLoading) return;
+    setState(() => _pricesLoading = true);
+    try {
+      await IapService.instance.loadProducts(phase: ProductLoadPhase.paywall);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _pricesLoading = false;
+          _pricesIncomplete = !IapService.instance.hasCompleteStoreProducts;
         });
+        if (_pricesIncomplete && _storeShown) {
+          _priceRetry = Timer(_priceRetryDelay, _loadStorePrices);
+          _priceRetryDelay = Duration(
+            seconds: (_priceRetryDelay.inSeconds * 2).clamp(20, 120),
+          );
+        } else {
+          _priceRetryDelay = const Duration(seconds: 20);
+        }
+      }
+    }
   }
 
   void _loadSbpAvailability() {
@@ -348,7 +360,17 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
         ? appL10n.paywallStoreApple
         : appL10n.paywallStoreGoogle;
     final detailColor = colors.primaryText.withValues(alpha: 0.7);
-    final buttonLabel = _androidMode == PaymentMode.unavailable
+    final missingPrice =
+        _storeShown &&
+        !IapService.instance.hasProductFor(_selectedTier) &&
+        !IapService.instance.hasDeliveredProduct(_selectedTier);
+    final loadingPrice = missingPrice && _pricesLoading;
+    final reloadPrice = missingPrice && _pricesIncomplete;
+    final buttonLabel = loadingPrice
+        ? appL10n.paywallLoadingPrice
+        : reloadPrice
+        ? appL10n.paywallReloadPrice
+        : _androidMode == PaymentMode.unavailable
         ? appL10n.paymentRegionUnavailable
         : sbpPay
         ? appL10n.webPayButton
@@ -499,9 +521,15 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
                         ),
                       ],
                       const SizedBox(height: AppDimensions.spacingXXL),
+                      if (reloadPrice && !loadingPrice)
+                        Text(
+                          appL10n.paywallPriceUnavailable,
+                          textAlign: TextAlign.center,
+                        ),
                       PremiumPressFeedback(
                         enabled:
                             !_isLoading &&
+                            !loadingPrice &&
                             !_androidUnresolved &&
                             _androidMode != PaymentMode.unavailable &&
                             !(kIsWeb && !sbpPay),
@@ -509,10 +537,13 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
                           key: const ValueKey('premium-plans-purchase'),
                           onPressed:
                               _isLoading ||
+                                  loadingPrice ||
                                   _androidUnresolved ||
                                   _androidMode == PaymentMode.unavailable ||
                                   (kIsWeb && !sbpPay)
                               ? null
+                              : reloadPrice
+                              ? _loadStorePrices
                               : sbpPay
                               ? _handleSbpPayment
                               : _handlePurchase,

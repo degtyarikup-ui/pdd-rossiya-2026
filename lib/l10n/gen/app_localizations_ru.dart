@@ -1327,23 +1327,20 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get authErrorApple =>
-      'Apple не завершила вход. Проверьте, что на устройстве выполнен вход в Аккаунт Apple, и повторите попытку. Если у вас уже есть Премиум или прогресс, используйте прежний способ входа.';
+      'Не удалось войти через Apple. Проверьте вход в Аккаунт Apple в настройках.';
 
   @override
-  String get authErrorProvider =>
-      'Не получилось войти через выбранный сервис. Попробуйте ещё раз или выберите другой способ входа.';
+  String get authErrorProvider => 'Не удалось войти. Попробуйте ещё раз.';
 
   @override
   String get authErrorGoogleServices =>
-      'Вход через Google на этом телефоне недоступен: сервисы Google Play не установлены или их нужно обновить. Войдите через Яндекс или Telegram.';
+      'Вход через Google недоступен. Проверьте сервисы Google Play.';
 
   @override
-  String get authErrorNetwork =>
-      'Нет связи с интернетом. Проверьте подключение и попробуйте ещё раз.';
+  String get authErrorNetwork => 'Нет связи. Попробуйте другую сеть.';
 
   @override
-  String get authErrorTimeout =>
-      'Не удалось дождаться ответа. Проверьте интернет или попробуйте другую сеть (Wi‑Fi или мобильный интернет). Билеты и экзамен доступны и без входа.';
+  String get authErrorTimeout => 'Ответ не пришёл вовремя. Попробуйте ещё раз.';
 
   @override
   String get authErrorAppKey =>
@@ -1351,15 +1348,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get authErrorCredential =>
-      'Не удалось подтвердить вход. Попробуйте ещё раз или войдите другим способом.';
+      'Не удалось подтвердить вход. Выберите свой аккаунт ещё раз.';
 
   @override
   String get authErrorServer =>
-      'Что-то пошло не так на нашей стороне. Попробуйте через пару минут.';
+      'Вход временно недоступен. Попробуйте через пару минут.';
 
   @override
   String get authErrorResponse =>
-      'Вход не завершился. Перезапустите приложение и попробуйте ещё раз. Если не помогло — проверьте дату и время на телефоне.';
+      'Не удалось завершить вход. Попробуйте ещё раз.';
 
   @override
   String get paySuccessActivated => 'Премиум включён. Спасибо!';
@@ -1377,12 +1374,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String payErrorStoreUnavailable(String store) {
-    return 'Магазин сейчас недоступен. Проверьте интернет и вход в $store, затем попробуйте снова.';
+    return '$store сейчас недоступен. Попробуйте позже.';
   }
 
   @override
   String payErrorStoreRefused(String store) {
-    return 'Магазин не смог провести оплату. Проверьте способ оплаты в $store и попробуйте ещё раз.';
+    return 'Оплата не прошла. Проверьте способ оплаты в $store.';
   }
 
   @override
@@ -1391,7 +1388,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get payErrorGeneric =>
-      'Покупка не завершилась. Попробуйте ещё раз. Если деньги списались, нажмите «Восстановить»: доступ вернётся.';
+      'Покупка не завершилась. Если деньги списались, нажмите «Восстановить».';
 
   @override
   String get payErrorUnexpected => 'Что-то пошло не так. Попробуйте ещё раз.';
@@ -1861,6 +1858,16 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get achievementRankFirst => '1 место';
+
+  @override
+  String get paywallPriceUnavailable =>
+      'Не удалось загрузить цену этого тарифа.';
+
+  @override
+  String get paywallLoadingPrice => 'Загружаем цену…';
+
+  @override
+  String get paywallReloadPrice => 'Обновить цену';
 
   @override
   String get paywallSubscribe => 'Оформить подписку';
@@ -3620,7 +3627,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get yandexPageLoadFailed =>
-      'Страница Яндекса не загрузилась. Проверьте интернет и нажмите «Повторить» или закройте окно и войдите другим способом.';
+      'Страница входа Яндекса не загрузилась. Проверьте соединение.';
 
   @override
   String get yandexPageRetry => 'Повторить';

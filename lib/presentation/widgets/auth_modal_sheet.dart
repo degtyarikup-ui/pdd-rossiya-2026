@@ -80,7 +80,7 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
 
   String _failureMessage() {
     final auth = _auth;
-    final message = switch (auth.lastFailure) {
+    return switch (auth.lastFailure) {
       AuthFailure.cancelled => appL10n.authErrorCancelled,
       AuthFailure.appleProvider => appL10n.authErrorApple,
       AuthFailure.provider => appL10n.authErrorProvider,
@@ -93,8 +93,6 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
       AuthFailure.response => appL10n.authErrorResponse,
       null => appL10n.authFailed,
     };
-    final id = auth.lastDiagnosticId;
-    return id == null ? message : '$message\n${appL10n.authDiagnosticCode(id)}';
   }
 
   Future<void> _handleAuth(Future<bool> Function() action) async {

@@ -489,6 +489,8 @@ class IapService extends ChangeNotifier {
   void debugClearPriceCache() => _cachedPrices.clear();
 
   /// Есть ли сейчас товары магазина, которые можно купить.
+  bool hasProductFor(PremiumTier tier) => _findProductForTier(tier) != null;
+
   bool get hasStoreProducts => _products.isNotEmpty;
 
   /// A partial response must not stop the paywall retry for the missing tier.
@@ -558,12 +560,12 @@ class IapService extends ChangeNotifier {
     }
   }
 
+  bool hasDeliveredProduct(PremiumTier tier) => _pendingVerification.values.any(
+    (entry) => entry.$1.productID == _productIdForTier(tier),
+  );
+
   bool _retryDeliveredProduct(PremiumTier tier) {
-    if (!_pendingVerification.values.any(
-      (entry) => entry.$1.productID == _productIdForTier(tier),
-    )) {
-      return false;
-    }
+    if (!hasDeliveredProduct(tier)) return false;
     _lastFailure = PurchaseFailure.verificationPending;
     _lastErrorMessage = appL10n.purchaseVerificationPending;
     retryPendingPurchases();
