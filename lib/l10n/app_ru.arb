@@ -2333,5 +2333,7 @@
       }
     }
   },
-  "referralCodeCopied": "Код скопирован в буфер обмена"
+  "referralCodeCopied": "Код скопирован в буфер обмена",
+  "referralLoadError": "Не удалось загрузить данные приглашения",
+  "referralRetryButton": "Попробовать снова"
 }

@@ -4767,4 +4767,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get referralCodeCopied => 'Code copied to clipboard';
+
+  @override
+  String get referralLoadError => 'Failed to load referral details';
+
+  @override
+  String get referralRetryButton => 'Try again';
 }

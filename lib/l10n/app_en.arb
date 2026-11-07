@@ -1652,5 +1652,7 @@
       }
     }
   },
-  "referralCodeCopied": "Code copied to clipboard"
+  "referralCodeCopied": "Code copied to clipboard",
+  "referralLoadError": "Failed to load referral details",
+  "referralRetryButton": "Try again"
 }

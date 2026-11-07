@@ -84,6 +84,14 @@ void main() {
       expect(updated.hasUsedReferral, true);
       expect(updated.referralCodeUsed, 'CODE99');
     });
+
+    test('fallback link is generated when link is empty', () {
+      const info = ReferralInfo(code: 'CODE123');
+      expect(info.link, 'https://pdd-drive.app/app/?ref=CODE123');
+
+      final fromJson = ReferralInfo.fromJson({'code': 'JSON456', 'link': ''});
+      expect(fromJson.link, 'https://pdd-drive.app/app/?ref=JSON456');
+    });
   });
 
   group('ReferralService pending code', () {
@@ -94,6 +102,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('pending_referral_code'), 'FRIENDCODE');
       expect(service.pendingCode, 'FRIENDCODE');
+      await service.clearPendingCodeForTesting();
     });
 
     test('claimCode validates code length before sending', () async {
@@ -104,14 +113,18 @@ void main() {
   });
 
   group('ReferralModalSheet UI', () {
-    tearDown(() {
+    tearDown(() async {
       AuthService.instance.setSessionForTesting(user: null, token: null, expiresAt: null);
       ReferralService.instance.setInfoForTesting(null);
+      ReferralService.instance.mockGetReferralInfo = null;
+      await ReferralService.instance.clearPendingCodeForTesting();
     });
 
     testWidgets('shows sign-in prompt and invitee subtitle when unauthenticated', (tester) async {
       AuthService.instance.setSessionForTesting(user: null, token: null, expiresAt: null);
       ReferralService.instance.setInfoForTesting(null);
+      ReferralService.instance.mockGetReferralInfo = null;
+      await ReferralService.instance.clearPendingCodeForTesting();
 
       await tester.pumpWidget(_wrap(const Scaffold(body: ReferralModalSheet())));
       await tester.pumpAndSettle();
@@ -123,6 +136,33 @@ void main() {
         find.text('Возьмите промокод у друга, который учит ПДД в приложении, или откройте его ссылку-приглашение — код подставится сам'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('shows retry button when authenticated session has no info and is not loading', (tester) async {
+      final user = UserProfile(
+        id: 'google_retry_user',
+        name: 'Retry User',
+        email: 'retry@example.com',
+        provider: AuthProviderType.google,
+        createdAt: DateTime(2026),
+      );
+      AuthService.instance.setSessionForTesting(
+        user: user,
+        token: 'test-token',
+        expiresAt: DateTime.now().add(const Duration(days: 30)),
+      );
+      ReferralService.instance.setInfoForTesting(null);
+      ReferralService.instance.mockGetReferralInfo = ({bool forceRefresh = false}) async => null;
+
+      await tester.pumpWidget(_wrap(const Scaffold(body: ReferralModalSheet())));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('referral-retry-button')), findsOneWidget);
+      expect(find.text('Не удалось загрузить данные приглашения'), findsOneWidget);
+      expect(find.text('Попробовать снова'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('referral-retry-button')));
+      await tester.pump();
     });
 
     testWidgets('auto-populates input field when pending code is set', (tester) async {
@@ -137,6 +177,7 @@ void main() {
       expect(inputFinder, findsOneWidget);
       final textField = tester.widget<TextField>(inputFinder);
       expect(textField.controller?.text, 'FRIEND77');
+      await ReferralService.instance.clearPendingCodeForTesting();
     });
 
     testWidgets('shows promo code, full link, share and copy buttons when user is authenticated', (tester) async {
@@ -172,6 +213,7 @@ void main() {
       expect(find.text('MYCODE9'), findsOneWidget);
       expect(find.byKey(const ValueKey('referral-user-link')), findsOneWidget);
       expect(find.text('https://pdd-drive.app/app/?ref=MYCODE9'), findsOneWidget);
+      expect(find.byKey(const ValueKey('referral-link-container')), findsOneWidget);
 
       // Buttons
       expect(find.byKey(const ValueKey('referral-copy-button')), findsOneWidget);
@@ -179,8 +221,11 @@ void main() {
       expect(find.byKey(const ValueKey('referral-share-button')), findsOneWidget);
       expect(find.byKey(const ValueKey('referral-copy-invite-button')), findsOneWidget);
 
-      // Tap copy buttons
+      // Tap copy buttons and link container
       await tester.tap(find.byKey(const ValueKey('referral-copy-button')));
+      await tester.pump();
+
+      await tester.tap(find.byKey(const ValueKey('referral-link-container')));
       await tester.pump();
 
       await tester.tap(find.byKey(const ValueKey('referral-copy-link-button')));

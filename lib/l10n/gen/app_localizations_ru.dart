@@ -4790,4 +4790,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get referralCodeCopied => 'Код скопирован в буфер обмена';
+
+  @override
+  String get referralLoadError => 'Не удалось загрузить данные приглашения';
+
+  @override
+  String get referralRetryButton => 'Попробовать снова';
 }

@@ -1652,5 +1652,7 @@
       }
     }
   },
-  "referralCodeCopied": "Код алмасу буферіне көшірілді"
+  "referralCodeCopied": "Код алмасу буферіне көшірілді",
+  "referralLoadError": "Шақыру деректерін жүктеу мүмкін болмады",
+  "referralRetryButton": "Қайта көру"
 }

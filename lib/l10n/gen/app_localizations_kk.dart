@@ -4760,4 +4760,10 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get referralCodeCopied => 'Код алмасу буферіне көшірілді';
+
+  @override
+  String get referralLoadError => 'Шақыру деректерін жүктеу мүмкін болмады';
+
+  @override
+  String get referralRetryButton => 'Қайта көру';
 }

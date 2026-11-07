@@ -11,7 +11,10 @@ import 'package:pdd_app/data/services/browser_info_stub.dart'
 
 class ReferralInfo {
   final String code;
-  final String link;
+  final String _link;
+  String get link => _link.isNotEmpty
+      ? _link
+      : (code.isNotEmpty ? 'https://pdd-drive.app/app/?ref=$code' : '');
   final int invitedCount;
   final int rewardDays;
   final bool hasUsedReferral;
@@ -22,7 +25,7 @@ class ReferralInfo {
 
   const ReferralInfo({
     required this.code,
-    required this.link,
+    String link = '',
     this.invitedCount = 0,
     this.rewardDays = 0,
     this.hasUsedReferral = false,
@@ -30,12 +33,16 @@ class ReferralInfo {
     this.referralCodeUsed,
     this.friendBonusDays = 1,
     this.inviterBonusDays = 2,
-  });
+  }) : _link = link;
 
   factory ReferralInfo.fromJson(Map<String, dynamic> json) {
+    final code = json['code'] as String? ?? '';
+    final rawLink = json['link'] as String? ?? '';
     return ReferralInfo(
-      code: json['code'] as String? ?? '',
-      link: json['link'] as String? ?? '',
+      code: code,
+      link: rawLink.isNotEmpty
+          ? rawLink
+          : (code.isNotEmpty ? 'https://pdd-drive.app/app/?ref=$code' : ''),
       invitedCount: (json['invitedCount'] as num?)?.toInt() ?? 0,
       rewardDays: (json['rewardDays'] as num?)?.toInt() ?? 0,
       hasUsedReferral: json['hasUsedReferral'] == true,
@@ -182,7 +189,16 @@ class ReferralService extends ChangeNotifier {
     notifyListeners();
   }
 
+  @visibleForTesting
+  Future<void> clearPendingCodeForTesting() => _clearPendingCode();
+
+  @visibleForTesting
+  Future<ReferralInfo?> Function({bool forceRefresh})? mockGetReferralInfo;
+
   Future<ReferralInfo?> getReferralInfo({bool forceRefresh = false}) async {
+    if (mockGetReferralInfo != null) {
+      return mockGetReferralInfo!(forceRefresh: forceRefresh);
+    }
     if (!AuthService.instance.isAuthenticated ||
         !AuthService.instance.hasServerSession) {
       return null;

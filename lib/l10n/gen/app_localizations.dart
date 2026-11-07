@@ -8001,6 +8001,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Код скопирован в буфер обмена'**
   String get referralCodeCopied;
+
+  /// No description provided for @referralLoadError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить данные приглашения'**
+  String get referralLoadError;
+
+  /// No description provided for @referralRetryButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Попробовать снова'**
+  String get referralRetryButton;
 }
 
 class _AppLocalizationsDelegate
