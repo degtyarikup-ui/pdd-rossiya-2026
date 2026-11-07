@@ -4687,7 +4687,22 @@ class AppLocalizationsKk extends AppLocalizations {
   String get referralCopyCode => 'Көшіру';
 
   @override
-  String get referralShareButton => 'Сілтемені бөлісу';
+  String get referralShareButton => 'Бөлісу';
+
+  @override
+  String get referralCopyInviteButton => 'Шақыруды көшіріп алу';
+
+  @override
+  String get referralYourLink => 'Реферальдық сілтеме';
+
+  @override
+  String get referralCopyLink => 'Сілтемені көшіріп алу';
+
+  @override
+  String get referralInviteCopied => 'Шақыру алмасу буферіне көшірілді';
+
+  @override
+  String get referralLinkCopied => 'Сілтеме алмасу буферіне көшірілді';
 
   @override
   String referralStatsInvited(int count) {
@@ -4701,6 +4716,10 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get referralEnterCodeTitle => 'Сізді дос шақырды ма?';
+
+  @override
+  String get referralEnterCodeSubtitle =>
+      'Промокодты қосымшаны пайдаланатын досыңыздан алыңыз немесе оның шақыру сілтемесін ашыңыз — код автоматты түрде қойылады';
 
   @override
   String get referralEnterCodeHint => 'Досыңыздың кодын енгізіңіз';

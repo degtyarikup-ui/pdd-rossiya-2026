@@ -7879,8 +7879,38 @@ abstract class AppLocalizations {
   /// No description provided for @referralShareButton.
   ///
   /// In ru, this message translates to:
-  /// **'Поделиться ссылкой'**
+  /// **'Поделиться'**
   String get referralShareButton;
+
+  /// No description provided for @referralCopyInviteButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скопировать приглашение'**
+  String get referralCopyInviteButton;
+
+  /// No description provided for @referralYourLink.
+  ///
+  /// In ru, this message translates to:
+  /// **'Реферальная ссылка'**
+  String get referralYourLink;
+
+  /// No description provided for @referralCopyLink.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скопировать ссылку'**
+  String get referralCopyLink;
+
+  /// No description provided for @referralInviteCopied.
+  ///
+  /// In ru, this message translates to:
+  /// **'Приглашение скопировано в буфер обмена'**
+  String get referralInviteCopied;
+
+  /// No description provided for @referralLinkCopied.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ссылка скопирована в буфер обмена'**
+  String get referralLinkCopied;
 
   /// No description provided for @referralStatsInvited.
   ///
@@ -7899,6 +7929,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Вас пригласил друг?'**
   String get referralEnterCodeTitle;
+
+  /// No description provided for @referralEnterCodeSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Возьмите промокод у друга, который учит ПДД в приложении, или откройте его ссылку-приглашение — код подставится сам'**
+  String get referralEnterCodeSubtitle;
 
   /// No description provided for @referralEnterCodeHint.
   ///

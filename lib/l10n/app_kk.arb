@@ -1601,7 +1601,12 @@
   "referralBannerDescription": "Промокодыңызды досыңызбен бөлісіңіз. Досыңыз 1 күн Премиум алады, ал сіз әр шақырылған дос үшін 2 күн аласыз!",
   "referralYourCode": "Шақыру кодыңыз",
   "referralCopyCode": "Көшіру",
-  "referralShareButton": "Сілтемені бөлісу",
+  "referralShareButton": "Бөлісу",
+  "referralCopyInviteButton": "Шақыруды көшіріп алу",
+  "referralYourLink": "Реферальдық сілтеме",
+  "referralCopyLink": "Сілтемені көшіріп алу",
+  "referralInviteCopied": "Шақыру алмасу буферіне көшірілді",
+  "referralLinkCopied": "Сілтеме алмасу буферіне көшірілді",
   "referralStatsInvited": "Шақырылған достар: {count}",
   "@referralStatsInvited": {
     "placeholders": {
@@ -1619,6 +1624,7 @@
     }
   },
   "referralEnterCodeTitle": "Сізді дос шақырды ма?",
+  "referralEnterCodeSubtitle": "Промокодты қосымшаны пайдаланатын досыңыздан алыңыз немесе оның шақыру сілтемесін ашыңыз — код автоматты түрде қойылады",
   "referralEnterCodeHint": "Досыңыздың кодын енгізіңіз",
   "referralActivateButton": "Іске қосу",
   "referralAlreadyClaimed": "Сіз кодты белсендірдіңіз: {code} (+1 күн)",

@@ -4709,7 +4709,22 @@ class AppLocalizationsRu extends AppLocalizations {
   String get referralCopyCode => 'Скопировать';
 
   @override
-  String get referralShareButton => 'Поделиться ссылкой';
+  String get referralShareButton => 'Поделиться';
+
+  @override
+  String get referralCopyInviteButton => 'Скопировать приглашение';
+
+  @override
+  String get referralYourLink => 'Реферальная ссылка';
+
+  @override
+  String get referralCopyLink => 'Скопировать ссылку';
+
+  @override
+  String get referralInviteCopied => 'Приглашение скопировано в буфер обмена';
+
+  @override
+  String get referralLinkCopied => 'Ссылка скопирована в буфер обмена';
 
   @override
   String referralStatsInvited(int count) {
@@ -4731,6 +4746,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get referralEnterCodeTitle => 'Вас пригласил друг?';
+
+  @override
+  String get referralEnterCodeSubtitle =>
+      'Возьмите промокод у друга, который учит ПДД в приложении, или откройте его ссылку-приглашение — код подставится сам';
 
   @override
   String get referralEnterCodeHint => 'Введите код друга';

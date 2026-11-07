@@ -1601,7 +1601,12 @@
   "referralBannerDescription": "Share your promo code with a friend. Your friend gets 1 day of Premium, and you get 2 days for each invited friend!",
   "referralYourCode": "Your invite code",
   "referralCopyCode": "Copy",
-  "referralShareButton": "Share link",
+  "referralShareButton": "Share",
+  "referralCopyInviteButton": "Copy invitation",
+  "referralYourLink": "Referral link",
+  "referralCopyLink": "Copy link",
+  "referralInviteCopied": "Invitation copied to clipboard",
+  "referralLinkCopied": "Link copied to clipboard",
   "referralStatsInvited": "Friends invited: {count}",
   "@referralStatsInvited": {
     "placeholders": {
@@ -1619,6 +1624,7 @@
     }
   },
   "referralEnterCodeTitle": "Invited by a friend?",
+  "referralEnterCodeSubtitle": "Get a promo code from a friend who uses the app, or open their invite link to apply it automatically",
   "referralEnterCodeHint": "Enter friend's code",
   "referralActivateButton": "Activate",
   "referralAlreadyClaimed": "You activated code: {code} (+1 day)",

@@ -104,6 +104,12 @@ class ReferralService extends ChangeNotifier {
   @visibleForTesting
   ReferralService.forTesting();
 
+  @visibleForTesting
+  void setInfoForTesting(ReferralInfo? info) {
+    _info = info;
+    notifyListeners();
+  }
+
   ReferralInfo? _info;
   ReferralInfo? get info => _info;
 
@@ -149,7 +155,8 @@ class ReferralService extends ChangeNotifier {
         checkPendingReferral();
       }
       getReferralInfo(forceRefresh: true);
-    } else if (!AuthService.instance.isAuthenticated) {
+    } else if (!AuthService.instance.isAuthenticated ||
+        !AuthService.instance.hasServerSession) {
       _info = null;
       notifyListeners();
     }

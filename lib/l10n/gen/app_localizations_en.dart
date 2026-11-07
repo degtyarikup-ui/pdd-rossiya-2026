@@ -4687,7 +4687,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get referralCopyCode => 'Copy';
 
   @override
-  String get referralShareButton => 'Share link';
+  String get referralShareButton => 'Share';
+
+  @override
+  String get referralCopyInviteButton => 'Copy invitation';
+
+  @override
+  String get referralYourLink => 'Referral link';
+
+  @override
+  String get referralCopyLink => 'Copy link';
+
+  @override
+  String get referralInviteCopied => 'Invitation copied to clipboard';
+
+  @override
+  String get referralLinkCopied => 'Link copied to clipboard';
 
   @override
   String referralStatsInvited(int count) {
@@ -4707,6 +4722,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get referralEnterCodeTitle => 'Invited by a friend?';
+
+  @override
+  String get referralEnterCodeSubtitle =>
+      'Get a promo code from a friend who uses the app, or open their invite link to apply it automatically';
 
   @override
   String get referralEnterCodeHint => 'Enter friend\'s code';

@@ -39,6 +39,10 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
   @override
   void initState() {
     super.initState();
+    final pending = ReferralService.instance.pendingCode;
+    if (pending != null && pending.isNotEmpty) {
+      _codeController.text = pending;
+    }
     ReferralService.instance.addListener(_onServiceUpdate);
     AuthService.instance.addListener(_onServiceUpdate);
     _claimSubscription = ReferralService.instance.onClaimResult.listen((res) {
@@ -48,7 +52,8 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
         setState(() {});
       }
     });
-    if (AuthService.instance.isAuthenticated) {
+    if (AuthService.instance.isAuthenticated &&
+        AuthService.instance.hasServerSession) {
       ReferralService.instance.getReferralInfo();
     }
   }
@@ -63,16 +68,52 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
   }
 
   void _onServiceUpdate() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    if (_codeController.text.isEmpty) {
+      final pending = ReferralService.instance.pendingCode;
+      if (pending != null && pending.isNotEmpty) {
+        _codeController.text = pending;
+      }
+    }
+    if (AuthService.instance.isAuthenticated &&
+        AuthService.instance.hasServerSession &&
+        ReferralService.instance.info == null &&
+        !ReferralService.instance.loading) {
+      ReferralService.instance.getReferralInfo();
+    }
+    setState(() {});
   }
 
-  Future<void> _handleCopy(String code) async {
+  Future<void> _handleCopyCode(String code) async {
     HapticFeedbackHelper.select();
     await Clipboard.setData(ClipboardData(text: code));
     if (!mounted) return;
     AppToast.show(
       context,
       appL10n.referralCodeCopied,
+      type: AppToastType.success,
+    );
+  }
+
+  Future<void> _handleCopyLink(String link) async {
+    HapticFeedbackHelper.select();
+    await Clipboard.setData(ClipboardData(text: link));
+    if (!mounted) return;
+    AppToast.show(
+      context,
+      appL10n.referralLinkCopied,
+      type: AppToastType.success,
+    );
+  }
+
+  Future<void> _handleCopyInvite(ReferralInfo info) async {
+    HapticFeedbackHelper.select();
+    final text = appL10n.referralShareText(info.code, info.link);
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    AppToast.show(
+      context,
+      appL10n.referralInviteCopied,
       type: AppToastType.success,
     );
   }
@@ -86,10 +127,10 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
         ShareParams(text: text, sharePositionOrigin: origin),
       );
       if (res.status == ShareResultStatus.unavailable) {
-        await _handleCopy(text);
+        await _handleCopyInvite(info);
       }
     } catch (_) {
-      await _handleCopy(text);
+      await _handleCopyInvite(info);
     }
   }
 
@@ -165,9 +206,12 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isAuthenticated = AuthService.instance.isAuthenticated;
+    final hasActiveSession = AuthService.instance.isAuthenticated &&
+        AuthService.instance.hasServerSession;
     final info = ReferralService.instance.info;
-    final loading = ReferralService.instance.loading && info == null;
+    final loading = hasActiveSession &&
+        ReferralService.instance.loading &&
+        info == null;
 
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
 
@@ -276,13 +320,13 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
               ),
               const SizedBox(height: 20),
 
-              if (loading) ...[
+              if (!hasActiveSession) ...[
+                _buildSignInCard(colors),
+              ] else if (loading) ...[
                 const Padding(
                   padding: EdgeInsets.all(24.0),
                   child: Center(child: CircularProgressIndicator()),
                 ),
-              ] else if (!isAuthenticated) ...[
-                _buildSignInCard(colors),
               ] else if (info != null) ...[
                 _buildCodeCard(colors, isDark, info),
                 const SizedBox(height: 16),
@@ -327,7 +371,15 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
           const SizedBox(height: 14),
           ElevatedButton(
             key: const ValueKey('referral-sign-in-button'),
-            onPressed: () => AuthModalSheet.show(context),
+            onPressed: () async {
+              final signedIn = await AuthModalSheet.show(context);
+              if (!mounted) return;
+              if (signedIn == true ||
+                  (AuthService.instance.isAuthenticated &&
+                      AuthService.instance.hasServerSession)) {
+                ReferralService.instance.getReferralInfo(forceRefresh: true);
+              }
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: colors.accent,
               foregroundColor: Colors.white,
@@ -394,11 +446,67 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
                 icon: const Icon(Icons.copy_rounded, size: 20),
                 color: colors.accent,
                 tooltip: appL10n.referralCopyCode,
-                onPressed: () => _handleCopy(info.code),
+                onPressed: () => _handleCopyCode(info.code),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          if (info.link.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              appL10n.referralYourLink,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: colors.secondaryText,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: colors.cardBackground,
+                borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
+                border: Border.all(
+                  color: colors.divider.withValues(alpha: 0.6),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.link_rounded,
+                    size: 18,
+                    color: colors.accent,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SelectableText(
+                      info.link,
+                      key: const ValueKey('referral-user-link'),
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colors.primaryText,
+                        fontFamily: 'Onest',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    key: const ValueKey('referral-copy-link-button'),
+                    icon: const Icon(Icons.copy_rounded, size: 18),
+                    color: colors.accent,
+                    tooltip: appL10n.referralCopyLink,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () => _handleCopyLink(info.link),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 14),
           ElevatedButton.icon(
             key: const ValueKey('referral-share-button'),
             icon: const Icon(Icons.share_rounded, size: 18),
@@ -416,6 +524,26 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
               ),
             ),
             onPressed: () => _handleShare(info),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const ValueKey('referral-copy-invite-button'),
+            icon: const Icon(Icons.copy_rounded, size: 18),
+            label: Text(
+              appL10n.referralCopyInviteButton,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: colors.accent,
+              side: BorderSide(
+                color: colors.accent.withValues(alpha: isDark ? 0.6 : 0.8),
+              ),
+              minimumSize: const Size.fromHeight(44),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
+              ),
+            ),
+            onPressed: () => _handleCopyInvite(info),
           ),
         ],
       ),
@@ -550,7 +678,16 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
               color: colors.primaryText,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 4),
+          Text(
+            appL10n.referralEnterCodeSubtitle,
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.35,
+              color: colors.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(

@@ -308,6 +308,18 @@ class AuthService extends ChangeNotifier {
     (attempt) => _completeSignIn(attempt, profile, credential),
   );
 
+  @visibleForTesting
+  void setSessionForTesting({
+    UserProfile? user,
+    String? token,
+    DateTime? expiresAt,
+  }) {
+    _currentUser = user;
+    _sessionToken = token;
+    _sessionExpiresAt = expiresAt;
+    notifyListeners();
+  }
+
   static const String _prefKeyUser = 'auth_user_profile';
 
   UserProfile? _currentUser;

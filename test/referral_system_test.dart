@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdd_app/data/models/user_profile.dart';
+import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/referral_service.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
@@ -102,13 +104,90 @@ void main() {
   });
 
   group('ReferralModalSheet UI', () {
-    testWidgets('shows sign-in prompt when unauthenticated', (tester) async {
+    tearDown(() {
+      AuthService.instance.setSessionForTesting(user: null, token: null, expiresAt: null);
+      ReferralService.instance.setInfoForTesting(null);
+    });
+
+    testWidgets('shows sign-in prompt and invitee subtitle when unauthenticated', (tester) async {
+      AuthService.instance.setSessionForTesting(user: null, token: null, expiresAt: null);
+      ReferralService.instance.setInfoForTesting(null);
+
       await tester.pumpWidget(_wrap(const Scaffold(body: ReferralModalSheet())));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('referral-sign-in-button')), findsOneWidget);
       expect(find.byKey(const ValueKey('referral-input-field')), findsOneWidget);
       expect(find.byKey(const ValueKey('referral-activate-button')), findsOneWidget);
+      expect(
+        find.text('Возьмите промокод у друга, который учит ПДД в приложении, или откройте его ссылку-приглашение — код подставится сам'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('auto-populates input field when pending code is set', (tester) async {
+      AuthService.instance.setSessionForTesting(user: null, token: null, expiresAt: null);
+      ReferralService.instance.setInfoForTesting(null);
+      await ReferralService.instance.savePendingCode('FRIEND77');
+
+      await tester.pumpWidget(_wrap(const Scaffold(body: ReferralModalSheet())));
+      await tester.pumpAndSettle();
+
+      final inputFinder = find.byKey(const ValueKey('referral-input-field'));
+      expect(inputFinder, findsOneWidget);
+      final textField = tester.widget<TextField>(inputFinder);
+      expect(textField.controller?.text, 'FRIEND77');
+    });
+
+    testWidgets('shows promo code, full link, share and copy buttons when user is authenticated', (tester) async {
+      final user = UserProfile(
+        id: 'google_test',
+        name: 'Tester',
+        email: 't@example.com',
+        provider: AuthProviderType.google,
+        createdAt: DateTime(2026),
+      );
+      AuthService.instance.setSessionForTesting(
+        user: user,
+        token: 'test-token',
+        expiresAt: DateTime.now().add(const Duration(days: 30)),
+      );
+      ReferralService.instance.setInfoForTesting(
+        const ReferralInfo(
+          code: 'MYCODE9',
+          link: 'https://pdd-drive.app/app/?ref=MYCODE9',
+          invitedCount: 2,
+          rewardDays: 4,
+        ),
+      );
+
+      await tester.pumpWidget(_wrap(const Scaffold(body: ReferralModalSheet())));
+      await tester.pumpAndSettle();
+
+      // Sign-in prompt should NOT be visible
+      expect(find.byKey(const ValueKey('referral-sign-in-button')), findsNothing);
+
+      // Promo code and link
+      expect(find.byKey(const ValueKey('referral-user-code')), findsOneWidget);
+      expect(find.text('MYCODE9'), findsOneWidget);
+      expect(find.byKey(const ValueKey('referral-user-link')), findsOneWidget);
+      expect(find.text('https://pdd-drive.app/app/?ref=MYCODE9'), findsOneWidget);
+
+      // Buttons
+      expect(find.byKey(const ValueKey('referral-copy-button')), findsOneWidget);
+      expect(find.byKey(const ValueKey('referral-copy-link-button')), findsOneWidget);
+      expect(find.byKey(const ValueKey('referral-share-button')), findsOneWidget);
+      expect(find.byKey(const ValueKey('referral-copy-invite-button')), findsOneWidget);
+
+      // Tap copy buttons
+      await tester.tap(find.byKey(const ValueKey('referral-copy-button')));
+      await tester.pump();
+
+      await tester.tap(find.byKey(const ValueKey('referral-copy-link-button')));
+      await tester.pump();
+
+      await tester.tap(find.byKey(const ValueKey('referral-copy-invite-button')));
+      await tester.pump();
     });
   });
 
