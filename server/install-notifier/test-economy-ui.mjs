@@ -173,6 +173,7 @@ if (process.argv.includes('--serve')) {
       assert.equal(initial.expenses.paymentFeesRub, 23.2);
       assert.equal(initial.currency,'USD');
       assert.match(await page.locator('#ec-gross-val').innerText(),/^\$6,10$/);
+      assert.equal(await page.locator('#ec-gross-sub').innerText(), 'App Store $3,05\nPlatega $3,05\nGoogle Play $0,00');
       assert.match(await page.locator('#ec-fx-status').innerText(),/ЦБ.*95/);
       assert.equal(initial.receipts.some(row=>row.isTest),false);
       assert.match(await page.locator('#ec-receipts-body').innerText(), /Анна/);
@@ -310,6 +311,7 @@ if (process.argv.includes('--serve')) {
       const revenue = (await config()).manualRevenues.find(item => item.title === 'Партнёрское поступление');
       assert.equal(revenue.amountRub, 950);
       assert.equal((await stats()).revenue.grossRub, 1530);
+      assert.match(await page.locator('#ec-gross-sub').innerText(), /Другое \$10,00/);
 
       // Later settings edits do not revalue already recorded FX transactions.
       await open('#ec-settings'); await field('paymentFeePercent', 8); await save();
