@@ -1,81 +1,77 @@
-import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/notifier_api.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:pdd_app/data/services/browser_info_stub.dart'
-    if (dart.library.js_interop) 'package:pdd_app/data/services/browser_info_web.dart';
+
+String? normalizeReferralCode(Object? value) {
+  if (value is! String || value.length > 64) return null;
+  final code = value.trim();
+  return RegExp(r'^[A-Za-z0-9]{3,32}$').hasMatch(code)
+      ? code.toUpperCase()
+      : null;
+}
+
+/// Accept a code or a link issued by the app. Other URLs are not codes.
+String? referralCodeFromInput(String value) {
+  final code = normalizeReferralCode(value);
+  if (code != null) return code;
+  if (value.length > 512) return null;
+  final uri = Uri.tryParse(value.trim());
+  if (uri == null ||
+      uri.scheme != 'https' ||
+      uri.authority != 'pdd-drive.app' ||
+      uri.path != '/app/') {
+    return null;
+  }
+  return normalizeReferralCode(uri.queryParameters['ref']);
+}
 
 class ReferralInfo {
   final String code;
-  final String _link;
-  String get link => _link.isNotEmpty
-      ? _link
-      : (code.isNotEmpty ? 'https://pdd-drive.app/app/?ref=$code' : '');
+  String get link =>
+      Uri.https('pdd-drive.app', '/app/', {'ref': code}).toString();
   final int invitedCount;
   final int rewardDays;
   final bool hasUsedReferral;
-  final String? referredBy;
   final String? referralCodeUsed;
   final int friendBonusDays;
   final int inviterBonusDays;
 
   const ReferralInfo({
     required this.code,
-    String link = '',
     this.invitedCount = 0,
     this.rewardDays = 0,
     this.hasUsedReferral = false,
-    this.referredBy,
     this.referralCodeUsed,
     this.friendBonusDays = 1,
     this.inviterBonusDays = 2,
-  }) : _link = link;
+  });
 
-  factory ReferralInfo.fromJson(Map<String, dynamic> json) {
-    final code = json['code'] as String? ?? '';
-    final rawLink = json['link'] as String? ?? '';
-    return ReferralInfo(
-      code: code,
-      link: rawLink.isNotEmpty
-          ? rawLink
-          : (code.isNotEmpty ? 'https://pdd-drive.app/app/?ref=$code' : ''),
-      invitedCount: (json['invitedCount'] as num?)?.toInt() ?? 0,
-      rewardDays: (json['rewardDays'] as num?)?.toInt() ?? 0,
-      hasUsedReferral: json['hasUsedReferral'] == true,
-      referredBy: json['referredBy'] as String?,
-      referralCodeUsed: json['referralCodeUsed'] as String?,
-      friendBonusDays: (json['friendBonusDays'] as num?)?.toInt() ?? 1,
-      inviterBonusDays: (json['inviterBonusDays'] as num?)?.toInt() ?? 2,
-    );
-  }
+  factory ReferralInfo.fromJson(Map<String, dynamic> json) => ReferralInfo(
+    code:
+        normalizeReferralCode(json['code']) ??
+        (throw const FormatException('Invalid invitation code')),
+    invitedCount: (json['invitedCount'] as int?) ?? 0,
+    rewardDays: (json['rewardDays'] as int?) ?? 0,
+    hasUsedReferral: json['hasUsedReferral'] == true,
+    referralCodeUsed: normalizeReferralCode(json['referralCodeUsed']),
+    friendBonusDays: (json['friendBonusDays'] as int?) ?? 1,
+    inviterBonusDays: (json['inviterBonusDays'] as int?) ?? 2,
+  );
 
-  ReferralInfo copyWith({
-    String? code,
-    String? link,
-    int? invitedCount,
-    int? rewardDays,
-    bool? hasUsedReferral,
-    String? referredBy,
-    String? referralCodeUsed,
-    int? friendBonusDays,
-    int? inviterBonusDays,
-  }) {
-    return ReferralInfo(
-      code: code ?? this.code,
-      link: link ?? this.link,
-      invitedCount: invitedCount ?? this.invitedCount,
-      rewardDays: rewardDays ?? this.rewardDays,
-      hasUsedReferral: hasUsedReferral ?? this.hasUsedReferral,
-      referredBy: referredBy ?? this.referredBy,
-      referralCodeUsed: referralCodeUsed ?? this.referralCodeUsed,
-      friendBonusDays: friendBonusDays ?? this.friendBonusDays,
-      inviterBonusDays: inviterBonusDays ?? this.inviterBonusDays,
-    );
-  }
+  ReferralInfo withClaim(String code) => ReferralInfo(
+    code: this.code,
+    invitedCount: invitedCount,
+    rewardDays: rewardDays,
+    hasUsedReferral: true,
+    referralCodeUsed: code,
+    friendBonusDays: friendBonusDays,
+    inviterBonusDays: inviterBonusDays,
+  );
 }
 
 enum ReferralClaimStatus {
@@ -85,31 +81,93 @@ enum ReferralClaimStatus {
   notFound,
   invalidCode,
   unauthenticated,
+  rateLimited,
+  pending,
   error,
 }
 
 class ReferralClaimResult {
   final ReferralClaimStatus status;
   final int daysAdded;
-  final String? message;
 
-  const ReferralClaimResult({
-    required this.status,
-    this.daysAdded = 0,
-    this.message,
-  });
+  const ReferralClaimResult({required this.status, this.daysAdded = 0});
 }
 
 class ReferralService extends ChangeNotifier {
-  static final ReferralService instance = ReferralService._internal();
+  static final ReferralService instance = ReferralService._();
   static const _pendingKey = 'pending_referral_code';
+  final _auth = AuthService.instance;
 
-  ReferralService._internal() {
-    AuthService.instance.addListener(_onAuthChanged);
+  ReferralService._() {
+    _scope = _currentScope;
+    _auth.addListener(_onAuthChanged);
+  }
+
+  ({String id, int revision})? get _currentScope {
+    final id = _auth.currentUser?.id;
+    return id != null && _auth.hasServerSession
+        ? (id: id, revision: _auth.accountRevision)
+        : null;
+  }
+
+  late ({String id, int revision})? _scope;
+  ReferralInfo? _info;
+  String? _confirmedCode;
+  ReferralInfo? get info => _scope == _currentScope ? _info : null;
+  Future<ReferralInfo?>? _fetch;
+  bool get loading => _fetch != null;
+  Future<ReferralClaimResult>? _claim;
+  bool get claiming => _claim != null;
+
+  String? _pendingCode;
+  String? get pendingCode => _pendingCode;
+
+  Future<void> init({String? incomingCode}) async {
+    if (normalizeReferralCode(incomingCode) case final String code) {
+      await savePendingCode(code);
+      return;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _pendingCode ??= normalizeReferralCode(prefs.getString(_pendingKey));
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  void _onAuthChanged() {
+    final scope = _currentScope;
+    if (scope == _scope) return;
+    _scope = scope;
+    _info = null;
+    _confirmedCode = null;
+    _fetch = null;
+    _claim = null;
+    notifyListeners();
+  }
+
+  Future<void> savePendingCode(String value) async {
+    final code = referralCodeFromInput(value);
+    if (code == null) return;
+    _pendingCode = code;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_pendingCode == code) await prefs.setString(_pendingKey, code);
+    } catch (_) {}
+  }
+
+  Future<void> _clearPendingCode([String? expected]) async {
+    if (expected != null && expected != _pendingCode) return;
+    _pendingCode = null;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_pendingCode == null) await prefs.remove(_pendingKey);
+    } catch (_) {}
   }
 
   @visibleForTesting
-  ReferralService.forTesting();
+  Future<void> clearPendingCodeForTesting() => _clearPendingCode();
 
   @visibleForTesting
   void setInfoForTesting(ReferralInfo? info) {
@@ -117,237 +175,133 @@ class ReferralService extends ChangeNotifier {
     notifyListeners();
   }
 
-  ReferralInfo? _info;
-  ReferralInfo? get info => _info;
-
-  bool _loading = false;
-  bool get loading => _loading;
-
-  String? _pendingCode;
-  String? get pendingCode => _pendingCode;
-
-  bool _initialized = false;
-
-  Future<void> init() async {
-    if (_initialized) return;
-    _initialized = true;
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      _pendingCode = prefs.getString(_pendingKey);
-
-      final webCode = takeReferralParam();
-      if (webCode != null && webCode.isNotEmpty) {
-        _pendingCode = webCode.trim().toUpperCase();
-        await prefs.setString(_pendingKey, _pendingCode!);
-      }
-
-      if (AuthService.instance.isAuthenticated && _pendingCode != null) {
-        await checkPendingReferral();
-      }
-    } catch (e) {
-      debugPrint('ReferralService init error: $e');
-    }
-  }
-
-  Future<ReferralClaimResult>? _inFlightClaim;
-  String? _inFlightClaimCode;
-  final _claimController = StreamController<ReferralClaimResult>.broadcast();
-  Stream<ReferralClaimResult> get onClaimResult => _claimController.stream;
-
-  void _onAuthChanged() {
-    if (AuthService.instance.isAuthenticated &&
-        AuthService.instance.hasServerSession) {
-      if (_pendingCode != null) {
-        checkPendingReferral();
-      }
-      getReferralInfo(forceRefresh: true);
-    } else if (!AuthService.instance.isAuthenticated ||
-        !AuthService.instance.hasServerSession) {
-      _info = null;
-      notifyListeners();
-    }
-  }
-
-  Future<void> savePendingCode(String code) async {
-    final clean = code.trim().toUpperCase();
-    if (clean.isEmpty) return;
-    _pendingCode = clean;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_pendingKey, clean);
-    } catch (_) {}
-    notifyListeners();
-  }
-
-  Future<void> _clearPendingCode() async {
-    _pendingCode = null;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_pendingKey);
-    } catch (_) {}
-    notifyListeners();
-  }
-
-  @visibleForTesting
-  Future<void> clearPendingCodeForTesting() => _clearPendingCode();
-
   @visibleForTesting
   Future<ReferralInfo?> Function({bool forceRefresh})? mockGetReferralInfo;
 
   Future<ReferralInfo?> getReferralInfo({bool forceRefresh = false}) async {
-    if (mockGetReferralInfo != null) {
-      return mockGetReferralInfo!(forceRefresh: forceRefresh);
-    }
-    if (!AuthService.instance.isAuthenticated ||
-        !AuthService.instance.hasServerSession) {
-      return null;
-    }
-    if (_info != null && !forceRefresh) return _info;
-    if (!BackendConfig.hasNotifier && !AuthService.instance.isDevSession) {
-      return null;
-    }
-
-    _loading = true;
+    final scope = _currentScope;
+    if (scope == null) return null;
+    if (info != null && !forceRefresh) return info;
+    if (_fetch case final inFlight?) return inFlight;
+    final headers = _auth.serverHeaders;
+    final mock = mockGetReferralInfo;
+    final future = Future<ReferralInfo?>(() async {
+      try {
+        if (mock != null) return await mock(forceRefresh: forceRefresh);
+        if (!BackendConfig.hasNotifier && !_auth.isDevSession) return null;
+        final resp = await NotifierApi.get(
+          '/api/user/referral',
+          headers: headers,
+        );
+        if (resp.statusCode != 200) return null;
+        return ReferralInfo.fromJson(
+          jsonDecode(resp.body) as Map<String, dynamic>,
+        );
+      } catch (_) {
+        return null;
+      }
+    });
+    _fetch = future;
     notifyListeners();
-
     try {
-      final resp = await NotifierApi.get(
-        '/api/user/referral',
-        headers: AuthService.instance.serverHeaders,
-      );
-      if (resp.statusCode == 200) {
-        final data = jsonDecode(resp.body) as Map<String, dynamic>;
-        _info = ReferralInfo.fromJson(data);
+      final loaded = await future;
+      if (_currentScope != scope || _fetch != future) return null;
+      if (loaded != null) {
+        final code = _confirmedCode;
+        _info = code == null ? loaded : loaded.withClaim(code);
       }
-    } catch (e) {
-      debugPrint('ReferralService.getReferralInfo error: $e');
+      return info;
     } finally {
-      _loading = false;
-      notifyListeners();
-    }
-    return _info;
-  }
-
-  Future<ReferralClaimResult> claimCode(String code) async {
-    final clean = code.trim().toUpperCase();
-    if (clean.isEmpty || clean.length < 3) {
-      return const ReferralClaimResult(status: ReferralClaimStatus.invalidCode);
-    }
-
-    if (!AuthService.instance.isAuthenticated ||
-        !AuthService.instance.hasServerSession) {
-      await savePendingCode(clean);
-      return const ReferralClaimResult(
-        status: ReferralClaimStatus.unauthenticated,
-      );
-    }
-
-    if (!BackendConfig.hasNotifier && !AuthService.instance.isDevSession) {
-      return const ReferralClaimResult(status: ReferralClaimStatus.error);
-    }
-
-    if (_inFlightClaim != null && _inFlightClaimCode == clean) {
-      return _inFlightClaim!;
-    }
-
-    final future = _doClaimCode(clean);
-    _inFlightClaim = future;
-    _inFlightClaimCode = clean;
-    try {
-      return await future;
-    } finally {
-      if (_inFlightClaimCode == clean) {
-        _inFlightClaim = null;
-        _inFlightClaimCode = null;
+      if (_fetch == future) {
+        _fetch = null;
+        notifyListeners();
       }
     }
   }
 
-  Future<ReferralClaimResult> _doClaimCode(String clean) async {
+  Future<ReferralClaimResult> claimCode(String value) async {
+    final code = referralCodeFromInput(value);
+    if (code == null) return _result(ReferralClaimStatus.invalidCode);
+    final scope = _currentScope;
+    if (scope == null) {
+      await savePendingCode(code);
+      return _result(ReferralClaimStatus.unauthenticated);
+    }
+    if (_claim != null) return _result(ReferralClaimStatus.pending);
+    if (!BackendConfig.hasNotifier && !_auth.isDevSession) {
+      return _result(ReferralClaimStatus.error);
+    }
+
+    final future = _requestClaim(code, _auth.serverHeaders);
+    _claim = future;
+    notifyListeners();
     try {
+      final result = await future;
+      if (_currentScope != scope) {
+        return _result(ReferralClaimStatus.unauthenticated);
+      }
+      if (result.status == ReferralClaimStatus.success) {
+        _confirmedCode = code;
+        _info = _info?.withClaim(code);
+        await _clearPendingCode(code);
+        if (_currentScope != scope) {
+          return _result(ReferralClaimStatus.unauthenticated);
+        }
+        await PremiumService.instance.checkForGrant();
+        if (_currentScope != scope) {
+          return _result(ReferralClaimStatus.unauthenticated);
+        }
+      }
+      return result;
+    } finally {
+      if (_claim == future) {
+        _claim = null;
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<ReferralClaimResult> _requestClaim(
+    String code,
+    Map<String, String> headers,
+  ) async {
+    try {
+      // The previous deployed API is not idempotent. Retry explicitly in the
+      // UI until all server routes have the new coordinator.
       final resp = await NotifierApi.post(
         '/api/user/referral/claim',
         idempotent: false,
-        headers: AuthService.instance.serverHeaders,
-        body: jsonEncode({'code': clean}),
+        headers: headers,
+        body: jsonEncode({'code': code}),
       );
-
-      final data =
-          resp.statusCode == 200 ||
-              resp.statusCode == 400 ||
-              resp.statusCode == 404
-          ? jsonDecode(resp.body) as Map<String, dynamic>
-          : null;
-
-      if (resp.statusCode == 200) {
-        await _clearPendingCode();
-        if (_info != null) {
-          _info = _info!.copyWith(
-            hasUsedReferral: true,
-            referralCodeUsed: clean,
-          );
-        } else {
-          unawaited(getReferralInfo(forceRefresh: true));
-        }
-        await PremiumService.instance.checkForGrant();
-        notifyListeners();
-        final res = ReferralClaimResult(
-          status: ReferralClaimStatus.success,
-          daysAdded: (data?['daysAdded'] as num?)?.toInt() ?? 1,
-        );
-        _claimController.add(res);
-        return res;
-      }
-
       if (resp.statusCode == 401) {
-        await savePendingCode(clean);
-        return const ReferralClaimResult(
-          status: ReferralClaimStatus.unauthenticated,
+        return _result(ReferralClaimStatus.unauthenticated);
+      }
+      if (resp.statusCode == 429) {
+        return _result(ReferralClaimStatus.rateLimited);
+      }
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      if (resp.statusCode == 200 &&
+          data['ok'] == true &&
+          data['daysAdded'] is int) {
+        return ReferralClaimResult(
+          status: ReferralClaimStatus.success,
+          daysAdded: data['daysAdded'] as int,
         );
       }
-
-      final error = data?['error'] as String? ?? '';
-      if (error == 'cannot_refer_self') {
-        return const ReferralClaimResult(
-          status: ReferralClaimStatus.selfReferral,
-        );
-      }
-      if (error == 'already_claimed') {
-        await _clearPendingCode();
-        return const ReferralClaimResult(
-          status: ReferralClaimStatus.alreadyClaimed,
-        );
-      }
-      if (resp.statusCode == 404 || error == 'code_not_found') {
-        return const ReferralClaimResult(status: ReferralClaimStatus.notFound);
-      }
-      if (error == 'invalid_code') {
-        return const ReferralClaimResult(
-          status: ReferralClaimStatus.invalidCode,
-        );
-      }
-      return const ReferralClaimResult(status: ReferralClaimStatus.error);
-    } catch (e) {
-      debugPrint('ReferralService.claimCode error: $e');
-      return const ReferralClaimResult(status: ReferralClaimStatus.error);
+      return _result(switch (data['error']) {
+        'cannot_refer_self' => ReferralClaimStatus.selfReferral,
+        'already_claimed' => ReferralClaimStatus.alreadyClaimed,
+        'code_not_found' || 'inviter_not_found' => ReferralClaimStatus.notFound,
+        'invalid_code' => ReferralClaimStatus.invalidCode,
+        'referral_pending' => ReferralClaimStatus.pending,
+        _ => ReferralClaimStatus.error,
+      });
+    } catch (_) {
+      return _result(ReferralClaimStatus.error);
     }
   }
 
-  Future<void> checkPendingReferral() async {
-    if (_pendingCode == null ||
-        !AuthService.instance.isAuthenticated ||
-        !AuthService.instance.hasServerSession) {
-      return;
-    }
-    final code = _pendingCode!;
-    final result = await claimCode(code);
-    if (result.status == ReferralClaimStatus.success ||
-        result.status == ReferralClaimStatus.alreadyClaimed ||
-        result.status == ReferralClaimStatus.selfReferral ||
-        result.status == ReferralClaimStatus.notFound ||
-        result.status == ReferralClaimStatus.invalidCode) {
-      await _clearPendingCode();
-    }
-  }
+  static ReferralClaimResult _result(ReferralClaimStatus status) =>
+      ReferralClaimResult(status: status);
 }

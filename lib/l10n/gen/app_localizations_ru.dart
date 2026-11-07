@@ -1437,7 +1437,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get authTelegramOpenAgain => 'Открыть Telegram ещё раз';
 
   @override
-  String get authDebug => 'Тестовый вход (debug-сборка)';
+  String get authDebug => 'Тестовый вход';
 
   @override
   String get authDevQuickLogin => 'Быстрый вход для тестов';
@@ -4695,58 +4695,62 @@ class AppLocalizationsRu extends AppLocalizations {
   String get checkoutStageCompleted => 'Завершён';
 
   @override
-  String get referralSectionTitle => 'Реферальная программа';
-
-  @override
   String get referralSettingsTitle => 'Пригласить друга';
 
   @override
   String get referralSettingsSubtitle => '+2 дня вам, +1 день другу';
 
   @override
-  String get referralPlansTitle => 'Хотите Премиум бесплатно?';
+  String get referralPlansTitle => 'Есть код приглашения?';
 
   @override
-  String get referralPlansSubtitle =>
-      'Пригласите друга: вам +2 дня, другу +1 день';
+  String get referralPlansSubtitle => '1 день Премиума за активацию кода';
 
   @override
-  String get referralModalTitle => 'Пригласи друга';
+  String get referralModalTitle => 'Приглашения';
 
   @override
-  String get referralBannerTitle => 'Дарим дни Премиума!';
+  String referralRules(int inviter, int friend) {
+    String _temp0 = intl.Intl.pluralLogic(
+      inviter,
+      locale: localeName,
+      other: '$inviter дня',
+      many: '$inviter дней',
+      few: '$inviter дня',
+      one: '$inviter день',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      friend,
+      locale: localeName,
+      other: '$friend дня',
+      many: '$friend дней',
+      few: '$friend дня',
+      one: '$friend день',
+    );
+    return 'Когда друг активирует ваш код, вы получите +$_temp0 Премиума, а он — +$_temp1.';
+  }
 
   @override
-  String get referralBannerDescription =>
-      'Поделитесь своим промокодом с другом. Друг получит 1 день Премиума, а вы — 2 дня за каждого приглашённого друга!';
+  String get referralYourCode => 'Ваш код';
 
   @override
-  String get referralYourCode => 'Ваш код приглашения';
+  String get referralCopyCode => 'Скопировать код';
 
   @override
-  String get referralCopyCode => 'Скопировать';
-
-  @override
-  String get referralShareButton => 'Поделиться';
-
-  @override
-  String get referralCopyInviteButton => 'Скопировать приглашение';
-
-  @override
-  String get referralYourLink => 'Реферальная ссылка';
+  String get referralShareButton => 'Отправить приглашение';
 
   @override
   String get referralCopyLink => 'Скопировать ссылку';
 
   @override
-  String get referralInviteCopied => 'Приглашение скопировано в буфер обмена';
+  String get referralInviteCopied => 'Приглашение скопировано';
 
   @override
-  String get referralLinkCopied => 'Ссылка скопирована в буфер обмена';
+  String get referralLinkCopied => 'Ссылка скопирована';
 
   @override
   String referralStatsInvited(int count) {
-    return 'Приглашено друзей: $count';
+    return 'Активировали код: $count';
   }
 
   @override
@@ -4754,64 +4758,95 @@ class AppLocalizationsRu extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      other: '$days дней',
+      other: '$days дня',
       many: '$days дней',
       few: '$days дня',
       one: '$days день',
     );
-    return 'Получено Премиума: $_temp0';
+    return 'Начислено: $_temp0';
   }
 
   @override
-  String get referralEnterCodeTitle => 'Вас пригласил друг?';
+  String get referralEnterCodeTitle => 'Код от друга';
 
   @override
-  String get referralEnterCodeSubtitle =>
-      'Возьмите промокод у друга, который учит ПДД в приложении, или откройте его ссылку-приглашение — код подставится сам';
+  String get referralEnterCodeHint => 'Код или ссылка';
 
   @override
-  String get referralEnterCodeHint => 'Введите код друга';
+  String get referralCodeOnce => 'Один код на аккаунт';
 
   @override
   String get referralActivateButton => 'Активировать';
 
   @override
-  String referralAlreadyClaimed(String code) {
-    return 'Вы активировали код: $code (+1 день)';
+  String get referralActivating => 'Активируем…';
+
+  @override
+  String referralSuccessDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days дня',
+      many: '$days дней',
+      few: '$days дня',
+      one: '$days день',
+    );
+    return 'Начислено: $_temp0 Премиума.';
   }
 
   @override
-  String get referralSuccessClaimed =>
-      'Код активирован! Вам начислен 1 день Премиума 🎉';
+  String get referralSignInRequired => 'Войдите в аккаунт и повторите попытку.';
 
   @override
-  String get referralSignInRequired =>
-      'Войдите в аккаунт, чтобы получить личный код и копить дни Премиума';
+  String get referralSignInButton => 'Войти и получить код';
 
   @override
-  String get referralSignInButton => 'Войти в аккаунт';
+  String get referralErrorSelf => 'Это ваш код. Введите код друга.';
 
   @override
-  String get referralErrorSelf => 'Нельзя активировать собственный код';
+  String get referralErrorAlreadyUsed => 'Вы уже активировали код приглашения.';
 
   @override
-  String get referralErrorAlreadyUsed => 'Вы уже активировали код приглашения';
+  String get referralErrorNotFound => 'Код не найден. Проверьте его.';
 
   @override
-  String get referralErrorNotFound =>
-      'Код не найден. Проверьте правильность ввода';
+  String get referralErrorInvalid =>
+      'Введите код латиницей или вставьте ссылку приглашения.';
 
   @override
-  String referralShareText(String code, String link) {
-    return 'Дарю 1 день Премиума в приложении ПДД Россия 2026! Установи приложение и введи мой промокод $code или перейди по ссылке: $link';
+  String get referralErrorRateLimited =>
+      'Слишком много попыток. Повторите позже.';
+
+  @override
+  String get referralClaimPending =>
+      'Начисление ещё идёт. Попробуйте позже с тем же кодом.';
+
+  @override
+  String get referralClaimError =>
+      'Не удалось проверить код. Попробуйте ещё раз.';
+
+  @override
+  String referralShareText(String code, String link, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days дня',
+      many: '$days дней',
+      few: '$days дня',
+      one: '$days день',
+    );
+    return 'ПДД Россия: $_temp0 Премиума по коду $code. Введите код в настройках приложения или откройте ссылку: $link';
   }
 
   @override
-  String get referralCodeCopied => 'Код скопирован в буфер обмена';
+  String get referralCodeCopied => 'Код скопирован';
 
   @override
-  String get referralLoadError => 'Не удалось загрузить данные приглашения';
+  String get referralCopyError => 'Не удалось скопировать';
 
   @override
-  String get referralRetryButton => 'Попробовать снова';
+  String get referralLoadError => 'Не удалось загрузить ваш код';
+
+  @override
+  String get referralRetryButton => 'Повторить';
 }

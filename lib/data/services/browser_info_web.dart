@@ -92,40 +92,36 @@ Map<String, String> browserAcquisitionFields() {
 /// Код сразу убирается из адреса, чтобы перезагрузка не повторяла параметр.
 String? takeReferralParam() {
   final base = Uri.base;
-  var code = base.queryParameters['ref'];
-  var fromFragment = false;
-  if ((code == null || code.isEmpty) && base.hasFragment) {
-    final frag = base.fragment;
-    final qIndex = frag.indexOf('?');
-    if (qIndex != -1) {
-      final fragQuery = Uri.splitQueryString(frag.substring(qIndex + 1));
-      code = fragQuery['ref'];
-      if (code != null && code.isNotEmpty) {
-        fromFragment = true;
+  final query = Map.of(base.queryParameters);
+  final directCode = query.remove('ref');
+  String? fragmentCode;
+  var fragment = base.fragment;
+  final separator = fragment.indexOf('?');
+  if (separator >= 0) {
+    try {
+      final fragmentQuery = Uri.splitQueryString(
+        fragment.substring(separator + 1),
+      );
+      fragmentCode = fragmentQuery.remove('ref');
+      if (fragmentCode != null) {
+        fragment = fragment.substring(0, separator);
+        if (fragmentQuery.isNotEmpty) {
+          fragment += '?${Uri(queryParameters: fragmentQuery).query}';
+        }
       }
+    } on FormatException {
+      // Ignore malformed fragment parameters without blocking application startup.
+    } on ArgumentError {
+      // Uri.splitQueryString can also reject invalid percent escapes.
     }
   }
-  if (code == null || code.isEmpty) return null;
-
-  final rest = Map.of(base.queryParameters)..remove('ref');
-  final query = rest.isEmpty ? '' : '?${Uri(queryParameters: rest).query}';
-  var fragment = base.hasFragment ? '#${base.fragment}' : '';
-  if (fromFragment && base.hasFragment) {
-    final frag = base.fragment;
-    final qIndex = frag.indexOf('?');
-    if (qIndex != -1) {
-      final fragPath = frag.substring(0, qIndex);
-      final fragQueryMap =
-          Map.of(Uri.splitQueryString(frag.substring(qIndex + 1)))
-            ..remove('ref');
-      final newFragQuery = fragQueryMap.isEmpty
-          ? ''
-          : '?${Uri(queryParameters: fragQueryMap).query}';
-      fragment = '#$fragPath$newFragQuery';
-    }
-  }
-  web.window.history.replaceState(null, '', '${base.path}$query$fragment');
-  return code;
+  if (directCode == null && fragmentCode == null) return null;
+  final remaining = query.isEmpty
+      ? ''
+      : '?${Uri(queryParameters: query).query}';
+  final hash = fragment.isEmpty ? '' : '#$fragment';
+  web.window.history.replaceState(null, '', '${base.path}$remaining$hash');
+  return directCode?.isNotEmpty == true ? directCode : fragmentCode;
 }
 
 void setWebCheckoutTier(String tier) {

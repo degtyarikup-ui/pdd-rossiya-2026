@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -7,6 +6,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/referral_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/result_share.dart';
@@ -20,7 +20,8 @@ class ReferralModalSheet extends StatefulWidget {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      showDragHandle: true,
       constraints: const BoxConstraints(maxWidth: 600),
       builder: (_) => const ReferralModalSheet(),
     );
@@ -31,808 +32,363 @@ class ReferralModalSheet extends StatefulWidget {
 }
 
 class _ReferralModalSheetState extends State<ReferralModalSheet> {
-  final TextEditingController _codeController = TextEditingController();
-  bool _claiming = false;
-  bool _claimed = false;
-  StreamSubscription<ReferralClaimResult>? _claimSubscription;
+  final _service = ReferralService.instance;
+  final _auth = AuthService.instance;
+  late final TextEditingController _code;
+  late (String?, int, bool) _account;
+  ReferralClaimResult? _result;
+  bool _signingIn = false;
+
+  (String?, int, bool) get _currentAccount =>
+      (_auth.currentUser?.id, _auth.accountRevision, _auth.hasServerSession);
 
   @override
   void initState() {
     super.initState();
-    final pending = ReferralService.instance.pendingCode;
-    if (pending != null && pending.isNotEmpty) {
-      _codeController.text = pending;
-    }
-    ReferralService.instance.addListener(_onServiceUpdate);
-    AuthService.instance.addListener(_onServiceUpdate);
-    _claimSubscription = ReferralService.instance.onClaimResult.listen((res) {
-      if (res.status == ReferralClaimStatus.success && mounted) {
-        _claimed = true;
-        _codeController.clear();
-        setState(() {});
-      }
+    _account = _currentAccount;
+    _code = TextEditingController(text: _service.pendingCode);
+    _service.addListener(_changed);
+    _auth.addListener(_authChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _service.getReferralInfo(forceRefresh: true);
     });
-    if (AuthService.instance.isAuthenticated &&
-        AuthService.instance.hasServerSession) {
-      ReferralService.instance.getReferralInfo();
-    }
   }
 
   @override
   void dispose() {
-    _claimSubscription?.cancel();
-    ReferralService.instance.removeListener(_onServiceUpdate);
-    AuthService.instance.removeListener(_onServiceUpdate);
-    _codeController.dispose();
+    _auth.removeListener(_authChanged);
+    _service.removeListener(_changed);
+    _code.dispose();
     super.dispose();
   }
 
-  void _onServiceUpdate() {
+  void _changed() {
     if (!mounted) return;
-    if (_codeController.text.isEmpty) {
-      final pending = ReferralService.instance.pendingCode;
-      if (pending != null && pending.isNotEmpty) {
-        _codeController.text = pending;
-      }
-    }
-    if (AuthService.instance.isAuthenticated &&
-        AuthService.instance.hasServerSession &&
-        ReferralService.instance.info == null &&
-        !ReferralService.instance.loading) {
-      ReferralService.instance.getReferralInfo();
+    if (_service.pendingCode case final String pending
+        when _code.text.isEmpty) {
+      _code.text = pending;
     }
     setState(() {});
   }
 
-  Future<void> _handleCopyCode(String code) async {
-    HapticFeedbackHelper.select();
-    await Clipboard.setData(ClipboardData(text: code));
-    if (!mounted) return;
-    AppToast.show(
-      context,
-      appL10n.referralCodeCopied,
-      type: AppToastType.success,
-    );
+  void _authChanged() {
+    if (_account != _currentAccount) {
+      _account = _currentAccount;
+      _result = null;
+      if (!_signingIn) _code.text = _service.pendingCode ?? '';
+      _service.getReferralInfo(forceRefresh: true);
+    }
+    _changed();
   }
 
-  Future<void> _handleCopyLink(String link) async {
-    HapticFeedbackHelper.select();
-    await Clipboard.setData(ClipboardData(text: link));
+  Future<void> _signIn() async {
+    if (_signingIn) return;
+    setState(() => _signingIn = true);
+    FocusScope.of(context).unfocus();
+    await _service.savePendingCode(_code.text);
     if (!mounted) return;
-    AppToast.show(
-      context,
-      appL10n.referralLinkCopied,
-      type: AppToastType.success,
-    );
+    await AuthModalSheet.show(context);
+    if (mounted) setState(() => _signingIn = false);
   }
 
-  Future<void> _handleCopyInvite(ReferralInfo info) async {
-    HapticFeedbackHelper.select();
-    final text = appL10n.referralShareText(info.code, info.link);
-    await Clipboard.setData(ClipboardData(text: text));
-    if (!mounted) return;
-    AppToast.show(
-      context,
-      appL10n.referralInviteCopied,
-      type: AppToastType.success,
-    );
+  Future<void> _copy(String value, String message) async {
+    try {
+      await Clipboard.setData(ClipboardData(text: value));
+      if (!mounted) return;
+      HapticFeedbackHelper.select();
+      AppToast.show(context, message, type: AppToastType.success);
+    } catch (_) {
+      if (mounted) {
+        AppToast.show(
+          context,
+          context.l10n.referralCopyError,
+          type: AppToastType.error,
+        );
+      }
+    }
   }
 
-  Future<void> _handleShare(ReferralInfo info) async {
-    HapticFeedbackHelper.tap();
-    final text = appL10n.referralShareText(info.code, info.link);
+  Future<void> _share(ReferralInfo info) async {
+    final l10n = context.l10n;
+    final text = l10n.referralShareText(
+      info.code,
+      info.link,
+      info.friendBonusDays,
+    );
     final origin = sharePositionOrigin(context);
     try {
-      final res = await SharePlus.instance.share(
+      final result = await SharePlus.instance.share(
         ShareParams(text: text, sharePositionOrigin: origin),
       );
-      if (res.status == ShareResultStatus.unavailable) {
-        await _handleCopyInvite(info);
-      }
-    } catch (_) {
-      await _handleCopyInvite(info);
+      if (result.status != ShareResultStatus.unavailable) return;
+    } catch (_) {}
+    if (mounted) await _copy(text, l10n.referralInviteCopied);
+  }
+
+  Future<void> _activate() async {
+    if (_service.claiming || _signingIn) return;
+    if (referralCodeFromInput(_code.text) == null) {
+      setState(
+        () => _result = const ReferralClaimResult(
+          status: ReferralClaimStatus.invalidCode,
+        ),
+      );
+      return;
+    }
+    if (!_auth.hasServerSession) {
+      await _signIn();
+      return;
+    }
+    final account = _account;
+    FocusScope.of(context).unfocus();
+    setState(() => _result = null);
+    final result = await _service.claimCode(_code.text);
+    if (!mounted || _currentAccount != account) return;
+    setState(() => _result = result);
+    if (result.status == ReferralClaimStatus.success) {
+      HapticFeedbackHelper.success();
+    } else {
+      HapticFeedbackHelper.error();
     }
   }
 
-  Future<void> _handleClaim() async {
-    final code = _codeController.text.trim();
-    if (code.isEmpty) return;
-
-    if (!AuthService.instance.isAuthenticated ||
-        !AuthService.instance.hasServerSession) {
-      await ReferralService.instance.savePendingCode(code);
-      if (!mounted) return;
-      await AuthModalSheet.show(context);
-      if (!mounted) return;
-      if (!AuthService.instance.isAuthenticated ||
-          !AuthService.instance.hasServerSession) {
-        return;
-      }
-      if (_claimed) {
-        return;
-      }
-    }
-
-    setState(() => _claiming = true);
-    HapticFeedbackHelper.select();
-
-    final result = await ReferralService.instance.claimCode(code);
-    if (!mounted) return;
-    setState(() => _claiming = false);
-
-    switch (result.status) {
-      case ReferralClaimStatus.success:
-        _claimed = true;
-        HapticFeedbackHelper.success();
-        _codeController.clear();
-        AppToast.show(
-          context,
-          appL10n.referralSuccessClaimed,
-          type: AppToastType.success,
-        );
-      case ReferralClaimStatus.selfReferral:
-        HapticFeedbackHelper.error();
-        AppToast.show(
-          context,
-          appL10n.referralErrorSelf,
-          type: AppToastType.error,
-        );
-      case ReferralClaimStatus.alreadyClaimed:
-        if (_claimed) return;
-        HapticFeedbackHelper.error();
-        AppToast.show(
-          context,
-          appL10n.referralErrorAlreadyUsed,
-          type: AppToastType.error,
-        );
-      case ReferralClaimStatus.notFound:
-      case ReferralClaimStatus.invalidCode:
-        HapticFeedbackHelper.error();
-        AppToast.show(
-          context,
-          appL10n.referralErrorNotFound,
-          type: AppToastType.error,
-        );
-      case ReferralClaimStatus.unauthenticated:
-        await AuthModalSheet.show(context);
-      case ReferralClaimStatus.error:
-        HapticFeedbackHelper.error();
-        AppToast.show(
-          context,
-          appL10n.referralErrorNotFound,
-          type: AppToastType.error,
-        );
-    }
-  }
+  bool get _claimed => _result?.status == ReferralClaimStatus.success;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final colors = AppColors.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasActiveSession = AuthService.instance.isAuthenticated &&
-        AuthService.instance.hasServerSession;
-    final info = ReferralService.instance.info;
-    final loading = hasActiveSession &&
-        ReferralService.instance.loading &&
-        info == null;
+    final theme = Theme.of(context);
+    final info = _service.info;
+    final signedIn = _auth.hasServerSession;
+    final renewSignIn = _result?.status == ReferralClaimStatus.unauthenticated;
+    final used =
+        _claimed ||
+        info?.hasUsedReferral == true ||
+        _result?.status == ReferralClaimStatus.alreadyClaimed;
+    final error = switch (_result?.status) {
+      ReferralClaimStatus.invalidCode => l10n.referralErrorInvalid,
+      ReferralClaimStatus.selfReferral => l10n.referralErrorSelf,
+      ReferralClaimStatus.notFound => l10n.referralErrorNotFound,
+      ReferralClaimStatus.rateLimited => l10n.referralErrorRateLimited,
+      ReferralClaimStatus.pending => l10n.referralClaimPending,
+      ReferralClaimStatus.error => l10n.referralClaimError,
+      ReferralClaimStatus.unauthenticated => l10n.referralSignInRequired,
+      _ => null,
+    };
 
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-
-    return PopScope<bool>(
-      canPop: !_claimed,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && _claimed) {
-          Navigator.of(context).pop(true);
-        }
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: colors.cardBackground,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppDimensions.radiusExtraLarge),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            AppDimensions.screenPadding,
+            0,
+            AppDimensions.screenPadding,
+            20,
           ),
-        ),
-        padding: EdgeInsets.fromLTRB(
-          AppDimensions.screenPadding,
-          12,
-          AppDimensions.screenPadding,
-          MediaQuery.of(context).viewPadding.bottom + 20 + bottomPadding,
-        ),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Drag Handle
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: colors.primaryText.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l10n.referralModalTitle,
+                      style: theme.textTheme.titleLarge,
                     ),
                   ),
-                ),
-
-                // Close Button
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: IconButton(
-                    key: const ValueKey('referral-close-button'),
-                    icon: Icon(Icons.close_rounded, color: colors.secondaryText),
-                    onPressed: () => Navigator.of(context).pop(_claimed ? true : null),
-                  ),
-                ),
-
-              // Top Gift Icon Badge
-              Center(
-                child: Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF2BC280), Color(0xFF0065FD)],
+                  Tooltip(
+                    message: MaterialLocalizations.of(
+                      context,
+                    ).closeButtonTooltip,
+                    child: AppChromeIconButton(
+                      key: const ValueKey('referral-close-button'),
+                      icon: Icons.close_rounded,
+                      onTap: () =>
+                          Navigator.of(context).pop(_claimed ? true : null),
                     ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF2BC280).withValues(alpha: 0.3),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
                   ),
-                  child: const Icon(
-                    Icons.card_giftcard_rounded,
-                    size: 32,
-                    color: Colors.white,
-                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                l10n.referralRules(
+                  info?.inviterBonusDays ?? 2,
+                  info?.friendBonusDays ?? 1,
+                ),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.secondaryText,
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Title
-              Text(
-                appL10n.referralModalTitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: colors.primaryText,
-                  fontFamily: 'Onest',
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Description
-              Text(
-                appL10n.referralBannerDescription,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.35,
-                  color: colors.secondaryText,
-                  fontFamily: 'Onest',
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              if (!hasActiveSession) ...[
-                _buildSignInCard(colors),
-              ] else if (loading) ...[
-                const Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              ] else if (info != null) ...[
-                _buildCodeCard(colors, isDark, info),
-                const SizedBox(height: 16),
-                _buildStatsRow(colors, isDark, info),
-              ] else ...[
-                _buildErrorRetryCard(colors, isDark),
-              ],
-
-              const SizedBox(height: 20),
-              _buildFriendCodeSection(colors, isDark, info),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-  Widget _buildErrorRetryCard(AppThemeColors colors, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.background,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        border: Border.all(color: colors.divider.withValues(alpha: 0.6)),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.cloud_off_rounded,
-            size: 36,
-            color: colors.secondaryText,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            appL10n.referralLoadError,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13.5,
-              color: colors.secondaryText,
-              fontFamily: 'Onest',
-            ),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            key: const ValueKey('referral-retry-button'),
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: Text(appL10n.referralRetryButton),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: colors.accent,
-              side: BorderSide(
-                color: colors.accent.withValues(alpha: isDark ? 0.6 : 0.8),
-              ),
-              minimumSize: const Size.fromHeight(40),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-              ),
-            ),
-            onPressed: () {
-              ReferralService.instance.getReferralInfo(forceRefresh: true);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSignInCard(AppThemeColors colors) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.background,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        border: Border.all(color: colors.divider.withValues(alpha: 0.6)),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.account_circle_outlined,
-            size: 36,
-            color: colors.secondaryText,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            appL10n.referralSignInRequired,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13.5,
-              color: colors.secondaryText,
-              fontFamily: 'Onest',
-            ),
-          ),
-          const SizedBox(height: 14),
-          ElevatedButton(
-            key: const ValueKey('referral-sign-in-button'),
-            onPressed: () async {
-              final pending = _codeController.text.trim();
-              if (pending.isNotEmpty) {
-                await ReferralService.instance.savePendingCode(pending);
-              }
-              if (!mounted) return;
-              final signedIn = await AuthModalSheet.show(context);
-              if (!mounted) return;
-              if (signedIn == true ||
-                  (AuthService.instance.isAuthenticated &&
-                      AuthService.instance.hasServerSession)) {
-                ReferralService.instance.getReferralInfo(forceRefresh: true);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors.accent,
-              foregroundColor: Colors.white,
-              minimumSize: const Size.fromHeight(44),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-              ),
-            ),
-            child: Text(
-              appL10n.referralSignInButton,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCodeCard(
-    AppThemeColors colors,
-    bool isDark,
-    ReferralInfo info,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E2633) : const Color(0xFFF0F5FF),
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        border: Border.all(
-          color: colors.accent.withValues(alpha: isDark ? 0.3 : 0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            appL10n.referralYourCode,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: colors.secondaryText,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SelectableText(
-                info.code,
-                key: const ValueKey('referral-user-code'),
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 4,
-                  color: colors.accent,
-                  fontFamily: 'Onest',
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                key: const ValueKey('referral-copy-button'),
-                icon: const Icon(Icons.copy_rounded, size: 20),
-                color: colors.accent,
-                tooltip: appL10n.referralCopyCode,
-                onPressed: () => _handleCopyCode(info.code),
-              ),
-            ],
-          ),
-          if (info.link.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              appL10n.referralYourLink,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: colors.secondaryText,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 6),
-            InkWell(
-              key: const ValueKey('referral-link-container'),
-              borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-              onTap: () => _handleCopyLink(info.link),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: colors.cardBackground,
-                  borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-                  border: Border.all(
-                    color: colors.divider.withValues(alpha: 0.6),
+              if (info != null)
+                _invitation(context, info)
+              else if (!signedIn)
+                OutlinedButton(
+                  key: const ValueKey('referral-sign-in-button'),
+                  onPressed: _signingIn ? null : _signIn,
+                  child: Text(l10n.referralSignInButton),
+                )
+              else if (_service.loading)
+                const LinearProgressIndicator()
+              else ...[
+                Text(l10n.referralLoadError, style: theme.textTheme.bodyMedium),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: TextButton(
+                    key: const ValueKey('referral-retry-button'),
+                    onPressed: () =>
+                        _service.getReferralInfo(forceRefresh: true),
+                    child: Text(l10n.referralRetryButton),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.link_rounded,
-                      size: 18,
-                      color: colors.accent,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        info.link,
-                        key: const ValueKey('referral-user-link'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: colors.primaryText,
-                          fontFamily: 'Onest',
+              ],
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 16),
+              if (used)
+                Semantics(
+                  liveRegion: true,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline_rounded,
+                        color: colors.accent,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _claimed
+                              ? l10n.referralSuccessDays(_result!.daysAdded)
+                              : l10n.referralErrorAlreadyUsed,
+                          style: theme.textTheme.titleSmall,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      key: const ValueKey('referral-copy-link-button'),
-                      icon: const Icon(Icons.copy_rounded, size: 18),
-                      color: colors.accent,
-                      tooltip: appL10n.referralCopyLink,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => _handleCopyLink(info.link),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 14),
-          ElevatedButton.icon(
-            key: const ValueKey('referral-share-button'),
-            icon: const Icon(Icons.share_rounded, size: 18),
-            label: Text(
-              appL10n.referralShareButton,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors.accent,
-              foregroundColor: Colors.white,
-              minimumSize: const Size.fromHeight(48),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-              ),
-            ),
-            onPressed: () => _handleShare(info),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            key: const ValueKey('referral-copy-invite-button'),
-            icon: const Icon(Icons.copy_rounded, size: 18),
-            label: Text(
-              appL10n.referralCopyInviteButton,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: colors.accent,
-              side: BorderSide(
-                color: colors.accent.withValues(alpha: isDark ? 0.6 : 0.8),
-              ),
-              minimumSize: const Size.fromHeight(44),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-              ),
-            ),
-            onPressed: () => _handleCopyInvite(info),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsRow(
-    AppThemeColors colors,
-    bool isDark,
-    ReferralInfo info,
-  ) {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              color: colors.background,
-              borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-              border: Border.all(color: colors.divider.withValues(alpha: 0.4)),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.people_outline_rounded,
-                  size: 20,
-                  color: colors.accent,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    appL10n.referralStatsInvited(info.invitedCount),
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: colors.primaryText,
-                    ),
+                    ],
                   ),
+                )
+              else ...[
+                Text(
+                  l10n.referralEnterCodeTitle,
+                  style: theme.textTheme.titleMedium,
                 ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              color: colors.background,
-              borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-              border: Border.all(color: colors.divider.withValues(alpha: 0.4)),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.stars_rounded,
-                  size: 20,
-                  color: Color(0xFF2BC280),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    appL10n.referralStatsDays(info.rewardDays),
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: colors.primaryText,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFriendCodeSection(
-    AppThemeColors colors,
-    bool isDark,
-    ReferralInfo? info,
-  ) {
-    if (info != null && info.hasUsedReferral) {
-      return Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF162B1D) : const Color(0xFFE8F8F0),
-          borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-          border: Border.all(
-            color: const Color(0xFF2BC280).withValues(alpha: 0.3),
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.check_circle_outline_rounded,
-              color: Color(0xFF2BC280),
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                appL10n.referralAlreadyClaimed(info.referralCodeUsed ?? ''),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2BC280),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.background,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        border: Border.all(color: colors.divider.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            appL10n.referralEnterCodeTitle,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: colors.primaryText,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            appL10n.referralEnterCodeSubtitle,
-            style: TextStyle(
-              fontSize: 12.5,
-              height: 1.35,
-              color: colors.secondaryText,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
+                const SizedBox(height: 10),
+                TextField(
                   key: const ValueKey('referral-input-field'),
-                  controller: _codeController,
+                  controller: _code,
+                  enabled: !_service.claiming && !_signingIn,
                   textCapitalization: TextCapitalization.characters,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
-                    LengthLimitingTextInputFormatter(16),
-                  ],
+                  textInputAction: TextInputAction.done,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  inputFormatters: [LengthLimitingTextInputFormatter(512)],
+                  onChanged: (_) => setState(() => _result = null),
+                  onSubmitted: (_) {
+                    if (_code.text.trim().isNotEmpty) _activate();
+                  },
                   decoration: InputDecoration(
-                    hintText: appL10n.referralEnterCodeHint,
-                    hintStyle: TextStyle(
-                      fontSize: 13,
-                      color: colors.secondaryText.withValues(alpha: 0.6),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    filled: true,
-                    fillColor: colors.cardBackground,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.buttonRadius,
-                      ),
-                      borderSide: BorderSide(
-                        color: colors.divider.withValues(alpha: 0.6),
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.buttonRadius,
-                      ),
-                      borderSide: BorderSide(
-                        color: colors.divider.withValues(alpha: 0.6),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.buttonRadius,
-                      ),
-                      borderSide: BorderSide(color: colors.accent),
-                    ),
+                    labelText: l10n.referralEnterCodeHint,
+                    helperText: l10n.referralCodeOnce,
+                    helperMaxLines: 2,
+                    errorText: error,
+                    errorMaxLines: 3,
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                key: const ValueKey('referral-activate-button'),
-                onPressed: _claiming ? null : _handleClaim,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2BC280),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(100, 48),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.buttonRadius,
-                    ),
+                const SizedBox(height: 10),
+                FilledButton(
+                  key: const ValueKey('referral-activate-button'),
+                  onPressed:
+                      _code.text.trim().isEmpty ||
+                          _service.claiming ||
+                          _signingIn
+                      ? null
+                      : (renewSignIn ? _signIn : _activate),
+                  child: Text(
+                    _service.claiming
+                        ? l10n.referralActivating
+                        : (renewSignIn
+                              ? l10n.signInCardTitle
+                              : l10n.referralActivateButton),
                   ),
                 ),
-                child: _claiming
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        appL10n.referralActivateButton,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-              ),
+              ],
             ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _invitation(BuildContext context, ReferralInfo info) {
+    final l10n = context.l10n;
+    final colors = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.background,
+        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+        border: Border.all(color: colors.divider),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.referralYourCode, style: text.labelLarge),
+                      const SizedBox(height: 3),
+                      SelectableText(
+                        info.code,
+                        key: const ValueKey('referral-user-code'),
+                        style: text.headlineSmall?.copyWith(
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  key: const ValueKey('referral-copy-button'),
+                  tooltip: l10n.referralCopyCode,
+                  onPressed: () => _copy(info.code, l10n.referralCodeCopied),
+                  icon: const Icon(Icons.copy_outlined),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              key: const ValueKey('referral-share-button'),
+              onPressed: () => _share(info),
+              icon: const Icon(Icons.share_outlined),
+              label: Text(l10n.referralShareButton),
+            ),
+            TextButton(
+              key: const ValueKey('referral-copy-link-button'),
+              onPressed: () => _copy(info.link, l10n.referralLinkCopied),
+              child: Text(l10n.referralCopyLink),
+            ),
+            const Divider(height: 12),
+            Text(
+              l10n.referralStatsInvited(info.invitedCount),
+              style: text.bodyMedium?.copyWith(color: colors.secondaryText),
+            ),
+            Text(
+              l10n.referralStatsDays(info.rewardDays),
+              style: text.bodyMedium?.copyWith(color: colors.secondaryText),
+            ),
+          ],
+        ),
       ),
     );
   }

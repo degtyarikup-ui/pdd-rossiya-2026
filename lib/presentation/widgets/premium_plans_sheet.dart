@@ -21,12 +21,14 @@ import 'package:pdd_app/presentation/widgets/web_payment_dialog.dart';
 import 'package:pdd_app/presentation/widgets/premium_motion.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+enum PremiumPlansResult { purchased, webPayment, referral }
+
 class PremiumPlansSheet extends StatefulWidget {
   const PremiumPlansSheet({super.key});
 
-  static Future<bool?> show(BuildContext context) {
+  static Future<PremiumPlansResult?> show(BuildContext context) {
     HapticFeedbackHelper.tap();
-    return showModalBottomSheet<bool>(
+    return showModalBottomSheet<PremiumPlansResult>(
       context: context,
       isScrollControlled: true,
       sheetAnimationStyle: MediaQuery.disableAnimationsOf(context)
@@ -212,7 +214,7 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
         setState(() => _isLoading = false);
         if (result == PurchaseResult.success) {
           // The benefits screen shows the Premium celebration.
-          Navigator.of(context).pop(true);
+          Navigator.of(context).pop(PremiumPlansResult.purchased);
         } else if (result == PurchaseResult.canceled) {
           // Пользователь закрыл окно оплаты Apple/Google — ошибку не показываем
         } else if (PremiumPlansSheet.offerSbpAfterStoreFailure(
@@ -287,7 +289,7 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
       if (!mounted || result == null) return;
       if (result.opened) {
         // Android checks the pending order when returning from the browser.
-        if (!kIsWeb) Navigator.of(context).pop(false);
+        if (!kIsWeb) Navigator.of(context).pop(PremiumPlansResult.webPayment);
         return;
       }
       AppToast.show(
@@ -320,7 +322,7 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
       final restored = await IapService.instance.restorePurchases();
       if (!mounted) return;
       if (restored) {
-        Navigator.of(context).pop(true);
+        Navigator.of(context).pop(PremiumPlansResult.purchased);
       } else {
         AppToast.show(
           context,
@@ -419,7 +421,7 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
       },
       child: Focus(
         autofocus: true,
-        child: PopScope<bool>(
+        child: PopScope<PremiumPlansResult>(
           canPop: !_isLoading,
           child: ConstrainedBox(
             constraints: BoxConstraints(
@@ -753,82 +755,33 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
   );
 
   Widget _buildReferralCard(AppThemeColors colors) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.cardBackground,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        border: Border.all(
-          color: const Color(0xFF2BC280).withValues(alpha: 0.35),
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: const ValueKey('premium-plans-referral-button'),
+    final l10n = appL10n;
+    return Card(
+      margin: EdgeInsets.zero,
+      color: colors.cardBackground,
+      elevation: 0,
+      child: ListTile(
+        key: const ValueKey('premium-plans-referral-button'),
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-          onTap: _isLoading
-              ? null
-              : () async {
-                  final wasPremium = PremiumService.instance.isPremium;
-                  final claimed = await ReferralModalSheet.show(context);
-                  if (mounted &&
-                      (claimed == true ||
-                          (!wasPremium && PremiumService.instance.isPremium))) {
-                    Navigator.of(context).pop(true);
-                  }
-                },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2BC280).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.card_giftcard_rounded,
-                    color: Color(0xFF2BC280),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        appL10n.referralPlansTitle,
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: colors.primaryText,
-                          fontFamily: 'Onest',
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        appL10n.referralPlansSubtitle,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.secondaryText,
-                          fontFamily: 'Onest',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: colors.secondaryText,
-                ),
-              ],
-            ),
-          ),
+          side: BorderSide(color: colors.divider),
         ),
+        leading: Icon(Icons.card_giftcard_rounded, color: colors.accent),
+        title: Text(l10n.referralPlansTitle),
+        subtitle: Text(l10n.referralPlansSubtitle),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: _isLoading
+            ? null
+            : () async {
+                final premium = PremiumService.instance;
+                final wasPremium = premium.isPremium;
+                final claimed = await ReferralModalSheet.show(context);
+                if (mounted &&
+                    premium.isPremium &&
+                    (claimed == true || !wasPremium)) {
+                  Navigator.of(context).pop(PremiumPlansResult.referral);
+                }
+              },
       ),
     );
   }

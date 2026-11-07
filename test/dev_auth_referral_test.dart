@@ -26,87 +26,130 @@ void main() {
     await AuthService.instance.signOut();
   });
 
-  test('debugSignInAvailable is enabled by .dev package without GAME_DEBUG', () {
-    AuthService.setDebugSignInAvailableForTesting(null);
-    AuthService.setDevPackageForTesting(false);
-    expect(AuthService.debugSignInAvailable, isFalse);
+  test(
+    'debugSignInAvailable is enabled by .dev package without GAME_DEBUG',
+    () {
+      AuthService.setDebugSignInAvailableForTesting(null);
+      AuthService.setDevPackageForTesting(false);
+      expect(AuthService.debugSignInAvailable, isFalse);
 
-    AuthService.setDevPackageForTesting(true);
-    expect(AuthService.debugSignInAvailable, isTrue);
+      AuthService.setDevPackageForTesting(true);
+      expect(AuthService.debugSignInAvailable, isTrue);
 
-    AuthService.setDevPackageForTesting(false);
-  });
+      AuthService.setDevPackageForTesting(false);
+    },
+  );
 
-  test('dev login establishes active server session and dev session flags', () async {
-    final auth = AuthService.instance;
-    expect(auth.isAuthenticated, isFalse);
-    expect(auth.hasServerSession, isFalse);
+  test(
+    'dev login establishes active server session and dev session flags',
+    () async {
+      final auth = AuthService.instance;
+      expect(auth.isAuthenticated, isFalse);
+      expect(auth.hasServerSession, isFalse);
 
-    final success = await auth.signInDebug(
-      accountId: 'dev_tester_1',
-      name: 'Тестировщик 1',
-    );
-    expect(success, isTrue);
-    expect(auth.isAuthenticated, isTrue);
-    expect(auth.hasServerSession, isTrue);
-    expect(auth.isDevSession, isTrue);
-    expect(auth.currentUser?.id, 'dev_tester_1');
-    expect(auth.serverHeaders['authorization'], startsWith('Bearer dev_token_dev_tester_1'));
-  });
+      final success = await auth.signInDebug(
+        accountId: 'dev_tester_1',
+        name: 'Тестировщик 1',
+      );
+      expect(success, isTrue);
+      expect(auth.isAuthenticated, isTrue);
+      expect(auth.hasServerSession, isTrue);
+      expect(auth.isDevSession, isTrue);
+      expect(auth.currentUser?.id, 'dev_tester_1');
+      expect(
+        auth.serverHeaders['authorization'],
+        startsWith('Bearer dev_token_dev_tester_1'),
+      );
+    },
+  );
 
-  test('ReferralService.getReferralInfo receives mock referral data in dev session', () async {
-    final auth = AuthService.instance;
-    await auth.signInDebug(accountId: 'dev_tester_1', name: 'Тестировщик 1');
+  test(
+    'ReferralService.getReferralInfo receives mock referral data in dev session',
+    () async {
+      final auth = AuthService.instance;
+      await auth.signInDebug(accountId: 'dev_tester_1', name: 'Тестировщик 1');
 
-    final referralService = ReferralService.instance;
-    final info = await referralService.getReferralInfo(forceRefresh: true);
+      final referralService = ReferralService.instance;
+      final info = await referralService.getReferralInfo(forceRefresh: true);
 
-    expect(info, isNotNull);
-    expect(info!.code, 'DEVTEST1');
-    expect(info.link, 'https://pdd-drive.app/app/?ref=DEVTEST1');
-    expect(info.invitedCount, 0);
-    expect(info.rewardDays, 0);
-    expect(info.hasUsedReferral, isFalse);
-  });
+      expect(info, isNotNull);
+      expect(info!.code, 'DEVTEST1');
+      expect(info.link, 'https://pdd-drive.app/app/?ref=DEVTEST1');
+      expect(info.invitedCount, 0);
+      expect(info.rewardDays, 0);
+      expect(info.hasUsedReferral, isFalse);
+    },
+  );
 
-  test('ReferralService.claimCode self-referral rejected in dev session', () async {
-    final auth = AuthService.instance;
-    await auth.signInDebug(accountId: 'dev_tester_1', name: 'Тестировщик 1');
+  test(
+    'ReferralService.claimCode self-referral rejected in dev session',
+    () async {
+      final auth = AuthService.instance;
+      await auth.signInDebug(accountId: 'dev_tester_1', name: 'Тестировщик 1');
 
-    final referralService = ReferralService.instance;
-    final result = await referralService.claimCode('DEVTEST1');
+      final referralService = ReferralService.instance;
+      final result = await referralService.claimCode('DEVTEST1');
 
-    expect(result.status, ReferralClaimStatus.selfReferral);
-  });
+      expect(result.status, ReferralClaimStatus.selfReferral);
+    },
+  );
 
-  test('ReferralService.claimCode non-existent code rejected in dev session', () async {
-    final auth = AuthService.instance;
-    await auth.signInDebug(accountId: 'dev_tester_1', name: 'Тестировщик 1');
+  test(
+    'ReferralService.claimCode non-existent code rejected in dev session',
+    () async {
+      final auth = AuthService.instance;
+      await auth.signInDebug(accountId: 'dev_tester_1', name: 'Тестировщик 1');
 
-    final referralService = ReferralService.instance;
-    final result = await referralService.claimCode('UNKNOWN99');
+      final referralService = ReferralService.instance;
+      final result = await referralService.claimCode('UNKNOWN99');
 
-    expect(result.status, ReferralClaimStatus.notFound);
-  });
+      expect(result.status, ReferralClaimStatus.notFound);
+    },
+  );
 
-  test('ReferralService.claimCode success with seed friend code grants day and prevents duplicate', () async {
-    final auth = AuthService.instance;
-    await auth.signInDebug(accountId: 'dev_tester_1', name: 'Тестировщик 1');
+  test(
+    'ReferralService.claimCode success with seed friend code grants day and prevents duplicate',
+    () async {
+      final auth = AuthService.instance;
+      await auth.signInDebug(accountId: 'dev_tester_1', name: 'Тестировщик 1');
 
-    final referralService = ReferralService.instance;
-    final result = await referralService.claimCode(DevMockEndpoint.seedFriendCode);
+      final referralService = ReferralService.instance;
+      final result = await referralService.claimCode(
+        DevMockEndpoint.seedFriendCode,
+      );
 
-    expect(result.status, ReferralClaimStatus.success);
-    expect(result.daysAdded, 1);
+      expect(result.status, ReferralClaimStatus.success);
+      expect(result.daysAdded, 1);
 
-    // Premium grant check
-    await PremiumService.instance.checkForGrant();
-    expect(PremiumService.instance.isPremium, isTrue);
+      // Premium grant check
+      await PremiumService.instance.checkForGrant();
+      expect(PremiumService.instance.isPremium, isTrue);
 
-    // Second attempt should fail with alreadyClaimed
-    final duplicate = await referralService.claimCode(DevMockEndpoint.seedFriendCode);
-    expect(duplicate.status, ReferralClaimStatus.alreadyClaimed);
-  });
+      // Retry after a lost response leaves the expiry unchanged.
+      final expires = PremiumService.instance.expiresAt;
+      final duplicate = await referralService.claimCode(
+        DevMockEndpoint.seedFriendCode,
+      );
+      expect(duplicate.status, ReferralClaimStatus.success);
+      expect(PremiumService.instance.expiresAt, expires);
+      final different = await referralService.claimCode('DEVTEST2');
+      expect(different.status, ReferralClaimStatus.alreadyClaimed);
+    },
+  );
+
+  test(
+    'a saved invitation is never redeemed automatically on sign-in',
+    () async {
+      final service = ReferralService.instance;
+      await service.init(incomingCode: 'friend26');
+      addTearDown(service.clearPendingCodeForTesting);
+      await AuthService.instance.signInDebug(accountId: 'dev_tester_1');
+      final info = await service.getReferralInfo();
+      expect(info?.hasUsedReferral, isFalse);
+      expect(PremiumService.instance.isPremium, isFalse);
+      expect(service.pendingCode, 'FRIEND26');
+    },
+  );
 
   test('Peer referral flow between tester 1 and tester 2', () async {
     final auth = AuthService.instance;
@@ -135,8 +178,14 @@ void main() {
     // 4. Switch back to Tester 1, check that inviter was rewarded
     await auth.signOut();
     await auth.signInDebug(accountId: 'dev_tester_1', name: 'Тестировщик 1');
-    expect(PremiumService.instance.isPremium, isTrue, reason: 'signInDebug should sync premium state from dev mock');
-    final updatedInfo1 = await referralService.getReferralInfo(forceRefresh: true);
+    expect(
+      PremiumService.instance.isPremium,
+      isTrue,
+      reason: 'signInDebug should sync premium state from dev mock',
+    );
+    final updatedInfo1 = await referralService.getReferralInfo(
+      forceRefresh: true,
+    );
     expect(updatedInfo1?.invitedCount, 1);
     expect(updatedInfo1?.rewardDays, 2);
 
@@ -162,35 +211,44 @@ void main() {
     expect(auth.hasServerSession, isFalse);
   });
 
-  testWidgets('AuthModalSheet renders dev login button and signs in through account picker', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('ru'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(body: AuthModalSheet()),
-      ),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'AuthModalSheet renders dev login button and signs in through account picker',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: AuthModalSheet()),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    final buttonFinder = find.byKey(const ValueKey('dev-mock-login-button'));
-    expect(buttonFinder, findsOneWidget);
+      final buttonFinder = find.byKey(const ValueKey('dev-mock-login-button'));
+      expect(buttonFinder, findsOneWidget);
 
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
+      await tester.tap(buttonFinder);
+      await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('dev-account-tester-1')), findsOneWidget);
-    expect(find.byKey(const ValueKey('dev-account-tester-2')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('dev-account-tester-1')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('dev-account-tester-2')),
+        findsOneWidget,
+      );
 
-    await tester.tap(find.byKey(const ValueKey('dev-account-tester-1')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.byKey(const ValueKey('dev-account-tester-1')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
-    expect(AuthService.instance.isAuthenticated, isTrue);
-    expect(AuthService.instance.hasServerSession, isTrue);
-    expect(AuthService.instance.currentUser?.id, 'dev_tester_1');
+      expect(AuthService.instance.isAuthenticated, isTrue);
+      expect(AuthService.instance.hasServerSession, isTrue);
+      expect(AuthService.instance.currentUser?.id, 'dev_tester_1');
 
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump(const Duration(seconds: 7));
-  });
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 7));
+    },
+  );
 }

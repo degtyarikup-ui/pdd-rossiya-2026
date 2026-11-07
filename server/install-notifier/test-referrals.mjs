@@ -94,11 +94,11 @@ test('referrals: POST /api/user/referral/claim grants 1 day to friend and 2 days
   // ~2 days (+- 5 seconds)
   assert.ok(Math.abs(inviterExpiry - (now + 2 * 86400000)) < 5000);
 
-  // Double claim by friend fails
+  // A lost response can be retried without moving either expiry.
   const secondClaim = await worker.fetch(request('/api/user/referral/claim', { code }, friendToken), env);
-  assert.equal(secondClaim.status, 400);
-  const secondData = await secondClaim.json();
-  assert.equal(secondData.error, 'already_claimed');
+  assert.equal(secondClaim.status, 200);
+  assert.equal((await secondClaim.json()).premiumExpiresAt, claimData.premiumExpiresAt);
+  assert.equal(JSON.parse(await accountRead(env, 'google_inviter', 'user:google_inviter')).referralCount, 1);
 });
 
 test('referrals: multiple friends stack +2 days each on inviter', async () => {
@@ -160,4 +160,104 @@ test('referrals: concurrent claims by multiple friends do not race or lose invit
   assert.equal(inviter.referralDaysEarned, 4);
   const inviterExpiry = Date.parse(inviter.premiumExpiresAt);
   assert.ok(Math.abs(inviterExpiry - (now + 4 * 86400000)) < 5000);
+});
+
+async function setupPair() {
+  const setup = fixture();
+  const { env } = setup;
+  for (const id of ['google_inviter', 'google_friend', 'google_other']) {
+    await env.INSTALLS.put('user:' + id, JSON.stringify(identity(id)));
+  }
+  const inviterToken = await session(env, 'google_inviter');
+  const friendToken = await session(env, 'google_friend');
+  const otherToken = await session(env, 'google_other');
+  const info = token => worker.fetch(request('/api/user/referral', undefined, token), env).then(res => res.json());
+  const claim = (code, token = friendToken) =>
+    worker.fetch(request('/api/user/referral/claim', { code }, token), env);
+  const read = async id => JSON.parse(await accountRead(env, id, 'user:' + id));
+  return { ...setup, inviterToken, friendToken, otherToken, info, claim, read };
+}
+
+test('referrals: only one code can win simultaneous claims by the same friend', async () => {
+  const { inviterToken, otherToken, info, claim, read } = await setupPair();
+  const [first, second] = await Promise.all([info(inviterToken), info(otherToken)]);
+  const statuses = await Promise.all([claim(first.code), claim(second.code)]);
+  assert.deepEqual(statuses.map(res => res.status).sort(), [200, 400]);
+  const inviters = await Promise.all(['google_inviter', 'google_other'].map(read));
+  assert.equal(inviters.reduce((sum, user) => sum + (user.referralDaysEarned || 0), 0), 2);
+});
+
+test('referrals: the alarm recovers after inviter credit commits but its response is lost', async () => {
+  const { env, states, objects, restart, inviterToken, info, claim, read } = await setupPair();
+  const { code } = await info(inviterToken);
+  const original = env.ACCOUNTS;
+  env.ACCOUNTS = { ...original, get(id) {
+    const stub = original.get(id);
+    return { async fetch(url, options) {
+      const res = await stub.fetch(url, options);
+      if (id === 'google_inviter' && String(url).endsWith('/_account/referral-reward')) {
+        throw new Error('response lost after inviter commit');
+      }
+      return res;
+    } };
+  } };
+  assert.equal((await claim(code)).status, 500);
+  assert.equal((await read('google_inviter')).referralDaysEarned, 2);
+  assert.equal((await read('google_friend')).referredBy, undefined);
+  env.ACCOUNTS = original;
+  const coordinator = 'referral-claim:google_friend';
+  assert.ok(states.get(coordinator).alarm);
+  restart(coordinator);
+  // Reinstantiate via an unrelated private directory read, then deliver the alarm.
+  await original.get(coordinator).fetch('https://account.internal/_directory/find', {
+    method: 'POST', body: '{}',
+  });
+  await objects.get(coordinator).alarm();
+  assert.equal((await read('google_friend')).referralCodeUsed, code);
+  assert.equal((await read('google_inviter')).referralDaysEarned, 2);
+  assert.equal((await claim(code)).status, 200);
+  assert.equal(states.get(coordinator).alarm, null);
+});
+
+test('referrals: public input is bounded and guesses are rate limited', async () => {
+  const { env, friendToken, claim } = await setupPair();
+  assert.equal((await claim(['ABC'])).status, 400);
+  assert.equal((await claim('ABC-DEF')).status, 400);
+  assert.equal((await worker.fetch(request('/api/user/referral/claim', {
+    code: 'VALID1', padding: 'x'.repeat(2000),
+  }, friendToken), env)).status, 400);
+  for (let i = 0; i < 8; i++) assert.equal((await claim('MISS' + i)).status, 404);
+  const limited = await claim('MISS8');
+  assert.equal(limited.status, 429);
+  assert.ok(Number(limited.headers.get('Retry-After')) > 0);
+});
+
+test('referrals: rejects a stale index and accepts a valid legacy code', async () => {
+  const { env, inviterToken, info, claim, read } = await setupPair();
+  await env.INSTALLS.put('ref_code:STALE1', 'google_inviter');
+  assert.equal((await claim('STALE1')).status, 404);
+  assert.equal((await read('google_inviter')).referralCount, undefined);
+  await env.INSTALLS.put('user:google_other', JSON.stringify({
+    ...identity('google_other'), referralCode: 'OLD123',
+  }));
+  await env.INSTALLS.put('ref_code:OLD123', 'google_other');
+  assert.equal((await claim('  old123  ')).status, 200);
+  assert.equal((await info(inviterToken)).invitedCount, 0);
+});
+
+test('referrals: a recreated account cannot collect a second friend bonus', async () => {
+  const { env, inviterToken, friendToken, otherToken, info, claim, read } = await setupPair();
+  const { code } = await info(inviterToken);
+  const other = await info(otherToken);
+  assert.equal((await claim(code)).status, 200);
+  assert.equal((await worker.fetch(request('/api/user/delete', { userId: 'google_friend' }, friendToken), env)).status, 200);
+  const generation = await accountRead(env, 'google_friend', 'auth_generation:google_friend');
+  const { accountWrite } = await import('./account_state.js');
+  const { signSession } = await import('./user_auth.js');
+  const recreated = { ...identity('google_friend'), createdAt: new Date(Date.now() + 1000).toISOString() };
+  await accountWrite(env, 'google_friend', 'user:google_friend', JSON.stringify(recreated));
+  const token = await signSession(env, { user: recreated, generation, expiresAt: Date.now() + 3600000 });
+  assert.equal((await claim(other.code, token)).status, 400);
+  assert.equal((await info(token)).hasUsedReferral, true);
+  assert.equal((await read('google_other')).referralCount, undefined);
 });

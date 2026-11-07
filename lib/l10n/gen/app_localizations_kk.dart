@@ -1417,7 +1417,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get authTelegramOpenAgain => 'Telegram-ды қайта ашу';
 
   @override
-  String get authDebug => 'Сынақ енгізу (отлад құрастыру)';
+  String get authDebug => 'Сынақ аккаунтымен кіру';
 
   @override
   String get authDevQuickLogin => 'Сынақ үшін жылдам кіру';
@@ -4673,115 +4673,121 @@ class AppLocalizationsKk extends AppLocalizations {
   String get checkoutStageCompleted => 'Аяқталды';
 
   @override
-  String get referralSectionTitle => 'Рефералдық бағдарлама';
-
-  @override
-  String get referralSettingsTitle => 'Досыңды шақыру';
+  String get referralSettingsTitle => 'Дос шақыру';
 
   @override
   String get referralSettingsSubtitle => 'Сізге +2 күн, досыңызға +1 күн';
 
   @override
-  String get referralPlansTitle => 'Премиумды тегін алғыңыз келе ме?';
+  String get referralPlansTitle => 'Шақыру кодыңыз бар ма?';
 
   @override
   String get referralPlansSubtitle =>
-      'Досыңызды шақырыңыз: сізге +2 күн, досыңызға +1 күн';
+      'Кодты іске қоссаңыз, 1 күн Премиум аласыз';
 
   @override
-  String get referralModalTitle => 'Досыңды шақыр';
+  String get referralModalTitle => 'Шақырулар';
 
   @override
-  String get referralBannerTitle => 'Премиум күндерін сыйлаймыз!';
+  String referralRules(int inviter, int friend) {
+    return 'Досыңыз кодыңызды іске қосқанда, сізге $inviter күн, ал досыңызға $friend күн Премиум беріледі.';
+  }
 
   @override
-  String get referralBannerDescription =>
-      'Промокодыңызды досыңызбен бөлісіңіз. Досыңыз 1 күн Премиум алады, ал сіз әр шақырылған дос үшін 2 күн аласыз!';
+  String get referralYourCode => 'Сіздің кодыңыз';
 
   @override
-  String get referralYourCode => 'Шақыру кодыңыз';
+  String get referralCopyCode => 'Кодты көшіру';
 
   @override
-  String get referralCopyCode => 'Көшіру';
+  String get referralShareButton => 'Шақыруды жіберу';
 
   @override
-  String get referralShareButton => 'Бөлісу';
+  String get referralCopyLink => 'Сілтемені көшіру';
 
   @override
-  String get referralCopyInviteButton => 'Шақыруды көшіріп алу';
+  String get referralInviteCopied => 'Шақыру көшірілді';
 
   @override
-  String get referralYourLink => 'Реферальдық сілтеме';
-
-  @override
-  String get referralCopyLink => 'Сілтемені көшіріп алу';
-
-  @override
-  String get referralInviteCopied => 'Шақыру алмасу буферіне көшірілді';
-
-  @override
-  String get referralLinkCopied => 'Сілтеме алмасу буферіне көшірілді';
+  String get referralLinkCopied => 'Сілтеме көшірілді';
 
   @override
   String referralStatsInvited(int count) {
-    return 'Шақырылған достар: $count';
+    return 'Кодты қолданғандар: $count';
   }
 
   @override
   String referralStatsDays(int days) {
-    return 'Алынған Премиум: $days күн';
+    return 'Берілді: $days күн';
   }
 
   @override
-  String get referralEnterCodeTitle => 'Сізді дос шақырды ма?';
+  String get referralEnterCodeTitle => 'Досыңыздың коды';
 
   @override
-  String get referralEnterCodeSubtitle =>
-      'Промокодты қосымшаны пайдаланатын досыңыздан алыңыз немесе оның шақыру сілтемесін ашыңыз — код автоматты түрде қойылады';
+  String get referralEnterCodeHint => 'Код немесе сілтеме';
 
   @override
-  String get referralEnterCodeHint => 'Досыңыздың кодын енгізіңіз';
+  String get referralCodeOnce => 'Бір аккаунтқа бір код';
 
   @override
   String get referralActivateButton => 'Іске қосу';
 
   @override
-  String referralAlreadyClaimed(String code) {
-    return 'Сіз кодты белсендірдіңіз: $code (+1 күн)';
+  String get referralActivating => 'Іске қосылуда…';
+
+  @override
+  String referralSuccessDays(int days) {
+    return 'Сізге $days күн Премиум берілді.';
   }
 
   @override
-  String get referralSuccessClaimed =>
-      'Код іске қосылды! Сізге 1 күн Премиум берілді 🎉';
+  String get referralSignInRequired => 'Аккаунтқа кіріп, қайталап көріңіз.';
 
   @override
-  String get referralSignInRequired =>
-      'Жеке код алып, Премиум күндерін жинау үшін жүйеге кіріңіз';
+  String get referralSignInButton => 'Код алу үшін кіріңіз';
 
   @override
-  String get referralSignInButton => 'Аккаунтқа кіру';
-
-  @override
-  String get referralErrorSelf => 'Өз кодыңды белсендіруге болмайды';
+  String get referralErrorSelf =>
+      'Бұл сіздің кодыңыз. Досыңыздың кодын енгізіңіз.';
 
   @override
   String get referralErrorAlreadyUsed =>
-      'Сіз шақыру кодын бұрын іске қосқансыз';
+      'Шақыру кодын бұрын қолданып қойғансыз.';
 
   @override
-  String get referralErrorNotFound => 'Код табылмады. Қайта тексеріп көріңіз';
+  String get referralErrorNotFound => 'Код табылмады. Кодты тексеріңіз.';
 
   @override
-  String referralShareText(String code, String link) {
-    return 'Ресей ЖҚЕ 2026 қолданбасында 1 күн Премиум сыйлаймын! Қолданбаны орнатып, менің $code промокодымды енгізіңіз немесе сілтемеге өтіңіз: $link';
+  String get referralErrorInvalid =>
+      'Кодты латын әріптерімен енгізіңіз немесе шақыру сілтемесін қойыңыз.';
+
+  @override
+  String get referralErrorRateLimited =>
+      'Әрекет тым көп. Кейінірек қайталаңыз.';
+
+  @override
+  String get referralClaimPending =>
+      'Сыйлық әлі есептеліп жатыр. Кейін осы кодпен қайта көріңіз.';
+
+  @override
+  String get referralClaimError =>
+      'Кодты тексеру мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String referralShareText(String code, String link, int days) {
+    return 'Ресейдің жол қозғалысы ережелері: $code коды арқылы $days күн Премиум алыңыз. Кодты қолданба баптауларында енгізіңіз немесе сілтемені ашыңыз: $link';
   }
 
   @override
-  String get referralCodeCopied => 'Код алмасу буферіне көшірілді';
+  String get referralCodeCopied => 'Код көшірілді';
 
   @override
-  String get referralLoadError => 'Шақыру деректерін жүктеу мүмкін болмады';
+  String get referralCopyError => 'Көшіру мүмкін болмады';
 
   @override
-  String get referralRetryButton => 'Қайта көру';
+  String get referralLoadError => 'Кодыңызды жүктеу мүмкін болмады';
+
+  @override
+  String get referralRetryButton => 'Қайталау';
 }

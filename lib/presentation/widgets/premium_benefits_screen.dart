@@ -70,7 +70,7 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
     final result = await PremiumPlansSheet.show(context);
     if (!mounted) return;
     setState(() => _showingPlans = false);
-    if (result == true) {
+    if (result == PremiumPlansResult.purchased) {
       // Paid or restored: celebrate before the gate gets its result.
       await PremiumCelebrationScreen.show(
         context,
@@ -79,7 +79,9 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
       );
       if (!mounted) return;
     }
-    if (result != null) Navigator.of(context).pop(result);
+    if (result != null) {
+      Navigator.of(context).pop(result != PremiumPlansResult.webPayment);
+    }
   }
 
   @override

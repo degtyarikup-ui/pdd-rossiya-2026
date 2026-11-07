@@ -37,6 +37,9 @@ import 'package:pdd_app/presentation/screens/home/home_screen.dart';
 import 'package:pdd_app/presentation/screens/games/games_hub_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/referral_modal_sheet.dart';
+import 'package:pdd_app/data/services/browser_info_stub.dart'
+    if (dart.library.js_interop) 'package:pdd_app/data/services/browser_info_web.dart';
 import 'package:pdd_app/presentation/widgets/app_startup_gate.dart';
 import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
     if (dart.library.js_interop) 'package:pdd_app/data/services/web_oauth_redirect.dart';
@@ -183,7 +186,10 @@ Future<Widget> _initializeApplication(
   }
 
   unawaited(IapService.instance.init());
-  unawaited(ReferralService.instance.init());
+  final incomingReferral = normalizeReferralCode(takeReferralParam());
+  final referralInit = ReferralService.instance.init(
+    incomingCode: incomingReferral,
+  );
   // Ящик уведомлений (колокольчик в профиле): новости и сообщения о подписке.
   unawaited(
     NotificationInboxService.instance.init().catchError(
@@ -207,7 +213,14 @@ Future<Widget> _initializeApplication(
     overrides: [
       progressDataSourceProvider.overrideWithValue(progressDataSource),
     ],
-    child: PddApp(webAuthReturn: webAuthReturn),
+    child: PddApp(
+      webAuthReturn: webAuthReturn,
+      referralPrompt: incomingReferral != null || webAuthReturn != null
+          ? referralInit.then(
+              (_) => ReferralService.instance.pendingCode != null,
+            )
+          : null,
+    ),
   );
 }
 
@@ -238,8 +251,9 @@ Future<void> _initStreakNotifications(ProgressDataSource ds) async {
 }
 
 class PddApp extends ConsumerStatefulWidget {
-  const PddApp({super.key, this.webAuthReturn});
+  const PddApp({super.key, this.webAuthReturn, this.referralPrompt});
   final Map<String, String>? webAuthReturn;
+  final Future<bool>? referralPrompt;
 
   @override
   ConsumerState<PddApp> createState() => _PddAppState();
@@ -273,18 +287,24 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     RemoteNotificationsService.instance.onSupportReply =
         SupportInbox.instance.pollNow;
     SupportInbox.instance.start();
+    if (widget.webAuthReturn != null || widget.referralPrompt != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showStartupPrompt());
+    }
+  }
+
+  Future<void> _showStartupPrompt() async {
     final returned = widget.webAuthReturn;
-    if (returned != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final navigatorContext = _navigatorKey.currentContext;
-        if (mounted && navigatorContext != null) {
-          AuthModalSheet.show(
-            navigatorContext,
-            initialAction: () =>
-                AuthService.instance.completeWebSignIn(returned),
-          );
-        }
-      });
+    final navigatorContext = _navigatorKey.currentContext;
+    if (mounted && navigatorContext != null && returned != null) {
+      await AuthModalSheet.show(
+        navigatorContext,
+        initialAction: () => AuthService.instance.completeWebSignIn(returned),
+      );
+    }
+    if (await widget.referralPrompt != true || !mounted) return;
+    if (_navigatorKey.currentContext case final BuildContext context
+        when context.mounted) {
+      await ReferralModalSheet.show(context);
     }
   }
 

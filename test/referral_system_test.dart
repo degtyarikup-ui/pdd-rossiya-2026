@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -44,7 +46,6 @@ void main() {
         'invitedCount': 3,
         'rewardDays': 6,
         'hasUsedReferral': true,
-        'referredBy': 'google_inviter',
         'referralCodeUsed': 'INVITE1',
         'friendBonusDays': 1,
         'inviterBonusDays': 2,
@@ -56,41 +57,28 @@ void main() {
       expect(info.invitedCount, 3);
       expect(info.rewardDays, 6);
       expect(info.hasUsedReferral, true);
-      expect(info.referredBy, 'google_inviter');
       expect(info.referralCodeUsed, 'INVITE1');
       expect(info.friendBonusDays, 1);
       expect(info.inviterBonusDays, 2);
     });
 
-    test('copyWith updates fields correctly', () {
-      const info = ReferralInfo(
-        code: 'OLD123',
-        link: 'https://pdd-drive.app/app/?ref=OLD123',
-        invitedCount: 1,
-        rewardDays: 2,
+    test('shares only the canonical invitation URL', () {
+      final info = ReferralInfo.fromJson({
+        'code': 'JSON456',
+        'link': 'https://example.com',
+      });
+      expect(info.link, 'https://pdd-drive.app/app/?ref=JSON456');
+      expect(
+        referralCodeFromInput('  https://pdd-drive.app/app/?ref=json456  '),
+        'JSON456',
       );
-
-      final updated = info.copyWith(
-        code: 'NEW123',
-        invitedCount: 2,
-        rewardDays: 4,
-        hasUsedReferral: true,
-        referralCodeUsed: 'CODE99',
+      expect(
+        referralCodeFromInput(
+          'https://pdd-drive.app.example.com/app/?ref=JSON456',
+        ),
+        isNull,
       );
-
-      expect(updated.code, 'NEW123');
-      expect(updated.invitedCount, 2);
-      expect(updated.rewardDays, 4);
-      expect(updated.hasUsedReferral, true);
-      expect(updated.referralCodeUsed, 'CODE99');
-    });
-
-    test('fallback link is generated when link is empty', () {
-      const info = ReferralInfo(code: 'CODE123');
-      expect(info.link, 'https://pdd-drive.app/app/?ref=CODE123');
-
-      final fromJson = ReferralInfo.fromJson({'code': 'JSON456', 'link': ''});
-      expect(fromJson.link, 'https://pdd-drive.app/app/?ref=JSON456');
+      expect(referralCodeFromInput('JSON-456'), isNull);
     });
   });
 
@@ -114,63 +102,101 @@ void main() {
 
   group('ReferralModalSheet UI', () {
     tearDown(() async {
-      AuthService.instance.setSessionForTesting(user: null, token: null, expiresAt: null);
+      AuthService.instance.setSessionForTesting(
+        user: null,
+        token: null,
+        expiresAt: null,
+      );
       ReferralService.instance.setInfoForTesting(null);
       ReferralService.instance.mockGetReferralInfo = null;
       await ReferralService.instance.clearPendingCodeForTesting();
     });
 
-    testWidgets('shows sign-in prompt and invitee subtitle when unauthenticated', (tester) async {
-      AuthService.instance.setSessionForTesting(user: null, token: null, expiresAt: null);
+    testWidgets('shows sign-in and lets guests enter a code', (tester) async {
+      AuthService.instance.setSessionForTesting(
+        user: null,
+        token: null,
+        expiresAt: null,
+      );
       ReferralService.instance.setInfoForTesting(null);
       ReferralService.instance.mockGetReferralInfo = null;
       await ReferralService.instance.clearPendingCodeForTesting();
 
-      await tester.pumpWidget(_wrap(const Scaffold(body: ReferralModalSheet())));
+      await tester.pumpWidget(
+        _wrap(const Scaffold(body: ReferralModalSheet())),
+      );
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('referral-sign-in-button')), findsOneWidget);
-      expect(find.byKey(const ValueKey('referral-input-field')), findsOneWidget);
-      expect(find.byKey(const ValueKey('referral-activate-button')), findsOneWidget);
       expect(
-        find.text('Возьмите промокод у друга, который учит ПДД в приложении, или откройте его ссылку-приглашение — код подставится сам'),
+        find.byKey(const ValueKey('referral-sign-in-button')),
         findsOneWidget,
       );
+      expect(
+        find.byKey(const ValueKey('referral-input-field')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('referral-activate-button')),
+        findsOneWidget,
+      );
+      expect(find.text('Один код на аккаунт'), findsOneWidget);
     });
 
-    testWidgets('shows retry button when authenticated session has no info and is not loading', (tester) async {
-      final user = UserProfile(
-        id: 'google_retry_user',
-        name: 'Retry User',
-        email: 'retry@example.com',
-        provider: AuthProviderType.google,
-        createdAt: DateTime(2026),
-      );
+    testWidgets(
+      'shows retry button when authenticated session has no info and is not loading',
+      (tester) async {
+        final user = UserProfile(
+          id: 'google_retry_user',
+          name: 'Retry User',
+          email: 'retry@example.com',
+          provider: AuthProviderType.google,
+          createdAt: DateTime(2026),
+        );
+        AuthService.instance.setSessionForTesting(
+          user: user,
+          token: 'test-token',
+          expiresAt: DateTime.now().add(const Duration(days: 30)),
+        );
+        ReferralService.instance.setInfoForTesting(null);
+        var attempts = 0;
+        ReferralService.instance.mockGetReferralInfo =
+            ({bool forceRefresh = false}) async {
+              attempts++;
+              return null;
+            };
+
+        await tester.pumpWidget(
+          _wrap(const Scaffold(body: ReferralModalSheet())),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('referral-retry-button')),
+          findsOneWidget,
+        );
+        expect(find.text('Не удалось загрузить ваш код'), findsOneWidget);
+        expect(attempts, 1);
+
+        await tester.tap(find.byKey(const ValueKey('referral-retry-button')));
+        await tester.pumpAndSettle();
+        expect(attempts, 2);
+      },
+    );
+
+    testWidgets('auto-populates input field when pending code is set', (
+      tester,
+    ) async {
       AuthService.instance.setSessionForTesting(
-        user: user,
-        token: 'test-token',
-        expiresAt: DateTime.now().add(const Duration(days: 30)),
+        user: null,
+        token: null,
+        expiresAt: null,
       );
-      ReferralService.instance.setInfoForTesting(null);
-      ReferralService.instance.mockGetReferralInfo = ({bool forceRefresh = false}) async => null;
-
-      await tester.pumpWidget(_wrap(const Scaffold(body: ReferralModalSheet())));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const ValueKey('referral-retry-button')), findsOneWidget);
-      expect(find.text('Не удалось загрузить данные приглашения'), findsOneWidget);
-      expect(find.text('Попробовать снова'), findsOneWidget);
-
-      await tester.tap(find.byKey(const ValueKey('referral-retry-button')));
-      await tester.pump();
-    });
-
-    testWidgets('auto-populates input field when pending code is set', (tester) async {
-      AuthService.instance.setSessionForTesting(user: null, token: null, expiresAt: null);
       ReferralService.instance.setInfoForTesting(null);
       await ReferralService.instance.savePendingCode('FRIEND77');
 
-      await tester.pumpWidget(_wrap(const Scaffold(body: ReferralModalSheet())));
+      await tester.pumpWidget(
+        _wrap(const Scaffold(body: ReferralModalSheet())),
+      );
       await tester.pumpAndSettle();
 
       final inputFinder = find.byKey(const ValueKey('referral-input-field'));
@@ -180,7 +206,9 @@ void main() {
       await ReferralService.instance.clearPendingCodeForTesting();
     });
 
-    testWidgets('shows promo code, full link, share and copy buttons when user is authenticated', (tester) async {
+    testWidgets('shows the code and lets the user copy the exact link', (
+      tester,
+    ) async {
       final user = UserProfile(
         id: 'google_test',
         name: 'Tester',
@@ -194,50 +222,91 @@ void main() {
         expiresAt: DateTime.now().add(const Duration(days: 30)),
       );
       ReferralService.instance.setInfoForTesting(
-        const ReferralInfo(
-          code: 'MYCODE9',
-          link: 'https://pdd-drive.app/app/?ref=MYCODE9',
-          invitedCount: 2,
-          rewardDays: 4,
-        ),
+        const ReferralInfo(code: 'MYCODE9', invitedCount: 2, rewardDays: 4),
       );
 
-      await tester.pumpWidget(_wrap(const Scaffold(body: ReferralModalSheet())));
+      await tester.pumpWidget(
+        _wrap(const Scaffold(body: ReferralModalSheet())),
+      );
       await tester.pumpAndSettle();
 
       // Sign-in prompt should NOT be visible
-      expect(find.byKey(const ValueKey('referral-sign-in-button')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('referral-sign-in-button')),
+        findsNothing,
+      );
 
-      // Promo code and link
-      expect(find.byKey(const ValueKey('referral-user-code')), findsOneWidget);
       expect(find.text('MYCODE9'), findsOneWidget);
-      expect(find.byKey(const ValueKey('referral-user-link')), findsOneWidget);
-      expect(find.text('https://pdd-drive.app/app/?ref=MYCODE9'), findsOneWidget);
-      expect(find.byKey(const ValueKey('referral-link-container')), findsOneWidget);
-
-      // Buttons
-      expect(find.byKey(const ValueKey('referral-copy-button')), findsOneWidget);
-      expect(find.byKey(const ValueKey('referral-copy-link-button')), findsOneWidget);
-      expect(find.byKey(const ValueKey('referral-share-button')), findsOneWidget);
-      expect(find.byKey(const ValueKey('referral-copy-invite-button')), findsOneWidget);
-
-      // Tap copy buttons and link container
+      expect(
+        find.byKey(const ValueKey('referral-share-button')),
+        findsOneWidget,
+      );
+      final clipboard = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            clipboard.add((call.arguments as Map)['text'] as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
       await tester.tap(find.byKey(const ValueKey('referral-copy-button')));
-      await tester.pump();
-
-      await tester.tap(find.byKey(const ValueKey('referral-link-container')));
-      await tester.pump();
-
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('referral-copy-link-button')));
-      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(clipboard, ['MYCODE9', 'https://pdd-drive.app/app/?ref=MYCODE9']);
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+    });
 
-      await tester.tap(find.byKey(const ValueKey('referral-copy-invite-button')));
+    testWidgets('a late response never reveals the previous account code', (
+      tester,
+    ) async {
+      final service = ReferralService.instance;
+      final first = Completer<ReferralInfo?>();
+      void signIn(String id) {
+        AuthService.instance.setSessionForTesting(
+          user: UserProfile(
+            id: id,
+            name: id,
+            email: '',
+            provider: AuthProviderType.google,
+            createdAt: DateTime(2026),
+          ),
+          token: id,
+          expiresAt: DateTime.now().add(const Duration(days: 1)),
+        );
+      }
+
+      signIn('google_first');
+      service.mockGetReferralInfo = ({bool forceRefresh = false}) async =>
+          AuthService.instance.currentUser?.id == 'google_first'
+          ? first.future
+          : const ReferralInfo(code: 'CURRENT1');
+      await tester.pumpWidget(
+        _wrap(const Scaffold(body: ReferralModalSheet())),
+      );
       await tester.pump();
+      signIn('google_second');
+      await tester.pumpAndSettle();
+      first.complete(const ReferralInfo(code: 'PRIVATE1'));
+      await tester.pumpAndSettle();
+      expect(find.text('PRIVATE1'), findsNothing);
+      expect(find.text('CURRENT1'), findsOneWidget);
     });
   });
 
   group('Settings Screen referral button', () {
-    testWidgets('renders referral tile in settings and opens sheet on tap', (tester) async {
+    testWidgets('renders referral tile in settings and opens sheet on tap', (
+      tester,
+    ) async {
       final data = ProgressDataSource();
       await data.init();
 
@@ -280,30 +349,31 @@ void main() {
   });
 
   group('Premium purchase menu referral button', () {
-    testWidgets('renders referral button in PremiumPlansSheet and opens sheet on tap', (tester) async {
-      await tester.pumpWidget(
-        _wrap(
-          const Scaffold(
-            body: PremiumPlansSheet(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders referral button in PremiumPlansSheet and opens sheet on tap',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(const Scaffold(body: PremiumPlansSheet())),
+        );
+        await tester.pumpAndSettle();
 
-      final referralBtn = find.byKey(const ValueKey('premium-plans-referral-button'));
-      expect(referralBtn, findsOneWidget);
+        final referralBtn = find.byKey(
+          const ValueKey('premium-plans-referral-button'),
+        );
+        expect(referralBtn, findsOneWidget);
 
-      await tester.tap(referralBtn);
-      await tester.pumpAndSettle();
+        await tester.tap(referralBtn);
+        await tester.pumpAndSettle();
 
-      expect(find.byType(ReferralModalSheet), findsOneWidget);
+        expect(find.byType(ReferralModalSheet), findsOneWidget);
 
-      final closeBtn = find.byKey(const ValueKey('referral-close-button'));
-      expect(closeBtn, findsOneWidget);
-      await tester.tap(closeBtn);
-      await tester.pumpAndSettle();
+        final closeBtn = find.byKey(const ValueKey('referral-close-button'));
+        expect(closeBtn, findsOneWidget);
+        await tester.tap(closeBtn);
+        await tester.pumpAndSettle();
 
-      expect(find.byType(ReferralModalSheet), findsNothing);
-    });
+        expect(find.byType(ReferralModalSheet), findsNothing);
+      },
+    );
   });
 }

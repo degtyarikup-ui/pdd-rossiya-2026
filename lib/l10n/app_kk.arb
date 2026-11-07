@@ -499,7 +499,7 @@
     }
   },
   "authTelegramOpenAgain": "Telegram-ды қайта ашу",
-  "authDebug": "Сынақ енгізу (отлад құрастыру)",
+  "authDebug": "Сынақ аккаунтымен кіру",
   "authDevQuickLogin": "Сынақ үшін жылдам кіру",
   "authDevSelectAccount": "Сынақ аккаунтын таңдаңыз",
   "authDevTester1": "1-сынаушы (код: DEVTEST1)",
@@ -1597,23 +1597,29 @@
       }
     }
   },
-  "referralSectionTitle": "Рефералдық бағдарлама",
-  "referralSettingsTitle": "Досыңды шақыру",
+  "referralSettingsTitle": "Дос шақыру",
   "referralSettingsSubtitle": "Сізге +2 күн, досыңызға +1 күн",
-  "referralPlansTitle": "Премиумды тегін алғыңыз келе ме?",
-  "referralPlansSubtitle": "Досыңызды шақырыңыз: сізге +2 күн, досыңызға +1 күн",
-  "referralModalTitle": "Досыңды шақыр",
-  "referralBannerTitle": "Премиум күндерін сыйлаймыз!",
-  "referralBannerDescription": "Промокодыңызды досыңызбен бөлісіңіз. Досыңыз 1 күн Премиум алады, ал сіз әр шақырылған дос үшін 2 күн аласыз!",
-  "referralYourCode": "Шақыру кодыңыз",
-  "referralCopyCode": "Көшіру",
-  "referralShareButton": "Бөлісу",
-  "referralCopyInviteButton": "Шақыруды көшіріп алу",
-  "referralYourLink": "Реферальдық сілтеме",
-  "referralCopyLink": "Сілтемені көшіріп алу",
-  "referralInviteCopied": "Шақыру алмасу буферіне көшірілді",
-  "referralLinkCopied": "Сілтеме алмасу буферіне көшірілді",
-  "referralStatsInvited": "Шақырылған достар: {count}",
+  "referralPlansTitle": "Шақыру кодыңыз бар ма?",
+  "referralPlansSubtitle": "Кодты іске қоссаңыз, 1 күн Премиум аласыз",
+  "referralModalTitle": "Шақырулар",
+  "referralRules": "Досыңыз кодыңызды іске қосқанда, сізге {inviter} күн, ал досыңызға {friend} күн Премиум беріледі.",
+  "@referralRules": {
+    "placeholders": {
+      "inviter": {
+        "type": "int"
+      },
+      "friend": {
+        "type": "int"
+      }
+    }
+  },
+  "referralYourCode": "Сіздің кодыңыз",
+  "referralCopyCode": "Кодты көшіру",
+  "referralShareButton": "Шақыруды жіберу",
+  "referralCopyLink": "Сілтемені көшіру",
+  "referralInviteCopied": "Шақыру көшірілді",
+  "referralLinkCopied": "Сілтеме көшірілді",
+  "referralStatsInvited": "Кодты қолданғандар: {count}",
   "@referralStatsInvited": {
     "placeholders": {
       "count": {
@@ -1621,7 +1627,7 @@
       }
     }
   },
-  "referralStatsDays": "Алынған Премиум: {days} күн",
+  "referralStatsDays": "Берілді: {days} күн",
   "@referralStatsDays": {
     "placeholders": {
       "days": {
@@ -1629,25 +1635,29 @@
       }
     }
   },
-  "referralEnterCodeTitle": "Сізді дос шақырды ма?",
-  "referralEnterCodeSubtitle": "Промокодты қосымшаны пайдаланатын досыңыздан алыңыз немесе оның шақыру сілтемесін ашыңыз — код автоматты түрде қойылады",
-  "referralEnterCodeHint": "Досыңыздың кодын енгізіңіз",
+  "referralEnterCodeTitle": "Досыңыздың коды",
+  "referralEnterCodeHint": "Код немесе сілтеме",
+  "referralCodeOnce": "Бір аккаунтқа бір код",
   "referralActivateButton": "Іске қосу",
-  "referralAlreadyClaimed": "Сіз кодты белсендірдіңіз: {code} (+1 күн)",
-  "@referralAlreadyClaimed": {
+  "referralActivating": "Іске қосылуда…",
+  "referralSuccessDays": "Сізге {days} күн Премиум берілді.",
+  "@referralSuccessDays": {
     "placeholders": {
-      "code": {
-        "type": "String"
+      "days": {
+        "type": "int"
       }
     }
   },
-  "referralSuccessClaimed": "Код іске қосылды! Сізге 1 күн Премиум берілді 🎉",
-  "referralSignInRequired": "Жеке код алып, Премиум күндерін жинау үшін жүйеге кіріңіз",
-  "referralSignInButton": "Аккаунтқа кіру",
-  "referralErrorSelf": "Өз кодыңды белсендіруге болмайды",
-  "referralErrorAlreadyUsed": "Сіз шақыру кодын бұрын іске қосқансыз",
-  "referralErrorNotFound": "Код табылмады. Қайта тексеріп көріңіз",
-  "referralShareText": "Ресей ЖҚЕ 2026 қолданбасында 1 күн Премиум сыйлаймын! Қолданбаны орнатып, менің {code} промокодымды енгізіңіз немесе сілтемеге өтіңіз: {link}",
+  "referralSignInRequired": "Аккаунтқа кіріп, қайталап көріңіз.",
+  "referralSignInButton": "Код алу үшін кіріңіз",
+  "referralErrorSelf": "Бұл сіздің кодыңыз. Досыңыздың кодын енгізіңіз.",
+  "referralErrorAlreadyUsed": "Шақыру кодын бұрын қолданып қойғансыз.",
+  "referralErrorNotFound": "Код табылмады. Кодты тексеріңіз.",
+  "referralErrorInvalid": "Кодты латын әріптерімен енгізіңіз немесе шақыру сілтемесін қойыңыз.",
+  "referralErrorRateLimited": "Әрекет тым көп. Кейінірек қайталаңыз.",
+  "referralClaimPending": "Сыйлық әлі есептеліп жатыр. Кейін осы кодпен қайта көріңіз.",
+  "referralClaimError": "Кодты тексеру мүмкін болмады. Қайта көріңіз.",
+  "referralShareText": "Ресейдің жол қозғалысы ережелері: {code} коды арқылы {days} күн Премиум алыңыз. Кодты қолданба баптауларында енгізіңіз немесе сілтемені ашыңыз: {link}",
   "@referralShareText": {
     "placeholders": {
       "code": {
@@ -1655,10 +1665,14 @@
       },
       "link": {
         "type": "String"
+      },
+      "days": {
+        "type": "int"
       }
     }
   },
-  "referralCodeCopied": "Код алмасу буферіне көшірілді",
-  "referralLoadError": "Шақыру деректерін жүктеу мүмкін болмады",
-  "referralRetryButton": "Қайта көру"
+  "referralCodeCopied": "Код көшірілді",
+  "referralCopyError": "Көшіру мүмкін болмады",
+  "referralLoadError": "Кодыңызды жүктеу мүмкін болмады",
+  "referralRetryButton": "Қайталау"
 }

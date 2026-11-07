@@ -587,7 +587,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  for (final result in [true, false]) {
+  for (final result in PremiumPlansResult.values) {
     _testPremium('plan result $result reaches the original premium gate', (
       tester,
     ) async {
@@ -604,7 +604,7 @@ void main() {
       await tester.pumpAndSettle();
       Navigator.of(tester.element(find.byType(PremiumPlansSheet))).pop(result);
       await tester.pumpAndSettle();
-      if (result) {
+      if (result == PremiumPlansResult.purchased) {
         // A purchase is celebrated before the gate learns about it.
         expect(find.byType(PremiumCelebrationScreen), findsOneWidget);
         expect(completed, isFalse);
@@ -616,7 +616,7 @@ void main() {
       expect(find.byType(PremiumBenefitsScreen), findsNothing);
       expect(find.byType(PremiumPaywallSheet), findsNothing);
       expect(completed, isTrue);
-      expect(gateResult, result);
+      expect(gateResult, result != PremiumPlansResult.webPayment);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }

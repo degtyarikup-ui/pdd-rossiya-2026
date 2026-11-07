@@ -514,7 +514,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(height: AppDimensions.spacingXL),
 
-                    _buildSectionTitle(appL10n.referralSectionTitle),
                     _buildSectionCard(
                       children: [
                         _buildSettingItem(

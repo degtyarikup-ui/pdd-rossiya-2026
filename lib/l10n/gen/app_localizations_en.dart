@@ -1416,7 +1416,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authTelegramOpenAgain => 'Open Telegram again';
 
   @override
-  String get authDebug => 'Test login (debug build)';
+  String get authDebug => 'Test sign-in';
 
   @override
   String get authDevQuickLogin => 'Quick test login';
@@ -4673,58 +4673,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkoutStageCompleted => 'Completed';
 
   @override
-  String get referralSectionTitle => 'Referral Program';
-
-  @override
   String get referralSettingsTitle => 'Invite a friend';
 
   @override
-  String get referralSettingsSubtitle => '+2 days for you, +1 day for friend';
+  String get referralSettingsSubtitle =>
+      '+2 days for you, +1 day for your friend';
 
   @override
-  String get referralPlansTitle => 'Want Premium for free?';
+  String get referralPlansTitle => 'Have an invite code?';
 
   @override
-  String get referralPlansSubtitle =>
-      'Invite a friend: +2 days for you, +1 day for friend';
+  String get referralPlansSubtitle => 'Redeem it for 1 day of Premium';
 
   @override
-  String get referralModalTitle => 'Invite a Friend';
+  String get referralModalTitle => 'Invitations';
 
   @override
-  String get referralBannerTitle => 'Free Premium Days!';
+  String referralRules(int inviter, int friend) {
+    String _temp0 = intl.Intl.pluralLogic(
+      inviter,
+      locale: localeName,
+      other: '$inviter extra days',
+      one: '$inviter extra day',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      friend,
+      locale: localeName,
+      other: '$friend days',
+      one: '$friend day',
+    );
+    return 'When a friend uses your code, you get $_temp0 of Premium and they get $_temp1.';
+  }
 
   @override
-  String get referralBannerDescription =>
-      'Share your promo code with a friend. Your friend gets 1 day of Premium, and you get 2 days for each invited friend!';
+  String get referralYourCode => 'Your code';
 
   @override
-  String get referralYourCode => 'Your invite code';
+  String get referralCopyCode => 'Copy code';
 
   @override
-  String get referralCopyCode => 'Copy';
-
-  @override
-  String get referralShareButton => 'Share';
-
-  @override
-  String get referralCopyInviteButton => 'Copy invitation';
-
-  @override
-  String get referralYourLink => 'Referral link';
+  String get referralShareButton => 'Share invitation';
 
   @override
   String get referralCopyLink => 'Copy link';
 
   @override
-  String get referralInviteCopied => 'Invitation copied to clipboard';
+  String get referralInviteCopied => 'Invitation copied';
 
   @override
-  String get referralLinkCopied => 'Link copied to clipboard';
+  String get referralLinkCopied => 'Link copied';
 
   @override
   String referralStatsInvited(int count) {
-    return 'Friends invited: $count';
+    return 'Friends who used your code: $count';
   }
 
   @override
@@ -4735,60 +4736,85 @@ class AppLocalizationsEn extends AppLocalizations {
       other: '$days days',
       one: '$days day',
     );
-    return 'Earned Premium: $_temp0';
+    return 'Earned: $_temp0';
   }
 
   @override
-  String get referralEnterCodeTitle => 'Invited by a friend?';
+  String get referralEnterCodeTitle => 'Code from a friend';
 
   @override
-  String get referralEnterCodeSubtitle =>
-      'Get a promo code from a friend who uses the app, or open their invite link to apply it automatically';
+  String get referralEnterCodeHint => 'Code or link';
 
   @override
-  String get referralEnterCodeHint => 'Enter friend\'s code';
+  String get referralCodeOnce => 'One code per account';
 
   @override
-  String get referralActivateButton => 'Activate';
+  String get referralActivateButton => 'Redeem code';
 
   @override
-  String referralAlreadyClaimed(String code) {
-    return 'You activated code: $code (+1 day)';
+  String get referralActivating => 'Redeeming…';
+
+  @override
+  String referralSuccessDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '$days day',
+    );
+    return 'You received $_temp0 of Premium.';
   }
 
   @override
-  String get referralSuccessClaimed =>
-      'Code activated! You received 1 day of Premium 🎉';
+  String get referralSignInRequired => 'Sign in and try again.';
 
   @override
-  String get referralSignInRequired =>
-      'Sign in to get your personal code and earn Premium days';
+  String get referralSignInButton => 'Sign in to get your code';
 
   @override
-  String get referralSignInButton => 'Sign in';
+  String get referralErrorSelf => 'This is your code. Enter a friend’s code.';
 
   @override
-  String get referralErrorSelf => 'You cannot activate your own code';
-
-  @override
-  String get referralErrorAlreadyUsed =>
-      'You have already activated an invite code';
+  String get referralErrorAlreadyUsed => 'You’ve already used an invite code.';
 
   @override
   String get referralErrorNotFound =>
-      'Code not found. Please check and try again';
+      'Code not found. Check the code and try again.';
 
   @override
-  String referralShareText(String code, String link) {
-    return 'Gift: 1 day of Premium in Russian Traffic Rules 2026 app! Install the app and enter my promo code $code or use link: $link';
+  String get referralErrorInvalid =>
+      'Enter a code using Latin letters or paste an invite link.';
+
+  @override
+  String get referralErrorRateLimited => 'Too many attempts. Try again later.';
+
+  @override
+  String get referralClaimPending =>
+      'Your reward is pending. Try again later with the same code.';
+
+  @override
+  String get referralClaimError => 'Couldn’t check the code. Try again.';
+
+  @override
+  String referralShareText(String code, String link, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '$days day',
+    );
+    return 'Russian Traffic Rules: Get $_temp0 of Premium with code $code. Enter it in the app settings or open this link: $link';
   }
 
   @override
-  String get referralCodeCopied => 'Code copied to clipboard';
+  String get referralCodeCopied => 'Code copied';
 
   @override
-  String get referralLoadError => 'Failed to load referral details';
+  String get referralCopyError => 'Couldn’t copy';
 
   @override
-  String get referralRetryButton => 'Try again';
+  String get referralLoadError => 'Couldn’t load your code';
+
+  @override
+  String get referralRetryButton => 'Retry';
 }

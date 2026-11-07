@@ -3,11 +3,11 @@
 // Every existing account writer runs inside one globally addressed DO request;
 // all local documents commit in one storage transaction after the handler ends.
 import { durableRequest } from './durable_request.js';
-const ACCOUNT_PREFIXES = ['user:', 'user_progress:', 'user_admin:', 'pay_intent:', 'auth_generation:', 'account_deleted:', 'apple_auth:'];
-const scoped = (key, id) => ACCOUNT_PREFIXES.some(prefix => key === prefix + id) || key.startsWith('pay_order:') || key.startsWith('payment_ledger:') || key.startsWith('pay_tx:') || key.startsWith('notified_purch:') || key.startsWith('revoked_session:' + id + ':');
+const ACCOUNT_PREFIXES = ['user:', 'user_progress:', 'user_admin:', 'pay_intent:', 'auth_generation:', 'account_deleted:', 'apple_auth:', 'referral_used:'];
+const scoped = (key, id) => ACCOUNT_PREFIXES.some(prefix => key === prefix + id) || key.startsWith('pay_order:') || key.startsWith('payment_ledger:') || key.startsWith('pay_tx:') || key.startsWith('notified_purch:') || key.startsWith('revoked_session:' + id + ':') || key.startsWith('referral_receipt:' + id + ':');
 const json = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 const parse = raw => { try { return raw ? JSON.parse(raw) : null; } catch { return null; } };
-const noProjection = key => key.startsWith('apple_auth:');
+const noProjection = key => key.startsWith('apple_auth:') || key.startsWith('referral_receipt:') || key.startsWith('referral_used:');
 const MAINTENANCE_PAGE = 25;
 // Only a local native allocation failure can poison this object's storage.
 // A failure forwarded by another DO must not reset an otherwise healthy account.
@@ -76,6 +76,8 @@ export async function routeAccountRequest(request, env, { sessionAccountId, veri
     return null;
   }
   const url = new URL(request.url), path = url.pathname;
+  // A separate coordinator calls accounts one at a time without holding an account lock.
+  if (path === '/api/user/referral/claim' && request.method === 'POST') return null;
   let id = null, callbackOrder = null;
   if (path.startsWith('/api/user/')) id = await sessionAccountId(request, env);
   else if (path.startsWith('/api/admin/users/') && await verifyAdminAuth(request, env)) {
@@ -132,6 +134,12 @@ export class AccountState {
     // touching any maintenance data, including list(), so a quiet account can
     // recover even after a long downstream outage or an object restart.
     await this.state.storage.setAlarm(Date.now() + 65000);
+    const job = await this.state.storage.get('referral-job');
+    if (job && !job.done) {
+      const { retryReferralClaim } = await import('./referrals.js');
+      await retryReferralClaim(this.state.storage, this.env, job);
+      return;
+    }
     const expiry = await this.expireRecords();
     const pending = await this.flush();
     const next = Math.min(expiry, pending ? Date.now() + 65000 : Infinity);
@@ -250,6 +258,11 @@ export class AccountState {
   async handle(request) {
     const path = new URL(request.url).pathname;
     if (path.startsWith('/_directory/')) return this.directory(request, path);
+    if (path === '/_referral/code' || path === '/_referral/claim') {
+      const { referralDirectory, referralClaim } = await import('./referrals.js');
+      const body = await request.json();
+      return (path === '/_referral/code' ? referralDirectory : referralClaim)(this.state.storage, this.env, body);
+    }
     const id = request.headers.get('x-account-id');
     if (!id || id.length > 220) return json({ error: 'invalid account' }, 400);
     const owner = await this.state.storage.get('account-id');
@@ -366,9 +379,12 @@ export class AccountState {
         await put('user:' + id, JSON.stringify(user), { metadata: summary });
       }
       response = json({ ok: true, summary });
+    } else if (['/_account/referral-check', '/_account/referral-reward', '/_account/referral-complete'].includes(path)) {
+      const { referralAccountStep } = await import('./referrals.js');
+      response = await referralAccountStep(path, request, env);
     } else {
       const handlers = await import('./worker.js');
-      response = path === '/_account/reconcile' || path === '/_account/refresh' || path === '/_account/iap-event' || path === '/_account/referral-reward'
+      response = path === '/_account/reconcile' || path === '/_account/refresh' || path === '/_account/iap-event'
         ? await handlers.handleAccountMaintenance(path, request, env)
         : await handlers.handleAccountHttp(request, env);
     }

@@ -499,7 +499,7 @@
     }
   },
   "authTelegramOpenAgain": "Open Telegram again",
-  "authDebug": "Test login (debug build)",
+  "authDebug": "Test sign-in",
   "authDevQuickLogin": "Quick test login",
   "authDevSelectAccount": "Select test account",
   "authDevTester1": "Tester 1 (code: DEVTEST1)",
@@ -1597,23 +1597,29 @@
       }
     }
   },
-  "referralSectionTitle": "Referral Program",
   "referralSettingsTitle": "Invite a friend",
-  "referralSettingsSubtitle": "+2 days for you, +1 day for friend",
-  "referralPlansTitle": "Want Premium for free?",
-  "referralPlansSubtitle": "Invite a friend: +2 days for you, +1 day for friend",
-  "referralModalTitle": "Invite a Friend",
-  "referralBannerTitle": "Free Premium Days!",
-  "referralBannerDescription": "Share your promo code with a friend. Your friend gets 1 day of Premium, and you get 2 days for each invited friend!",
-  "referralYourCode": "Your invite code",
-  "referralCopyCode": "Copy",
-  "referralShareButton": "Share",
-  "referralCopyInviteButton": "Copy invitation",
-  "referralYourLink": "Referral link",
+  "referralSettingsSubtitle": "+2 days for you, +1 day for your friend",
+  "referralPlansTitle": "Have an invite code?",
+  "referralPlansSubtitle": "Redeem it for 1 day of Premium",
+  "referralModalTitle": "Invitations",
+  "referralRules": "When a friend uses your code, you get {inviter, plural, one{{inviter} extra day} other{{inviter} extra days}} of Premium and they get {friend, plural, one{{friend} day} other{{friend} days}}.",
+  "@referralRules": {
+    "placeholders": {
+      "inviter": {
+        "type": "int"
+      },
+      "friend": {
+        "type": "int"
+      }
+    }
+  },
+  "referralYourCode": "Your code",
+  "referralCopyCode": "Copy code",
+  "referralShareButton": "Share invitation",
   "referralCopyLink": "Copy link",
-  "referralInviteCopied": "Invitation copied to clipboard",
-  "referralLinkCopied": "Link copied to clipboard",
-  "referralStatsInvited": "Friends invited: {count}",
+  "referralInviteCopied": "Invitation copied",
+  "referralLinkCopied": "Link copied",
+  "referralStatsInvited": "Friends who used your code: {count}",
   "@referralStatsInvited": {
     "placeholders": {
       "count": {
@@ -1621,7 +1627,7 @@
       }
     }
   },
-  "referralStatsDays": "Earned Premium: {days, plural, one{{days} day} other{{days} days}}",
+  "referralStatsDays": "Earned: {days, plural, one{{days} day} other{{days} days}}",
   "@referralStatsDays": {
     "placeholders": {
       "days": {
@@ -1629,25 +1635,29 @@
       }
     }
   },
-  "referralEnterCodeTitle": "Invited by a friend?",
-  "referralEnterCodeSubtitle": "Get a promo code from a friend who uses the app, or open their invite link to apply it automatically",
-  "referralEnterCodeHint": "Enter friend's code",
-  "referralActivateButton": "Activate",
-  "referralAlreadyClaimed": "You activated code: {code} (+1 day)",
-  "@referralAlreadyClaimed": {
+  "referralEnterCodeTitle": "Code from a friend",
+  "referralEnterCodeHint": "Code or link",
+  "referralCodeOnce": "One code per account",
+  "referralActivateButton": "Redeem code",
+  "referralActivating": "Redeeming…",
+  "referralSuccessDays": "You received {days, plural, one{{days} day} other{{days} days}} of Premium.",
+  "@referralSuccessDays": {
     "placeholders": {
-      "code": {
-        "type": "String"
+      "days": {
+        "type": "int"
       }
     }
   },
-  "referralSuccessClaimed": "Code activated! You received 1 day of Premium 🎉",
-  "referralSignInRequired": "Sign in to get your personal code and earn Premium days",
-  "referralSignInButton": "Sign in",
-  "referralErrorSelf": "You cannot activate your own code",
-  "referralErrorAlreadyUsed": "You have already activated an invite code",
-  "referralErrorNotFound": "Code not found. Please check and try again",
-  "referralShareText": "Gift: 1 day of Premium in Russian Traffic Rules 2026 app! Install the app and enter my promo code {code} or use link: {link}",
+  "referralSignInRequired": "Sign in and try again.",
+  "referralSignInButton": "Sign in to get your code",
+  "referralErrorSelf": "This is your code. Enter a friend’s code.",
+  "referralErrorAlreadyUsed": "You’ve already used an invite code.",
+  "referralErrorNotFound": "Code not found. Check the code and try again.",
+  "referralErrorInvalid": "Enter a code using Latin letters or paste an invite link.",
+  "referralErrorRateLimited": "Too many attempts. Try again later.",
+  "referralClaimPending": "Your reward is pending. Try again later with the same code.",
+  "referralClaimError": "Couldn’t check the code. Try again.",
+  "referralShareText": "Russian Traffic Rules: Get {days, plural, one{{days} day} other{{days} days}} of Premium with code {code}. Enter it in the app settings or open this link: {link}",
   "@referralShareText": {
     "placeholders": {
       "code": {
@@ -1655,10 +1665,14 @@
       },
       "link": {
         "type": "String"
+      },
+      "days": {
+        "type": "int"
       }
     }
   },
-  "referralCodeCopied": "Code copied to clipboard",
-  "referralLoadError": "Failed to load referral details",
-  "referralRetryButton": "Try again"
+  "referralCodeCopied": "Code copied",
+  "referralCopyError": "Couldn’t copy",
+  "referralLoadError": "Couldn’t load your code",
+  "referralRetryButton": "Retry"
 }

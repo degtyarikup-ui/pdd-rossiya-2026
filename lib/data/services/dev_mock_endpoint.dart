@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/referral_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// In-app mock backend for dev / test builds.
@@ -23,25 +24,28 @@ class DevMockEndpoint {
     seedFriendCode: 'virtual_friend',
   };
 
-  /// Only active in test/dev builds when the session has a dev token
-  /// or AuthService is in dev session mode.
-  static bool shouldHandle(Map<String, String>? headers) {
-    if (!AuthService.debugSignInAvailable) return false;
-    final auth = headers?['authorization'] ?? '';
-    if (auth.startsWith('Bearer $prefixToken')) return true;
-    return AuthService.instance.isDevSession;
+  /// Route by the request credential, never by the currently visible account.
+  static bool shouldHandle(Map<String, String>? headers) =>
+      AuthService.debugSignInAvailable && _extractUserId(headers) != null;
+
+  static String? _extractUserId(Map<String, String>? headers) {
+    final auth = headers?['authorization'];
+    const prefix = 'Bearer $prefixToken';
+    if (auth == null || !auth.startsWith(prefix)) return null;
+    final id = auth.substring(prefix.length);
+    return RegExp(r'^(dev_|debug_)[a-zA-Z0-9_]{1,48}$').hasMatch(id)
+        ? id
+        : null;
   }
 
-  static String _extractUserId(Map<String, String>? headers) {
-    final auth = headers?['authorization'] ?? '';
-    const prefix = 'Bearer $prefixToken';
-    if (auth.startsWith(prefix)) {
-      final tokenSuffix = auth.substring(prefix.length).trim();
-      if (tokenSuffix.isNotEmpty) return tokenSuffix;
-    }
-    final current = AuthService.instance.currentUser;
-    if (current != null && current.id.isNotEmpty) return current.id;
-    return 'dev_tester_1';
+  static Future<void> _tail = Future.value();
+
+  static Future<http.Response> _serial(
+    Future<http.Response> Function() action,
+  ) {
+    final request = _tail.then((_) => action());
+    _tail = request.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return request;
   }
 
   static String _defaultCodeForUser(String userId) {
@@ -178,9 +182,10 @@ class DevMockEndpoint {
     String path, {
     Map<String, String>? headers,
     Map<String, String>? query,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
+  }) => _serial(() async {
     final userId = _extractUserId(headers);
+    if (userId == null) return http.Response('{"error":"unauthorized"}', 401);
+    final prefs = await SharedPreferences.getInstance();
 
     if (path == '/api/user/referral') {
       final data = await _getUserReferralData(prefs, userId);
@@ -202,21 +207,18 @@ class DevMockEndpoint {
       );
     }
 
-    return http.Response(
-      jsonEncode({'ok': true}),
-      200,
-      headers: {'content-type': 'application/json'},
-    );
-  }
+    return http.Response('{"error":"not_found"}', 404);
+  });
 
   /// Handles POST requests for dev mock sessions.
   static Future<http.Response> handlePost(
     String path, {
     Map<String, String>? headers,
     String? body,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
+  }) => _serial(() async {
     final userId = _extractUserId(headers);
+    if (userId == null) return http.Response('{"error":"unauthorized"}', 401);
+    final prefs = await SharedPreferences.getInstance();
 
     if (path == '/api/user/referral/claim') {
       Map<String, dynamic> bodyJson = {};
@@ -226,12 +228,9 @@ class DevMockEndpoint {
         }
       } catch (_) {}
 
-      final cleanCode = (bodyJson['code'] as String? ?? '')
-          .trim()
-          .toUpperCase()
-          .replaceAll(RegExp(r'[^A-Z0-9]'), '');
+      final cleanCode = normalizeReferralCode(bodyJson['code']);
 
-      if (cleanCode.length < 3 || cleanCode.length > 32) {
+      if (cleanCode == null) {
         return http.Response(
           jsonEncode({'error': 'invalid_code'}),
           400,
@@ -250,6 +249,10 @@ class DevMockEndpoint {
         );
       }
 
+      if (userData['hasUsedReferral'] == true &&
+          userData['referralCodeUsed'] == cleanCode) {
+        return _claimSuccess(prefs, userId);
+      }
       if (userData['hasUsedReferral'] == true) {
         return http.Response(
           jsonEncode({'error': 'already_claimed'}),
@@ -280,14 +283,14 @@ class DevMockEndpoint {
       // 1. Reward friend (current user) +1 day of Premium
       userData['hasUsedReferral'] = true;
       userData['referralCodeUsed'] = cleanCode;
-      userData['referredBy'] = inviterId;
       await _saveUserReferralData(prefs, userId, userData);
       await _addPremiumDays(prefs, userId, 1);
 
       // 2. Reward inviter if known test user (+1 invite, +2 bonus days)
       if (inviterId != 'virtual_friend') {
         final inviterData = await _getUserReferralData(prefs, inviterId);
-        final currentCount = (inviterData['invitedCount'] as num?)?.toInt() ?? 0;
+        final currentCount =
+            (inviterData['invitedCount'] as num?)?.toInt() ?? 0;
         final currentDays = (inviterData['rewardDays'] as num?)?.toInt() ?? 0;
         inviterData['invitedCount'] = currentCount + 1;
         inviterData['rewardDays'] = currentDays + 2;
@@ -295,20 +298,7 @@ class DevMockEndpoint {
         await _addPremiumDays(prefs, inviterId, 2);
       }
 
-      final friendPremium = await _getPremiumData(prefs, userId);
-      return http.Response(
-        jsonEncode({
-          'ok': true,
-          'daysAdded': 1,
-          'inviterDaysAdded': 2,
-          'inviterRewarded': true,
-          'isPremium': friendPremium['isPremium'],
-          'premiumExpiresAt': friendPremium['premiumExpiresAt'],
-          'premiumSource': friendPremium['premiumSource'],
-        }),
-        200,
-        headers: {'content-type': 'application/json'},
-      );
+      return _claimSuccess(prefs, userId);
     }
 
     if (path == '/api/user/sync') {
@@ -350,12 +340,22 @@ class DevMockEndpoint {
       );
     }
 
-    return http.Response(
-      jsonEncode({'ok': true}),
-      200,
-      headers: {'content-type': 'application/json'},
-    );
-  }
+    return http.Response('{"error":"not_found"}', 404);
+  });
+
+  static Future<http.Response> _claimSuccess(
+    SharedPreferences prefs,
+    String userId,
+  ) async => http.Response(
+    jsonEncode({
+      'ok': true,
+      'daysAdded': 1,
+      'inviterDaysAdded': 2,
+      ...await _getPremiumData(prefs, userId),
+    }),
+    200,
+    headers: {'content-type': 'application/json'},
+  );
 
   @visibleForTesting
   static Future<void> resetForTesting() async {
