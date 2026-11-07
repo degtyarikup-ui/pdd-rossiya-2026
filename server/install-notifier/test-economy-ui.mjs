@@ -173,7 +173,9 @@ if (process.argv.includes('--serve')) {
       assert.equal(initial.expenses.paymentFeesRub, 23.2);
       assert.equal(initial.currency,'USD');
       assert.match(await page.locator('#ec-gross-val').innerText(),/^\$6,10$/);
-      assert.equal(await page.locator('#ec-gross-sub').innerText(), 'App Store $3,05\nPlatega $3,05\nGoogle Play $0,00');
+      const incomeSources = page.locator('#ec-gross-sub > span');
+      assert.deepEqual(await incomeSources.allTextContents(), ['App Store $3,05', 'Platega $3,05', 'Google Play $0,00']);
+      assert.equal(await incomeSources.evaluateAll(nodes => new Set(nodes.map(node => node.offsetTop)).size), 1);
       assert.match(await page.locator('#ec-fx-status').innerText(),/ЦБ.*95/);
       assert.equal(initial.receipts.some(row=>row.isTest),false);
       assert.match(await page.locator('#ec-receipts-body').innerText(), /Анна/);
@@ -349,6 +351,8 @@ if (process.argv.includes('--serve')) {
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `page fits ${width}px`);
         const clipped = await page.locator('#economy-view .ec-value').evaluateAll(nodes => nodes.filter(node => node.scrollWidth > node.clientWidth + 1).map(node => node.textContent));
         assert.deepEqual(clipped, [], `KPI values fit ${width}px`);
+        assert.ok(await incomeSources.evaluateAll(nodes => new Set(nodes.map(node => node.offsetTop)).size > 1), 'income sources wrap on mobile');
+        assert.equal(await page.locator('#ec-gross-sub').evaluate(node => node.scrollWidth <= node.clientWidth + 1), true);
         const rowActions = await page.locator('#ec-receipts-body .ec-money:visible, #ec-receipts-body .ec-edit:visible').evaluateAll(nodes => nodes.map(node => {
           const r = node.getBoundingClientRect(); return { text: node.textContent.trim() || node.getAttribute('aria-label'), left: r.left, right: r.right };
         }));
