@@ -2,6 +2,7 @@
 // Доход включает продажи магазинов по тарифу; выплаты магазинов — справочные.
 import { getUsdRate } from './economy_fx.js';
 import { economyInUsd } from './economy_usd.js';
+import { profitAllocation } from './economy_shares.js';
 import { handlePlategaBalances } from './economy_platega.js';
 import { getCloudflareBilling, cloudflareExpenseLines } from './economy_cloudflare.js';
 import { mapAdminReads } from './admin_reads.js';
@@ -71,6 +72,19 @@ function title(value) {
   if (typeof value !== 'string' || !value.trim() || value.trim().length > 160) throw new Error('Название: от 1 до 160 символов');
   return value.trim();
 }
+function normalizeProfitShares(items) {
+  if (!Array.isArray(items) || !items.length || items.length > 1000) throw new Error('Укажите от 1 до 1000 долей');
+  const shares = items.map(item => {
+    if (!object(item)) throw new Error('Некорректная доля');
+    const percent = number(item.percent, 'доля', 0, 100);
+    if (percent !== round(percent)) throw new Error('Укажите долю с точностью до двух знаков после запятой');
+    return { name: title(item.name), percent };
+  });
+  if (shares.reduce((sum, share) => sum + Math.round(share.percent * 100), 0) !== 10000) {
+    throw new Error('Сумма долей должна быть 100%');
+  }
+  return shares;
+}
 function normalizeExpense(input, now = Date.now()) {
   if (!object(input)) throw new Error('Некорректный расход');
   const frequency = input.frequency ?? (input.monthly ? 'monthly' : 'once');
@@ -139,6 +153,9 @@ function safeConfig(parsed = {}) {
   }
   if (!Object.hasOwn(parsed, 'nikitaSharePercent') && typeof parsed.sergeySharePercent === 'number') result.nikitaSharePercent = round(100 - result.sergeySharePercent);
   result.sergeySharePercent = round(100 - result.nikitaSharePercent);
+  if (Object.hasOwn(parsed, 'profitShares')) {
+    try { result.profitShares = normalizeProfitShares(parsed.profitShares); } catch (_) { /* use legacy shares */ }
+  }
   for (const key of booleanSettings) {
     if (typeof parsed[key] === 'boolean') result[key] = parsed[key];
   }
@@ -168,6 +185,7 @@ export async function saveEconomyConfig(env, updates) {
   const next = await getEconomyConfig(env);
   for (const [key, value] of Object.entries(updates)) {
     if (numericRules[key]) next[key] = number(value, key, ...numericRules[key]);
+    else if (key === 'profitShares') next.profitShares = normalizeProfitShares(value);
     else if (booleanSettings.includes(key)) {
       if (typeof value !== 'boolean') throw new Error('Некорректное значение: ' + key);
       next[key] = value;
@@ -427,11 +445,7 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
   const totalExpensesRub = round(recurringRub + oneOffRub + aiPeriodRub + paymentFeesRub + withdrawalSummary.feeRub);
   const grossRevenueRub = round(Object.values(revenueByStore).reduce((sum, value) => sum + value, 0));
   const operatingProfitRub = round(grossRevenueRub - totalExpensesRub);
-  const reinvestRub = round(Math.max(0, operatingProfitRub) * config.reinvestPercent / 100);
-  const distributableNetProfitRub = round(operatingProfitRub - reinvestRub);
-  const payout = Math.max(0, distributableNetProfitRub);
-  const nikitaPayoutRub = round(payout * config.nikitaSharePercent / 100);
-  const sergeyPayoutRub = round(payout - nikitaPayoutRub);
+  const allocation = profitAllocation(config, operatingProfitRub);
   receipts.sort((a, b) => timestamp(b.date) - timestamp(a.date));
   estimatedReceipts.sort((a, b) => timestamp(b.date) - timestamp(a.date));
   const estimatedStoresRub = round(estimatedReceipts.reduce((sum, receipt) => sum + ((!receipt.isTest || !config.excludeTestOrders) ? receipt.amountRub : 0), 0));
@@ -455,12 +469,10 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
         includedInTotal: aiIncluded, available: aiValues[0] !== null && aiValues[0] !== undefined,
         totalRequests: aiNumbers[1] || 0, promptTokens: aiNumbers[2] || 0, candidateTokens: aiNumbers[3] || 0 },
       extraExpensesRub: round(extraExpensesRub), extraList: lines.filter(line => !line.builtin) },
-    profit: { operatingRub: operatingProfitRub, reinvestPercent: config.reinvestPercent, reinvestRub,
-      distributableNetRub: distributableNetProfitRub, marginPercent: grossRevenueRub > 0 ? round(distributableNetProfitRub / grossRevenueRub * 100) : 0 },
-    partners: {
-      sergey: { name: 'Сергей', role: 'Основатель / Разработка', percent: config.sergeySharePercent, payoutRub: sergeyPayoutRub },
-      nikita: { name: 'Никита', role: 'Партнёр / Развитие', percent: config.nikitaSharePercent, payoutRub: nikitaPayoutRub },
-    },
+    profit: { operatingRub: operatingProfitRub, reinvestPercent: config.profitShares ? 0 : config.reinvestPercent, reinvestRub: allocation.reinvest,
+      distributableNetRub: allocation.distributable, marginPercent: grossRevenueRub > 0 ? round(allocation.distributable / grossRevenueRub * 100) : 0 },
+    profitShares: allocation.shares.map(({ amount, ...share }) => ({ ...share, payoutRub: amount })),
+    partners: Object.fromEntries(Object.entries(allocation.partners).map(([key, { amount, ...partner }]) => [key, { ...partner, payoutRub: amount }])),
     breakEven: { targetRub: totalExpensesRub, monthlyRub: round(monthlyRub), weeklySubsNeeded: Math.ceil(totalExpensesRub / 99),
       threeMonthSubsNeeded: Math.ceil(totalExpensesRub / 290), coveragePercent: totalExpensesRub > 0 ? Math.round(grossRevenueRub / totalExpensesRub * 100) : 100,
       isProfitable: grossRevenueRub >= totalExpensesRub },

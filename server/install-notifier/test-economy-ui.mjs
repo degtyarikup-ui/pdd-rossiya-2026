@@ -215,16 +215,33 @@ if (process.argv.includes('--serve')) {
       await page.locator('#ec-store-filter').selectOption('all');
       await mode('all');
 
+      const shareRows = page.locator('.ec-share-row');
+      const shareInput = (index, name) => shareRows.nth(index).locator('[name="share' + name + '"]');
       await open('#ec-edit-shares');
-      await field('nikitaSharePercent', 0);
-      assert.equal(await page.locator('#ec-form [name="sergeySharePercent"]').inputValue(), '100');
-      await field('reinvestPercent', 0); await save();
-      assert.equal((await config()).nikitaSharePercent, 0);
+      assert.deepEqual(await shareRows.locator('[name="sharePercent"]').evaluateAll(nodes => nodes.map(node => Number(node.value))), [15, 79.3, 5.7]);
+      await shareInput(0, 'Name').fill('Развитие');
+      await shareInput(0, 'Percent').fill('50');
+      await shareInput(1, 'Percent').fill('40');
+      await shareInput(2, 'Percent').fill('5');
+      assert.match(await page.locator('#ec-form-preview').innerText(), /95%/);
+      await page.locator('#ec-submit').click();
+      assert.match(await page.locator('#ec-form-error').innerText(), /100%/);
+      await shareInput(2, 'Percent').fill('10');
+      await screenshot('shares-dialog');
+      await save();
+      assert.deepEqual((await config()).profitShares, [
+        { name: 'Развитие', percent: 50 }, { name: 'Сергей', percent: 40 }, { name: 'Никита', percent: 10 },
+      ]);
       await page.reload(); await settled();
+      assert.match(await page.locator('#ec-allocation-list').innerText(), /Развитие 50%/);
       await open('#ec-edit-shares');
-      assert.equal(await page.locator('#ec-form [name="nikitaSharePercent"]').inputValue(), '0');
-      await field('nikitaSharePercent', 25); await field('reinvestPercent', 10); await save();
-      assert.equal((await config()).sergeySharePercent, 75);
+      await shareRows.nth(2).locator('[data-remove-share]').click();
+      await page.locator('#ec-add-share').click();
+      await shareInput(2, 'Name').fill('Резерв');
+      await shareInput(2, 'Percent').fill('10');
+      await save();
+      assert.deepEqual((await config()).profitShares[2], { name: 'Резерв', percent: 10 });
+      assert.match(await page.locator('#ec-allocation-list').innerText(), /Резерв 10%/);
 
       await add('expense');
       await field('title', 'Дизайн и иллюстрации'); await field('amount', 2500);
@@ -334,6 +351,11 @@ if (process.argv.includes('--serve')) {
           const r = node.getBoundingClientRect(); return { text: node.textContent.trim() || node.getAttribute('aria-label'), left: r.left, right: r.right };
         }));
         assert.deepEqual(rowActions.filter(r => r.left < -1 || r.right > width + 1), [], `amounts and edit controls fit ${width}px`);
+        await open('#ec-edit-shares');
+        assert.equal(await page.locator('#ec-dialog').evaluate(node => node.scrollWidth <= node.clientWidth + 1), true);
+        await screenshot(`mobile-${width}-shares-dialog`);
+        await page.keyboard.press('Escape');
+        await page.locator('#ec-dialog').waitFor({ state: 'hidden' });
         await add('withdrawal'); await select('currency', 'USD');
         const bounds = await page.locator('#ec-dialog').boundingBox();
         assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width + 1);

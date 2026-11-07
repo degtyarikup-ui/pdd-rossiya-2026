@@ -63,6 +63,47 @@ test('settings validate before persistence and support either partner share', as
   assert.equal((await api(env, 'settings', { extraExpenses: [] })).status, 400);
 });
 
+test('editable shares allocate the full profit and reject invalid updates without changing the list', async () => {
+  const env = environment();
+  await seedConfig(env, { paymentFeePercent: 0, reinvestPercent: 50, nikitaSharePercent: 60 });
+  await order(env, 'real', { amount: 950 });
+  const legacy = await stats(env);
+  assert.deepEqual(legacy.usd.profitShares.map(share => share.percent), [50, 20, 30]);
+  assert.deepEqual(legacy.usd.profitShares.map(share => share.payoutUsd), [5, 2, 3]);
+  const profitShares = [
+    { name: 'Развитие', percent: 50 }, { name: 'Сергей', percent: 40 }, { name: 'Никита', percent: 10 },
+  ];
+  assert.equal((await api(env, 'settings', { profitShares })).status, 200);
+  for (const period of ['month', '30d', 'all']) {
+    const result = await stats(env, period);
+    assert.deepEqual(result.profitShares.map(share => share.payoutRub), [475, 380, 95]);
+    assert.deepEqual(result.usd.profitShares.map(share => share.payoutUsd), [5, 4, 1]);
+  }
+  for (const invalid of [[], [{ name: ' ', percent: 100 }], [{ name: 'Резерв', percent: '100' }],
+    [{ name: 'Резерв', percent: 99.99 }], [{ name: 'Резерв', percent: 100.01 }],
+    [{ name: 'Резерв', percent: 33.333 }, { name: 'Развитие', percent: 66.667 }]]) {
+    assert.equal((await api(env, 'settings', { profitShares: invalid })).status, 400);
+  }
+  assert.deepEqual((await getEconomyConfig(env)).profitShares, profitShares);
+  assert.equal((await api(env, 'settings', { profitShares: [{ name: ' Резерв ', percent: 100 }] })).status, 200);
+  await saveEconomyConfig(env, { paymentFeePercent: 8 });
+  assert.deepEqual((await getEconomyConfig(env)).profitShares, [{ name: 'Резерв', percent: 100 }]);
+  await api(env, 'expenses/add', { title: 'Расход', amount: 1500, date: '2026-10-16' });
+  assert.equal((await stats(env)).usd.profitShares[0].payoutUsd, 0);
+});
+
+test('fractional percentages reconcile payouts to the cent', async () => {
+  const env = environment();
+  await seedConfig(env, { paymentFeePercent: 0, profitShares: [
+    { name: 'A', percent: 33.33 }, { name: 'B', percent: 33.33 }, { name: 'C', percent: 33.34 },
+    { name: 'D', percent: 0 },
+  ] });
+  await order(env, 'real', { amount: .95 });
+  const result = await stats(env);
+  assert.deepEqual(result.profitShares.map(share => share.payoutRub), [.32, .31, .32, 0]);
+  assert.deepEqual(result.usd.profitShares.map(share => share.payoutUsd), [0, 0, .01, 0]);
+});
+
 test('expense CRUD supports frequency, currency, dates and legacy inputs', async () => {
   const env = environment();
   await seedConfig(env);

@@ -1,3 +1,5 @@
+import { splitProfit } from './economy_shares.js';
+
 // Экономика: итог периода и единый журнал с отдельным учётом переводов и комиссий.
 export const ECONOMY_NAV_HTML = String.raw`
 <button class="nav-item" data-feature="economy"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Экономика</span></button>`;
@@ -11,7 +13,7 @@ export const ECONOMY_VIEW_HTML = String.raw`
 #economy-view .ec-seg button{border:0;padding:8px 12px;min-height:34px;border-radius:8px;background:transparent;color:var(--ec-muted);font-size:11.5px;font-weight:550;white-space:nowrap}#economy-view .ec-seg button.active{background:#17191E;color:white}
 #economy-view .ec-card{background:#fff;border-radius:20px;padding:23px 24px;min-width:0}.ec-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:14px}.ec-kpi-label{font-size:12px;color:var(--ec-muted);font-weight:500}.ec-value{font-size:34px;font-weight:590;letter-spacing:-1.1px;line-height:1.2;font-variant-numeric:tabular-nums;margin:14px 0 7px;overflow-wrap:anywhere}.ec-caption{font-size:11px;color:var(--ec-muted);line-height:1.5}.ec-caption:empty{display:none}
 #economy-view .ec-net{background:#0574F8;color:#fff}.ec-net .ec-value,.ec-net .ec-kpi-label{color:#fff}.ec-net .ec-caption{color:#DCEBFF}#economy-view .ec-net.is-loss{background:#FCEDE8;color:var(--text,#17191E)}.ec-net.is-loss .ec-value{color:var(--ec-red)}.ec-net.is-loss .ec-kpi-label,.ec-net.is-loss .ec-caption{color:var(--ec-muted)}
-.ec-allocation{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;align-items:center;gap:20px;margin-bottom:24px;padding:9px 22px}.ec-allocation-item{min-width:0}.ec-allocation-item+.ec-allocation-item{padding-left:20px;border-left:1px solid #E0E5EC}.ec-allocation-label{font-size:11px;color:var(--ec-muted)}.ec-allocation-label span{margin-left:5px;color:#9098A5}.ec-allocation-amount{font-size:18px;font-weight:570;letter-spacing:-.35px;font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:3px}.ec-head{margin-bottom:18px;min-height:34px}.ec-head h2{font-size:15px;letter-spacing:-.3px;font-weight:600;margin:0}.ec-head-title{display:flex;align-items:center;gap:8px}.ec-head-title .ec-caption{font-variant-numeric:tabular-nums}
+.ec-allocation{display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:9px 22px}.ec-allocation-list{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,100px),1fr));gap:14px 20px}.ec-allocation-item{min-width:0}.ec-allocation-item+.ec-allocation-item{padding-left:20px;border-left:1px solid #E0E5EC}.ec-allocation-label{overflow-wrap:anywhere;font-size:11px;color:var(--ec-muted)}.ec-allocation-label span{margin-left:5px;color:#9098A5}.ec-allocation-amount{font-size:18px;font-weight:570;letter-spacing:-.35px;font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:3px}.ec-head{margin-bottom:18px;min-height:34px}.ec-head h2{font-size:15px;letter-spacing:-.3px;font-weight:600;margin:0}.ec-head-title{display:flex;align-items:center;gap:8px}.ec-head-title .ec-caption{font-variant-numeric:tabular-nums}
 .ec-ledger-tabs{display:flex;gap:20px;border-bottom:1px solid var(--ec-line);margin-bottom:17px;overflow-x:auto;scrollbar-width:none}.ec-ledger-tabs::-webkit-scrollbar{display:none}#economy-view .ec-ledger-tabs button{border:0;border-bottom:2px solid transparent;background:none;color:var(--ec-muted);font-size:12px;font-weight:500;padding:0 0 12px;white-space:nowrap;min-height:34px}#economy-view .ec-ledger-tabs button.active{color:#17191E;border-bottom-color:#17191E;font-weight:600}
 .ec-ledger-tools{display:flex;gap:10px;align-items:center;margin-bottom:18px}.ec-search{width:100%;min-width:0;flex:1;padding:9px 12px}.ec-ledger-tools select{padding:9px 11px;max-width:160px}.ec-check{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ec-muted);white-space:nowrap}.ec-check input{margin:0}
 .ec-table-wrap{max-width:100%;overflow:auto}.ec-table{border-collapse:collapse;width:100%;font-size:12px;line-height:1.5}#economy-view .ec-table th{font-size:10px;color:#89919F;font-weight:500;letter-spacing:.3px;text-align:left;padding:0 12px 11px 0;white-space:nowrap}#economy-view .ec-table td{border-top:1px solid var(--ec-line);padding:14px 12px 14px 0;vertical-align:middle;font-weight:450}#economy-view .ec-table th:last-child,#economy-view .ec-table td:last-child{padding-right:0}.ec-table .ec-money{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:550}.ec-table .ec-date{font-size:11px;color:var(--ec-muted);white-space:nowrap;width:100px}.ec-table .ec-cell-action{width:32px;text-align:right}.ec-name{min-width:120px;max-width:420px;overflow-wrap:anywhere}.ec-sub{display:block;color:var(--ec-muted);font-size:10.5px;font-weight:400;margin-top:3px}.ec-kind{font-size:11px;color:var(--ec-muted);white-space:nowrap}.ec-money.income{color:#16865F}.ec-money.commission,.ec-money.expense{color:#444C59}
@@ -28,9 +30,9 @@ export const ECONOMY_VIEW_HTML = String.raw`
 #ec-receipts-body tr:hover{background:#FAFBFD}#ec-receipts-body .ec-row-title:focus-visible{outline:2px solid var(--ec-blue);outline-offset:4px;border-radius:3px}
 .ec-disclosure{background:#fff;border-radius:18px;margin-top:14px}.ec-disclosure>summary{display:flex;align-items:center;gap:12px;list-style:none;cursor:pointer;padding:18px 24px;font-size:12px;font-weight:550}.ec-disclosure>summary::-webkit-details-marker{display:none}.ec-disclosure>summary:after{content:'+';margin-left:auto;color:#89919F;font-size:18px;font-weight:400}.ec-disclosure[open]>summary:after{content:'−'}.ec-disclosure-body{padding:0 24px 22px}.ec-register-tools{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:0 0 14px}.ec-register-tools select{padding:8px 12px}.ec-register-note{font-size:11px;color:var(--ec-muted);margin-top:13px}.ec-planner-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}.ec-planner-grid>div+div{border-left:1px solid var(--ec-line);padding-left:24px}.ec-plan-title{font-size:12px;font-weight:550;margin-bottom:10px}.ec-plan-amount{font-size:25px;font-weight:580;letter-spacing:-.7px;margin-bottom:8px}.ec-plan-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ec-plan-numbers{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}.ec-plan-numbers strong{display:block;font-size:18px;font-weight:570;margin-top:4px;color:#343B49}.ec-plan-controls label{font-size:11px;color:var(--ec-muted);display:flex;flex-direction:column;gap:6px}.ec-plan-controls input{padding:9px 12px;box-sizing:border-box;width:100%}
 .ec-platega-balances{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.ec-platega-balance{padding:14px 16px;background:var(--ec-soft);border-radius:12px}.ec-platega-balance strong{display:block;font-size:21px;font-weight:570;letter-spacing:-.4px;margin:4px 0;font-variant-numeric:tabular-nums}.ec-platega-status{font-size:11px;color:var(--ec-muted);min-width:0}.ec-platega-status.error{color:var(--ec-red)}.ec-feedback{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#E9F6EF;color:#16774F;font-size:12px;padding:12px 16px;margin-bottom:15px;border-radius:12px}.ec-feedback.error{background:#FCEDE8;color:#B1432D}.ec-feedback button{border:0;background:none;color:inherit;font-size:18px;padding:0;line-height:1}
-#ec-dialog{margin:auto;padding:0;border:0;border-radius:22px;width:min(460px,calc(100% - 32px));max-height:calc(100svh - 32px);overflow:auto;color:#17191E;background:#fff;box-shadow:0 20px 80px #17223622}#ec-dialog::backdrop{background:#17223655;backdrop-filter:blur(3px)}#ec-form{padding:26px}#ec-dialog h2{font-size:21px;font-weight:600;letter-spacing:-.6px;margin:0 0 21px}.ec-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.ec-field{display:flex;flex-direction:column;gap:7px;font-size:11px;font-weight:500;color:#6D7583;min-width:0}.ec-field.full{grid-column:1/-1}.ec-field input,.ec-field select{width:100%;box-sizing:border-box;padding:11px 12px;font-weight:450}.ec-form-check{display:flex;align-items:center;gap:8px;grid-column:1/-1;font-size:12px;color:#555E6E}.ec-form-preview{grid-column:1/-1;background:var(--ec-soft);border-radius:11px;padding:13px;font-size:12px;color:var(--ec-muted);line-height:1.65}.ec-preview-line{display:flex;align-items:center;justify-content:space-between;gap:10px}.ec-form-preview b{font-weight:600;color:#343B49;font-variant-numeric:tabular-nums}.ec-form-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:23px}.ec-form-actions #ec-delete{margin-right:auto}.ec-form-error{font-size:12px;color:#B1432D;background:#FCEDE8;padding:11px 12px;border-radius:10px;margin-top:16px}.ec-form-note{font-size:11px;color:var(--ec-muted);margin:13px 0 0;line-height:1.5}.ec-settings-extra{grid-column:1/-1;border-top:1px solid var(--ec-line);padding-top:12px}.ec-settings-extra summary{cursor:pointer;font-size:12px;font-weight:500;color:#555E6E}.ec-settings-extra .ec-form-grid{margin-top:16px}.ec-detail-list{grid-column:1/-1;margin:0;display:grid;grid-template-columns:1fr auto;gap:12px 18px;font-size:12px}.ec-detail-list dt{color:var(--ec-muted)}.ec-detail-list dd{margin:0;text-align:right;overflow-wrap:anywhere;min-width:0;max-width:240px}.ec-detail-list .ec-wide{grid-column:1/-1;text-align:left}.ec-detail-copy{font:inherit;background:var(--ec-soft);border:0;padding:8px 10px;border-radius:8px;max-width:100%;overflow-wrap:anywhere;color:#576476;text-align:left}
+#ec-dialog{margin:auto;padding:0;border:0;border-radius:22px;width:min(460px,calc(100% - 32px));max-height:calc(100svh - 32px);overflow:auto;color:#17191E;background:#fff;box-shadow:0 20px 80px #17223622}#ec-dialog::backdrop{background:#17223655;backdrop-filter:blur(3px)}#ec-form{padding:26px}#ec-dialog h2{font-size:21px;font-weight:600;letter-spacing:-.6px;margin:0 0 21px}.ec-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.ec-field{display:flex;flex-direction:column;gap:7px;font-size:11px;font-weight:500;color:#6D7583;min-width:0}.ec-field.full{grid-column:1/-1}.ec-field input,.ec-field select{width:100%;box-sizing:border-box;padding:11px 12px;font-weight:450}.ec-form-check{display:flex;align-items:center;gap:8px;grid-column:1/-1;font-size:12px;color:#555E6E}.ec-form-preview{grid-column:1/-1;background:var(--ec-soft);border-radius:11px;padding:13px;font-size:12px;color:var(--ec-muted);line-height:1.65}.ec-share-fields,.ec-share-add{grid-column:1/-1}.ec-share-add{justify-self:start}.ec-share-fields{display:grid;gap:14px}.ec-share-row{display:grid;grid-template-columns:minmax(0,1fr) 72px auto;align-items:end;gap:8px}.ec-preview-line>span{min-width:0;overflow-wrap:anywhere}.ec-preview-line> b{white-space:nowrap}.ec-preview-line{display:flex;align-items:center;justify-content:space-between;gap:10px}.ec-form-preview b{font-weight:600;color:#343B49;font-variant-numeric:tabular-nums}.ec-form-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:23px}.ec-form-actions #ec-delete{margin-right:auto}.ec-form-error{font-size:12px;color:#B1432D;background:#FCEDE8;padding:11px 12px;border-radius:10px;margin-top:16px}.ec-form-note{font-size:11px;color:var(--ec-muted);margin:13px 0 0;line-height:1.5}.ec-settings-extra{grid-column:1/-1;border-top:1px solid var(--ec-line);padding-top:12px}.ec-settings-extra summary{cursor:pointer;font-size:12px;font-weight:500;color:#555E6E}.ec-settings-extra .ec-form-grid{margin-top:16px}.ec-detail-list{grid-column:1/-1;margin:0;display:grid;grid-template-columns:1fr auto;gap:12px 18px;font-size:12px}.ec-detail-list dt{color:var(--ec-muted)}.ec-detail-list dd{margin:0;text-align:right;overflow-wrap:anywhere;min-width:0;max-width:240px}.ec-detail-list .ec-wide{grid-column:1/-1;text-align:left}.ec-detail-copy{font:inherit;background:var(--ec-soft);border:0;padding:8px 10px;border-radius:8px;max-width:100%;overflow-wrap:anywhere;color:#576476;text-align:left}
 @media(max-width:1150px){.ec-value{font-size:29px}.ec-allocation{gap:14px;padding:8px 17px}.ec-allocation-item+.ec-allocation-item{padding-left:14px}.ec-allocation-amount{font-size:17px}}
-@media(max-width:900px){.ec-toolbar .admin-data-state{display:none}.ec-value{font-size:26px}.ec-allocation{grid-template-columns:repeat(3,minmax(0,1fr));position:relative;padding-right:8px;padding-bottom:42px}.ec-allocation>#ec-edit-shares{position:absolute;bottom:0;right:0}.ec-planner-grid{grid-template-columns:1fr}.ec-planner-grid>div+div{border-left:0;border-top:1px solid var(--ec-line);padding:20px 0 0}}
+@media(max-width:900px){.ec-toolbar .admin-data-state{display:none}.ec-value{font-size:26px}.ec-allocation{flex-wrap:wrap;padding-right:8px}.ec-allocation-list{flex-basis:100%}.ec-allocation>#ec-edit-shares{margin-left:auto}.ec-planner-grid{grid-template-columns:1fr}.ec-planner-grid>div+div{border-left:0;border-top:1px solid var(--ec-line);padding:20px 0 0}}
 @media(max-width:600px){.ec-toolbar{gap:12px}.ec-toolbar>.ec-actions{width:100%;justify-content:flex-end}.ec-toolbar .ec-seg{width:100%}.ec-toolbar .ec-seg button{flex:1}.ec-toolbar #ec-add-operation{margin-left:auto}.ec-kpis{grid-template-columns:1fr 1fr;gap:10px}#economy-view .ec-card{padding:18px}.ec-kpis>.ec-net{grid-column:1/-1;display:grid;grid-template-columns:1fr auto;align-items:center;gap:3px 10px}.ec-net .ec-value{grid-column:2;grid-row:1/3;margin:0}.ec-net .ec-caption{grid-column:1}.ec-value{font-size:27px;margin:12px 0 7px}.ec-kpi-label{font-size:11px}.ec-allocation{gap:9px;padding-left:5px;margin-bottom:18px}.ec-allocation-item+.ec-allocation-item{padding-left:10px}.ec-allocation-amount{font-size:16px}.ec-allocation-label{font-size:10px}.ec-allocation-label span{display:block;margin:0}.ec-ledger-tabs{gap:18px}.ec-ledger-tabs button{font-size:11px!important}.ec-ledger-tools{flex-wrap:wrap;gap:9px}.ec-search{flex-basis:100%}.ec-ledger-tools select{flex:1;max-width:none}.ec-ledger-tools .ec-check{padding:8px 0 8px 6px}.ec-disclosure>summary{padding:18px}.ec-disclosure-body{padding:0 18px 20px}
  #economy-view .ec-table,#economy-view .ec-table tbody{display:block}#economy-view .ec-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}#economy-view .ec-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto 28px;gap:5px 9px;padding:14px 0;border-top:1px solid var(--ec-line);align-items:center}#economy-view .ec-table td{border:0;padding:0;min-width:0}#economy-view .ec-table .ec-name{min-width:0;max-width:none;grid-column:1;grid-row:1}#economy-view .ec-table .ec-date{grid-column:1;grid-row:2;font-size:10.5px;width:auto}#economy-view .ec-table .ec-kind{grid-column:1;grid-row:3;font-size:10px}#economy-view .ec-table .ec-money{grid-column:2;grid-row:1/3;white-space:normal;overflow-wrap:anywhere;max-width:112px;font-size:12px}#economy-view .ec-table .ec-cell-action{grid-column:3;grid-row:1/3;width:auto}#economy-view .ec-table .ec-empty{grid-column:1/-1}.ec-table .ec-edit{width:28px!important;height:30px!important}#ec-form{padding:22px}.ec-detail-list dd{max-width:180px}}
 @media(max-width:600px){.ec-operation{gap:8px;align-items:flex-start}.ec-operation-icon{flex-basis:28px;width:28px;height:28px;border-radius:9px;margin-top:1px}.ec-operation-icon svg{width:17px;height:17px}#ec-receipts-body .ec-row-title{font-size:12px}#ec-receipts-body .ec-sub{font-size:10px}#economy-view #ec-receipts-body .ec-date,#economy-view #ec-receipts-body .ec-kind{padding-left:36px}#economy-view #ec-receipts-body .ec-money{font-size:13px}.ec-type-badge{font-size:10px;padding:3px 7px}}
@@ -48,9 +50,7 @@ export const ECONOMY_VIEW_HTML = String.raw`
  <div class="ec-card ec-net" id="ec-net-card"><div class="ec-kpi-label" id="ec-net-label">Прибыль</div><div class="ec-value" id="ec-net-val">—</div><div class="ec-caption" id="ec-net-sub">После расходов и комиссий</div></div>
 </div>
 <section class="ec-allocation" aria-label="Распределение прибыли">
- <div class="ec-allocation-item"><div class="ec-allocation-label">В развитие <span id="ec-fund-pct"></span></div><div class="ec-allocation-amount" id="ec-fund-total">—</div></div>
- <div class="ec-allocation-item"><div class="ec-allocation-label">Сергей <span id="ec-share-s"></span></div><div class="ec-allocation-amount" id="ec-payout-s">—</div></div>
- <div class="ec-allocation-item"><div class="ec-allocation-label">Никита <span id="ec-share-n"></span></div><div class="ec-allocation-amount" id="ec-payout-n">—</div></div>
+ <div class="ec-allocation-list" id="ec-allocation-list"></div>
  <button type="button" class="btn-action" id="ec-edit-shares" disabled>Изменить доли</button>
 </section>
 <div class="ec-caption" id="ec-fx-status" role="status" style="margin:0 0 16px"></div>
@@ -78,6 +78,7 @@ export const ECONOMY_VIEW_HTML = String.raw`
 export const ECONOMY_CLIENT_JS = String.raw`
 (function() {
  'use strict';
+ var splitProfit=${splitProfit.toString()};
  var stats=null,period='month',receiptMode='all',page=0,requestId=0,loading=null,dialogContext=null,saving=false,returnFocus=null,journal=[],plategaData=null,plategaLoading=false;
  var stores={web:'СБП · Platega',appstore:'App Store',googleplay:'Google Play',rustore:'RuStore',other:'Другое'};
  var frequencies={once:'Без повторения',monthly:'Ежемесячно',yearly:'Ежегодно'};
@@ -157,8 +158,9 @@ export const ECONOMY_CLIENT_JS = String.raw`
   var commissions=(exp.paymentFeesUsd||0)+(exp.withdrawalFeesUsd||0)+(exp.lines||[]).filter(function(line){return line.category==='commission';}).reduce(function(sum,line){return sum+line.periodUsd;},0);
   set('ec-costs-sub',stats.cloudflare?.stale?'Cloudflare: показаны прежние счета':'Комиссии '+usd(commissions)+' · Platega '+pct(cfg.paymentFeePercent));
   var loss=profit.operatingUsd<0;el('ec-net-card').classList.toggle('is-loss',loss);set('ec-net-label',loss?'Убыток':'Прибыль');set('ec-net-sub',loss?'Распределение — $0.00':rev.includedStoreSalesUsd>0?'Оценка после расходов':'После расходов и комиссий');
-  set('ec-fund-pct',pct(cfg.reinvestPercent));set('ec-fund-total',usd(profit.reinvestUsd));
-  ['sergey','nikita'].forEach(function(key,index){var partner=stats.partners[key],suffix=index?'n':'s';set('ec-share-'+suffix,pct(partner.percent)+' доли');set('ec-payout-'+suffix,usd(partner.payoutUsd));});
+  el('ec-allocation-list').innerHTML=stats.profitShares.map(function(share){
+   return '<div class="ec-allocation-item"><div class="ec-allocation-label">'+esc(share.name)+' <span>'+pct(share.percent)+'</span></div><div class="ec-allocation-amount">'+usd(share.payoutUsd)+'</div></div>';
+  }).join('');
   set('ec-fx-status',(stats.fx.stale?'Курс не обновлён · ':'')+'ЦБ '+dateText(stats.fx.effectiveDate,true)+' · $1 = '+Number(stats.fx.rubPerUsd).toLocaleString('ru-RU',{maximumFractionDigits:4})+' ₽');
   var range=stats.periodInfo||{};set('ec-period-note',range.from?dateText(range.from,true)+' — '+dateText(range.to,true):'');
   set('ec-withdrawn-total',stats.withdrawalSummary?.count?'Выведено '+usd(stats.withdrawalSummary.receivedUsd):'');
@@ -220,8 +222,8 @@ export const ECONOMY_CLIENT_JS = String.raw`
   el('ec-expenses-body').innerHTML=lines.length?lines.map(function(line){var kind=line.builtin?'builtin':line.category==='commission'?'commission':'expense',amount=usd(line.amountUsd),action=line.imported?'data-detail-key="expense:'+esc(line.id)+'"':'data-edit-kind="'+kind+'" data-id="'+esc(line.id)+'"';return '<tr><td class="ec-date">'+(line.builtin?'Бюджет':esc(dateText(line.date,true)))+'</td><td class="ec-name"><button type="button" class="ec-row-title" '+action+'>'+esc(line.title)+'</button>'+(line.imported?'<span class="ec-sub">Cloudflare · весь аккаунт · API</span>':line.endDate?'<span class="ec-sub">До '+esc(dateText(line.endDate,true))+'</span>':'')+'</td><td class="ec-kind">'+(line.frequency==='once'?'Разовый':frequencies[line.frequency])+'</td><td class="ec-money">'+amount+'</td><td class="ec-cell-action"><button type="button" class="ec-edit" '+action+' aria-label="'+(line.imported?'Подробнее: ':'Редактировать ')+esc(line.title)+'">'+(line.imported?infoIcon:editIcon)+'</button></td></tr>';}).join(''):'<tr><td colspan="5" class="ec-empty">Расходов пока нет</td></tr>';
  }
  function updatePlanner(){
-  if(!stats)return;var monthly=Number(stats.expenses.monthlyUsd)||0,target=Math.max(0,Number(el('ec-plan-target').value)||0),average=Math.max(0.01,Number(el('ec-plan-average').value)||1),reinvestFactor=1-stats.config.reinvestPercent/100,feeFactor=1-stats.config.paymentFeePercent/100;
-  var possible=feeFactor>0&&(reinvestFactor>0||target===0),required=possible?(monthly+(target===0?0:target/reinvestFactor))/feeFactor:0;
+  if(!stats)return;var monthly=Number(stats.expenses.monthlyUsd)||0,target=Math.max(0,Number(el('ec-plan-target').value)||0),average=Math.max(0.01,Number(el('ec-plan-average').value)||1),feeFactor=1-stats.config.paymentFeePercent/100;
+  var possible=feeFactor>0,required=possible?(monthly+target)/feeFactor:0;
   set('ec-plan-cost',usd(monthly)+' / мес');set('ec-plan-fee','С учётом комиссии Platega '+pct(stats.config.paymentFeePercent));
   set('ec-be-week',feeFactor>0?num(Math.ceil(monthly/(stats.tariffs.weeklyUsd*feeFactor)))+' продаж':'—');set('ec-be-quarter',feeFactor>0?num(Math.ceil(monthly/(stats.tariffs.quarterlyUsd*feeFactor)))+' продаж':'—');
   set('ec-plan-revenue',possible?usd(Math.ceil(required)):'—');set('ec-plan-sales',possible?num(Math.ceil(required/average)):'—');
@@ -244,7 +246,11 @@ export const ECONOMY_CLIENT_JS = String.raw`
  function showForm(kind,item){
   if(!stats||saving||stats.period!==period)return;item=item||{};returnFocus=document.activeElement;dialogContext={kind:kind,id:item.id||null,confirmDelete:false,item:item};var html='',heading='',note='';
   if(Object.hasOwn(operationTypes,kind)){heading=item.id?'Изменить операцию':'Новая операция';html=operationFields(kind,item);}
-  else if(kind==='shares'){heading='Распределение прибыли';html=input('reinvestPercent','В развитие, %',stats.config.reinvestPercent,{max:100,full:true})+input('sergeySharePercent','Сергей, %',stats.config.sergeySharePercent,{max:100})+input('nikitaSharePercent','Никита, %',stats.config.nikitaSharePercent,{max:100})+'<div class="ec-form-preview" id="ec-form-preview"></div>';note='Доли делят остаток после отчисления в развитие.';}
+  else if(kind==='shares'){
+   heading='Распределение прибыли';
+   html='<div class="ec-share-fields" id="ec-share-fields">'+stats.profitShares.map(shareFields).join('')+'</div><button type="button" class="btn-action ec-share-add" id="ec-add-share">Добавить долю</button><div class="ec-form-preview" id="ec-form-preview"></div>';
+   note='Каждая доля считается от общей прибыли. Сумма долей должна быть 100%.';
+  }
   else if(kind==='settings'){
    heading='Настройки экономики';var cfg=stats.config;
    html=input('paymentFeePercent','Комиссия Platega, %',cfg.paymentFeePercent??8,{max:100})+'<details class="ec-settings-extra"><summary>Бюджет инфраструктуры</summary><div class="ec-form-grid">'+(stats.cloudflare?.configured?'<input type="hidden" name="cloudflareMonthlyUsd" value="'+esc(cfg.cloudflareMonthlyUsd)+'"><p class="ec-form-note">Cloudflare: счета через API. Бюджет не используется.</p>':input('cloudflareMonthlyUsd','Cloudflare, $ / мес',cfg.cloudflareMonthlyUsd))+input('domainMonthlyRub','Домен, ₽ / мес',cfg.domainMonthlyRub)+'<label class="ec-form-check"><input type="checkbox" name="cloudflareEnabled" '+(stats.cloudflare?.configured?'disabled ':'')+(cfg.cloudflareEnabled!==false?'checked':'')+'>Учитывать Cloudflare</label><label class="ec-form-check"><input type="checkbox" name="domainEnabled" '+(cfg.domainEnabled!==false?'checked':'')+'>Учитывать домен</label><p class="ec-form-note" style="grid-column:1/-1;margin:0">Бюджет распределяется по дням. При учёте реальных списаний отключите его.</p></div></details>';
@@ -254,12 +260,28 @@ export const ECONOMY_CLIENT_JS = String.raw`
   }
   set('ec-dialog-title',heading);el('ec-fields').innerHTML=html;el('ec-form-error').hidden=true;formNote(note);el('ec-delete').hidden=!item.id;set('ec-delete',kind==='builtin'?'Отключить':'Удалить');el('ec-submit').hidden=false;set('ec-submit',item.id||kind==='shares'||kind==='settings'?'Сохранить':'Добавить');set('ec-cancel','Отмена');if(item.id&&field('operationType'))field('operationType').disabled=true;updateFormPreview();el('ec-dialog').showModal();
  }
- function updateFormPreview(changed){
+ function shareFields(share){
+  return '<div class="ec-share-row">'+input('shareName','Название',share.name,{type:'text'})+input('sharePercent','Доля, %',share.percent,{max:100})+'<button type="button" class="btn-action btn-danger" data-remove-share>Удалить</button></div>';
+ }
+ function readShares(){
+  return Array.from(el('ec-share-fields').children,function(row){
+   var value=row.querySelector('[name="sharePercent"]').value;
+   return {name:row.querySelector('[name="shareName"]').value.trim(),percent:value===''?NaN:Number(value)};
+  });
+ }
+ function shareTotal(shares){
+  return shares.reduce(function(sum,share){return sum+Math.round((share.percent||0)*100);},0);
+ }
+ function updateFormPreview(){
   if(!dialogContext)return;var kind=dialogContext.kind;
   if(kind==='shares'){
-   if(changed==='sergeySharePercent'||changed==='nikitaSharePercent'){var other=changed==='sergeySharePercent'?'nikitaSharePercent':'sergeySharePercent',value=Number(field(changed).value);if(field(changed).value!==''&&Number.isFinite(value)&&value>=0&&value<=100)field(other).value=Number((100-value).toFixed(2));}
-   var profit=Math.max(0,stats.profit.operatingUsd),fund=profit*Number(field('reinvestPercent').value)/100,payout=profit-fund;
-   el('ec-form-preview').innerHTML=previewLine('В развитие',usd(fund))+previewLine('Сергей',usd(payout*Number(field('sergeySharePercent').value)/100))+previewLine('Никита',usd(payout*Number(field('nikitaSharePercent').value)/100));return;
+   var shares=readShares(),total=shareTotal(shares),valid=total===10000&&shares.every(function(share){return share.name&&Number.isFinite(share.percent)&&share.percent>=0&&share.percent<=100&&share.percent===Math.round(share.percent*100)/100;});
+   var html=previewLine('Итого',pct(total/100));
+   if(valid){
+    var amounts=splitProfit(shares,stats.profit.operatingUsd);
+    html+=shares.map(function(share,i){return previewLine(share.name,usd(amounts[i]));}).join('');
+   }
+   el('ec-form-preview').innerHTML=html;return;
   }
   if(!Object.hasOwn(operationTypes,kind))return;
   var amount=Number(field('amount').value)||0,currency=field('currency').value,expense=kind==='expense'||kind==='commission',rate=stats.fx.rubPerUsd,dollars=currency==='USD'?amount:amount/rate,note='';
@@ -306,7 +328,12 @@ export const ECONOMY_CLIENT_JS = String.raw`
     else{body.store=field('store').value;}
     if(kind==='withdrawal'){body.fee=Number(field('fee').value);body.feeMode=field('feeMode').value;}
     path=group+'/'+(context.id?'update':'add');if(context.id)body.id=context.id;
-   }else if(kind==='shares'){body={nikitaSharePercent:Number(field('nikitaSharePercent').value),reinvestPercent:Number(field('reinvestPercent').value)};if(Math.abs(Number(field('sergeySharePercent').value)+body.nikitaSharePercent-100)>.001){formError('Сумма долей должна быть 100%');return;}path='settings';}
+   }else if(kind==='shares'){
+    body={profitShares:readShares()};
+    if(body.profitShares.some(function(share){return !share.name;})){formError('Укажите название каждой доли');return;}
+    if(shareTotal(body.profitShares)!==10000){formError('Сумма долей должна быть 100%');return;}
+    path='settings';
+   }
    else if(kind==='builtin'){body[context.item.source==='cloudflare'?'cloudflareMonthlyUsd':'domainMonthlyRub']=Number(field('amount').value);path='settings';}
    else{body={paymentFeePercent:Number(field('paymentFeePercent').value),cloudflareMonthlyUsd:Number(field('cloudflareMonthlyUsd').value),domainMonthlyRub:Number(field('domainMonthlyRub').value),cloudflareEnabled:field('cloudflareEnabled').checked,domainEnabled:field('domainEnabled').checked};path='settings';}
   }
@@ -327,13 +354,26 @@ export const ECONOMY_CLIENT_JS = String.raw`
   ['ec-search','ec-store-filter'].forEach(function(id){el(id).addEventListener(id==='ec-search'?'input':'change',function(){page=0;renderReceipts();});});
   el('ec-prev').onclick=function(){page--;renderReceipts();};el('ec-next').onclick=function(){page++;renderReceipts();};el('ec-receipts-body').addEventListener('click',openRow);el('ec-expenses-body').addEventListener('click',openRow);
   el('ec-feedback').querySelector('button').onclick=function(){el('ec-feedback').hidden=true;};['ec-plan-target','ec-plan-average'].forEach(function(id){el(id).addEventListener('input',updatePlanner);});
-  el('ec-form').addEventListener('input',function(event){if(event.target.name!=='operationType')updateFormPreview(event.target.name);});
+  el('ec-form').addEventListener('input',function(event){if(event.target.name!=='operationType')updateFormPreview();});
   el('ec-form').addEventListener('change',function(event){
    if(event.target.name==='operationType'&&!dialogContext.id){var draft=formDraft(),kind=event.target.value;dialogContext.kind=kind;if(kind==='withdrawal'&&!draft.title&&draft.amount==='')draft.currency='USD';el('ec-fields').innerHTML=operationFields(kind,draft);field('operationType').focus();}
-   updateFormPreview(event.target.name);
+   updateFormPreview();
   });
   el('ec-form').addEventListener('submit',submitForm);el('ec-cancel').onclick=closeForm;
   el('ec-delete').onclick=function(){if(!dialogContext.confirmDelete){dialogContext.confirmDelete=true;set('ec-delete',dialogContext.kind==='builtin'?'Подтвердить отключение':'Подтвердить удаление');return;}submitForm(null,true);};
+  el('ec-fields').addEventListener('click',function(event){
+   var button=event.target.closest('#ec-add-share,[data-remove-share]');if(!button||saving)return;
+   var rows=el('ec-share-fields');
+   if(button.id==='ec-add-share'){
+    rows.insertAdjacentHTML('beforeend',shareFields({name:'',percent:0}));
+    rows.lastElementChild.querySelector('input').focus();
+   }else{
+    var row=button.closest('.ec-share-row'),next=row.nextElementSibling||row.previousElementSibling;
+    row.remove();
+    (next?.querySelector('[data-remove-share]')||el('ec-add-share')).focus();
+   }
+   el('ec-form-error').hidden=true;updateFormPreview();
+  });
   el('ec-fields').addEventListener('click',async function(event){var button=event.target.closest('[data-copy]');if(!button)return;try{await navigator.clipboard.writeText(button.dataset.copy);set('ec-form-note','Номер заказа скопирован');el('ec-form-note').hidden=false;}catch(_){formError('Не удалось скопировать номер заказа');}});
   el('ec-dialog').addEventListener('cancel',function(event){event.preventDefault();closeForm();});
   el('ec-dialog').addEventListener('click',function(event){if(event.target===el('ec-dialog')){var rect=el('ec-dialog').getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)closeForm();}});
