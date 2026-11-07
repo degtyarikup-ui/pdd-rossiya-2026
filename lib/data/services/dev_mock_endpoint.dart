@@ -295,8 +295,56 @@ class DevMockEndpoint {
         await _addPremiumDays(prefs, inviterId, 2);
       }
 
+      final friendPremium = await _getPremiumData(prefs, userId);
       return http.Response(
-        jsonEncode({'ok': true, 'daysAdded': 1, 'inviterRewarded': true}),
+        jsonEncode({
+          'ok': true,
+          'daysAdded': 1,
+          'inviterDaysAdded': 2,
+          'inviterRewarded': true,
+          'isPremium': friendPremium['isPremium'],
+          'premiumExpiresAt': friendPremium['premiumExpiresAt'],
+          'premiumSource': friendPremium['premiumSource'],
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    }
+
+    if (path == '/api/user/sync') {
+      final premium = await _getPremiumData(prefs, userId);
+      final current = AuthService.instance.currentUser;
+      return http.Response(
+        jsonEncode({
+          'ok': true,
+          'user': {
+            'id': userId,
+            'name': current?.name ?? 'Тестировщик',
+            'email': current?.email ?? '$userId@example.com',
+            'provider': current?.provider.name ?? 'google',
+          },
+          'isPremium': premium['isPremium'],
+          'premiumExpiresAt': premium['premiumExpiresAt'],
+          'premiumSource': premium['premiumSource'],
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    }
+
+    if (path == '/api/user/delete') {
+      await prefs.remove('dev_mock_referrals_$userId');
+      await prefs.remove('dev_mock_premium_$userId');
+      return http.Response(
+        jsonEncode({'ok': true, 'deleted': userId}),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    }
+
+    if (path == '/api/auth/logout') {
+      return http.Response(
+        jsonEncode({'ok': true}),
         200,
         headers: {'content-type': 'application/json'},
       );

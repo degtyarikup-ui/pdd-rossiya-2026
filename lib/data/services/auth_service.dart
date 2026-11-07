@@ -351,15 +351,12 @@ class AuthService extends ChangeNotifier {
 
   Future<void> init() async {
     if (_isInitialized) return;
-    if (const bool.fromEnvironment('GAME_DEBUG')) {
-      try {
-        _devPackage = (await PackageInfo.fromPlatform().timeout(
-          const Duration(milliseconds: 500),
-        )).packageName.endsWith(
-          '.dev',
-        );
-      } catch (_) {}
-    }
+    try {
+      final info = await PackageInfo.fromPlatform().timeout(
+        const Duration(seconds: 2),
+      );
+      _devPackage = info.packageName.endsWith('.dev');
+    } catch (_) {}
     try {
       final prefs = await SharedPreferences.getInstance();
       final userJson = prefs.getString(_prefKeyUser);
@@ -468,6 +465,10 @@ class AuthService extends ChangeNotifier {
   static void setDebugSignInAvailableForTesting(bool? value) {
     _debugSignInOverride = value;
   }
+  @visibleForTesting
+  static void setDevPackageForTesting(bool value) {
+    _devPackage = value;
+  }
 
   /// Debug builds only (`--dart-define=GAME_DEBUG=true` or dev package): a local
   /// account without an OAuth provider, so a dev-signed APK (its package and SHA-1
@@ -477,10 +478,10 @@ class AuthService extends ChangeNotifier {
   /// a release build: the store package never ends in `.dev`.
   static bool get debugSignInAvailable =>
       _debugSignInOverride ??
-      (const bool.fromEnvironment('GAME_DEBUG') &&
-          (kDebugMode ||
-              _devPackage ||
-              const bool.fromEnvironment('GAME_DEBUG_DEVICE')));
+      (_devPackage ||
+          (const bool.fromEnvironment('GAME_DEBUG') &&
+              (kDebugMode ||
+                  const bool.fromEnvironment('GAME_DEBUG_DEVICE'))));
   static bool _devPackage = false;
 
   Future<bool> signInDebug({String? accountId, String? name}) async {
@@ -1123,14 +1124,13 @@ class AuthService extends ChangeNotifier {
       final user = _currentUser;
       final revision = _accountRevision;
       try {
-        if (user != null && BackendConfig.hasNotifier) {
-          final resp = await http
-              .post(
-                NotifierApi.uri('/api/user/delete'),
-                headers: serverHeaders,
-                body: jsonEncode({'userId': user.id}),
-              )
-              .timeout(const Duration(seconds: 10));
+        if (user != null && (BackendConfig.hasNotifier || isDevSession)) {
+          final resp = await NotifierApi.post(
+            '/api/user/delete',
+            idempotent: false,
+            headers: serverHeaders,
+            body: jsonEncode({'userId': user.id}),
+          ).timeout(const Duration(seconds: 10));
           if (resp.statusCode == 200) {
             final body = jsonDecode(resp.body);
             deleted =

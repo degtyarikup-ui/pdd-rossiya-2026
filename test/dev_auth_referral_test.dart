@@ -21,8 +21,20 @@ void main() {
 
   tearDown(() async {
     AuthService.setDebugSignInAvailableForTesting(null);
+    AuthService.setDevPackageForTesting(false);
     await DevMockEndpoint.resetForTesting();
     await AuthService.instance.signOut();
+  });
+
+  test('debugSignInAvailable is enabled by .dev package without GAME_DEBUG', () {
+    AuthService.setDebugSignInAvailableForTesting(null);
+    AuthService.setDevPackageForTesting(false);
+    expect(AuthService.debugSignInAvailable, isFalse);
+
+    AuthService.setDevPackageForTesting(true);
+    expect(AuthService.debugSignInAvailable, isTrue);
+
+    AuthService.setDevPackageForTesting(false);
   });
 
   test('dev login establishes active server session and dev session flags', () async {
@@ -123,6 +135,7 @@ void main() {
     // 4. Switch back to Tester 1, check that inviter was rewarded
     await auth.signOut();
     await auth.signInDebug(accountId: 'dev_tester_1', name: 'Тестировщик 1');
+    expect(PremiumService.instance.isPremium, isTrue, reason: 'signInDebug should sync premium state from dev mock');
     final updatedInfo1 = await referralService.getReferralInfo(forceRefresh: true);
     expect(updatedInfo1?.invitedCount, 1);
     expect(updatedInfo1?.rewardDays, 2);
@@ -130,6 +143,23 @@ void main() {
     // Tester 1 also received Premium reward
     await PremiumService.instance.checkForGrant();
     expect(PremiumService.instance.isPremium, isTrue);
+  });
+
+  test('deleteAccount works and purges mock data in dev session', () async {
+    final auth = AuthService.instance;
+    await auth.signInDebug(accountId: 'dev_tester_1', name: 'Тестировщик 1');
+    expect(auth.isAuthenticated, isTrue);
+    expect(auth.isDevSession, isTrue);
+
+    final referralService = ReferralService.instance;
+    final info = await referralService.getReferralInfo(forceRefresh: true);
+    expect(info?.code, 'DEVTEST1');
+
+    final deleted = await auth.deleteAccount();
+    expect(deleted, isTrue);
+    expect(auth.isAuthenticated, isFalse);
+    expect(auth.currentUser, isNull);
+    expect(auth.hasServerSession, isFalse);
   });
 
   testWidgets('AuthModalSheet renders dev login button and signs in through account picker', (tester) async {
@@ -159,5 +189,8 @@ void main() {
     expect(AuthService.instance.isAuthenticated, isTrue);
     expect(AuthService.instance.hasServerSession, isTrue);
     expect(AuthService.instance.currentUser?.id, 'dev_tester_1');
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 7));
   });
 }
