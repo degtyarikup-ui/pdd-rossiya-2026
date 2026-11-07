@@ -12,6 +12,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 // Replace only the native store boundary; exercise the real payment services.
 // ignore: depend_on_referenced_packages
 import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_interface.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
@@ -103,6 +104,14 @@ void main() {
         email: 'test@example.com',
         provider: AuthProviderType.apple,
         createdAt: DateTime(2026),
+      );
+      // Auth initialization checks the package ID before restoring a session.
+      PackageInfo.setMockInitialValues(
+        appName: 'PDD',
+        packageName: 'ru.pdd.pddApp',
+        version: '2.2.11',
+        buildNumber: '1',
+        buildSignature: '',
       );
       SharedPreferences.setMockInitialValues({
         'auth_user_profile': user.toJson(),
