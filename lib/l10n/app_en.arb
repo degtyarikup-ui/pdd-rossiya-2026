@@ -1599,8 +1599,8 @@
   },
   "referralSettingsTitle": "Invite a friend",
   "referralSettingsSubtitle": "2 Premium days each",
-  "referralPlansTitle": "Have an invite code?",
-  "referralPlansSubtitle": "2 days of Premium with a friend’s code",
+  "referralPlansTitle": "Enter a promo code",
+  "referralPlansSubtitle": "A friend’s code or a promotional code",
   "referralModalTitle": "2 Premium days each",
   "referralRules": "A friend uses your code — you get {inviter} days of Premium, they get {friend}.",
   "@referralRules": {
@@ -1674,5 +1674,15 @@
   "referralCodeCopied": "Code copied",
   "referralCopyError": "Couldn’t copy",
   "referralLoadError": "Couldn’t load your code",
-  "referralRetryButton": "Retry"
+  "referralRetryButton": "Retry",
+  "promoTitle": "Enter a promo code",
+  "promoFieldTitle": "Promo code",
+  "promoDescription": "A friend’s code or a promotional code",
+  "promoTerms": "A friend’s code can be used once, within 7 days of signing up.",
+  "promoReferralTerms": "Your friend can redeem the code within 7 days of signing up. One friend’s code per account.",
+  "promoReferralIneligible": "Friend codes are only available within 7 days of signing up.",
+  "promoUnavailable": "This promo code is currently unavailable.",
+  "promoExpired": "This promo code has expired.",
+  "promoNotStarted": "This promotion hasn’t started yet.",
+  "promoExhausted": "This promo code has reached its redemption limit."
 }

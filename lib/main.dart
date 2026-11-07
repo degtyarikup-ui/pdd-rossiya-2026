@@ -37,7 +37,7 @@ import 'package:pdd_app/presentation/screens/home/home_screen.dart';
 import 'package:pdd_app/presentation/screens/games/games_hub_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
-import 'package:pdd_app/presentation/widgets/referral_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/promo_code_sheet.dart';
 import 'package:pdd_app/data/services/browser_info_stub.dart'
     if (dart.library.js_interop) 'package:pdd_app/data/services/browser_info_web.dart';
 import 'package:pdd_app/presentation/widgets/app_startup_gate.dart';
@@ -304,7 +304,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     if (await widget.referralPrompt != true || !mounted) return;
     if (_navigatorKey.currentContext case final BuildContext context
         when context.mounted) {
-      await ReferralModalSheet.show(context);
+      await PromoCodeSheet.show(context);
     }
   }
 

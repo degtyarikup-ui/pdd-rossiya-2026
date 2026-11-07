@@ -21,7 +21,7 @@ function generateCode() {
   return Array.from(crypto.getRandomValues(new Uint8Array(10)), byte => ALPHABET[byte & 31]).join('');
 }
 
-async function liveUser(env) {
+export async function liveUser(env) {
   const id = env.__ACCOUNT_ID;
   const raw = await env.INSTALLS.get('user:' + id);
   const user = raw && JSON.parse(raw);
@@ -30,7 +30,7 @@ async function liveUser(env) {
   return deletion && !(Date.parse(user.createdAt) > deletion.at) ? null : user;
 }
 
-async function codeRpc(env, code, operation, owner) {
+export async function codeRpc(env, code, operation, owner) {
   const res = await accountRpc(env, 'referral-code:' + code, '/_referral/code', { code, operation, owner });
   if (!res?.ok) throw new Error('referral directory unavailable');
   return (await res.json()).owner;
@@ -80,7 +80,7 @@ export async function handleGetReferral(env, authenticatedUser, jsonResponse) {
   }, 200, noStore);
 }
 
-async function readClaimCode(request) {
+export async function readClaimCode(request) {
   const reader = request.body?.getReader();
   if (!reader) return null;
   let size = 0, json = '';
@@ -116,7 +116,7 @@ const premiumStatus = user => ({
   premiumExpiresAt: user.premiumExpiresAt || null,
   premiumSource: user.premiumSource || null,
 });
-const success = user => reply({ ok: true, daysAdded: FRIEND_DAYS, inviterDaysAdded: INVITER_DAYS, ...premiumStatus(user) });
+const success = user => reply({ ok: true, kind: 'referral', daysAdded: FRIEND_DAYS, inviterDaysAdded: INVITER_DAYS, ...premiumStatus(user) });
 
 export async function referralAccountStep(path, request, env) {
   const job = await request.json();
@@ -124,6 +124,10 @@ export async function referralAccountStep(path, request, env) {
   if (path === '/_account/referral-check') {
     if (!user) return fail('account_not_ready', 404);
     if (user.referredBy || await env.INSTALLS.get('referral_used:' + user.id)) return fail('already_claimed', 400);
+    const created = Date.parse(user.createdAt);
+    if (!Number.isFinite(created) || created > Date.now() ||
+        Date.now() - created > 7 * 86400000 ||
+        await env.INSTALLS.get('account_deleted:' + user.id)) return fail('referral_ineligible', 400);
     if (user.referralCode === job.code) return fail('cannot_refer_self', 400);
     return reply({ createdAt: user.createdAt || null });
   }

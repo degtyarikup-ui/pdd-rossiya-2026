@@ -79,6 +79,7 @@ import { enhanceAdminHtml, enhanceAdminClientJs, ADMIN_UI_CLIENT_JS } from './ad
 import { ADMIN_DATA_STYLES, ADMIN_DATA_CLIENT_JS } from './admin_data.js';
 import { StatsBuffer } from './stats_buffer.js';
 import { handleUsersAdmin, isPremiumActive } from './users_admin.js';
+import { handlePromoClaim, handlePromoAdmin } from './promocodes.js';
 import { handleGetReferral, handleClaimReferral } from './referrals.js';
 import { putUserRecord, putUserActivity, listUserSummaries } from './user_store.js';
 import { usersSnapshot } from './analytics_data.js';
@@ -3477,11 +3478,15 @@ const workerHandlers = {
       for (const [key, value] of Object.entries(CORS_HEADERS)) authResponse.headers.set(key, value);
       return authResponse;
     }
-    if (url.pathname === '/api/user/referral/claim' && request.method === 'POST') {
+    if (url.pathname === '/api/admin/promocodes') {
+      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
+      return handlePromoAdmin(request, env);
+    }
+    if (['/api/user/referral/claim', '/api/user/promo/claim'].includes(url.pathname) && request.method === 'POST') {
       const session = await readSession(request, env);
       if (!session) return jsonResponse({ error: 'unauthorized' }, 401, { 'Cache-Control': 'no-store' });
       if (!await appKeyAllowed(request, env)) return jsonResponse({ error: 'forbidden' }, 403, { 'Cache-Control': 'no-store' });
-      return handleClaimReferral(request, env, session.user, jsonResponse);
+      return (url.pathname === '/api/user/promo/claim' ? handlePromoClaim : handleClaimReferral)(request, env, session.user, jsonResponse);
     }
     const authorization = await authorizeUserRequest(request, env);
     if (authorization.response) {

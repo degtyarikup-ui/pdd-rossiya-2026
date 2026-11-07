@@ -27,6 +27,51 @@ void main() {
   });
 
   test(
+    'advertising code is separate from a friend code and can be replayed safely',
+    () async {
+      await AuthService.instance.signInDebug(
+        accountId: 'dev_tester_1',
+        name: 'Tester',
+      );
+      final service = ReferralService.instance;
+      await service.getReferralInfo(forceRefresh: true);
+      final first = await service.claimCode('PREMIUM7');
+      expect(first.status, ReferralClaimStatus.success);
+      expect(first.daysAdded, 7);
+      expect(first.isReferral, false);
+      expect(service.info?.hasUsedReferral, false);
+      final prefs = await SharedPreferences.getInstance();
+      final before = prefs.getString('dev_mock_premium_dev_tester_1');
+      await service.claimCode('PREMIUM7');
+      expect(prefs.getString('dev_mock_premium_dev_tester_1'), before);
+      expect(
+        (await service.claimCode('FRIEND26')).status,
+        ReferralClaimStatus.success,
+      );
+    },
+  );
+
+  test('old account cannot use friend code but can use a promotion', () async {
+    await AuthService.instance.signInDebug(
+      accountId: 'dev_tester_1',
+      name: 'Tester',
+    );
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(
+      'dev_mock_created_dev_tester_1',
+      DateTime.now().subtract(const Duration(days: 8)).millisecondsSinceEpoch,
+    );
+    expect(
+      (await ReferralService.instance.claimCode('FRIEND26')).status,
+      ReferralClaimStatus.ineligible,
+    );
+    expect(
+      (await ReferralService.instance.claimCode('PREMIUM7')).status,
+      ReferralClaimStatus.success,
+    );
+  });
+
+  test(
     'debugSignInAvailable is enabled by .dev package without GAME_DEBUG',
     () {
       AuthService.setDebugSignInAvailableForTesting(null);

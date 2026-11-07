@@ -8,6 +8,7 @@ import 'package:pdd_app/data/services/referral_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/promo_code_sheet.dart';
 import 'package:pdd_app/presentation/widgets/result_share.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -33,9 +34,7 @@ class ReferralModalSheet extends StatefulWidget {
 class _ReferralModalSheetState extends State<ReferralModalSheet> {
   final _service = ReferralService.instance;
   final _auth = AuthService.instance;
-  late final TextEditingController _code;
   late (String?, int, bool) _account;
-  ReferralClaimResult? _result;
   bool _signingIn = false;
 
   (String?, int, bool) get _currentAccount =>
@@ -45,7 +44,6 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
   void initState() {
     super.initState();
     _account = _currentAccount;
-    _code = TextEditingController(text: _service.pendingCode);
     _service.addListener(_changed);
     _auth.addListener(_authChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -57,24 +55,17 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
   void dispose() {
     _auth.removeListener(_authChanged);
     _service.removeListener(_changed);
-    _code.dispose();
     super.dispose();
   }
 
   void _changed() {
     if (!mounted) return;
-    if (_service.pendingCode case final String pending
-        when _code.text.isEmpty) {
-      _code.text = pending;
-    }
     setState(() {});
   }
 
   void _authChanged() {
     if (_account != _currentAccount) {
       _account = _currentAccount;
-      _result = null;
-      if (!_signingIn) _code.text = _service.pendingCode ?? '';
       _service.getReferralInfo(forceRefresh: true);
     }
     _changed();
@@ -84,7 +75,6 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
     if (_signingIn) return;
     setState(() => _signingIn = true);
     FocusScope.of(context).unfocus();
-    await _service.savePendingCode(_code.text);
     if (!mounted) return;
     await AuthModalSheet.show(context);
     if (mounted) setState(() => _signingIn = false);
@@ -124,35 +114,6 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
     if (mounted) await _copy(text, l10n.referralInviteCopied);
   }
 
-  Future<void> _activate() async {
-    if (_service.claiming || _signingIn) return;
-    if (referralCodeFromInput(_code.text) == null) {
-      setState(
-        () => _result = const ReferralClaimResult(
-          status: ReferralClaimStatus.invalidCode,
-        ),
-      );
-      return;
-    }
-    if (!_auth.hasServerSession) {
-      await _signIn();
-      return;
-    }
-    final account = _account;
-    FocusScope.of(context).unfocus();
-    setState(() => _result = null);
-    final result = await _service.claimCode(_code.text);
-    if (!mounted || _currentAccount != account) return;
-    setState(() => _result = result);
-    if (result.status == ReferralClaimStatus.success) {
-      HapticFeedbackHelper.success();
-    } else {
-      HapticFeedbackHelper.error();
-    }
-  }
-
-  bool get _claimed => _result?.status == ReferralClaimStatus.success;
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -160,22 +121,6 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
     final theme = Theme.of(context);
     final info = _service.info;
     final signedIn = _auth.hasServerSession;
-    final renewSignIn = _result?.status == ReferralClaimStatus.unauthenticated;
-    final used =
-        _claimed ||
-        info?.hasUsedReferral == true ||
-        _result?.status == ReferralClaimStatus.alreadyClaimed;
-    final error = switch (_result?.status) {
-      ReferralClaimStatus.invalidCode => l10n.referralErrorInvalid,
-      ReferralClaimStatus.selfReferral => l10n.referralErrorSelf,
-      ReferralClaimStatus.notFound => l10n.referralErrorNotFound,
-      ReferralClaimStatus.rateLimited => l10n.referralErrorRateLimited,
-      ReferralClaimStatus.pending => l10n.referralClaimPending,
-      ReferralClaimStatus.error => l10n.referralClaimError,
-      ReferralClaimStatus.unauthenticated => l10n.referralSignInRequired,
-      _ => null,
-    };
-
     return SafeArea(
       top: false,
       child: Padding(
@@ -239,87 +184,22 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
               const SizedBox(height: 16),
               const Divider(height: 1),
               const SizedBox(height: 16),
-              if (used)
-                Semantics(
-                  liveRegion: true,
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline_rounded,
-                        color: colors.accent,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _claimed
-                              ? l10n.referralSuccessDays(_result!.daysAdded)
-                              : l10n.referralErrorAlreadyUsed,
-                          style: theme.textTheme.titleSmall,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else ...[
-                Text(
-                  l10n.referralEnterCodeTitle,
-                  style: TextStyle(
-                    fontFamily: 'Onest',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: colors.primaryText,
-                  ),
+              Text(
+                l10n.promoReferralTerms,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.secondaryText,
                 ),
-                const SizedBox(height: 10),
-                TextField(
-                  key: const ValueKey('referral-input-field'),
-                  controller: _code,
-                  enabled: !_service.claiming && !_signingIn,
-                  textCapitalization: TextCapitalization.characters,
-                  textInputAction: TextInputAction.done,
-                  autocorrect: false,
-                  enableSuggestions: false,
-                  inputFormatters: [LengthLimitingTextInputFormatter(512)],
-                  onChanged: (_) => setState(() => _result = null),
-                  onSubmitted: (_) {
-                    if (_code.text.trim().isNotEmpty) _activate();
-                  },
-                  decoration: InputDecoration(
-                    hintText: l10n.referralEnterCodeHint,
-                    filled: true,
-                    fillColor: colors.background,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    helperText: l10n.referralCodeOnce,
-                    helperMaxLines: 2,
-                    errorText: error,
-                    errorMaxLines: 3,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  key: const ValueKey('referral-activate-button'),
-                  onPressed:
-                      _code.text.trim().isEmpty ||
-                          _service.claiming ||
-                          _signingIn
-                      ? null
-                      : (renewSignIn ? _signIn : _activate),
-                  child: Text(
-                    _service.claiming
-                        ? l10n.referralActivating
-                        : (renewSignIn
-                              ? l10n.signInCardTitle
-                              : l10n.referralActivateButton),
-                  ),
-                ),
-              ],
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                key: const ValueKey('referral-open-promo-button'),
+                onPressed: () {
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
+                  PromoCodeSheet.show(navigator.context);
+                },
+                child: Text(l10n.promoTitle),
+              ),
             ],
           ),
         ),

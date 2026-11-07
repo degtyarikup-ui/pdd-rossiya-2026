@@ -4679,10 +4679,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get referralSettingsSubtitle => '2 Premium days each';
 
   @override
-  String get referralPlansTitle => 'Have an invite code?';
+  String get referralPlansTitle => 'Enter a promo code';
 
   @override
-  String get referralPlansSubtitle => '2 days of Premium with a friend’s code';
+  String get referralPlansSubtitle => 'A friend’s code or a promotional code';
 
   @override
   String get referralModalTitle => '2 Premium days each';
@@ -4804,4 +4804,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get referralRetryButton => 'Retry';
+
+  @override
+  String get promoTitle => 'Enter a promo code';
+
+  @override
+  String get promoFieldTitle => 'Promo code';
+
+  @override
+  String get promoDescription => 'A friend’s code or a promotional code';
+
+  @override
+  String get promoTerms =>
+      'A friend’s code can be used once, within 7 days of signing up.';
+
+  @override
+  String get promoReferralTerms =>
+      'Your friend can redeem the code within 7 days of signing up. One friend’s code per account.';
+
+  @override
+  String get promoReferralIneligible =>
+      'Friend codes are only available within 7 days of signing up.';
+
+  @override
+  String get promoUnavailable => 'This promo code is currently unavailable.';
+
+  @override
+  String get promoExpired => 'This promo code has expired.';
+
+  @override
+  String get promoNotStarted => 'This promotion hasn’t started yet.';
+
+  @override
+  String get promoExhausted =>
+      'This promo code has reached its redemption limit.';
 }

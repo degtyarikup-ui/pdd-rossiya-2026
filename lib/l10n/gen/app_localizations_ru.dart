@@ -4701,10 +4701,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get referralSettingsSubtitle => '2 дня Премиума каждому';
 
   @override
-  String get referralPlansTitle => 'Есть код приглашения?';
+  String get referralPlansTitle => 'Ввести промокод';
 
   @override
-  String get referralPlansSubtitle => '2 дня Премиума за код друга';
+  String get referralPlansSubtitle => 'Код друга или код из акции';
 
   @override
   String get referralModalTitle => '2 дня Премиума каждому';
@@ -4833,4 +4833,37 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get referralRetryButton => 'Повторить';
+
+  @override
+  String get promoTitle => 'Ввести промокод';
+
+  @override
+  String get promoFieldTitle => 'Промокод';
+
+  @override
+  String get promoDescription => 'Код друга или код из акции';
+
+  @override
+  String get promoTerms =>
+      'Код друга — один раз, в первые 7 дней после регистрации.';
+
+  @override
+  String get promoReferralTerms =>
+      'Друг может активировать код в первые 7 дней после регистрации. Один код друга на аккаунт.';
+
+  @override
+  String get promoReferralIneligible =>
+      'Код друга доступен только в первые 7 дней после регистрации.';
+
+  @override
+  String get promoUnavailable => 'Этот промокод сейчас недоступен.';
+
+  @override
+  String get promoExpired => 'Срок действия промокода истёк.';
+
+  @override
+  String get promoNotStarted => 'Акция ещё не началась.';
+
+  @override
+  String get promoExhausted => 'Лимит активаций этого промокода исчерпан.';
 }

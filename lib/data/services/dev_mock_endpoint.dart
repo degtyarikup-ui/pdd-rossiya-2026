@@ -128,8 +128,9 @@ class DevMockEndpoint {
   static Future<void> _addPremiumDays(
     SharedPreferences prefs,
     String userId,
-    int days,
-  ) async {
+    int days, {
+    String source = 'referral',
+  }) async {
     final key = 'dev_mock_premium_$userId';
     final raw = prefs.getString(key);
     DateTime currentExpiry = DateTime.now();
@@ -148,7 +149,7 @@ class DevMockEndpoint {
     final data = {
       'isPremium': true,
       'premiumExpiresAt': newExpiry.toIso8601String(),
-      'premiumSource': 'referral',
+      'premiumSource': source,
     };
     await prefs.setString(key, jsonEncode(data));
   }
@@ -169,7 +170,9 @@ class DevMockEndpoint {
         return {
           'isPremium': isPremium,
           'premiumExpiresAt': isPremium ? exp.toIso8601String() : null,
-          'premiumSource': isPremium ? 'referral' : null,
+          'premiumSource': isPremium
+              ? (decoded['premiumSource'] ?? 'referral')
+              : null,
         };
       } catch (_) {}
     }
@@ -223,7 +226,7 @@ class DevMockEndpoint {
     if (userId == null) return http.Response('{"error":"unauthorized"}', 401);
     final prefs = await SharedPreferences.getInstance();
 
-    if (path == '/api/user/referral/claim') {
+    if (path == '/api/user/referral/claim' || path == '/api/user/promo/claim') {
       Map<String, dynamic> bodyJson = {};
       try {
         if (body != null && body.isNotEmpty) {
@@ -241,6 +244,23 @@ class DevMockEndpoint {
         );
       }
 
+      if (path == '/api/user/promo/claim' && cleanCode == 'PREMIUM7') {
+        final receipt = 'dev_mock_promo_${userId}_$cleanCode';
+        if (prefs.getBool(receipt) != true) {
+          await _addPremiumDays(prefs, userId, 7, source: 'promo');
+          await prefs.setBool(receipt, true);
+        }
+        return http.Response(
+          jsonEncode({
+            'ok': true,
+            'kind': 'promotion',
+            'daysAdded': 7,
+            ...await _getPremiumData(prefs, userId),
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
       final userData = await _getUserReferralData(prefs, userId);
       final userOwnCode = userData['code'] as String?;
 
@@ -264,6 +284,18 @@ class DevMockEndpoint {
         );
       }
 
+      final createdKey = 'dev_mock_created_$userId';
+      final created =
+          prefs.getInt(createdKey) ?? DateTime.now().millisecondsSinceEpoch;
+      await prefs.setInt(createdKey, created);
+      if (DateTime.now().millisecondsSinceEpoch - created >
+          const Duration(days: 7).inMilliseconds) {
+        return http.Response(
+          jsonEncode({'error': 'referral_ineligible'}),
+          400,
+          headers: {'content-type': 'application/json'},
+        );
+      }
       final owners = await _getCodeOwners(prefs);
       final inviterId = owners[cleanCode];
 

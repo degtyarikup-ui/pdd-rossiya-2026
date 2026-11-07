@@ -77,6 +77,11 @@ class ReferralInfo {
 enum ReferralClaimStatus {
   success,
   selfReferral,
+  ineligible,
+  unavailable,
+  expired,
+  notStarted,
+  exhausted,
   alreadyClaimed,
   notFound,
   invalidCode,
@@ -89,8 +94,13 @@ enum ReferralClaimStatus {
 class ReferralClaimResult {
   final ReferralClaimStatus status;
   final int daysAdded;
+  final bool isReferral;
 
-  const ReferralClaimResult({required this.status, this.daysAdded = 0});
+  const ReferralClaimResult({
+    required this.status,
+    this.daysAdded = 0,
+    this.isReferral = true,
+  });
 }
 
 class ReferralService extends ChangeNotifier {
@@ -241,8 +251,10 @@ class ReferralService extends ChangeNotifier {
         return _result(ReferralClaimStatus.unauthenticated);
       }
       if (result.status == ReferralClaimStatus.success) {
-        _confirmedCode = code;
-        _info = _info?.withClaim(code);
+        if (result.isReferral) {
+          _confirmedCode = code;
+          _info = _info?.withClaim(code);
+        }
         await _clearPendingCode(code);
         if (_currentScope != scope) {
           return _result(ReferralClaimStatus.unauthenticated);
@@ -266,10 +278,9 @@ class ReferralService extends ChangeNotifier {
     Map<String, String> headers,
   ) async {
     try {
-      // The previous deployed API is not idempotent. Retry explicitly in the
-      // UI until all server routes have the new coordinator.
+      // The server keeps a receipt; an explicit retry resumes the same claim.
       final resp = await NotifierApi.post(
-        '/api/user/referral/claim',
+        '/api/user/promo/claim',
         idempotent: false,
         headers: headers,
         body: jsonEncode({'code': code}),
@@ -287,10 +298,17 @@ class ReferralService extends ChangeNotifier {
         return ReferralClaimResult(
           status: ReferralClaimStatus.success,
           daysAdded: data['daysAdded'] as int,
+          isReferral: data['kind'] != 'promotion',
         );
       }
       return _result(switch (data['error']) {
         'cannot_refer_self' => ReferralClaimStatus.selfReferral,
+        'referral_ineligible' => ReferralClaimStatus.ineligible,
+        'promo_expired' => ReferralClaimStatus.expired,
+        'promo_not_started' => ReferralClaimStatus.notStarted,
+        'promo_exhausted' => ReferralClaimStatus.exhausted,
+        'promo_inactive' ||
+        'promo_already_used' => ReferralClaimStatus.unavailable,
         'already_claimed' => ReferralClaimStatus.alreadyClaimed,
         'code_not_found' || 'inviter_not_found' => ReferralClaimStatus.notFound,
         'invalid_code' => ReferralClaimStatus.invalidCode,

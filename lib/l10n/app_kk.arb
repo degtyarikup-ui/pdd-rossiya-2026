@@ -1599,8 +1599,8 @@
   },
   "referralSettingsTitle": "Дос шақыру",
   "referralSettingsSubtitle": "Екеуіңізге де 2 күн Премиум",
-  "referralPlansTitle": "Шақыру кодыңыз бар ма?",
-  "referralPlansSubtitle": "Досыңыздың коды үшін 2 күн Премиум",
+  "referralPlansTitle": "Промокод енгізу",
+  "referralPlansSubtitle": "Досыңыздың коды немесе акция коды",
   "referralModalTitle": "Екеуіңізге де 2 күн Премиум",
   "referralRules": "Досыңыз кодты қолданса, сізге {inviter} күн, оған {friend} күн Премиум беріледі.",
   "@referralRules": {
@@ -1674,5 +1674,15 @@
   "referralCodeCopied": "Код көшірілді",
   "referralCopyError": "Көшіру мүмкін болмады",
   "referralLoadError": "Кодыңызды жүктеу мүмкін болмады",
-  "referralRetryButton": "Қайталау"
+  "referralRetryButton": "Қайталау",
+  "promoTitle": "Промокод енгізу",
+  "promoFieldTitle": "Промокод",
+  "promoDescription": "Досыңыздың коды немесе акция коды",
+  "promoTerms": "Дос кодын тіркелгеннен кейінгі алғашқы 7 күнде бір рет қолдануға болады.",
+  "promoReferralTerms": "Досыңыз кодты тіркелгеннен кейінгі алғашқы 7 күнде белсендіре алады. Бір аккаунтқа бір дос коды.",
+  "promoReferralIneligible": "Дос кодын тіркелгеннен кейінгі алғашқы 7 күнде ғана қолдануға болады.",
+  "promoUnavailable": "Бұл промокод қазір қолжетімсіз.",
+  "promoExpired": "Промокодтың мерзімі аяқталды.",
+  "promoNotStarted": "Акция әлі басталған жоқ.",
+  "promoExhausted": "Бұл промокодты белсендіру лимиті таусылды."
 }

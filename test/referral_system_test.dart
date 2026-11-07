@@ -13,6 +13,7 @@ import 'package:pdd_app/l10n/gen/app_localizations.dart';
 import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_plans_sheet.dart';
 import 'package:pdd_app/presentation/widgets/referral_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/promo_code_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Widget _wrap(Widget child) {
@@ -112,34 +113,37 @@ void main() {
       await ReferralService.instance.clearPendingCodeForTesting();
     });
 
-    testWidgets('shows sign-in and lets guests enter a code', (tester) async {
+    testWidgets('invitation links to separate promo entry', (tester) async {
       AuthService.instance.setSessionForTesting(
         user: null,
         token: null,
         expiresAt: null,
       );
-      ReferralService.instance.setInfoForTesting(null);
-      ReferralService.instance.mockGetReferralInfo = null;
-      await ReferralService.instance.clearPendingCodeForTesting();
-
       await tester.pumpWidget(
-        _wrap(const Scaffold(body: ReferralModalSheet())),
+        _wrap(
+          Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => ReferralModalSheet.show(context),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
       );
+      await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
-
       expect(
         find.byKey(const ValueKey('referral-sign-in-button')),
         findsOneWidget,
       );
-      expect(
-        find.byKey(const ValueKey('referral-input-field')),
-        findsOneWidget,
+      expect(find.byType(TextField), findsNothing);
+      await tester.tap(
+        find.byKey(const ValueKey('referral-open-promo-button')),
       );
-      expect(
-        find.byKey(const ValueKey('referral-activate-button')),
-        findsOneWidget,
-      );
-      expect(find.text('Один код на аккаунт'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.byType(PromoCodeSheet), findsOneWidget);
+      expect(find.byKey(const ValueKey('promo-input-field')), findsOneWidget);
     });
 
     testWidgets(
@@ -194,12 +198,10 @@ void main() {
       ReferralService.instance.setInfoForTesting(null);
       await ReferralService.instance.savePendingCode('FRIEND77');
 
-      await tester.pumpWidget(
-        _wrap(const Scaffold(body: ReferralModalSheet())),
-      );
+      await tester.pumpWidget(_wrap(const Scaffold(body: PromoCodeSheet())));
       await tester.pumpAndSettle();
 
-      final inputFinder = find.byKey(const ValueKey('referral-input-field'));
+      final inputFinder = find.byKey(const ValueKey('promo-input-field'));
       expect(inputFinder, findsOneWidget);
       final textField = tester.widget<TextField>(inputFinder);
       expect(textField.controller?.text, 'FRIEND77');
@@ -365,14 +367,14 @@ void main() {
         await tester.tap(referralBtn);
         await tester.pumpAndSettle();
 
-        expect(find.byType(ReferralModalSheet), findsOneWidget);
+        expect(find.byType(PromoCodeSheet), findsOneWidget);
 
         final closeBtn = find.byKey(const ValueKey('referral-close-button'));
         expect(closeBtn, findsNothing);
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
 
-        expect(find.byType(ReferralModalSheet), findsNothing);
+        expect(find.byType(PromoCodeSheet), findsNothing);
       },
     );
   });

@@ -7867,13 +7867,13 @@ abstract class AppLocalizations {
   /// No description provided for @referralPlansTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Есть код приглашения?'**
+  /// **'Ввести промокод'**
   String get referralPlansTitle;
 
   /// No description provided for @referralPlansSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'2 дня Премиума за код друга'**
+  /// **'Код друга или код из акции'**
   String get referralPlansSubtitle;
 
   /// No description provided for @referralModalTitle.
@@ -8055,6 +8055,66 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Повторить'**
   String get referralRetryButton;
+
+  /// No description provided for @promoTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ввести промокод'**
+  String get promoTitle;
+
+  /// No description provided for @promoFieldTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Промокод'**
+  String get promoFieldTitle;
+
+  /// No description provided for @promoDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код друга или код из акции'**
+  String get promoDescription;
+
+  /// No description provided for @promoTerms.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код друга — один раз, в первые 7 дней после регистрации.'**
+  String get promoTerms;
+
+  /// No description provided for @promoReferralTerms.
+  ///
+  /// In ru, this message translates to:
+  /// **'Друг может активировать код в первые 7 дней после регистрации. Один код друга на аккаунт.'**
+  String get promoReferralTerms;
+
+  /// No description provided for @promoReferralIneligible.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код друга доступен только в первые 7 дней после регистрации.'**
+  String get promoReferralIneligible;
+
+  /// No description provided for @promoUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот промокод сейчас недоступен.'**
+  String get promoUnavailable;
+
+  /// No description provided for @promoExpired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Срок действия промокода истёк.'**
+  String get promoExpired;
+
+  /// No description provided for @promoNotStarted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Акция ещё не началась.'**
+  String get promoNotStarted;
+
+  /// No description provided for @promoExhausted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лимит активаций этого промокода исчерпан.'**
+  String get promoExhausted;
 }
 
 class _AppLocalizationsDelegate

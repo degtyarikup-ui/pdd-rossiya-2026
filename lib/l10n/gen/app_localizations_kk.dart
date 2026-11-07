@@ -4679,10 +4679,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get referralSettingsSubtitle => 'Екеуіңізге де 2 күн Премиум';
 
   @override
-  String get referralPlansTitle => 'Шақыру кодыңыз бар ма?';
+  String get referralPlansTitle => 'Промокод енгізу';
 
   @override
-  String get referralPlansSubtitle => 'Досыңыздың коды үшін 2 күн Премиум';
+  String get referralPlansSubtitle => 'Досыңыздың коды немесе акция коды';
 
   @override
   String get referralModalTitle => 'Екеуіңізге де 2 күн Премиум';
@@ -4789,4 +4789,37 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get referralRetryButton => 'Қайталау';
+
+  @override
+  String get promoTitle => 'Промокод енгізу';
+
+  @override
+  String get promoFieldTitle => 'Промокод';
+
+  @override
+  String get promoDescription => 'Досыңыздың коды немесе акция коды';
+
+  @override
+  String get promoTerms =>
+      'Дос кодын тіркелгеннен кейінгі алғашқы 7 күнде бір рет қолдануға болады.';
+
+  @override
+  String get promoReferralTerms =>
+      'Досыңыз кодты тіркелгеннен кейінгі алғашқы 7 күнде белсендіре алады. Бір аккаунтқа бір дос коды.';
+
+  @override
+  String get promoReferralIneligible =>
+      'Дос кодын тіркелгеннен кейінгі алғашқы 7 күнде ғана қолдануға болады.';
+
+  @override
+  String get promoUnavailable => 'Бұл промокод қазір қолжетімсіз.';
+
+  @override
+  String get promoExpired => 'Промокодтың мерзімі аяқталды.';
+
+  @override
+  String get promoNotStarted => 'Акция әлі басталған жоқ.';
+
+  @override
+  String get promoExhausted => 'Бұл промокодты белсендіру лимиті таусылды.';
 }

@@ -16,7 +16,7 @@ import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
-import 'package:pdd_app/presentation/widgets/referral_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/promo_code_sheet.dart';
 import 'package:pdd_app/presentation/widgets/web_payment_dialog.dart';
 import 'package:pdd_app/presentation/widgets/premium_motion.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -743,7 +743,7 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
             : () async {
                 final premium = PremiumService.instance;
                 final wasPremium = premium.isPremium;
-                final claimed = await ReferralModalSheet.show(context);
+                final claimed = await PromoCodeSheet.show(context);
                 if (mounted &&
                     premium.isPremium &&
                     (claimed == true || !wasPremium)) {

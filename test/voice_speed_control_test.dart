@@ -178,13 +178,8 @@ void main() {
         );
         await capture(tester, 'speed-$language');
         expect(tester.takeException(), isNull);
-        await tester.tap(
-          find.byTooltip(
-            MaterialLocalizations.of(
-              tester.element(find.byType(Slider)),
-            ).closeButtonTooltip,
-          ),
-        );
+        // Bottom sheets close with Back or a swipe; no duplicate close icon.
+        await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
         expect(visibility, [true, false]);
         expect(container.read(appSettingsProvider).voiceEnabled, isFalse);

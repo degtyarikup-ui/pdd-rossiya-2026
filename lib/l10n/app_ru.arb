@@ -2280,8 +2280,8 @@
   },
   "referralSettingsTitle": "Пригласить друга",
   "referralSettingsSubtitle": "2 дня Премиума каждому",
-  "referralPlansTitle": "Есть код приглашения?",
-  "referralPlansSubtitle": "2 дня Премиума за код друга",
+  "referralPlansTitle": "Ввести промокод",
+  "referralPlansSubtitle": "Код друга или код из акции",
   "referralModalTitle": "2 дня Премиума каждому",
   "referralRules": "Друг активирует ваш код — вам +{inviter} дня, ему +{friend} дня Премиума.",
   "@referralRules": {
@@ -2355,5 +2355,15 @@
   "referralCodeCopied": "Код скопирован",
   "referralCopyError": "Не удалось скопировать",
   "referralLoadError": "Не удалось загрузить ваш код",
-  "referralRetryButton": "Повторить"
+  "referralRetryButton": "Повторить",
+  "promoTitle": "Ввести промокод",
+  "promoFieldTitle": "Промокод",
+  "promoDescription": "Код друга или код из акции",
+  "promoTerms": "Код друга — один раз, в первые 7 дней после регистрации.",
+  "promoReferralTerms": "Друг может активировать код в первые 7 дней после регистрации. Один код друга на аккаунт.",
+  "promoReferralIneligible": "Код друга доступен только в первые 7 дней после регистрации.",
+  "promoUnavailable": "Этот промокод сейчас недоступен.",
+  "promoExpired": "Срок действия промокода истёк.",
+  "promoNotStarted": "Акция ещё не началась.",
+  "promoExhausted": "Лимит активаций этого промокода исчерпан."
 }

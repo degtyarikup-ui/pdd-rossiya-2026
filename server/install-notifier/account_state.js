@@ -4,10 +4,10 @@
 // all local documents commit in one storage transaction after the handler ends.
 import { durableRequest } from './durable_request.js';
 const ACCOUNT_PREFIXES = ['user:', 'user_progress:', 'user_admin:', 'pay_intent:', 'auth_generation:', 'account_deleted:', 'apple_auth:', 'referral_used:'];
-const scoped = (key, id) => ACCOUNT_PREFIXES.some(prefix => key === prefix + id) || key.startsWith('pay_order:') || key.startsWith('payment_ledger:') || key.startsWith('pay_tx:') || key.startsWith('notified_purch:') || key.startsWith('revoked_session:' + id + ':') || key.startsWith('referral_receipt:' + id + ':');
+const scoped = (key, id) => ACCOUNT_PREFIXES.some(prefix => key === prefix + id) || key.startsWith('pay_order:') || key.startsWith('payment_ledger:') || key.startsWith('pay_tx:') || key.startsWith('notified_purch:') || key.startsWith('revoked_session:' + id + ':') || key.startsWith('referral_receipt:' + id + ':') || key.startsWith('promo_receipt:' + id + ':');
 const json = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 const parse = raw => { try { return raw ? JSON.parse(raw) : null; } catch { return null; } };
-const noProjection = key => key.startsWith('apple_auth:') || key.startsWith('referral_receipt:') || key.startsWith('referral_used:');
+const noProjection = key => key.startsWith('apple_auth:') || key.startsWith('referral_receipt:') || key.startsWith('referral_used:') || key.startsWith('promo_receipt:');
 const MAINTENANCE_PAGE = 25;
 // Only a local native allocation failure can poison this object's storage.
 // A failure forwarded by another DO must not reset an otherwise healthy account.
@@ -77,7 +77,7 @@ export async function routeAccountRequest(request, env, { sessionAccountId, veri
   }
   const url = new URL(request.url), path = url.pathname;
   // A separate coordinator calls accounts one at a time without holding an account lock.
-  if (path === '/api/user/referral/claim' && request.method === 'POST') return null;
+  if (['/api/user/referral/claim', '/api/user/promo/claim'].includes(path) && request.method === 'POST') return null;
   let id = null, callbackOrder = null;
   if (path.startsWith('/api/user/')) id = await sessionAccountId(request, env);
   else if (path.startsWith('/api/admin/users/') && await verifyAdminAuth(request, env)) {
@@ -134,6 +134,11 @@ export class AccountState {
     // touching any maintenance data, including list(), so a quiet account can
     // recover even after a long downstream outage or an object restart.
     await this.state.storage.setAlarm(Date.now() + 65000);
+    if (await this.state.storage.get('promo-catalog')) {
+      const { retryPromos } = await import('./promocodes.js');
+      await retryPromos(this.state.storage, this.env);
+      return;
+    }
     const job = await this.state.storage.get('referral-job');
     if (job && !job.done) {
       const { retryReferralClaim } = await import('./referrals.js');
@@ -257,6 +262,10 @@ export class AccountState {
   }
   async handle(request) {
     const path = new URL(request.url).pathname;
+    if (path === '/_promo/catalog') {
+      const { promoCatalog } = await import('./promocodes.js');
+      return promoCatalog(this.state.storage, this.env, await request.json());
+    }
     if (path.startsWith('/_directory/')) return this.directory(request, path);
     if (path === '/_referral/code' || path === '/_referral/claim') {
       const { referralDirectory, referralClaim } = await import('./referrals.js');
@@ -379,6 +388,9 @@ export class AccountState {
         await put('user:' + id, JSON.stringify(user), { metadata: summary });
       }
       response = json({ ok: true, summary });
+    } else if (path === '/_account/promo') {
+      const { promoAccountStep } = await import('./promocodes.js');
+      response = await promoAccountStep(request, env);
     } else if (['/_account/referral-check', '/_account/referral-reward', '/_account/referral-complete'].includes(path)) {
       const { referralAccountStep } = await import('./referrals.js');
       response = await referralAccountStep(path, request, env);

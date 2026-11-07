@@ -21,6 +21,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/presentation/screens/pdd/pdd_screen.dart';
 import 'package:pdd_app/presentation/screens/support/support_chat_screen.dart';
 import 'package:pdd_app/presentation/widgets/referral_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/promo_code_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -526,6 +527,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             color: colors.secondaryText,
                           ),
                           onTap: () => ReferralModalSheet.show(context),
+                        ),
+                        _buildSettingItem(
+                          key: const ValueKey('settings-promo-tile'),
+                          icon: Icons.confirmation_number_outlined,
+                          title: appL10n.promoTitle,
+                          subtitle: appL10n.promoDescription,
+                          trailing: Icon(
+                            Icons.chevron_right_rounded,
+                            color: colors.secondaryText,
+                          ),
+                          onTap: () => PromoCodeSheet.show(context),
                         ),
                       ],
                     ),
