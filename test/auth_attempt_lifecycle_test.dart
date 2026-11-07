@@ -493,7 +493,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
       expect(sdkCalls, 1);
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.binding.handlePopRoute();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
       expect(auth.isSigningIn, true);

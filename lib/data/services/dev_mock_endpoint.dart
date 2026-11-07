@@ -68,7 +68,10 @@ class DevMockEndpoint {
     final raw = prefs.getString(key);
     if (raw != null && raw.isNotEmpty) {
       try {
-        return jsonDecode(raw) as Map<String, dynamic>;
+        return {
+          ...jsonDecode(raw) as Map<String, dynamic>,
+          'friendBonusDays': 2,
+        };
       } catch (_) {}
     }
     final code = _defaultCodeForUser(userId);
@@ -81,7 +84,7 @@ class DevMockEndpoint {
       'hasUsedReferral': false,
       'referredBy': null,
       'referralCodeUsed': null,
-      'friendBonusDays': 1,
+      'friendBonusDays': 2,
       'inviterBonusDays': 2,
     };
     await prefs.setString(key, jsonEncode(initial));
@@ -280,11 +283,11 @@ class DevMockEndpoint {
         );
       }
 
-      // 1. Reward friend (current user) +1 day of Premium
+      // 1. Reward friend (current user) +2 days of Premium
       userData['hasUsedReferral'] = true;
       userData['referralCodeUsed'] = cleanCode;
       await _saveUserReferralData(prefs, userId, userData);
-      await _addPremiumDays(prefs, userId, 1);
+      await _addPremiumDays(prefs, userId, 2);
 
       // 2. Reward inviter if known test user (+1 invite, +2 bonus days)
       if (inviterId != 'virtual_friend') {
@@ -349,7 +352,7 @@ class DevMockEndpoint {
   ) async => http.Response(
     jsonEncode({
       'ok': true,
-      'daysAdded': 1,
+      'daysAdded': 2,
       'inviterDaysAdded': 2,
       ...await _getPremiumData(prefs, userId),
     }),

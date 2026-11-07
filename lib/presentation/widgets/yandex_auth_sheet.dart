@@ -259,13 +259,6 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
                       ),
                     ],
                   ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: colors.secondaryText,
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
                 ],
               ),
             ),

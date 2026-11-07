@@ -382,16 +382,6 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
                               ),
                             ),
                           const Spacer(),
-                          IconButton(
-                            icon: Icon(
-                              Icons.close_rounded,
-                              color: colors.secondaryText,
-                              size: 22,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
                         ],
                       ),
                     ),

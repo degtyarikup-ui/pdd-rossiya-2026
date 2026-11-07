@@ -37,7 +37,8 @@ class TelegramAuthSheet extends StatefulWidget {
     return showModalBottomSheet<TelegramAuthResult>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      showDragHandle: true,
+      backgroundColor: AppColors.of(context).cardBackground,
       builder: (_) => const TelegramAuthSheet(),
     );
   }
@@ -318,13 +319,6 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  icon: Icon(Icons.close_rounded, color: colors.secondaryText),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ),
               Center(
                 child: Container(
                   width: 64,

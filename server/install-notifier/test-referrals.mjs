@@ -23,7 +23,7 @@ test('referrals: GET /api/user/referral returns user referral code and link', as
   assert.equal(data.link, 'https://pdd-drive.app/app/?ref=' + data.code);
   assert.equal(data.invitedCount, 0);
   assert.equal(data.rewardDays, 0);
-  assert.equal(data.friendBonusDays, 1);
+  assert.equal(data.friendBonusDays, 2);
   assert.equal(data.inviterBonusDays, 2);
 
   // Calling again returns the exact same code
@@ -59,7 +59,7 @@ test('referrals: POST /api/user/referral/claim rejects invalid input and self-re
   assert.equal(emptyData.error, 'invalid_code');
 });
 
-test('referrals: POST /api/user/referral/claim grants 1 day to friend and 2 days to inviter', async () => {
+test('referrals: POST /api/user/referral/claim grants 2 days to friend and 2 days to inviter', async () => {
   const { env } = fixture();
   await env.INSTALLS.put('user:google_inviter', JSON.stringify(identity('google_inviter')));
   await env.INSTALLS.put('user:google_friend', JSON.stringify(identity('google_friend')));
@@ -75,13 +75,13 @@ test('referrals: POST /api/user/referral/claim grants 1 day to friend and 2 days
   assert.equal(claimRes.status, 200);
   const claimData = await claimRes.json();
   assert.equal(claimData.ok, true);
-  assert.equal(claimData.daysAdded, 1);
+  assert.equal(claimData.daysAdded, 2);
   assert.equal(claimData.isPremium, true);
   assert.equal(claimData.premiumSource, 'referral');
 
   const friendExpiry = Date.parse(claimData.premiumExpiresAt);
   // ~1 day (+- 5 seconds)
-  assert.ok(Math.abs(friendExpiry - (now + 86400000)) < 5000);
+  assert.ok(Math.abs(friendExpiry - (now + 2 * 86400000)) < 5000);
 
   // Check inviter has +2 days
   const inviterRaw = await accountRead(env, 'google_inviter', 'user:google_inviter');

@@ -1598,11 +1598,11 @@
     }
   },
   "referralSettingsTitle": "Дос шақыру",
-  "referralSettingsSubtitle": "Сізге +2 күн, досыңызға +1 күн",
+  "referralSettingsSubtitle": "Екеуіңізге де 2 күн Премиум",
   "referralPlansTitle": "Шақыру кодыңыз бар ма?",
-  "referralPlansSubtitle": "Кодты іске қоссаңыз, 1 күн Премиум аласыз",
-  "referralModalTitle": "Шақырулар",
-  "referralRules": "Досыңыз кодыңызды іске қосқанда, сізге {inviter} күн, ал досыңызға {friend} күн Премиум беріледі.",
+  "referralPlansSubtitle": "Досыңыздың коды үшін 2 күн Премиум",
+  "referralModalTitle": "Екеуіңізге де 2 күн Премиум",
+  "referralRules": "Досыңыз кодты қолданса, сізге {inviter} күн, оған {friend} күн Премиум беріледі.",
   "@referralRules": {
     "placeholders": {
       "inviter": {

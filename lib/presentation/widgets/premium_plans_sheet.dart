@@ -395,19 +395,6 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
         ),
       ),
     );
-    final closeButton = PremiumPressFeedback(
-      enabled: !_isLoading,
-      pressedScale: .94,
-      child: IconButton(
-        key: const ValueKey('premium-plans-close'),
-        tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-        onPressed: _isLoading ? null : () => Navigator.of(context).maybePop(),
-        color: colors.primaryText,
-        icon: const Icon(Icons.close_rounded),
-        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-      ),
-    );
-
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(
@@ -472,26 +459,7 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
                           ),
                         ),
                       ),
-                      if (largeText) ...[
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: closeButton,
-                        ),
-                        title,
-                      ] else
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: title,
-                              ),
-                            ),
-                            const SizedBox(width: AppDimensions.spacingS),
-                            closeButton,
-                          ],
-                        ),
+                      title,
                       const SizedBox(height: AppDimensions.spacingXXL),
                       if (_androidModes.length > 1) ...[
                         _buildMethodSelector(colors),

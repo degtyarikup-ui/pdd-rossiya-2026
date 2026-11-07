@@ -25,7 +25,6 @@ const _capture = bool.fromEnvironment('PREMIUM_CAPTURE');
 const _captureKey = ValueKey('premium-review-boundary');
 const _openKey = ValueKey('open-premium');
 const _showPlans = ValueKey('premium-show-plans');
-const _closePlans = ValueKey('premium-plans-close');
 
 void _testPremium(String description, WidgetTesterCallback callback) {
   testWidgets(description, (tester) async {
@@ -373,7 +372,7 @@ void main() {
       expect(find.byKey(_showPlans).hitTestable(), findsOneWidget);
       await tester.tap(find.byKey(_showPlans));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(_closePlans));
+      await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       expect(revealOpacity(tester, 'title'), 1);
       expect(revealOpacity(tester, 'feed'), 1);
@@ -512,7 +511,7 @@ void main() {
         expect(tester.getTopLeft(passRate).dx, passX);
         await tester.tap(find.byKey(_showPlans));
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(_closePlans));
+        await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
         expect(displayed(rating), appL10n.premiumRatingValue);
         expect(displayed(passRate), appL10n.premiumPassRateValue);
@@ -557,7 +556,7 @@ void main() {
 
     await tester.tap(find.byKey(_showPlans));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(_closePlans));
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.byType(PremiumPlansSheet), findsNothing);
     expect(find.byType(PremiumBenefitsScreen), findsOneWidget);

@@ -47,7 +47,7 @@ class ReferralInfo {
     this.rewardDays = 0,
     this.hasUsedReferral = false,
     this.referralCodeUsed,
-    this.friendBonusDays = 1,
+    this.friendBonusDays = 2,
     this.inviterBonusDays = 2,
   });
 
@@ -59,7 +59,7 @@ class ReferralInfo {
     rewardDays: (json['rewardDays'] as int?) ?? 0,
     hasUsedReferral: json['hasUsedReferral'] == true,
     referralCodeUsed: normalizeReferralCode(json['referralCodeUsed']),
-    friendBonusDays: (json['friendBonusDays'] as int?) ?? 1,
+    friendBonusDays: (json['friendBonusDays'] as int?) ?? 2,
     inviterBonusDays: (json['inviterBonusDays'] as int?) ?? 2,
   );
 

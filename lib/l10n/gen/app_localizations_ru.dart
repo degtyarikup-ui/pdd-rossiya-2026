@@ -4698,36 +4698,20 @@ class AppLocalizationsRu extends AppLocalizations {
   String get referralSettingsTitle => 'Пригласить друга';
 
   @override
-  String get referralSettingsSubtitle => '+2 дня вам, +1 день другу';
+  String get referralSettingsSubtitle => '2 дня Премиума каждому';
 
   @override
   String get referralPlansTitle => 'Есть код приглашения?';
 
   @override
-  String get referralPlansSubtitle => '1 день Премиума за активацию кода';
+  String get referralPlansSubtitle => '2 дня Премиума за код друга';
 
   @override
-  String get referralModalTitle => 'Приглашения';
+  String get referralModalTitle => '2 дня Премиума каждому';
 
   @override
   String referralRules(int inviter, int friend) {
-    String _temp0 = intl.Intl.pluralLogic(
-      inviter,
-      locale: localeName,
-      other: '$inviter дня',
-      many: '$inviter дней',
-      few: '$inviter дня',
-      one: '$inviter день',
-    );
-    String _temp1 = intl.Intl.pluralLogic(
-      friend,
-      locale: localeName,
-      other: '$friend дня',
-      many: '$friend дней',
-      few: '$friend дня',
-      one: '$friend день',
-    );
-    return 'Когда друг активирует ваш код, вы получите +$_temp0 Премиума, а он — +$_temp1.';
+    return 'Друг активирует ваш код — вам +$inviter дня, ему +$friend дня Премиума.';
   }
 
   @override

@@ -7861,7 +7861,7 @@ abstract class AppLocalizations {
   /// No description provided for @referralSettingsSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'+2 дня вам, +1 день другу'**
+  /// **'2 дня Премиума каждому'**
   String get referralSettingsSubtitle;
 
   /// No description provided for @referralPlansTitle.
@@ -7873,19 +7873,19 @@ abstract class AppLocalizations {
   /// No description provided for @referralPlansSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'1 день Премиума за активацию кода'**
+  /// **'2 дня Премиума за код друга'**
   String get referralPlansSubtitle;
 
   /// No description provided for @referralModalTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Приглашения'**
+  /// **'2 дня Премиума каждому'**
   String get referralModalTitle;
 
   /// No description provided for @referralRules.
   ///
   /// In ru, this message translates to:
-  /// **'Когда друг активирует ваш код, вы получите +{inviter, plural, one{{inviter} день} few{{inviter} дня} many{{inviter} дней} other{{inviter} дня}} Премиума, а он — +{friend, plural, one{{friend} день} few{{friend} дня} many{{friend} дней} other{{friend} дня}}.'**
+  /// **'Друг активирует ваш код — вам +{inviter} дня, ему +{friend} дня Премиума.'**
   String referralRules(int inviter, int friend);
 
   /// No description provided for @referralYourCode.

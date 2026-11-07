@@ -6,7 +6,6 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/referral_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
-import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/result_share.dart';
@@ -194,32 +193,21 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.referralModalTitle,
-                      style: theme.textTheme.titleLarge,
-                    ),
-                  ),
-                  Tooltip(
-                    message: MaterialLocalizations.of(
-                      context,
-                    ).closeButtonTooltip,
-                    child: AppChromeIconButton(
-                      key: const ValueKey('referral-close-button'),
-                      icon: Icons.close_rounded,
-                      onTap: () =>
-                          Navigator.of(context).pop(_claimed ? true : null),
-                    ),
-                  ),
-                ],
+              Text(
+                l10n.referralModalTitle,
+                style: TextStyle(
+                  fontFamily: 'Onest',
+                  fontSize: 26,
+                  height: 1.15,
+                  fontWeight: FontWeight.w700,
+                  color: colors.primaryText,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 l10n.referralRules(
                   info?.inviterBonusDays ?? 2,
-                  info?.friendBonusDays ?? 1,
+                  info?.friendBonusDays ?? 2,
                 ),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colors.secondaryText,
@@ -275,7 +263,12 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
               else ...[
                 Text(
                   l10n.referralEnterCodeTitle,
-                  style: theme.textTheme.titleMedium,
+                  style: TextStyle(
+                    fontFamily: 'Onest',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colors.primaryText,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 TextField(
@@ -292,7 +285,17 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
                     if (_code.text.trim().isNotEmpty) _activate();
                   },
                   decoration: InputDecoration(
-                    labelText: l10n.referralEnterCodeHint,
+                    hintText: l10n.referralEnterCodeHint,
+                    filled: true,
+                    fillColor: colors.background,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                     helperText: l10n.referralCodeOnce,
                     helperMaxLines: 2,
                     errorText: error,
@@ -300,7 +303,7 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                FilledButton(
+                ElevatedButton(
                   key: const ValueKey('referral-activate-button'),
                   onPressed:
                       _code.text.trim().isEmpty ||
@@ -332,7 +335,6 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
       decoration: BoxDecoration(
         color: colors.background,
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        border: Border.all(color: colors.divider),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -345,7 +347,12 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(l10n.referralYourCode, style: text.labelLarge),
+                      Text(
+                        l10n.referralYourCode,
+                        style: text.bodySmall?.copyWith(
+                          color: colors.secondaryText,
+                        ),
+                      ),
                       const SizedBox(height: 3),
                       SelectableText(
                         info.code,
@@ -367,7 +374,7 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
               ],
             ),
             const SizedBox(height: 8),
-            FilledButton.icon(
+            ElevatedButton.icon(
               key: const ValueKey('referral-share-button'),
               onPressed: () => _share(info),
               icon: const Icon(Icons.share_outlined),
@@ -378,15 +385,17 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
               onPressed: () => _copy(info.link, l10n.referralLinkCopied),
               child: Text(l10n.referralCopyLink),
             ),
-            const Divider(height: 12),
-            Text(
-              l10n.referralStatsInvited(info.invitedCount),
-              style: text.bodyMedium?.copyWith(color: colors.secondaryText),
-            ),
-            Text(
-              l10n.referralStatsDays(info.rewardDays),
-              style: text.bodyMedium?.copyWith(color: colors.secondaryText),
-            ),
+            if (info.invitedCount > 0) ...[
+              const Divider(height: 12),
+              Text(
+                l10n.referralStatsInvited(info.invitedCount),
+                style: text.bodyMedium?.copyWith(color: colors.secondaryText),
+              ),
+              Text(
+                l10n.referralStatsDays(info.rewardDays),
+                style: text.bodyMedium?.copyWith(color: colors.secondaryText),
+              ),
+            ],
           ],
         ),
       ),

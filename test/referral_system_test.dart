@@ -368,8 +368,8 @@ void main() {
         expect(find.byType(ReferralModalSheet), findsOneWidget);
 
         final closeBtn = find.byKey(const ValueKey('referral-close-button'));
-        expect(closeBtn, findsOneWidget);
-        await tester.tap(closeBtn);
+        expect(closeBtn, findsNothing);
+        await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
 
         expect(find.byType(ReferralModalSheet), findsNothing);

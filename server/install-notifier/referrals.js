@@ -3,7 +3,7 @@ import { putUserRecord } from './user_store.js';
 import { accountRpc } from './account_state.js';
 
 const ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-const FRIEND_DAYS = 1;
+const FRIEND_DAYS = 2;
 const INVITER_DAYS = 2;
 const WINDOW_MS = 15 * 60_000;
 const MAX_ATTEMPTS = 8;

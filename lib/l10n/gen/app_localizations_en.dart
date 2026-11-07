@@ -4676,33 +4676,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get referralSettingsTitle => 'Invite a friend';
 
   @override
-  String get referralSettingsSubtitle =>
-      '+2 days for you, +1 day for your friend';
+  String get referralSettingsSubtitle => '2 Premium days each';
 
   @override
   String get referralPlansTitle => 'Have an invite code?';
 
   @override
-  String get referralPlansSubtitle => 'Redeem it for 1 day of Premium';
+  String get referralPlansSubtitle => '2 days of Premium with a friend’s code';
 
   @override
-  String get referralModalTitle => 'Invitations';
+  String get referralModalTitle => '2 Premium days each';
 
   @override
   String referralRules(int inviter, int friend) {
-    String _temp0 = intl.Intl.pluralLogic(
-      inviter,
-      locale: localeName,
-      other: '$inviter extra days',
-      one: '$inviter extra day',
-    );
-    String _temp1 = intl.Intl.pluralLogic(
-      friend,
-      locale: localeName,
-      other: '$friend days',
-      one: '$friend day',
-    );
-    return 'When a friend uses your code, you get $_temp0 of Premium and they get $_temp1.';
+    return 'A friend uses your code — you get $inviter days of Premium, they get $friend.';
   }
 
   @override

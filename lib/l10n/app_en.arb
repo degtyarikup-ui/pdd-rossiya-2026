@@ -1598,11 +1598,11 @@
     }
   },
   "referralSettingsTitle": "Invite a friend",
-  "referralSettingsSubtitle": "+2 days for you, +1 day for your friend",
+  "referralSettingsSubtitle": "2 Premium days each",
   "referralPlansTitle": "Have an invite code?",
-  "referralPlansSubtitle": "Redeem it for 1 day of Premium",
-  "referralModalTitle": "Invitations",
-  "referralRules": "When a friend uses your code, you get {inviter, plural, one{{inviter} extra day} other{{inviter} extra days}} of Premium and they get {friend, plural, one{{friend} day} other{{friend} days}}.",
+  "referralPlansSubtitle": "2 days of Premium with a friend’s code",
+  "referralModalTitle": "2 Premium days each",
+  "referralRules": "A friend uses your code — you get {inviter} days of Premium, they get {friend}.",
   "@referralRules": {
     "placeholders": {
       "inviter": {

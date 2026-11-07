@@ -300,13 +300,6 @@ class _VoiceSpeedPicker extends ConsumerWidget {
                     size: 24,
                   ),
                   const Spacer(),
-                  IconButton(
-                    tooltip: MaterialLocalizations.of(
-                      context,
-                    ).closeButtonTooltip,
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
                 ],
               ),
               Align(
@@ -344,13 +337,6 @@ class _VoiceSpeedPicker extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: MaterialLocalizations.of(
-                      context,
-                    ).closeButtonTooltip,
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded),
                   ),
                 ],
               ),

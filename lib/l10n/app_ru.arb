@@ -2279,11 +2279,11 @@
     }
   },
   "referralSettingsTitle": "Пригласить друга",
-  "referralSettingsSubtitle": "+2 дня вам, +1 день другу",
+  "referralSettingsSubtitle": "2 дня Премиума каждому",
   "referralPlansTitle": "Есть код приглашения?",
-  "referralPlansSubtitle": "1 день Премиума за активацию кода",
-  "referralModalTitle": "Приглашения",
-  "referralRules": "Когда друг активирует ваш код, вы получите +{inviter, plural, one{{inviter} день} few{{inviter} дня} many{{inviter} дней} other{{inviter} дня}} Премиума, а он — +{friend, plural, one{{friend} день} few{{friend} дня} many{{friend} дней} other{{friend} дня}}.",
+  "referralPlansSubtitle": "2 дня Премиума за код друга",
+  "referralModalTitle": "2 дня Премиума каждому",
+  "referralRules": "Друг активирует ваш код — вам +{inviter} дня, ему +{friend} дня Премиума.",
   "@referralRules": {
     "placeholders": {
       "inviter": {

@@ -34,7 +34,8 @@ class AuthModalSheet extends StatefulWidget {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      showDragHandle: true,
+      backgroundColor: AppColors.of(context).cardBackground,
       builder: (_) => AuthModalSheet(initialAction: initialAction),
     );
   }
@@ -170,21 +171,6 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Close Button
-                    if (!widget.embedded)
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.close_rounded,
-                            color: colors.secondaryText,
-                          ),
-                          onPressed: () {
-                            _cancelOwnedAttempt();
-                            Navigator.of(context).pop(false);
-                          },
-                        ),
-                      ),
                     if (!widget.embedded) const SizedBox(height: 4),
 
                     if (!widget.embedded)

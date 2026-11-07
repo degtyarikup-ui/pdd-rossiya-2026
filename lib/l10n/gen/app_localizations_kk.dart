@@ -4676,21 +4676,20 @@ class AppLocalizationsKk extends AppLocalizations {
   String get referralSettingsTitle => 'Дос шақыру';
 
   @override
-  String get referralSettingsSubtitle => 'Сізге +2 күн, досыңызға +1 күн';
+  String get referralSettingsSubtitle => 'Екеуіңізге де 2 күн Премиум';
 
   @override
   String get referralPlansTitle => 'Шақыру кодыңыз бар ма?';
 
   @override
-  String get referralPlansSubtitle =>
-      'Кодты іске қоссаңыз, 1 күн Премиум аласыз';
+  String get referralPlansSubtitle => 'Досыңыздың коды үшін 2 күн Премиум';
 
   @override
-  String get referralModalTitle => 'Шақырулар';
+  String get referralModalTitle => 'Екеуіңізге де 2 күн Премиум';
 
   @override
   String referralRules(int inviter, int friend) {
-    return 'Досыңыз кодыңызды іске қосқанда, сізге $inviter күн, ал досыңызға $friend күн Премиум беріледі.';
+    return 'Досыңыз кодты қолданса, сізге $inviter күн, оған $friend күн Премиум беріледі.';
   }
 
   @override

@@ -183,12 +183,8 @@ void main() {
             );
             expect(tester.widget<ElevatedButton>(purchase).onPressed, isNull);
             expect(
-              tester
-                  .widget<IconButton>(
-                    find.byKey(const ValueKey('premium-plans-close')),
-                  )
-                  .onPressed,
-              isNull,
+              find.byKey(const ValueKey('premium-plans-close')),
+              findsNothing,
             );
             for (final tier in PremiumTier.values) {
               final card = find.byKey(ValueKey('premium-plan-${tier.name}'));

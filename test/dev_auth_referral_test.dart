@@ -119,7 +119,7 @@ void main() {
       );
 
       expect(result.status, ReferralClaimStatus.success);
-      expect(result.daysAdded, 1);
+      expect(result.daysAdded, 2);
 
       // Premium grant check
       await PremiumService.instance.checkForGrant();

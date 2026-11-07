@@ -21,7 +21,8 @@ class ProfileModalSheet extends ConsumerWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      showDragHandle: true,
+      backgroundColor: AppColors.of(context).cardBackground,
       builder: (_) => ProfileModalSheet(profile: profile),
     );
   }
@@ -144,14 +145,6 @@ class ProfileModalSheet extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Close Button
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  icon: Icon(Icons.close_rounded, color: colors.secondaryText),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ),
               const SizedBox(height: 4),
 
               Center(

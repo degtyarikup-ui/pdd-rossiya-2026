@@ -17,7 +17,8 @@ class SubscriptionManagementSheet extends StatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      showDragHandle: true,
+      backgroundColor: AppColors.of(context).cardBackground,
       builder: (_) => const SubscriptionManagementSheet(),
     );
   }
@@ -166,13 +167,6 @@ class _SubscriptionManagementSheetState
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 1. Close Button
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  icon: Icon(Icons.close_rounded, color: colors.secondaryText),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ),
               const SizedBox(height: 2),
 
               // 2. Verified Header Badge
