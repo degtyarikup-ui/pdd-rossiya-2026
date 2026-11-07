@@ -4,7 +4,7 @@ import { inflateSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import worker, { buildUserRegistrationMessage, buildPremiumPurchaseMessage, buildReportMessage, dailyChartPoints, sendDailyReport, finishPendingDailyReport, dailyReportEnd, buildDailyReportMessage, flushBufferedStats, sanitizeAnalyticsEvent } from './worker.js';
-import { isPaidPremiumEvent } from './premium_analytics.js';
+import { buildPremiumDailyMessage, isPaidPremiumEvent, premiumChartPoint, premiumPurchaseEvent } from './premium_analytics.js';
 import { renderDailyChart, pngBase64 } from './daily_chart.js';
 import { metadataFields, attributedDestination } from './attribution.js';
 import { TelegramQueue } from './telegram_queue.js';
@@ -245,6 +245,70 @@ test('daily report counts paid transactions and excludes manual grants from both
  assert.ok(isPaidPremiumEvent(sanitizeAnalyticsEvent({type:'purchase'})),'old events remain countable after sanitizing');
  assert.ok(isPaidPremiumEvent({type:'purchase',purchaseSource:'appstore',premiumSource:'admin_grant'}),'a longer grant does not hide a real paid transaction');
  assert.equal(isPaidPremiumEvent({type:'purchase',purchaseSource:'unknown'}),false);
+});
+
+test('Premium totals deduplicate buyers across slots and chart actual amounts with missing prices visible', async () => {
+  const { env, state } = setup();
+  const date = '2026-11-07';
+  const end = Date.parse(date + 'T19:00Z');
+  const account = { id: 'fixture-buyer', app: 'ru', marketingSource: 'threads' };
+  const fx = { rubPerUsd: 80, rubPerUnit: { EUR: 96 }, effectiveDate: date, requestedDay: date, checkedAt: new Date(end).toISOString() };
+  await env.INSTALLS.put('economy_fx_usd_v1', JSON.stringify(fx));
+  const events = await Promise.all([
+    ['web', -16, 'weekly', { milliunits: 99000, currency: 'RUB' }],
+    ['appstore', -1, 'threeMonths', { milliunits: 3000, currency: 'EUR' }],
+    ['googleplay', -1, 'weekly', null, { paid: false }],
+  ].map(async ([method, hours, premiumPlan, premiumMoney, reference]) => {
+    const ts = end + hours * 3600000;
+    const event = await premiumPurchaseEvent(env, account, method, 'web', ts, reference);
+    return { kind: 'analytics', ts, event: sanitizeAnalyticsEvent({ ...event, premiumPlan, premiumMoney }) };
+  }));
+  await flushBufferedStats(env, events);
+  const slots = await Promise.all(['night', 'day'].map(async slot => JSON.parse(await env.INSTALLS.get(`slot:${date}:${slot}`))));
+  assert.equal(slots[0].premiumPurchases[0][2], slots[1].premiumPurchases[0][2]);
+  assert.notEqual((await premiumPurchaseEvent(env, account, 'web', 'web', end)).premiumBuyer, events[0].event.premiumBuyer);
+  assert.deepEqual(premiumChartPoint(date, slots, fx), { date, available: true, web: 1.2375, appstore: 3.6, googleplay: 0 });
+  assert.equal(premiumChartPoint(date, [{ purchases: 1 }], fx).available, false);
+  assert.equal(premiumChartPoint(date, [{ purchases: 1, premiumPurchases: [['appstore', 'unknown', null, null]] }], fx).appstore, null);
+  const message = buildPremiumDailyMessage(slots, date, fx);
+  assert.match(message, /Покупатели: <b>1<\/b>/);
+  assert.match(message, /На неделю: <b>1<\/b>\nНа 3 месяца: <b>1<\/b>/);
+  assert.match(message, /Threads → СБП: <b>1<\/b>\nThreads → App Store: <b>1<\/b>/);
+  assert.match(message, /💰 <b>Сумма покупок: \$4.84<\/b>\nPlatega: \$1.24\nApp Store: \$3.60$/);
+  assert.doesNotMatch(message, /fixture-buyer|[a-f0-9]{64}/);
+
+  await env.INSTALLS.put('tg:daily_pending', JSON.stringify({ scheduledTime: end }));
+  await finishPendingDailyReport(env);
+  const items = [...(await state.storage.list({ prefix: 'q:' })).values()];
+  const premium = items.find(item => item.text.includes('Premium за сутки'));
+  assert.ok(premium.photoBase64);
+  assert.equal(premium.threadId, undefined);
+  assert.match(premium.text, /7 ноя 22:00 МСК/);
+  await env.INSTALLS.put('tg:daily_pending', JSON.stringify({ scheduledTime: end }));
+  await finishPendingDailyReport(env);
+  assert.equal((await state.storage.list({ prefix: 'q:' })).size, items.length);
+});
+
+test('Premium report leaves an amount unavailable when the CBR rate for its day cannot be loaded', async t => {
+  const { env, state } = setup();
+  const end = Date.parse('2026-11-07T19:00Z');
+  const event = await premiumPurchaseEvent(env, { id: 'fixture-buyer' }, 'web', 'web', end - 1000);
+  await flushBufferedStats(env, [{ kind: 'analytics', ts: end - 1000, event: sanitizeAnalyticsEvent({
+    ...event, premiumPlan: 'weekly', premiumMoney: { milliunits: 99000, currency: 'RUB' },
+  }) }]);
+  await env.INSTALLS.put('economy_fx_usd_v1', JSON.stringify({
+    rubPerUsd: 80, rubPerUnit: { RUB: 1 }, effectiveDate: '2026-11-06', requestedDay: '2026-11-06', checkedAt: '2026-11-06T19:00Z',
+  }));
+  t.mock.method(globalThis, 'fetch', async url => {
+    assert.match(String(url), /cbr\.ru.*07%2F11%2F2026/);
+    return new Response(null, { status: 503 });
+  });
+  await env.INSTALLS.put('tg:daily_pending', JSON.stringify({ scheduledTime: end }));
+  await finishPendingDailyReport(env);
+  const items = [...(await state.storage.list({ prefix: 'q:' })).values()];
+  const premium = items.find(item => item.text.includes('Premium за сутки'));
+  assert.match(premium.text, /💰 <b>Сумма покупок: —<\/b>\nPlatega: —/);
+  assert.doesNotMatch(premium.text, /\$1\.24/);
 });
 
 test('Telegram topics route errors, purchases and registrations to configured thread IDs with resilient fallback', async () => {

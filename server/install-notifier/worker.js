@@ -44,7 +44,7 @@ import { trafficRequest } from './traffic_state.js';
 import { closeFinishedGameWeeks, bestGameRank, deleteGameBest } from './game_weeks.js';
 export { PurchaseClaims } from './purchase_claims.js';
 export { SupportThread } from './support_thread.js';
-import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, StoreError, withStoreDeadline, PURCHASE_VERIFY_DEADLINE_MS } from './store_verification.js';
+import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, googleOrderMoney, StoreError, withStoreDeadline, PURCHASE_VERIFY_DEADLINE_MS } from './store_verification.js';
 import { setEntitlement, extendEntitlement } from './entitlements.js';
 import { accountTokenForUserId } from './store_account.js';
 import { deleteAccountDocuments, executeAppleRevocation } from './apple_account.js';
@@ -63,7 +63,8 @@ import { handleStoreNotification, appleNotificationToken } from './store_notific
 import { handleTelegramAuthRequest, handleTelegramAuthCheck } from './telegram_auth.js';
 import { handleClientIncident, deferIncident, errorCode, isIncidentReported } from './diagnostics.js';
 import { APPLE_WEB_CALLBACK_PATH, handleAppleWebCallback } from './apple_web_callback.js';
-import { premiumEventSource, isPaidPremiumEvent } from './premium_analytics.js';
+import { premiumEventSource, isPaidPremiumEvent, premiumPurchaseEvent, recordPremiumPurchase, buildPremiumDailyMessage,
+  premiumChartPoint, premiumChartSlots, premiumHistoryMissing, premiumNeedsFx, validPremiumMoney } from './premium_analytics.js';
 import { handleSocialAdmin, handleVideoStream, handleVideoThumb, runAutoPost } from './social.js';
 import { SOCIAL_VIEW_HTML, SOCIAL_CLIENT_JS } from './social_ui.js';
 import { handleThreadsAdmin, runThreadsSchedule } from './threads.js';
@@ -310,6 +311,7 @@ function applyEventToSlot(slotData, event) {
     if (event.type === 'purchase' && !isPaidPremiumEvent(event)) return slotData;
     const key = event.type === 'purchase' ? 'purchases' : 'reports';
     slotData[key] = (slotData[key] || 0) + 1;
+    if (event.type === 'purchase') recordPremiumPurchase(slotData, event);
     return slotData;
   }
   if (event.type === 'registration') {
@@ -460,6 +462,44 @@ export async function sendDailyReport(env, now = new Date(), dedupKey = null) {
   return stub.fetch('https://telegram/enqueue', { method: 'POST', body: JSON.stringify({ messages, dedupKey }) });
 }
 
+async function readPremiumSlots(env, date) {
+  return Promise.all(['night', 'day'].map(async slot => {
+    const raw = await env.INSTALLS.get(`slot:${date}:${slot}`);
+    return raw ? JSON.parse(raw) : null;
+  }));
+}
+
+async function sendPremiumDailyReport(env, end) {
+  const date = mskDayKey(end);
+  const dates = Array.from({ length: 7 }, (_, i) => mskDayKey(new Date(end.getTime() - (6 - i) * 86400000)));
+  const week = await Promise.all(dates.map(day => day === date ? readPremiumSlots(env, day) : readPremiumSlots(env, day).catch(() => [])));
+  let chartWeek = week;
+  if (week.some(premiumHistoryMissing)) {
+    try {
+      const history = JSON.parse(await env.INSTALLS.get('premium:chart_history'));
+      chartWeek = week.map((slots, i) => premiumChartSlots(slots, history?.[dates[i]]));
+    } catch (_) { /* Missing historical prices are rendered as unavailable. */ }
+  }
+  const rate = chartWeek.some(premiumNeedsFx) || premiumNeedsFx(week.at(-1))
+    ? await getUsdRate(env, { now: end.getTime(), allCurrencies: true }).catch(() => null)
+    : null;
+  const fx = rate?.requestedDay === date ? rate : null;
+  const text = buildPremiumDailyMessage(week.at(-1), dailyReportPeriod(end), fx);
+  const dedupKey = 'premium-daily:' + date;
+  if (!env.TELEGRAM) return sendTelegram(env, text, dedupKey);
+
+  let messages = [{ text }];
+  try {
+    const points = chartWeek.map((slots, i) => premiumChartPoint(dates[i], slots, fx));
+    const photoBase64 = pngBase64(await renderDailyChart(points, { premium: true }));
+    messages = text.length <= 1024 ? [{ text, photoBase64 }] : [
+      { text: `⭐ Premium · ${dailyReportPeriod(end)}`, photoBase64 }, { text },
+    ];
+  } catch (_) { console.error('Premium daily chart unavailable; sending text'); }
+  const stub = env.TELEGRAM.get(env.TELEGRAM.idFromName(String(telegramChatId(env))));
+  return stub.fetch('https://telegram/enqueue', { method: 'POST', body: JSON.stringify({ messages, dedupKey }) });
+}
+
 export async function finishPendingDailyReport(env) {
   const raw = await env.INSTALLS.get('tg:daily_pending');
   if (!raw) return;
@@ -468,17 +508,23 @@ export async function finishPendingDailyReport(env) {
   const now = new Date(scheduledTime);
   const response = await sendDailyReport(env, now, 'daily:' + mskDayKey(now));
   if (!response.ok) throw new Error('daily report queue unavailable');
+  const premiumResponse = await sendPremiumDailyReport(env, dailyReportEnd(now));
+  if (!premiumResponse.ok) throw new Error('premium daily report queue unavailable');
   await env.INSTALLS.delete('tg:daily_pending');
+}
+
+function dailyReportPeriod(end) {
+  const start = new Date(end.getTime() - 86400000);
+  const months = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+  const date = d => `${d.getUTCDate()} ${months[d.getUTCMonth()]}`;
+  return `${date(start)} 22:00 — ${date(end)} 22:00 МСК`;
 }
 
 export function buildDailyReportMessage({ data, end = dailyReportEnd() }) {
   const n = value => value == null ? '—' : formatNumberWithSpaces(value);
   const stores = ['App Store', 'Google Play', 'RuStore'];
   const clicks = stores.reduce((sum, k) => sum + (data?.clicksByStore?.[k] || 0), 0);
-  const start = new Date(end.getTime() - 86400000);
-  const months = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-  const date = d => `${d.getUTCDate()} ${months[d.getUTCMonth()]}`;
-  const completeExtra = start.getTime() >= EXTRA_METRICS_STARTED_AT;
+  const completeExtra = end.getTime() - 86400000 >= EXTRA_METRICS_STARTED_AT;
   const viewSources = { ...data?.viewsBySource };
   // Older slots counted Threads both separately and inside social_other.
   const legacyThreads = Math.min(data?.threadsViews || 0, viewSources.social_other || 0);
@@ -503,7 +549,7 @@ export function buildDailyReportMessage({ data, end = dailyReportEnd() }) {
   }
   return [
     '📊 <b>Итоги за сутки</b>',
-    `<i>${date(start)} 22:00 — ${date(end)} 22:00 МСК</i>`,
+    `<i>${dailyReportPeriod(end)}</i>`,
     '',
     '🌐 <b>Сайт</b>',
     `Просмотры: <b>${n(data?.views)}</b>`,
@@ -710,7 +756,14 @@ async function logStorePurchase(env, user, verified, details = {}) {
     const notification = await sendTelegram(env, msg, key, { topic: 'purchases' });
     if (!notification.ok) throw new Error('purchase notification queue unavailable');
   }
-  await trackStats(env, null, { id: key, kind: 'analytics', event: { type: 'purchase', purchaseSource: store, app: user.app, platform } });
+  const ts = Date.now();
+  const event = await premiumPurchaseEvent(env, user, store, platform, ts, verified.reference);
+  if (productId.endsWith('.3months')) event.premiumPlan = 'threeMonths';
+  else if (productId.endsWith('.week')) event.premiumPlan = 'weekly';
+  if (verified.money) event.premiumMoney = verified.money;
+  const googleOrder = store === 'googleplay' && verified.orderId && !event.premiumReportExcluded
+    ? { id: verified.orderId, country: verified.reference.country } : null;
+  await trackStats(env, null, { id: key, kind: 'analytics', ts, event, ...(googleOrder ? { googleOrder } : {}) });
   await env.INSTALLS.put(key, '1', { expirationTtl: 30 * 86400 });
 }
 
@@ -2095,7 +2148,15 @@ export function sanitizeAnalyticsEvent(event) {
     package: analyticsToken(e.package, ''),
     path: String(e.path || '').replace(/[^A-Za-z0-9._~\/-]/g, '').slice(0, 120),
   };
-  if (e.type === 'purchase') out.purchaseSource = premiumEventSource(e);
+  if (e.type === 'purchase') {
+    out.purchaseSource = premiumEventSource(e);
+    if (e.premiumReportExcluded === true) out.premiumReportExcluded = true;
+    if (typeof e.premiumBuyer === 'string' && /^[a-f0-9]{64}$/.test(e.premiumBuyer)) out.premiumBuyer = e.premiumBuyer;
+    if (validPremiumMoney(e.premiumMoney)) {
+      out.premiumMoney = { milliunits: e.premiumMoney.milliunits, currency: e.premiumMoney.currency };
+    }
+    if (['weekly', 'threeMonths'].includes(e.premiumPlan)) out.premiumPlan = e.premiumPlan;
+  }
   for (const key of Object.keys(out)) if (out[key] === '') delete out[key];
   return out;
 }
@@ -2107,6 +2168,11 @@ async function trackStats(env, ctx, item) {
     return;
   }
   if (!env.INSTALLS) return;
+  if (item.googleOrder) {
+    const { googleOrder, ...stats } = item;
+    const premiumMoney = await googleOrderMoney(env, googleOrder.country, googleOrder.id).catch(() => null);
+    item = { ...stats, event: { ...stats.event, premiumMoney } };
+  }
   if (item && item.kind === 'analytics') item.event = sanitizeAnalyticsEvent(item.event);
   item.ts = item.ts || Date.now();
   if (env.STATS) {

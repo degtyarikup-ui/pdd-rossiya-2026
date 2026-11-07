@@ -18,6 +18,7 @@ import { reportIncident, errorCode, markIncidentReported } from './diagnostics.j
 // добавляет: заказ отмечается в user.webPayments.
 
 import { premiumBanner, premiumContextLines, premiumDate } from './premium_message.js';
+import { premiumPurchaseEvent } from './premium_analytics.js';
 import { metadataFields } from './attribution.js';
 import { putUserRecord } from './user_store.js';
 import { entitlementsOf, extendEntitlement, setEntitlement } from './entitlements.js';
@@ -362,7 +363,12 @@ export async function settleOrder(env, order, deps) {
     }
     await notify(env, deps, buildSbpPurchaseMessage(order, ledger.expiresAt, deps.esc, ledger.renewal), 'pay_paid:' + order.orderId);
     try {
-      await deps.trackStats?.(env, null, { id: 'pay_paid:' + order.orderId, kind: 'analytics', event: { type: 'purchase', purchaseSource: 'web', app: order.app || 'ru', platform: (order.context ? order.context.platform : order.client) || 'unknown' } });
+      const ts = Date.parse(order.confirmedAt);
+      const platform = (order.context ? order.context.platform : order.client) || 'unknown';
+      const event = await premiumPurchaseEvent(env, user, 'web', platform, ts);
+      event.premiumPlan = order.tier;
+      event.premiumMoney = { milliunits: Math.round(order.amount * 1000), currency: order.currency };
+      await deps.trackStats?.(env, null, { id: 'pay_paid:' + order.orderId, kind: 'analytics', ts, event });
     } catch (_) {}
   } else if (status === 'CHARGEBACKED' && order.status === 'confirmed') {
     const user = await loadUser(env, order);

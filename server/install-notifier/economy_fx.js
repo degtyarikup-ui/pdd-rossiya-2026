@@ -4,19 +4,24 @@ const flights = new WeakMap();
 const moscowDay = now => new Date(now + 10800000).toISOString().slice(0,10);
 export function parseCbrUsd(xml, requestedDay) {
   const date = xml.match(/<ValCurs\b[^>]*\bDate="(\d{2})\.(\d{2})\.(\d{4})"/);
-  const row = (xml.match(/<Valute\b[^>]*>[\s\S]*?<\/Valute>/g) || []).find(value => /<CharCode>USD<\/CharCode>/.test(value));
-  const numeric = tag => Number(row?.match(new RegExp('<'+tag+'>([^<]+)</'+tag+'>'))?.[1]?.replace(/\s/g,'').replace(',','.'));
-  const rate = numeric('Value') / numeric('Nominal');
+  const rubPerUnit = { RUB: 1 };
+  for (const row of xml.match(/<Valute\b[^>]*>[\s\S]*?<\/Valute>/g) || []) {
+    const currency = row.match(/<CharCode>([A-Z]{3})<\/CharCode>/)?.[1];
+    const numeric = tag => Number(row.match(new RegExp('<'+tag+'>([^<]+)</'+tag+'>'))?.[1]?.replace(/\s/g,'').replace(',','.'));
+    const rate = numeric('Value') / numeric('Nominal');
+    if (currency && Number.isFinite(rate) && rate > 0 && rate <= 100000) rubPerUnit[currency] = rate;
+  }
+  const rate = rubPerUnit.USD;
   const effectiveDate = date ? `${date[3]}-${date[2]}-${date[1]}` : '';
   if (!effectiveDate || !Number.isFinite(Date.parse(effectiveDate)) || new Date(effectiveDate).toISOString().slice(0,10)!==effectiveDate || effectiveDate > requestedDay || !Number.isFinite(rate) || rate <= 0 || rate > 100000) throw new Error('Invalid CBR rate');
-  return { rubPerUsd: rate, effectiveDate, source: 'CBR', sourceUrl: 'https://www.cbr.ru/currency_base/daily/', base: 'USD', quote: 'RUB' };
+  return { rubPerUsd: rate, rubPerUnit, effectiveDate, source: 'CBR', sourceUrl: 'https://www.cbr.ru/currency_base/daily/', base: 'USD', quote: 'RUB' };
 }
 export async function getUsdRate(env, deps = {}) {
   if (deps.fx) return deps.fx; // Explicit deterministic test dependency.
   const now=deps.now??Date.now(), today=moscowDay(now);
   let cached;try { cached=JSON.parse(await env.INSTALLS.get(KEY)); } catch(_) {}
   if (!(cached?.rubPerUsd > 0 && cached.effectiveDate <= today)) cached=null;
-  if(cached && !deps.force && cached.requestedDay===today && now-Date.parse(cached.checkedAt)<3600000) return {...cached,stale:false};
+  if(cached && !deps.force && (!deps.allCurrencies || cached.rubPerUnit) && cached.requestedDay===today && now-Date.parse(cached.checkedAt)<3600000) return {...cached,stale:false};
   let task=flights.get(env.INSTALLS);
   if(!task){
     task=(async()=>{

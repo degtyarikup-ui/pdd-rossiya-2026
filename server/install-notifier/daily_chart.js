@@ -16,9 +16,26 @@ const FONT = {
   'Ь':['10000','10000','10000','11110','10001','10001','11110'], 'Ч':['10001','10001','10001','01111','00001','00001','00001'],
   '/':['00001','00010','00010','00100','01000','01000','10000'], '.':['00000','00000','00000','00000','00000','00110','00110'],
   'Х':['10001','10001','01010','00100','01010','10001','10001'],
+  'A':['01110','10001','10001','11111','10001','10001','10001'], 'E':['11111','10000','10000','11110','10000','10000','11111'],
+  'G':['01110','10001','10000','10111','10001','10001','01110'], 'L':['10000','10000','10000','10000','10000','10000','11111'],
+  'O':['01110','10001','10001','10001','10001','10001','01110'], 'P':['11110','10001','10001','11110','10000','10000','10000'],
+  'R':['11110','10001','10001','11110','10100','10010','10001'], 'S':['01111','10000','10000','01110','00001','00001','11110'],
+  'D':['11110','10001','10001','10001','10001','10001','11110'], 'U':['10001','10001','10001','10001','10001','10001','01110'],
+  'T':['11111','00100','00100','00100','00100','00100','00100'], 'Y':['10001','10001','01010','00100','00100','00100','00100'],
   ':':['00000','00110','00110','00000','00110','00110','00000'], '-':['00000','00000','00000','11111','00000','00000','00000'],
 };
-const COLORS = [[246,248,252],[27,39,60],[216,223,235],[0,122,255],[39,174,96],[117,128,150]];
+// Orange matches AppColors.premiumAmber in the app.
+const COLORS = [[246,248,252],[27,39,60],[216,223,235],[0,122,255],[39,174,96],[117,128,150],
+  [255,165,60],[24,24,26],[142,62,0],[0,80,184]];
+const GENERAL_SERIES = [
+  { key: 'installs', label: 'УСТАНОВКИ', legendX: 40, offset: 0, width: 32, color: 3 },
+  { key: 'registrations', label: 'АККАУНТЫ', legendX: 320, offset: 42, width: 32, color: 4 },
+];
+const PREMIUM_SERIES = [
+  { key: 'web', label: 'PLATEGA', legendX: 40, offset: 0, width: 24, color: 6, valueColor: 8 },
+  { key: 'appstore', label: 'APP STORE', legendX: 215, offset: 33, width: 24, color: 7 },
+  { key: 'googleplay', label: 'GOOGLE PLAY', legendX: 420, offset: 66, width: 24, color: 3, valueColor: 9 },
+];
 function crc32(bytes) {
   let crc = 0xffffffff;
   for (const byte of bytes) { crc ^= byte; for (let i=0;i<8;i++) crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0); }
@@ -36,7 +53,7 @@ export function pngBase64(bytes) {
   for (let i=0; i<bytes.length; i+=8192) binary += String.fromCharCode(...bytes.subarray(i,i+8192));
   return btoa(binary);
 }
-export async function renderDailyChart(points) {
+export async function renderDailyChart(points, { premium = false } = {}) {
   if (!Array.isArray(points) || points.length !== 7) throw new Error('expected seven days');
   const w=960,h=520, pixels=new Uint8Array(w*h);
   function rect(x,y,width,height,color) {
@@ -50,12 +67,15 @@ export async function renderDailyChart(points) {
       x+=6*scale;
     }
   }
-  text('ПДД / 7 СУТОК',40,30,1,4);
-  rect(40,91,20,20,3); text('УСТАНОВКИ',72,91,1,3);
-  rect(320,91,20,20,4); text('АККАУНТЫ',352,91,1,3);
-  text('22:00-22:00 МСК',630,94,5,2);
+  const series = premium ? PREMIUM_SERIES : GENERAL_SERIES;
+  text(premium ? 'ПРЕМИУМ / 7 СУТОК' : 'ПДД / 7 СУТОК',40,30,1,4);
+  if (premium) text('СУММЫ ПОКУПОК / USD',695,42,5,2);
+  for (const { label, legendX, color } of series) {
+    rect(legendX,91,20,20,color); text(label,legendX+32,91,1,3);
+  }
+  text('22:00-22:00 МСК',premium ? 695 : 630,94,5,2);
   const count = v => Number.isFinite(Number(v)) ? Math.max(0,Math.min(1e8,Number(v))) : 0;
-  const max=Math.max(5,...points.flatMap(p=>[count(p.installs),count(p.registrations)]));
+  const max=Math.max(5,...points.flatMap(p=>series.map(({ key })=>count(p[key]))));
   const magnitude=10**Math.floor(Math.log10(max/5));
   const step=Math.ceil(max/5/magnitude)*magnitude,top=step*5;
   const base=430,plot=260;
@@ -65,11 +85,20 @@ export async function renderDailyChart(points) {
   }
   points.forEach((p,i)=>{
     const x=128+i*112;
+    const labels = [];
     if(p.available === false) text('Н/Д',x+7,base-30,5,3);
-    else for (const [j,value] of [count(p.installs),count(p.registrations)].entries()) {
+    else for (const { key, offset, width, color, valueColor = color } of series) {
+      const value=count(p[key]);
       const bh=value/top*plot;
-      rect(x+j*42,base-bh,32,bh,j===0?3:4);
-      text(value,x+j*42,base-bh-20,j===0?3:4,2);
+      rect(x+offset,base-bh,width,bh,color);
+      const label = premium ? (p[key] == null ? 'Н/Д' : value ? value.toFixed(2) : '0') : String(value);
+      const labelScale = premium && label.length > 3 ? 1.5 : 2;
+      const labelWidth = label.length * 6 * labelScale;
+      const labelX=premium ? x+offset+(width-labelWidth)/2 : x+offset;
+      let labelY=base-bh-20;
+      while (premium && labels.some(other => labelX < other.right && labelX+labelWidth > other.left && Math.abs(labelY-other.y)<15)) labelY-=16;
+      labels.push({ left: labelX, right: labelX+labelWidth, y: labelY });
+      text(label,labelX,labelY,premium && p[key] == null ? 5 : valueColor,labelScale);
     }
     text(String(p.date).slice(8,10)+'.'+String(p.date).slice(5,7),x-4,453,1,3);
   });

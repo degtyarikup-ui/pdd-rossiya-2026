@@ -50,6 +50,19 @@ async function googleAccessToken(env) {
   return data.access_token;
 }
 
+export async function googleOrderMoney(env, country, orderId) {
+  const packageName = packages[country];
+  if (!packageName || !/^GPA\.[\d.-]+$/.test(orderId || '')) return null;
+  const token = await googleAccessToken(env);
+  const response = await fetch(`https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${packageName}/orders/${encodeURIComponent(orderId)}`, {
+    headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(4000),
+  });
+  if (!response.ok) return null;
+  const { total } = await response.json();
+  if (!total) return null;
+  return { milliunits: Math.round(Number(total.units || 0) * 1000 + Number(total.nanos || 0) / 1e6), currency: total.currencyCode };
+}
+
 export function googleEntitlement(data, productId, now = Date.now()) {
   const item = data.lineItems?.filter(i => i.productId === productId)
     .sort((a, b) => Date.parse(b.expiryTime) - Date.parse(a.expiryTime))[0];
@@ -160,6 +173,7 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
   }
   return { active, autoRenewEnabled, accountToken: data.appAccountToken || null, expiresAt: new Date(expiresDate).toISOString(),
     renewal: data.transactionReason === 'RENEWAL', orderId: String(data.transactionId), key: `appstore:${data.originalTransactionId}`,
+    money: { milliunits: data.price, currency: data.currency },
     reference: { store, country, productId: data.productId, transactionId: String(data.transactionId),
       evidenceVersion: 1, environment: data.environment, isTest: data.environment !== 'Production',
       paid: data.price == null ? null : Number(data.price) > 0, refunded: Boolean(data.revocationDate) } };
