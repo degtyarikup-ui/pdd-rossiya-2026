@@ -263,7 +263,10 @@ func _create_materials() -> void:
 	marking_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	curb_mat = sc.surface_material("pavement", sc.color("sidewalk"))
 	sidewalk_mat = sc.surface_material("pavement", sc.color("sidewalk"))
-	grass_mat = sc.surface_material("grass", sc.color("ground"))
+	var is_winter: bool = sc.season.get("precipitation", "") == "snow"
+	# Calibrate winter ground tone in crossroads: avoid blinding flat whiteout under overhead camera
+	var ground_col := Color("#A8B8C6") if is_winter else sc.color("ground")
+	grass_mat = sc.surface_material("grass", ground_col)
 	stone_mat = sc.surface_material("pavement", Color("#8D7E75"))
 
 
@@ -584,7 +587,9 @@ func _ground_shares(p: Vector2) -> Vector3:
 
 ## A ground mesh over [x0, x1] × [z0, z1] sampled from the field.
 func _field_mesh(x0: float, x1: float, z0: float, z1: float, y: float, max_long := FIELD_STEP) -> MeshInstance3D:
-	var colours := [Color("#2C2F36"), Color("#8D7151"), sc.color("ground")]
+	var is_winter: bool = sc.season.get("precipitation", "") == "snow"
+	var ground_col := Color("#A8B8C6") if is_winter else sc.color("ground")
+	var colours := [Color("#2C2F36"), Color("#8D7151"), ground_col]
 	var layers := [sc.layer_of("asphalt"), sc.layer_of("dirt"), sc.layer_of("grass")]
 	var nx := maxi(1, ceili((x1 - x0) / (FIELD_STEP if x1 - x0 < 20.0 else max_long)))
 	var nz := maxi(1, ceili((z1 - z0) / (FIELD_STEP if z1 - z0 < 20.0 else max_long)))
@@ -1959,6 +1964,38 @@ func _build_suburban_scenery_decor() -> void:
 			_put_prop("trees/round_0", Vector3(-dist, 0.16, sz * tree_verge), PI * 0.5, Vector3.ONE * 1.0, leaf_color, true)
 			_put_prop("trees/birch_0", Vector3(dist, 0.16, sz * tree_verge), -PI * 0.5, Vector3.ONE * 1.0, birch_color, true)
 
+	# Suburban yard fences, evergreen conifers and garden shrubs (breaks up vast empty snow lawns)
+	var is_winter: bool = sc.season.get("precipitation", "") == "snow"
+	var bush_col: Color = Color.WHITE if is_winter else Color("#3E6B32")
+	# Fences enclosing suburban cottage plots
+	for c in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
+		var ns_side := "south" if c.y > 0 else "north"
+		var ew_side := "east" if c.x > 0 else "west"
+		if ns_side != closed_side:
+			_put_prop("street/fence_14", Vector3(c.x * 13.5, 0.15, c.y * 22.0), 0.0, Vector3.ONE * 0.95, Color.WHITE, false)
+			_put_prop("street/fence_14", Vector3(c.x * 13.5, 0.15, c.y * 34.0), 0.0, Vector3.ONE * 0.95, Color.WHITE, false)
+		if ew_side != closed_side:
+			_put_prop("street/fence_14", Vector3(c.x * 22.0, 0.15, c.y * 13.5), PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, false)
+			_put_prop("street/fence_14", Vector3(c.x * 34.0, 0.15, c.y * 13.5), PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, false)
+
+	# Rich evergreen Russian pines and garden trees in the cottage plots
+	_put_prop("trees/pine_0", Vector3(-17.0, 0.15, -23.5), 0.4, Vector3.ONE * 1.25, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(-23.5, 0.15, -16.5), -0.3, Vector3.ONE * 1.15, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(17.5, 0.15, -25.0), 0.6, Vector3.ONE * 1.3, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(25.0, 0.15, -16.0), -0.7, Vector3.ONE * 1.1, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(-17.0, 0.15, 23.5), -0.5, Vector3.ONE * 1.2, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(-24.0, 0.15, 16.5), 0.8, Vector3.ONE * 1.15, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(17.0, 0.15, 23.5), 0.2, Vector3.ONE * 1.25, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(24.5, 0.15, 16.5), -0.4, Vector3.ONE * 1.1, pine_color, true)
+
+	# Shrubs and lilac along suburban borders
+	for sx in [-1, 1]:
+		for b_dist in [20.0, 32.0, 48.0, 68.0, 92.0, 120.0]:
+			_put_prop("street/bush", Vector3(sx * 12.6, 0.15, b_dist), 0.0, Vector3.ONE * 0.85, bush_col, false)
+			_put_prop("street/bush", Vector3(sx * 12.6, 0.15, -b_dist), 0.0, Vector3.ONE * 0.85, bush_col, false)
+			_put_prop("street/bush", Vector3(b_dist, 0.15, sx * 12.6), PI * 0.5, Vector3.ONE * 0.85, bush_col, false)
+			_put_prop("street/bush", Vector3(-b_dist, 0.15, sx * 12.6), -PI * 0.5, Vector3.ONE * 0.85, bush_col, false)
+
 	_finish_pools()
 
 
@@ -2223,6 +2260,8 @@ func _build_urban_scenery_decor() -> void:
 	_put_prop("trees/pine_0", Vector3(14.0, 0.15, -25.5), -0.5, Vector3.ONE * 1.05, pine_color, true)
 	_put_prop("trees/pine_0", Vector3(-14.0, 0.15, 25.5), 0.8, Vector3.ONE * 1.05, pine_color, true)
 	_put_prop("trees/pine_0", Vector3(14.0, 0.15, 25.5), 0.8, Vector3.ONE * 1.05, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(-25.5, 0.15, 14.0), -0.3, Vector3.ONE * 1.1, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(25.5, 0.15, -14.0), 0.5, Vector3.ONE * 1.1, pine_color, true)
 	_put_prop("trees/birch_0", Vector3(-25.5, 0.15, -14.0), 1.2, Vector3.ONE * 1.0, birch_color, true)
 	_put_prop("trees/round_0", Vector3(25.5, 0.15, 14.0), -0.7, Vector3.ONE * 1.0, leaf_color, true)
 

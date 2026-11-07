@@ -34,9 +34,19 @@ static func apply(sun: DirectionalLight3D, environment: Environment, season_name
 	environment.background_color = CROSSROADS_SKY if for_crossroads else CLEAR_SKY
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_sky_contribution = 0.0
-	environment.ambient_light_color = Color(season.get("ambientTint", "#ffffff"))
-	environment.ambient_light_energy = float(season.ambient) * (0.65 if for_crossroads else 0.8)
-	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC if for_crossroads else Environment.TONE_MAPPER_LINEAR
+	if season_name == "winter" and for_crossroads:
+		# Winter crossroads: soften ambient brightness and use cool atmospheric ambient tint
+		# to prevent snow and ground from clipping into a blinding flat whiteout.
+		sun.light_energy = 0.42
+		sun.light_color = Color("#E2EDF8")
+		environment.ambient_light_color = Color("#9FB3C7")
+		environment.ambient_light_energy = 0.44
+		environment.tonemap_mode = Environment.TONE_MAPPER_REINHARDT
+		environment.tonemap_white = 3.5
+	else:
+		environment.ambient_light_color = Color(season.get("ambientTint", "#ffffff"))
+		environment.ambient_light_energy = float(season.ambient) * (0.65 if for_crossroads else 0.8)
+		environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC if for_crossroads else Environment.TONE_MAPPER_LINEAR
 	environment.fog_enabled = true
 	environment.fog_mode = Environment.FOG_MODE_DEPTH
 	# Godot resets density when fog_mode changes; set it afterwards.

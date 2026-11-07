@@ -61,6 +61,9 @@ func run() -> void:
 	expect(crossroads_sc.snow != null, "Crossroads spawns Snow in winter")
 	expect(crossroads_sc.leaves == null, "Crossroads does NOT spawn Leaves in winter")
 	expect(crossroads_sc.junction.sc.season.precipitation == "snow", "Crossroads junction uses winter scenery")
+	var ground_param = crossroads_sc.junction.grass_mat.get_shader_parameter("surface_colour")
+	var expected_col := Color("#A8B8C6")
+	expect(ground_param == Vector3(expected_col.r, expected_col.g, expected_col.b), "Crossroads winter ground is calibrated to prevent whiteout")
 	await dispose_game(crossroads_sc)
 
 	# 5. Regulator winter check
