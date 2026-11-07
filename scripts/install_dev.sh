@@ -38,7 +38,7 @@ fi
 sdk_path=$(python3 tools/android_build/environment.py --sdk)
 export PATH="$sdk_path/platform-tools:$PATH"
 
-connected() { adb devices | awk 'NR>1 && $2=="device" {print $1; exit}'; }
+connected() { adb devices | awk -F'\t' 'NR>1 && $2~/^device/ {print $1; exit}'; }
 try_connect() { adb connect "$1" >/dev/null 2>&1 || true; sleep 1; connected; }
 # Wireless debugging picks a new random port (30000-49999) every time it is
 # switched on; the phone's IP stays. Find the open adb port by a quick scan.
@@ -75,11 +75,13 @@ find_ip_by_mac() {
 }
 remember_mac() { [[ $(uname -s) == Darwin ]] || return 0; local ip=$1; arp -n "$ip" 2>/dev/null | awk '{print $4; exit}' | grep -E '^([0-9a-f]{1,2}:){5}[0-9a-f]{1,2}$' > "$MACFILE" || true; }
 
-# An adb server started inside a sandbox has no network: always restart it.
-adb kill-server >/dev/null 2>&1 || true
-adb start-server >/dev/null 2>&1 || true
-
+# An adb server started inside a sandbox has no network: restart only if no device is connected.
 dev=$(connected || true)
+if [[ -z $dev ]]; then
+  adb kill-server >/dev/null 2>&1 || true
+  adb start-server >/dev/null 2>&1 || true
+  dev=$(connected || true)
+fi
 if [[ -z $dev && -n $addr ]]; then dev=$(try_connect "$addr"); fi
 if [[ -z $dev ]]; then
   for _ in 1 2 3; do
