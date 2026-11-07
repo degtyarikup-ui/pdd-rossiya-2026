@@ -88,15 +88,42 @@ Map<String, String> browserAcquisitionFields() {
   return (result: result, order: order);
 }
 
-/// Реферальный код в адресе: `?ref=<code>`.
+/// Реферальный код в адресе: `?ref=<code>` или `/#/?ref=<code>`.
 /// Код сразу убирается из адреса, чтобы перезагрузка не повторяла параметр.
 String? takeReferralParam() {
   final base = Uri.base;
-  final code = base.queryParameters['ref'];
+  var code = base.queryParameters['ref'];
+  var fromFragment = false;
+  if ((code == null || code.isEmpty) && base.hasFragment) {
+    final frag = base.fragment;
+    final qIndex = frag.indexOf('?');
+    if (qIndex != -1) {
+      final fragQuery = Uri.splitQueryString(frag.substring(qIndex + 1));
+      code = fragQuery['ref'];
+      if (code != null && code.isNotEmpty) {
+        fromFragment = true;
+      }
+    }
+  }
   if (code == null || code.isEmpty) return null;
+
   final rest = Map.of(base.queryParameters)..remove('ref');
   final query = rest.isEmpty ? '' : '?${Uri(queryParameters: rest).query}';
-  final fragment = base.hasFragment ? '#${base.fragment}' : '';
+  var fragment = base.hasFragment ? '#${base.fragment}' : '';
+  if (fromFragment && base.hasFragment) {
+    final frag = base.fragment;
+    final qIndex = frag.indexOf('?');
+    if (qIndex != -1) {
+      final fragPath = frag.substring(0, qIndex);
+      final fragQueryMap =
+          Map.of(Uri.splitQueryString(frag.substring(qIndex + 1)))
+            ..remove('ref');
+      final newFragQuery = fragQueryMap.isEmpty
+          ? ''
+          : '?${Uri(queryParameters: fragQueryMap).query}';
+      fragment = '#$fragPath$newFragQuery';
+    }
+  }
   web.window.history.replaceState(null, '', '${base.path}$query$fragment');
   return code;
 }

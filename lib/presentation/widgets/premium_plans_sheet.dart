@@ -766,7 +766,17 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
         child: InkWell(
           key: const ValueKey('premium-plans-referral-button'),
           borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-          onTap: _isLoading ? null : () => ReferralModalSheet.show(context),
+          onTap: _isLoading
+              ? null
+              : () async {
+                  final wasPremium = PremiumService.instance.isPremium;
+                  final claimed = await ReferralModalSheet.show(context);
+                  if (mounted &&
+                      (claimed == true ||
+                          (!wasPremium && PremiumService.instance.isPremium))) {
+                    Navigator.of(context).pop(true);
+                  }
+                },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(

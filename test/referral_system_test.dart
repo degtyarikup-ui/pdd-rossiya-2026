@@ -143,6 +143,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final referralTile = find.byKey(const ValueKey('settings-referral-tile'));
+      await tester.scrollUntilVisible(referralTile, 200);
+      await tester.ensureVisible(referralTile);
+      await tester.pumpAndSettle();
       expect(referralTile, findsOneWidget);
 
       await tester.tap(referralTile);
@@ -170,6 +173,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(ReferralModalSheet), findsOneWidget);
+
+      final closeBtn = find.byKey(const ValueKey('referral-close-button'));
+      expect(closeBtn, findsOneWidget);
+      await tester.tap(closeBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ReferralModalSheet), findsNothing);
     });
   });
 }

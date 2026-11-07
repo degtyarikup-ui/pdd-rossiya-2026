@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -8,14 +9,15 @@ import 'package:pdd_app/data/services/referral_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/result_share.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ReferralModalSheet extends StatefulWidget {
   const ReferralModalSheet({super.key});
 
-  static Future<void> show(BuildContext context) {
+  static Future<bool?> show(BuildContext context) {
     HapticFeedbackHelper.tap();
-    return showModalBottomSheet<void>(
+    return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -31,12 +33,21 @@ class ReferralModalSheet extends StatefulWidget {
 class _ReferralModalSheetState extends State<ReferralModalSheet> {
   final TextEditingController _codeController = TextEditingController();
   bool _claiming = false;
+  bool _claimed = false;
+  StreamSubscription<ReferralClaimResult>? _claimSubscription;
 
   @override
   void initState() {
     super.initState();
     ReferralService.instance.addListener(_onServiceUpdate);
     AuthService.instance.addListener(_onServiceUpdate);
+    _claimSubscription = ReferralService.instance.onClaimResult.listen((res) {
+      if (res.status == ReferralClaimStatus.success && mounted) {
+        _claimed = true;
+        _codeController.clear();
+        setState(() {});
+      }
+    });
     if (AuthService.instance.isAuthenticated) {
       ReferralService.instance.getReferralInfo();
     }
@@ -44,6 +55,7 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
 
   @override
   void dispose() {
+    _claimSubscription?.cancel();
     ReferralService.instance.removeListener(_onServiceUpdate);
     AuthService.instance.removeListener(_onServiceUpdate);
     _codeController.dispose();
@@ -68,14 +80,7 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
   Future<void> _handleShare(ReferralInfo info) async {
     HapticFeedbackHelper.tap();
     final text = appL10n.referralShareText(info.code, info.link);
-    final box = context.findRenderObject();
-    final origin = box is RenderBox && box.hasSize
-        ? Rect.fromCenter(
-            center: box.localToGlobal(box.size.center(Offset.zero)),
-            width: 1,
-            height: 1,
-          )
-        : null;
+    final origin = sharePositionOrigin(context);
     try {
       final res = await SharePlus.instance.share(
         ShareParams(text: text, sharePositionOrigin: origin),
@@ -92,11 +97,17 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
     final code = _codeController.text.trim();
     if (code.isEmpty) return;
 
-    if (!AuthService.instance.isAuthenticated) {
+    if (!AuthService.instance.isAuthenticated ||
+        !AuthService.instance.hasServerSession) {
       await ReferralService.instance.savePendingCode(code);
       if (!mounted) return;
-      await AuthModalSheet.show(context);
-      return;
+      final signedIn = await AuthModalSheet.show(context);
+      if (!mounted) return;
+      if (!AuthService.instance.isAuthenticated ||
+          !AuthService.instance.hasServerSession ||
+          signedIn != true) {
+        return;
+      }
     }
 
     setState(() => _claiming = true);
@@ -108,6 +119,7 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
 
     switch (result.status) {
       case ReferralClaimStatus.success:
+        _claimed = true;
         HapticFeedbackHelper.success();
         _codeController.clear();
         AppToast.show(
@@ -159,48 +171,55 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
 
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.cardBackground,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppDimensions.radiusExtraLarge),
+    return PopScope<bool>(
+      canPop: !_claimed,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _claimed) {
+          Navigator.of(context).pop(true);
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.cardBackground,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppDimensions.radiusExtraLarge),
+          ),
         ),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        AppDimensions.screenPadding,
-        12,
-        AppDimensions.screenPadding,
-        MediaQuery.of(context).viewPadding.bottom + 20 + bottomPadding,
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: colors.primaryText.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(2),
+        padding: EdgeInsets.fromLTRB(
+          AppDimensions.screenPadding,
+          12,
+          AppDimensions.screenPadding,
+          MediaQuery.of(context).viewPadding.bottom + 20 + bottomPadding,
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Drag Handle
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: colors.primaryText.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
 
-              // Close Button
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  key: const ValueKey('referral-close-button'),
-                  icon: Icon(Icons.close_rounded, color: colors.secondaryText),
-                  onPressed: () => Navigator.of(context).pop(),
+                // Close Button
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    key: const ValueKey('referral-close-button'),
+                    icon: Icon(Icons.close_rounded, color: colors.secondaryText),
+                    onPressed: () => Navigator.of(context).pop(_claimed ? true : null),
+                  ),
                 ),
-              ),
 
               // Top Gift Icon Badge
               Center(
@@ -276,8 +295,9 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSignInCard(AppThemeColors colors) {
     return Container(

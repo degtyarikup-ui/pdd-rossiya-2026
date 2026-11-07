@@ -391,24 +391,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(height: AppDimensions.spacingXL),
 
-                    _buildSectionTitle(appL10n.referralSectionTitle),
-                    _buildSectionCard(
-                      children: [
-                        _buildSettingItem(
-                          key: const ValueKey('settings-referral-tile'),
-                          icon: Icons.card_giftcard_rounded,
-                          title: appL10n.referralSettingsTitle,
-                          subtitle: appL10n.referralSettingsSubtitle,
-                          trailing: Icon(
-                            Icons.chevron_right_rounded,
-                            color: colors.secondaryText,
-                          ),
-                          onTap: () => ReferralModalSheet.show(context),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppDimensions.spacingXL),
-
                     _buildSectionTitle(appL10n.preparation),
                     _buildSectionCard(
                       children: [
@@ -527,6 +509,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             color: colors.secondaryText,
                           ),
                           onTap: _handleResetStats,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppDimensions.spacingXL),
+
+                    _buildSectionTitle(appL10n.referralSectionTitle),
+                    _buildSectionCard(
+                      children: [
+                        _buildSettingItem(
+                          key: const ValueKey('settings-referral-tile'),
+                          icon: Icons.card_giftcard_rounded,
+                          title: appL10n.referralSettingsTitle,
+                          subtitle: appL10n.referralSettingsSubtitle,
+                          trailing: Icon(
+                            Icons.chevron_right_rounded,
+                            color: colors.secondaryText,
+                          ),
+                          onTap: () => ReferralModalSheet.show(context),
                         ),
                       ],
                     ),

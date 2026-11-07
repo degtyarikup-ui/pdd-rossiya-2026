@@ -368,7 +368,7 @@ export class AccountState {
       response = json({ ok: true, summary });
     } else {
       const handlers = await import('./worker.js');
-      response = path === '/_account/reconcile' || path === '/_account/refresh' || path === '/_account/iap-event'
+      response = path === '/_account/reconcile' || path === '/_account/refresh' || path === '/_account/iap-event' || path === '/_account/referral-reward'
         ? await handlers.handleAccountMaintenance(path, request, env)
         : await handlers.handleAccountHttp(request, env);
     }

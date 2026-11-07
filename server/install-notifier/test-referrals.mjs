@@ -131,3 +131,33 @@ test('referrals: multiple friends stack +2 days each on inviter', async () => {
   // ~4 days (+- 5 seconds)
   assert.ok(Math.abs(inviterExpiry - (now + 4 * 86400000)) < 5000);
 });
+
+test('referrals: concurrent claims by multiple friends do not race or lose inviter days', async () => {
+  const { env } = fixture();
+  await env.INSTALLS.put('user:google_inviter', JSON.stringify(identity('google_inviter')));
+  const inviterToken = await session(env, 'google_inviter');
+
+  const refRes = await worker.fetch(request('/api/user/referral', undefined, inviterToken), env);
+  const { code } = await refRes.json();
+
+  const now = Date.now();
+  await env.INSTALLS.put('user:concurrent_1', JSON.stringify({ ...identity('concurrent_1'), name: 'Friend <One>&Co' }));
+  await env.INSTALLS.put('user:concurrent_2', JSON.stringify({ ...identity('concurrent_2'), name: 'Friend <Two>' }));
+  const f1Token = await session(env, 'concurrent_1');
+  const f2Token = await session(env, 'concurrent_2');
+
+  const [res1, res2] = await Promise.all([
+    worker.fetch(request('/api/user/referral/claim', { code }, f1Token), env),
+    worker.fetch(request('/api/user/referral/claim', { code }, f2Token), env),
+  ]);
+
+  assert.equal(res1.status, 200);
+  assert.equal(res2.status, 200);
+
+  const inviterRaw = await accountRead(env, 'google_inviter', 'user:google_inviter');
+  const inviter = JSON.parse(inviterRaw);
+  assert.equal(inviter.referralCount, 2);
+  assert.equal(inviter.referralDaysEarned, 4);
+  const inviterExpiry = Date.parse(inviter.premiumExpiresAt);
+  assert.ok(Math.abs(inviterExpiry - (now + 4 * 86400000)) < 5000);
+});

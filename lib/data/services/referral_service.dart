@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
@@ -136,13 +137,19 @@ class ReferralService extends ChangeNotifier {
     }
   }
 
+  Future<ReferralClaimResult>? _inFlightClaim;
+  String? _inFlightClaimCode;
+  final _claimController = StreamController<ReferralClaimResult>.broadcast();
+  Stream<ReferralClaimResult> get onClaimResult => _claimController.stream;
+
   void _onAuthChanged() {
-    if (AuthService.instance.isAuthenticated) {
+    if (AuthService.instance.isAuthenticated &&
+        AuthService.instance.hasServerSession) {
       if (_pendingCode != null) {
         checkPendingReferral();
       }
       getReferralInfo(forceRefresh: true);
-    } else {
+    } else if (!AuthService.instance.isAuthenticated) {
       _info = null;
       notifyListeners();
     }
@@ -215,6 +222,24 @@ class ReferralService extends ChangeNotifier {
       return const ReferralClaimResult(status: ReferralClaimStatus.error);
     }
 
+    if (_inFlightClaim != null && _inFlightClaimCode == clean) {
+      return _inFlightClaim!;
+    }
+
+    final future = _doClaimCode(clean);
+    _inFlightClaim = future;
+    _inFlightClaimCode = clean;
+    try {
+      return await future;
+    } finally {
+      if (_inFlightClaimCode == clean) {
+        _inFlightClaim = null;
+        _inFlightClaimCode = null;
+      }
+    }
+  }
+
+  Future<ReferralClaimResult> _doClaimCode(String clean) async {
     try {
       final resp = await NotifierApi.post(
         '/api/user/referral/claim',
@@ -223,7 +248,10 @@ class ReferralService extends ChangeNotifier {
         body: jsonEncode({'code': clean}),
       );
 
-      final data = resp.statusCode == 200 || resp.statusCode == 400 || resp.statusCode == 404
+      final data =
+          resp.statusCode == 200 ||
+              resp.statusCode == 400 ||
+              resp.statusCode == 404
           ? jsonDecode(resp.body) as Map<String, dynamic>
           : null;
 
@@ -234,12 +262,23 @@ class ReferralService extends ChangeNotifier {
             hasUsedReferral: true,
             referralCodeUsed: clean,
           );
+        } else {
+          unawaited(getReferralInfo(forceRefresh: true));
         }
         await PremiumService.instance.checkForGrant();
         notifyListeners();
-        return ReferralClaimResult(
+        final res = ReferralClaimResult(
           status: ReferralClaimStatus.success,
           daysAdded: (data?['daysAdded'] as num?)?.toInt() ?? 1,
+        );
+        _claimController.add(res);
+        return res;
+      }
+
+      if (resp.statusCode == 401) {
+        await savePendingCode(clean);
+        return const ReferralClaimResult(
+          status: ReferralClaimStatus.unauthenticated,
         );
       }
 
@@ -258,6 +297,11 @@ class ReferralService extends ChangeNotifier {
       if (resp.statusCode == 404 || error == 'code_not_found') {
         return const ReferralClaimResult(status: ReferralClaimStatus.notFound);
       }
+      if (error == 'invalid_code') {
+        return const ReferralClaimResult(
+          status: ReferralClaimStatus.invalidCode,
+        );
+      }
       return const ReferralClaimResult(status: ReferralClaimStatus.error);
     } catch (e) {
       debugPrint('ReferralService.claimCode error: $e');
@@ -266,11 +310,18 @@ class ReferralService extends ChangeNotifier {
   }
 
   Future<void> checkPendingReferral() async {
-    if (_pendingCode == null || !AuthService.instance.isAuthenticated) return;
+    if (_pendingCode == null ||
+        !AuthService.instance.isAuthenticated ||
+        !AuthService.instance.hasServerSession) {
+      return;
+    }
     final code = _pendingCode!;
     final result = await claimCode(code);
-    if (result.status == ReferralClaimStatus.alreadyClaimed ||
-        result.status == ReferralClaimStatus.selfReferral) {
+    if (result.status == ReferralClaimStatus.success ||
+        result.status == ReferralClaimStatus.alreadyClaimed ||
+        result.status == ReferralClaimStatus.selfReferral ||
+        result.status == ReferralClaimStatus.notFound ||
+        result.status == ReferralClaimStatus.invalidCode) {
       await _clearPendingCode();
     }
   }

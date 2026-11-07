@@ -1,9 +1,16 @@
 import { extendEntitlement } from './entitlements.js';
-import { putUserRecord, userSummary } from './user_store.js';
-import { accountRead, accountWrite } from './account_state.js';
+import { putUserRecord } from './user_store.js';
+import { accountRpc } from './account_state.js';
 
 const CODE_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const CODE_LEN = 6;
+
+function esc(s) {
+  return String(s ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
 
 export function generateReferralCode() {
   const bytes = new Uint8Array(CODE_LEN);
@@ -73,6 +80,40 @@ export async function handleGetReferral(request, env, authenticatedUser, { jsonR
   });
 }
 
+export async function rewardInviter(env, inviterId, { friendId, friendName, days = 2, now = Date.now() }) {
+  if (env.ACCOUNTS) {
+    const response = await accountRpc(env, inviterId, '/_account/referral-reward', {
+      friendId,
+      friendName,
+      days,
+      now,
+    });
+    if (!response?.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'failed to reward inviter');
+    }
+    const data = await response.json();
+    return data.inviter;
+  }
+  let raw = await env.INSTALLS.get('user:' + inviterId);
+  if (!raw) throw new Error('inviter_not_found');
+  let inviter = JSON.parse(raw);
+  const deletion = JSON.parse(await env.INSTALLS.get('account_deleted:' + inviter.id) || 'null');
+  if (deletion && Date.parse(inviter.createdAt || '') <= deletion.at) throw new Error('inviter_not_found');
+  extendEntitlement(inviter, 'referral', days, now);
+  inviter.referralCount = (inviter.referralCount || 0) + 1;
+  inviter.referralDaysEarned = (inviter.referralDaysEarned || 0) + days;
+  const referrals = Array.isArray(inviter.referrals) ? inviter.referrals : [];
+  referrals.push({
+    id: friendId,
+    name: friendName || null,
+    at: new Date(now).toISOString(),
+  });
+  inviter.referrals = referrals.slice(-50);
+  await putUserRecord(env, inviter);
+  return inviter;
+}
+
 export async function handleClaimReferral(request, env, authenticatedUser, { jsonResponse, sendTelegram }) {
   if (!authenticatedUser?.id) return jsonResponse({ error: 'unauthorized' }, 401);
   let body;
@@ -107,17 +148,30 @@ export async function handleClaimReferral(request, env, authenticatedUser, { jso
     };
   }
 
+  if (user.referralCode === cleanCode) {
+    return jsonResponse({ error: 'cannot_refer_self' }, 400);
+  }
+
   if (user.referredBy) {
     return jsonResponse({ error: 'already_claimed' }, 400);
   }
 
-  let inviterRaw = await accountRead(env, inviterId, 'user:' + inviterId);
-  let inviter = inviterRaw ? JSON.parse(inviterRaw) : null;
-  if (!inviter) {
-    return jsonResponse({ error: 'inviter_not_found' }, 404);
+  const now = Date.now();
+  let inviter;
+  try {
+    inviter = await rewardInviter(env, inviterId, {
+      friendId: user.id,
+      friendName: user.name,
+      days: 2,
+      now,
+    });
+  } catch (e) {
+    if (e.message.includes('not found') || e.message.includes('deleted')) {
+      return jsonResponse({ error: 'inviter_not_found' }, 404);
+    }
+    return jsonResponse({ error: 'failed_to_reward_inviter' }, 500);
   }
 
-  const now = Date.now();
   // 1. Friend gets 1 day of Premium
   extendEntitlement(user, 'referral', 1, now);
   user.referredBy = inviterId;
@@ -125,25 +179,14 @@ export async function handleClaimReferral(request, env, authenticatedUser, { jso
   user.referralClaimedAt = new Date(now).toISOString();
   await putUserRecord(env, user);
 
-  // 2. Inviter gets 2 days of Premium
-  extendEntitlement(inviter, 'referral', 2, now);
-  inviter.referralCount = (inviter.referralCount || 0) + 1;
-  inviter.referralDaysEarned = (inviter.referralDaysEarned || 0) + 2;
-  const referrals = Array.isArray(inviter.referrals) ? inviter.referrals : [];
-  referrals.push({
-    id: user.id,
-    name: user.name || null,
-    at: new Date(now).toISOString(),
-  });
-  inviter.referrals = referrals.slice(-50);
-  await accountWrite(env, inviterId, 'user:' + inviterId, JSON.stringify(inviter), { metadata: userSummary(inviter) });
-
   if (sendTelegram && env.BOT_TOKEN && env.CHAT_ID) {
     try {
+      const inviterLabel = esc(inviter.name || inviter.id);
+      const friendLabel = esc(user.name || user.id);
       const msg = `🎁 <b>Реферальное приглашение</b>\n` +
-        `• Пригласил: <b>${inviter.name || inviter.id}</b> (+2 дня Premium)\n` +
-        `• Друг: <b>${user.name || user.id}</b> (+1 день Premium)\n` +
-        `• Код: <code>${cleanCode}</code>`;
+        `• Пригласил: <b>${inviterLabel}</b> (+2 дня Premium)\n` +
+        `• Друг: <b>${friendLabel}</b> (+1 день Premium)\n` +
+        `• Код: <code>${esc(cleanCode)}</code>`;
       await sendTelegram(env, msg, 'referral:' + crypto.randomUUID(), { topic: 'purchases' });
     } catch (_) {}
   }

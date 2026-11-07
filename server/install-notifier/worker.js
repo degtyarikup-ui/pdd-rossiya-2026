@@ -45,7 +45,7 @@ import { closeFinishedGameWeeks, bestGameRank, deleteGameBest } from './game_wee
 export { PurchaseClaims } from './purchase_claims.js';
 export { SupportThread } from './support_thread.js';
 import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, StoreError, withStoreDeadline, PURCHASE_VERIFY_DEADLINE_MS } from './store_verification.js';
-import { setEntitlement } from './entitlements.js';
+import { setEntitlement, extendEntitlement } from './entitlements.js';
 import { accountTokenForUserId } from './store_account.js';
 import { deleteAccountDocuments, executeAppleRevocation } from './apple_account.js';
 import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive, settleOrder } from './payments.js';
@@ -4303,6 +4303,25 @@ export async function handleAccountMaintenance(path, request, env) {
   } else if (path === '/_account/refresh') {
     const raw = await env.INSTALLS.get('user:' + env.__ACCOUNT_ID);
     if (raw) await refreshStoreEntitlement(env, JSON.parse(raw));
+  } else if (path === '/_account/referral-reward') {
+    const { friendId, friendName, days = 2, now = Date.now() } = await request.json();
+    const raw = await env.INSTALLS.get('user:' + env.__ACCOUNT_ID);
+    if (!raw) return jsonResponse({ error: 'inviter not found' }, 404);
+    const inviter = JSON.parse(raw);
+    const deletion = JSON.parse(await env.INSTALLS.get('account_deleted:' + inviter.id) || 'null');
+    if (deletion && Date.parse(inviter.createdAt || '') <= deletion.at) return jsonResponse({ error: 'inviter deleted' }, 404);
+    extendEntitlement(inviter, 'referral', days, now);
+    inviter.referralCount = (inviter.referralCount || 0) + 1;
+    inviter.referralDaysEarned = (inviter.referralDaysEarned || 0) + days;
+    const referrals = Array.isArray(inviter.referrals) ? inviter.referrals : [];
+    referrals.push({
+      id: friendId,
+      name: friendName || null,
+      at: new Date(now).toISOString(),
+    });
+    inviter.referrals = referrals.slice(-50);
+    await putUserRecord(env, inviter);
+    return jsonResponse({ ok: true, inviter });
   } else {
     const { orderId } = await request.json();
     const raw = await env.INSTALLS.get('pay_order:' + orderId);
