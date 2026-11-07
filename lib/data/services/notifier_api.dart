@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'package:pdd_app/core/config/backend_config.dart';
+import 'package:pdd_app/data/services/dev_mock_endpoint.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
 
 /// Retry only operations whose server contract is idempotent. Payment creation
@@ -13,15 +14,20 @@ class NotifierApi {
     String path, {
     Map<String, String>? headers,
     Map<String, String>? query,
-  }) => sendWithRetry(
-    (host) => http.get(
-      Uri.parse('$host$path').replace(queryParameters: query),
-      headers: headers,
-    ),
-    hosts: BackendConfig.notifierHosts,
-    attempts: const [Duration(seconds: 8), Duration(seconds: 8)],
-    pause: Duration.zero,
-  );
+  }) {
+    if (DevMockEndpoint.shouldHandle(headers)) {
+      return DevMockEndpoint.handleGet(path, headers: headers, query: query);
+    }
+    return sendWithRetry(
+      (host) => http.get(
+        Uri.parse('$host$path').replace(queryParameters: query),
+        headers: headers,
+      ),
+      hosts: BackendConfig.notifierHosts,
+      attempts: const [Duration(seconds: 8), Duration(seconds: 8)],
+      pause: Duration.zero,
+    );
+  }
 
   /// Store receipt checks wait for Apple/Google inside the account's queue;
   /// the server ends them with 503 after 25 seconds. A shorter wait abandoned
@@ -41,6 +47,9 @@ class NotifierApi {
       Duration(seconds: 15),
     ],
   }) {
+    if (DevMockEndpoint.shouldHandle(headers)) {
+      return DevMockEndpoint.handlePost(path, headers: headers, body: body);
+    }
     if (!idempotent) {
       return http
           .post(uri(path), headers: headers, body: body)

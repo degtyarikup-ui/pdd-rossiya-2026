@@ -2494,6 +2494,42 @@ abstract class AppLocalizations {
   /// **'Тестовый вход (debug-сборка)'**
   String get authDebug;
 
+  /// No description provided for @authDevQuickLogin.
+  ///
+  /// In ru, this message translates to:
+  /// **'Быстрый вход для тестов'**
+  String get authDevQuickLogin;
+
+  /// No description provided for @authDevSelectAccount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите тестовый аккаунт'**
+  String get authDevSelectAccount;
+
+  /// No description provided for @authDevTester1.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тестировщик 1 (код: DEVTEST1)'**
+  String get authDevTester1;
+
+  /// No description provided for @authDevTester2.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тестировщик 2 (код: DEVTEST2)'**
+  String get authDevTester2;
+
+  /// No description provided for @authDevTester1Name.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тестировщик 1'**
+  String get authDevTester1Name;
+
+  /// No description provided for @authDevTester2Name.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тестировщик 2'**
+  String get authDevTester2Name;
+
   /// No description provided for @accountDeleted.
   ///
   /// In ru, this message translates to:

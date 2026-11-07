@@ -1419,6 +1419,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authDebug => 'Test login (debug build)';
 
   @override
+  String get authDevQuickLogin => 'Quick test login';
+
+  @override
+  String get authDevSelectAccount => 'Select test account';
+
+  @override
+  String get authDevTester1 => 'Tester 1 (code: DEVTEST1)';
+
+  @override
+  String get authDevTester2 => 'Tester 2 (code: DEVTEST2)';
+
+  @override
+  String get authDevTester1Name => 'Tester 1';
+
+  @override
+  String get authDevTester2Name => 'Tester 2';
+
+  @override
   String get accountDeleted => 'Account and data deleted';
 
   @override

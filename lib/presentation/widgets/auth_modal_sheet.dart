@@ -293,11 +293,10 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                     if (AuthService.debugSignInAvailable) ...[
                       const SizedBox(height: 10),
                       TextButton.icon(
-                        onPressed: _isLoading
-                            ? null
-                            : () => _handleAuth(_auth.signInDebug),
+                        key: const ValueKey('dev-mock-login-button'),
+                        onPressed: _busy ? null : _handleDevLogin,
                         icon: const Icon(Icons.bug_report_outlined),
-                        label: Text(appL10n.authDebug),
+                        label: Text(appL10n.authDevQuickLogin),
                       ),
                     ],
                     if (!widget.embedded) const SizedBox(height: 12),
@@ -309,6 +308,73 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleDevLogin() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final colors = AppColors.of(ctx);
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Material(
+          color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    appL10n.authDevSelectAccount,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: colors.primaryText,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    key: const ValueKey('dev-account-tester-1'),
+                    leading: const CircleAvatar(child: Text('1')),
+                    title: Text(appL10n.authDevTester1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: colors.divider),
+                    ),
+                    onTap: () => Navigator.of(ctx).pop('dev_tester_1'),
+                  ),
+                  const SizedBox(height: 10),
+                  ListTile(
+                    key: const ValueKey('dev-account-tester-2'),
+                    leading: const CircleAvatar(child: Text('2')),
+                    title: Text(appL10n.authDevTester2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: colors.divider),
+                    ),
+                    onTap: () => Navigator.of(ctx).pop('dev_tester_2'),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selected != null && mounted) {
+      final name = selected == 'dev_tester_2'
+          ? appL10n.authDevTester2Name
+          : appL10n.authDevTester1Name;
+      await _handleAuth(
+        () => _auth.signInDebug(accountId: selected, name: name),
+      );
+    }
   }
 
   Widget _buildAuthButton({

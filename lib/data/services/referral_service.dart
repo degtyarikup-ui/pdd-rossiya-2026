@@ -204,7 +204,9 @@ class ReferralService extends ChangeNotifier {
       return null;
     }
     if (_info != null && !forceRefresh) return _info;
-    if (!BackendConfig.hasNotifier) return null;
+    if (!BackendConfig.hasNotifier && !AuthService.instance.isDevSession) {
+      return null;
+    }
 
     _loading = true;
     notifyListeners();
@@ -241,7 +243,7 @@ class ReferralService extends ChangeNotifier {
       );
     }
 
-    if (!BackendConfig.hasNotifier) {
+    if (!BackendConfig.hasNotifier && !AuthService.instance.isDevSession) {
       return const ReferralClaimResult(status: ReferralClaimStatus.error);
     }
 

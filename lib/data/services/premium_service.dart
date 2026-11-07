@@ -363,7 +363,7 @@ class PremiumService extends ChangeNotifier {
   Future<void> checkForGrant() async {
     final user = AuthService.instance.currentUser;
     if (user == null || !AuthService.instance.hasServerSession) return;
-    if (!BackendConfig.hasNotifier) return;
+    if (!BackendConfig.hasNotifier && !AuthService.instance.isDevSession) return;
     final revision = AuthService.instance.accountRevision;
     final entitlementRevision = _entitlementRevision;
     try {

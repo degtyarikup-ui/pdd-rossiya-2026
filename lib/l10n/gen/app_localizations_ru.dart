@@ -1440,6 +1440,24 @@ class AppLocalizationsRu extends AppLocalizations {
   String get authDebug => 'Тестовый вход (debug-сборка)';
 
   @override
+  String get authDevQuickLogin => 'Быстрый вход для тестов';
+
+  @override
+  String get authDevSelectAccount => 'Выберите тестовый аккаунт';
+
+  @override
+  String get authDevTester1 => 'Тестировщик 1 (код: DEVTEST1)';
+
+  @override
+  String get authDevTester2 => 'Тестировщик 2 (код: DEVTEST2)';
+
+  @override
+  String get authDevTester1Name => 'Тестировщик 1';
+
+  @override
+  String get authDevTester2Name => 'Тестировщик 2';
+
+  @override
   String get accountDeleted => 'Аккаунт и данные удалены';
 
   @override

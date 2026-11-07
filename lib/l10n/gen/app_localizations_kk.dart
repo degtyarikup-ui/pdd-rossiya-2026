@@ -1420,6 +1420,24 @@ class AppLocalizationsKk extends AppLocalizations {
   String get authDebug => 'Сынақ енгізу (отлад құрастыру)';
 
   @override
+  String get authDevQuickLogin => 'Сынақ үшін жылдам кіру';
+
+  @override
+  String get authDevSelectAccount => 'Сынақ аккаунтын таңдаңыз';
+
+  @override
+  String get authDevTester1 => '1-сынаушы (код: DEVTEST1)';
+
+  @override
+  String get authDevTester2 => '2-сынаушы (код: DEVTEST2)';
+
+  @override
+  String get authDevTester1Name => '1-сынаушы';
+
+  @override
+  String get authDevTester2Name => '2-сынаушы';
+
+  @override
   String get accountDeleted => 'Есептік жазба мен деректер жойылды';
 
   @override

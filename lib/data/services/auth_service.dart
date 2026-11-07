@@ -342,11 +342,20 @@ class AuthService extends ChangeNotifier {
   UserProfile? get currentUser => _currentUser;
   bool get isAuthenticated => _currentUser != null;
 
+  bool get isDevSession =>
+      debugSignInAvailable &&
+      _currentUser != null &&
+      (_currentUser!.id.startsWith('dev_') ||
+          _currentUser!.id.startsWith('debug_') ||
+          (_sessionToken?.startsWith('dev_token_') ?? false));
+
   Future<void> init() async {
     if (_isInitialized) return;
     if (const bool.fromEnvironment('GAME_DEBUG')) {
       try {
-        _devPackage = (await PackageInfo.fromPlatform()).packageName.endsWith(
+        _devPackage = (await PackageInfo.fromPlatform().timeout(
+          const Duration(milliseconds: 500),
+        )).packageName.endsWith(
           '.dev',
         );
       } catch (_) {}
@@ -375,9 +384,41 @@ class AuthService extends ChangeNotifier {
           );
           await prefs.setString(_prefKeyUser, user.toJson());
         }
-        if (!debugSignInAvailable && user.id == 'debug_tester') {
+        final isDevId =
+            user.id == 'debug_tester' ||
+            user.id.startsWith('dev_') ||
+            user.id.startsWith('debug_');
+        if (!debugSignInAvailable && isDevId) {
           await prefs.remove(_prefKeyUser);
-        } else if (debugSignInAvailable && user.id == 'debug_tester') {
+          try {
+            await _clearSession();
+          } catch (_) {}
+        } else if (debugSignInAvailable && isDevId) {
+          Map<String, dynamic>? session;
+          try {
+            session = await AuthSessionStore.read();
+          } catch (_) {}
+          final expiry = DateTime.tryParse(
+            session?['expiresAt'] as String? ?? '',
+          );
+          if (session?['userId'] == user.id &&
+              session?['token'] is String &&
+              expiry != null &&
+              expiry.isAfter(DateTime.now())) {
+            _sessionToken = session!['token'] as String;
+            _sessionExpiresAt = expiry;
+          } else {
+            final expires = DateTime.now().add(const Duration(days: 30));
+            _sessionToken = 'dev_token_${user.id}';
+            _sessionExpiresAt = expires;
+            try {
+              await _writeSession({
+                'userId': user.id,
+                'token': _sessionToken,
+                'expiresAt': expires.toIso8601String(),
+              });
+            } catch (_) {}
+          }
           _currentUser = user;
         } else {
           Map<String, dynamic>? session;
@@ -422,34 +463,60 @@ class AuthService extends ChangeNotifier {
         '513938972930-a7sh1di6odgf77ijltu31lvpuhijcis1.apps.googleusercontent.com',
   );
 
-  /// Debug builds only (`--dart-define=GAME_DEBUG=true`): a local account
-  /// without an OAuth provider, so a dev-signed APK (its package and SHA-1
+  static bool? _debugSignInOverride;
+  @visibleForTesting
+  static void setDebugSignInAvailableForTesting(bool? value) {
+    _debugSignInOverride = value;
+  }
+
+  /// Debug builds only (`--dart-define=GAME_DEBUG=true` or dev package): a local
+  /// account without an OAuth provider, so a dev-signed APK (its package and SHA-1
   /// are not registered with Google/Yandex) can still exercise the
   /// signed-in features. Never available in store builds.
   /// Also the side-by-side test install (`-Pdev`, package `*.dev`), which is
   /// a release build: the store package never ends in `.dev`.
   static bool get debugSignInAvailable =>
-      const bool.fromEnvironment('GAME_DEBUG') &&
-      (kDebugMode ||
-          _devPackage ||
-          // iOS has no `.dev` package: a test build on a phone is made with
-          // both defines, the store build never gets either.
-          const bool.fromEnvironment('GAME_DEBUG_DEVICE'));
+      _debugSignInOverride ??
+      (const bool.fromEnvironment('GAME_DEBUG') &&
+          (kDebugMode ||
+              _devPackage ||
+              const bool.fromEnvironment('GAME_DEBUG_DEVICE')));
   static bool _devPackage = false;
 
-  Future<bool> signInDebug() async {
+  Future<bool> signInDebug({String? accountId, String? name}) async {
     if (!debugSignInAvailable) return false;
     cancelSignIn();
     _accountRevision++;
-    _currentUser = UserProfile(
-      id: 'debug_tester',
-      name: 'Тестировщик',
-      email: 'tester@example.com',
+    final id = accountId ?? 'dev_tester_1';
+    final userName =
+        name ??
+        (id == 'dev_tester_2'
+            ? 'Тестировщик 2'
+            : (id == 'debug_tester' ? 'Тестировщик' : 'Тестировщик 1'));
+    final user = UserProfile(
+      id: id,
+      name: userName,
+      email: '$id@example.com',
       avatarUrl: null,
       provider: AuthProviderType.google,
       createdAt: DateTime.now(),
     );
-    await _saveUser();
+    _currentUser = user;
+    final expires = DateTime.now().add(const Duration(days: 30));
+    _sessionToken = 'dev_token_$id';
+    _sessionExpiresAt = expires;
+
+    await _queueSessionOperation(() async {
+      try {
+        await _writeSession({
+          'userId': id,
+          'token': _sessionToken,
+          'expiresAt': expires.toIso8601String(),
+        });
+      } catch (_) {}
+      await _saveUser();
+    });
+
     notifyListeners();
     await PremiumService.instance.onAuthChanged(_currentUser);
     return true;
@@ -977,6 +1044,7 @@ class AuthService extends ChangeNotifier {
     final oldUserId = _currentUser?.id;
     final oldHeaders = serverHeaders;
     final hadSession = hasServerSession;
+    final wasDevSession = isDevSession;
     cancelSignIn();
     _signingOut = true;
     _updateSignInBusy();
@@ -988,7 +1056,7 @@ class AuthService extends ChangeNotifier {
       sessionIsTemporary = false;
       ProgressSyncService.instance.cancel();
       await SupportChatService.clearAccountCache(oldUserId);
-      if (hadSession) {
+      if (hadSession && !wasDevSession) {
         unawaited(
           http
               .post(
@@ -1004,23 +1072,27 @@ class AuthService extends ChangeNotifier {
           _clearSession,
         ).timeout(const Duration(seconds: 5));
       } catch (_) {}
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      if (!wasDevSession &&
+          !kIsWeb &&
+          defaultTargetPlatform == TargetPlatform.iOS) {
         try {
           await YandexNativeAuth.signOut().timeout(const Duration(seconds: 5));
         } catch (_) {}
       }
       try {
-        try {
-          final googleSignIn = GoogleSignIn(
-            clientId: kIsWeb ? googleWebClientId : null,
-          );
-          if (kIsWeb ||
-              await googleSignIn.isSignedIn().timeout(
-                const Duration(seconds: 5),
-              )) {
-            await googleSignIn.signOut().timeout(const Duration(seconds: 5));
-          }
-        } catch (_) {}
+        if (!wasDevSession) {
+          try {
+            final googleSignIn = GoogleSignIn(
+              clientId: kIsWeb ? googleWebClientId : null,
+            );
+            if (kIsWeb ||
+                await googleSignIn.isSignedIn().timeout(
+                  const Duration(seconds: 5),
+                )) {
+              await googleSignIn.signOut().timeout(const Duration(seconds: 5));
+            }
+          } catch (_) {}
+        }
         _currentUser = null;
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(_prefKeyUser);
