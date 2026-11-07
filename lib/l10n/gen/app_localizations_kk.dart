@@ -4653,4 +4653,92 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get checkoutStageCompleted => 'Аяқталды';
+
+  @override
+  String get referralSectionTitle => 'Рефералдық бағдарлама';
+
+  @override
+  String get referralSettingsTitle => 'Досыңды шақыру';
+
+  @override
+  String get referralSettingsSubtitle => 'Сізге +2 күн, досыңызға +1 күн';
+
+  @override
+  String get referralPlansTitle => 'Премиумды тегін алғыңыз келе ме?';
+
+  @override
+  String get referralPlansSubtitle =>
+      'Досыңызды шақырыңыз: сізге +2 күн, досыңызға +1 күн';
+
+  @override
+  String get referralModalTitle => 'Досыңды шақыр';
+
+  @override
+  String get referralBannerTitle => 'Премиум күндерін сыйлаймыз!';
+
+  @override
+  String get referralBannerDescription =>
+      'Промокодыңызды досыңызбен бөлісіңіз. Досыңыз 1 күн Премиум алады, ал сіз әр шақырылған дос үшін 2 күн аласыз!';
+
+  @override
+  String get referralYourCode => 'Шақыру кодыңыз';
+
+  @override
+  String get referralCopyCode => 'Көшіру';
+
+  @override
+  String get referralShareButton => 'Сілтемені бөлісу';
+
+  @override
+  String referralStatsInvited(int count) {
+    return 'Шақырылған достар: $count';
+  }
+
+  @override
+  String referralStatsDays(int days) {
+    return 'Алынған Премиум: $days күн';
+  }
+
+  @override
+  String get referralEnterCodeTitle => 'Сізді дос шақырды ма?';
+
+  @override
+  String get referralEnterCodeHint => 'Досыңыздың кодын енгізіңіз';
+
+  @override
+  String get referralActivateButton => 'Іске қосу';
+
+  @override
+  String referralAlreadyClaimed(String code) {
+    return 'Сіз кодты белсендірдіңіз: $code (+1 күн)';
+  }
+
+  @override
+  String get referralSuccessClaimed =>
+      'Код іске қосылды! Сізге 1 күн Премиум берілді 🎉';
+
+  @override
+  String get referralSignInRequired =>
+      'Жеке код алып, Премиум күндерін жинау үшін жүйеге кіріңіз';
+
+  @override
+  String get referralSignInButton => 'Аккаунтқа кіру';
+
+  @override
+  String get referralErrorSelf => 'Өз кодыңды белсендіруге болмайды';
+
+  @override
+  String get referralErrorAlreadyUsed =>
+      'Сіз шақыру кодын бұрын іске қосқансыз';
+
+  @override
+  String get referralErrorNotFound => 'Код табылмады. Қайта тексеріп көріңіз';
+
+  @override
+  String referralShareText(String code, String link) {
+    return 'Ресей ЖҚЕ 2026 қолданбасында 1 күн Премиум сыйлаймын! Қолданбаны орнатып, менің $code промокодымды енгізіңіз немесе сілтемеге өтіңіз: $link';
+  }
+
+  @override
+  String get referralCodeCopied => 'Код алмасу буферіне көшірілді';
 }

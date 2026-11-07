@@ -20,6 +20,7 @@ import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/presentation/screens/pdd/pdd_screen.dart';
 import 'package:pdd_app/presentation/screens/support/support_chat_screen.dart';
+import 'package:pdd_app/presentation/widgets/referral_modal_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -390,6 +391,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(height: AppDimensions.spacingXL),
 
+                    _buildSectionTitle(appL10n.referralSectionTitle),
+                    _buildSectionCard(
+                      children: [
+                        _buildSettingItem(
+                          key: const ValueKey('settings-referral-tile'),
+                          icon: Icons.card_giftcard_rounded,
+                          title: appL10n.referralSettingsTitle,
+                          subtitle: appL10n.referralSettingsSubtitle,
+                          trailing: Icon(
+                            Icons.chevron_right_rounded,
+                            color: colors.secondaryText,
+                          ),
+                          onTap: () => ReferralModalSheet.show(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppDimensions.spacingXL),
+
                     _buildSectionTitle(appL10n.preparation),
                     _buildSectionCard(
                       children: [
@@ -660,6 +679,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildSettingItem({
+    Key? key,
     required IconData icon,
     required String title,
     String? subtitle,
@@ -668,6 +688,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }) {
     final colors = AppColors.of(context);
     return InkWell(
+      key: key,
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
       child: Padding(

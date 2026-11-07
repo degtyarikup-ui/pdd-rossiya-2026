@@ -4675,4 +4675,100 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get checkoutStageCompleted => 'Завершён';
+
+  @override
+  String get referralSectionTitle => 'Реферальная программа';
+
+  @override
+  String get referralSettingsTitle => 'Пригласить друга';
+
+  @override
+  String get referralSettingsSubtitle => '+2 дня вам, +1 день другу';
+
+  @override
+  String get referralPlansTitle => 'Хотите Премиум бесплатно?';
+
+  @override
+  String get referralPlansSubtitle =>
+      'Пригласите друга: вам +2 дня, другу +1 день';
+
+  @override
+  String get referralModalTitle => 'Пригласи друга';
+
+  @override
+  String get referralBannerTitle => 'Дарим дни Премиума!';
+
+  @override
+  String get referralBannerDescription =>
+      'Поделитесь своим промокодом с другом. Друг получит 1 день Премиума, а вы — 2 дня за каждого приглашённого друга!';
+
+  @override
+  String get referralYourCode => 'Ваш код приглашения';
+
+  @override
+  String get referralCopyCode => 'Скопировать';
+
+  @override
+  String get referralShareButton => 'Поделиться ссылкой';
+
+  @override
+  String referralStatsInvited(int count) {
+    return 'Приглашено друзей: $count';
+  }
+
+  @override
+  String referralStatsDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days дней',
+      many: '$days дней',
+      few: '$days дня',
+      one: '$days день',
+    );
+    return 'Получено Премиума: $_temp0';
+  }
+
+  @override
+  String get referralEnterCodeTitle => 'Вас пригласил друг?';
+
+  @override
+  String get referralEnterCodeHint => 'Введите код друга';
+
+  @override
+  String get referralActivateButton => 'Активировать';
+
+  @override
+  String referralAlreadyClaimed(String code) {
+    return 'Вы активировали код: $code (+1 день)';
+  }
+
+  @override
+  String get referralSuccessClaimed =>
+      'Код активирован! Вам начислен 1 день Премиума 🎉';
+
+  @override
+  String get referralSignInRequired =>
+      'Войдите в аккаунт, чтобы получить личный код и копить дни Премиума';
+
+  @override
+  String get referralSignInButton => 'Войти в аккаунт';
+
+  @override
+  String get referralErrorSelf => 'Нельзя активировать собственный код';
+
+  @override
+  String get referralErrorAlreadyUsed => 'Вы уже активировали код приглашения';
+
+  @override
+  String get referralErrorNotFound =>
+      'Код не найден. Проверьте правильность ввода';
+
+  @override
+  String referralShareText(String code, String link) {
+    return 'Дарю 1 день Премиума в приложении ПДД Россия 2026! Установи приложение и введи мой промокод $code или перейди по ссылке: $link';
+  }
+
+  @override
+  String get referralCodeCopied => 'Код скопирован в буфер обмена';
 }

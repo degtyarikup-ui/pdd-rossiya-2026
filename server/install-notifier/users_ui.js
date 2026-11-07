@@ -156,7 +156,7 @@ var uvState = { users: [], filter: 'all', app: 'ru', sort: 'seen', query: '', li
 var UV_DAY = 86400000;
 var UV_PRESETS = [[7, '7 дней'], [30, '1 месяц'], [90, '3 месяца'], [180, '6 месяцев'], [365, '1 год']];
 var UV_APPS = { ru: 'Россия' };
-var UV_SOURCES = { admin_grant: 'Выдан вручную', googleplay: 'Google Play', appstore: 'App Store', google_play: 'Google Play', play: 'Google Play', app_store: 'App Store', apple: 'App Store', rustore: 'RuStore', web: 'СБП (Platega)' };
+var UV_SOURCES = { admin_grant: 'Выдан вручную', referral: 'Реферальная программа', googleplay: 'Google Play', appstore: 'App Store', google_play: 'Google Play', play: 'Google Play', app_store: 'App Store', apple: 'App Store', rustore: 'RuStore', web: 'СБП (Platega)' };
 var UV_ACQUISITION = { threads:'Threads', instagram:'Instagram', youtube:'YouTube', tiktok:'TikTok', telegram:'Telegram', vk:'ВКонтакте', yandex:'Яндекс', google:'Google', bing:'Bing', duckduckgo:'DuckDuckGo', google_play_organic:'Google Play · органика', in_app_banner:'Баннер в приложении', chatgpt:'ChatGPT', perplexity:'Perplexity', copilot:'Copilot', gemini:'Gemini', claude:'Claude', direct:'Прямой переход', other:'Другой сайт', unknown:'Источник не определён' };
 function uvAcquisitionName(u) { return Object.hasOwn(UV_ACQUISITION,u.marketingSource)?UV_ACQUISITION[u.marketingSource]:UV_ACQUISITION.unknown; }
 function uvAcquisitionChip(u) { return '<div class="uv-sub" style="margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Первый источник привлечения аккаунта: '+uvEsc(uvAcquisitionName(u))+'">'+uvEsc(uvAcquisitionName(u))+'</div>'; }
@@ -489,11 +489,13 @@ function uvPremiumDetails(u) {
   if (!u.premiumSource && !u.isPremium) return '';
   var logo = typeof uvStoreLogo === 'function' ? uvStoreLogo(u.premiumSource) : '';
   var source = u.premiumSource === 'admin_grant' ? 'Выдан вручную'
+    : u.premiumSource === 'referral' ? 'Реферальная программа'
     : UV_SOURCES[u.premiumSource] ? 'Куплен · ' + UV_SOURCES[u.premiumSource] : 'Источник неизвестен';
   var renewal = u.premiumSource === 'admin_grant' ? 'Автопродление: не применяется'
+    : u.premiumSource === 'referral' ? 'Реферальный бонус, без автопродления'
     : u.premiumSource === 'web' ? 'Разовая оплата, без автопродления'
     : 'Автопродление: ' + (u.autoRenewEnabled === true ? 'включено' : u.autoRenewEnabled === false ? 'выключено' : 'неизвестно');
-  var checked = u.premiumSource === 'web' ? 'Оплата подтверждена платёжным сервисом' : u.storeVerifiedAt ? 'Проверено магазином: ' + uvDate(new Date(u.storeVerifiedAt).toISOString(), true) : 'Статус магазина ещё не получен';
+  var checked = u.premiumSource === 'referral' ? 'Бонус за приглашение друга' : u.premiumSource === 'web' ? 'Оплата подтверждена платёжным сервисом' : u.storeVerifiedAt ? 'Проверено магазином: ' + uvDate(new Date(u.storeVerifiedAt).toISOString(), true) : 'Статус магазина ещё не получен';
   return '<div style="font-size:11.5px;color:var(--text-muted);margin-top:5px;line-height:1.5;white-space:normal">'
     + (logo ? '<span style="display:inline-block;vertical-align:middle;margin-right:4px;">' + logo + '</span>' : '')
     + uvEsc(source) + '<br><span title="' + uvEsc(checked) + '">' + uvEsc(renewal) + '</span></div>';

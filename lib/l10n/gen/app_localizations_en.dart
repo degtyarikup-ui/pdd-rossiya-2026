@@ -4653,4 +4653,99 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkoutStageCompleted => 'Completed';
+
+  @override
+  String get referralSectionTitle => 'Referral Program';
+
+  @override
+  String get referralSettingsTitle => 'Invite a friend';
+
+  @override
+  String get referralSettingsSubtitle => '+2 days for you, +1 day for friend';
+
+  @override
+  String get referralPlansTitle => 'Want Premium for free?';
+
+  @override
+  String get referralPlansSubtitle =>
+      'Invite a friend: +2 days for you, +1 day for friend';
+
+  @override
+  String get referralModalTitle => 'Invite a Friend';
+
+  @override
+  String get referralBannerTitle => 'Free Premium Days!';
+
+  @override
+  String get referralBannerDescription =>
+      'Share your promo code with a friend. Your friend gets 1 day of Premium, and you get 2 days for each invited friend!';
+
+  @override
+  String get referralYourCode => 'Your invite code';
+
+  @override
+  String get referralCopyCode => 'Copy';
+
+  @override
+  String get referralShareButton => 'Share link';
+
+  @override
+  String referralStatsInvited(int count) {
+    return 'Friends invited: $count';
+  }
+
+  @override
+  String referralStatsDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '$days day',
+    );
+    return 'Earned Premium: $_temp0';
+  }
+
+  @override
+  String get referralEnterCodeTitle => 'Invited by a friend?';
+
+  @override
+  String get referralEnterCodeHint => 'Enter friend\'s code';
+
+  @override
+  String get referralActivateButton => 'Activate';
+
+  @override
+  String referralAlreadyClaimed(String code) {
+    return 'You activated code: $code (+1 day)';
+  }
+
+  @override
+  String get referralSuccessClaimed =>
+      'Code activated! You received 1 day of Premium 🎉';
+
+  @override
+  String get referralSignInRequired =>
+      'Sign in to get your personal code and earn Premium days';
+
+  @override
+  String get referralSignInButton => 'Sign in';
+
+  @override
+  String get referralErrorSelf => 'You cannot activate your own code';
+
+  @override
+  String get referralErrorAlreadyUsed =>
+      'You have already activated an invite code';
+
+  @override
+  String get referralErrorNotFound =>
+      'Code not found. Please check and try again';
+
+  @override
+  String referralShareText(String code, String link) {
+    return 'Gift: 1 day of Premium in Russian Traffic Rules 2026 app! Install the app and enter my promo code $code or use link: $link';
+  }
+
+  @override
+  String get referralCodeCopied => 'Code copied to clipboard';
 }

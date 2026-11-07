@@ -78,6 +78,7 @@ import { enhanceAdminHtml, enhanceAdminClientJs, ADMIN_UI_CLIENT_JS } from './ad
 import { ADMIN_DATA_STYLES, ADMIN_DATA_CLIENT_JS } from './admin_data.js';
 import { StatsBuffer } from './stats_buffer.js';
 import { handleUsersAdmin, isPremiumActive } from './users_admin.js';
+import { handleGetReferral, handleClaimReferral } from './referrals.js';
 import { putUserRecord, putUserActivity, listUserSummaries } from './user_store.js';
 import { usersSnapshot } from './analytics_data.js';
 import { acceptUsage, applyUsage, usageSnapshot } from './usage_analytics.js';
@@ -2871,6 +2872,13 @@ async function saveUserProfile(env, user) {
     ipCountry: user.ipCountry || (existing ? existing.ipCountry : null),
     userAgent: user.userAgent || (existing ? existing.userAgent : null),
     suspect: user.suspect === true || (existing ? existing.suspect === true : false),
+    referralCode: existing?.referralCode || undefined,
+    referralCount: existing?.referralCount || undefined,
+    referralDaysEarned: existing?.referralDaysEarned || undefined,
+    referredBy: existing?.referredBy || undefined,
+    referralCodeUsed: existing?.referralCodeUsed || undefined,
+    referralClaimedAt: existing?.referralClaimedAt || undefined,
+    referrals: existing?.referrals || undefined,
   };
 
   await putUserRecord(env, merged);
@@ -3700,6 +3708,13 @@ const workerHandlers = {
         premiumSource: user.premiumSource || null,
         grantNotice: user.grantNotice || null
       });
+    }
+
+    if (url.pathname === '/api/user/referral' && request.method === 'GET') {
+      return handleGetReferral(request, env, authenticatedUser, { jsonResponse });
+    }
+    if (url.pathname === '/api/user/referral/claim' && request.method === 'POST') {
+      return handleClaimReferral(request, env, authenticatedUser, { jsonResponse, sendTelegram });
     }
 
     if (url.pathname === '/api/pay/status' && request.method === 'GET') {

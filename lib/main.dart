@@ -1,6 +1,7 @@
 import 'package:pdd_app/data/services/web_checkout_route.dart';
 import 'package:pdd_app/presentation/screens/premium_web_checkout_screen.dart';
 import 'package:pdd_app/data/services/notification_inbox_service.dart';
+import 'package:pdd_app/data/services/referral_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 
 import 'dart:async';
@@ -182,6 +183,7 @@ Future<Widget> _initializeApplication(
   }
 
   unawaited(IapService.instance.init());
+  unawaited(ReferralService.instance.init());
   // Ящик уведомлений (колокольчик в профиле): новости и сообщения о подписке.
   unawaited(
     NotificationInboxService.instance.init().catchError(

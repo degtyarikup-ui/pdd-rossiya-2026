@@ -16,6 +16,7 @@ import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/referral_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/web_payment_dialog.dart';
 import 'package:pdd_app/presentation/widgets/premium_motion.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -520,6 +521,8 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
                           colors: colors,
                         ),
                       ],
+                      const SizedBox(height: AppDimensions.spacingM),
+                      _buildReferralCard(colors),
                       const SizedBox(height: AppDimensions.spacingXXL),
                       if (reloadPrice && !loadingPrice)
                         Text(
@@ -748,4 +751,75 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
             setState(() => _selectedTier = tier);
           },
   );
+
+  Widget _buildReferralCard(AppThemeColors colors) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+        border: Border.all(
+          color: const Color(0xFF2BC280).withValues(alpha: 0.35),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: const ValueKey('premium-plans-referral-button'),
+          borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+          onTap: _isLoading ? null : () => ReferralModalSheet.show(context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2BC280).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.card_giftcard_rounded,
+                    color: Color(0xFF2BC280),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appL10n.referralPlansTitle,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: colors.primaryText,
+                          fontFamily: 'Onest',
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        appL10n.referralPlansSubtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colors.secondaryText,
+                          fontFamily: 'Onest',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: colors.secondaryText,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -102,7 +102,7 @@ export async function routeAccountRequest(request, env, { sessionAccountId, veri
   // Reads may recover from a reset. A write can already have committed before
   // its response is lost, so never repeat it without a request-id contract.
   const retryableRead = request.method === 'GET' && ['/api/user/status', '/api/user/progress',
-    '/api/user/store/status', '/api/user/store/account-token'].includes(path);
+    '/api/user/store/status', '/api/user/store/account-token', '/api/user/referral'].includes(path);
   return durableRequest(env.ACCOUNTS, env.ACCOUNTS.idFromName(id),
     stub => stub.fetch(new Request(request, { headers })), {
       retryableRead, operation: retryableRead ? path.slice(1).replaceAll('/', '.') : 'account.request',

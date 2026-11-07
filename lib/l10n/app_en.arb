@@ -1590,5 +1590,61 @@
         "type": "String"
       }
     }
-  }
+  },
+  "referralSectionTitle": "Referral Program",
+  "referralSettingsTitle": "Invite a friend",
+  "referralSettingsSubtitle": "+2 days for you, +1 day for friend",
+  "referralPlansTitle": "Want Premium for free?",
+  "referralPlansSubtitle": "Invite a friend: +2 days for you, +1 day for friend",
+  "referralModalTitle": "Invite a Friend",
+  "referralBannerTitle": "Free Premium Days!",
+  "referralBannerDescription": "Share your promo code with a friend. Your friend gets 1 day of Premium, and you get 2 days for each invited friend!",
+  "referralYourCode": "Your invite code",
+  "referralCopyCode": "Copy",
+  "referralShareButton": "Share link",
+  "referralStatsInvited": "Friends invited: {count}",
+  "@referralStatsInvited": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "referralStatsDays": "Earned Premium: {days, plural, one{{days} day} other{{days} days}}",
+  "@referralStatsDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "referralEnterCodeTitle": "Invited by a friend?",
+  "referralEnterCodeHint": "Enter friend's code",
+  "referralActivateButton": "Activate",
+  "referralAlreadyClaimed": "You activated code: {code} (+1 day)",
+  "@referralAlreadyClaimed": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "referralSuccessClaimed": "Code activated! You received 1 day of Premium 🎉",
+  "referralSignInRequired": "Sign in to get your personal code and earn Premium days",
+  "referralSignInButton": "Sign in",
+  "referralErrorSelf": "You cannot activate your own code",
+  "referralErrorAlreadyUsed": "You have already activated an invite code",
+  "referralErrorNotFound": "Code not found. Please check and try again",
+  "referralShareText": "Gift: 1 day of Premium in Russian Traffic Rules 2026 app! Install the app and enter my promo code {code} or use link: {link}",
+  "@referralShareText": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "referralCodeCopied": "Code copied to clipboard"
 }

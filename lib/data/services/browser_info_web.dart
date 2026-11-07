@@ -88,6 +88,19 @@ Map<String, String> browserAcquisitionFields() {
   return (result: result, order: order);
 }
 
+/// Реферальный код в адресе: `?ref=<code>`.
+/// Код сразу убирается из адреса, чтобы перезагрузка не повторяла параметр.
+String? takeReferralParam() {
+  final base = Uri.base;
+  final code = base.queryParameters['ref'];
+  if (code == null || code.isEmpty) return null;
+  final rest = Map.of(base.queryParameters)..remove('ref');
+  final query = rest.isEmpty ? '' : '?${Uri(queryParameters: rest).query}';
+  final fragment = base.hasFragment ? '#${base.fragment}' : '';
+  web.window.history.replaceState(null, '', '${base.path}$query$fragment');
+  return code;
+}
+
 void setWebCheckoutTier(String tier) {
   final uri = Uri.base;
   final query = {...uri.queryParameters, 'checkout': 'sbp', 'tier': tier}

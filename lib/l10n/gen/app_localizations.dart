@@ -7815,6 +7815,156 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Завершён'**
   String get checkoutStageCompleted;
+
+  /// No description provided for @referralSectionTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Реферальная программа'**
+  String get referralSectionTitle;
+
+  /// No description provided for @referralSettingsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пригласить друга'**
+  String get referralSettingsTitle;
+
+  /// No description provided for @referralSettingsSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'+2 дня вам, +1 день другу'**
+  String get referralSettingsSubtitle;
+
+  /// No description provided for @referralPlansTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Хотите Премиум бесплатно?'**
+  String get referralPlansTitle;
+
+  /// No description provided for @referralPlansSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пригласите друга: вам +2 дня, другу +1 день'**
+  String get referralPlansSubtitle;
+
+  /// No description provided for @referralModalTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пригласи друга'**
+  String get referralModalTitle;
+
+  /// No description provided for @referralBannerTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дарим дни Премиума!'**
+  String get referralBannerTitle;
+
+  /// No description provided for @referralBannerDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поделитесь своим промокодом с другом. Друг получит 1 день Премиума, а вы — 2 дня за каждого приглашённого друга!'**
+  String get referralBannerDescription;
+
+  /// No description provided for @referralYourCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш код приглашения'**
+  String get referralYourCode;
+
+  /// No description provided for @referralCopyCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скопировать'**
+  String get referralCopyCode;
+
+  /// No description provided for @referralShareButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поделиться ссылкой'**
+  String get referralShareButton;
+
+  /// No description provided for @referralStatsInvited.
+  ///
+  /// In ru, this message translates to:
+  /// **'Приглашено друзей: {count}'**
+  String referralStatsInvited(int count);
+
+  /// No description provided for @referralStatsDays.
+  ///
+  /// In ru, this message translates to:
+  /// **'Получено Премиума: {days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дней}}'**
+  String referralStatsDays(int days);
+
+  /// No description provided for @referralEnterCodeTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вас пригласил друг?'**
+  String get referralEnterCodeTitle;
+
+  /// No description provided for @referralEnterCodeHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите код друга'**
+  String get referralEnterCodeHint;
+
+  /// No description provided for @referralActivateButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Активировать'**
+  String get referralActivateButton;
+
+  /// No description provided for @referralAlreadyClaimed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы активировали код: {code} (+1 день)'**
+  String referralAlreadyClaimed(String code);
+
+  /// No description provided for @referralSuccessClaimed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код активирован! Вам начислен 1 день Премиума 🎉'**
+  String get referralSuccessClaimed;
+
+  /// No description provided for @referralSignInRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Войдите в аккаунт, чтобы получить личный код и копить дни Премиума'**
+  String get referralSignInRequired;
+
+  /// No description provided for @referralSignInButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Войти в аккаунт'**
+  String get referralSignInButton;
+
+  /// No description provided for @referralErrorSelf.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нельзя активировать собственный код'**
+  String get referralErrorSelf;
+
+  /// No description provided for @referralErrorAlreadyUsed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы уже активировали код приглашения'**
+  String get referralErrorAlreadyUsed;
+
+  /// No description provided for @referralErrorNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код не найден. Проверьте правильность ввода'**
+  String get referralErrorNotFound;
+
+  /// No description provided for @referralShareText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дарю 1 день Премиума в приложении ПДД Россия 2026! Установи приложение и введи мой промокод {code} или перейди по ссылке: {link}'**
+  String referralShareText(String code, String link);
+
+  /// No description provided for @referralCodeCopied.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код скопирован в буфер обмена'**
+  String get referralCodeCopied;
 }
 
 class _AppLocalizationsDelegate

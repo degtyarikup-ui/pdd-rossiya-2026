@@ -7,4 +7,6 @@ Map<String, String> browserAcquisitionFields() => const {};
 /// Возврат с формы оплаты бывает только на вебе.
 ({String result, String order})? takePaymentReturn() => null;
 
+String? takeReferralParam() => null;
+
 void setWebCheckoutTier(String tier) {}
