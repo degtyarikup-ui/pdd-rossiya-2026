@@ -133,7 +133,7 @@ class _QuestionVoiceToggleState extends ConsumerState<QuestionVoiceToggle> {
         ? colors.accent
         : colors.secondaryText;
     final background = locked
-        ? colors.premiumAmberSurface
+        ? colors.gold.withValues(alpha: 0.2)
         : enabled
         ? colors.accentSurface10
         : colors.cardBackground;
