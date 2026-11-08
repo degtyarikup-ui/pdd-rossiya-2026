@@ -1,8 +1,10 @@
 import unittest
+import copy
+import json
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
-from collect_pddby import Collector, parse_ticket, correct_index
+from collect_pddby import Collector, parse_ticket, correct_index, question_id, merge_question
 
 
 class ParseTicketTest(unittest.TestCase):
@@ -42,6 +44,56 @@ class ParseTicketTest(unittest.TestCase):
         ]:
             with self.assertRaises(ValueError):
                 correct_index(response, 1, 4)
+
+
+class AnswerOrderTest(unittest.TestCase):
+    def question(self, answers, correct):
+        q = {'text': 'Synthetic question', 'answers': answers, 'correctIndex': correct,
+             'imageUrls': [], 'subject': 'pdd', 'topics': [5], 'observations': 1,
+             'hintHtml': 'Synthetic reference'}
+        q['id'] = question_id(q)
+        return q
+
+    def test_order_variants_merge_and_choice_maps_correct_text(self):
+        first = self.question(['A', 'B'], 0)
+        reordered = self.question(['B', 'A'], 1)
+        reordered['topics'] = [6]
+        self.assertEqual(first['id'], reordered['id'])
+        with tempfile.TemporaryDirectory() as folder:
+            c = Collector(Path(folder), 0.35)
+            merge_question(c.bank['questions'], first)
+            self.assertEqual(c.choose_answer(reordered), 2)
+            merge_question(c.bank['questions'], reordered)
+            self.assertEqual(len(c.bank['questions']), 1)
+            saved = c.bank['questions'][first['id']]
+            self.assertEqual(saved['answers'][saved['correctIndex']], 'A')
+            self.assertEqual(saved['topics'], [5, 6])
+            self.assertEqual(saved['observations'], 2)
+            bad = copy.deepcopy(reordered)
+            bad['correctIndex'] = 0
+            with self.assertRaises(ValueError):
+                merge_question(c.bank['questions'], bad)
+
+    def test_numbered_option_references_preserve_order(self):
+        first = self.question(['A', 'B', 'Ответы 1 и 2'], 2)
+        reordered = self.question(['B', 'A', 'Ответы 1 и 2'], 2)
+        self.assertNotEqual(first['id'], reordered['id'])
+
+    def test_existing_checkpoint_migration_preserves_provenance_and_date(self):
+        first = self.question(['A', 'B'], 0)
+        second = self.question(['B', 'A'], 1)
+        first['id'] = 'by:old:1'; second['id'] = 'by:old:2'
+        first['evidence'] = {'question': 'raw/first.json', 'answer': 'raw/answer.json'}
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'collected.json'
+            path.write_text(json.dumps({'questions': {'first': first, 'second': second}, 'checkedAt': 'original-date'}))
+            c = Collector(Path(folder), 0.35)
+            self.assertEqual(len(c.bank['questions']), 1)
+            saved = next(iter(c.bank['questions'].values()))
+            self.assertEqual(saved['legacyIds'], ['by:old:1', 'by:old:2'])
+            self.assertEqual(saved['evidence'], first['evidence'])
+            self.assertEqual(c.bank['checkedAt'], 'original-date')
+            self.assertEqual(json.loads(path.read_text())['questions'], c.bank['questions'])
 
 
 class FakeCollector(Collector):

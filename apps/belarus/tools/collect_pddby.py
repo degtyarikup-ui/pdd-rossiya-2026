@@ -84,6 +84,40 @@ class TicketParser(HTMLParser):
             self.answers[-1].append(data)
 
 
+def question_id(question):
+    # Preserve order if the wording explicitly refers to numbered answer options.
+    references = re.compile(r'(?:ответ|вариант)\w*[^.!?]{0,12}(?:[1-5]|перв|втор|трет|четв|пят)|(?:перв|втор|трет|четв|пят)\w*\s+(?:ответ|вариант)', re.I)
+    ordered = bool(references.search(' '.join([question['text'], *question['answers']])))
+    answers = question['answers'] if ordered else sorted(question['answers'])
+    key_data = [question['text'], answers, question['imageUrls']]
+    key = hashlib.sha256(json.dumps(key_data, ensure_ascii=False).encode()).hexdigest()
+    return 'by:pddby:' + key[:24]
+
+
+def merge_question(questions, question):
+    previous = questions.get(question['id'])
+    if previous is None:
+        questions[question['id']] = question
+        return
+    for key in ('text', 'imageUrls', 'subject'):
+        if previous[key] != question[key]:
+            raise ValueError(f'Conflicting source question: {question["id"]} ({key})')
+    previous_answer = previous['answers'][previous['correctIndex']]
+    current_answer = question['answers'][question['correctIndex']]
+    if sorted(previous['answers']) != sorted(question['answers']) or previous_answer != current_answer:
+        raise ValueError(f'Conflicting answer text: {question["id"]}')
+    previous['topics'] = sorted(set(previous['topics'] + question['topics']))
+    previous['observations'] += question['observations']
+    aliases = set(previous.get('legacyIds', []) + question.get('legacyIds', []))
+    if aliases:
+        previous['legacyIds'] = sorted(aliases)
+    hints = set(previous.get('additionalHints', []) + question.get('additionalHints', []) + [question['hintHtml']])
+    hints.discard(previous['hintHtml'])
+    hints.discard('')
+    if hints:
+        previous['additionalHints'] = sorted(hints)
+
+
 def parse_ticket(payload):
     p = TicketParser()
     p.feed(payload['ticket'])
@@ -93,10 +127,9 @@ def parse_ticket(payload):
         raise ValueError('Unexpected question/answer markup; raw response retained')
     if len(set(answers)) != len(answers):
         raise ValueError('Duplicate answer text')
-    key_data = [question, answers, p.images]
-    key = hashlib.sha256(json.dumps(key_data, ensure_ascii=False).encode()).hexdigest()
-    return {'id': 'by:pddby:' + key[:24], 'text': question,
-            'answers': answers, 'imageUrls': p.images}
+    result = {'text': question, 'answers': answers, 'imageUrls': p.images}
+    result['id'] = question_id(result)
+    return result
 
 
 def correct_index(reply, submitted, answer_count):
@@ -131,6 +164,20 @@ class Collector:
             'permission': 'Owner reports publisher permission to scrape the website; 2026-11-09',
             'completeness': 'unverified-random-public-trainer-sample',
             'questions': {}, 'ticketsByTopic': {}, 'history': []}
+        if self.bank.get('idScheme') != 'answer-order-aware-v2':
+            normalized = {}
+            before = len(self.bank['questions'])
+            for question in self.bank['questions'].values():
+                previous_id = question['id']
+                question['id'] = question_id(question)
+                if previous_id != question['id']:
+                    question['legacyIds'] = sorted(set(question.get('legacyIds', []) + [previous_id]))
+                merge_question(normalized, question)
+            self.bank['questions'] = normalized
+            self.bank['idScheme'] = 'answer-order-aware-v2'
+            if bank_path.exists():
+                atomic_json(bank_path, self.bank)
+                print(json.dumps({'mergedAnswerOrderVariants': before - len(normalized)}), flush=True)
 
     def fetch(self, path, params=None):
         url = BASE + path + ('?' + urlencode(params) if params else '')
@@ -189,7 +236,8 @@ class Collector:
     def choose_answer(self, question):
         known = self.bank['questions'].get(question['id'])
         if known:
-            return known['correctIndex'] + 1
+            correct_text = known['answers'][known['correctIndex']]
+            return question['answers'].index(correct_text) + 1
         # Only a practice attempt choice, never an inferred correct answer in data.
         # The actual answer is always obtained and validated from the publisher.
         counts = {}
@@ -222,16 +270,8 @@ class Collector:
             question['subject'] = 'other' if topic == 7 else 'pdd'
             question['topics'] = [topic]
             question['evidence'] = {'question': raw_question, 'answer': raw_answer}
-            previous = self.bank['questions'].get(question['id'])
-            if previous:
-                for key in ['text', 'answers', 'imageUrls', 'correctIndex', 'subject']:
-                    if previous[key] != question[key]:
-                        raise ValueError(f'Conflicting source question: {question["id"]} ({key})')
-                previous['topics'] = sorted(set(previous['topics'] + [topic]))
-                previous['observations'] += 1
-            else:
-                question['observations'] = 1
-                self.bank['questions'][question['id']] = question
+            question['observations'] = 1
+            merge_question(self.bank['questions'], question)
             self.save()
             # The public trainer terminates an attempt after the second error.
             # Follow that behaviour; do not request questions from an ended ticket.
