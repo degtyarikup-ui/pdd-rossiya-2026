@@ -1857,8 +1857,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get achievementRankFirst => '1st place';
 
   @override
-  String get paywallPriceUnavailable =>
-      'Couldn’t load the price for this plan.';
+  String get paywallPriceUnavailable => 'Couldn’t load the price';
 
   @override
   String get paywallLoadingPrice => 'Loading price…';

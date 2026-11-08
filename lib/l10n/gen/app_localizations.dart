@@ -3211,7 +3211,7 @@ abstract class AppLocalizations {
   /// No description provided for @paywallPriceUnavailable.
   ///
   /// In ru, this message translates to:
-  /// **'Не удалось загрузить цену этого тарифа.'**
+  /// **'Не удалось загрузить цену'**
   String get paywallPriceUnavailable;
 
   /// No description provided for @paywallLoadingPrice.

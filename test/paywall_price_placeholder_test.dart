@@ -108,7 +108,7 @@ void main() {
 
     final reload = find.text('Обновить цену');
     expect(
-      find.text('Не удалось загрузить цену этого тарифа.'),
+      find.text('Не удалось загрузить цену'),
       findsOneWidget,
     );
     expect(reload, findsOneWidget);

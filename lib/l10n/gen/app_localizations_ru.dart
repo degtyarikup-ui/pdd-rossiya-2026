@@ -1878,8 +1878,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get achievementRankFirst => '1 место';
 
   @override
-  String get paywallPriceUnavailable =>
-      'Не удалось загрузить цену этого тарифа.';
+  String get paywallPriceUnavailable => 'Не удалось загрузить цену';
 
   @override
   String get paywallLoadingPrice => 'Загружаем цену…';

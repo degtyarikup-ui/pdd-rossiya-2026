@@ -629,7 +629,7 @@
   "achievementDescRank": "Ойынның апталық рейтингіндегі ең жақсы орын",
   "achievementRankTop": "Топ-{count}",
   "achievementRankFirst": "1 орын",
-  "paywallPriceUnavailable": "Бұл тарифтің бағасы жүктелмеді.",
+  "paywallPriceUnavailable": "Баға жүктелмеді",
   "paywallLoadingPrice": "Баға жүктелуде…",
   "paywallReloadPrice": "Бағаны жаңарту",
   "paywallSubscribe": "Жазылу",

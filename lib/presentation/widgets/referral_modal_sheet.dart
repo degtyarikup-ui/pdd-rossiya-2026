@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdd_app/presentation/widgets/inline_load_error.dart';
 import 'package:flutter/services.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -169,18 +170,17 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
                 )
               else if (_service.loading)
                 const LinearProgressIndicator()
-              else ...[
-                Text(l10n.referralLoadError, style: theme.textTheme.bodyMedium),
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: TextButton(
+              else
+                InlineLoadError(
+                  message: l10n.referralLoadError,
+                  action: TextButton.icon(
                     key: const ValueKey('referral-retry-button'),
                     onPressed: () =>
                         _service.getReferralInfo(forceRefresh: true),
-                    child: Text(l10n.referralRetryButton),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(l10n.referralRetryButton),
                   ),
                 ),
-              ],
               const SizedBox(height: 16),
               const Divider(height: 1),
               const SizedBox(height: 16),

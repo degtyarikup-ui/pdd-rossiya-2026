@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:pdd_app/presentation/widgets/inline_load_error.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -494,11 +495,13 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
                       const SizedBox(height: AppDimensions.spacingM),
                       _buildReferralCard(colors),
                       const SizedBox(height: AppDimensions.spacingXXL),
-                      if (reloadPrice && !loadingPrice)
-                        Text(
-                          appL10n.paywallPriceUnavailable,
-                          textAlign: TextAlign.center,
+                      if (reloadPrice && !loadingPrice) ...[
+                        InlineLoadError(
+                          key: const ValueKey('premium-price-load-error'),
+                          message: appL10n.paywallPriceUnavailable,
                         ),
+                        const SizedBox(height: AppDimensions.spacingM),
+                      ],
                       PremiumPressFeedback(
                         enabled:
                             !_isLoading &&
@@ -736,7 +739,6 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
         ),
         leading: Icon(Icons.card_giftcard_rounded, color: colors.accent),
         title: Text(l10n.referralPlansTitle),
-        subtitle: Text(l10n.referralPlansSubtitle),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: _isLoading
             ? null

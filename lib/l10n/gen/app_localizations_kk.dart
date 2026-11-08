@@ -1858,7 +1858,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get achievementRankFirst => '1 орын';
 
   @override
-  String get paywallPriceUnavailable => 'Бұл тарифтің бағасы жүктелмеді.';
+  String get paywallPriceUnavailable => 'Баға жүктелмеді';
 
   @override
   String get paywallLoadingPrice => 'Баға жүктелуде…';

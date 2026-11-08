@@ -1080,7 +1080,7 @@
     }
   },
   "achievementRankFirst": "1 место",
-  "paywallPriceUnavailable": "Не удалось загрузить цену этого тарифа.",
+  "paywallPriceUnavailable": "Не удалось загрузить цену",
   "paywallLoadingPrice": "Загружаем цену…",
   "paywallReloadPrice": "Обновить цену",
   "paywallSubscribe": "Оформить подписку",
