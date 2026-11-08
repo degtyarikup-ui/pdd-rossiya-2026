@@ -8,7 +8,7 @@ const admin = (env, body) => worker.fetch(request('/api/admin/promocodes', body,
 const campaign = (code, extra = {}) => ({ operation: 'create', code, days: 7, maxUses: 10,
   startsAt: new Date(Date.now()-DAY).toISOString(), expiresAt: new Date(Date.now()+DAY).toISOString(), ...extra });
 async function user(env, id, age = 0) {
-  await env.INSTALLS.put('user:'+id, JSON.stringify({...identity(id),createdAt:new Date(Date.now()-age).toISOString()}));
+  await env.INSTALLS.put('user:'+id, JSON.stringify({...identity(id),email:id+'@example.invalid',createdAt:new Date(Date.now()-age).toISOString()}));
   return session(env,id);
 }
 const claim = (env, token, code) => worker.fetch(request('/api/user/promo/claim',{code,days:365,userId:'google_victim'},token),env);

@@ -2,7 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from './worker.js';
 import { fixture, identity, session, request } from './fixture-account.mjs';
-import { accountRead } from './account_state.js';
+import { accountRead, accountWrite } from './account_state.js';
+import { signSession } from './user_auth.js';
+
+const older = () => new Date(Date.now() - 60_000).toISOString();
+const profile = (id, overrides = {}) => ({
+  ...identity(id), email: id + '@example.invalid', ...overrides,
+});
 
 test('referrals: GET /api/user/referral requires authentication', async () => {
   const { env } = fixture();
@@ -61,8 +67,8 @@ test('referrals: POST /api/user/referral/claim rejects invalid input and self-re
 
 test('referrals: POST /api/user/referral/claim grants 2 days to friend and 2 days to inviter', async () => {
   const { env } = fixture();
-  await env.INSTALLS.put('user:google_inviter', JSON.stringify(identity('google_inviter')));
-  await env.INSTALLS.put('user:google_friend', JSON.stringify(identity('google_friend')));
+  await env.INSTALLS.put('user:google_inviter', JSON.stringify(profile('google_inviter', { createdAt: older() })));
+  await env.INSTALLS.put('user:google_friend', JSON.stringify(profile('google_friend')));
 
   const inviterToken = await session(env, 'google_inviter');
   const friendToken = await session(env, 'google_friend');
@@ -80,7 +86,7 @@ test('referrals: POST /api/user/referral/claim grants 2 days to friend and 2 day
   assert.equal(claimData.premiumSource, 'referral');
 
   const friendExpiry = Date.parse(claimData.premiumExpiresAt);
-  // ~1 day (+- 5 seconds)
+  // ~2 days (+- 5 seconds)
   assert.ok(Math.abs(friendExpiry - (now + 2 * 86400000)) < 5000);
 
   // Check inviter has +2 days
@@ -103,7 +109,7 @@ test('referrals: POST /api/user/referral/claim grants 2 days to friend and 2 day
 
 test('referrals: multiple friends stack +2 days each on inviter', async () => {
   const { env } = fixture();
-  await env.INSTALLS.put('user:google_inviter', JSON.stringify(identity('google_inviter')));
+  await env.INSTALLS.put('user:google_inviter', JSON.stringify(profile('google_inviter', { createdAt: older() })));
   const inviterToken = await session(env, 'google_inviter');
 
   const refRes = await worker.fetch(request('/api/user/referral', undefined, inviterToken), env);
@@ -134,7 +140,7 @@ test('referrals: multiple friends stack +2 days each on inviter', async () => {
 
 test('referrals: concurrent claims by multiple friends do not race or lose inviter days', async () => {
   const { env } = fixture();
-  await env.INSTALLS.put('user:google_inviter', JSON.stringify(identity('google_inviter')));
+  await env.INSTALLS.put('user:google_inviter', JSON.stringify(profile('google_inviter', { createdAt: older() })));
   const inviterToken = await session(env, 'google_inviter');
 
   const refRes = await worker.fetch(request('/api/user/referral', undefined, inviterToken), env);
@@ -162,11 +168,12 @@ test('referrals: concurrent claims by multiple friends do not race or lose invit
   assert.ok(Math.abs(inviterExpiry - (now + 4 * 86400000)) < 5000);
 });
 
-async function setupPair() {
+async function setupPair(overrides = {}) {
   const setup = fixture();
   const { env } = setup;
   for (const id of ['google_inviter', 'google_friend', 'google_other']) {
-    await env.INSTALLS.put('user:' + id, JSON.stringify(identity(id)));
+    const createdAt = id === 'google_friend' ? new Date().toISOString() : older();
+    await env.INSTALLS.put('user:' + id, JSON.stringify(profile(id, { createdAt, ...overrides[id] })));
   }
   const inviterToken = await session(env, 'google_inviter');
   const friendToken = await session(env, 'google_friend');
@@ -203,7 +210,7 @@ test('referrals: the alarm recovers after inviter credit commits but its respons
   } };
   assert.equal((await claim(code)).status, 500);
   assert.equal((await read('google_inviter')).referralDaysEarned, 2);
-  assert.equal((await read('google_friend')).referredBy, undefined);
+  assert.equal((await read('google_friend')).referredBy, 'google_inviter');
   env.ACCOUNTS = original;
   const coordinator = 'referral-claim:google_friend';
   assert.ok(states.get(coordinator).alarm);
@@ -238,26 +245,98 @@ test('referrals: rejects a stale index and accepts a valid legacy code', async (
   assert.equal((await claim('STALE1')).status, 404);
   assert.equal((await read('google_inviter')).referralCount, undefined);
   await env.INSTALLS.put('user:google_other', JSON.stringify({
-    ...identity('google_other'), referralCode: 'OLD123',
+    ...profile('google_other', { createdAt: older() }), referralCode: 'OLD123',
   }));
   await env.INSTALLS.put('ref_code:OLD123', 'google_other');
   assert.equal((await claim('  old123  ')).status, 200);
   assert.equal((await info(inviterToken)).invitedCount, 0);
 });
 
-test('referrals: a recreated account cannot collect a second friend bonus', async () => {
+test('referrals: a recreated account cannot collect or trigger a second bonus', async () => {
   const { env, inviterToken, friendToken, otherToken, info, claim, read } = await setupPair();
   const { code } = await info(inviterToken);
   const other = await info(otherToken);
   assert.equal((await claim(code)).status, 200);
   assert.equal((await worker.fetch(request('/api/user/delete', { userId: 'google_friend' }, friendToken), env)).status, 200);
   const generation = await accountRead(env, 'google_friend', 'auth_generation:google_friend');
-  const { accountWrite } = await import('./account_state.js');
-  const { signSession } = await import('./user_auth.js');
-  const recreated = { ...identity('google_friend'), createdAt: new Date(Date.now() + 1000).toISOString() };
+  const recreated = profile('google_friend', { createdAt: new Date(Date.now() + 1000).toISOString() });
   await accountWrite(env, 'google_friend', 'user:google_friend', JSON.stringify(recreated));
   const token = await signSession(env, { user: recreated, generation, expiresAt: Date.now() + 3600000 });
+  assert.equal((await claim(code, token)).status, 400);
   assert.equal((await claim(other.code, token)).status, 400);
   assert.equal((await info(token)).hasUsedReferral, true);
+  assert.equal((await read('google_inviter')).referralDaysEarned, 2);
   assert.equal((await read('google_other')).referralCount, undefined);
+});
+
+test('referrals: simultaneous mutual claims only reward the earlier inviter', async () => {
+  const { env, inviterToken, friendToken, info, claim, read } = await setupPair();
+  const [inviter, friend] = await Promise.all([info(inviterToken), info(friendToken)]);
+  const [valid, reverse] = await Promise.all([
+    claim(inviter.code),
+    worker.fetch(request('/api/user/promo/claim', { code: friend.code }, inviterToken), env),
+  ]);
+  assert.equal(valid.status, 200);
+  assert.equal(reverse.status, 400);
+  assert.equal((await reverse.json()).error, 'referral_ineligible');
+  assert.equal((await read('google_inviter')).referralDaysEarned, 2);
+  assert.equal((await read('google_friend')).referralDaysEarned, undefined);
+});
+
+test('referrals: the same verified email cannot trigger either bonus', async () => {
+  const { inviterToken, info, claim, read } = await setupPair({
+    google_friend: { email: 'GOOGLE_INVITER@example.invalid' },
+  });
+  const { code } = await info(inviterToken);
+  const res = await claim(code);
+  assert.equal(res.status, 400);
+  assert.equal((await res.json()).error, 'cannot_refer_self');
+  assert.equal((await read('google_inviter')).referralDaysEarned, undefined);
+  assert.equal((await read('google_friend')).referredBy, undefined);
+});
+
+test('referrals: a failed friend commit gives the inviter no reward before a retry', async () => {
+  const { env, states, inviterToken, info, claim, read } = await setupPair();
+  const { code } = await info(inviterToken);
+  const original = env.ACCOUNTS.get;
+  env.ACCOUNTS.get = id => ({ fetch(url, options) {
+    if (id === 'google_friend' && String(url).endsWith('/_account/referral-complete')) {
+      states.get(id).failCommit = true;
+    }
+    return original(id).fetch(url, options);
+  } });
+  assert.equal((await claim(code)).status, 500);
+  env.ACCOUNTS.get = original;
+  assert.equal((await read('google_inviter')).referralDaysEarned, undefined);
+  assert.equal((await read('google_friend')).referredBy, undefined);
+  assert.equal((await claim(code)).status, 200);
+  assert.equal((await claim(code)).status, 200);
+  assert.equal((await read('google_inviter')).referralDaysEarned, 2);
+});
+
+test('referrals: deletion before the friend commits never rewards the inviter', async () => {
+  const { env, objects, friendToken, inviterToken, info, claim, read } = await setupPair();
+  const { code } = await info(inviterToken);
+  const original = env.ACCOUNTS.get;
+  env.ACCOUNTS.get = id => ({ fetch(url, options) {
+    if (id === 'google_friend' && String(url).endsWith('/_account/referral-complete')) {
+      return Promise.resolve(Response.json({}, { status: 503 }));
+    }
+    return original(id).fetch(url, options);
+  } });
+  assert.equal((await claim(code)).status, 503);
+  env.ACCOUNTS.get = original;
+  assert.equal((await worker.fetch(request('/api/user/delete', { userId: 'google_friend' }, friendToken), env)).status, 200);
+  await objects.get('referral-claim:google_friend').alarm();
+  assert.equal((await read('google_inviter')).referralDaysEarned, undefined);
+});
+
+test('referrals: retry of a partially completed legacy claim does not credit the inviter again', async () => {
+  const { env, inviterToken, info, claim, read } = await setupPair({
+    google_inviter: { referrals: [{ id: 'google_friend' }], referralCount: 1, referralDaysEarned: 2 },
+  });
+  const { code } = await info(inviterToken);
+  assert.equal((await claim(code)).status, 200);
+  assert.equal((await read('google_friend')).referredBy, 'google_inviter');
+  assert.equal((await read('google_inviter')).referralDaysEarned, 2);
 });

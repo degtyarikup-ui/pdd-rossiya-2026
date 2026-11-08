@@ -391,7 +391,7 @@ export class AccountState {
     } else if (path === '/_account/promo') {
       const { promoAccountStep } = await import('./promocodes.js');
       response = await promoAccountStep(request, env);
-    } else if (['/_account/referral-check', '/_account/referral-reward', '/_account/referral-complete'].includes(path)) {
+    } else if (['/_account/referral-check', '/_account/referral-inviter', '/_account/referral-reward', '/_account/referral-complete'].includes(path)) {
       const { referralAccountStep } = await import('./referrals.js');
       response = await referralAccountStep(path, request, env);
     } else {

@@ -116,7 +116,11 @@ const premiumStatus = user => ({
   premiumExpiresAt: user.premiumExpiresAt || null,
   premiumSource: user.premiumSource || null,
 });
-const success = user => reply({ ok: true, kind: 'referral', daysAdded: FRIEND_DAYS, inviterDaysAdded: INVITER_DAYS, ...premiumStatus(user) });
+const success = (user, inviterDaysAdded = INVITER_DAYS) => reply({
+  ok: true, kind: 'referral', daysAdded: FRIEND_DAYS, inviterDaysAdded, ...premiumStatus(user),
+});
+
+const normalizedEmail = email => typeof email === 'string' ? email.trim().toLowerCase() : '';
 
 export async function referralAccountStep(path, request, env) {
   const job = await request.json();
@@ -129,12 +133,25 @@ export async function referralAccountStep(path, request, env) {
         Date.now() - created > 7 * 86400000 ||
         await env.INSTALLS.get('account_deleted:' + user.id)) return fail('referral_ineligible', 400);
     if (user.referralCode === job.code) return fail('cannot_refer_self', 400);
-    return reply({ createdAt: user.createdAt || null });
+    return reply({ createdAt: user.createdAt, email: normalizedEmail(user.email) });
+  }
+  if (path === '/_account/referral-inviter') {
+    if (!user || user.referralCode !== job.code) return fail('code_not_found', 404);
+    if (job.email && job.email === normalizedEmail(user.email)) return fail('cannot_refer_self', 400);
+    if (!(Date.parse(user.createdAt) < Date.parse(job.createdAt))) return fail('referral_ineligible', 400);
+    return reply({ inviterCreatedAt: user.createdAt });
   }
   if (path === '/_account/referral-reward') {
     const receipt = 'referral_receipt:' + env.__ACCOUNT_ID + ':' + job.id;
     if (await env.INSTALLS.get(receipt)) return reply({ ok: true });
-    if (!user || user.referralCode !== job.code) return fail('code_not_found', 404);
+    if (!user || user.referralCode !== job.code ||
+        (job.inviterCreatedAt && user.createdAt !== job.inviterCreatedAt)) return fail('code_not_found', 404);
+    // Before receipts existed, the inviter could already have been credited
+    // even if the friend's profile write failed.
+    if (Array.isArray(user.referrals) && user.referrals.some(entry => entry?.id === job.friendId)) {
+      await env.INSTALLS.put(receipt, '1');
+      return reply({ ok: true });
+    }
     extendEntitlement(user, 'referral', INVITER_DAYS);
     user.referralCount = (user.referralCount || 0) + 1;
     user.referralDaysEarned = (user.referralDaysEarned || 0) + INVITER_DAYS;
@@ -142,21 +159,28 @@ export async function referralAccountStep(path, request, env) {
     await env.INSTALLS.put(receipt, '1');
     return reply({ ok: true });
   }
-  if (!user || (user.createdAt || null) !== job.createdAt) return fail('account_not_ready', 410);
+  const usedKey = 'referral_used:' + env.__ACCOUNT_ID;
+  const used = await env.INSTALLS.get(usedKey);
+  if (!user || (user.createdAt || null) !== job.createdAt) {
+    return fail(used === job.id ? 'referral_friend_deleted' : 'account_not_ready', 410);
+  }
   if (user.referredBy) {
     if (user.referralCodeUsed !== job.code || user.referredBy !== job.inviterId) return fail('already_claimed', 400);
     return success(applyEntitlements(user));
   }
+  if (used) return fail('already_claimed', 400);
+  if (await env.INSTALLS.get('account_deleted:' + user.id)) return fail('account_not_ready', 410);
   extendEntitlement(user, 'referral', FRIEND_DAYS);
   user.referredBy = job.inviterId;
   user.referralCodeUsed = job.code;
   user.referralClaimedAt = new Date().toISOString();
   await putUserRecord(env, user);
-  await env.INSTALLS.put('referral_used:' + user.id, '1');
+  await env.INSTALLS.put(usedKey, job.id);
   return success(user);
 }
 
-async function completeClaim(storage, env, job) {
+// Jobs reserved by the previous release may already have paid the inviter.
+async function completeLegacyClaim(storage, env, job) {
   const reward = await accountRpc(env, job.inviterId, '/_account/referral-reward', job);
   if (reward.status === 404 && (await reward.json()).error === 'code_not_found') {
     await storage.delete('referral-job');
@@ -167,7 +191,7 @@ async function completeClaim(storage, env, job) {
   const friend = await accountRpc(env, job.friendId, '/_account/referral-complete', job);
   const data = await friend.json();
   if ((!friend.ok || data.ok !== true) && !(
-    (friend.status === 410 && data.error === 'account_not_ready') ||
+    (friend.status === 410 && ['account_not_ready', 'referral_friend_deleted'].includes(data.error)) ||
     (friend.status === 400 && data.error === 'already_claimed')
   )) return fail('referral_pending', 503);
 
@@ -176,6 +200,31 @@ async function completeClaim(storage, env, job) {
   await storage.put('referral-job', { code: job.code, done: true, createdAt: job.createdAt });
   await storage.deleteAlarm();
   return reply(data, friend.status);
+}
+
+async function completeClaim(storage, env, job) {
+  if (!job.inviterCreatedAt) return completeLegacyClaim(storage, env, job);
+
+  const friend = await accountRpc(env, job.friendId, '/_account/referral-complete', job);
+  const data = await friend.json();
+  const committed = friend.ok && data.ok === true;
+  const deletedAfterCommit = friend.status === 410 && data.error === 'referral_friend_deleted';
+  if (!committed && !deletedAfterCommit && !(
+    (friend.status === 410 && data.error === 'account_not_ready') ||
+    (friend.status === 400 && data.error === 'already_claimed')
+  )) return fail('referral_pending', 503);
+
+  let inviterDaysAdded = 0;
+  if (committed || deletedAfterCommit) {
+    const reward = await accountRpc(env, job.inviterId, '/_account/referral-reward', job);
+    const rewardData = await reward.json();
+    if (reward.ok && rewardData.ok === true) inviterDaysAdded = INVITER_DAYS;
+    else if (reward.status !== 404 || rewardData.error !== 'code_not_found') return fail('referral_pending', 503);
+  }
+
+  await storage.put('referral-job', { code: job.code, done: true, createdAt: job.createdAt, inviterDaysAdded });
+  await storage.deleteAlarm();
+  return committed ? reply({ ...data, inviterDaysAdded }) : reply(data, friend.status);
 }
 
 export async function referralClaim(storage, env, { code, friendId }) {
@@ -188,7 +237,7 @@ export async function referralClaim(storage, env, { code, friendId }) {
     const raw = (await status.json()).value;
     const user = raw && JSON.parse(raw);
     return user?.referralCodeUsed === code && (user.createdAt || null) === previous.createdAt
-      ? success(applyEntitlements(user))
+      ? success(applyEntitlements(user), previous.inviterDaysAdded)
       : fail('already_claimed', 400);
   }
 
@@ -203,8 +252,12 @@ export async function referralClaim(storage, env, { code, friendId }) {
   const inviterId = await codeRpc(env, code, 'lookup');
   if (!inviterId) return fail('code_not_found', 404);
   if (inviterId === friendId) return fail('cannot_refer_self', 400);
-  const { createdAt } = await friend.json();
-  const job = { id: crypto.randomUUID(), code, inviterId, friendId, createdAt };
+  const { createdAt, email } = await friend.json();
+  const inviter = await accountRpc(env, inviterId, '/_account/referral-inviter', { code, createdAt, email });
+  if (!inviter.ok) return inviter;
+  const { inviterCreatedAt } = await inviter.json();
+  if (!inviterCreatedAt) return fail('referral_unavailable', 503);
+  const job = { id: crypto.randomUUID(), code, inviterId, friendId, createdAt, inviterCreatedAt };
   await storage.setAlarm(now + 60_000);
   await storage.put('referral-job', job);
   return completeClaim(storage, env, job);
