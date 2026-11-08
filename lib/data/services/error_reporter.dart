@@ -25,6 +25,7 @@ class ErrorReporter {
   ErrorReporter({
     this.endpoint = BackendConfig.notifierUrl,
     this.secret = BackendConfig.notifierSecret,
+    this.suppressTestAuthAndProducts = const bool.fromEnvironment('GAME_DEBUG'),
     http.Client? client,
     Future<Map<String, dynamic>> Function()? metadata,
     Map<String, String> Function()? headers,
@@ -36,6 +37,9 @@ class ErrorReporter {
 
   static final instance = ErrorReporter();
   static const queueKey = 'error_events_v1';
+
+  /// Dev APKs must not turn expected OAuth/store setup failures into alerts.
+  final bool suppressTestAuthAndProducts;
   final String endpoint;
   final String secret;
   final http.Client _client;
@@ -139,6 +143,7 @@ class ErrorReporter {
     String? provider,
     Map<String, dynamic>? context,
   }) {
+    if (_suppressed(category.name, operation)) return flush();
     final details = DiagnosticContext.sanitize(context);
     final now = DateTime.now();
     final key =
@@ -165,6 +170,12 @@ class ErrorReporter {
     });
   }
 
+  bool _suppressed(Object? category, Object? operation) =>
+      suppressTestAuthAndProducts &&
+      (category == 'auth' ||
+          operation == 'startup.auth' ||
+          operation == 'iap.products');
+
   Future<void> flush() => _serialize(null);
 
   /// Адреса воркера. Запасной нужен только для боевого адреса; при другом
@@ -183,6 +194,7 @@ class ErrorReporter {
             .cast<Map<String, dynamic>>()
             .where(
               (e) =>
+                  !_suppressed(e['category'], e['operation']) &&
                   e['ts'] is int &&
                   now - (e['ts'] as int) <
                       const Duration(days: 7).inMilliseconds,

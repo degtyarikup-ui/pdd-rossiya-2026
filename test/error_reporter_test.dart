@@ -18,6 +18,71 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   test(
+    'dev filters new and queued auth/catalog failures, keeps other errors',
+    () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      SharedPreferences.setMockInitialValues({
+        ErrorReporter.queueKey: jsonEncode([
+          for (final operation in [
+            'auth.provider',
+            'startup.auth',
+            'iap.products',
+            'iap.verify',
+          ])
+            {
+              'id': operation,
+              'ts': now,
+              'category': operation == 'auth.provider' ? 'auth' : 'app',
+              'operation': operation,
+              'code': 'timeout',
+            },
+        ]),
+      });
+      final operations = <String>[];
+      final reporter = ErrorReporter(
+        suppressTestAuthAndProducts: true,
+        endpoint: 'https://test',
+        secret: 'test',
+        metadata: () async => {},
+        headers: () => {},
+        userId: () => null,
+        client: MockClient((request) async {
+          for (final event in jsonDecode(request.body)['events']) {
+            operations.add(event['operation'] as String);
+          }
+          return http.Response('{}', 200);
+        }),
+      );
+      await reporter.flush();
+      await reporter.record(
+        ErrorCategory.auth,
+        'auth.provider',
+        code: 'timeout',
+      );
+      await reporter.record(ErrorCategory.app, 'startup.auth', code: 'timeout');
+      await reporter.record(
+        ErrorCategory.purchase,
+        'iap.products',
+        code: 'products_not_found',
+      );
+      await reporter.record(
+        ErrorCategory.app,
+        'flutter.framework',
+        code: 'exception',
+      );
+      expect(operations, ['iap.verify', 'flutter.framework']);
+      expect(
+        jsonDecode(
+          (await SharedPreferences.getInstance()).getString(
+            ErrorReporter.queueKey,
+          )!,
+        ),
+        isEmpty,
+      );
+    },
+  );
+
+  test(
     'offline errors retry original IDs after restart and omit raw secrets',
     () async {
       var online = false;
