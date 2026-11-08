@@ -364,23 +364,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get preparation => 'Дайындық';
 
   @override
-  String get feedbackSection => 'Кері байланыс және дыбыстар';
-
-  @override
-  String get confirmAnswerSetting => 'Жауапты растау';
-
-  @override
-  String get confirmAnswerHint =>
-      'Жауап алдымен таңдалады, содан кейін түйме арқылы расталады.';
-
-  @override
-  String get hapticFeedback => 'Діріл';
+  String get soundsAndNotificationsSection => 'Дыбыстар мен хабарландырулар';
 
   @override
   String get soundEffects => 'Дыбыстық әсерлер';
-
-  @override
-  String get voiceOverQuestions => 'Сұрақтарды дауыстап оқу';
 
   @override
   String get voicePremium => 'Премиум дыбыстау';
@@ -402,10 +389,6 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get voiceSpeedDescription =>
       'Өзіңізге ыңғайлы қарқынды таңдаңыз. Жылдамдық барлық сұрақтар үшін сақталады.';
-
-  @override
-  String get voiceLanguageDescription =>
-      'Орыс тілінде дайын жазба. Ағылшын және қазақ тілдерінде құрылғының жүйелік дауысы қолданылады.';
 
   @override
   String get voicePlaybackUnavailable =>
@@ -531,9 +514,6 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get hideHint => 'Кеңесті жасыру';
-
-  @override
-  String get confirmAnswerButton => 'Жауапты растау';
 
   @override
   String get myMistakes => 'Менің қателіктерім';
@@ -4415,7 +4395,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get trainingKeyboardHint =>
-      'Сандар — жауап · Enter — растау немесе жалғастыру · ←/→ — сұрақтар · Esc — артқа';
+      'Сандар — жауап · Enter — жалғастыру · ←/→ — сұрақтар · Esc — артқа';
 
   @override
   String get examKeyboardHint =>

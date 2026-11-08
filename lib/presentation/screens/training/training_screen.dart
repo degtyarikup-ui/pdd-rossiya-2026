@@ -61,8 +61,7 @@ class TrainingScreen extends ConsumerStatefulWidget {
 class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   late List<int?> _savedChoices;
   int _currentIndex = 0;
-  int? _selectedAnswerIndex;
-  bool _isAnswerSubmitted = false;
+  bool get _isAnswerSubmitted => _savedChoices[_currentIndex] != null;
   bool _isFavorite = false;
   final List<int> _correctIndices = [];
   final List<int> _wrongIndices = [];
@@ -110,10 +109,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           (widget.questions[i]['answers'] as List)[choice]['correct'] == true;
       (correct ? _correctIndices : _wrongIndices).add(i);
     }
-    _selectedAnswerIndex = _savedChoices.isEmpty
-        ? null
-        : _savedChoices[_currentIndex];
-    _isAnswerSubmitted = _selectedAnswerIndex != null;
     _pageController = PageController(initialPage: _currentIndex);
     _checkFavorite();
     _rememberPosition();
@@ -186,9 +181,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     _invalidateVoicePlayback();
     setState(() {
       _currentIndex = i;
-      final saved = _savedChoices[i];
-      _selectedAnswerIndex = saved;
-      _isAnswerSubmitted = saved != null;
       _showHint = false;
     });
     _checkFavorite();
@@ -216,29 +208,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     }
   }
 
-  void _selectAnswer(int index, {required bool requireConfirmation}) {
-    if (_isAnswerSubmitted) return;
-
-    if (requireConfirmation) {
-      // Только выбор варианта — лёгкий отклик выбора. Подтверждение придёт
-      // отдельным действием.
-      HapticFeedbackHelper.tap();
-      setState(() => _selectedAnswerIndex = index);
-      return;
-    }
-
-    // Прямая отправка: единственный отклик даёт _submitAnswer (success/error).
-    // Дополнительный tap() здесь ощущался как «двойная вибрация».
-    _submitAnswer(index);
-  }
-
-  void _submitSelectedAnswer() {
-    if (_selectedAnswerIndex == null || _isAnswerSubmitted) return;
-
-    // Отклик даёт _submitAnswer по результату; свой tap() убран, иначе двойной.
-    _submitAnswer(_selectedAnswerIndex!);
-  }
-
   void _submitAnswer(int index) {
     if (_leaving || _finishing || _isAnswerSubmitted) return;
     final question = widget.questions[_currentIndex];
@@ -248,8 +217,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     final TicketCategory category = _category;
 
     setState(() {
-      _selectedAnswerIndex = index;
-      _isAnswerSubmitted = true;
       _savedChoices[_currentIndex] = index;
     });
 
@@ -462,7 +429,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || gen != _voiceScheduleGen) return;
       if (_currentIndex != capturedIndex) return;
-      if (_isAnswerSubmitted || _selectedAnswerIndex != null) return;
+      if (_isAnswerSubmitted) return;
       final q = widget.questions[_currentIndex];
       if ((q['id'] as String) != questionId) return;
       final settings = ref.read(appSettingsProvider);
@@ -522,8 +489,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     final hasHint = comment.isNotEmpty;
     final voiceEnabled =
         appSettings.voiceEnabled && ref.watch(isPremiumProvider);
-    final voiceShouldPlay =
-        voiceEnabled && !isAnswered && _selectedAnswerIndex == null;
+    final voiceShouldPlay = voiceEnabled && !isAnswered;
 
     _syncVoicePlayback(
       questionId: questionId,
@@ -540,20 +506,13 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
       },
       child: QuestionKeyboardShortcuts(
         answerCount: answers.length,
-        onAnswer: (index) => _selectAnswer(
-          index,
-          requireConfirmation: appSettings.confirmAnswerEnabled,
-        ),
+        onAnswer: _submitAnswer,
         onPrevious: () => _goToQuestion(_currentIndex - 1),
         onNext: () => _goToQuestion(_currentIndex + 1),
         onExit: _stopVoiceAndPop,
         onConfirm: () {
           if (_leaving || _finishing) return;
-          if (_isAnswerSubmitted) {
-            _nextQuestion();
-          } else if (_selectedAnswerIndex != null) {
-            _submitSelectedAnswer();
-          }
+          if (_isAnswerSubmitted) _nextQuestion();
         },
         child: AppContentFrame(
           maxWidth: AppContentFrame.catalogueWidth,
@@ -575,14 +534,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                           controller: _pageController,
                           itemCount: _unlockedCount,
                           onPageChanged: _onQuestionPageChanged,
-                          itemBuilder: (context, pageIndex) {
-                            return _buildTrainingQuestionPage(
-                              context,
-                              pageIndex,
-                              requireConfirmation:
-                                  appSettings.confirmAnswerEnabled,
-                            );
-                          },
+                          itemBuilder: _buildTrainingQuestionPage,
                         ),
                         if (ref.watch(isPremiumProvider))
                           Positioned(
@@ -597,22 +549,14 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                 ],
               ),
             ),
-            bottomNavigationBar: _buildBottomBar(
-              context,
-              requireConfirmation: appSettings.confirmAnswerEnabled,
-              hasHint: hasHint,
-            ),
+            bottomNavigationBar: _buildBottomBar(context, hasHint: hasHint),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTrainingQuestionPage(
-    BuildContext context,
-    int pageIndex, {
-    required bool requireConfirmation,
-  }) {
+  Widget _buildTrainingQuestionPage(BuildContext context, int pageIndex) {
     final colors = AppColors.of(context);
     final question = widget.questions[pageIndex];
     final answers = question['answers'] as List;
@@ -657,7 +601,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
             index: index,
             text: answer['text'] as String,
             isCorrect: answer['correct'] as bool,
-            requireConfirmation: requireConfirmation,
             showHint: showHintBlock,
           ),
         );
@@ -778,16 +721,13 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     required int index,
     required String text,
     required bool isCorrect,
-    required bool requireConfirmation,
     required bool showHint,
   }) {
     final colors = AppColors.of(context);
     final saved = _savedChoices[questionIndex];
     final isAnswered = saved != null;
     final isHinted = showHint && isCorrect && !isAnswered;
-    final isSelected = isAnswered
-        ? (saved == index)
-        : (questionIndex == _currentIndex && _selectedAnswerIndex == index);
+    final isSelected = saved == index;
 
     Color backgroundColor;
     Color textColor;
@@ -803,9 +743,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         backgroundColor = colors.gray;
         textColor = colors.secondaryText;
       }
-    } else if (requireConfirmation && isSelected) {
-      backgroundColor = colors.accentSurface10;
-      textColor = colors.primaryText;
     } else {
       backgroundColor = colors.cardBackground;
       textColor = colors.primaryText;
@@ -816,10 +753,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: canTap
-            ? () =>
-                  _selectAnswer(index, requireConfirmation: requireConfirmation)
-            : null,
+        onTap: canTap ? () => _submitAnswer(index) : null,
         borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -849,8 +783,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                             : colors.gray)
                       : isHinted
                       ? colors.green
-                      : isSelected
-                      ? colors.accent.withValues(alpha: 0.12)
                       : colors.gray,
                   shape: BoxShape.circle,
                 ),
@@ -868,7 +800,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                             color: AppColors.white,
                             size: 16,
                           )
-                        : isAnswered && isSelected
+                        : isSelected
                         ? const Icon(
                             Icons.close_rounded,
                             key: ValueKey('training_answer_close'),
@@ -883,8 +815,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                               fontWeight: FontWeight.w600,
                               color: isHinted
                                   ? AppColors.white
-                                  : isSelected
-                                  ? colors.accent
                                   : colors.secondaryText,
                             ),
                           ),
@@ -1037,16 +967,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     );
   }
 
-  Widget _buildBottomBar(
-    BuildContext context, {
-    required bool requireConfirmation,
-    required bool hasHint,
-  }) {
+  Widget _buildBottomBar(BuildContext context, {required bool hasHint}) {
     final colors = AppColors.of(context);
     final isAnswered = _isAnswerSubmitted;
     final isAllComplete = _isAllAnswered;
-    final canConfirm =
-        requireConfirmation && _selectedAnswerIndex != null && !isAnswered;
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.screenPadding),
@@ -1134,17 +1058,6 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                       ),
                     ],
                   ),
-                  if (requireConfirmation) ...[
-                    const SizedBox(height: AppDimensions.spacingM),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: canConfirm ? _submitSelectedAnswer : null,
-                        child: Text(appL10n.confirmAnswerButton),
-                      ),
-                    ),
-                  ],
                 ],
               ),
       ),

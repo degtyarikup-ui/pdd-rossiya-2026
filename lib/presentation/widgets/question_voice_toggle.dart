@@ -12,11 +12,11 @@ import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 
-String voiceSpeedLabel(double speed) => speed == speed.roundToDouble()
+String _voiceSpeedLabel(double speed) => speed == speed.roundToDouble()
     ? speed.toInt().toString()
     : speed.toString();
 
-/// One narration control across tickets, the exam, the feed and Settings.
+/// One narration control across tickets, the exam and the feed.
 /// A tap toggles playback; a hold opens the speed picker without toggling it.
 class QuestionVoiceToggle extends ConsumerStatefulWidget {
   const QuestionVoiceToggle({
@@ -101,7 +101,7 @@ class _QuestionVoiceToggleState extends ConsumerState<QuestionVoiceToggle> {
       _showingSheet = true;
       widget.onSheetVisibilityChanged?.call(true);
       try {
-        await showVoiceSpeedPicker(context);
+        await _showVoiceSpeedPicker(context);
       } finally {
         _showingSheet = false;
         if (mounted) widget.onSheetVisibilityChanged?.call(false);
@@ -138,7 +138,7 @@ class _QuestionVoiceToggleState extends ConsumerState<QuestionVoiceToggle> {
         ? colors.accentSurface10
         : colors.cardBackground;
     final canChooseSpeed = premium;
-    final speed = voiceSpeedLabel(settings.voiceSpeed);
+    final speed = _voiceSpeedLabel(settings.voiceSpeed);
 
     return Semantics(
       button: true,
@@ -241,8 +241,7 @@ class _QuestionVoiceToggleState extends ConsumerState<QuestionVoiceToggle> {
   }
 }
 
-/// Also reachable by a regular tap in Settings and by a screen-reader action.
-Future<void> showVoiceSpeedPicker(BuildContext context) async {
+Future<void> _showVoiceSpeedPicker(BuildContext context) async {
   HapticFeedbackHelper.tap();
   final colors = AppColors.of(context);
   final container = ProviderScope.containerOf(context);
@@ -358,9 +357,9 @@ class _VoiceSpeedPicker extends ConsumerWidget {
                 divisions: AppSettings.voiceSpeeds.length - 1,
                 activeColor: colors.accent,
                 inactiveColor: colors.accentSurface10,
-                label: '${voiceSpeedLabel(settings.voiceSpeed)}x',
+                label: '${_voiceSpeedLabel(settings.voiceSpeed)}x',
                 semanticFormatterCallback: (value) => appL10n.voiceSpeedValue(
-                  voiceSpeedLabel(AppSettings.voiceSpeeds[value.round()]),
+                  _voiceSpeedLabel(AppSettings.voiceSpeeds[value.round()]),
                 ),
                 onChanged: allowed ? (value) => select(value.round()) : null,
               ),
@@ -397,7 +396,7 @@ class _VoiceSpeedPicker extends ConsumerWidget {
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              '${voiceSpeedLabel(AppSettings.voiceSpeeds[i])}x',
+                              '${_voiceSpeedLabel(AppSettings.voiceSpeeds[i])}x',
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -413,83 +412,6 @@ class _VoiceSpeedPicker extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class QuestionVoiceSettingsTile extends ConsumerWidget {
-  const QuestionVoiceSettingsTile({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(appSettingsProvider);
-    final premium = ref.watch(isPremiumProvider);
-    final colors = AppColors.of(context);
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      appL10n.voiceOverQuestions,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: colors.primaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      premium
-                          ? appL10n.voiceLanguageDescription
-                          : appL10n.voicePremium,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        height: 1.35,
-                        color: colors.secondaryText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              const QuestionVoiceToggle(),
-            ],
-          ),
-        ),
-        if (premium)
-          Material(
-            color: colors.cardBackground,
-            child: ListTile(
-              key: const ValueKey('voice-speed-setting'),
-              leading: Icon(Icons.speed_rounded, color: colors.secondaryText),
-              title: Text(
-                appL10n.voiceSpeed,
-                style: const TextStyle(fontSize: 15),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${voiceSpeedLabel(settings.voiceSpeed)}x',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: colors.accent,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right_rounded, size: 18),
-                ],
-              ),
-              onTap: () => showVoiceSpeedPicker(context),
-            ),
-          ),
-      ],
     );
   }
 }

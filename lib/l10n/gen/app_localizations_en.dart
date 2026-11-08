@@ -364,23 +364,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preparation => 'Preparation';
 
   @override
-  String get feedbackSection => 'Feedback and sounds';
-
-  @override
-  String get confirmAnswerSetting => 'Confirm answer';
-
-  @override
-  String get confirmAnswerHint =>
-      'The answer is first selected and then confirmed with a button.';
-
-  @override
-  String get hapticFeedback => 'Vibration';
+  String get soundsAndNotificationsSection => 'Sounds and notifications';
 
   @override
   String get soundEffects => 'Sound effects';
-
-  @override
-  String get voiceOverQuestions => 'Voiceover questions';
 
   @override
   String get voicePremium => 'Premium narration';
@@ -402,10 +389,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get voiceSpeedDescription =>
       'Choose a comfortable pace. Your speed is saved for all questions.';
-
-  @override
-  String get voiceLanguageDescription =>
-      'Recorded narration in Russian. English and Kazakh use your device’s system voice.';
 
   @override
   String get voicePlaybackUnavailable =>
@@ -530,9 +513,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hideHint => 'Hide hint';
-
-  @override
-  String get confirmAnswerButton => 'Confirm answer';
 
   @override
   String get myMistakes => 'My mistakes';
@@ -4413,7 +4393,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trainingKeyboardHint =>
-      'Numbers — answer · Enter — confirm or continue · ←/→ — questions · Esc — back';
+      'Numbers — answer · Enter — continue · ←/→ — questions · Esc — back';
 
   @override
   String get examKeyboardHint =>

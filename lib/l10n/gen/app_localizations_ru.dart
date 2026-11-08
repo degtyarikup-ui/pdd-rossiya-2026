@@ -376,23 +376,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get preparation => 'Подготовка';
 
   @override
-  String get feedbackSection => 'Отклики и звуки';
-
-  @override
-  String get confirmAnswerSetting => 'Подтверждать ответ';
-
-  @override
-  String get confirmAnswerHint =>
-      'Ответ сначала выбирается, а затем подтверждается кнопкой.';
-
-  @override
-  String get hapticFeedback => 'Тактильный отклик';
+  String get soundsAndNotificationsSection => 'Звуки и уведомления';
 
   @override
   String get soundEffects => 'Звуки';
-
-  @override
-  String get voiceOverQuestions => 'Озвучка вопросов';
 
   @override
   String get voicePremium => 'Озвучка с Премиумом';
@@ -414,10 +401,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get voiceSpeedDescription =>
       'Выберите удобный темп. Скорость сохранится для всех вопросов.';
-
-  @override
-  String get voiceLanguageDescription =>
-      'Готовая озвучка на русском. На английском и казахском — системный голос устройства.';
 
   @override
   String get voicePlaybackUnavailable =>
@@ -545,9 +528,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get hideHint => 'Скрыть подсказку';
-
-  @override
-  String get confirmAnswerButton => 'Подтвердить ответ';
 
   @override
   String get myMistakes => 'Мои ошибки';
@@ -4431,7 +4411,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get trainingKeyboardHint =>
-      'Цифры — ответ · Enter — подтвердить или продолжить · ←/→ — вопросы · Esc — назад';
+      'Цифры — ответ · Enter — продолжить · ←/→ — вопросы · Esc — назад';
 
   @override
   String get examKeyboardHint => 'Цифры — ответ · ←/→ — вопросы · Esc — назад';

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -123,18 +125,20 @@ void main() {
     double scale = 1,
     String locale = 'ru',
     GlobalKey<NavigatorState>? navigator,
-    bool confirm = false,
+    bool legacyConfirmation = false,
   }) async {
-    SharedPreferences.setMockInitialValues({'notification_prompt_shown': true});
+    SharedPreferences.setMockInitialValues({
+      'notification_prompt_shown': true,
+      'app_settings': jsonEncode({
+        ...AppSettings(
+          languageCode: locale,
+          soundEffectsEnabled: false,
+        ).toJson(),
+        if (legacyConfirmation) 'confirmAnswerEnabled': true,
+      }),
+    });
     final data = ProgressDataSource();
     await data.init();
-    await data.saveAppSettings(
-      AppSettings(
-        languageCode: locale,
-        soundEffectsEnabled: false,
-        confirmAnswerEnabled: confirm,
-      ),
-    );
     SoundEffectsService.instance.setEnabled(false);
     updateAppLocale(Locale(locale));
     await tester.pumpWidget(
@@ -243,7 +247,7 @@ void main() {
 
   for (final exam in [false, true]) {
     testWidgets(
-      '${exam ? 'exam' : 'training'} retains route, page, selection and timer across rotation',
+      '${exam ? 'exam' : 'training'} submits on tap and retains route, answer and timer across rotation',
       (tester) async {
         viewport(tester, const Size(390, 844));
         final navigator = GlobalKey<NavigatorState>();
@@ -251,7 +255,7 @@ void main() {
           tester,
           const Scaffold(body: Text('root')),
           navigator: navigator,
-          confirm: true,
+          legacyConfirmation: true,
         );
         final questions = _questions();
         navigator.currentState!.push(
@@ -278,16 +282,6 @@ void main() {
           controller.jumpToPage(2);
           await tester.pumpAndSettle();
         }
-        final confirmation = find.widgetWithText(
-          ElevatedButton,
-          appL10n.confirmAnswerButton,
-        );
-        if (!exam) {
-          expect(
-            tester.widget<ElevatedButton>(confirmation).onPressed,
-            isNotNull,
-          );
-        }
         for (final size in [
           const Size(844, 390),
           const Size(1024, 768),
@@ -303,22 +297,15 @@ void main() {
           );
           expect(controller.page, closeTo(exam ? 2 : 0, .01));
           expect(navigator.currentState!.canPop(), isTrue);
-          if (exam) {
-            final answer = find.ancestor(
-              of: find.text('Верный ответ').hitTestable(),
-              matching: find.byType(InkWell),
-            );
-            expect(
-              tester.widget<InkWell>(answer).onTap,
-              isNull,
-              reason: 'The submitted answer must remain submitted',
-            );
-          } else {
-            expect(
-              tester.widget<ElevatedButton>(confirmation).onPressed,
-              isNotNull,
-            );
-          }
+          final answer = find.ancestor(
+            of: find.text('Верный ответ').hitTestable(),
+            matching: find.byType(InkWell),
+          );
+          expect(
+            tester.widget<InkWell>(answer).onTap,
+            isNull,
+            reason: 'The submitted answer must remain submitted',
+          );
           expect(tester.takeException(), isNull);
         }
         if (exam) {
@@ -328,9 +315,6 @@ void main() {
             reason: 'Rotation must not restart the timer',
           );
         }
-        if (!exam) await tester.tap(confirmation);
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
       },
     );
   }

@@ -15,7 +15,6 @@ import 'package:pdd_app/data/services/notification_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/config/build_info.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
-import 'package:pdd_app/presentation/widgets/question_voice_toggle.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/presentation/screens/pdd/pdd_screen.dart';
@@ -422,38 +421,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             onTap: _toggleTicketCategory,
                           ),
                         ],
-                        _buildDivider(),
-                        _buildSettingItem(
-                          icon: Icons.check_circle_outline,
-                          title: appL10n.confirmAnswerSetting,
-                          subtitle: appL10n.confirmAnswerHint,
-                          trailing: Switch(
-                            value: settings.confirmAnswerEnabled,
-                            onChanged: (value) {
-                              HapticFeedbackHelper.select();
-                              settingsController.setConfirmAnswerEnabled(value);
-                            },
-                          ),
-                        ),
                       ],
                     ),
                     const SizedBox(height: AppDimensions.spacingXL),
 
-                    _buildSectionTitle(appL10n.feedbackSection),
+                    _buildSectionTitle(appL10n.soundsAndNotificationsSection),
                     _buildSectionCard(
                       children: [
-                        _buildSettingItem(
-                          icon: Icons.vibration_rounded,
-                          title: appL10n.hapticFeedback,
-                          trailing: Switch(
-                            value: settings.hapticsEnabled,
-                            onChanged: (value) {
-                              HapticFeedbackHelper.select();
-                              settingsController.setHapticsEnabled(value);
-                            },
-                          ),
-                        ),
-                        _buildDivider(),
                         _buildSettingItem(
                           icon: Icons.volume_up_outlined,
                           title: appL10n.soundEffects,
@@ -465,8 +439,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             },
                           ),
                         ),
-                        _buildDivider(),
-                        const QuestionVoiceSettingsTile(),
                         _buildDivider(),
                         _buildSettingItem(
                           icon: Icons.notifications_none_rounded,

@@ -682,41 +682,17 @@ abstract class AppLocalizations {
   /// **'Подготовка'**
   String get preparation;
 
-  /// No description provided for @feedbackSection.
+  /// No description provided for @soundsAndNotificationsSection.
   ///
   /// In ru, this message translates to:
-  /// **'Отклики и звуки'**
-  String get feedbackSection;
-
-  /// No description provided for @confirmAnswerSetting.
-  ///
-  /// In ru, this message translates to:
-  /// **'Подтверждать ответ'**
-  String get confirmAnswerSetting;
-
-  /// No description provided for @confirmAnswerHint.
-  ///
-  /// In ru, this message translates to:
-  /// **'Ответ сначала выбирается, а затем подтверждается кнопкой.'**
-  String get confirmAnswerHint;
-
-  /// No description provided for @hapticFeedback.
-  ///
-  /// In ru, this message translates to:
-  /// **'Тактильный отклик'**
-  String get hapticFeedback;
+  /// **'Звуки и уведомления'**
+  String get soundsAndNotificationsSection;
 
   /// No description provided for @soundEffects.
   ///
   /// In ru, this message translates to:
   /// **'Звуки'**
   String get soundEffects;
-
-  /// No description provided for @voiceOverQuestions.
-  ///
-  /// In ru, this message translates to:
-  /// **'Озвучка вопросов'**
-  String get voiceOverQuestions;
 
   /// No description provided for @voicePremium.
   ///
@@ -753,12 +729,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Выберите удобный темп. Скорость сохранится для всех вопросов.'**
   String get voiceSpeedDescription;
-
-  /// No description provided for @voiceLanguageDescription.
-  ///
-  /// In ru, this message translates to:
-  /// **'Готовая озвучка на русском. На английском и казахском — системный голос устройства.'**
-  String get voiceLanguageDescription;
 
   /// No description provided for @voicePlaybackUnavailable.
   ///
@@ -969,12 +939,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Скрыть подсказку'**
   String get hideHint;
-
-  /// No description provided for @confirmAnswerButton.
-  ///
-  /// In ru, this message translates to:
-  /// **'Подтвердить ответ'**
-  String get confirmAnswerButton;
 
   /// No description provided for @myMistakes.
   ///
@@ -7405,7 +7369,7 @@ abstract class AppLocalizations {
   /// No description provided for @trainingKeyboardHint.
   ///
   /// In ru, this message translates to:
-  /// **'Цифры — ответ · Enter — подтвердить или продолжить · ←/→ — вопросы · Esc — назад'**
+  /// **'Цифры — ответ · Enter — продолжить · ←/→ — вопросы · Esc — назад'**
   String get trainingKeyboardHint;
 
   /// No description provided for @examKeyboardHint.

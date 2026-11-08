@@ -4,9 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 
 class AppSettings {
-  final bool hapticsEnabled;
   final bool soundEffectsEnabled;
-  final bool confirmAnswerEnabled;
   final bool voiceEnabled;
   final double voiceSpeed;
 
@@ -31,9 +29,7 @@ class AppSettings {
   final bool vehicleOnboardingCompleted;
 
   const AppSettings({
-    this.hapticsEnabled = true,
     this.soundEffectsEnabled = true,
-    this.confirmAnswerEnabled = false,
     this.voiceEnabled = false,
     this.voiceSpeed = 1.0,
     this.notificationsEnabled = true,
@@ -70,9 +66,7 @@ class AppSettings {
   }
 
   AppSettings copyWith({
-    bool? hapticsEnabled,
     bool? soundEffectsEnabled,
-    bool? confirmAnswerEnabled,
     bool? voiceEnabled,
     double? voiceSpeed,
     bool? notificationsEnabled,
@@ -83,9 +77,7 @@ class AppSettings {
     bool? vehicleOnboardingCompleted,
   }) {
     return AppSettings(
-      hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
       soundEffectsEnabled: soundEffectsEnabled ?? this.soundEffectsEnabled,
-      confirmAnswerEnabled: confirmAnswerEnabled ?? this.confirmAnswerEnabled,
       voiceEnabled: voiceEnabled ?? this.voiceEnabled,
       voiceSpeed: voiceSpeed == null
           ? this.voiceSpeed
@@ -119,9 +111,7 @@ class AppSettings {
         (map.isEmpty ? false : true);
 
     return AppSettings(
-      hapticsEnabled: map['hapticsEnabled'] as bool? ?? true,
       soundEffectsEnabled: map['soundEffectsEnabled'] as bool? ?? true,
-      confirmAnswerEnabled: map['confirmAnswerEnabled'] as bool? ?? false,
       voiceEnabled: map['voiceEnabled'] as bool? ?? false,
       voiceSpeed: parseVoiceSpeed(map['voiceSpeed']),
       notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
@@ -135,9 +125,7 @@ class AppSettings {
 
   Map<String, dynamic> toJson() {
     return {
-      'hapticsEnabled': hapticsEnabled,
       'soundEffectsEnabled': soundEffectsEnabled,
-      'confirmAnswerEnabled': confirmAnswerEnabled,
       'voiceEnabled': voiceEnabled,
       'voiceSpeed': voiceSpeed,
       'notificationsEnabled': notificationsEnabled,

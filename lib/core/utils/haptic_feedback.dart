@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class HapticFeedbackHelper {
@@ -5,6 +6,7 @@ class HapticFeedbackHelper {
 
   static bool _enabled = true;
 
+  @visibleForTesting
   static void setEnabled(bool enabled) {
     _enabled = enabled;
   }

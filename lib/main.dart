@@ -14,7 +14,6 @@ import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/layout/app_max_width_frame.dart';
 import 'package:pdd_app/core/navigation/route_observer.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
-import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/acquisition_service.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
@@ -378,7 +377,6 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     ref.watch(ttsServiceProvider);
     // Effective system language can change without replacing AppSettings.
     TtsService.instance.updateLanguage(appSettings.effectiveLanguageCode);
-    HapticFeedbackHelper.setEnabled(appSettings.hapticsEnabled);
 
     final String initialScreen = kDebugMode
         ? const String.fromEnvironment('SCREEN', defaultValue: 'home')

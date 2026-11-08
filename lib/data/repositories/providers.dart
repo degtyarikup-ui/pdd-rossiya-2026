@@ -60,19 +60,9 @@ class AppSettingsController extends StateNotifier<AppSettings> {
     SoundEffectsService.instance.setEnabled(state.soundEffectsEnabled);
   }
 
-  Future<void> setHapticsEnabled(bool value) async {
-    state = state.copyWith(hapticsEnabled: value);
-    await _dataSource.saveAppSettings(state);
-  }
-
   Future<void> setSoundEffectsEnabled(bool value) async {
     state = state.copyWith(soundEffectsEnabled: value);
     SoundEffectsService.instance.setEnabled(value);
-    await _dataSource.saveAppSettings(state);
-  }
-
-  Future<void> setConfirmAnswerEnabled(bool value) async {
-    state = state.copyWith(confirmAnswerEnabled: value);
     await _dataSource.saveAppSettings(state);
   }
 

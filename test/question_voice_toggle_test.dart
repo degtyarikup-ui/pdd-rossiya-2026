@@ -210,12 +210,19 @@ void main() {
     }
   }
 
-  testWidgets('exam, training and Settings share persisted voice preference', (
+  testWidgets('voice controls stay in questions and persist across sessions', (
     tester,
   ) async {
     final (source, container, tts) = await setup(tester);
     expect(const AppSettings().voiceEnabled, isFalse);
     expect(AppSettings.fromJson({}).voiceEnabled, isFalse);
+    await _show(tester, container, const SettingsScreen());
+    await tester.scrollUntilVisible(find.text(appL10n.soundEffects), 80);
+    expect(find.byType(QuestionVoiceToggle), findsNothing);
+    expect(find.text(appL10n.voiceSpeed), findsNothing);
+    expect(find.text('Тактильный отклик'), findsNothing);
+    expect(find.text('Подтверждать ответ'), findsNothing);
+
     await _show(tester, container, ExamScreen(allQuestions: _questions()));
     await tester.tap(find.byType(QuestionVoiceToggle));
     await tester.pumpAndSettle();
@@ -224,14 +231,16 @@ void main() {
     expect(find.byIcon(Icons.record_voice_over_rounded), findsOneWidget);
     expect(tts.questions, hasLength(2));
 
-    await _show(tester, container, const SettingsScreen());
-    final voiceToggle = find.byType(QuestionVoiceToggle);
-    await tester.ensureVisible(voiceToggle);
+    await tester.longPress(find.byType(QuestionVoiceToggle));
     await tester.pumpAndSettle();
-    await tester.tap(voiceToggle);
+    await tester.tap(find.byKey(const ValueKey('voice-speed-1.4')));
+    await tester.pumpAndSettle();
+    expect((await source.loadAppSettings()).voiceSpeed, 1.4);
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
-    await _show(tester, container, _training());
+    await tester.tap(find.byType(QuestionVoiceToggle));
+    await tester.pumpAndSettle();
     expect(find.byIcon(Icons.voice_over_off_rounded), findsOneWidget);
     expect(tts.questions, hasLength(2));
     expect((await source.loadAppSettings()).voiceEnabled, isFalse);
@@ -247,6 +256,7 @@ void main() {
     addTearDown(reloaded.dispose);
     await reloaded.read(appSettingsProvider.notifier).ready;
     expect(reloaded.read(appSettingsProvider).voiceEnabled, isTrue);
+    expect(reloaded.read(appSettingsProvider).voiceSpeed, 1.4);
     expect(tester.takeException(), isNull);
   });
 

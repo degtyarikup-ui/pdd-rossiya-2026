@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -54,13 +55,17 @@ void main() {
     double textScale = 1,
     bool reducedMotion = false,
     ValueChanged<bool>? onSheetVisibilityChanged,
-    bool settings = false,
+    bool legacyHapticsDisabled = false,
     TtsService? narration,
   }) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'app_settings': jsonEncode({
+        ...AppSettings(languageCode: language).toJson(),
+        if (legacyHapticsDisabled) 'hapticsEnabled': false,
+      }),
+    });
     final source = ProgressDataSource();
     await source.init();
-    await source.saveAppSettings(AppSettings(languageCode: language));
     final container = ProviderContainer(
       overrides: [
         progressDataSourceProvider.overrideWithValue(source),
@@ -101,14 +106,12 @@ void main() {
               body: SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
-                  child: settings
-                      ? const QuestionVoiceSettingsTile()
-                      : Align(
-                          alignment: Alignment.topRight,
-                          child: QuestionVoiceToggle(
-                            onSheetVisibilityChanged: onSheetVisibilityChanged,
-                          ),
-                        ),
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: QuestionVoiceToggle(
+                      onSheetVisibilityChanged: onSheetVisibilityChanged,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -214,7 +217,7 @@ void main() {
   );
 
   testWidgets(
-    'Settings exposes speed with ordinary tap and honours disabled haptics',
+    'speed picker emits haptics even with an old disabled preference',
     (tester) async {
       final calls = <MethodCall>[];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -230,13 +233,20 @@ void main() {
           null,
         ),
       );
-      await mount(tester, settings: true);
-      HapticFeedbackHelper.setEnabled(false);
-      await tester.tap(find.byKey(const ValueKey('voice-speed-setting')));
+      await mount(tester, legacyHapticsDisabled: true);
+      await tester.longPress(find.byType(QuestionVoiceToggle));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('voice-speed-1.5')));
       await tester.pumpAndSettle();
-      expect(calls.where((c) => c.method == 'HapticFeedback.vibrate'), isEmpty);
+      expect(
+        calls
+            .where((call) => call.method == 'HapticFeedback.vibrate')
+            .map((call) => call.arguments),
+        containsAllInOrder([
+          'HapticFeedbackType.lightImpact',
+          'HapticFeedbackType.selectionClick',
+        ]),
+      );
       expect(tester.takeException(), isNull);
     },
   );
