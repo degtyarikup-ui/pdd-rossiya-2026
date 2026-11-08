@@ -1,0 +1,6 @@
+{
+  "version": "2.2.13",
+  "ru": "• Исправлена загрузка подписок при медленном ответе Google Play.\n• Повышена надёжность входа при нестабильном соединении.\n• Исправлено восстановление загрузки цен после сетевого сбоя.",
+  "en": "• Fixed subscription loading when Google Play responds slowly.\n• Improved sign-in reliability on unstable connections.\n• Fixed price loading recovery after a network failure.",
+  "kk": "• Google Play баяу жауап берген кезде жазылымдардың жүктелуі түзетілді.\n• Тұрақсыз байланыс кезінде кіру сенімділігі артты.\n• Желі ақауынан кейін бағаларды қайта жүктеу түзетілді."
+}

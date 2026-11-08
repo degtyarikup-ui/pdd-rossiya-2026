@@ -55,43 +55,49 @@ class TelegramAuthTransport {
   Future<TelegramAuthChallenge> createChallenge({
     required bool Function() stillWanted,
   }) async {
-    String? selected;
-    final start = NotifierRoute.preferredIndex(hosts);
-    for (var i = 0; i < hosts.length; i++) {
-      _wanted(stillWanted);
-      final host = hosts[(start + i) % hosts.length];
-      try {
-        // This public, CORS-enabled status only reads payment configuration;
-        // it creates no payment, auth nonce, webhook or notification.
-        final request = http.Request('GET', Uri.parse('$host/api/pay/status'))
-          ..followRedirects = false;
-        final response = await (() async => http.Response.fromStream(
-          await _client.send(request),
-        ))().timeout(probeTimeout);
-        _wanted(stillWanted);
-        Object? health;
-        try {
-          health = jsonDecode(response.body);
-        } catch (_) {
-          /* Try the next read-only route. */
-        }
-        if (response.statusCode == 200 &&
-            health is Map &&
-            health['ok'] == true &&
-            health['available'] is bool) {
-          selected = host;
-          break;
-        }
-      } catch (error) {
-        if (error is TelegramAuthCancelled || !isRetryableNetworkError(error)) {
-          rethrow;
-        }
-      }
-    }
     _wanted(stillWanted);
-    if (selected == null) {
+    final stats = RetryStats();
+    try {
+      await sendWithRetry(
+        (host) async {
+          // This public, CORS-enabled status only reads payment configuration;
+          // it creates no payment, auth nonce, webhook or notification.
+          final request = http.Request('GET', Uri.parse('$host/api/pay/status'))
+            ..followRedirects = false;
+          final response = await http.Response.fromStream(
+            await _client.send(request),
+          );
+          _wanted(stillWanted);
+          Object? health;
+          try {
+            health = jsonDecode(response.body);
+          } catch (_) {
+            /* Try the next read-only route. */
+          }
+          if (response.statusCode == 200 &&
+              health is Map &&
+              health['ok'] == true &&
+              health['available'] is bool) {
+            return response;
+          }
+          throw http.ClientException('Invalid Telegram route response');
+        },
+        hosts: hosts,
+        attempts: List.filled(hosts.length, probeTimeout),
+        pause: Duration.zero,
+        stillWanted: () => !_closed && stillWanted(),
+        stats: stats,
+        // Keep listening to an already sent GET while checking the fallback.
+        // The overall route-selection budget is still one timeout per host.
+        acceptLateSuccess: true,
+      );
+    } catch (error) {
+      _wanted(stillWanted);
+      if (!isRetryableNetworkError(error)) rethrow;
       throw http.ClientException('Telegram route unavailable');
     }
+    _wanted(stillWanted);
+    final selected = stats.host!;
     final response = await _post(
       selected,
       '/api/auth/telegram/request',

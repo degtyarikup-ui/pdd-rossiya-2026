@@ -164,6 +164,88 @@ void main() {
   );
 
   test(
+    'a late healthy probe selects its host and creates one challenge',
+    () async {
+      final primary = Completer<http.Response>();
+      var probes = 0, writes = 0;
+      final transport = TelegramAuthTransport(
+        hosts: hosts,
+        probeTimeout: const Duration(milliseconds: 30),
+        client: MockClient((request) async {
+          if (request.method == 'GET') {
+            probes++;
+            if (request.url.host == 'primary.invalid') return primary.future;
+            // The first successful response arrives after its own timeout,
+            // while the fallback request is still pending.
+            primary.complete(http.Response(healthBody, 200));
+            return Completer<http.Response>().future;
+          }
+          writes++;
+          expect(request.url.host, 'primary.invalid');
+          return challenge();
+        }),
+      );
+      final accepted = await transport.createChallenge(stillWanted: () => true);
+      expect(accepted.host, hosts.first);
+      expect(probes, 2);
+      expect(writes, 1);
+      transport.close();
+    },
+  );
+
+  test(
+    'a late invalid probe cannot select a route or replay a challenge',
+    () async {
+      final primary = Completer<http.Response>();
+      var writes = 0;
+      final transport = TelegramAuthTransport(
+        hosts: hosts,
+        probeTimeout: const Duration(milliseconds: 30),
+        client: MockClient((request) async {
+          if (request.method == 'GET') {
+            if (request.url.host == 'primary.invalid') return primary.future;
+            primary.complete(http.Response('<html>gateway</html>', 200));
+            return http.Response(healthBody, 200);
+          }
+          writes++;
+          expect(request.url.host, 'fallback.invalid');
+          return challenge();
+        }),
+      );
+      final accepted = await transport.createChallenge(stillWanted: () => true);
+      expect(accepted.host, hosts.last);
+      expect(writes, 1);
+      transport.close();
+    },
+  );
+
+  test('cancelled route selection cannot use a late healthy probe', () async {
+    final primary = Completer<http.Response>();
+    var wanted = true, writes = 0;
+    final transport = TelegramAuthTransport(
+      hosts: hosts,
+      probeTimeout: const Duration(milliseconds: 30),
+      client: MockClient((request) async {
+        if (request.method == 'GET') {
+          if (request.url.host == 'primary.invalid') return primary.future;
+          wanted = false;
+          primary.complete(http.Response(healthBody, 200));
+          return http.Response(healthBody, 200);
+        }
+        writes++;
+        return challenge();
+      }),
+    );
+    await expectLater(
+      transport.createChallenge(stillWanted: () => wanted),
+      throwsA(isA<TelegramAuthCancelled>()),
+    );
+    expect(writes, 0);
+    expect(NotifierRoute.preferredIndex(hosts), 0);
+    transport.close();
+  });
+
+  test(
     'v2 retries lost responses and temporary HTTP errors with the same proof',
     () async {
       var checks = 0;

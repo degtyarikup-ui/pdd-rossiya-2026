@@ -44,7 +44,7 @@ test('auth diagnostics identify the failed phase without logging credentials or 
     const success = await login(e);
     assert.equal(logs.at(-1).outcome, 'session_issued');
     assert.equal(typeof success.token, 'string');
-    assert.equal(wrongClient.headers.get('x-auth-diagnostic-id'), logs[1].requestId);
+    assert.equal(wrongClient.headers.get('x-auth-diagnostic-id'), logs.find(entry => entry.outcome === 'oauth_client_rejected').requestId);
     const serialized = JSON.stringify(logs);
     for (const value of ['PRIVATE-TOKEN', 'PRIVATE-NAME', 'google_123', success.token, e.SHARED_SECRET, e.SESSION_SECRET]) assert.equal(serialized.includes(value), false);
   } finally { console.log = original; }

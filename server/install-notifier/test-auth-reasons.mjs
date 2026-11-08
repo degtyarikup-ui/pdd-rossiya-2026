@@ -9,6 +9,31 @@ const request = body => new Request('https://app.test/api/auth/session', {
   method: 'POST', headers: { 'content-type': 'application/json', 'x-install-secret': 'test-key' }, body: JSON.stringify(body),
 });
 
+test('request arrival is logged before reading a slow body and correlated with its finish', async t => {
+  const logs = [];
+  t.mock.method(console, 'log', text => logs.push(JSON.parse(text)));
+  let controller;
+  const body = new ReadableStream({ start(value) { controller = value; } });
+  const pending = handleAuth(new Request('https://app.test/api/auth/session?PRIVATE-QUERY', {
+    method: 'POST', duplex: 'half', body,
+    headers: { 'content-type': 'application/json', 'x-install-secret': 'test-key', authorization: 'PRIVATE-HEADER' },
+  }), env(), async () => { throw new Error('PRIVATE-ERROR'); });
+  assert.equal(logs.length, 1, 'arrival must not wait for the request body');
+  assert.deepEqual(Object.keys(logs[0]).sort(), ['event', 'requestId']);
+  assert.equal(logs[0].event, 'auth_session_started');
+  assert.match(logs[0].requestId, /^[a-f0-9-]{36}$/);
+  controller.enqueue(new TextEncoder().encode(JSON.stringify({ provider: 'yandex', credential: 'PRIVATE-CREDENTIAL', name: 'PRIVATE-NAME', email: 'PRIVATE-EMAIL' })));
+  controller.close();
+  const response = await pending;
+  assert.equal(response.status, 401);
+  assert.equal(logs.length, 2);
+  assert.equal(logs[1].event, 'auth_session');
+  assert.equal(logs[1].requestId, logs[0].requestId);
+  assert.equal(response.headers.get('x-auth-diagnostic-id'), logs[0].requestId);
+  assert.ok(Number.isFinite(logs[1].durationMs) && logs[1].durationMs >= 0);
+  assert.equal(JSON.stringify(logs).includes('PRIVATE'), false);
+});
+
 test('метка причины берётся из кода ошибки проверки и не содержит текста', () => {
   const claim = Object.assign(new Error('unexpected "aud" claim value SECRET-TOKEN'), { code: 'ERR_JWT_CLAIM_VALIDATION_FAILED', claim: 'aud' });
   assert.equal(credentialReason(claim), 'ERR_JWT_CLAIM_VALIDATION_FAILED:aud');

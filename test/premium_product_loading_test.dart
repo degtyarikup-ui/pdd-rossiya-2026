@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,33 +13,37 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class PriceStore extends InAppPurchasePlatform {
   int queries = 0;
+  Completer<ProductDetailsResponse>? pending;
   @override
   Future<bool> isAvailable() async => true;
   @override
   Future<ProductDetailsResponse> queryProductDetails(Set<String> ids) async {
     queries++;
-    return ProductDetailsResponse(
-      productDetails: [
-        ProductDetails(
-          id: 'ru.pdd.pddapp.sub.week',
-          title: 'Week',
-          description: 'Week',
-          price: '99 ₽',
-          rawPrice: 99,
-          currencyCode: 'RUB',
-        ),
-        ProductDetails(
-          id: 'ru.pdd.pddapp.sub.3months',
-          title: 'Quarter',
-          description: 'Quarter',
-          price: '290 ₽',
-          rawPrice: 290,
-          currencyCode: 'RUB',
-        ),
-      ],
-      notFoundIDs: const [],
-    );
+    if (pending != null) return pending!.future;
+    return response();
   }
+
+  ProductDetailsResponse response() => ProductDetailsResponse(
+    productDetails: [
+      ProductDetails(
+        id: 'ru.pdd.pddapp.sub.week',
+        title: 'Week',
+        description: 'Week',
+        price: '99 ₽',
+        rawPrice: 99,
+        currencyCode: 'RUB',
+      ),
+      ProductDetails(
+        id: 'ru.pdd.pddapp.sub.3months',
+        title: 'Quarter',
+        description: 'Quarter',
+        price: '290 ₽',
+        rawPrice: 290,
+        currencyCode: 'RUB',
+      ),
+    ],
+    notFoundIDs: const [],
+  );
 }
 
 void main() {
@@ -95,4 +101,38 @@ void main() {
       },
     );
   }
+  testWidgets('late catalog enables purchase and cancels paywall retry', (
+    tester,
+  ) async {
+    try {
+      store.pending = Completer<ProductDetailsResponse>();
+      await tester.binding.setSurfaceSize(const Size(800, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: PremiumPlansSheet())),
+      );
+      await tester.pumpAndSettle();
+      final play = find.text(appL10n.paywallStoreGoogle);
+      await tester.ensureVisible(play);
+      await tester.tap(play);
+      await tester.pump();
+      for (var i = 0; i < 37; i++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
+      expect(store.queries, 1);
+      expect(find.text(appL10n.paywallReloadPrice), findsWidgets);
+      store.pending!.complete(store.response());
+      await tester.pumpAndSettle();
+      expect(find.text(appL10n.paywallSubscribe), findsOneWidget);
+      expect(find.text(appL10n.paywallReloadPrice), findsNothing);
+      for (var i = 0; i < 21; i++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
+      expect(store.queries, 1);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
 }

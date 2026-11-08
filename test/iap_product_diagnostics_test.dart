@@ -153,7 +153,7 @@ void main() {
       );
       addTearDown(iap.dispose);
       await iap.loadProducts(phase: ProductLoadPhase.paywall);
-      expect(store.queries, 3);
+      expect(store.queries, 1);
       expect(codes, ['timeout']);
     },
   );

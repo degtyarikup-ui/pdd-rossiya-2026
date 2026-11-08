@@ -173,7 +173,15 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
   }
 
   void _onIapChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    final complete = IapService.instance.hasCompleteStoreProducts;
+    if (complete) {
+      // The native store may finish after our bounded loading state ended.
+      // Its late success must also stop the scheduled recovery query.
+      _priceRetry?.cancel();
+      _priceRetryDelay = const Duration(seconds: 20);
+    }
+    setState(() => _pricesIncomplete = !complete);
   }
 
   /// Понятный текст при неудачной покупке. Сырой текст магазина не показываем:

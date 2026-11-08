@@ -985,6 +985,7 @@ class AuthService extends ChangeNotifier {
       hosts: BackendConfig.notifierHosts,
       stillWanted: () => _wanted(attempt),
       stats: stats,
+      acceptLateSuccess: true,
       // Only session issuance is safe to retry. A temporary provider/JWKS
       // outage must not be shown as rejected credentials after one HTTP reply.
       retryStatusCodes: const {500, 502, 503, 504},

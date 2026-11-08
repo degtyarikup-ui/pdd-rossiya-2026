@@ -142,6 +142,40 @@ void main() {
     },
   );
 
+  testWidgets('a late verified response logs in once while fallback waits', (
+    tester,
+  ) async {
+    final first = Completer<http.Response>();
+    final persisted = <Map<String, dynamic>>[];
+    final auth = AuthService.forTesting(
+      writeSession: (value) async => persisted.add(value),
+    );
+    var calls = 0;
+    final login = http.runWithClient(
+      () => auth.completeSignInForTesting(profile('late'), 'provider-token'),
+      () => MockClient((request) async {
+        calls++;
+        if (calls == 1) return first.future;
+        first.complete(session(profile('late')));
+        return Completer<http.Response>().future;
+      }),
+    );
+    await tester.pump();
+    expect(calls, 1);
+    await tester.pump(const Duration(seconds: 8));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+    expect(await login, true);
+    expect(calls, 2);
+    expect(persisted, hasLength(1));
+    expect(auth.currentUser?.id, 'google_late');
+    expect(auth.hasServerSession, true);
+    // Finish the abandoned transport timer; it cannot change the session.
+    await tester.pump(const Duration(seconds: 10));
+    expect(auth.currentUser?.id, 'google_late');
+    expect(persisted, hasLength(1));
+  });
+
   test(
     'late storage completion is rolled back before the next account is persisted',
     () async {

@@ -77,6 +77,7 @@ void main() {
     bool Function()? stillWanted,
     Set<int> retryStatusCodes = const {},
     Duration pause = Duration.zero,
+    bool acceptLateSuccess = false,
   }) => sendWithRetry(
     send,
     hosts: hostList,
@@ -85,6 +86,7 @@ void main() {
     stats: stats,
     stillWanted: stillWanted,
     retryStatusCodes: retryStatusCodes,
+    acceptLateSuccess: acceptLateSuccess,
   );
 
   test('повисший основной адрес — запрос проходит через запасной', () async {
@@ -101,6 +103,152 @@ void main() {
     expect(stats.host, 'https://backup');
     expect(stats.neededRecovery, isTrue);
   });
+
+  test(
+    'a late successful response survives while the fallback is pending',
+    () async {
+      final first = Completer<http.Response>();
+      final stats = RetryStats();
+      var calls = 0;
+      final response = await run(
+        (host) {
+          calls++;
+          if (calls == 1) return first.future;
+          if (calls == 2) {
+            first.complete(http.Response('verified session', 200));
+          }
+          return Completer<http.Response>().future;
+        },
+        stats: stats,
+        acceptLateSuccess: true,
+      );
+      expect(response.body, 'verified session');
+      expect(calls, 2);
+      expect(stats.host, hosts.first);
+      expect(stats.attempts, 2);
+    },
+  );
+
+  test('late response recovery is disabled for other callers', () async {
+    final first = Completer<http.Response>();
+    var calls = 0;
+    await expectLater(
+      run((_) {
+        calls++;
+        if (calls == 1) return first.future;
+        if (calls == 2) first.complete(http.Response('old success', 200));
+        return Completer<http.Response>().future;
+      }),
+      throwsA(isA<TimeoutException>()),
+    );
+    expect(calls, 3);
+  });
+
+  test('only a late HTTP 200 can recover the pending exchange', () async {
+    final first = Completer<http.Response>();
+    var calls = 0;
+    await expectLater(
+      run((_) {
+        calls++;
+        if (calls == 1) return first.future;
+        if (calls == 2) first.complete(http.Response('not a session', 201));
+        return Completer<http.Response>().future;
+      }, acceptLateSuccess: true),
+      throwsA(isA<TimeoutException>()),
+    );
+    expect(calls, 3);
+  });
+
+  for (final status in [401, 403, 503]) {
+    test(
+      'late $status rejection or cooldown wins before another success',
+      () async {
+        final first = Completer<http.Response>();
+        final second = Completer<http.Response>();
+        final stats = RetryStats();
+        var calls = 0;
+        final response = await run(
+          (_) {
+            calls++;
+            if (calls == 1) return first.future;
+            first.complete(
+              http.Response(
+                'stop',
+                status,
+                headers: status == 503 ? {'retry-after': '30'} : {},
+              ),
+            );
+            return second.future;
+          },
+          stats: stats,
+          retryStatusCodes: {503},
+          acceptLateSuccess: true,
+        );
+        expect(response.statusCode, status);
+        expect(calls, 2);
+        final acceptedHost = stats.host;
+        final preferredRoute = NotifierRoute.preferredIndex(hosts);
+        second.complete(http.Response('too late success', 200));
+        await Future<void>.delayed(Duration.zero);
+        expect(stats.host, acceptedHost);
+        expect(NotifierRoute.preferredIndex(hosts), preferredRoute);
+      },
+    );
+  }
+
+  test(
+    'account cancellation cannot accept a late successful response',
+    () async {
+      final first = Completer<http.Response>();
+      final stats = RetryStats();
+      var wanted = true, calls = 0;
+      await expectLater(
+        run(
+          (_) {
+            calls++;
+            if (calls == 1) return first.future;
+            wanted = false;
+            first.complete(http.Response('cancelled account', 200));
+            return Completer<http.Response>().future;
+          },
+          stats: stats,
+          stillWanted: () => wanted,
+          acceptLateSuccess: true,
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+      expect(calls, 2);
+      expect(stats.host, isNull);
+    },
+  );
+
+  test(
+    'late recovery keeps the original deadline and ignores results after it',
+    () async {
+      final pending = <Completer<http.Response>>[];
+      final stats = RetryStats();
+      await expectLater(
+        run(
+          (_) {
+            final response = Completer<http.Response>();
+            pending.add(response);
+            return response.future;
+          },
+          stats: stats,
+          acceptLateSuccess: true,
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+      expect(pending, hasLength(3));
+      expect(stats.attempts, 3);
+      for (final response in pending) {
+        response.complete(http.Response('after deadline', 200));
+      }
+      await Future<void>.delayed(Duration.zero);
+      expect(stats.host, isNull);
+      expect(NotifierRoute.preferredIndex(hosts), 0);
+    },
+  );
 
   test('адрес, который сработал, пробуется первым в следующий раз', () async {
     const pair = ['https://dead', 'https://alive'];
@@ -187,10 +335,14 @@ void main() {
     () async {
       for (final value in ['30', 'Thu, 22 Oct 2026 15:00:00 GMT']) {
         var calls = 0;
-        final response = await run((_) async {
-          calls++;
-          return http.Response('busy', 503, headers: {'retry-after': value});
-        }, retryStatusCodes: {503});
+        final response = await run(
+          (_) async {
+            calls++;
+            return http.Response('busy', 503, headers: {'retry-after': value});
+          },
+          retryStatusCodes: {503},
+          acceptLateSuccess: true,
+        );
         expect(response.statusCode, 503);
         expect(calls, 1);
       }
@@ -221,12 +373,16 @@ void main() {
   test('short Retry-After is honored before retrying a safe request', () async {
     var calls = 0;
     final elapsed = Stopwatch()..start();
-    final response = await run((_) async {
-      calls++;
-      return calls == 1
-          ? http.Response('busy', 503, headers: {'retry-after': '1'})
-          : http.Response('ok', 200);
-    }, retryStatusCodes: {503});
+    final response = await run(
+      (_) async {
+        calls++;
+        return calls == 1
+            ? http.Response('busy', 503, headers: {'retry-after': '1'})
+            : http.Response('ok', 200);
+      },
+      retryStatusCodes: {503},
+      acceptLateSuccess: true,
+    );
     expect(response.statusCode, 200);
     expect(calls, 2);
     expect(elapsed.elapsed, greaterThanOrEqualTo(const Duration(seconds: 1)));

@@ -194,6 +194,10 @@ export async function handleAuth(request, env, verify = verifyIdentity, onFailur
   if (path === '/api/auth/session' && request.method === 'POST') {
     const started = Date.now();
     const requestId = crypto.randomUUID();
+    // Record arrival before reading the body or contacting a provider. A
+    // missing finish event can then be distinguished from no observed request.
+    // Only a server-generated ID is logged, never body, headers or identity.
+    console.log(JSON.stringify({ event: 'auth_session_started', requestId }));
     let provider = 'unknown';
     let metadata = {};
     const finish = (body, status, outcome, reason = null, retryAfter = null) => {

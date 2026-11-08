@@ -20,6 +20,8 @@ class RetryStats {
   bool get neededRecovery => host != null && (attempts > 1);
 }
 
+typedef _RoutedResponse = ({String host, http.Response response});
+
 /// Несколько коротких попыток вместо одной долгой. Помогает, когда связь
 /// пропала на секунду или маршрут до сервера временно плохой: вторая попытка
 /// (на запасном адресе, если он есть) обычно проходит быстрее, чем человек
@@ -44,52 +46,128 @@ Future<http.Response> sendWithRetry(
   bool Function()? stillWanted,
   RetryStats? stats,
   Set<int> retryStatusCodes = const {},
+  // Session exchange may accept a late HTTP 200 from the same credential
+  // while another route is pending. Other callers keep sequential semantics.
+  bool acceptLateSuccess = false,
 }) async {
   assert(hosts.isNotEmpty);
   final start = NotifierRoute.preferredIndex(hosts);
   Object? lastError;
   var nextPause = pause;
-  for (var i = 0; i < attempts.length; i++) {
-    if (i > 0) {
-      if (stillWanted != null && !stillWanted()) break;
-      await Future<void>.delayed(nextPause);
-      if (stillWanted != null && !stillWanted()) break;
-    }
-    final host = hosts[(start + i) % hosts.length];
-    stats?.attempts = i + 1;
-    try {
-      final response = await send(host).timeout(attempts[i]);
-      if (retryStatusCodes.contains(response.statusCode)) {
-        // Keep login bounded. A longer or date-based Retry-After is returned to
-        // the caller instead of retrying early or holding its UI indefinitely.
-        final retryAfter = response.headers['retry-after'];
-        final seconds = retryAfter == null ? 0 : int.tryParse(retryAfter);
-        if (i + 1 < attempts.length &&
-            seconds != null &&
-            seconds >= 0 &&
-            seconds <= 2) {
-          final requested = Duration(seconds: seconds);
-          nextPause = requested > pause ? requested : pause;
-          continue;
-        }
-        return response;
-      }
-      stats?.host = host;
-      NotifierRoute.remember(host);
-      return response;
-    } on TimeoutException catch (error) {
-      lastError = error;
-      nextPause = pause;
-    } on http.ClientException catch (error) {
-      lastError = error;
-      nextPause = pause;
-    } catch (error) {
-      if (!isPlatformNetworkError(error)) rethrow;
-      lastError = error;
-      nextPause = pause;
-    }
+  var finished = false;
+  final lateResponse = Completer<_RoutedResponse>();
+  _RoutedResponse? terminalResponse;
+
+  bool wanted() => !finished && (stillWanted?.call() ?? true);
+
+  bool stopsLateSuccess(http.Response response) {
+    if (response.statusCode == 401 || response.statusCode == 403) return true;
+    if (!retryStatusCodes.contains(response.statusCode)) return false;
+    final value = response.headers['retry-after'];
+    if (value == null) return false;
+    final seconds = int.tryParse(value);
+    return seconds == null || seconds < 0 || seconds > 2;
   }
-  throw lastError ?? TimeoutException('request not sent');
+
+  http.Response finish(_RoutedResponse routed) {
+    if (acceptLateSuccess && !wanted()) {
+      throw lastError ?? TimeoutException('request no longer wanted');
+    }
+    final result = terminalResponse ?? routed;
+    if (!retryStatusCodes.contains(result.response.statusCode)) {
+      stats?.host = result.host;
+      NotifierRoute.remember(result.host);
+    }
+    return result.response;
+  }
+
+  try {
+    for (var i = 0; i < attempts.length; i++) {
+      if (i > 0) {
+        if (stillWanted != null && !stillWanted()) break;
+        final delay = Future<void>.delayed(nextPause);
+        if (acceptLateSuccess) {
+          final recovered = await Future.any<_RoutedResponse?>([
+            delay.then((_) => null),
+            lateResponse.future,
+          ]);
+          if (stillWanted != null && !stillWanted()) break;
+          if (recovered != null) return finish(recovered);
+        } else {
+          await delay;
+        }
+        if (stillWanted != null && !stillWanted()) break;
+      }
+      final host = hosts[(start + i) % hosts.length];
+      stats?.attempts = i + 1;
+      try {
+        var timedOut = false;
+        final pending = Future<http.Response>.sync(() => send(host));
+        if (acceptLateSuccess) {
+          unawaited(
+            pending.then<void>((response) {
+              if (!wanted()) return;
+              final routed = (host: host, response: response);
+              // A known credential rejection or server cooldown wins over an
+              // older success, including when it arrives from a timed-out call.
+              if (stopsLateSuccess(response)) {
+                terminalResponse ??= routed;
+                if (!lateResponse.isCompleted) lateResponse.complete(routed);
+              } else if (timedOut &&
+                  response.statusCode == 200 &&
+                  !lateResponse.isCompleted) {
+                lateResponse.complete(routed);
+              }
+            }, onError: (Object _, StackTrace _) {}),
+          );
+        }
+        final current = pending
+            .then((response) => (host: host, response: response))
+            .timeout(
+              attempts[i],
+              onTimeout: () {
+                timedOut = true;
+                throw TimeoutException('request timed out', attempts[i]);
+              },
+            );
+        final routed = acceptLateSuccess
+            ? await Future.any([current, lateResponse.future])
+            : await current;
+        if (acceptLateSuccess && !wanted()) break;
+        final result = terminalResponse ?? routed;
+        final response = result.response;
+        if (retryStatusCodes.contains(response.statusCode)) {
+          // Keep login bounded. A longer or date-based Retry-After is returned
+          // without retrying early or extending the original attempt budget.
+          final retryAfter = response.headers['retry-after'];
+          final seconds = retryAfter == null ? 0 : int.tryParse(retryAfter);
+          if (i + 1 < attempts.length &&
+              seconds != null &&
+              seconds >= 0 &&
+              seconds <= 2) {
+            final requested = Duration(seconds: seconds);
+            nextPause = requested > pause ? requested : pause;
+            continue;
+          }
+          return response;
+        }
+        return finish(result);
+      } on TimeoutException catch (error) {
+        lastError = error;
+        nextPause = pause;
+      } on http.ClientException catch (error) {
+        lastError = error;
+        nextPause = pause;
+      } catch (error) {
+        if (!isPlatformNetworkError(error)) rethrow;
+        lastError = error;
+        nextPause = pause;
+      }
+    }
+    throw lastError ?? TimeoutException('request not sent');
+  } finally {
+    finished = true;
+  }
 }
 
 /// Какой адрес воркера сейчас работает лучше. Запоминается на неделю: в сети,

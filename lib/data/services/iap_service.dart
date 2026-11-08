@@ -45,6 +45,14 @@ enum PurchaseFailure {
   legacyOwnerRequired,
 }
 
+class _StoreProductQuery {
+  _StoreProductQuery(this.ids);
+
+  final Set<String> ids;
+  final Map<String, dynamic> context = {};
+  late final Future<String?> result;
+}
+
 class IapService extends ChangeNotifier {
   static final IapService instance = IapService._internal();
   IapService._internal() : _onProductDiagnostic = null;
@@ -308,6 +316,8 @@ class IapService extends ChangeNotifier {
   static Duration productRetryUnit = const Duration(seconds: 2);
 
   Future<void>? _loadingProducts;
+  _StoreProductQuery? _storeProductQuery;
+  bool _disposed = false;
   String? _purchaseProductId;
   ProductLoadPhase _loadPhase = ProductLoadPhase.background;
   Map<String, dynamic> _productContext = {};
@@ -318,17 +328,25 @@ class IapService extends ChangeNotifier {
     ProductLoadPhase phase = ProductLoadPhase.background,
     PremiumTier? purchaseTier,
   }) {
+    if (_disposed) return Future.value();
+    if (_loadingProducts == null) {
+      // Share a slow native query within one bounded load cycle. Once that
+      // cycle ends, keep accepting its late success until a new load starts;
+      // then allow recovery even if the previous native query never returns.
+      _storeProductQuery = null;
+    }
     if (_loadingProducts == null || phase.index > _loadPhase.index) {
       _loadPhase = phase;
     }
     if (phase == ProductLoadPhase.purchase && purchaseTier != null) {
       _purchaseProductId = _productIdForTier(purchaseTier);
     }
-    return _loadingProducts ??= _loadProducts().whenComplete(() {
-      _loadingProducts = null;
-      _loadPhase = ProductLoadPhase.background;
-      _purchaseProductId = null;
-    });
+    return _loadingProducts ??= Future<void>.microtask(_loadProducts)
+        .whenComplete(() {
+          _loadingProducts = null;
+          _loadPhase = ProductLoadPhase.background;
+          _purchaseProductId = null;
+        });
   }
 
   void _reportProducts(String code, {StackTrace? stack}) {
@@ -341,7 +359,7 @@ class IapService extends ChangeNotifier {
   }
 
   Future<void> _loadProducts() async {
-    if (!supportsStoreBilling) return;
+    if (_disposed || !supportsStoreBilling) return;
     for (var attempt = 1; !_isAvailable; attempt++) {
       _productContext = {'stage': 'availability', 'attempt': attempt};
       String? failure;
@@ -355,6 +373,7 @@ class IapService extends ChangeNotifier {
         failure = ErrorReporter.codeFor(error);
         failureStack = stack;
       }
+      if (_disposed) return;
       if (attempt >= _productAttempts || _permanentProductFailure(failure)) {
         _reportProducts(failure, stack: failureStack);
         return;
@@ -362,6 +381,7 @@ class IapService extends ChangeNotifier {
       await Future<void>.delayed(productRetryUnit * attempt);
     }
     for (var attempt = 1; ; attempt++) {
+      if (_disposed) return;
       _productContext = {
         'stage': 'query',
         'attempt': attempt,
@@ -385,22 +405,46 @@ class IapService extends ChangeNotifier {
   }.contains(code);
 
   Future<String?> _queryProducts() async {
+    final query = _storeProductQuery ?? _startProductQuery();
+    try {
+      // Bound the caller's wait, not the native query. A slow success remains
+      // usable by the next wait and also updates an already-open paywall.
+      final failure = await query.result.timeout(productQueryTimeout);
+      if (_disposed) return null;
+      _productContext.addAll(query.context);
+      if (identical(_storeProductQuery, query)) _storeProductQuery = null;
+      return failure;
+    } on TimeoutException catch (error, stack) {
+      if (_disposed) return null;
+      _lastErrorMessage = error.toString();
+      _productContext['frames'] = DiagnosticContext.frames(stack);
+      return 'timeout';
+    }
+  }
+
+  _StoreProductQuery _startProductQuery() {
+    final query = _StoreProductQuery(Set.unmodifiable(_productIds));
+    _storeProductQuery = query;
     // A previously loaded ProductDetails may contain an expired Google Play
     // offer token. Keep display prices separately, never buy from old details.
     final hadProducts = _products.isNotEmpty;
     _products.clear();
+    query.result = _fetchProducts(query);
     if (hadProducts) notifyListeners();
+    return query;
+  }
+
+  Future<String?> _fetchProducts(_StoreProductQuery query) async {
     try {
-      final response = await _iap
-          .queryProductDetails(_productIds)
-          .timeout(productQueryTimeout);
+      final response = await _iap.queryProductDetails(query.ids);
+      if (_disposed || !identical(_storeProductQuery, query)) return null;
       final products = response.productDetails
-          .where((product) => _productIds.contains(product.id))
+          .where((product) => query.ids.contains(product.id))
           .toList();
-      final missing = _productIds.difference(
+      final missing = query.ids.difference(
         products.map((product) => product.id).toSet(),
       );
-      _productContext.addAll({
+      query.context.addAll({
         'returnedCount': products.length,
         'missingCount': missing.length,
         'missingIds': missing.toList(),
@@ -408,7 +452,7 @@ class IapService extends ChangeNotifier {
       final error = response.error;
       if (error != null) {
         _lastErrorMessage = error.message;
-        _productContext.addAll({
+        query.context.addAll({
           'sdkSource': error.source,
           'sdkCodeHash': sha256
               .convert(utf8.encode(error.code))
@@ -420,6 +464,7 @@ class IapService extends ChangeNotifier {
       for (final product in products) {
         _products[product.id] = product;
       }
+      _lastErrorMessage = '';
       if (products.isNotEmpty) {
         notifyListeners();
         unawaited(_savePriceCache());
@@ -432,10 +477,11 @@ class IapService extends ChangeNotifier {
       if (missing.isNotEmpty) return 'products_incomplete';
       return null;
     } catch (e, stack) {
+      if (_disposed || !identical(_storeProductQuery, query)) return null;
       _lastErrorMessage = e.toString();
-      _productContext['frames'] = DiagnosticContext.frames(stack);
+      query.context['frames'] = DiagnosticContext.frames(stack);
       if (e is PlatformException) {
-        _productContext['sdkCodeHash'] = sha256
+        query.context['sdkCodeHash'] = sha256
             .convert(utf8.encode(e.code))
             .toString()
             .substring(0, 16);
@@ -879,6 +925,8 @@ class IapService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    _storeProductQuery = null;
     _retryTimer?.cancel();
     if (_observingAuth) AuthService.instance.removeListener(_onAuthChanged);
     _subscription?.cancel();
