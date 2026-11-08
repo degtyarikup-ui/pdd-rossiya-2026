@@ -63,7 +63,7 @@ def main():
                 raise ValueError('Image escapes local image directory')
             if hashlib.sha256(path.read_bytes()).hexdigest() != entry['sha256']:
                 raise ValueError('Image checksum mismatch')
-            images.append(f'<img src="{e(entry["path"], quote=True)}" alt="Иллюстрация к вопросу">')
+            images.append(f'<img loading="lazy" decoding="async" src="{e(entry["path"], quote=True)}" alt="Иллюстрация к вопросу">')
         options = ''.join(f'<li class="{"correct" if i == q["correctIndex"] else ""}">{e(a)}</li>' for i, a in enumerate(q['answers']))
         hint = PlainText(); hint.feed(q['hintHtml'])
         cards.append(f'<article><small>{e(q["id"])} · Разделы {e(str(q["topics"]))}</small><h2>{e(q["text"])}</h2>{"".join(images)}<ol>{options}</ol><p>{e("".join(hint.parts))}</p></article>')
