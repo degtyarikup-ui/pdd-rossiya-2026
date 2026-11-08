@@ -208,7 +208,7 @@ void main() {
       await ReferralService.instance.clearPendingCodeForTesting();
     });
 
-    testWidgets('shows the code and lets the user copy the exact link', (
+    testWidgets('shows the code and lets the user copy it', (
       tester,
     ) async {
       final user = UserProfile(
@@ -261,9 +261,11 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('referral-copy-button')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('referral-copy-link-button')));
-      await tester.pumpAndSettle();
-      expect(clipboard, ['MYCODE9', 'https://pdd-drive.app/app/?ref=MYCODE9']);
+      expect(clipboard, ['MYCODE9']);
+      expect(
+        find.byKey(const ValueKey('referral-copy-link-button')),
+        findsNothing,
+      );
       await tester.pump(const Duration(seconds: 4));
       await tester.pumpAndSettle();
     });

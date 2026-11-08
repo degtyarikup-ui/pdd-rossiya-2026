@@ -1618,9 +1618,7 @@
   "referralYourCode": "Сіздің кодыңыз",
   "referralCopyCode": "Кодты көшіру",
   "referralShareButton": "Шақыруды жіберу",
-  "referralCopyLink": "Сілтемені көшіру",
   "referralInviteCopied": "Шақыру көшірілді",
-  "referralLinkCopied": "Сілтеме көшірілді",
   "referralStatsInvited": "Кодты қолданғандар: {count}",
   "@referralStatsInvited": {
     "placeholders": {

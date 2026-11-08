@@ -1618,9 +1618,7 @@
   "referralYourCode": "Your code",
   "referralCopyCode": "Copy code",
   "referralShareButton": "Share invitation",
-  "referralCopyLink": "Copy link",
   "referralInviteCopied": "Invitation copied",
-  "referralLinkCopied": "Link copied",
   "referralStatsInvited": "Friends who used your code: {count}",
   "@referralStatsInvited": {
     "placeholders": {

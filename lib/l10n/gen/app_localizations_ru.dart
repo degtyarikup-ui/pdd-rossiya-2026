@@ -4736,13 +4736,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get referralShareButton => 'Отправить приглашение';
 
   @override
-  String get referralCopyLink => 'Скопировать ссылку';
-
-  @override
   String get referralInviteCopied => 'Приглашение скопировано';
-
-  @override
-  String get referralLinkCopied => 'Ссылка скопирована';
 
   @override
   String referralStatsInvited(int count) {

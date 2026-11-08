@@ -264,12 +264,6 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
           icon: const Icon(Icons.share_outlined),
           label: Text(l10n.referralShareButton, textAlign: TextAlign.center),
         ),
-        const SizedBox(height: AppDimensions.spacingXS),
-        TextButton(
-          key: const ValueKey('referral-copy-link-button'),
-          onPressed: () => _copy(info.link, l10n.referralLinkCopied),
-          child: Text(l10n.referralCopyLink),
-        ),
         if (info.invitedCount > 0) ...[
           const SizedBox(height: AppDimensions.spacingS),
           Text(

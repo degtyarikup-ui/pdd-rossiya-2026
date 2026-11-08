@@ -2299,9 +2299,7 @@
   "referralYourCode": "Ваш код",
   "referralCopyCode": "Скопировать код",
   "referralShareButton": "Отправить приглашение",
-  "referralCopyLink": "Скопировать ссылку",
   "referralInviteCopied": "Приглашение скопировано",
-  "referralLinkCopied": "Ссылка скопирована",
   "referralStatsInvited": "Активировали код: {count}",
   "@referralStatsInvited": {
     "placeholders": {

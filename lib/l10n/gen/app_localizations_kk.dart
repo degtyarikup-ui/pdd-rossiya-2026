@@ -4707,13 +4707,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get referralShareButton => 'Шақыруды жіберу';
 
   @override
-  String get referralCopyLink => 'Сілтемені көшіру';
-
-  @override
   String get referralInviteCopied => 'Шақыру көшірілді';
-
-  @override
-  String get referralLinkCopied => 'Сілтеме көшірілді';
 
   @override
   String referralStatsInvited(int count) {

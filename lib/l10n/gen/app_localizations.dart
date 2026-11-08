@@ -7912,23 +7912,11 @@ abstract class AppLocalizations {
   /// **'Отправить приглашение'**
   String get referralShareButton;
 
-  /// No description provided for @referralCopyLink.
-  ///
-  /// In ru, this message translates to:
-  /// **'Скопировать ссылку'**
-  String get referralCopyLink;
-
   /// No description provided for @referralInviteCopied.
   ///
   /// In ru, this message translates to:
   /// **'Приглашение скопировано'**
   String get referralInviteCopied;
-
-  /// No description provided for @referralLinkCopied.
-  ///
-  /// In ru, this message translates to:
-  /// **'Ссылка скопирована'**
-  String get referralLinkCopied;
 
   /// No description provided for @referralStatsInvited.
   ///

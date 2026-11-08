@@ -4712,13 +4712,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get referralShareButton => 'Share invitation';
 
   @override
-  String get referralCopyLink => 'Copy link';
-
-  @override
   String get referralInviteCopied => 'Invitation copied';
-
-  @override
-  String get referralLinkCopied => 'Link copied';
 
   @override
   String referralStatsInvited(int count) {
