@@ -21,6 +21,11 @@ from urllib.parse import urlencode, urljoin, urlparse
 from urllib.error import URLError
 from urllib.request import build_opener, HTTPCookieProcessor, Request
 
+try:
+    import requests
+except ImportError:
+    requests = None
+
 BASE = 'https://pdd.by'
 
 
@@ -114,10 +119,11 @@ class Collector:
         self.output = output
         self.raw = output / 'raw'
         self.raw.mkdir(parents=True, exist_ok=True)
+        self.session = requests.Session() if requests is not None else None
         self.opener = build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
         self.delay = delay
         self.last_request = 0
-        self.last_ticket_end = 0
+        self.last_ticket_end = time.monotonic()
         self.sequence = len(list(self.raw.glob('*.json')))
         bank_path = output / 'collected.json'
         self.bank = json.loads(bank_path.read_text()) if bank_path.exists() else {
@@ -134,11 +140,31 @@ class Collector:
         # Ambiguous read timeouts/session errors fail with the checkpoint intact.
         for attempt in range(3):
             try:
-                with self.opener.open(Request(url, headers={'User-Agent': 'PDD-Belarus-content-review/1.0'}), timeout=25) as r:
-                    data = r.read(4 * 1024 * 1024)
+                headers = {'User-Agent': 'PDD-Belarus-content-review/1.0'}
+                if self.session is None:
+                    with self.opener.open(Request(url, headers=headers), timeout=25) as r:
+                        data = r.read(4 * 1024 * 1024 + 1)
+                else:
+                    # Keep TLS connections alive; preserve the same cookie session.
+                    # requests has no automatic retries for these session operations.
+                    with self.session.get(url, headers=headers, timeout=(25, 25), stream=True) as r:
+                        r.raise_for_status()
+                        if urlparse(r.url).hostname != 'pdd.by':
+                            raise ValueError('Unexpected redirect host')
+                        chunks = []
+                        size = 0
+                        for chunk in r.iter_content(65536):
+                            chunks.append(chunk)
+                            size += len(chunk)
+                            if size > 4 * 1024 * 1024:
+                                raise ValueError('Response exceeds size limit')
+                        data = b''.join(chunks)
+                if len(data) > 4 * 1024 * 1024:
+                    raise ValueError('Response exceeds size limit')
                 break
-            except URLError as error:
-                if 'handshake operation timed out' not in str(error) or attempt == 2:
+            except Exception as error:
+                safe_retry = (isinstance(error, URLError) and 'handshake operation timed out' in str(error)) or (requests is not None and isinstance(error, requests.exceptions.ConnectTimeout))
+                if not safe_retry or attempt == 2:
                     raise
                 print(json.dumps({'networkRetry': attempt + 1, 'reason': 'TLS handshake timeout'}), flush=True)
                 time.sleep(10 * (attempt + 1))
@@ -160,6 +186,19 @@ class Collector:
         self.bank['checkedAt'] = datetime.now(timezone.utc).isoformat()
         atomic_json(self.output / 'collected.json', self.bank)
 
+    def choose_answer(self, question):
+        known = self.bank['questions'].get(question['id'])
+        if known:
+            return known['correctIndex'] + 1
+        # Only a practice attempt choice, never an inferred correct answer in data.
+        # The actual answer is always obtained and validated from the publisher.
+        counts = {}
+        for existing in self.bank['questions'].values():
+            if len(existing['answers']) == len(question['answers']):
+                answer = existing['correctIndex'] + 1
+                counts[answer] = counts.get(answer, 0) + 1
+        return max(counts, key=lambda a: (counts[a], a)) if sum(counts.values()) >= 5 else 1
+
     def ticket(self, topic):
         # The publisher requires ten seconds between attempts.
         time.sleep(max(0, 11 - (time.monotonic() - self.last_ticket_end)))
@@ -174,8 +213,7 @@ class Collector:
             if int(payload['current']) != number - 1:
                 raise ValueError('Unexpected question position')
             question = parse_ticket(payload)
-            known = self.bank['questions'].get(question['id'])
-            submitted = known['correctIndex'] + 1 if known else 1
+            submitted = self.choose_answer(question)
             reply, raw_answer = self.api('set', n=submitted)
             question['correctIndex'] = correct_index(reply, submitted, len(question['answers']))
             mistakes += not reply['result']

@@ -91,10 +91,14 @@ W22543140 (№73 от 07.03.2025), W22644772 (№87 от 03.04.2026).
 
 ## Воспроизводимый сбор и проверка
 
-Команды из корня workspace; материалы не коммитить:
+Команды из корня workspace; материалы не коммитить. Для длительного сбора
+используется отдельное локальное Python 3.12 окружение и постоянное HTTPS-соединение
+через requests. Без requests сохраняется совместимость со стандартной библиотекой:
 
 ```sh
-python3 apps/belarus/tools/collect_pddby.py --output scratch/pddby-source --rounds 10
+python3.12 -m venv scratch/pddby-tools-venv
+scratch/pddby-tools-venv/bin/python -m pip install -r apps/belarus/tools/requirements-collect.txt
+scratch/pddby-tools-venv/bin/python apps/belarus/tools/collect_pddby.py --output scratch/pddby-source --rounds 10
 python3 apps/belarus/tools/download_pddby_images.py scratch/pddby-source
 python3 apps/belarus/tools/review_pddby.py scratch/pddby-source --require-images
 python3 -m unittest discover -s apps/belarus/tools -p 'test_*.py'
@@ -106,3 +110,8 @@ python3 -m unittest discover -s apps/belarus/tools -p 'test_*.py'
 Отчёт `review-report.json` содержит количество полученных вопросов, пропущенные
 изображения и SHA-256 исходных ответов. Это проверка переноса данных, а не
 самостоятельная нормативная экспертиза ответов издателя.
+
+Для новой редакции банка использовать новую папку выгрузки: возобновление
+сбора дополняет текущую выборку и не удаляет вопросы, которые издатель мог снять
+позднее. Остановка по серии билетов без новых вопросов — наблюдаемое насыщение
+выборки, а не доказательство получения полного банка.

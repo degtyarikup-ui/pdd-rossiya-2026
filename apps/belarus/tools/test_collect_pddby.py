@@ -54,6 +54,10 @@ class FakeCollector(Collector):
     def fetch(self, path, params=None):
         return None
 
+    def choose_answer(self, question):
+        known = self.bank['questions'].get(question['id'])
+        return known['correctIndex'] + 1 if known else 1
+
     def api(self, method, **params):
         self.calls.append((method, params))
         if method in ('start', 'select'):
@@ -65,6 +69,15 @@ class FakeCollector(Collector):
 
 
 class CollectorFlowTest(unittest.TestCase):
+    def test_practice_choice_uses_observations_but_source_defines_truth(self):
+        with tempfile.TemporaryDirectory() as folder:
+            c = Collector(Path(folder), 0.35)
+            for i in range(5):
+                c.bank['questions'][str(i)] = {'answers': ['A', 'B'], 'correctIndex': 1}
+            self.assertEqual(c.choose_answer({'id': 'new', 'answers': ['A', 'B']}), 2)
+            # A contrary source response must still be stored as answer A.
+            self.assertEqual(correct_index({'an': 2, 'answ': 1, 'result': False}, 2, 2), 0)
+
     @patch('collect_pddby.time.sleep')
     def test_second_wrong_answer_ends_ticket_and_keeps_checkpoint(self, _):
         with tempfile.TemporaryDirectory() as folder:
