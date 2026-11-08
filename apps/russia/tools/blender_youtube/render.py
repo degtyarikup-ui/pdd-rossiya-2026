@@ -25,7 +25,9 @@ for frame in range(args.start,args.end+1):
     path=folder/f'frame_{frame:04d}.png'
     if path.exists() and path.stat().st_size>10000:continue
     S.frame_set(frame);S.render.filepath=str(path)
-    bpy.ops.render.render(write_still=True)
+    result=bpy.ops.render.render(write_still=True)
+    if 'FINISHED' not in result or not path.exists():
+        raise RuntimeError(f'Render stopped before frame {frame} was saved')
     count+=1;elapsed=time.monotonic()-start
     print(json.dumps(dict(frame=frame,end=args.end,rendered=count,seconds=round(elapsed,2),secondsPerFrame=round(elapsed/count,2))),flush=True)
     time.sleep(args.cooldown)
