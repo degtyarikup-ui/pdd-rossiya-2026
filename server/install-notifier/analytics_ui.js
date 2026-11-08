@@ -264,7 +264,18 @@ function anTipHide() { var t = document.getElementById('an-tip'); if (t) t.style
 document.addEventListener('pointerdown', function (e) { if (!e.target.closest('rect[data-i]')) anTipHide(); });
 
 // Столбцы в реальных пикселях контейнера. На оси Y — только 0 и максимум.
+var anBarCharts = new WeakMap();
+var anBarResize = new ResizeObserver(function (entries) {
+  entries.forEach(function (entry) {
+    var el = entry.target, width = el.clientWidth, svg = el.firstElementChild;
+    if (!width || !svg || svg.tagName !== 'svg' || Number(svg.getAttribute('width')) === Math.max(240, width)) return;
+    var chart = anBarCharts.get(el);
+    anBars(el, chart.bars, chart.height, chart.stacked);
+  });
+});
 function anBars(el, bars, height, stacked) {
+  if (!anBarCharts.has(el)) anBarResize.observe(el);
+  anBarCharts.set(el, {bars:bars, height:height, stacked:stacked});
   var W = Math.max(240, el.clientWidth), H = height, padL = 54, padB = 28, padT = 12;
   var plotW = W - padL, plotH = H - padB - padT, n = bars.length;
   var segments = bars.map(function (b) {
@@ -283,7 +294,7 @@ function anBars(el, bars, height, stacked) {
     s += '<text x="' + (padL - 10) + '" y="' + (y(g) + 4) + '" text-anchor="end" font-size="11" font-weight="500" fill="#747B88">' + anNum(g) + '</text>';
   });
   var perDay = stacked ? 1 : 2;
-  var every = perDay * Math.ceil((n / perDay) / Math.max(2, Math.floor(plotW / 70)));
+  var every = perDay * Math.ceil((n / perDay) / Math.max(2, Math.floor(plotW / (stacked ? 48 : 70))));
   bars.forEach(function (b, i) {
     var center = padL + (Math.floor(i / perDay) + 0.5) * slot * perDay;
     var x = center + (stacked ? -bw / 2 : i % 2 ? 3 : -bw - 3);

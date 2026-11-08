@@ -220,6 +220,10 @@ if(process.argv.includes('--serve')) {
   const activityCard=page.locator('.an-activity-card');
   const activityChart=activityCard.locator('#an-activity-chart');
   const activitySummary=activityCard.locator('#an-activity-summary');
+  await page.waitForFunction(()=>{
+   const chart=document.getElementById('an-activity-chart');
+   return Number(chart.querySelector('svg')?.getAttribute('width'))===chart.clientWidth;
+  },null,{timeout:3000});
   assert.equal(await activityCard.locator('.an-caption,.an-day-details').count(),0);
   const days=[
    {date:'2026-11-06',total:25,android:10,ios:20},
