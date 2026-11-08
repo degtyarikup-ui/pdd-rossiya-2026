@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import unittest
 import zipfile
+from tools.multi_app.test_pck import pack
 
 SCRIPT = Path(__file__).resolve().parents[2] / 'scripts/godot_android_assets.sh'
 IOS_SCRIPT = SCRIPT.with_name('godot_ios_assets.sh')
@@ -61,6 +62,8 @@ exit 0
 class GodotIosExportTests(unittest.TestCase):
     def run_export(self, root, stage):
         (root / 'scripts').mkdir()
+        shutil.copytree(SCRIPT.parents[1] / 'tools/multi_app', root / 'tools/multi_app')
+        (root / 'fixture.pck').write_bytes(pack())
         shutil.copyfile(IOS_SCRIPT, root / 'scripts/godot_ios_assets.sh')
         scenery = root / 'game_godot/scenery'
         scenery.mkdir(parents=True)
@@ -98,7 +101,7 @@ if [[ "$*" == *--import* && "$FAIL_STAGE" == import ]] ||
   exit 0
 fi
 if [[ "$*" == *--export-pack* && "$FAIL_STAGE" != missing ]]; then
-  echo 'fresh validated game' > "${!#}"
+  cp fixture.pck "${!#}"
 fi
 exit 0
 ''')
@@ -128,7 +131,7 @@ exit 0
             root = Path(tmp)
             result, previous = self.run_export(root, '')
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertEqual(previous.read_text(), 'fresh validated game\n')
+            self.assertEqual(previous.read_bytes(), pack())
             self.assertTrue((root / 'ios/Godot/engine.xcconfig').exists())
             self.assertTrue((root / 'ios/Godot/libgodot.ios.release.xcframework').exists())
 

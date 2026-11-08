@@ -17,6 +17,7 @@ esac
 
 cd "$(dirname "$0")/.."
 source scripts/android_env.sh
+dart tools/multi_app/check_boundaries.dart
 
 # Store builds must use the calendar, never the development winter preview.
 if [[ "${EXTRA_DEFINES:-}" == *GAME_DEBUG* || "${EXTRA_DEFINES:-}" == *DEV_SEASON* ]]; then
@@ -80,6 +81,10 @@ fi
 # ошибки — релиз, где все экраны пишут «не удалось загрузить данные».
 verify_archive() {
   local archive="$1"
+  local profile=ru-android-universal
+  [[ "$archive" != *.aab ]] || profile=ru-android-aab
+  mkdir -p output
+  python3 tools/multi_app/check_artifact.py "$archive" --country "$COUNTRY" --profile "$profile" > output/artifact-isolation.json
   local needle="assets/countries/$COUNTRY/questions/questions_ab.json"
   # Here-string avoids SIGPIPE from either unzip or printf when grep exits early.
   local listing
@@ -209,6 +214,7 @@ case "$TARGET" in
       ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
     python3 tools/web/version_web_build.py build/web
     ./scripts/godot_web_assets.sh
+    python3 tools/multi_app/check_artifact.py build/web --country "$COUNTRY" --profile ru-web > output/web-isolation.json
     echo "Web: build/web (COUNTRY=$COUNTRY)"
     ;;
   *) echo "unknown target: $TARGET (expected aab|apk|rustore-apk|ipa|web)"; exit 1 ;;

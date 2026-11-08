@@ -36,6 +36,7 @@ fi
 for required in index.html index.js index.wasm index.pck; do
   [[ -s "$PACKAGE/$required" ]] || { echo "Ошибка экспорта Godot: отсутствует $required; журнал: $LOG"; exit 1; }
 done
+python3 tools/multi_app/check_artifact.py "$PACKAGE/index.pck" --country ru > output/godot/web-pack-isolation.json
 # The host bridge is static JS so CSP never needs unsafe-eval for GDScript.
 cp game_godot/web_bridge.js "$PACKAGE/host_bridge.js"
 python3 - "$PACKAGE/index.html" <<'PYBRIDGE'

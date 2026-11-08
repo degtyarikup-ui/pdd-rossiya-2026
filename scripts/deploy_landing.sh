@@ -56,6 +56,7 @@ echo "Previous deployment (rollback): $PREVIOUS"
 rsync -rc --delete --exclude=.git --exclude=/app/ --exclude=source.json "$SRC/" "$WORKTREE/"
 python3 "$ROOT/tools/blog_admin/generator.py" clean-public "$WORKTREE"
 if [ -n "${APP_BUILD:-}" ]; then
+  python3 tools/multi_app/check_artifact.py "$APP_BUILD" --country "$COUNTRY" --profile ru-web > /dev/null
   grep -q '<base href="/app/"' "$APP_BUILD/index.html" || { echo "APP_BUILD собран не с --base-href /app/"; exit 1; }
   rsync -rc --delete "$APP_BUILD/" "$WORKTREE/app/"
 fi

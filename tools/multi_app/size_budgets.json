@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "baseline_commit": "0b107750",
+  "note": "15% headroom over local baseline. APK/AAB/web are existing artifacts, not proof of current source. Compare identical profiles only. No store delivery estimate. Never auto-increase limits.",
+  "profiles": {
+    "ru-android-universal": {
+      "country": "ru",
+      "baseline_uncompressed_bytes": 360596332,
+      "max_uncompressed_bytes": 414685782,
+      "source": "build/app/outputs/flutter-apk/app-ru-release.apk"
+    },
+    "ru-android-aab": {
+      "country": "ru",
+      "baseline_uncompressed_bytes": 506595449,
+      "max_uncompressed_bytes": 582584766,
+      "source": "build/app/outputs/bundle/ruRelease/app-ru-release.aab"
+    },
+    "ru-flutter-assets": {
+      "country": "ru",
+      "baseline_uncompressed_bytes": 152424825,
+      "max_uncompressed_bytes": 175288549,
+      "source": "build/flutter_assets"
+    },
+    "ru-ios-game": {
+      "country": "ru",
+      "baseline_uncompressed_bytes": 93692252,
+      "max_uncompressed_bytes": 107746090,
+      "source": "ios/Godot/game.pck"
+    },
+    "ru-web": {
+      "country": "ru",
+      "baseline_uncompressed_bytes": 399118194,
+      "max_uncompressed_bytes": 458985923,
+      "source": "build/web"
+    }
+  }
+}

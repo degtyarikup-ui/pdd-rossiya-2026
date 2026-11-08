@@ -73,6 +73,7 @@ fi
 [[ -s "$TMP/game.apk" ]] || { echo "Ошибка экспорта Godot: APK пуст или отсутствует; журнал: $LOG"; exit 1; }
 (cd "$TMP" && unzip -oq game.apk 'assets/*' -x 'assets/dexopt/*')
 [[ -s "$TMP/assets/project.binary" ]] || { echo "Ошибка экспорта Godot: нет игрового project.binary"; exit 1; }
+python3 tools/multi_app/check_artifact.py "$TMP/assets" --country ru --game-only > output/godot/android-isolation.json
 mkdir -p "$OUT"
 rm -rf "$OUT/assets"
 mv "$TMP/assets" "$OUT/assets"

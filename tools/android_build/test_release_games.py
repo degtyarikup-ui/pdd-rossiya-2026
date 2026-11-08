@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[2]
 class ReleaseGameTests(unittest.TestCase):
     def fixture(self, root):
         (root / 'scripts').mkdir()
+        (root / 'output').mkdir()
+        shutil.copytree(ROOT / 'tools/multi_app', root / 'tools/multi_app')
         for name in ('build.sh', 'android_env.sh'):
             shutil.copyfile(ROOT / 'scripts' / name, root / 'scripts' / name)
         tools = root / 'tools/godot_export'
@@ -31,12 +33,17 @@ if [[ "${{FAIL_GAME:-}}" == 1 ]]; then exit 19; fi
             exporter.chmod(0o755)
         flutter = root / 'bin/flutter'
         flutter.parent.mkdir()
+        dart = root / 'bin/dart'
+        dart.write_text('#!/bin/sh\nexit 0\n')
+        dart.chmod(0o755)
         flutter.write_text('''#!/usr/bin/env python3
 import os, pathlib, sys, zipfile
 root = pathlib.Path('.')
 with open('calls','a') as f: f.write('flutter ' + ' '.join(sys.argv[1:]) + '\\n')
 if sys.argv[2] == 'web':
-    (root/'build/web').mkdir(parents=True, exist_ok=True)
+    content=root/'build/web/assets/countries/ru/questions'
+    content.mkdir(parents=True, exist_ok=True)
+    (content/'q.json').write_text('{}')
     sys.exit(0)
 if sys.argv[2] == 'ipa': sys.exit(23)  # no upload in fixtures
 path = root/('build/app/outputs/bundle/ruRelease/app-ru-release.aab' if sys.argv[2]=='appbundle' else 'build/app/outputs/flutter-apk/app-ru-release.apk')

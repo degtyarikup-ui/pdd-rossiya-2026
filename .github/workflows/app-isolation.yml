@@ -1,0 +1,25 @@
+name: App isolation
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  boundaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Install the tested Flutter revision
+        run: |
+          git clone --filter=blob:none --no-checkout https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          git -C "$RUNNER_TEMP/flutter" checkout 9584c6713b324636289d067944a46fd6b49df14b
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+      - run: flutter pub get
+      - run: dart tools/multi_app/check_boundaries.dart
+      - run: python3 -m unittest discover -s tools/multi_app -p 'test_*.py'
+      - name: Test boundary violations
+        run: |
+          mkdir -p assets/audio/game_questions
+          flutter test test/multi_app_boundaries_test.dart

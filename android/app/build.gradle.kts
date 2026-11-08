@@ -148,3 +148,12 @@ dependencies {
     // Core library desugaring для flutter_local_notifications.
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
+
+// Also guard direct `flutter build apk/appbundle` calls, before compiling.
+val appBoundaryCheck = tasks.register<Exec>("checkAppBoundaries") {
+    val props = Properties()
+    rootProject.file("local.properties").inputStream().use { props.load(it) }
+    workingDir(rootProject.projectDir.parentFile)
+    commandLine("${props.getProperty("flutter.sdk")}/bin/dart", "tools/multi_app/check_boundaries.dart")
+}
+tasks.named("preBuild") { dependsOn(appBoundaryCheck) }

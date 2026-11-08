@@ -89,6 +89,12 @@ def main():
         result = subprocess.run(command, cwd=ROOT, env=child)
     if result.returncode and not args.download_fallback:
         print('При тайм-аутах Google Maven повторите с --download-fallback; см. docs/build/android.md.', file=sys.stderr)
+    if result.returncode == 0:
+        return subprocess.run([
+            sys.executable, str(ROOT / 'tools/multi_app/check_artifact.py'),
+            str(ROOT / 'build/app/outputs/flutter-apk/app-ru-release.apk'),
+            '--country', 'ru',
+        ], cwd=ROOT).returncode
     return result.returncode
 
 

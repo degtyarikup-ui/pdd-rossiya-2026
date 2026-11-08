@@ -52,6 +52,7 @@ if ! godot --headless --path "$STAGE/game_godot" --export-pack "iOS" "$PACKAGE/g
   tail -60 "$LOG"; echo "Ошибка экспорта Godot; полный журнал: $LOG"; exit 1
 fi
 [[ -s "$PACKAGE/game.pck" ]] || { echo "Ошибка экспорта Godot: пакет игры пуст или отсутствует; журнал: $LOG"; exit 1; }
+python3 tools/multi_app/check_artifact.py "$PACKAGE/game.pck" --country ru --profile ru-ios-game > output/godot/ios-isolation.json
 # Release slices only: the same engine serves Debug builds (no separate debug engine is needed).
 unzip -oq "$TEMPLATES/ios.zip" 'libgodot.ios.release.xcframework/*' 'MoltenVK.xcframework/*' -d "$TMP"
 mv "$TMP/libgodot.ios.release.xcframework" "$TMP/MoltenVK.xcframework" "$PACKAGE/"

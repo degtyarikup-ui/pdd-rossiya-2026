@@ -339,7 +339,8 @@ class FallbackTests(unittest.TestCase):
                         mock.patch.object(build_dev.shutil, 'which', return_value=godot), \
                         mock.patch.object(build_dev.subprocess, 'check_output', return_value='abc123\n'), \
                         mock.patch.object(build_dev.subprocess, 'run', side_effect=[
-                            subprocess.CompletedProcess([], export_code), subprocess.CompletedProcess([], 0)]) as run, \
+                            subprocess.CompletedProcess([], export_code), subprocess.CompletedProcess([], 0),
+                            subprocess.CompletedProcess([], 0)]) as run, \
                         mock.patch.dict(build_dev.os.environ, {}, clear=True), \
                         mock.patch.object(sys, 'argv', ['build_dev.py']), \
                         mock.patch('builtins.print'):
@@ -349,7 +350,8 @@ class FallbackTests(unittest.TestCase):
                 if export_code:
                     self.assertEqual(run.call_count, 1, 'failed export must never package the old game')
                 else:
-                    self.assertEqual(run.call_count, 2)
+                    self.assertEqual(run.call_count, 3)
+                    self.assertIn("check_artifact.py", run.call_args_list[2].args[0][1])
                     self.assertEqual(run.call_args_list[1].args[0][:3], ['flutter', 'build', 'apk'])
 
 

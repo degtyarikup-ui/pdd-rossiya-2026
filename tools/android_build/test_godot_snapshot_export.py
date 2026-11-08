@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import unittest
 import zipfile
+from tools.multi_app.test_pck import pack
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -13,17 +14,20 @@ ROOT = Path(__file__).resolve().parents[2]
 class SnapshotExportTests(unittest.TestCase):
     def export(self, root, platform, failure):
         (root / 'scripts').mkdir()
+        shutil.copytree(Path(__file__).resolve().parents[2] / 'tools/multi_app', root / 'tools/multi_app')
         script = f'godot_{platform}_assets.sh'
         shutil.copyfile(ROOT / 'scripts' / script, root / 'scripts' / script)
         scenery = root / 'game_godot/scenery/test.import'
         scenery.parent.mkdir(parents=True)
         scenery.write_text('author edits')
+        (root / 'game_godot/web_bridge.js').write_text('// fixture bridge')
         (root / 'game_godot/export_presets.cfg').write_text('[preset.0.options]\npackage/signed=true\n[preset.1]\n')
         situation = root / 'game_godot/situations/ticket_1_1'
         situation.mkdir(parents=True)
         (situation / 'scene.json').write_text('{}')
         (situation / 'scene.glb').write_text('shared geometry')
         (situation / 'notes.md').write_text('not an export input')
+        (root / 'fixture.pck').write_bytes(pack())
         (root / 'assets').mkdir()
         (root / 'lib').mkdir()
         tools = root / 'tools/godot_export'
@@ -61,7 +65,7 @@ if stage == 'export' and os.environ['FAIL_STAGE'] != 'missing':
         with zipfile.ZipFile(destination,'w') as z: z.writestr('assets/project.binary','fresh validated game')
     else:
         for suffix in ('html','js','wasm','pck'):
-            destination.with_suffix('.'+suffix).write_text('fresh validated game')
+            destination.with_suffix('.'+suffix).write_bytes(pathlib.Path('fixture.pck').read_bytes() if suffix == 'pck' else b'fresh validated game')
 ''')
         binary.chmod(0o755)
         env = dict(os.environ, HOME=str(home), FAIL_STAGE=failure,
@@ -87,7 +91,7 @@ if stage == 'export' and os.environ['FAIL_STAGE'] != 'missing':
             with self.subTest(platform=platform), tempfile.TemporaryDirectory() as tmp:
                 result, previous, output = self.export(Path(tmp), platform, '')
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                self.assertEqual(previous.read_text(), 'fresh validated game')
+                self.assertEqual(previous.read_bytes(), pack() if platform == 'web' else b'fresh validated game')
                 if platform == 'web':
                     self.assertTrue((output / 'situations/ticket_1_1/scene.glb').is_file())
                     self.assertFalse((output / 'situations/ticket_1_1/notes.md').exists())
