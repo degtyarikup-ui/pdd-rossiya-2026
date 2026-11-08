@@ -104,7 +104,6 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <div class="an-head"><div><div class="an-title">${cardToggle('activity', 'Активность по дням')}</div><div class="an-subtitle">Аккаунты · без гостей</div></div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Аккаунты, обращавшиеся к серверу за день, без гостей. Синий сегмент включает все Android-сборки, в том числе Google Play и RuStore. Аккаунт, активный на Android и iOS, входит в оба сегмента. В общем итоге он учитывается один раз. Сегодня — неполный день.</div></details></div>
   <div id="an-body-activity">
   <div class="an-activity-summary" id="an-activity-summary"></div>
-  <div class="an-legend" id="an-activity-legend"></div>
   <div class="an-chart" id="an-activity-chart"></div>
   </div>
  </div>
@@ -395,7 +394,7 @@ function anRenderGeo() {
 }
 var AN_ACTIVITY_SERIES = [
  {key:'android', label:'Google Play / Android', icon:'gplay', color:AN_C.accent},
- {key:'ios', label:'iOS', icon:'apple', color:'#000000'}
+ {key:'ios', label:'iOS', icon:'apple', color:'#89919F'}
 ];
 function anRenderActivity(data) {
  var activity=data.users&&data.users.activity, days=activity?activity.days:[], available=days.filter(function(d){return d.total!=null;});
@@ -403,13 +402,11 @@ function anRenderActivity(data) {
  var time=comparison?String(Math.floor(comparison.minute/60)).padStart(2,'0')+':'+String(comparison.minute%60).padStart(2,'0'):'';
  var comparable=comparison&&comparison.today!=null&&comparison.days>0;
  var labels=AN_ACTIVITY_SERIES.map(function(series){return anSvgIcon(series.icon)+series.label;});
- document.getElementById('an-activity-legend').innerHTML=AN_ACTIVITY_SERIES.map(function(series,i){
-  return '<span><i class="an-dot" style="background:'+series.color+'"></i>'+labels[i]+'</span>';
- }).join('');
  document.getElementById('an-activity-summary').innerHTML=latest?[
  ['Сегодня',latest.total]
  ].concat(AN_ACTIVITY_SERIES.map(function(series,i){
-  return ['<span class="an-act-label">'+labels[i]+'</span>',latest[series.key]];
+  var marker='<i class="an-dot" aria-hidden="true" style="background:'+series.color+'"></i>';
+  return ['<span class="an-act-label">'+marker+labels[i]+'</span>',latest[series.key]];
  }),[['Среднее'+(time?' к '+time:''),comparable?comparison.average:null]])
  .map(function(m){return '<span>'+m[0]+'<b>'+(m[1]==null?'—':anNum(m[1]))+'</b></span>';}).join(''):'';
  var bars=available.map(function(d){

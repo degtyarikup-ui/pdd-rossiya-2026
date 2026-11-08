@@ -224,7 +224,7 @@ if(process.argv.includes('--serve')) {
    const chart=document.getElementById('an-activity-chart');
    return Number(chart.querySelector('svg')?.getAttribute('width'))===chart.clientWidth;
   },null,{timeout:3000});
-  assert.equal(await activityCard.locator('.an-caption,.an-day-details').count(),0);
+  assert.equal(await activityCard.locator('.an-caption,.an-day-details,.an-legend').count(),0);
   const days=[
    {date:'2026-11-06',total:25,android:10,ios:20},
    {date:'2026-11-07',total:0,android:0,ios:0},
@@ -239,7 +239,9 @@ if(process.argv.includes('--serve')) {
    return {color:path.getAttribute('fill'),x,y,width,height};
   }));
   const [android,ios,iosOnly]=segments;
-  assert.deepEqual(segments.map(segment=>segment.color),['#0574F8','#000000','#000000']);
+  assert.deepEqual(segments.map(segment=>segment.color),['#0574F8','#89919F','#89919F']);
+  const markers=await activitySummary.locator('.an-dot').evaluateAll(dots=>dots.map(dot=>getComputedStyle(dot).backgroundColor));
+  assert.deepEqual(markers,['rgb(5, 116, 248)','rgb(137, 145, 159)']);
   assert.equal(android.x,ios.x);
   assert.equal(android.width,ios.width);
   assert.ok(Math.abs(android.y-ios.y-ios.height)<0.001,'the segments touch');
