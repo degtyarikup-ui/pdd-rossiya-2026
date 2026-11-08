@@ -4687,6 +4687,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get referralModalTitle => '2 Premium days each';
 
   @override
+  String referralEqualReward(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return 'You both get $_temp0 of Premium when your friend uses the code.';
+  }
+
+  @override
   String referralRules(int inviter, int friend) {
     return 'A friend uses your code — you get $inviter days of Premium, they get $friend.';
   }

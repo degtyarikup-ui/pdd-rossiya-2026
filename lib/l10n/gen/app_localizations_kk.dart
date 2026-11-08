@@ -4688,6 +4688,11 @@ class AppLocalizationsKk extends AppLocalizations {
   String get referralModalTitle => 'Екеуіңізге де 2 күн Премиум';
 
   @override
+  String referralEqualReward(int days) {
+    return 'Досыңыз кодты қолданса, екеуіңізге де $days күн Премиум беріледі.';
+  }
+
+  @override
   String referralRules(int inviter, int friend) {
     return 'Досыңыз кодты қолданса, сізге $inviter күн, оған $friend күн Премиум беріледі.';
   }

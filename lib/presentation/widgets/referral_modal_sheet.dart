@@ -122,6 +122,9 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
     final theme = Theme.of(context);
     final info = _service.info;
     final signedIn = _auth.hasServerSession;
+    final inviterDays = info?.inviterBonusDays ?? 2;
+    final friendDays = info?.friendBonusDays ?? 2;
+
     return SafeArea(
       top: false,
       child: Padding(
@@ -131,16 +134,16 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
             AppDimensions.screenPadding,
-            0,
+            AppDimensions.spacingXS,
             AppDimensions.screenPadding,
-            20,
+            AppDimensions.spacingXXL,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                l10n.referralModalTitle,
+                l10n.referralSettingsTitle,
                 style: TextStyle(
                   fontFamily: 'Onest',
                   fontSize: 26,
@@ -149,17 +152,16 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
                   color: colors.primaryText,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppDimensions.spacingS),
               Text(
-                l10n.referralRules(
-                  info?.inviterBonusDays ?? 2,
-                  info?.friendBonusDays ?? 2,
-                ),
+                inviterDays == friendDays
+                    ? l10n.referralEqualReward(friendDays)
+                    : l10n.referralRules(inviterDays, friendDays),
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.secondaryText,
+                  color: colors.primaryText.withValues(alpha: .72),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppDimensions.spacingXL),
               if (info != null)
                 _invitation(context, info)
               else if (!signedIn)
@@ -187,7 +189,7 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
               Text(
                 l10n.promoReferralTerms,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.secondaryText,
+                  color: colors.primaryText.withValues(alpha: .72),
                 ),
               ),
               const SizedBox(height: 8),
@@ -211,17 +213,17 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
     final l10n = context.l10n;
     final colors = AppColors.of(context);
     final text = Theme.of(context).textTheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.background,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.background,
+            borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppDimensions.spacingL),
+            child: Row(
               children: [
                 Expanded(
                   child: Column(
@@ -253,32 +255,33 @@ class _ReferralModalSheetState extends State<ReferralModalSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            ElevatedButton.icon(
-              key: const ValueKey('referral-share-button'),
-              onPressed: () => _share(info),
-              icon: const Icon(Icons.share_outlined),
-              label: Text(l10n.referralShareButton),
-            ),
-            TextButton(
-              key: const ValueKey('referral-copy-link-button'),
-              onPressed: () => _copy(info.link, l10n.referralLinkCopied),
-              child: Text(l10n.referralCopyLink),
-            ),
-            if (info.invitedCount > 0) ...[
-              const Divider(height: 12),
-              Text(
-                l10n.referralStatsInvited(info.invitedCount),
-                style: text.bodyMedium?.copyWith(color: colors.secondaryText),
-              ),
-              Text(
-                l10n.referralStatsDays(info.rewardDays),
-                style: text.bodyMedium?.copyWith(color: colors.secondaryText),
-              ),
-            ],
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: AppDimensions.spacingM),
+        ElevatedButton.icon(
+          key: const ValueKey('referral-share-button'),
+          onPressed: () => _share(info),
+          icon: const Icon(Icons.share_outlined),
+          label: Text(l10n.referralShareButton, textAlign: TextAlign.center),
+        ),
+        const SizedBox(height: AppDimensions.spacingXS),
+        TextButton(
+          key: const ValueKey('referral-copy-link-button'),
+          onPressed: () => _copy(info.link, l10n.referralLinkCopied),
+          child: Text(l10n.referralCopyLink),
+        ),
+        if (info.invitedCount > 0) ...[
+          const SizedBox(height: AppDimensions.spacingS),
+          Text(
+            l10n.referralStatsInvited(info.invitedCount),
+            style: text.bodyMedium?.copyWith(color: colors.secondaryText),
+          ),
+          Text(
+            l10n.referralStatsDays(info.rewardDays),
+            style: text.bodyMedium?.copyWith(color: colors.secondaryText),
+          ),
+        ],
+      ],
     );
   }
 }

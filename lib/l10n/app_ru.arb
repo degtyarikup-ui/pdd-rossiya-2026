@@ -2283,6 +2283,8 @@
   "referralPlansTitle": "Ввести промокод",
   "referralPlansSubtitle": "Код друга или код из акции",
   "referralModalTitle": "2 дня Премиума каждому",
+  "referralEqualReward": "По {days, plural, one{{days} дню} few{{days} дня} many{{days} дней} other{{days} дня}} Премиума каждому после активации кода.",
+  "@referralEqualReward": {"placeholders": {"days": {"type": "int"}}},
   "referralRules": "Друг активирует ваш код — вам +{inviter} дня, ему +{friend} дня Премиума.",
   "@referralRules": {
     "placeholders": {

@@ -4709,6 +4709,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get referralModalTitle => '2 дня Премиума каждому';
 
   @override
+  String referralEqualReward(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days дня',
+      many: '$days дней',
+      few: '$days дня',
+      one: '$days дню',
+    );
+    return 'По $_temp0 Премиума каждому после активации кода.';
+  }
+
+  @override
   String referralRules(int inviter, int friend) {
     return 'Друг активирует ваш код — вам +$inviter дня, ему +$friend дня Премиума.';
   }

@@ -1602,6 +1602,8 @@
   "referralPlansTitle": "Enter a promo code",
   "referralPlansSubtitle": "A friend’s code or a promotional code",
   "referralModalTitle": "2 Premium days each",
+  "referralEqualReward": "You both get {days, plural, one{1 day} other{{days} days}} of Premium when your friend uses the code.",
+  "@referralEqualReward": {"placeholders": {"days": {"type": "int"}}},
   "referralRules": "A friend uses your code — you get {inviter} days of Premium, they get {friend}.",
   "@referralRules": {
     "placeholders": {
