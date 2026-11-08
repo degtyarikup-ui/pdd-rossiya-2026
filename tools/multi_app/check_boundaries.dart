@@ -9,8 +9,9 @@ List<String> checkBoundaries(Directory root) {
     '${root.path}/tools/multi_app/resource_policy.json',
   ).existsSync()) {
     final parent = root.parent;
-    if (parent.path == root.path)
+    if (parent.path == root.path) {
       throw StateError('Workspace policy not found');
+    }
     root = parent;
   }
   final errors = <String>[];

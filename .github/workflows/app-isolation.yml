@@ -24,3 +24,10 @@ jobs:
           mkdir -p apps/russia/assets/audio/game_questions
           cd apps/russia
           flutter test test/multi_app_boundaries_test.dart
+      - name: Test Belarus application and content gate
+        working-directory: apps/belarus
+        run: |
+          flutter gen-l10n
+          flutter analyze
+          flutter test
+          dart tools/validate_content.dart assets/countries/by/catalog.json

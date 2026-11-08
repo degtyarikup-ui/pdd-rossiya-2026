@@ -1,6 +1,7 @@
 # PDD workspace
 
 - Россия: [apps/russia](apps/russia/), документация: [карта](apps/russia/docs/README.md).
+- Новая Беларусь: [apps/belarus](apps/belarus/), тестовые сборки — `./scripts/build_belarus.sh apk|ios|web`.
 - Общий интерфейс: [packages/pdd_ui](packages/pdd_ui/).
 - План миграции: [docs/architecture/multi-app-migration.md](docs/architecture/multi-app-migration.md).
 

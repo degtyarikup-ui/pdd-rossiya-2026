@@ -1,0 +1,47 @@
+{
+  "@@locale": "en",
+  "appTitle": "Belarus driving theory · Test",
+  "welcome": "Get ready for Belarus roads",
+  "intro": "Road rules and practice exam for the Republic of Belarus.",
+  "exam": "Exam",
+  "examRules": "10 questions · 15 minutes · at most one mistake",
+  "contentPending": "We are checking current questions and answers. The exam will be available after the question bank is reviewed.",
+  "startExam": "Start exam",
+  "preparing": "Preparing question bank",
+  "practiceNotice": "Independent practice tool. This is not an official traffic police exam.",
+  "loadError": "Could not load questions.",
+  "retry": "Retry",
+  "leaveTitle": "End this attempt?",
+  "leaveBody": "Your answers in this attempt will not be saved. The timer keeps running.",
+  "stay": "Continue",
+  "leave": "Leave",
+  "result": "Result",
+  "passed": "Passed",
+  "failed": "Not passed",
+  "expired": "Time is up",
+  "score": "Correct answers: {count} of 10",
+  "correctAnswer": "Correct answer: {answer}",
+  "home": "Home",
+  "questionNumber": "Question {number} of 10",
+  "@score": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@correctAnswer": {
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
+  },
+  "@questionNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  }
+}
