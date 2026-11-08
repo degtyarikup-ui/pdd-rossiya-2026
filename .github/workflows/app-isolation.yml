@@ -27,6 +27,7 @@ jobs:
       - name: Test Belarus application and content gate
         working-directory: apps/belarus
         run: |
+          python3 -m unittest discover -s tools -p 'test_*.py'
           flutter gen-l10n
           flutter analyze
           flutter test
