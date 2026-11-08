@@ -116,8 +116,8 @@ const premiumStatus = user => ({
   premiumExpiresAt: user.premiumExpiresAt || null,
   premiumSource: user.premiumSource || null,
 });
-const success = (user, inviterDaysAdded = INVITER_DAYS) => reply({
-  ok: true, kind: 'referral', daysAdded: FRIEND_DAYS, inviterDaysAdded, ...premiumStatus(user),
+const success = (user, inviterDaysAdded = INVITER_DAYS, alreadyApplied = false) => reply({
+  ok: true, kind: 'referral', alreadyApplied, daysAdded: FRIEND_DAYS, inviterDaysAdded, ...premiumStatus(user),
 });
 
 const normalizedEmail = email => typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -166,7 +166,7 @@ export async function referralAccountStep(path, request, env) {
   }
   if (user.referredBy) {
     if (user.referralCodeUsed !== job.code || user.referredBy !== job.inviterId) return fail('already_claimed', 400);
-    return success(applyEntitlements(user));
+    return success(applyEntitlements(user), INVITER_DAYS, true);
   }
   if (used) return fail('already_claimed', 400);
   if (await env.INSTALLS.get('account_deleted:' + user.id)) return fail('account_not_ready', 410);
@@ -237,7 +237,7 @@ export async function referralClaim(storage, env, { code, friendId }) {
     const raw = (await status.json()).value;
     const user = raw && JSON.parse(raw);
     return user?.referralCodeUsed === code && (user.createdAt || null) === previous.createdAt
-      ? success(applyEntitlements(user), previous.inviterDaysAdded)
+      ? success(applyEntitlements(user), previous.inviterDaysAdded, true)
       : fail('already_claimed', 400);
   }
 

@@ -95,11 +95,15 @@ class ReferralClaimResult {
   final ReferralClaimStatus status;
   final int daysAdded;
   final bool isReferral;
+  final bool alreadyApplied;
+  final Map<String, dynamic>? premiumState;
 
   const ReferralClaimResult({
     required this.status,
     this.daysAdded = 0,
     this.isReferral = true,
+    this.alreadyApplied = false,
+    this.premiumState,
   });
 }
 
@@ -242,6 +246,7 @@ class ReferralService extends ChangeNotifier {
       return _result(ReferralClaimStatus.error);
     }
 
+    final entitlementRevision = PremiumService.instance.entitlementRevision;
     final future = _requestClaim(code, _auth.serverHeaders);
     _claim = future;
     notifyListeners();
@@ -255,11 +260,19 @@ class ReferralService extends ChangeNotifier {
           _confirmedCode = code;
           _info = _info?.withClaim(code);
         }
-        await _clearPendingCode(code);
+        final state = result.premiumState;
+        if (state != null) {
+          await PremiumService.instance.applyCodeGrant(
+            state,
+            accountId: scope.id,
+            accountRevision: scope.revision,
+            entitlementRevision: entitlementRevision,
+          );
+        }
         if (_currentScope != scope) {
           return _result(ReferralClaimStatus.unauthenticated);
         }
-        await PremiumService.instance.checkForGrant();
+        await _clearPendingCode(code);
         if (_currentScope != scope) {
           return _result(ReferralClaimStatus.unauthenticated);
         }
@@ -299,6 +312,8 @@ class ReferralService extends ChangeNotifier {
           status: ReferralClaimStatus.success,
           daysAdded: data['daysAdded'] as int,
           isReferral: data['kind'] != 'promotion',
+          alreadyApplied: data['alreadyApplied'] == true,
+          premiumState: data,
         );
       }
       return _result(switch (data['error']) {

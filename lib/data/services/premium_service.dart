@@ -359,11 +359,49 @@ class PremiumService extends ChangeNotifier {
     _premiumGrantedStreamController.add(serverExpiresAt);
   }
 
+  /// Capture before a grant request so an older response cannot replace a
+  /// subsequently confirmed purchase or another account's access.
+  int get entitlementRevision => _entitlementRevision;
+
+  Future<bool> applyCodeGrant(
+    Map<String, dynamic> data, {
+    required String accountId,
+    required int accountRevision,
+    required int entitlementRevision,
+  }) async {
+    final auth = AuthService.instance;
+    if (auth.currentUser?.id != accountId ||
+        !auth.hasServerSession ||
+        auth.accountRevision != accountRevision ||
+        _entitlementRevision != entitlementRevision ||
+        data['ok'] != true ||
+        data['isPremium'] is! bool) {
+      return false;
+    }
+    final rawExpiry = data['premiumExpiresAt'];
+    final expiry = rawExpiry is String ? DateTime.tryParse(rawExpiry) : null;
+    if (rawExpiry != null && expiry == null) return false;
+    if (data['premiumSource'] != null && data['premiumSource'] is! String) {
+      return false;
+    }
+    _isPremium =
+        data['isPremium'] == true &&
+        (expiry == null || expiry.isAfter(DateTime.now()));
+    _expiresAt = _isPremium ? expiry : null;
+    _purchaseStore = data['premiumSource'] as String?;
+    _entitlementRevision++;
+    notifyListeners();
+    await _saveState();
+    return true;
+  }
+
   /// Picks up administrative grants and store renewals while the app is open.
   Future<void> checkForGrant() async {
     final user = AuthService.instance.currentUser;
     if (user == null || !AuthService.instance.hasServerSession) return;
-    if (!BackendConfig.hasNotifier && !AuthService.instance.isDevSession) return;
+    if (!BackendConfig.hasNotifier && !AuthService.instance.isDevSession) {
+      return;
+    }
     final revision = AuthService.instance.accountRevision;
     final entitlementRevision = _entitlementRevision;
     try {

@@ -81,6 +81,7 @@ test('referrals: POST /api/user/referral/claim grants 2 days to friend and 2 day
   assert.equal(claimRes.status, 200);
   const claimData = await claimRes.json();
   assert.equal(claimData.ok, true);
+  assert.equal(claimData.alreadyApplied, false);
   assert.equal(claimData.daysAdded, 2);
   assert.equal(claimData.isPremium, true);
   assert.equal(claimData.premiumSource, 'referral');
@@ -103,7 +104,9 @@ test('referrals: POST /api/user/referral/claim grants 2 days to friend and 2 day
   // A lost response can be retried without moving either expiry.
   const secondClaim = await worker.fetch(request('/api/user/referral/claim', { code }, friendToken), env);
   assert.equal(secondClaim.status, 200);
-  assert.equal((await secondClaim.json()).premiumExpiresAt, claimData.premiumExpiresAt);
+  const replay = await secondClaim.json();
+  assert.equal(replay.alreadyApplied, true);
+  assert.equal(replay.premiumExpiresAt, claimData.premiumExpiresAt);
   assert.equal(JSON.parse(await accountRead(env, 'google_inviter', 'user:google_inviter')).referralCount, 1);
 });
 

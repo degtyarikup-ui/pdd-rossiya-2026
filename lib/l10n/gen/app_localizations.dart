@@ -8109,6 +8109,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Лимит активаций этого промокода исчерпан.'**
   String get promoExhausted;
+
+  /// No description provided for @promoAlreadyApplied.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот код уже был активирован. Повторно дни не начисляются.'**
+  String get promoAlreadyApplied;
 }
 
 class _AppLocalizationsDelegate

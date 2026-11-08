@@ -175,7 +175,9 @@ class _PromoCodeSheetState extends State<PromoCodeSheet> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          l10n.referralSuccessDays(_result!.daysAdded),
+                          _result!.alreadyApplied
+                              ? l10n.promoAlreadyApplied
+                              : l10n.referralSuccessDays(_result!.daysAdded),
                           style: theme.textTheme.titleSmall,
                         ),
                       ),

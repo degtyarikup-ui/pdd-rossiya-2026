@@ -246,7 +246,8 @@ class DevMockEndpoint {
 
       if (path == '/api/user/promo/claim' && cleanCode == 'PREMIUM7') {
         final receipt = 'dev_mock_promo_${userId}_$cleanCode';
-        if (prefs.getBool(receipt) != true) {
+        final alreadyApplied = prefs.getBool(receipt) == true;
+        if (!alreadyApplied) {
           await _addPremiumDays(prefs, userId, 7, source: 'promo');
           await prefs.setBool(receipt, true);
         }
@@ -254,6 +255,7 @@ class DevMockEndpoint {
           jsonEncode({
             'ok': true,
             'kind': 'promotion',
+            'alreadyApplied': alreadyApplied,
             'daysAdded': 7,
             ...await _getPremiumData(prefs, userId),
           }),
@@ -274,7 +276,7 @@ class DevMockEndpoint {
 
       if (userData['hasUsedReferral'] == true &&
           userData['referralCodeUsed'] == cleanCode) {
-        return _claimSuccess(prefs, userId);
+        return _claimSuccess(prefs, userId, alreadyApplied: true);
       }
       if (userData['hasUsedReferral'] == true) {
         return http.Response(
@@ -380,12 +382,14 @@ class DevMockEndpoint {
 
   static Future<http.Response> _claimSuccess(
     SharedPreferences prefs,
-    String userId,
-  ) async => http.Response(
+    String userId, {
+    bool alreadyApplied = false,
+  }) async => http.Response(
     jsonEncode({
       'ok': true,
       'daysAdded': 2,
       'inviterDaysAdded': 2,
+      'alreadyApplied': alreadyApplied,
       ...await _getPremiumData(prefs, userId),
     }),
     200,

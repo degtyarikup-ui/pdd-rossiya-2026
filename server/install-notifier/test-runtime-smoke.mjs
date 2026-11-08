@@ -371,6 +371,21 @@ new_sqlite_classes = [${classes.map(JSON.stringify).join(', ')}]
     assert.equal(rankedRetry.credited, 0);
     t.diagnostic('process restart preserved profile, large Unicode progress and support initialization');
 
+    await api('/api/admin/promocodes', {token:credential,body:{operation:'create',code:'RUNTIMEPROMO',days:2}});
+    const promo=await api('/api/user/promo/claim',{token,body:{code:'RUNTIMEPROMO'}});
+    assert.equal(promo.alreadyApplied,false);
+    assert.equal(promo.isPremium,true);
+    await api('/api/admin/promocodes',{token:credential,body:{operation:'delete',code:'RUNTIMEPROMO',revision:1}});
+    await stop();await start();
+    const replay=await api('/api/user/promo/claim',{token,body:{code:'RUNTIMEPROMO'}});
+    assert.equal(replay.alreadyApplied,true);
+    assert.equal(replay.premiumExpiresAt,promo.premiumExpiresAt);
+    const history=await api('/api/admin/promocodes?code=RUNTIMEPROMO',{token:credential});
+    assert.equal(history.claims.length,1);assert.equal(history.claims[0].status,'done');
+    const archived=await api('/api/admin/promocodes',{token:credential});
+    assert.ok(archived.codes.find(c=>c.code==='RUNTIMEPROMO').deletedAt);
+    t.diagnostic('promo reservation, grant, archived history and replay survive a real SQLite restart');
+
     assert.equal((await api('/api/auth/logout', { token, body: {} })).ok, true);
     await api('/api/user/status', { token, expected: 401 });
     assert.equal((await api('/api/user/status', { token: anotherToken })).user.id, userId);

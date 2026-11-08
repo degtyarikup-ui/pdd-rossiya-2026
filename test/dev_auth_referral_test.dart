@@ -7,6 +7,7 @@ import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/referral_service.dart';
 import 'package:pdd_app/l10n/gen/app_localizations.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/promo_code_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -27,6 +28,93 @@ void main() {
   });
 
   test(
+    'grant response updates access directly and rejects stale account or entitlement',
+    () async {
+      final auth = AuthService.instance;
+      await auth.signInDebug(accountId: 'dev_tester_1', name: 'Tester');
+      final premium = PremiumService.instance;
+      final revision = premium.entitlementRevision;
+      final accountRevision = auth.accountRevision;
+      final state = <String, dynamic>{
+        'ok': true,
+        'isPremium': true,
+        'premiumSource': 'promo',
+        'premiumExpiresAt': DateTime.now()
+            .add(const Duration(days: 7))
+            .toIso8601String(),
+      };
+      expect(
+        await premium.applyCodeGrant(
+          state,
+          accountId: 'dev_tester_1',
+          accountRevision: accountRevision,
+          entitlementRevision: revision,
+        ),
+        true,
+      );
+      expect(premium.isPremium, true);
+      expect(
+        await premium.applyCodeGrant(
+          {...state, 'isPremium': false},
+          accountId: 'dev_tester_1',
+          accountRevision: accountRevision,
+          entitlementRevision: revision,
+        ),
+        false,
+      );
+      expect(premium.isPremium, true);
+      await auth.signOut();
+      expect(
+        await premium.applyCodeGrant(
+          state,
+          accountId: 'dev_tester_1',
+          accountRevision: accountRevision,
+          entitlementRevision: premium.entitlementRevision,
+        ),
+        false,
+      );
+      expect(premium.isPremium, false);
+    },
+  );
+
+  testWidgets('replayed promo displays already activated instead of new days', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await AuthService.instance.signInDebug(
+        accountId: 'dev_tester_1',
+        name: 'Tester',
+      );
+      await ReferralService.instance.claimCode('PREMIUM7');
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(body: PromoCodeSheet()),
+      ),
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('promo-input-field')),
+      'PREMIUM7',
+    );
+    await tester.pump();
+    await tester.runAsync(() async {
+      await tester.tap(find.byKey(const ValueKey('promo-activate-button')));
+      while (ReferralService.instance.claiming) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+    });
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Этот код уже был активирован. Повторно дни не начисляются.'),
+      findsOneWidget,
+    );
+    expect(find.text('Начислено: 7 дней Премиума.'), findsNothing);
+  });
+
+  test(
     'advertising code is separate from a friend code and can be replayed safely',
     () async {
       await AuthService.instance.signInDebug(
@@ -42,7 +130,9 @@ void main() {
       expect(service.info?.hasUsedReferral, false);
       final prefs = await SharedPreferences.getInstance();
       final before = prefs.getString('dev_mock_premium_dev_tester_1');
-      await service.claimCode('PREMIUM7');
+      expect(first.alreadyApplied, false);
+      expect(PremiumService.instance.isPremium, true);
+      expect((await service.claimCode('PREMIUM7')).alreadyApplied, true);
       expect(prefs.getString('dev_mock_premium_dev_tester_1'), before);
       expect(
         (await service.claimCode('FRIEND26')).status,

@@ -1684,5 +1684,6 @@
   "promoUnavailable": "This promo code is currently unavailable.",
   "promoExpired": "This promo code has expired.",
   "promoNotStarted": "This promotion hasn’t started yet.",
-  "promoExhausted": "This promo code has reached its redemption limit."
+  "promoExhausted": "This promo code has reached its redemption limit.",
+  "promoAlreadyApplied": "This code has already been activated. No additional days were added."
 }

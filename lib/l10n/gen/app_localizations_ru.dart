@@ -4872,4 +4872,8 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get promoExhausted => 'Лимит активаций этого промокода исчерпан.';
+
+  @override
+  String get promoAlreadyApplied =>
+      'Этот код уже был активирован. Повторно дни не начисляются.';
 }

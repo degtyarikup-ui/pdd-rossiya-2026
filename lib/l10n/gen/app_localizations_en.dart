@@ -4842,4 +4842,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get promoExhausted =>
       'This promo code has reached its redemption limit.';
+
+  @override
+  String get promoAlreadyApplied =>
+      'This code has already been activated. No additional days were added.';
 }

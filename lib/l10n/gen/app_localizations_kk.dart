@@ -4821,4 +4821,8 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get promoExhausted => 'Бұл промокодты белсендіру лимиті таусылды.';
+
+  @override
+  String get promoAlreadyApplied =>
+      'Бұл код бұрын белсендірілген. Қосымша күндер қайта есептелмейді.';
 }

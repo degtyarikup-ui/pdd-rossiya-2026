@@ -173,3 +173,72 @@ test('optional limits support immediate, perpetual and scheduled campaigns and c
   assert.equal((await admin(env,{operation:'create',code:'INVALID',days:2,...extra})).status,400);
  }
 });
+
+test('replay after expiry identifies the old grant without extending access', async () => {
+ const {env}=fixture();const token=await user(env,'google_replay');
+ await admin(env,campaign('REPLAY',{days:1}));
+ const first=await (await claim(env,token,'REPLAY')).json();assert.equal(first.alreadyApplied,false);
+ const real=Date.now;Date.now=()=>real()+2*DAY;
+ try {
+  const {accountRpc}=await import('./account_state.js');
+  const repeated=await (await accountRpc(env,'promotions','/_promo/catalog',{operation:'claim',userId:'google_replay',code:'REPLAY'})).json();
+  assert.equal(repeated.alreadyApplied,true);assert.equal(repeated.isPremium,false);
+  assert.equal(repeated.premiumExpiresAt,first.premiumExpiresAt);
+ } finally {Date.now=real;}
+});
+
+test('retry queue advances past exceptions and persistent failures and survives restart',async()=>{
+ const {env,states,objects,restart}=fixture();await admin(env,campaign('QUEUE'));
+ const storage=states.get('promotions');
+ for(let i=0;i<26;i++){
+  const id='google_q'+String(i).padStart(2,'0');await user(env,id);
+  const key='promo-claim:QUEUE:'+id;
+  const profile=JSON.parse(await env.INSTALLS.get('user:'+id));
+  await storage.put(key,{code:'QUEUE',userId:id,createdAt:profile.createdAt,days:7});
+  await storage.put('promo-pending:'+key,key);
+ }
+ const original=env.ACCOUNTS.get;const seen=[];
+ env.ACCOUNTS.get=id=>({fetch:async(req,opts)=>{
+  if(id.startsWith('google_q')) {seen.push(id);if(id==='google_q00')throw new Error('unavailable');if(id!=='google_q25')return Response.json({error:'busy'},{status:503});}
+  return original(id).fetch(req,opts);
+ }});
+ await objects.get('promotions').alarm();assert.ok(seen.includes('google_q24'));assert.ok(!seen.includes('google_q25'));
+ restart('promotions');await admin(env);await objects.get('promotions').alarm();
+ assert.ok(seen.includes('google_q25'));
+ assert.equal((await storage.get('promo-claim:QUEUE:google_q25')).done,true);
+ assert.equal((await storage.list({prefix:'promo-pending:'})).size,25);
+ assert.ok(await storage.getAlarm());
+});
+
+test('slow account check or grant does not block catalog or another claimant',async()=>{
+ for(const stage of ['check','grant']) {
+  const {env}=fixture();const a=await user(env,'google_slow'),b=await user(env,'google_fast');
+  await admin(env,campaign('PARALLEL'));
+  const original=env.ACCOUNTS.get;let release,entered;
+  const gate=new Promise(r=>release=r),started=new Promise(r=>entered=r);
+  env.ACCOUNTS.get=id=>({fetch:async(req,opts)=>{
+   if(id==='google_slow'&&String(typeof req==='string'?req:req.url).endsWith('/_account/promo')) {
+    const body=JSON.parse(opts?.body || await req.clone().text());
+    if((body.operation==='check')===(stage==='check')){entered();await gate;}
+   }
+   return original(id).fetch(req,opts);
+  }});
+  const slow=claim(env,a,'PARALLEL');await started;
+  try {
+   await Promise.race([(async()=>{assert.equal((await admin(env)).status,200);assert.equal((await claim(env,b,'PARALLEL')).status,200);})(),new Promise((_,reject)=>{const t=setTimeout(()=>reject(new Error('catalog blocked')),1000);t.unref();})]);
+  } finally {release();await slow;}
+ }
+});
+
+test('deleted legacy campaigns migrate to archive and free capacity without freeing codes',async()=>{
+ const {env,states}=fixture();await admin(env,campaign('SEED'));
+ const catalog={};for(let i=0;i<500;i++)catalog['OLD'+i]={code:'OLD'+i,days:7,revision:1,deletedAt:new Date().toISOString(),enabled:false};
+ await states.get('promotions').put('catalog',catalog);
+ assert.equal((await admin(env,campaign('NEWCODE'))).status,200);
+ assert.equal(Object.keys(await states.get('promotions').get('catalog')).length,1);
+ assert.equal((await (await admin(env)).json()).codes.length,501);
+ assert.equal((await admin(env,campaign('OLD0'))).status,409);
+ assert.equal((await worker.fetch(request('/api/admin/promocodes?code=OLD0',undefined,'fixture-admin'),env)).status,200);
+ const token=await user(env,'google_new');await env.INSTALLS.put('ref_code:OLD0','@promotion');
+ assert.equal((await (await claim(env,token,'OLD0')).json()).error,'promo_inactive');
+});

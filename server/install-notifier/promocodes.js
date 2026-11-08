@@ -47,40 +47,74 @@ export async function promoAccountStep(request, env) {
   } else {
     applyEntitlements(user);
   }
-  return json({ ok: true, kind: 'promotion', daysAdded: receipt ? JSON.parse(receipt).days : job.days,
+  return json({ ok: true, kind: 'promotion', daysAdded: receipt ? JSON.parse(receipt).days : job.days, alreadyApplied: Boolean(receipt),
     isPremium: user.isPremium, premiumExpiresAt: user.premiumExpiresAt, premiumSource: user.premiumSource });
 }
 
-async function finish(storage, env, key, job) {
+async function finish(storage, env, key, job, serial) {
   const res = await accountRpc(env, job.userId, '/_account/promo', job);
   const data = await res.json();
   if (!res.ok && res.status !== 410) return fail('referral_pending', 503);
-  await storage.transaction(async txn => {
-    await txn.put(key, { ...job, done: true, failed: !res.ok });
+  await serial(() => storage.transaction(async txn => {
+    const current = await txn.get(key);
+    // A later replay (including after deletion) must not rewrite grant history.
+    if (!current?.done) await txn.put(key, { ...job, done: true, failed: !res.ok });
     await txn.delete('promo-pending:' + key);
-  });
+  }));
   return json(data, res.status);
 }
 
-export async function retryPromos(storage, env) {
+// Select a fair batch under the catalog lock; run account calls outside it.
+export async function retryPromos(storage, env, serial) {
   await storage.setAlarm(Date.now() + 60_000);
-  const pending = await storage.list({ prefix: 'promo-pending:', limit: 25 });
-  for (const key of pending.values()) {
-    const job = await storage.get(key);
-    if (job && !job.done) await finish(storage, env, key, job);
-    else await storage.delete('promo-pending:' + key);
-  }
-  if (!(await storage.list({ prefix: 'promo-pending:', limit: 1 })).size) await storage.deleteAlarm();
+  const cursor = await storage.get('promo-retry-cursor');
+  let pending = await storage.list({ prefix: 'promo-pending:', ...(cursor ? { start: cursor + '\0' } : {}), limit: 25 });
+  if (!pending.size) pending = await storage.list({ prefix: 'promo-pending:', limit: 25 });
+  if (pending.size) await storage.put('promo-retry-cursor', [...pending.keys()].at(-1));
+  return async () => {
+    await Promise.allSettled([...pending.values()].map(async key => {
+      const job = await storage.get(key);
+      if (job && !job.done) await finish(storage, env, key, job, serial);
+      else await serial(() => storage.delete('promo-pending:' + key));
+    }));
+    await serial(async () => {
+      if (!(await storage.list({ prefix: 'promo-pending:', limit: 1 })).size) {
+        await storage.delete('promo-retry-cursor');
+        await storage.deleteAlarm();
+      }
+    });
+  };
 }
 
-export async function promoCatalog(storage, env, body) {
+async function archives(storage) {
+  const result = [];
+  let start;
+  while (true) {
+    const page = await storage.list({ prefix: 'promo-archive:', ...(start ? { start } : {}), limit: 500 });
+    result.push(...page.values());
+    if (page.size < 500) return result;
+    start = [...page.keys()].at(-1) + '\0';
+  }
+}
+
+export async function promoCatalog(storage, env, body, serial) {
   await storage.put('promo-catalog', true);
   const catalog = await storage.get('catalog') || {};
-  if (body.operation === 'list') return json({ codes: Object.values(catalog) });
+  const deleted = Object.values(catalog).filter(c => c.deletedAt);
+  if (deleted.length) {
+    await storage.transaction(async txn => {
+      for (const campaign of deleted) {
+        await txn.put('promo-archive:' + campaign.code, campaign);
+        delete catalog[campaign.code];
+      }
+      await txn.put('catalog', catalog);
+    });
+  }
+  if (body.operation === 'list') return json({ codes: [...Object.values(catalog), ...await archives(storage)] });
   const code = sanitizeCode(body.code);
   if (!code) return fail('invalid_code');
   if (body.operation === 'history') {
-    if (!catalog[code]) return fail('not_found', 404);
+    if (!catalog[code] && !await storage.get('promo-archive:' + code)) return fail('not_found', 404);
     const prefix = 'promo-claim:' + code + ':';
     if (body.cursor && (typeof body.cursor !== 'string' || !body.cursor.startsWith(prefix) || body.cursor.length > 300)) return fail('invalid_cursor');
     const rows = await storage.list({ prefix, ...(body.cursor ? { start: body.cursor } : {}), limit: 51 });
@@ -99,7 +133,13 @@ export async function promoCatalog(storage, env, body) {
       if (body.operation === 'delete') current.deletedAt = new Date().toISOString();
       current.revision = (current.revision || 1) + 1;
       current.updatedAt = new Date().toISOString();
-      await storage.put('catalog', catalog);
+      await storage.transaction(async txn => {
+        if (current.deletedAt) {
+          await txn.put('promo-archive:' + code, current);
+          delete catalog[code];
+        }
+        await txn.put('catalog', catalog);
+      });
       return json({ ok: true, campaign: current });
     }
   }
@@ -126,7 +166,7 @@ export async function promoCatalog(storage, env, body) {
       await storage.put('catalog', catalog);
       return json({ ok: true, campaign: catalog[code] });
     }
-    if (catalog[code]) return fail('code_exists', 409);
+    if (catalog[code] || await storage.get('promo-archive:' + code)) return fail('code_exists', 409);
     if (Object.keys(catalog).length >= 500) return fail('catalog_full', 409);
     const owner = await codeRpc(env, code, 'register', marker);
     if (owner !== marker) return fail('code_exists', 409);
@@ -136,32 +176,38 @@ export async function promoCatalog(storage, env, body) {
     await storage.put('catalog', catalog);
     return json({ ok: true, campaign: catalog[code] });
   }
-  if (body.operation !== 'claim' || typeof body.userId !== 'string') return fail('invalid_operation');
+  if (!['claim', 'reserve'].includes(body.operation) || typeof body.userId !== 'string') return fail('invalid_operation');
   const key = 'promo-claim:' + code + ':' + body.userId;
   const previous = await storage.get(key);
   if (previous) {
     if (previous.failed) return fail('promo_already_used');
-    return finish(storage, env, key, previous);
+    return () => finish(storage, env, key, previous, serial);
   }
   const now = Date.now();
-  const rateKey = 'promo-attempts:' + body.userId;
-  const attempts = (await storage.get(rateKey) || []).filter(at => at > now - 900000);
-  if (attempts.length >= 8) return json({ error: 'rate_limited' }, 429, { 'Retry-After': String(Math.ceil((attempts[0] + 900000 - now) / 1000)) });
-  await storage.put(rateKey, [...attempts, now]);
-  const owner = await codeRpc(env, code, 'lookup');
-  if (!owner) return fail('code_not_found', 404);
-  if (owner !== marker) {
-    return accountRpc(env, 'referral-claim:' + body.userId, '/_referral/claim', { code, friendId: body.userId });
+  if (body.operation === 'claim') {
+    const rateKey = 'promo-attempts:' + body.userId;
+    const attempts = (await storage.get(rateKey) || []).filter(at => at > now - 900000);
+    if (attempts.length >= 8) return json({ error: 'rate_limited' }, 429, { 'Retry-After': String(Math.ceil((attempts[0] + 900000 - now) / 1000)) });
+    await storage.put(rateKey, [...attempts, now]);
+    const owner = await codeRpc(env, code, 'lookup');
+    if (!owner) return fail('code_not_found', 404);
+    if (owner !== marker) {
+      return () => accountRpc(env, 'referral-claim:' + body.userId, '/_referral/claim', { code, friendId: body.userId });
+    }
+    return async () => {
+      const check = await accountRpc(env, body.userId, '/_account/promo', { operation: 'check' });
+      if (!check.ok) return check;
+      const { createdAt } = await check.json();
+      return rpc(env, { operation: 'reserve', userId: body.userId, code, createdAt });
+    };
   }
   const campaign = catalog[code];
-  if (!campaign) return fail('code_not_found', 404);
+  if (!campaign) return await storage.get('promo-archive:' + code) ? fail('promo_inactive') : fail('code_not_found', 404);
   if (campaign.deletedAt || !campaign.enabled) return fail('promo_inactive');
   if (campaign.startsAt != null && now < Date.parse(campaign.startsAt)) return fail('promo_not_started');
   if (campaign.expiresAt != null && now >= Date.parse(campaign.expiresAt)) return fail('promo_expired');
   if (campaign.maxUses != null && campaign.uses >= campaign.maxUses) return fail('promo_exhausted');
-  const check = await accountRpc(env, body.userId, '/_account/promo', { operation: 'check' });
-  if (!check.ok) return check;
-  const { createdAt } = await check.json();
+  const { createdAt } = body;
   const job = { code, userId: body.userId, createdAt, days: campaign.days, claimedAt: new Date(now).toISOString() };
   await storage.setAlarm(now + 60_000);
   await storage.transaction(async txn => {
@@ -170,5 +216,5 @@ export async function promoCatalog(storage, env, body) {
     await txn.put(key, job);
     await txn.put('promo-pending:' + key, key);
   });
-  return finish(storage, env, key, job);
+  return () => finish(storage, env, key, job, serial);
 }

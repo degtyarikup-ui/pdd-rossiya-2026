@@ -128,16 +128,19 @@ export class AccountState {
     this.tail = result.then(() => {}, () => {});
     return result;
   }
-  fetch(request) { return this.serial(() => this.handle(request)); }
-  alarm() { return this.serial(async () => {
+  async fetch(request) {
+    const result = await this.serial(() => this.handle(request));
+    // Promo reservations are serialized; downstream account work is not.
+    return typeof result === 'function' ? result() : result;
+  }
+  async alarm() { const result = await this.serial(async () => {
     // Alarms have a finite automatic retry budget. Save another wake-up before
     // touching any maintenance data, including list(), so a quiet account can
     // recover even after a long downstream outage or an object restart.
     await this.state.storage.setAlarm(Date.now() + 65000);
     if (await this.state.storage.get('promo-catalog')) {
       const { retryPromos } = await import('./promocodes.js');
-      await retryPromos(this.state.storage, this.env);
-      return;
+      return retryPromos(this.state.storage, this.env, fn => this.serial(fn));
     }
     const job = await this.state.storage.get('referral-job');
     if (job && !job.done) {
@@ -150,7 +153,7 @@ export class AccountState {
     const next = Math.min(expiry, pending ? Date.now() + 65000 : Infinity);
     if (Number.isFinite(next)) await this.state.storage.setAlarm(next);
     else await this.state.storage.deleteAlarm();
-  }); }
+  }); return typeof result === 'function' ? result() : result; }
   async scheduleExpiry(at) {
     const current = await this.state.storage.getAlarm?.();
     // Never postpone an already due alarm: a steady stream of account writes
@@ -264,7 +267,7 @@ export class AccountState {
     const path = new URL(request.url).pathname;
     if (path === '/_promo/catalog') {
       const { promoCatalog } = await import('./promocodes.js');
-      return promoCatalog(this.state.storage, this.env, await request.json());
+      return promoCatalog(this.state.storage, this.env, await request.json(), fn => this.serial(fn));
     }
     if (path.startsWith('/_directory/')) return this.directory(request, path);
     if (path === '/_referral/code' || path === '/_referral/claim') {
