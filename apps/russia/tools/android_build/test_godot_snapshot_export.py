@@ -1,5 +1,7 @@
 """Export validation is independent of Godot's unreliable error exit status."""
 import os
+import sys
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[4]))
 from pathlib import Path
 import shutil
 import subprocess
@@ -14,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 class SnapshotExportTests(unittest.TestCase):
     def export(self, root, platform, failure):
         (root / 'scripts').mkdir()
-        shutil.copytree(Path(__file__).resolve().parents[2] / 'tools/multi_app', root / 'tools/multi_app')
+        shutil.copytree(Path(__file__).resolve().parents[4] / 'tools/multi_app', root / 'tools/multi_app')
         script = f'godot_{platform}_assets.sh'
         shutil.copyfile(ROOT / 'scripts' / script, root / 'scripts' / script)
         scenery = root / 'game_godot/scenery/test.import'

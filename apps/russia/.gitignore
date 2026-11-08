@@ -1,0 +1,89 @@
+# Локальное и воспроизводимое; постоянные исходники и контент хранятся в Git.
+# Временное: output/ и scratch/. Необходимое переносить в docs/ или store_assets/.
+# Секреты, подпись и состояние Wrangler не публикуются.
+# Godot network/build/ и signs_reel/state.json НЕ являются временным кэшем.
+# Правила очистки: docs/ops/workspace-cleanup.md.
+
+**/.wrangler/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+*.class
+*.iml
+*.ipr
+*.iws
+*.jks
+*.keystore
+*.log
+*.p12
+*.pem
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.dart_tool/
+.dev-device
+.dev-mac
+.env
+.env.*
+.flutter-plugins-dependencies
+.history
+.idea/
+.pub-cache/
+.pub/
+.svn/
+.swiftpm/
+.wrangler/
+/android/app/debug
+/android/app/profile
+/android/app/release
+/android/key.properties
+/build/
+/coverage/
+/output/
+/scratch/
+.agents/
+app.*.map.json
+app.*.symbols
+assets/videos/signs_reel/
+exports/
+migrate_working_dir/
+node_modules/
+output/game-reels/
+secrets/
+supabase/.temp/
+tools/network/.venv/
+tools/signs_reel/.cache/
+tools/signs_reel/.work/
+web_landing/ru/app/
+game_godot/network/preview/
+game_godot/network/history/
+/android/godot/
+/ios/Godot/
+# Пример окружения допускается, но без реальных значений секретов.
+!.env.example
+
+# Temporary links for standalone Godot exports; canonical photos are in assets/.
+/game_godot/questions/*.webp
+/game_godot/questions/*.webp.import
+# MP3 derivatives of canonical studio Opus audio, shared by Flutter/Godot.
+/assets/audio/game_questions/*.mp3
+/assets/audio/game_questions/.manifest.json
+# Temporary links for standalone game exports.
+/game_godot/question_audio/*.mp3
+/game_godot/question_audio/*.mp3.import
+
+# Temporary links to canonical answer sounds for standalone Godot exports.
+/game_godot/answer_audio/
+
+# Shared achievement badges, exported from assets/ for the Godot package.
+game_godot/icons/achievements/
+
+game_godot/icons/streak_flame.svg
+game_godot/icons/streak_flame.svg.import
+
+# Local artifact links are not portable source files.
+/build
+/output
+/scratch

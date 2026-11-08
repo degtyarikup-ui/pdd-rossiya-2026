@@ -50,7 +50,7 @@ flutter doctor --android-licenses
 ./scripts/setup_android.sh
 flutter doctor -v
 flutter pub get
-flutter gen-l10n
+(cd apps/russia && flutter gen-l10n)
 
 ./scripts/build_dev.sh
 ```
@@ -61,8 +61,8 @@ flutter gen-l10n
 Платформа Android, Build Tools и NDK берутся из требований Flutter/Gradle;
 их загрузке нужны принятые лицензии и доступ к серверам Android SDK.
 
-Готовый APK: `build/app/outputs/flutter-apk/app-ru-release.apk`.
-При наличии `secrets/firebase/ru.defines.json` тестовая сборка получает ту же
+Готовый APK: `apps/russia/build/app/outputs/flutter-apk/app-ru-release.apk`.
+При наличии `apps/russia/secrets/firebase/ru.defines.json` тестовая сборка получает ту же
 конфигурацию удалённых пушей, что и релизная; без файла Firebase не включается.
 `build_dev.sh` собирает release APK с `-Pdev`; Flutter debug-режим и тестовый
 суффикс пакета — разные вещи. Если `android/key.properties` отсутствует,

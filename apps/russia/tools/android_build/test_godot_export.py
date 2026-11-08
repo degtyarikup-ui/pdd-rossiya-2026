@@ -1,5 +1,7 @@
 """Godot may exit zero on script errors; never package that export."""
 import os
+import sys
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[4]))
 from pathlib import Path
 import shutil
 import subprocess
@@ -62,7 +64,7 @@ exit 0
 class GodotIosExportTests(unittest.TestCase):
     def run_export(self, root, stage):
         (root / 'scripts').mkdir()
-        shutil.copytree(SCRIPT.parents[1] / 'tools/multi_app', root / 'tools/multi_app')
+        shutil.copytree(SCRIPT.parents[3] / 'tools/multi_app', root / 'tools/multi_app')
         (root / 'fixture.pck').write_bytes(pack())
         shutil.copyfile(IOS_SCRIPT, root / 'scripts/godot_ios_assets.sh')
         scenery = root / 'game_godot/scenery'

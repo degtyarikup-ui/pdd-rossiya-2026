@@ -1,5 +1,7 @@
 """A release cannot silently omit games or reuse a failed engine export."""
 import os
+import sys
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[4]))
 from pathlib import Path
 import shutil
 import subprocess
@@ -15,7 +17,7 @@ class ReleaseGameTests(unittest.TestCase):
     def fixture(self, root):
         (root / 'scripts').mkdir()
         (root / 'output').mkdir()
-        shutil.copytree(ROOT / 'tools/multi_app', root / 'tools/multi_app')
+        shutil.copytree(ROOT.parents[1] / 'tools/multi_app', root / 'tools/multi_app')
         for name in ('build.sh', 'android_env.sh'):
             shutil.copyfile(ROOT / 'scripts' / name, root / 'scripts' / name)
         tools = root / 'tools/godot_export'

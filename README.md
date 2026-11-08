@@ -1,15 +1,17 @@
-# ПДД Россия 2026
+# PDD workspace
 
-Приложение для подготовки к экзамену ГИБДД (Flutter: iOS, Android, веб),
-3D-игра «Живой город», сайт pdd-drive.ru и серверная часть на Cloudflare Workers.
+- Россия: [apps/russia](apps/russia/), документация: [карта](apps/russia/docs/README.md).
+- Общий интерфейс: [packages/pdd_ui](packages/pdd_ui/).
+- План миграции: [docs/architecture/multi-app-migration.md](docs/architecture/multi-app-migration.md).
 
-- **Правила работы для людей и ИИ-агентов:** [CLAUDE.md](CLAUDE.md) (= `AGENTS.md`)
-- **Карта кода:** [docs/architecture.md](docs/architecture.md)
-- **Подсистемы:** [приложение](docs/application/README.md), [сервер](docs/server/README.md), [админки](docs/admin/README.md), [контент](docs/content/README.md), [игра](docs/game/README.md)
-- **Вся документация:** [docs/README.md](docs/README.md)
-
-```bash
+```sh
 flutter pub get
+cd apps/russia
+flutter analyze
 flutter test
-./scripts/build.sh ru apk          # сборка, варианты — в CLAUDE.md
 ```
+
+Из корня по-прежнему работают `./scripts/build_dev.sh --arm64`,
+`./scripts/build.sh ru web`, `./scripts/network_editor.sh`.
+`build/` на этом ноутбуке — совместимая ссылка на российские артефакты.
+Свежая копия хранит их в `apps/russia/build/`.

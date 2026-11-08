@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class IosCopyGateTest(unittest.TestCase):
     def test_existing_pack_is_audited_even_without_running_exporter(self):
-        project = (ROOT / 'ios/Runner.xcodeproj/project.pbxproj').read_text()
+        project = (ROOT / 'apps/russia/ios/Runner.xcodeproj/project.pbxproj').read_text()
         block = project.split('/* Copy Godot game pack */ = {', 1)[1].split('\n\t\t};', 1)[0]
         script = json.loads(re.search(r'shellScript = ("(?:[^"\\]|\\.)*");', block)[1])
         for country in ('ru', 'by'):

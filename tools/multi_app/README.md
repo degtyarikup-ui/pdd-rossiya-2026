@@ -5,9 +5,9 @@ Run from the repository root after `flutter pub get`:
 ```sh
 dart tools/multi_app/check_boundaries.dart
 python3 -m unittest discover -s tools/multi_app -p 'test_*.py'
-python3 tools/multi_app/check_artifact.py build/app/outputs/flutter-apk/app-ru-release.apk --country ru
-python3 tools/multi_app/check_artifact.py build/web --country ru --profile ru-web
-python3 tools/multi_app/check_artifact.py ios/Godot/game.pck --country ru --profile ru-ios-game
+python3 tools/multi_app/check_artifact.py apps/russia/build/app/outputs/flutter-apk/app-ru-release.apk --country ru
+python3 tools/multi_app/check_artifact.py apps/russia/build/web --country ru --profile ru-web
+python3 tools/multi_app/check_artifact.py apps/russia/ios/Godot/game.pck --country ru --profile ru-ios-game
 ```
 
 `resource_policy.json` assigns current content conservatively to RU. Shared UI

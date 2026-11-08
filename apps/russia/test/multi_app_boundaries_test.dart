@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import '../tools/multi_app/check_boundaries.dart';
+import '../../../tools/multi_app/check_boundaries.dart';
 
 void main() {
   test('current repository obeys app and shared package boundaries', () {

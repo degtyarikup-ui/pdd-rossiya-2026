@@ -24,17 +24,17 @@
     ]
   },
   "ownership": {
-    "assets/countries/ru/": "ru",
-    "assets/audio/": "ru",
-    "assets/game/": "ru",
-    "assets/images/": "ru",
-    "assets/icons/": "ru",
-    "assets/mascot/": "ru",
-    "assets/fonts/": "shared",
-    "game_godot/": "ru",
-    "android/godot/assets/": "ru",
-    "ios/Godot/game.pck": "ru",
-    "build/web/godot/": "ru"
+    "apps/russia/assets/countries/ru/": "ru",
+    "apps/russia/assets/audio/": "ru",
+    "apps/russia/assets/game/": "ru",
+    "apps/russia/assets/images/": "ru",
+    "apps/russia/assets/icons/": "ru",
+    "apps/russia/assets/mascot/": "ru",
+    "apps/russia/assets/fonts/": "shared",
+    "apps/russia/game_godot/": "ru",
+    "apps/russia/android/godot/assets/": "ru",
+    "apps/russia/ios/Godot/game.pck": "ru",
+    "apps/russia/build/web/godot/": "ru"
   },
   "note": "Conservative ownership: all current game/content resources belong to RU until explicitly reviewed for reuse. UI package has no resources.",
   "flutterFontAssets": {
@@ -45,5 +45,8 @@
       "assets/fonts/Onest-Bold.ttf",
       "assets/fonts/Onest-ExtraBold.ttf"
     ]
+  },
+  "applications": {
+    "apps/russia": "ru"
   }
 }

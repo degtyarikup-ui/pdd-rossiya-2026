@@ -1,6 +1,7 @@
 name: pdd_ui
 description: Shared PDD design tokens. No country content or services.
 publish_to: none
+resolution: workspace
 version: 0.1.0
 environment:
   sdk: ^3.11.4

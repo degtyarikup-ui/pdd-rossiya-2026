@@ -4,6 +4,15 @@ import 'dart:io';
 import 'package:yaml/yaml.dart';
 
 List<String> checkBoundaries(Directory root) {
+  // Accept calls from a country app or from the workspace root.
+  while (!File(
+    '${root.path}/tools/multi_app/resource_policy.json',
+  ).existsSync()) {
+    final parent = root.parent;
+    if (parent.path == root.path)
+      throw StateError('Workspace policy not found');
+    root = parent;
+  }
   final errors = <String>[];
   final policy =
       jsonDecode(
@@ -12,14 +21,20 @@ List<String> checkBoundaries(Directory root) {
             ).readAsStringSync(),
           )
           as Map<String, dynamic>;
-  final projects = <String, String>{'.': 'ru'};
+  final registered = Map<String, String>.from(
+    policy['applications'] as Map? ?? {'.': 'ru'},
+  );
+  final projects = <String, String>{...registered};
   for (final kind in ['apps', 'packages']) {
     final dir = Directory('${root.path}/$kind');
     if (!dir.existsSync()) continue;
     for (final item
         in dir.listSync(followLinks: false).whereType<Directory>()) {
       final name = item.uri.pathSegments.where((s) => s.isNotEmpty).last;
-      projects['$kind/$name'] = kind == 'packages' ? 'shared' : name;
+      final path = '$kind/$name';
+      projects[path] = kind == 'packages'
+          ? 'shared'
+          : (registered[path] ?? name);
     }
   }
   final appNames = <String>{};

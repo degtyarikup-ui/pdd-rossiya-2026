@@ -21,5 +21,6 @@ jobs:
       - run: python3 -m unittest discover -s tools/multi_app -p 'test_*.py'
       - name: Test boundary violations
         run: |
-          mkdir -p assets/audio/game_questions
+          mkdir -p apps/russia/assets/audio/game_questions
+          cd apps/russia
           flutter test test/multi_app_boundaries_test.dart

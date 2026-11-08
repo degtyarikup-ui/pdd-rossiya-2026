@@ -1,3 +1,5 @@
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -7,6 +9,16 @@ from tools.multi_app.check_artifact import audit, inventory
 
 
 class ArtifactIsolationTest(unittest.TestCase):
+    def test_relocated_app_wrapper_enforces_country(self):
+        script = Path(__file__).resolve().parents[2] / "apps/russia/tools/multi_app/check_artifact.py"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "assets/countries/ru/questions/q.json"
+            path.parent.mkdir(parents=True)
+            path.write_text("[]")
+            for country, expected in (("ru", 0), ("by", 1)):
+                result = subprocess.run([sys.executable, str(script), directory, "--country", country], capture_output=True, text=True)
+                self.assertEqual(result.returncode, expected, result.stderr)
+
     def test_android_and_ios_prefixes(self):
         for prefix in ('assets/flutter_assets/', 'base/assets/flutter_assets/',
                        'Payload/Runner.app/Frameworks/App.framework/flutter_assets/'):
