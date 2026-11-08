@@ -1,0 +1,28 @@
+{
+  "vehicles": [
+    {
+      "name": "BMW 1 Series M",
+      "author": "Mike Pan",
+      "source": "https://mikepan.com/bmw.html",
+      "download": "https://download.blender.org/demo/test/BMW27_2.blend.zip",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "licenseEvidence": "https://casual-effects.com/g3d/data10/index.html",
+      "changes": "Extracted one car, baked geometry, rescaled to 4.48 m, replaced paint and selected materials, animated wheels and indicators."
+    },
+    {
+      "name": "Ferrari 458 Italia",
+      "author": "vicent091036",
+      "source": "https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6",
+      "download": "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/ferrari.glb",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "licenseEvidence": "https://github.com/mrdoob/three.js/issues/23089",
+      "distribution": "https://threejs.org/examples/webgl_materials_car.html",
+      "changes": "Replaced paint and selected materials, oriented and animated for the road scene."
+    }
+  ],
+  "environment": "Original procedural street, buildings, plants, furnishings, cameras and lighting in scene.py.",
+  "font": "Onest; assets/fonts/Onest-OFL.txt",
+  "audio": "New Gemini Algenib narration; locally synthesised ambience, engines and indicator."
+}
