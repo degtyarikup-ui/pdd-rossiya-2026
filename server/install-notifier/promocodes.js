@@ -104,18 +104,24 @@ export async function promoCatalog(storage, env, body) {
     }
   }
   if (body.operation === 'create' || body.operation === 'update') {
-    const { days, maxUses } = body;
-    const startsAt = Date.parse(body.startsAt), expiresAt = Date.parse(body.expiresAt);
+    const { days } = body;
+    const optional = value => value === undefined || value === null || value === '';
+    const maxUses = optional(body.maxUses) ? null : body.maxUses;
+    const startsAt = optional(body.startsAt) ? null : Date.parse(body.startsAt);
+    const expiresAt = optional(body.expiresAt) ? null : Date.parse(body.expiresAt);
+    const startIso = startsAt === null ? null : Number.isFinite(startsAt) ? new Date(startsAt).toISOString() : null;
+    const endIso = expiresAt === null ? null : Number.isFinite(expiresAt) ? new Date(expiresAt).toISOString() : null;
     if (!Number.isInteger(days) || days < 1 || days > 365 ||
-        !Number.isInteger(maxUses) || maxUses < 1 || maxUses > 100000 ||
-        !Number.isFinite(startsAt) || !Number.isFinite(expiresAt) || expiresAt <= startsAt ||
-        (body.operation === 'create' && expiresAt <= Date.now())) return fail('invalid_campaign');
+        (maxUses !== null && (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > 100000)) ||
+        (startsAt !== null && !Number.isFinite(startsAt)) || (expiresAt !== null && !Number.isFinite(expiresAt)) ||
+        (startsAt !== null && expiresAt !== null && expiresAt <= startsAt) ||
+        (body.operation === 'create' && expiresAt !== null && expiresAt <= Date.now())) return fail('invalid_campaign');
     if (body.title !== undefined && (typeof body.title !== 'string' || body.title.length > 100)) return fail('invalid_campaign');
     if (body.notes !== undefined && (typeof body.notes !== 'string' || body.notes.length > 1000)) return fail('invalid_campaign');
     if (body.operation === 'update') {
-      if (maxUses < catalog[code].uses) return fail('limit_below_uses');
+      if (maxUses !== null && maxUses < catalog[code].uses) return fail('limit_below_uses');
       catalog[code] = { ...catalog[code], days, maxUses, title: (body.title || '').trim(), notes: (body.notes || '').trim(),
-        startsAt: new Date(startsAt).toISOString(), expiresAt: new Date(expiresAt).toISOString(),
+        startsAt: startIso, expiresAt: endIso,
         revision: (catalog[code].revision || 1) + 1, updatedAt: new Date().toISOString() };
       await storage.put('catalog', catalog);
       return json({ ok: true, campaign: catalog[code] });
@@ -124,8 +130,8 @@ export async function promoCatalog(storage, env, body) {
     if (Object.keys(catalog).length >= 500) return fail('catalog_full', 409);
     const owner = await codeRpc(env, code, 'register', marker);
     if (owner !== marker) return fail('code_exists', 409);
-    catalog[code] = { code, days, maxUses, startsAt: new Date(startsAt).toISOString(),
-      expiresAt: new Date(expiresAt).toISOString(), enabled: true, uses: 0, revision: 1,
+    catalog[code] = { code, days, maxUses, startsAt: startIso,
+      expiresAt: endIso, enabled: true, uses: 0, revision: 1,
       title: (body.title || '').trim(), notes: (body.notes || '').trim(), createdAt: new Date().toISOString() };
     await storage.put('catalog', catalog);
     return json({ ok: true, campaign: catalog[code] });
@@ -150,9 +156,9 @@ export async function promoCatalog(storage, env, body) {
   const campaign = catalog[code];
   if (!campaign) return fail('code_not_found', 404);
   if (campaign.deletedAt || !campaign.enabled) return fail('promo_inactive');
-  if (now < Date.parse(campaign.startsAt)) return fail('promo_not_started');
-  if (now >= Date.parse(campaign.expiresAt)) return fail('promo_expired');
-  if (campaign.uses >= campaign.maxUses) return fail('promo_exhausted');
+  if (campaign.startsAt != null && now < Date.parse(campaign.startsAt)) return fail('promo_not_started');
+  if (campaign.expiresAt != null && now >= Date.parse(campaign.expiresAt)) return fail('promo_expired');
+  if (campaign.maxUses != null && campaign.uses >= campaign.maxUses) return fail('promo_exhausted');
   const check = await accountRpc(env, body.userId, '/_account/promo', { operation: 'check' });
   if (!check.ok) return check;
   const { createdAt } = await check.json();

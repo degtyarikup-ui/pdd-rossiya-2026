@@ -152,3 +152,24 @@ test('expired campaign notes can be edited without restarting the campaign',asyn
  assert.equal(res.status,200);
  const token=await user(env,'google_late');assert.equal((await (await claim(env,token,'EXPIRED')).json()).error,'promo_expired');
 });
+
+test('optional limits support immediate, perpetual and scheduled campaigns and can be removed',async()=>{
+ const {env}=fixture();
+ assert.equal((await admin(env,{operation:'create',code:'FOREVER',days:2})).status,200);
+ let stored=(await (await admin(env)).json()).codes[0];
+ assert.equal(stored.maxUses,null);assert.equal(stored.startsAt,null);assert.equal(stored.expiresAt,null);
+ const a=await user(env,'google_a'),b=await user(env,'google_b');
+ assert.equal((await claim(env,a,'FOREVER')).status,200);assert.equal((await claim(env,b,'FOREVER')).status,200);
+ assert.equal((await (await admin(env,{operation:'update',code:'FOREVER',days:2,revision:1,maxUses:1})).json()).error,'limit_below_uses');
+ assert.equal((await admin(env,{operation:'update',code:'FOREVER',days:2,revision:1,maxUses:2})).status,200);
+ const c=await user(env,'google_c');assert.equal((await (await claim(env,c,'FOREVER')).json()).error,'promo_exhausted');
+ assert.equal((await admin(env,{operation:'update',code:'FOREVER',days:2,revision:2,maxUses:null,startsAt:null,expiresAt:null})).status,200);
+ assert.equal((await claim(env,c,'FOREVER')).status,200);
+ assert.equal((await admin(env,{operation:'create',code:'LATER',days:2,startsAt:new Date(Date.now()+DAY).toISOString()})).status,200);
+ assert.equal((await (await claim(env,c,'LATER')).json()).error,'promo_not_started');
+ assert.equal((await admin(env,{operation:'create',code:'ENDONLY',days:2,expiresAt:new Date(Date.now()+DAY).toISOString()})).status,200);
+ assert.equal((await claim(env,c,'ENDONLY')).status,200);
+ for(const extra of [{maxUses:0},{maxUses:-1},{maxUses:'bad'},{startsAt:'bad'},{expiresAt:'bad'},{expiresAt:new Date(Date.now()-DAY).toISOString()}]) {
+  assert.equal((await admin(env,{operation:'create',code:'INVALID',days:2,...extra})).status,400);
+ }
+});
