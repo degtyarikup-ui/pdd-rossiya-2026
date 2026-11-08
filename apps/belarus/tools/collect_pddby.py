@@ -132,7 +132,9 @@ def parse_ticket(payload):
     return result
 
 
-def correct_index(reply, submitted, answer_count):
+def correct_index(reply, submitted, answer_count, expected_current=None):
+    if expected_current is not None and int(reply.get('current', -1)) != expected_current:
+        raise ValueError('Answer belongs to a different ticket position')
     if 'error' in reply or int(reply.get('an', 0)) != submitted:
         raise ValueError('Answer was not acknowledged')
     answer = int(reply['answ'])
@@ -263,7 +265,7 @@ class Collector:
             question = parse_ticket(payload)
             submitted = self.choose_answer(question)
             reply, raw_answer = self.api('set', n=submitted)
-            question['correctIndex'] = correct_index(reply, submitted, len(question['answers']))
+            question['correctIndex'] = correct_index(reply, submitted, len(question['answers']), expected_current=number - 1)
             mistakes += not reply['result']
             answered += 1
             question['hintHtml'] = reply.get('hint') or payload.get('hint') or ''

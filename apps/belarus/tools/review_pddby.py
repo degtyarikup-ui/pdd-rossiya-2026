@@ -49,7 +49,7 @@ def main():
             if observed[key] != q[key]:
                 raise ValueError('Normalized question differs from raw response')
         submitted = int(raw['answer']['an'])
-        if correct_index(raw['answer'], submitted, len(q['answers'])) != q['correctIndex']:
+        if correct_index(raw['answer'], submitted, len(q['answers']), expected_current=int(raw['question']['current'])) != q['correctIndex']:
             raise ValueError('Normalized answer differs from raw response')
         images = []
         for url in q['imageUrls']:

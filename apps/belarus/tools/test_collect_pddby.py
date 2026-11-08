@@ -35,6 +35,8 @@ class ParseTicketTest(unittest.TestCase):
             parse_ticket({'ticket': '<div id="q-img"><img src="https://other.example/a.jpg"></div>'})
 
     def test_server_answer_consistency(self):
+        with self.assertRaises(ValueError):
+            correct_index({'current': 1, 'an': 1, 'answ': 1, 'result': True}, 1, 2, expected_current=0)
         self.assertEqual(correct_index({'an': '1', 'answ': '3', 'result': False}, 1, 4), 2)
         self.assertEqual(correct_index({'an': '2', 'answ': '2', 'result': True}, 2, 4), 1)
         for response in [
@@ -116,7 +118,7 @@ class FakeCollector(Collector):
             self.number = params.get('n', 1)
             return {'current': self.number - 1, 'ticket': f'<li class="b-question">Q{self.number}</li><ul id="variants"><li><span>A</span></li><li><span>B</span></li></ul>'}, 'raw/fake-question.json'
         if method == 'set':
-            return {'an': params['n'], 'answ': self.answer, 'result': params['n'] == self.answer}, 'raw/fake-answer.json'
+            return {'current': self.number - 1, 'an': params['n'], 'answ': self.answer, 'result': params['n'] == self.answer}, 'raw/fake-answer.json'
         return {}, 'raw/fake-exit.json'
 
 
