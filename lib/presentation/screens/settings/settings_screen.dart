@@ -521,7 +521,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           key: const ValueKey('settings-referral-tile'),
                           icon: Icons.card_giftcard_rounded,
                           title: appL10n.referralSettingsTitle,
-                          subtitle: appL10n.referralSettingsSubtitle,
                           trailing: Icon(
                             Icons.chevron_right_rounded,
                             color: colors.secondaryText,
@@ -531,8 +530,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         _buildSettingItem(
                           key: const ValueKey('settings-promo-tile'),
                           icon: Icons.confirmation_number_outlined,
-                          title: appL10n.promoTitle,
-                          subtitle: appL10n.promoDescription,
+                          title: appL10n.promoFieldTitle,
                           trailing: Icon(
                             Icons.chevron_right_rounded,
                             color: colors.secondaryText,
