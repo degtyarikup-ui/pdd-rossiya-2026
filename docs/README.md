@@ -9,6 +9,7 @@
 | Серверная и локальная админки | [admin/README.md](admin/README.md) |
 | Контент, генераторы и сайт | [content/README.md](content/README.md) |
 | Рабочая папка и очистка | [ops/workspace-cleanup.md](ops/workspace-cleanup.md) |
+| Переход к приложениям RU/BY | [Пошаговый план](architecture/multi-app-migration.md) |
 | Карта кода | [architecture.md](architecture.md) |
 | Проверки перед коммитом | [testing.md](testing.md) |
 | **Сборка Android на другом компьютере, загрузка зависимостей, Wi-Fi** | [build/android.md](build/android.md) |

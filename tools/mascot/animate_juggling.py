@@ -24,7 +24,7 @@ FLIGHT = 1.0
 TRANSFER = 3 * BEAT
 HAND_PERIOD = 2 * BEAT
 BALL_RADIUS = .20
-accent_source = (ROOT / "lib/core/constants/app_colors.dart").read_text()
+accent_source = (ROOT / "packages/pdd_ui/lib/src/app_colors.dart").read_text()
 accent_match = re.search(
     r"static const light\s*=\s*AppThemeColors\(\s*accent:\s*Color\(0xFF([0-9A-Fa-f]{6})\)",
     accent_source,

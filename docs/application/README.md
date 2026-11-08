@@ -17,7 +17,7 @@
 | Марафон | `screens/training/marathon_entry.dart`, `training_screen.dart`, `models/marathon_progress.dart` |
 | Нативные отзывы | `review_prompt_service.dart`, `widgets/completion_review_prompt.dart`; правила ниже |
 | Правила страны | `lib/core/config/country_config.dart` |
-| Дизайн | `lib/core/constants/`, `lib/core/theme/` |
+| Дизайн | `packages/pdd_ui/lib/src/` (токены), `lib/core/constants/` (совместимые экспорты), `lib/core/theme/` |
 | Планшеты и горизонтальный режим | [Адаптивная вёрстка](adaptive-layout.md) |
 | Строки | `lib/l10n/app_{ru,en,kk}.arb` |
 | Ящик уведомлений (колокольчик в профиле) | `notification_inbox_service.dart`, `screens/notifications/`; описание — [уведомления](../ops/notifications-setup.md) |
