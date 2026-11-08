@@ -18,11 +18,16 @@ export async function handlePromoClaim(request, env, user, jsonResponse) {
 }
 
 export async function handlePromoAdmin(request, env) {
-  if (request.method === 'GET') return rpc(env, { operation: 'list' });
+  if (request.method === 'GET') {
+    const url = new URL(request.url);
+    return rpc(env, url.searchParams.has('code')
+      ? { operation: 'history', code: url.searchParams.get('code'), cursor: url.searchParams.get('cursor') }
+      : { operation: 'list' });
+  }
   if (request.method !== 'POST') return fail('method_not_allowed', 405);
   let body;
   try { body = await request.json(); } catch { return fail('invalid_json'); }
-  if (!['create', 'toggle'].includes(body?.operation)) return fail('invalid_operation');
+  if (!['create', 'update', 'toggle', 'delete'].includes(body?.operation)) return fail('invalid_operation');
   return rpc(env, body);
 }
 
@@ -74,27 +79,56 @@ export async function promoCatalog(storage, env, body) {
   if (body.operation === 'list') return json({ codes: Object.values(catalog) });
   const code = sanitizeCode(body.code);
   if (!code) return fail('invalid_code');
-  if (body.operation === 'create') {
+  if (body.operation === 'history') {
+    if (!catalog[code]) return fail('not_found', 404);
+    const prefix = 'promo-claim:' + code + ':';
+    if (body.cursor && (typeof body.cursor !== 'string' || !body.cursor.startsWith(prefix) || body.cursor.length > 300)) return fail('invalid_cursor');
+    const rows = await storage.list({ prefix, ...(body.cursor ? { start: body.cursor } : {}), limit: 51 });
+    const entries = [...rows];
+    return json({ claims: entries.slice(0, 50).map(([, job]) => ({ userId: job.userId,
+      days: job.days, claimedAt: job.claimedAt || null, status: job.failed ? 'failed' : job.done ? 'done' : 'pending' })),
+      cursor: entries.length > 50 ? entries[50][0] : null });
+  }
+  if (['update', 'toggle', 'delete'].includes(body.operation)) {
+    const current = catalog[code];
+    if (!current || current.deletedAt) return fail('not_found', 404);
+    if ((body.operation !== 'toggle' || body.revision !== undefined) && body.revision !== (current.revision || 1)) return fail('campaign_changed', 409);
+    if (body.operation === 'delete' || body.operation === 'toggle') {
+      if (body.operation === 'toggle' && typeof body.enabled !== 'boolean') return fail('invalid_campaign');
+      current.enabled = body.operation === 'delete' ? false : body.enabled;
+      if (body.operation === 'delete') current.deletedAt = new Date().toISOString();
+      current.revision = (current.revision || 1) + 1;
+      current.updatedAt = new Date().toISOString();
+      await storage.put('catalog', catalog);
+      return json({ ok: true, campaign: current });
+    }
+  }
+  if (body.operation === 'create' || body.operation === 'update') {
     const { days, maxUses } = body;
     const startsAt = Date.parse(body.startsAt), expiresAt = Date.parse(body.expiresAt);
     if (!Number.isInteger(days) || days < 1 || days > 365 ||
         !Number.isInteger(maxUses) || maxUses < 1 || maxUses > 100000 ||
         !Number.isFinite(startsAt) || !Number.isFinite(expiresAt) || expiresAt <= startsAt ||
-        expiresAt <= Date.now()) return fail('invalid_campaign');
+        (body.operation === 'create' && expiresAt <= Date.now())) return fail('invalid_campaign');
+    if (body.title !== undefined && (typeof body.title !== 'string' || body.title.length > 100)) return fail('invalid_campaign');
+    if (body.notes !== undefined && (typeof body.notes !== 'string' || body.notes.length > 1000)) return fail('invalid_campaign');
+    if (body.operation === 'update') {
+      if (maxUses < catalog[code].uses) return fail('limit_below_uses');
+      catalog[code] = { ...catalog[code], days, maxUses, title: (body.title || '').trim(), notes: (body.notes || '').trim(),
+        startsAt: new Date(startsAt).toISOString(), expiresAt: new Date(expiresAt).toISOString(),
+        revision: (catalog[code].revision || 1) + 1, updatedAt: new Date().toISOString() };
+      await storage.put('catalog', catalog);
+      return json({ ok: true, campaign: catalog[code] });
+    }
     if (catalog[code]) return fail('code_exists', 409);
     if (Object.keys(catalog).length >= 500) return fail('catalog_full', 409);
     const owner = await codeRpc(env, code, 'register', marker);
     if (owner !== marker) return fail('code_exists', 409);
     catalog[code] = { code, days, maxUses, startsAt: new Date(startsAt).toISOString(),
-      expiresAt: new Date(expiresAt).toISOString(), enabled: true, uses: 0 };
+      expiresAt: new Date(expiresAt).toISOString(), enabled: true, uses: 0, revision: 1,
+      title: (body.title || '').trim(), notes: (body.notes || '').trim(), createdAt: new Date().toISOString() };
     await storage.put('catalog', catalog);
     return json({ ok: true, campaign: catalog[code] });
-  }
-  if (body.operation === 'toggle') {
-    if (!catalog[code] || typeof body.enabled !== 'boolean') return fail('not_found', 404);
-    catalog[code].enabled = body.enabled;
-    await storage.put('catalog', catalog);
-    return json({ ok: true });
   }
   if (body.operation !== 'claim' || typeof body.userId !== 'string') return fail('invalid_operation');
   const key = 'promo-claim:' + code + ':' + body.userId;
@@ -115,14 +149,14 @@ export async function promoCatalog(storage, env, body) {
   }
   const campaign = catalog[code];
   if (!campaign) return fail('code_not_found', 404);
-  if (!campaign.enabled) return fail('promo_inactive');
+  if (campaign.deletedAt || !campaign.enabled) return fail('promo_inactive');
   if (now < Date.parse(campaign.startsAt)) return fail('promo_not_started');
   if (now >= Date.parse(campaign.expiresAt)) return fail('promo_expired');
   if (campaign.uses >= campaign.maxUses) return fail('promo_exhausted');
   const check = await accountRpc(env, body.userId, '/_account/promo', { operation: 'check' });
   if (!check.ok) return check;
   const { createdAt } = await check.json();
-  const job = { code, userId: body.userId, createdAt, days: campaign.days };
+  const job = { code, userId: body.userId, createdAt, days: campaign.days, claimedAt: new Date(now).toISOString() };
   await storage.setAlarm(now + 60_000);
   await storage.transaction(async txn => {
     campaign.uses++;

@@ -114,3 +114,41 @@ test('missing or future registration dates cannot collect a friend bonus',async(
   assert.equal((await (await claim(env,await session(env,id),code)).json()).error,'referral_ineligible');
  }
 });
+
+test('versioned edits preserve grants, deletion preserves history and prevents reuse',async()=>{
+ const {env}=fixture();const a=await user(env,'google_a'),b=await user(env,'google_b');
+ await admin(env,campaign('EDIT7'));const before=await (await claim(env,a,'EDIT7')).json();
+ const update=(revision,extra={})=>admin(env,{...campaign('EDIT7'),operation:'update',revision,days:3,...extra});
+ assert.equal((await update(1)).status,200);assert.equal((await update(1)).status,409);
+ assert.equal((await (await claim(env,a,'EDIT7')).json()).premiumExpiresAt,before.premiumExpiresAt);
+ assert.equal((await (await claim(env,b,'EDIT7')).json()).daysAdded,3);
+ assert.equal((await (await update(2,{maxUses:1})).json()).error,'limit_below_uses');
+ const history=await worker.fetch(request('/api/admin/promocodes?code=EDIT7',undefined,'fixture-admin'),env);
+ const data=await history.json();assert.equal(data.claims.length,2);assert.equal(data.claims[0].days,7);assert.ok(data.claims[0].claimedAt);
+ assert.equal((await admin(env,{operation:'delete',code:'EDIT7',revision:2})).status,200);
+ const c=await user(env,'google_c');assert.equal((await (await claim(env,c,'EDIT7')).json()).error,'promo_inactive');
+ assert.equal((await (await claim(env,a,'EDIT7')).json()).premiumExpiresAt,before.premiumExpiresAt);
+ assert.equal((await admin(env,campaign('EDIT7'))).status,409);
+ assert.equal((await admin(env,{operation:'toggle',code:'EDIT7',enabled:true})).status,404);
+ assert.ok((await (await admin(env)).json()).codes[0].deletedAt);
+});
+
+test('history pagination, authorization and metadata validation',async()=>{
+ const {env,states}=fixture();await admin(env,campaign('HISTORY'));
+ for(let i=0;i<55;i++) await states.get('promotions').put('promo-claim:HISTORY:google_'+String(i).padStart(3,'0'),{userId:'google_'+i,days:7,done:true});
+ const get=(query,token='fixture-admin')=>worker.fetch(request('/api/admin/promocodes?'+query,undefined,token),env);
+ assert.equal((await get('code=HISTORY',null)).status,401);
+ assert.equal((await get('code=HISTORY&cursor=promo-claim:OTHER:user')).status,400);
+ const first=await (await get('code=HISTORY')).json();assert.equal(first.claims.length,50);assert.ok(first.cursor);
+ const next=await (await get('code=HISTORY&cursor='+encodeURIComponent(first.cursor))).json();assert.equal(next.claims.length,5);assert.equal(next.cursor,null);
+ assert.equal(new Set([...first.claims,...next.claims].map(c=>c.userId)).size,55);
+ assert.equal((await admin(env,campaign('INVALID',{title:'x'.repeat(101)}))).status,400);
+ assert.equal((await admin(env,campaign('INVALID',{notes:{bad:true}}))).status,400);
+});
+
+test('expired campaign notes can be edited without restarting the campaign',async()=>{
+ const {env}=fixture();await admin(env,campaign('EXPIRED'));
+ const res=await admin(env,{...campaign('EXPIRED'),operation:'update',revision:1,startsAt:new Date(Date.now()-2*DAY).toISOString(),expiresAt:new Date(Date.now()-DAY).toISOString(),notes:'Finished'});
+ assert.equal(res.status,200);
+ const token=await user(env,'google_late');assert.equal((await (await claim(env,token,'EXPIRED')).json()).error,'promo_expired');
+});

@@ -1,3 +1,4 @@
+import { PROMOCODES_NAV_HTML, PROMOCODES_VIEW_HTML, PROMOCODES_CLIENT_JS } from './promocodes_ui.js';
 import { secureResponse } from './security_headers.js';
 import { rankedRequest } from './ranked_runs.js';
 export { RankedRuns } from './ranked_runs.js';
@@ -2808,9 +2809,9 @@ function renderAdminPage() {
 
   const html = enhanceAdminHtml(enhancePublicationsHtml(withAi
     .replace('<button class="nav-item" data-feature="links">', TASKS_NAV_HTML + '\n      <button class="nav-item" data-feature="links">')
-    .replace('</nav>', ECONOMY_NAV_HTML + '\n      ' + NOTIFICATIONS_NAV_HTML + '    </nav>')
-    .replace('\n\n  </main>', '\n' + TASKS_VIEW_HTML + '\n' + ECONOMY_VIEW_HTML + '\n' + NOTIFICATIONS_VIEW_HTML + '\n' + SOCIAL_VIEW_HTML + '\n' + THREADS_VIEW_HTML + '\n' + PUBLICATIONS_VIEW_HTML + '\n  </main>')));
-  return html + ADMIN_THEME_HTML + ADMIN_DATA_STYLES + "<script>" + ADMIN_SECURITY_CLIENT_JS + ADMIN_DATA_CLIENT_JS + BRAND_SVGS_CLIENT_JS + clientJs + ANALYTICS_CLIENT_JS + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + ECONOMY_CLIENT_JS + NOTIFICATIONS_CLIENT_JS + TASKS_CLIENT_JS + BLOG_CLIENT_JS + PUBLICATIONS_CLIENT_JS + ADMIN_UI_CLIENT_JS + ADMIN_THEME_CLIENT_JS + "</script></body></html>";
+    .replace('</nav>', PROMOCODES_NAV_HTML + ECONOMY_NAV_HTML + '\n      ' + NOTIFICATIONS_NAV_HTML + '    </nav>')
+    .replace('\n\n  </main>', '\n' + PROMOCODES_VIEW_HTML + TASKS_VIEW_HTML + '\n' + ECONOMY_VIEW_HTML + '\n' + NOTIFICATIONS_VIEW_HTML + '\n' + SOCIAL_VIEW_HTML + '\n' + THREADS_VIEW_HTML + '\n' + PUBLICATIONS_VIEW_HTML + '\n  </main>')));
+  return html + ADMIN_THEME_HTML + ADMIN_DATA_STYLES + "<script>" + ADMIN_SECURITY_CLIENT_JS + ADMIN_DATA_CLIENT_JS + BRAND_SVGS_CLIENT_JS + clientJs + ANALYTICS_CLIENT_JS + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + ECONOMY_CLIENT_JS + NOTIFICATIONS_CLIENT_JS + TASKS_CLIENT_JS + BLOG_CLIENT_JS + PUBLICATIONS_CLIENT_JS + PROMOCODES_CLIENT_JS + ADMIN_UI_CLIENT_JS + ADMIN_THEME_CLIENT_JS + "</script></body></html>";
 }
 
 

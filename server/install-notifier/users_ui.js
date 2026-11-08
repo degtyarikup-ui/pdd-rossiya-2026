@@ -114,21 +114,6 @@ export const USERS_VIEW_HTML = String.raw`
         }
       </style>
 
-      <details class="uv-card" style="margin-bottom:18px" ontoggle="if(this.open)uvLoadPromos()">
-        <summary style="cursor:pointer;font-weight:700">Промокоды</summary>
-        <p class="uv-meta">Рекламные коды доступны аккаунтам любого возраста. Каждый код — один раз на аккаунт.</p>
-        <form id="uv-promo-form" class="uv-toolbar" style="margin-top:16px" onsubmit="uvCreatePromo(event)">
-          <label>Код<br><input class="uv-field" name="code" required pattern="[A-Za-z0-9]{3,32}" maxlength="32" placeholder="SUMMER7" autocomplete="off"></label>
-          <label>Дней Премиума<br><input class="uv-field" name="days" type="number" min="1" max="365" value="7" required style="width:130px"></label>
-          <label>Лимит активаций<br><input class="uv-field" name="maxUses" type="number" min="1" max="100000" value="100" required style="width:140px"></label>
-          <label>Начало<br><input class="uv-field" name="startsAt" type="datetime-local" required></label>
-          <label>Окончание<br><input class="uv-field" name="expiresAt" type="datetime-local" required></label>
-          <button class="uv-icon-btn" type="submit">Создать</button>
-        </form>
-        <p class="uv-meta">Время указано в вашем часовом поясе. Срок и лимит созданного кода не меняются.</p>
-        <p id="uv-promo-message" class="uv-meta" role="status"></p>
-        <div id="uv-promos"></div>
-      </details>
       <div id="uv-list-screen">
         <div class="uv-kpis" id="uv-kpis"></div>
         <div class="card">
@@ -289,51 +274,6 @@ async function uvFetch(url, body) {
 function uvToast(msg, isError) {
   if (typeof adminToast === 'function') adminToast(msg, isError);
   else if (isError) alert(msg);
-}
-
-// Promotional codes share admin authentication and existing controls.
-function uvPromoDate(date) {
-  var d = new Date(date); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0,16);
-}
-async function uvLoadPromos() {
-  var message = document.getElementById('uv-promo-message');
-  var form = document.getElementById('uv-promo-form');
-  if (!form.elements.startsAt.value) {
-    form.elements.startsAt.value = uvPromoDate(Date.now());
-    form.elements.expiresAt.value = uvPromoDate(Date.now()+30*86400000);
-  }
-  message.textContent = 'Загрузка…';
-  try {
-    var data = await uvFetch('/api/admin/promocodes');
-    var host = document.getElementById('uv-promos'); host.replaceChildren();
-    data.codes.forEach(function(c) {
-      var row = document.createElement('div'); row.className = 'uv-toolbar';
-      var label = document.createElement('span'); label.style.flex = '1';
-      var state = !c.enabled ? 'Отключён' : Date.now() >= Date.parse(c.expiresAt) ? 'Истёк' : c.uses >= c.maxUses ? 'Лимит исчерпан' : Date.now() < Date.parse(c.startsAt) ? 'Запланирован' : 'Активен';
-      label.textContent = c.code + ' · ' + c.days + ' дн. · ' + c.uses + '/' + c.maxUses + ' · ' + state + ' · до ' + new Date(c.expiresAt).toLocaleString('ru');
-      var button = document.createElement('button'); button.type = 'button'; button.className = 'uv-icon-btn';
-      button.textContent = c.enabled ? 'Отключить' : 'Включить';
-      button.onclick = async function() {
-        button.disabled = true;
-        try { await uvFetch('/api/admin/promocodes', {operation:'toggle',code:c.code,enabled:!c.enabled}); await uvLoadPromos(); }
-        catch(e) { message.textContent = 'Не удалось изменить код: ' + e.message; button.disabled = false; }
-      };
-      row.append(label, button); host.append(row);
-    });
-    message.textContent = data.codes.length ? '' : 'Промокодов пока нет';
-  } catch(e) { message.textContent = 'Не удалось загрузить промокоды: ' + e.message; }
-}
-async function uvCreatePromo(event) {
-  event.preventDefault(); var form = event.target, button = form.querySelector('button[type="submit"]');
-  var message = document.getElementById('uv-promo-message');
-  button.disabled = true;
-  try {
-    var fields = form.elements;
-    await uvFetch('/api/admin/promocodes', {operation:'create',code:fields.code.value.trim(),days:Number(fields.days.value),maxUses:Number(fields.maxUses.value),startsAt:new Date(fields.startsAt.value).toISOString(),expiresAt:new Date(fields.expiresAt.value).toISOString()});
-    fields.code.value = ''; await uvLoadPromos(); message.textContent = 'Промокод создан';
-  } catch(e) { message.textContent = e.message === 'code_exists' ? 'Этот код уже занят' : 'Не удалось создать код. Проверьте даты и значения. ' + e.message; }
-  finally { button.disabled = false; }
 }
 
 // ── Список ──
