@@ -139,7 +139,7 @@ void main() {
 
   for (final language in ['ru', 'en', 'kk']) {
     testWidgets(
-      'hold selects all four persisted speeds without enabling voice: $language',
+      'hold selects all eight persisted speeds without enabling voice: $language',
       (tester) async {
         final visibility = <bool>[];
         final (container, source) = await mount(
@@ -157,7 +157,7 @@ void main() {
         expect(container.read(appSettingsProvider).voiceEnabled, isFalse);
         expect(visibility, [true]);
         expect(find.byType(Slider), findsOneWidget);
-        for (final speed in [0.8, 1.2, 1.5, 1.0]) {
+        for (final speed in AppSettings.voiceSpeeds) {
           await tester.ensureVisible(
             find.byKey(ValueKey('voice-speed-$speed')),
           );
@@ -173,7 +173,7 @@ void main() {
           appL10n.voiceSpeedValue('0.8'),
         );
         expect(
-          slider.semanticFormatterCallback!(3),
+          slider.semanticFormatterCallback!(7),
           appL10n.voiceSpeedValue('1.5'),
         );
         await capture(tester, 'speed-$language');

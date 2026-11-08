@@ -9,6 +9,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 
 class TipFeedCard extends StatefulWidget {
   final FeedItem item;
+  final Widget? voiceControl;
   final bool isCurrent;
   final bool isPaused;
   final VoidCallback onAutoNext;
@@ -18,6 +19,7 @@ class TipFeedCard extends StatefulWidget {
   const TipFeedCard({
     super.key,
     required this.item,
+    this.voiceControl,
     required this.isCurrent,
     this.isPaused = false,
     required this.onAutoNext,
@@ -285,6 +287,10 @@ class _TipFeedCardState extends State<TipFeedCard>
                   },
                 ),
                 const Spacer(),
+                if (widget.voiceControl != null) ...[
+                  widget.voiceControl!,
+                  const SizedBox(width: 8),
+                ],
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,

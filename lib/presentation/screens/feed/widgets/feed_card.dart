@@ -17,6 +17,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 
 class FeedCard extends ConsumerStatefulWidget {
   final FeedItem item;
+  final Widget? voiceControl;
   final bool isCurrent;
   final bool voiceEnabled;
   final double voiceSpeed;
@@ -32,6 +33,7 @@ class FeedCard extends ConsumerStatefulWidget {
   const FeedCard({
     super.key,
     required this.item,
+    this.voiceControl,
     required this.isCurrent,
     required this.voiceEnabled,
     this.voiceSpeed = 1,
@@ -520,133 +522,157 @@ class _FeedCardState extends ConsumerState<FeedCard>
   Widget _buildTopHeaderRow(AppThemeColors colors) {
     return Row(
       children: [
-        if (widget.item.badgeText != null) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: widget.item.isAiSmart
-                  ? colors.cardBackground
-                  : colors.lightAccent,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.item.isAiSmart) ...[
-                  Icon(
-                    Icons.auto_awesome_rounded,
-                    size: 13,
-                    color: colors.premiumAmber,
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                Text(
-                  widget.item.badgeText!,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: widget.item.isAiSmart
-                        ? colors.premiumAmber
-                        : colors.accent,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-
-        if (_isAnswered) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: _selectedAnswerIndex == widget.item.correctAnswerIndex
-                  ? colors.greenLight
-                  : colors.redLight,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _selectedAnswerIndex == widget.item.correctAnswerIndex
-                      ? Icons.check_circle_rounded
-                      : Icons.cancel_rounded,
-                  size: 13,
-                  color: _selectedAnswerIndex == widget.item.correctAnswerIndex
-                      ? colors.green
-                      : colors.red,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _selectedAnswerIndex == widget.item.correctAnswerIndex
-                      ? appL10n.gameCorrectShort
-                      : appL10n.mistakeLabel,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color:
-                        _selectedAnswerIndex == widget.item.correctAnswerIndex
-                        ? colors.green
-                        : colors.red,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ] else ...[
-          AnimatedBuilder(
-            animation: _timerController,
-            builder: (context, _) {
-              final progress = (1.0 - _timerController.value).clamp(0.0, 1.0);
-              final remaining = (_timerController.duration != null)
-                  ? (progress *
-                            _timerController.duration!.inMilliseconds /
-                            1000)
-                        .ceil()
-                  : 0;
-              final isUrgent = remaining <= 3;
-              final bg = isUrgent ? colors.redLight : colors.lightAccent;
-              final fg = isUrgent ? colors.red : colors.accent;
-              return CustomPaint(
-                foregroundPainter: _RRectProgressBorderPainter(
-                  progress: progress,
-                  color: fg,
-                  strokeWidth: 2.0,
-                  radius: 10.0,
-                ),
-                child: Container(
+        Expanded(
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (widget.item.badgeText != null) ...[
+                Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: bg,
+                    color: widget.item.isAiSmart
+                        ? colors.cardBackground
+                        : colors.lightAccent,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.timer_outlined, size: 13, color: fg),
-                      const SizedBox(width: 4),
+                      if (widget.item.isAiSmart) ...[
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 13,
+                          color: colors.premiumAmber,
+                        ),
+                        const SizedBox(width: 4),
+                      ],
                       Text(
-                        appL10n.gameSecondsLeft(remaining),
+                        widget.item.badgeText!,
                         style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: fg,
-                          fontFamily: 'Onest',
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: widget.item.isAiSmart
+                              ? colors.premiumAmber
+                              : colors.accent,
                         ),
                       ),
                     ],
                   ),
                 ),
-              );
-            },
-          ),
-        ],
+              ],
 
-        const Spacer(),
+              if (_isAnswered) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        _selectedAnswerIndex == widget.item.correctAnswerIndex
+                        ? colors.greenLight
+                        : colors.redLight,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _selectedAnswerIndex == widget.item.correctAnswerIndex
+                            ? Icons.check_circle_rounded
+                            : Icons.cancel_rounded,
+                        size: 13,
+                        color:
+                            _selectedAnswerIndex ==
+                                widget.item.correctAnswerIndex
+                            ? colors.green
+                            : colors.red,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _selectedAnswerIndex == widget.item.correctAnswerIndex
+                            ? appL10n.gameCorrectShort
+                            : appL10n.mistakeLabel,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color:
+                              _selectedAnswerIndex ==
+                                  widget.item.correctAnswerIndex
+                              ? colors.green
+                              : colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                AnimatedBuilder(
+                  animation: _timerController,
+                  builder: (context, _) {
+                    final progress = (1.0 - _timerController.value).clamp(
+                      0.0,
+                      1.0,
+                    );
+                    final remaining = (_timerController.duration != null)
+                        ? (progress *
+                                  _timerController.duration!.inMilliseconds /
+                                  1000)
+                              .ceil()
+                        : 0;
+                    final isUrgent = remaining <= 3;
+                    final bg = isUrgent ? colors.redLight : colors.lightAccent;
+                    final fg = isUrgent ? colors.red : colors.accent;
+                    return CustomPaint(
+                      foregroundPainter: _RRectProgressBorderPainter(
+                        progress: progress,
+                        color: fg,
+                        strokeWidth: 2.0,
+                        radius: 10.0,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: bg,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.timer_outlined, size: 13, color: fg),
+                            const SizedBox(width: 4),
+                            Text(
+                              appL10n.gameSecondsLeft(remaining),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: fg,
+                                fontFamily: 'Onest',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (widget.voiceControl != null) ...[
+          const SizedBox(width: 8),
+          widget.voiceControl!,
+        ],
+        const SizedBox(width: 8),
 
         ListenableBuilder(
           listenable: PremiumService.instance,

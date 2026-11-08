@@ -10,7 +10,7 @@ class AppSettings {
   final bool voiceEnabled;
   final double voiceSpeed;
 
-  static const voiceSpeeds = <double>[0.8, 1.0, 1.2, 1.5];
+  static const voiceSpeeds = <double>[0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5];
 
   static double parseVoiceSpeed(Object? value) {
     if (value is num && voiceSpeeds.contains(value.toDouble())) {

@@ -397,6 +397,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     return _buildFeedContent(context, _items, colors);
   }
 
+  Widget _buildVoiceControl() => QuestionVoiceToggle(
+    compact: true,
+    onSheetVisibilityChanged: (visible) {
+      if (mounted) setState(() => _isVoiceSheetOpen = visible);
+    },
+  );
+
   Widget _buildFeedContent(
     BuildContext context,
     List<FeedItem> displayItems,
@@ -443,6 +450,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                       return TipFeedCard(
                         key: ValueKey('${item.id}_$index'),
                         item: item,
+                        voiceControl: _buildVoiceControl(),
                         isCurrent: index == _currentIndex,
                         isPaused: isPaused,
                         onAutoNext: _autoNext,
@@ -458,6 +466,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                         '${item.id}_${index}_${settings.effectiveLanguageCode}',
                       ),
                       item: item,
+                      voiceControl: _buildVoiceControl(),
                       isCurrent: index == _currentIndex,
                       voiceEnabled: voiceEnabled,
                       voiceSpeed: settings.voiceSpeed,
@@ -569,7 +578,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
               ),
             ),
 
-            // 4. Floating AI, Sound & Favorite controls (bottom right corner, above bottom nav bar)
+            // 4. Floating AI & Favorite controls (bottom right corner, above bottom nav bar)
             Positioned(
               right: AppDimensions.screenPadding,
               bottom: 24,
@@ -590,16 +599,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                       }
                     },
                     colors: colors,
-                  ),
-                  const SizedBox(height: 10),
-
-                  // 2. Narration shares its preference and speed with study modes.
-                  QuestionVoiceToggle(
-                    onSheetVisibilityChanged: (visible) {
-                      if (mounted) {
-                        setState(() => _isVoiceSheetOpen = visible);
-                      }
-                    },
                   ),
                   const SizedBox(height: 10),
 

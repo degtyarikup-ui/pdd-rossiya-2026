@@ -363,7 +363,7 @@ void main() {
       final settings = const AppSettings().copyWith(voiceSpeed: speed);
       expect(AppSettings.fromJson(settings.toJson()).voiceSpeed, speed);
     }
-    for (final invalid in [null, -1, 0, 1.3, 5, '1.2', double.nan]) {
+    for (final invalid in [null, -1, 0, 1.35, 5, '1.2', double.nan]) {
       expect(AppSettings.fromJson({'voiceSpeed': invalid}).voiceSpeed, 1);
     }
   });

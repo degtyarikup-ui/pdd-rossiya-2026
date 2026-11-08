@@ -19,7 +19,13 @@ String voiceSpeedLabel(double speed) => speed == speed.roundToDouble()
 /// One narration control across tickets, the exam, the feed and Settings.
 /// A tap toggles playback; a hold opens the speed picker without toggling it.
 class QuestionVoiceToggle extends ConsumerStatefulWidget {
-  const QuestionVoiceToggle({super.key, this.onSheetVisibilityChanged});
+  const QuestionVoiceToggle({
+    super.key,
+    this.onSheetVisibilityChanged,
+    this.compact = false,
+  });
+
+  final bool compact;
 
   final ValueChanged<bool>? onSheetVisibilityChanged;
 
@@ -167,8 +173,8 @@ class _QuestionVoiceToggleState extends ConsumerState<QuestionVoiceToggle> {
                       ? Duration.zero
                       : const Duration(milliseconds: 180),
                   curve: Curves.easeOutCubic,
-                  constraints: const BoxConstraints(
-                    minHeight: 44,
+                  constraints: BoxConstraints(
+                    minHeight: widget.compact ? 28 : 32,
                     minWidth: 56,
                   ),
                   decoration: BoxDecoration(
@@ -185,7 +191,7 @@ class _QuestionVoiceToggleState extends ConsumerState<QuestionVoiceToggle> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
-                          vertical: 10,
+                          vertical: 6,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -194,7 +200,7 @@ class _QuestionVoiceToggleState extends ConsumerState<QuestionVoiceToggle> {
                               enabled || locked
                                   ? Icons.record_voice_over_rounded
                                   : Icons.voice_over_off_rounded,
-                              size: 20,
+                              size: widget.compact ? 16 : 20,
                               color: foreground,
                             ),
                             const SizedBox(width: 5),
@@ -340,29 +346,16 @@ class _VoiceSpeedPicker extends ConsumerWidget {
                   ),
                 ],
               ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                allowed
-                    ? appL10n.voiceSpeedDescription
-                    : appL10n.voicePremiumRequired,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.4,
-                  color: colors.secondaryText,
-                ),
-              ),
-            ),
             const SizedBox(height: 20),
             Semantics(
               label: appL10n.voiceSpeed,
               child: Slider(
                 key: const ValueKey('voice-speed-slider'),
-                value: (index < 0 ? 1 : index).toDouble(),
+                value: (index < 0 ? AppSettings.voiceSpeeds.indexOf(1) : index)
+                    .toDouble(),
                 min: 0,
-                max: 3,
-                divisions: 3,
+                max: (AppSettings.voiceSpeeds.length - 1).toDouble(),
+                divisions: AppSettings.voiceSpeeds.length - 1,
                 activeColor: colors.accent,
                 inactiveColor: colors.accentSurface10,
                 label: '${voiceSpeedLabel(settings.voiceSpeed)}x',
@@ -372,51 +365,52 @@ class _VoiceSpeedPicker extends ConsumerWidget {
                 onChanged: allowed ? (value) => select(value.round()) : null,
               ),
             ),
-            Row(
-              children: [
-                for (var i = 0; i < AppSettings.voiceSpeeds.length; i++)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 3),
-                      child: Semantics(
-                        selected: i == index,
-                        child: TextButton(
-                          key: ValueKey(
-                            'voice-speed-${AppSettings.voiceSpeeds[i]}',
-                          ),
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size(44, 44),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 2,
-                              vertical: 8,
+            for (var row = 0; row < 2; row++)
+              Row(
+                children: [
+                  for (var i = row * 4; i < (row + 1) * 4; i++)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        child: Semantics(
+                          selected: i == index,
+                          child: TextButton(
+                            key: ValueKey(
+                              'voice-speed-${AppSettings.voiceSpeeds[i]}',
                             ),
-                            foregroundColor: i == index
-                                ? colors.accent
-                                : colors.secondaryText,
-                            backgroundColor: i == index
-                                ? colors.accentSurface10
-                                : Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(44, 44),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 2,
+                                vertical: 8,
+                              ),
+                              foregroundColor: i == index
+                                  ? colors.accent
+                                  : colors.secondaryText,
+                              backgroundColor: i == index
+                                  ? colors.accentSurface10
+                                  : Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
-                          ),
-                          onPressed: allowed ? () => select(i) : null,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              '${voiceSpeedLabel(AppSettings.voiceSpeeds[i])}x',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                            onPressed: allowed ? () => select(i) : null,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                '${voiceSpeedLabel(AppSettings.voiceSpeeds[i])}x',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
       ),
