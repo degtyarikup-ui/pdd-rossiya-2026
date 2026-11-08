@@ -144,9 +144,9 @@ class _PromoCodeSheetState extends State<PromoCodeSheet> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
             AppDimensions.screenPadding,
-            0,
+            AppDimensions.spacingXS,
             AppDimensions.screenPadding,
-            20,
+            AppDimensions.spacingXXL,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -162,14 +162,7 @@ class _PromoCodeSheetState extends State<PromoCodeSheet> {
                   color: colors.primaryText,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.promoDescription,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.secondaryText,
-                ),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppDimensions.spacingXXL),
               if (_claimed) ...[
                 Semantics(
                   liveRegion: true,
@@ -189,22 +182,12 @@ class _PromoCodeSheetState extends State<PromoCodeSheet> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppDimensions.spacingXL),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(true),
                   child: Text(l10n.done),
                 ),
               ] else ...[
-                Text(
-                  l10n.promoFieldTitle,
-                  style: TextStyle(
-                    fontFamily: 'Onest',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: colors.primaryText,
-                  ),
-                ),
-                const SizedBox(height: 10),
                 TextField(
                   key: const ValueKey('promo-input-field'),
                   controller: _code,
@@ -219,24 +202,29 @@ class _PromoCodeSheetState extends State<PromoCodeSheet> {
                     if (_code.text.trim().isNotEmpty) _activate();
                   },
                   decoration: InputDecoration(
-                    hintText: l10n.referralEnterCodeHint,
+                    hintText: l10n.promoFieldTitle,
+                    contentPadding: const EdgeInsets.all(
+                      AppDimensions.spacingL,
+                    ),
                     filled: true,
                     fillColor: colors.background,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.buttonRadius,
+                      ),
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.buttonRadius,
+                      ),
                       borderSide: BorderSide.none,
                     ),
-                    helperText: l10n.promoTerms,
-                    helperMaxLines: 2,
                     errorText: error,
                     errorMaxLines: 3,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: AppDimensions.spacingXL),
                 ElevatedButton(
                   key: const ValueKey('promo-activate-button'),
                   onPressed:
