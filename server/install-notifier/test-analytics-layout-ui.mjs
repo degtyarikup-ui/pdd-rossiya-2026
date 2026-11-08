@@ -217,18 +217,36 @@ if(process.argv.includes('--serve')) {
   await page.waitForFunction(()=>document.querySelector('#an-now .an-big')?.textContent==='160');
   // Previous-version cached data never substitutes full-day averages for
   // missing intraday measurements. Render a measured zero and restore.
-  const comparisonCaption=page.locator('#an-activity-caption');
-  await page.evaluate(()=>{
-    const activity=window.__anData.users.activity;
-    anRenderActivity({users:{activity:{from:activity.from,days:activity.days}}});
-  });
-  assert.match(await comparisonCaption.innerText(),/накопится история/);
-  await page.evaluate(()=>{
-    const activity=window.__anData.users.activity;
-    anRenderActivity({users:{activity:{...activity,comparison:{minute:852,today:0,average:12,days:3}}}});
-  });
-  assert.match(await comparisonCaption.innerText(),/К 14:12 МСК сегодня — 0/);
-  assert.match(await page.locator('#an-activity-summary').innerText(),/Среднее к 14:12\s*12/);
+  const activityCard=page.locator('.an-activity-card');
+  const activityChart=activityCard.locator('#an-activity-chart');
+  const activitySummary=activityCard.locator('#an-activity-summary');
+  assert.equal(await activityCard.locator('.an-caption,.an-day-details').count(),0);
+  const days=[
+   {date:'2026-11-06',total:25,android:10,ios:20},
+   {date:'2026-11-07',total:0,android:0,ios:0},
+   {date:'2026-11-08',total:20,android:0,ios:20},
+  ];
+  await page.evaluate(days=>anRenderActivity({users:{activity:{days}}}),days);
+  assert.match(await activitySummary.innerText(),/Среднее\s*—/);
+  assert.deepEqual(await activityChart.locator('svg > text').allTextContents(),['0','30','6.11','7.11','8.11']);
+  assert.equal(await activityChart.locator('rect[data-i]').count(),days.length);
+  const segments=await activityChart.locator('svg > path').evaluateAll(paths=>paths.map(path=>{
+   const {x,y,width,height}=path.getBBox();
+   return {color:path.getAttribute('fill'),x,y,width,height};
+  }));
+  const [android,ios,iosOnly]=segments;
+  assert.deepEqual(segments.map(segment=>segment.color),['#0574F8','#000000','#000000']);
+  assert.equal(android.x,ios.x);
+  assert.equal(android.width,ios.width);
+  assert.ok(Math.abs(android.y-ios.y-ios.height)<0.001,'the segments touch');
+  assert.ok(Math.abs(2*android.height-ios.height)<0.001,'segment heights follow platform counts');
+  assert.ok(Math.abs(iosOnly.y+iosOnly.height-android.y-android.height)<0.001,'iOS starts at zero without Android activity');
+  await activityChart.locator('rect[data-i="0"]').hover();
+  assert.match(await page.locator('#an-tip').innerText(),/Google Play \/ Android\s*10[\s\S]*iOS\s*20/);
+  await page.evaluate(days=>{
+    anRenderActivity({users:{activity:{days,comparison:{minute:852,today:0,average:12,days:3}}}});
+  },days);
+  assert.match(await activitySummary.innerText(),/Среднее к 14:12\s*12/);
   await page.evaluate(()=>anRenderActivity(window.__anData));
 
   assert.equal(await page.locator('#an-auth-table tbody tr').count(),4);
@@ -312,8 +330,6 @@ if(process.argv.includes('--serve')) {
   await page.evaluate(data=>renderDashboard(data),oneDay);
   assert.equal(await page.locator('#an-auth-table').innerText(),auth);
   const activityToggle=page.locator('[aria-controls="an-body-activity"]');
-  const activityDays=page.locator('#an-details-activity-days');
-  await activityDays.locator('summary').click();
   await activityToggle.click();
   // Reopening renders persisted aggregates before a slow background refresh.
   let releaseRefresh;
@@ -330,7 +346,6 @@ if(process.argv.includes('--serve')) {
   await page.reload();
   await page.waitForFunction(()=>document.querySelector('#an-now .an-big')?.textContent==='160');
   assert.equal(await activityToggle.getAttribute('aria-expanded'),'false');
-  assert.equal(await activityDays.evaluate(el=>el.open),true);
   assert.match(await page.locator('#admin-data-state').innerText(),/Данные на.*обновление/);
   assert.equal(await page.locator('#refresh-btn').isDisabled(),true);
   await page.emulateMedia({reducedMotion:'no-preference'});
@@ -368,7 +383,7 @@ if(process.argv.includes('--serve')) {
   await page.waitForFunction(()=>document.querySelector('#an-now .an-big')?.textContent==='160');
   assert.equal(await activityToggle.getAttribute('aria-expanded'),'false');
   await activityToggle.click();
-  assert.equal(await activityDays.isVisible(),true);
+  assert.equal(await activityChart.isVisible(),true);
   await page.reload();
   assert.equal(await activityToggle.getAttribute('aria-expanded'),'true');
   assert.deepEqual(errors,[]);
