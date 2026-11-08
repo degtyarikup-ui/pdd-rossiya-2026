@@ -477,7 +477,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Copies the Godot game pack (ios/Godot/game.pck, scripts/godot_ios_assets.sh) into the app\n# bundle as <executable>.pck: the engine looks for it by that name. No pack, nothing is copied.\nPACK=\"${PROJECT_DIR}/Godot/game.pck\"\nif [ -f \"$PACK\" ]; then\n  cp -f \"$PACK\" \"${CODESIGNING_FOLDER_PATH}/${EXECUTABLE_NAME}.pck\"\nfi\n";
+			shellScript = "# Copies the Godot game pack (ios/Godot/game.pck, scripts/godot_ios_assets.sh) into the app\n# bundle as <executable>.pck: the engine looks for it by that name. No pack, nothing is copied.\nPACK=\"${PROJECT_DIR}/Godot/game.pck\"\nif [ -f \"$PACK\" ]; then\n  python3 \"${PROJECT_DIR}/../tools/multi_app/check_artifact.py\" \"$PACK\" --country ru --profile ru-ios-game > /dev/null || exit 1\n  cp -f \"$PACK\" \"${CODESIGNING_FOLDER_PATH}/${EXECUTABLE_NAME}.pck\"\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */

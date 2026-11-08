@@ -155,5 +155,13 @@ val appBoundaryCheck = tasks.register<Exec>("checkAppBoundaries") {
     rootProject.file("local.properties").inputStream().use { props.load(it) }
     workingDir(rootProject.projectDir.parentFile)
     commandLine("${props.getProperty("flutter.sdk")}/bin/dart", "tools/multi_app/check_boundaries.dart")
+    doLast {
+        if (File(rootProject.projectDir, "godot/assets/project.binary").isFile) {
+            project.exec {
+                workingDir(rootProject.projectDir.parentFile)
+                commandLine("python3", "tools/multi_app/check_artifact.py", "android/godot/assets", "--country", "ru", "--game-only")
+            }
+        }
+    }
 }
 tasks.named("preBuild") { dependsOn(appBoundaryCheck) }

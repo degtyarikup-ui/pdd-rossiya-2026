@@ -32,6 +32,9 @@ The checked-in baseline describes existing local artifacts, not a new release.
 
 Source gates run in build.sh, build_dev.sh, Android preBuild and the Xcode Flutter
 build phase. Thus direct Android/iOS Flutter builds get the same source gate.
+Android preBuild also audits existing loose Godot assets; the iOS copy phase
+audits the existing PCK before copying it, so stale foreign packs cannot bypass
+the exporter checks through direct Flutter commands.
 Godot exporters check generated content before replacing the previous output.
 APK/AAB release and dev build commands audit final artifacts; web release and
 APP_BUILD deployment audit web contents, including PCK. Direct Flutter web/bundle

@@ -12,7 +12,7 @@ flutter test                        # все тесты Flutter
 | Меняли | Запустить |
 | --- | --- |
 | Общие дизайн-токены `packages/pdd_ui` | `flutter analyze`, `flutter test` в каждом приложении-потребителе (сейчас Россия в корне) |
-| Проверка изоляции артефактов | `python3 -m unittest tools.multi_app.test_check_artifact`; ограничения — в плане миграции |
+| Проверка изоляции артефактов | `dart tools/multi_app/check_boundaries.dart`, `python3 -m unittest discover -s tools/multi_app -p 'test_*.py'`; охват — `tools/multi_app/README.md` |
 | Android-скрипты сборки / загрузки | `python3 -m unittest discover -s tools/android_build -p 'test_*.py'`, `bash -n scripts/*.sh`, dev APK с подготовленным Godot через `scripts/build_dev.sh` |
 | Строки `*.arb` | `flutter gen-l10n`, затем `flutter test` |
 | Вход / Премиум / оплату | список из `docs/premium/README.md` + `npm run test:security` в `server/install-notifier` |
