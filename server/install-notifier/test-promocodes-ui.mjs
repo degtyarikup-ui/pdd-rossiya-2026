@@ -32,9 +32,9 @@ test('promo CRUD, conflicts, filters, routing, history, safe text, mobile and lo
  await page.locator('#pc-create').click();await fill('code','UNLIMITED');
  assert.equal(await page.locator('[name="maxUses"]').inputValue(),'');assert.equal(await page.locator('[name="expiresAt"]').inputValue(),'');
  await page.locator('#pc-save').click();await page.locator('#pc-dialog').waitFor({state:'hidden'});
- await page.locator('[data-code="UNLIMITED"]').filter({hasText:'Бессрочно'}).waitFor();assert.ok((await page.locator('[data-code="UNLIMITED"]').textContent()).includes('без лимита'));
+ await page.locator('[data-code="UNLIMITED"]').filter({hasText:'Бессрочно'}).waitFor();assert.ok((await page.locator('[data-code="UNLIMITED"]').textContent()).includes('∞'));
  await page.locator('[data-code="UNLIMITED"] [data-action="edit"]').click();assert.equal(await page.locator('[name="maxUses"]').inputValue(),'');await fill('maxUses','10');await page.locator('#pc-save').click();await page.locator('#pc-dialog').waitFor({state:'hidden'});
- await page.locator('[data-code="UNLIMITED"]').filter({hasText:'0 / 10'}).waitFor();await page.locator('[data-code="UNLIMITED"] [data-action="edit"]').click();await fill('maxUses','');await page.locator('#pc-save').click();await page.locator('#pc-dialog').waitFor({state:'hidden'});await page.locator('[data-code="UNLIMITED"]').filter({hasText:'без лимита'}).waitFor();
+ await page.locator('[data-code="UNLIMITED"]').filter({hasText:'0 / 10'}).waitFor();await page.locator('[data-code="UNLIMITED"] [data-action="edit"]').click();await fill('maxUses','');await page.locator('#pc-save').click();await page.locator('#pc-dialog').waitFor({state:'hidden'});await page.locator('[data-code="UNLIMITED"]').filter({hasText:'∞'}).waitFor();
  await page.route('**/api/admin/promocodes',route=>route.fulfill({status:503,contentType:'application/json',body:'{"error":"unavailable"}'}));await page.locator('#pc-refresh').click();await page.waitForTimeout(200);assert.equal(await page.locator('[data-code="WINTER7"]').count(),1);assert.deepEqual(errors,[]);
  }finally{await browser.close();app.close();}
 });
