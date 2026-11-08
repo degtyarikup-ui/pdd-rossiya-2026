@@ -1,6 +1,6 @@
 # Порядок в рабочей папке
 
-Репозиторий один; границы подсистем описаны в [карте кода](../architecture.md).
+Репозиторий один; границы подсистем описаны в [карте кода](../../apps/russia/docs/architecture.md).
 Пути сохраняются: перенос каталогов требует проверки импортов, генераторов,
 платформенных проектов и скриптов деплоя.
 
@@ -47,7 +47,7 @@
 озвучку и скриншоты. Перед очисткой утверждённая сцена и дорога сохранены в
 `game_godot/videos/crossroads_reel/`, рецепт сборки и текстовые параметры — в
 `tools/game_reels/crossroads_reel/`. Стандарт и десять будущих сценариев доступны
-в [документации роликов](../video/reels_3d.md). В корневые инструкции добавлена
+в [документации роликов](../../apps/russia/docs/video/reels_3d.md). В корневые инструкции добавлена
 ссылка на этот стандарт для будущих выпусков.
 
 Удалены `output/reels/pilot-01/`, `pilot-01-v2/`, `pilot-01-v3/`,
@@ -117,7 +117,9 @@
 
 Основной репозиторий: `/Volumes/ORICO/MY PROJECTS/PDD Russia/main`.
 `output/` и `scratch/` в нём — ссылки на соседние служебные папки; `build/`
-указывает на `/Volumes/ORICO/Builds/PDD Russia/build-current`.
+указывает через `apps/russia/build` на `/Volumes/ORICO/Builds/PDD Russia/apps-russia`.
+Беларусь собирается отдельно в `/Volumes/ORICO/Builds/PDD Russia/apps-belarus`.
+`build-current` сохранён как исходный артефакт для сравнения после переноса.
 Верхняя ссылка `PDD Russia/build` исправлена на `main/build`.
 
 Прежняя папка `/Volumes/ORICO/MY PROJECTS/PDD` перенесена целиком в
