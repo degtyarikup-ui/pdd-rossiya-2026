@@ -365,52 +365,51 @@ class _VoiceSpeedPicker extends ConsumerWidget {
                 onChanged: allowed ? (value) => select(value.round()) : null,
               ),
             ),
-            for (var row = 0; row < 2; row++)
-              Row(
-                children: [
-                  for (var i = row * 4; i < (row + 1) * 4; i++)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 3),
-                        child: Semantics(
-                          selected: i == index,
-                          child: TextButton(
-                            key: ValueKey(
-                              'voice-speed-${AppSettings.voiceSpeeds[i]}',
+            Row(
+              children: [
+                for (var i = 0; i < AppSettings.voiceSpeeds.length; i++)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Semantics(
+                        selected: i == index,
+                        child: TextButton(
+                          key: ValueKey(
+                            'voice-speed-${AppSettings.voiceSpeeds[i]}',
+                          ),
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(0, 44),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 2,
+                              vertical: 8,
                             ),
-                            style: TextButton.styleFrom(
-                              minimumSize: const Size(44, 44),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 2,
-                                vertical: 8,
-                              ),
-                              foregroundColor: i == index
-                                  ? colors.accent
-                                  : colors.secondaryText,
-                              backgroundColor: i == index
-                                  ? colors.accentSurface10
-                                  : Colors.transparent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                            foregroundColor: i == index
+                                ? colors.accent
+                                : colors.secondaryText,
+                            backgroundColor: i == index
+                                ? colors.accentSurface10
+                                : Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            onPressed: allowed ? () => select(i) : null,
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                '${voiceSpeedLabel(AppSettings.voiceSpeeds[i])}x',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                          ),
+                          onPressed: allowed ? () => select(i) : null,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              '${voiceSpeedLabel(AppSettings.voiceSpeeds[i])}x',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
+            ),
           ],
         ),
       ),

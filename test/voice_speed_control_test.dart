@@ -157,12 +157,15 @@ void main() {
         expect(container.read(appSettingsProvider).voiceEnabled, isFalse);
         expect(visibility, [true]);
         expect(find.byType(Slider), findsOneWidget);
-        for (final speed in AppSettings.voiceSpeeds) {
-          await tester.ensureVisible(
-            find.byKey(ValueKey('voice-speed-$speed')),
-          );
-          await tester.pumpAndSettle();
-          await tester.tap(find.byKey(ValueKey('voice-speed-$speed')));
+        final speedButtons = AppSettings.voiceSpeeds
+            .map((speed) => find.byKey(ValueKey('voice-speed-$speed')))
+            .toList();
+        expect(
+          speedButtons.map((button) => tester.getCenter(button).dy).toSet(),
+          hasLength(1),
+        );
+        for (final (index, speed) in AppSettings.voiceSpeeds.indexed) {
+          await tester.tap(speedButtons[index]);
           await tester.pumpAndSettle();
           expect(container.read(appSettingsProvider).voiceSpeed, speed);
           expect((await source.loadAppSettings()).voiceSpeed, speed);
