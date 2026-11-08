@@ -7885,7 +7885,7 @@ abstract class AppLocalizations {
   /// No description provided for @referralEqualReward.
   ///
   /// In ru, this message translates to:
-  /// **'По {days, plural, one{{days} дню} few{{days} дня} many{{days} дней} other{{days} дня}} Премиума каждому после активации кода.'**
+  /// **'По {days, plural, one{{days} дню} few{{days} дня} many{{days} дней} other{{days} дня}} Premium вам и другу после активации кода'**
   String referralEqualReward(int days);
 
   /// No description provided for @referralRules.

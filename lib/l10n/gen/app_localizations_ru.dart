@@ -4718,7 +4718,7 @@ class AppLocalizationsRu extends AppLocalizations {
       few: '$days дня',
       one: '$days дню',
     );
-    return 'По $_temp0 Премиума каждому после активации кода.';
+    return 'По $_temp0 Premium вам и другу после активации кода';
   }
 
   @override
