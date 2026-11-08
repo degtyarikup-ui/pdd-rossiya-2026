@@ -3758,7 +3758,12 @@ const workerHandlers = {
       user.storeVerifiedAtByStore = { ...(user.storeVerifiedAtByStore || {}), [store]: Date.now() };
       user.autoRenewEnabled = verified.autoRenewEnabled;
       user.storeVerifiedAt = Date.now();
-      user.purchasedAt = new Date().toISOString();
+      if (store !== 'appstore') {
+        user.purchasedAt = new Date().toISOString();
+      } else if (!verified.reference.isTest && verified.reference.paid !== false && !verified.reference.refunded &&
+          Number.isFinite(verified.purchaseDate) && verified.purchaseDate > (Date.parse(user.purchasedAt) || 0)) {
+        user.purchasedAt = new Date(verified.purchaseDate).toISOString();
+      }
       if (platform) user.platform = platform;
       if (appVersion) user.appVersion = appVersion;
 

@@ -129,6 +129,9 @@ test('restoring an App Store receipt logs only a current paid period and uses Ap
       }
     });
     assert.equal(records.has('notified_purch:123'), shouldLog);
+    const profile = JSON.parse(records.get('user:' + id));
+    const isPaidProduction = data.environment === 'Production' && data.price > 0 && !data.revocationDate;
+    assert.equal(profile.purchasedAt, isPaidProduction ? new Date(purchaseDate).toISOString() : undefined);
     assert.deepEqual(effects.map(effect => effect.kind), shouldLog ? ['telegram', 'stats'] : []);
     if (shouldLog) {
       assert.match(effects[0].text, /<b>Автопродление Premium<\/b>/);
