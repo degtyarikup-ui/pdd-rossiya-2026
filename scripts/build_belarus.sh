@@ -3,8 +3,16 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+if ! command -v flutter >/dev/null; then
+  if [[ -x "$HOME/flutter/bin/flutter" ]]; then
+    export PATH="$HOME/flutter/bin:$PATH"
+  else
+    echo 'Flutter not found. Add its bin directory to PATH.' >&2
+    exit 1
+  fi
+fi
 flutter pub get
- dart tools/multi_app/check_boundaries.dart
+dart tools/multi_app/check_boundaries.dart
 cd apps/belarus
 dart tools/validate_content.dart assets/countries/by/catalog.json
 case "${1:-apk}" in
