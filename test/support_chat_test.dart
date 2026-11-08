@@ -1,6 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:pdd_app/core/config/backend_config.dart';
+import 'package:pdd_app/data/services/network_retry.dart';
 import 'package:pdd_app/data/models/support_chat_message.dart';
 import 'package:pdd_app/data/services/support_chat_service.dart';
 import 'package:pdd_app/presentation/screens/support/support_chat_screen.dart';
@@ -155,18 +162,105 @@ void main() {
     });
   });
 
+  group('SupportChatService delivery', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      FlutterSecureStorage.setMockInitialValues({});
+      NotifierRoute.reset();
+      PackageInfo.setMockInitialValues(
+        appName: 'Test',
+        packageName: 'ru.pdd.pdd_app',
+        version: '2.2.12',
+        buildNumber: '75',
+        buildSignature: '',
+      );
+    });
+    tearDown(NotifierRoute.reset);
+
+    test(
+      'an ambiguous timeout is not automatically sent a second time',
+      () async {
+        final calls = <Uri>[];
+        final result = await http.runWithClient(
+          () => SupportChatService.instance.sendMessage('Help'),
+          () => MockClient((request) async {
+            if (request.url.path == '/api/support/send') {
+              calls.add(request.url);
+              throw TimeoutException('Response lost after delivery');
+            }
+            return http.Response('{}', 200);
+          }),
+        );
+        expect(result, isNull);
+        expect(calls, hasLength(1));
+      },
+    );
+
+    test(
+      'sending uses the previously working host without replaying HTTP 504',
+      () async {
+        NotifierRoute.remember(BackendConfig.notifierHosts.last);
+        final calls = <Uri>[];
+        final result = await http.runWithClient(
+          () => SupportChatService.instance.sendMessage('Help'),
+          () => MockClient((request) async {
+            if (request.url.path == '/api/support/send') {
+              calls.add(request.url);
+              return http.Response('{}', 504);
+            }
+            return http.Response('{}', 200);
+          }),
+        );
+        expect(result, isNull);
+        expect(
+          calls.single.origin,
+          Uri.parse(BackendConfig.notifierHosts.last).origin,
+        );
+      },
+    );
+
+    test(
+      'a slow successful send is awaited past the former eight-second timeout',
+      () async {
+        var calls = 0;
+        final result = await http.runWithClient(
+          () => SupportChatService.instance.sendMessage('Help'),
+          () => MockClient((request) async {
+            if (request.url.path != '/api/support/send') {
+              return http.Response('{}', 200);
+            }
+            calls++;
+            await Future<void>.delayed(const Duration(seconds: 9));
+            return http.Response(
+              jsonEncode({
+                'ok': true,
+                'message': {
+                  'id': 'server-1',
+                  'sender': 'user',
+                  'text': 'Help',
+                  'ts': 1,
+                },
+              }),
+              200,
+            );
+          }),
+        );
+        expect(result?.id, 'server-1');
+        expect(calls, 1);
+      },
+    );
+  });
+
   group('SupportChatScreen Widget Tests', () {
     setUp(() {
       SharedPreferences.setMockInitialValues({});
       FlutterSecureStorage.setMockInitialValues({});
     });
 
-    testWidgets('Отображение экрана поддержки и элементов управления', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: SupportChatScreen(),
-        ),
-      );
+    testWidgets('Отображение экрана поддержки и элементов управления', (
+      tester,
+    ) async {
+      await tester.pumpWidget(const MaterialApp(home: SupportChatScreen()));
       await tester.pumpAndSettle();
 
       // Проверяем наличие поля ввода, иконки отправки и кнопки прикрепления фото

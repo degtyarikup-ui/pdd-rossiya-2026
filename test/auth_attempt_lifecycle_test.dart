@@ -524,6 +524,70 @@ void main() {
   );
 
   testWidgets(
+    'successful sign-in during sheet dismissal cannot pop the underlying page',
+    (tester) async {
+      final login = Completer<bool>();
+      final auth = AuthService.forTesting(writeSession: (_) async {});
+      final navigator = GlobalKey<NavigatorState>();
+      bool? sheetResult;
+      var accountPageClosed = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigator,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: Text('Home')),
+        ),
+      );
+      unawaited(
+        navigator.currentState!
+            .push<void>(
+              MaterialPageRoute<void>(
+                builder: (context) => Scaffold(
+                  body: TextButton(
+                    onPressed: () async {
+                      sheetResult = await showModalBottomSheet<bool>(
+                        context: context,
+                        isScrollControlled: true,
+                        builder: (_) => AuthModalSheet(
+                          authService: auth,
+                          initialAction: () => login.future,
+                        ),
+                      );
+                    },
+                    child: const Text('Account page'),
+                  ),
+                ),
+              ),
+            )
+            .then((_) {
+              accountPageClosed = true;
+            }),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Account page'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.byType(AuthModalSheet), findsOneWidget);
+
+      // The route is popped synchronously, while the sheet is still mounted
+      // until its exit animation finishes. Session persistence may finish now.
+      navigator.currentState!.pop(false);
+      login.complete(true);
+      await tester.pump();
+      expect(find.byType(AuthModalSheet), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(sheetResult, false);
+      expect(accountPageClosed, false);
+      expect(find.text('Account page'), findsOneWidget);
+      expect(find.text(appL10n.authSuccess), findsNothing);
+      expect(navigator.currentState!.canPop(), true);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'iOS Yandex SDK token goes directly to verified server exchange without client profile request',
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;

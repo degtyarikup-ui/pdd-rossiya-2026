@@ -4,7 +4,7 @@ const supportGuest = 'guest_v2_' + await supportDigest(supportSecret);
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import worker from './worker.js';
-import { handleSupportGetMessages, resetSupportPollThrottle } from './support_chat.js';
+import { handleSupportGetMessages, handleSupportSendMessage, resetSupportPollThrottle } from './support_chat.js';
 
 const messages = [{ id: 'fixture-reply', sender: 'support', text: 'Saved reply', ts: 2000 }];
 const request = () => new Request('https://fixture.invalid/api/support/messages?clientId=' + supportGuest + '&since=1000', { headers: { 'x-support-secret': supportSecret } });
@@ -198,4 +198,110 @@ test('a genuinely absent legacy history seeds an empty thread only once', async 
     }
     assert.deepEqual(calls, ['/list', '/seed', '/list', '/list']);
   }
+});
+
+
+function sendFixture(reply = () => Response.json({ ok: true })) {
+  const calls = [], puts = [];
+  const env = {
+    BOT_TOKEN: 'fixture-token', CHAT_ID: '-100',
+    INSTALLS: {
+      get: async key => key.startsWith('support:client:') ? { threadId: 7 } : null,
+      put: async (...args) => puts.push(args),
+    },
+    SUPPORT: { idFromName: id => id, get: () => ({ fetch: async (url, options) => {
+      calls.push(new URL(url).pathname);
+      return reply(JSON.parse(options.body));
+    } }) },
+  };
+  return { env, calls, puts };
+}
+const sendRequest = extra => new Request('https://fixture.invalid/api/support/send', {
+  method: 'POST', headers: { 'x-support-secret': supportSecret },
+  body: JSON.stringify({ clientId: supportGuest, text: 'Help please', ...extra }),
+});
+
+test('send acknowledges the internal append only after HTTP and JSON success', async t => {
+  t.mock.method(globalThis, 'fetch', async () => Response.json({ ok: true, result: {} }));
+  for (const response of [new Response(null, { status: 503 }), new Response('broken'), Response.json({}), Response.json({ ok: false })]) {
+    const { env, calls } = sendFixture(() => response);
+    const result = await worker.fetch(sendRequest(), env);
+    assert.equal(result.status, 503);
+    assert.equal((await result.json()).error, 'support storage unavailable');
+    assert.deepEqual(calls, ['/append'], 'ambiguous append is never replayed');
+  }
+});
+
+test('Telegram rejects or loses a message: do not record it as delivered', async t => {
+  const replies = [
+    () => new Response(null, { status: 504 }),
+    () => Response.json({ ok: false, description: 'PRIVATE' }),
+    () => new Response('malformed'),
+    () => { throw new Error('PRIVATE'); },
+  ];
+  for (const reply of replies) {
+    t.mock.method(globalThis, 'fetch', async () => reply());
+    const { env, calls } = sendFixture();
+    const result = await worker.fetch(sendRequest(), env);
+    assert.equal(result.status, 503);
+    assert.deepEqual(await result.json(), { error: 'support delivery unavailable' });
+    assert.deepEqual(calls, [], 'failed delivery is not a sent message');
+    t.mock.restoreAll();
+  }
+});
+
+test('failed photo delivery never becomes an empty successful message', async t => {
+  t.mock.method(globalThis, 'fetch', async () => Response.json({ ok: false }, { status: 503 }));
+  const { env, calls } = sendFixture();
+  const result = await worker.fetch(sendRequest({ text: '', imageBase64: 'AA==', imageMimeType: 'image/png' }), env);
+  assert.equal(result.status, 503);
+  assert.deepEqual(calls, []);
+});
+
+test('a short first contact needs one Telegram message after topic creation', async t => {
+  const telegramCalls = [];
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    telegramCalls.push({ method: String(url).split('/').pop(), body: JSON.parse(options.body) });
+    return Response.json({ ok: true, result: { message_thread_id: 7 } });
+  });
+  const { env, calls } = sendFixture();
+  env.INSTALLS.get = async () => null;
+  const result = await handleSupportSendMessage(sendRequest(), env);
+  assert.equal(result.status, 200);
+  assert.deepEqual(telegramCalls.map(c => c.method), ['createForumTopic', 'sendMessage']);
+  assert.match(telegramCalls[1].body.text, /Новое обращение/);
+  assert.match(telegramCalls[1].body.text, /Help please/);
+  assert.deepEqual(calls, ['/append']);
+});
+
+test('auxiliary metadata failure cannot turn a delivered stored message into a retry', async t => {
+  t.mock.method(globalThis, 'fetch', async () => Response.json({ ok: true, result: {} }));
+  const { env, calls } = sendFixture();
+  env.INSTALLS.put = async () => { throw new Error('KV unavailable'); };
+  const result = await handleSupportSendMessage(sendRequest(), env);
+  assert.equal(result.status, 200);
+  assert.equal((await result.json()).message.text, 'Help please');
+  assert.deepEqual(calls, ['/append']);
+});
+
+test('a long photo caption never truncates escaped HTML', async t => {
+  const captions = [], messages = [];
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    if (String(url).endsWith('/sendPhoto')) {
+      captions.push(options.body.get('caption'));
+      return Response.json({ ok: true, result: { photo: [{ file_id: 'fixture-photo' }] } });
+    }
+    messages.push(JSON.parse(options.body).text);
+    return Response.json({ ok: true, result: {} });
+  });
+  const { env } = sendFixture();
+  const text = '&'.repeat(1100);
+  const result = await handleSupportSendMessage(sendRequest({ text, userName: 'Name & Name', imageBase64: 'AA==', imageMimeType: 'image/png' }), env);
+  assert.equal(result.status, 200);
+  assert.deepEqual(captions, ['<b>Name &amp; Name</b>']);
+  assert.equal(messages.length, 1);
+  assert.ok(messages[0].endsWith('&amp;'.repeat(1100)));
+  const saved = (await result.json()).message;
+  assert.equal(saved.text, text);
+  assert.match(saved.imageUrl, /fixture-photo/);
 });

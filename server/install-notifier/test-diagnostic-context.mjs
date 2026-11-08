@@ -27,6 +27,17 @@ function setup() {
 const entries = (storage, prefix) => [...storage.data].filter(([key]) => key.startsWith(prefix)).map(([, value]) => value);
 const id = () => crypto.randomUUID().replaceAll('-', '');
 
+test('image failures retain a safe subsystem in diagnostics and CSV', async () => {
+  const {env, storage} = setup();
+  await reportIncident(env, { id:id(), origin:'client', category:'app',
+    operation:'flutter.framework', code:'network:http', platform:'android',
+    context:{stage:'framework_image', library:'https://private.test/SECRET'} });
+  const [record] = entries(storage, 'log:');
+  assert.deepEqual(record.context, {stage:'framework_image'});
+  assert.match(buildErrorCsv([record]), /framework_image/);
+  assert.doesNotMatch(JSON.stringify([...storage.data]), /private|SECRET/);
+});
+
 test('new client fields survive diagnostics, Telegram and CSV without raw messages or identifiers', async () => {
   const {env, storage} = setup(), installId = id();
   const context = { phase: 'paywall', stage: 'query', attempt: 3, requestedCount: 27, returnedCount: 0,

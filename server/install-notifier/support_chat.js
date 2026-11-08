@@ -64,7 +64,11 @@ async function supportReadRpc(stage, send) {
 async function appendSupportMessage(env, clientId, msg) {
   const stub = threadStub(env, clientId);
   if (stub) {
-    await stub.fetch('https://support.internal/append', { method: 'POST', body: JSON.stringify(msg) });
+    const response = await stub.fetch('https://support.internal/append', { method: 'POST', body: JSON.stringify(msg) });
+    const result = response.ok ? await response.json().catch(() => null) : null;
+    // A returned 5xx is not an exception. Never acknowledge an unsaved message
+    // (or repeat an ambiguous write automatically).
+    if (result?.ok !== true) throw new HttpFailure(503, 'support storage unavailable');
     return;
   }
   const key = 'support:messages:' + clientId;
@@ -120,9 +124,12 @@ function escapeHtml(s) {
     .replaceAll('"', '&quot;');
 }
 
-async function sendToTelegram(env, text, threadId = null) {
+async function sendToTelegram(env, text, threadId = null, required = false) {
   const chatId = telegramChatId(env);
-  if (!env.BOT_TOKEN || !chatId) return null;
+  if (!env.BOT_TOKEN || !chatId) {
+    if (required) throw new HttpFailure(503, 'support delivery unavailable');
+    return null;
+  }
   const payload = {
     chat_id: chatId,
     text,
@@ -132,15 +139,20 @@ async function sendToTelegram(env, text, threadId = null) {
   if (threadId) {
     payload.message_thread_id = Number(threadId);
   }
-  return fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+  const response = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(10000),
   }).catch((err) => {
-    console.error('sendToTelegram error:', err);
+    console.warn('support text delivery unavailable');
     return null;
   });
+  if (required) {
+    const data = response?.ok ? await response.json().catch(() => null) : null;
+    if (data?.ok !== true) throw new HttpFailure(503, 'support delivery unavailable');
+  }
+  return response;
 }
 
 async function sendPhotoToTelegram(env, base64Data, mimeType, caption = '', threadId = null) {
@@ -174,13 +186,13 @@ async function sendPhotoToTelegram(env, base64Data, mimeType, caption = '', thre
       signal: AbortSignal.timeout(20000),
     });
     const data = await resp.json().catch(() => null);
-    if (data?.ok && data.result) {
+    if (resp.ok && data?.ok && data.result) {
       return data.result;
     }
-    console.warn('sendPhotoToTelegram error:', data?.description || resp.status);
+    console.warn('support photo delivery unavailable');
     return null;
   } catch (err) {
-    console.error('sendPhotoToTelegram exception:', err);
+    console.warn('support photo delivery unavailable');
     return null;
   }
 }
@@ -447,6 +459,7 @@ export async function handleSupportSendMessage(request, env) {
   const clientKey = 'support:client:' + clientId;
   let client = env.INSTALLS ? await env.INSTALLS.get(clientKey, { type: 'json' }) : null;
   let threadId = client?.threadId || null;
+  let introduction = null;
   // Ответ пушем — только если переписка точно этого аккаунта (сессия входа),
   // приложение умеет такие пуши и они у него включены.
   const session = identity.session;
@@ -497,13 +510,12 @@ export async function handleSupportSendMessage(request, env) {
       }
 
       // Отправляем карточку с информацией о пользователе
-      const introText =
+      introduction =
         `💬 <b>Новое обращение в техподдержку</b>\n` +
         `👤 <b>Пользователь:</b> ${escapeHtml(displayName)}\n` +
         `🆔 <b>ID:</b> <code>${escapeHtml(clientId)}</code>\n` +
         `📱 <b>Платформа:</b> ${escapeHtml(platform)} ${escapeHtml(appVersion ? '(' + appVersion + ')' : '')}\n` +
         `⭐ <b>Премиум:</b> ${isPremium ? 'Да' : 'Нет'}`;
-      await sendToTelegram(env, introText, threadId);
     }
   }
 
@@ -518,23 +530,35 @@ export async function handleSupportSendMessage(request, env) {
 
   let imageUrl = null;
   if (imageBase64) {
+    if (introduction) await sendToTelegram(env, introduction, threadId);
     const caption = text
       ? `<b>${escapeHtml(displayName)}:</b>\n${escapeHtml(text)}`
       : `<b>${escapeHtml(displayName)}</b>`;
-    const tgPhotoResult = await sendPhotoToTelegram(env, imageBase64, imageMimeType, caption, threadId);
+    // Truncating escaped HTML can cut an entity/tag and make Telegram reject
+    // the entire photo. Send a complete short caption, then the full text.
+    const photoCaption = caption.length > 1024 ? `<b>${escapeHtml(displayName)}</b>` : caption;
+    const tgPhotoResult = await sendPhotoToTelegram(env, imageBase64, imageMimeType, photoCaption, threadId);
     if (tgPhotoResult?.photo && Array.isArray(tgPhotoResult.photo) && tgPhotoResult.photo.length > 0) {
       const fileId = tgPhotoResult.photo[tgPhotoResult.photo.length - 1].file_id;
       imageUrl = `/api/support/file?fileId=${encodeURIComponent(fileId)}`;
     }
+    if (!imageUrl) throw new HttpFailure(503, 'support delivery unavailable');
     // Если текст длиннее лимита caption в Telegram, досылаем его отдельным сообщением
     if (text && caption.length > 1024) {
       const tgUserText = `<b>${escapeHtml(displayName)}:</b>\n${escapeHtml(text)}`;
-      await sendToTelegram(env, tgUserText, threadId);
+      await sendToTelegram(env, tgUserText, threadId, true);
     }
   } else {
     // Отправляем обычный текст пользователя в Telegram
     const tgUserText = `<b>${escapeHtml(displayName)}:</b>\n${escapeHtml(text)}`;
-    await sendToTelegram(env, tgUserText, threadId);
+    const combined = introduction ? introduction + '\n\n' + tgUserText : tgUserText;
+    // Most first contacts fit into one message. Avoid a second 10-second
+    // Telegram round trip before delivering the user's actual question.
+    if (combined.length <= 4096) await sendToTelegram(env, combined, threadId, true);
+    else {
+      if (introduction) await sendToTelegram(env, introduction, threadId);
+      await sendToTelegram(env, tgUserText, threadId, true);
+    }
   }
 
   // Сохраняем сообщение в локальной истории
@@ -551,7 +575,10 @@ export async function handleSupportSendMessage(request, env) {
   if (env.INSTALLS && client) {
     client.lastMsgAt = Date.now();
     client.replyPush = replyPush;
-    await env.INSTALLS.put(clientKey, JSON.stringify(client), { expirationTtl: 90 * 86400 });
+    // The message is already delivered and stored. Failure of auxiliary
+    // metadata must not invite the user to resend it.
+    try { await env.INSTALLS.put(clientKey, JSON.stringify(client), { expirationTtl: 90 * 86400 }); }
+    catch { console.warn('support client metadata unavailable'); }
   }
 
   return jsonResponse({ ok: true, message: { ...newMsg, ...(newMsg.imageUrl ? { imageUrl: supportImageUrl(newMsg.imageUrl, clientId) } : {}) } });

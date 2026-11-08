@@ -1,6 +1,11 @@
 /// Diagnostic fields contain codes, counts and application source locations.
 /// Raw messages, SDK details, URLs and arbitrary stack lines are never retained.
 class DiagnosticContext {
+  /// Flutter image failures often have no application frames. Preserve their
+  /// subsystem without retaining the URL or framework diagnostic text.
+  static String frameworkStage(String? library) =>
+      library == 'image resource service' ? 'framework_image' : 'framework';
+
   static const productIds = {
     'u.pdd.pddApp.premium.week',
     'ru.pdd.pddApp.sub.3months',
@@ -17,6 +22,7 @@ class DiagnosticContext {
         'availability',
         'query',
         'framework',
+        'framework_image',
         'unhandled',
         'telegram_request',
         'telegram_check',

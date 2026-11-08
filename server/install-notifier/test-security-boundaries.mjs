@@ -55,8 +55,12 @@ test('account support rejects anonymous, cross-account and app-key-only reads an
   const r = await worker.fetch(req('/api/support/messages?clientId=google_fixture', undefined, own), e);
   assert.equal(r.status, 200); assert.equal((await r.json()).messages[0].text, 'private');
 });
-test('guest support needs a separate secret and signed-out accounts cannot be treated as guests', async () => {
+test('guest support needs a separate secret and signed-out accounts cannot be treated as guests', async t => {
   const e = env(), secret = 'a'.repeat(64), id = 'guest_v2_' + await digest(secret);
+  e.BOT_TOKEN = 'fixture'; e.CHAT_ID = '-100';
+  await e.INSTALLS.put('support:client:' + id, JSON.stringify({ threadId: 7 }));
+  await e.INSTALLS.put('tg:webhook_active', '1');
+  t.mock.method(globalThis, 'fetch', async () => Response.json({ ok: true, result: {} }));
   const r = await worker.fetch(req('/api/support/send', { clientId: id, text: 'guest' }, { 'x-support-secret': secret }), e);
   assert.equal(r.status, 200);
   assert.equal((await worker.fetch(req('/api/support/messages?clientId=' + id), e)).status, 401);

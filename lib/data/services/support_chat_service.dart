@@ -12,6 +12,7 @@ import 'package:pdd_app/data/models/support_chat_message.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
+import 'package:pdd_app/data/services/notifier_api.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/support_inbox.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -239,15 +240,17 @@ class SupportChatService {
     }
 
     try {
-      final response = await sendWithRetry(
-        (host) => http.post(
-          Uri.parse('$host/api/support/send'),
-          headers: requestHeaders,
-          body: jsonEncode(payload),
-        ),
-        hosts: BackendConfig.notifierHosts,
-        attempts: const [Duration(seconds: 8), Duration(seconds: 12)],
-      );
+      // Sending is not idempotent: after a lost response Telegram may already
+      // have the message. Replaying on another host silently sent duplicates.
+      // The existing server can spend 30 seconds on topic + intro + text, or
+      // 50 with a photo and its long caption. Leave room for storage and transit.
+      final response = await http
+          .post(
+            NotifierApi.uri('/api/support/send'),
+            headers: requestHeaders,
+            body: jsonEncode(payload),
+          )
+          .timeout(Duration(seconds: imageBytes?.isNotEmpty == true ? 60 : 40));
 
       if (response.statusCode != 200) {
         _reportSendFailure('http_${response.statusCode}');

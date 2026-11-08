@@ -17,6 +17,18 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  test('image diagnostics distinguish their subsystem without raw text', () {
+    final image = DiagnosticContext.frameworkStage('image resource service');
+    expect(image, 'framework_image');
+    expect(DiagnosticContext.sanitize({'stage': image}), {'stage': image});
+    expect(DiagnosticContext.frameworkStage('widgets library'), 'framework');
+    expect(
+      DiagnosticContext.frameworkStage('https://private.test/SECRET'),
+      'framework',
+    );
+    expect(DiagnosticContext.frameworkStage(null), 'framework');
+  });
+
   test(
     'dev filters new and queued auth/catalog failures, keeps other errors',
     () async {

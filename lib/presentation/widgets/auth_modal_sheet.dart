@@ -46,6 +46,7 @@ class AuthModalSheet extends StatefulWidget {
 
 class _AuthModalSheetState extends State<AuthModalSheet> {
   bool _isLoading = false;
+  bool _dismissed = false;
   String? _error;
   int? _ownedAttempt;
   AuthService get _auth => widget.authService ?? AuthService.instance;
@@ -108,7 +109,7 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
       final pending = action();
       _ownedAttempt = _auth.activeSignInId;
       final success = await pending;
-      if (mounted) {
+      if (mounted && !_dismissed) {
         setState(() => _isLoading = false);
         if (success) {
           HapticFeedbackHelper.success();
@@ -127,7 +128,7 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
       }
     } catch (e) {
       ErrorReporter.report(ErrorCategory.auth, 'auth.dialog', error: e);
-      if (mounted) {
+      if (mounted && !_dismissed) {
         setState(() => _isLoading = false);
         setState(() => _error = _failureMessage());
       }
@@ -141,7 +142,11 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
 
     return PopScope<bool>(
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop && result != true) _cancelOwnedAttempt();
+        if (!didPop) return;
+        // A closing sheet stays mounted during its reverse animation. A late
+        // sign-in result must not pop the route underneath it a second time.
+        _dismissed = true;
+        if (result != true) _cancelOwnedAttempt();
       },
       child: Container(
         decoration: BoxDecoration(

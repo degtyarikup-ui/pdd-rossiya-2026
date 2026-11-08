@@ -62,6 +62,9 @@ void main() {
     final result = await http.runWithClient(
       verify,
       () => MockClient((request) async {
+        if (request.url.path != '/api/user/purchase') {
+          return http.Response('{}', 503);
+        }
         expect(request.headers['authorization'], 'Bearer test-session');
         final body = jsonDecode(request.body) as Map;
         expect(body['purchaseToken'], 'receipt');
@@ -211,6 +214,83 @@ void main() {
       }),
     );
   });
+  for (final status in [503, 504]) {
+    test(
+      'HTTP $status after a committed receipt reconciles account access',
+      () async {
+        var checks = 0;
+        var syncs = 0;
+        final refreshedExpiry = expiry.add(Duration(days: status));
+        final synced = Completer<void>();
+        await http.runWithClient(
+          () async {
+            expect(await verify(), isFalse);
+            expect(
+              premium.purchaseVerificationFailure,
+              PurchaseVerificationFailure.unavailable,
+            );
+            await synced.future;
+            for (
+              var i = 0;
+              i < 20 && premium.expiresAt != refreshedExpiry;
+              i++
+            ) {
+              await Future<void>.delayed(Duration.zero);
+            }
+            expect(checks, 1);
+            expect(syncs, 1);
+            expect(premium.isPremium, isTrue);
+            expect(premium.expiresAt, refreshedExpiry);
+          },
+          () => MockClient((request) async {
+            if (request.url.path == '/api/user/purchase') {
+              checks++;
+              return http.Response('upstream unavailable', status);
+            }
+            if (request.url.path == '/api/user/sync') {
+              syncs++;
+              synced.complete();
+              return http.Response(
+                jsonEncode({
+                  'isPremium': true,
+                  'premiumExpiresAt': refreshedExpiry.toIso8601String(),
+                }),
+                200,
+              );
+            }
+            return http.Response('{}', 404);
+          }),
+        );
+      },
+    );
+  }
+  test(
+    'malformed status responses cannot revoke or make access permanent',
+    () async {
+      final validExpiry = premium.expiresAt;
+      for (final data in [
+        <String, dynamic>{},
+        {'isPremium': true},
+        {'isPremium': 'false'},
+        {'isPremium': false, 'premiumExpiresAt': 'broken'},
+        {'isPremium': true, 'premiumExpiresAt': 'broken'},
+      ]) {
+        await http.runWithClient(() async {
+          await premium.syncWithServer();
+          await premium.checkForGrant();
+        }, () => MockClient((_) async => http.Response(jsonEncode(data), 200)));
+        expect(premium.isPremium, isTrue);
+        expect(premium.expiresAt, validExpiry);
+      }
+      // A valid authoritative revocation must still be respected.
+      await http.runWithClient(
+        premium.checkForGrant,
+        () =>
+            MockClient((_) async => http.Response('{"isPremium":false}', 200)),
+      );
+      expect(premium.isPremium, isFalse);
+    },
+  );
   test(
     'status refresh updates renewed expiry while premium remains active',
     () async {

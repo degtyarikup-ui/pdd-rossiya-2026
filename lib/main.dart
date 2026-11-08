@@ -19,6 +19,7 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/acquisition_service.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
+import 'package:pdd_app/data/services/diagnostic_context.dart';
 import 'package:pdd_app/data/services/support_inbox.dart';
 import 'package:pdd_app/presentation/screens/support/support_chat_screen.dart';
 import 'package:pdd_app/presentation/widgets/support_reply_banner.dart';
@@ -61,7 +62,7 @@ void main() async {
       'flutter.framework',
       error: details.exception,
       stack: details.stack,
-      context: {'stage': 'framework'},
+      context: {'stage': DiagnosticContext.frameworkStage(details.library)},
     );
   };
   final previousPlatformError = PlatformDispatcher.instance.onError;

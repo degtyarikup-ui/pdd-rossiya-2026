@@ -97,6 +97,31 @@ void main() {
     PaintingBinding.instance.imageCache.clearLiveImages();
   });
 
+  testWidgets('late image failure after closing the profile is handled', (
+    tester,
+  ) async {
+    final response = Completer<HttpClientResponse>();
+    debugNetworkImageHttpClientProvider = () => _LoadingClient(response.future);
+    addTearDown(() {
+      debugNetworkImageHttpClientProvider = null;
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+    });
+    await open(tester, notice(image: 'https://test.invalid/late-failure.png'));
+    await tester.pumpWidget(const SizedBox());
+    final errors = <FlutterErrorDetails>[];
+    final original = FlutterError.onError;
+    FlutterError.onError = errors.add;
+    try {
+      response.completeError(const HttpException('connection closed'));
+      await tester.pump();
+      expect(errors, isEmpty);
+    } finally {
+      FlutterError.onError = original;
+      debugNetworkImageHttpClientProvider = null;
+    }
+  });
+
   testWidgets('all optional parts fit and following content stays below', (
     tester,
   ) async {
@@ -248,11 +273,16 @@ void main() {
 }
 
 class _LoadingClient extends Fake implements HttpClient {
+  _LoadingClient([this.response]);
+  final Future<HttpClientResponse>? response;
   @override
-  Future<HttpClientRequest> getUrl(Uri url) async => _LoadingRequest();
+  Future<HttpClientRequest> getUrl(Uri url) async => _LoadingRequest(response);
 }
 
 class _LoadingRequest extends Fake implements HttpClientRequest {
+  _LoadingRequest(this.response);
+  final Future<HttpClientResponse>? response;
   @override
-  Future<HttpClientResponse> close() => Completer<HttpClientResponse>().future;
+  Future<HttpClientResponse> close() =>
+      response ?? Completer<HttpClientResponse>().future;
 }

@@ -6,7 +6,7 @@ export function sanitizeDiagnosticContext(value) {
   const result = {};
   for (const [key, allowed] of Object.entries({
     phase: ['background', 'paywall', 'purchase'],
-    stage: ['availability', 'query', 'framework', 'unhandled', 'server', 'telegram_request', 'telegram_check', 'provider', 'session'],
+    stage: ['availability', 'query', 'framework', 'framework_image', 'unhandled', 'server', 'telegram_request', 'telegram_check', 'provider', 'session'],
     sdkSource: ['app_store', 'google_play'],
     errorType: ['Error', 'TypeError', 'RangeError', 'ReferenceError', 'SyntaxError'],
     supportStage: ['list', 'seed'],

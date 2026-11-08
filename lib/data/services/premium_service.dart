@@ -307,6 +307,7 @@ class PremiumService extends ChangeNotifier {
           revision == AuthService.instance.accountRevision &&
           entitlementRevision == _entitlementRevision) {
         final data = jsonDecode(resp.body) as Map<String, dynamic>;
+        if (!_hasValidPremiumState(data)) return;
         final serverIsPremium = data['isPremium'] == true;
         final serverExpStr = data['premiumExpiresAt'] as String?;
         final serverExpiresAt = serverExpStr != null
@@ -333,6 +334,23 @@ class PremiumService extends ChangeNotifier {
     } catch (e) {
       debugPrint('PremiumService: syncWithServer error: $e');
     }
+  }
+
+  // A gateway or partial response is not an authoritative loss of access.
+  // Keep the last verified state unless the server sent a usable entitlement.
+  static bool _hasValidPremiumState(Map<String, dynamic> data) {
+    if (data['isPremium'] is! bool) return false;
+    // Only an explicit null denotes lifetime access; an omitted expiry may
+    // mean a truncated status response.
+    if (data['isPremium'] == true && !data.containsKey('premiumExpiresAt')) {
+      return false;
+    }
+    final expiry = data['premiumExpiresAt'];
+    if (expiry != null &&
+        (expiry is! String || DateTime.tryParse(expiry) == null)) {
+      return false;
+    }
+    return data['premiumSource'] == null || data['premiumSource'] is String;
   }
 
   /// A new «Premium granted» notice from the admin panel: shown once, with
@@ -415,6 +433,7 @@ class PremiumService extends ChangeNotifier {
         return;
       }
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      if (!_hasValidPremiumState(data)) return;
       final serverIsPremium = data['isPremium'] == true;
       final serverExpiresAt = DateTime.tryParse(
         data['premiumExpiresAt'] as String? ?? '',
@@ -527,6 +546,13 @@ class PremiumService extends ChangeNotifier {
         }),
       );
       if (response.statusCode != 200) {
+        ErrorReporter.report(
+          ErrorCategory.purchase,
+          'premium.verify',
+          code: 'http_${response.statusCode}',
+          provider: store,
+          context: {'httpStatus': response.statusCode},
+        );
         if (response.statusCode == 409 &&
             jsonDecode(response.body)['error'] ==
                 'legacy purchase owner required') {
@@ -534,6 +560,15 @@ class PremiumService extends ChangeNotifier {
               PurchaseVerificationFailure.legacyOwnerRequired;
         } else if ([400, 403, 409, 422].contains(response.statusCode)) {
           _purchaseVerificationFailure = PurchaseVerificationFailure.rejected;
+        }
+        if (revision == auth.accountRevision &&
+            (response.statusCode == 408 ||
+                response.statusCode == 429 ||
+                response.statusCode >= 500)) {
+          // A gateway can time out after the account committed the receipt.
+          // Reconcile access now; only a later receipt confirmation may finish
+          // the store transaction, so this never permits a second charge.
+          unawaited(syncWithServer());
         }
         return false;
       }

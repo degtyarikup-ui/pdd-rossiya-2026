@@ -113,6 +113,9 @@ class _ProfileNoticeBannerState extends State<ProfileNoticeBanner> {
       onError: (Object error, StackTrace? stack) {
         if (mounted) setState(() => _imageFailed = true);
       },
+      // The banner handles image failures. A request that fails after the
+      // profile closes must not become an unhandled framework error.
+      reportErrors: false,
     );
     _stream!.addListener(_listener!);
   }
