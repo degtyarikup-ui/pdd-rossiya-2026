@@ -172,6 +172,7 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
     active = [1, 4].includes(latest.status) && !data.revocationDate && expiresDate > Date.now();
   }
   return { active, autoRenewEnabled, accountToken: data.appAccountToken || null, expiresAt: new Date(expiresDate).toISOString(),
+    purchaseDate: data.purchaseDate, billingPeriodEndsAt: data.expiresDate,
     renewal: data.transactionReason === 'RENEWAL', orderId: String(data.transactionId), key: `appstore:${data.originalTransactionId}`,
     money: { milliunits: data.price, currency: data.currency },
     reference: { store, country, productId: data.productId, transactionId: String(data.transactionId),

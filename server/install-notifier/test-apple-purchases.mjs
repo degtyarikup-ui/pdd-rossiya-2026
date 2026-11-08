@@ -5,6 +5,7 @@ import { verifyStorePurchase, refreshStoreEntitlement } from './store_verificati
 import worker, { handleAccountMaintenance } from './worker.js';
 import { signSession } from './user_auth.js';
 import { accountTokenForUserId } from './store_account.js';
+import { premiumDate } from './premium_message.js';
 const { privateKey } = await generateKeyPair('ES256', { extractable: true });
 const env = { APPLE_IAP_PRIVATE_KEY: await exportPKCS8(privateKey), APPLE_IAP_KEY_ID: 'test-key', APPLE_IAP_ISSUER_ID: 'test-issuer' };
 const body = { store: 'appstore', country: 'ru', productId: 'u.pdd.pddApp.premium.week', transactionId: '123' };
@@ -87,8 +88,55 @@ test('one quarterly Apple renewal notification for repeated verified callbacks',
       assert.equal(effects.filter(effect => effect.kind === 'telegram').length, Number(renewal));
     }
     const [notice] = effects.filter(effect => effect.kind === 'telegram');
-    assert.ok(notice.text.startsWith('⭐⭐⭐⭐⭐⭐\n✅✅✅\n<b>Покупка Premium</b>'));
+    assert.ok(notice.text.startsWith('⭐⭐⭐⭐⭐⭐\n✅✅✅\n<b>Автопродление Premium</b>'));
   });
+});
+test('restoring an App Store receipt logs only a current paid period and uses Apple price and date', async () => {
+  const id = 'apple_test';
+  const appAccountToken = await accountTokenForUserId(id);
+  const purchaseDate = Date.now() - 60000;
+  const expired = Date.now() - 1000;
+  const gracePeriodExpiresDate = Date.now() + 86400000;
+  const cases = [
+    { patch: { expiresDate: expired }, status: 3, active: false },
+    { patch: { expiresDate: expired }, status: 4, active: true },
+    { patch: { revocationDate: expired }, active: false },
+    { patch: { environment: 'Sandbox' }, active: true },
+    { patch: { price: 0 }, active: true },
+    { patch: {}, active: true, shouldLog: true },
+  ];
+  for (const { patch, status, active, shouldLog = false } of cases) {
+    const records = new Map(), effects = [];
+    const data = transaction({ transactionReason: 'RENEWAL', appAccountToken, purchaseDate, price: 990, currency: 'USD', ...patch });
+    const renewal = { originalTransactionId: data.originalTransactionId, environment: data.environment,
+      autoRenewStatus: 1, gracePeriodExpiresDate };
+    const e = { ...env, SHARED_SECRET: crypto.randomUUID(), SESSION_SECRET: crypto.randomUUID(),
+      BOT_TOKEN: 'test', CHAT_ID: 'test', __DURABLE_EFFECTS: effects,
+      APPLE_IAP_ENVIRONMENT: data.environment === 'Sandbox' ? 'sandbox' : 'production',
+      INSTALLS: { get: async key => records.get(key), put: async (key, value) => records.set(key, value) },
+      PURCHASE_CLAIMS: { idFromName: key => key, get: () => ({ fetch: async () => Response.json({ ok: true }) }) } };
+    const token = await signSession(e, { user: { id, provider: 'apple' }, expiresAt: Date.now() + 60000, generation: '' });
+    const restore = () => worker.fetch(new Request('https://test/api/user/purchase', {
+      method: 'POST', headers: { 'x-install-secret': e.SHARED_SECRET, authorization: `Bearer ${token}` },
+      body: JSON.stringify({ ...body, price: '99 ₽' }),
+    }), e);
+    await withApple(async url => new URL(url).pathname.includes('/subscriptions/') ? statusResponse(data, status, renewal)
+      : Response.json({ signedTransactionInfo: await signed(data) }), async () => {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const response = await restore();
+        assert.equal(response.status, 200);
+        assert.equal((await response.json()).isPremium, active);
+      }
+    });
+    assert.equal(records.has('notified_purch:123'), shouldLog);
+    assert.deepEqual(effects.map(effect => effect.kind), shouldLog ? ['telegram', 'stats'] : []);
+    if (shouldLog) {
+      assert.match(effects[0].text, /<b>Автопродление Premium<\/b>/);
+      assert.match(effects[0].text, /0,99\s*\$/);
+      assert.doesNotMatch(effects[0].text, /99 ₽/);
+      assert.ok(effects[0].text.includes('Дата транзакции:</b> ' + premiumDate(purchaseDate)));
+    }
+  }
 });
 test('restoring an expired period finds the renewed subscription and records latest transaction', async () => {
   const old = transaction({ expiresDate: Date.now() - 1000 });

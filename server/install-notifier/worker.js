@@ -727,7 +727,7 @@ export function buildPremiumPurchaseMessage(p) {
 
   const lines = [
     premiumBanner(p.tier, p.renewal),
-    '<b>Покупка Premium</b>',
+    p.renewal ? '<b>Автопродление Premium</b>' : '<b>Покупка Premium</b>',
     '',
     `• <b>Тариф:</b> ${tierStr}`,
     `• <b>Пользователь:</b> ${name}`,
@@ -738,7 +738,9 @@ export function buildPremiumPurchaseMessage(p) {
     p.id ? `• <b>ID аккаунта:</b> <code>${esc(String(p.id).slice(0, 120))}</code>` : null,
     p.expiresAt ? `• <b>Действует до:</b> ${premiumDate(p.expiresAt)}` : '• <b>Действует:</b> Навсегда',
     '',
-    p.orderId ? `• <b>Транзакция:</b> <code>${esc(p.orderId)}</code>\n` : null,
+    p.orderId ? `• <b>Транзакция:</b> <code>${esc(p.orderId)}</code>` : null,
+    Number.isFinite(p.purchaseDate) ? `• <b>Дата транзакции:</b> ${premiumDate(p.purchaseDate)}` : null,
+    '',
     `🕓 ${premiumDate(new Date())}`,
   ].filter((l) => l !== null);
 
@@ -746,14 +748,24 @@ export function buildPremiumPurchaseMessage(p) {
 }
 
 async function logStorePurchase(env, user, verified, details = {}) {
-  const { store, productId } = verified.reference;
+  const { store, productId, isTest, paid, refunded } = verified.reference;
+  if (!verified.active || isTest || paid === false || refunded) return;
+  // Restores also reach this path. Grace can preserve access after the paid period ends.
+  if (store === 'appstore' && verified.billingPeriodEndsAt <= Date.now()) return;
   const tier = productId.endsWith('.3months') ? 'threeMonths' : productId.endsWith('.week') ? 'weekly' : details.tier;
   const purchaseId = verified.orderId || `${user.id}_${details.tier || productId}_${(verified.expiresAt || '').slice(0, 10)}`;
   const key = 'notified_purch:' + purchaseId;
   if (await env.INSTALLS.get(key)) return;
   const platform = store === 'appstore' ? 'ios' : 'android';
   if (env.BOT_TOKEN && env.CHAT_ID) {
-    const msg = buildPremiumPurchaseMessage({ ...user, ...details, tier, store, platform,
+    let price = details.price;
+    if (store === 'appstore') {
+      const money = verified.money;
+      price = validPremiumMoney(money)
+        ? new Intl.NumberFormat('ru-RU', { style: 'currency', currency: money.currency }).format(money.milliunits / 1000)
+        : null;
+    }
+    const msg = buildPremiumPurchaseMessage({ ...user, ...details, tier, store, platform, price, purchaseDate: verified.purchaseDate,
       expiresAt: verified.expiresAt, orderId: verified.orderId, renewal: verified.renewal, autoRenewEnabled: verified.autoRenewEnabled });
     const notification = await sendTelegram(env, msg, key, { topic: 'purchases' });
     if (!notification.ok) throw new Error('purchase notification queue unavailable');
@@ -4371,7 +4383,7 @@ export async function handleAccountMaintenance(path, request, env) {
     user.storeVerifiedAtByStore = { ...(user.storeVerifiedAtByStore || {}), [reference.store]: Date.now() };
     user.verifiedPurchase = verified.reference; user.storeVerifiedAt = Date.now(); user.autoRenewEnabled = verified.autoRenewEnabled;
     await putUserRecord(env, user);
-    if (renewalEvent && verified.active && verified.orderId && !verified.reference.isTest && verified.reference.paid !== false &&
+    if (renewalEvent && verified.orderId &&
         (reference.store === 'googleplay' || (verified.renewal && reference.transactionId === verified.orderId))) {
       await logStorePurchase(env, user, { ...verified, renewal: true });
     }
