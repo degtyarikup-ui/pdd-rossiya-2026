@@ -75,6 +75,9 @@ if(process.argv.includes('--serve')) {
       {id:'root-video',accountId:'a',fileName:'root.mp4',driveFolders:[root],status:'queued',scheduledAt:null,targets:['youtube'],streamToken:'fixture'}
     );
     await preview.env.INSTALLS.put('social:posts',JSON.stringify(posts));
+    await preview.env.INSTALLS.put('social:drive-folders:fixture',JSON.stringify([
+      {id:'empty',path:'YouTube long videos'},
+    ]));
     const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
     const context=await browser.newContext({viewport:{width:1440,height:1100},reducedMotion:'reduce'});
     await context.route('**/*',route=>new URL(route.request().url()).origin===preview.url?route.continue():route.abort());
@@ -84,6 +87,9 @@ if(process.argv.includes('--serve')) {
       await page.goto(preview.url+'/admin#publications/videos');
       const folder=page.getByRole('combobox',{name:'Папка на Диске'});
       await page.locator('[data-post="first-0"]').waitFor();
+      await folder.selectOption({label:'YouTube long videos · 0'});
+      assert.equal(await page.locator('#sc-list [data-post]').count(),0);
+      assert.equal(await page.locator('#sc-plan').isDisabled(),true);
       await folder.selectOption('folder-1');
       assert.equal(await page.locator('#sc-list [data-post]').count(),24);
       assert.equal(await page.locator('#sc-n-q').innerText(),'29');

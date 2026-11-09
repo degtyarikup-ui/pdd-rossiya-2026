@@ -421,6 +421,9 @@ function scPlanPosts() {
 }
 function scRenderFolders() {
   var options = new Map(), unknown = 0;
+  (scState.driveFolders || []).forEach(function (folder) {
+    options.set(folder.id, { label: folder.path || 'Основная папка', count: 0 });
+  });
   (scState.posts || []).forEach(function (p) {
     var folders = p.driveFolders || [];
     if (!folders.length) { unknown += 1; return; }
@@ -985,10 +988,10 @@ document.getElementById('sc-sync').onclick = async function () {
   try {
     var res = await scApi('sync', {});
     var added = (res.results || []).reduce(function (s, r) { return s + (r.added || 0); }, 0);
-    var updatedFolders = (res.results || []).reduce(function (s, r) { return s + (r.updatedFolders || 0); }, 0);
+    var updatedFolders = (res.results || []).some(function (r) { return r.updatedFolders || r.folderCatalogChanged; });
     var bad = (res.results || []).filter(function (r) { return r.status === 'error'; });
     if (bad.length) scToast(bad[0].message, true);
-    else scToast(added ? ('Добавлено: ' + added) : updatedFolders ? 'Папки роликов обновлены' : 'Новых роликов нет');
+    else scToast(added ? ('Добавлено: ' + added) : updatedFolders ? 'Список папок обновлён' : 'Новых роликов нет');
     await loadSocial(true);
   } catch (e) { scToast('Ошибка: ' + e.message, true); }
 };

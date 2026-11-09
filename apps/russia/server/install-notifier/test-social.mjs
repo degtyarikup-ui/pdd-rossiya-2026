@@ -15,7 +15,8 @@ function setup() {
   const env = { INSTALLS:{ get:async k=>data.get(k)||null, put:async(k,v)=>data.set(k,v) } };
   const read = k=>JSON.parse(data.get('social:'+k));
   const call = async(path,body)=>{
-    const req = new Request('https://w.test/api/admin/social/'+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    const req = new Request('https://w.test/api/admin/social/'+path,body === undefined ? {} :
+      {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     return handleSocialAdmin(req,env,{waitUntil(){}},new URL(req.url),{jsonResponse:(body,status=200)=>Response.json(body,{status})});
   };
   return {env,read,call};
@@ -302,6 +303,49 @@ test('Drive folder sync backfills old videos, follows moves, and preserves dates
     await f.call('sync',{});
     assert.deepEqual(f.read('posts').find(p=>p.id==='old'),{...existing,driveFolders:[root,{...second,name:'PDD_2 renamed'}]});
   } finally {f.restore();}
+});
+
+test('Drive sync reads later pages and lists newly discovered folders even without videos', async () => {
+  const f = await schedulerFixture();
+  const root = 'fixture-folder';
+  const folderType = 'application/vnd.google-apps.folder';
+  const pages = [];
+  let fail = false;
+  globalThis.fetch = async url => {
+    const { searchParams } = new URL(url);
+    const folderId = searchParams.get('q').match(/^'([^']+)'/)[1];
+    const pageToken = searchParams.get('pageToken');
+    assert.match(searchParams.get('fields'), /nextPageToken/);
+    pages.push([folderId, pageToken]);
+    if (folderId === root && !pageToken) return Response.json({nextPageToken:'next'});
+    if (folderId === root) return fail ? new Response(null,{status:503}) : Response.json({files:[
+      {id:'empty',name:'YouTube long videos',mimeType:folderType},
+      {id:'with-video',name:'Короткие ролики',mimeType:folderType},
+    ]});
+    if (folderId === 'with-video') return Response.json({files:[{id:'clip',name:'clip.mp4',mimeType:'video/mp4'}]});
+    assert.equal(folderId,'empty');
+    return Response.json({files:[]});
+  };
+  try {
+    const sync = async () => (await (await f.call('sync',{})).json()).results[0];
+    const folders = async () => (await (await f.call('state')).json()).driveFolders;
+    assert.deepEqual(await folders(),[]);
+    const result = await sync();
+    assert.equal(result.added,1);
+    assert.equal(result.folderCatalogChanged,true);
+    assert.deepEqual(pages,[[root,null],[root,'next'],['empty',null],['with-video',null]]);
+    const catalog = [
+      {id:root,path:''},
+      {id:'empty',path:'YouTube long videos'},
+      {id:'with-video',path:'Короткие ролики'},
+    ];
+    assert.deepEqual(await folders(),catalog);
+    assert.deepEqual(f.read('posts').map(p=>[p.driveFileId,p.scheduledAt]),[['clip',null]]);
+    assert.equal((await sync()).folderCatalogChanged,false);
+    fail = true;
+    assert.equal((await sync()).status,'error');
+    assert.deepEqual(await folders(),catalog);
+  } finally { f.restore(); }
 });
 
 test('folder backfill merges into a fresh snapshot after concurrent scheduling and never recreates a removed video', async () => {

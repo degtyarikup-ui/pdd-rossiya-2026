@@ -30,6 +30,7 @@ const KV_LOG = 'social:log';
 const KV_GOOGLE_TOKEN = 'social:google_token';
 const KV_INSTAGRAM_COOLDOWN = 'social:instagram_cooldown';
 const KV_EXCLUDED_PREFIX = 'social:excluded:';
+const KV_DRIVE_FOLDERS_PREFIX = 'social:drive-folders:';
 const IG_COOLDOWN_MS = 60 * 60 * 1000;
 const IG_MAX_COOLDOWN_MS = 24 * IG_COOLDOWN_MS;
 const instagramCooldownMemory = new WeakMap();
@@ -353,23 +354,29 @@ async function driveListFolder(env, folderId) {
   const auth = await driveAuth(env);
   const params = new URLSearchParams({
     q: `'${folderId}' in parents and trashed = false`,
-    fields: 'files(id, name, mimeType, size, md5Checksum)',
+    fields: 'nextPageToken, files(id, name, mimeType, size, md5Checksum)',
     pageSize: '200',
     orderBy: 'name_natural',
   });
   if (auth.mode === 'apikey') params.set('key', auth.key);
-  const res = await fetch('https://www.googleapis.com/drive/v3/files?' + params, {
-    headers: auth.mode === 'oauth' ? { authorization: 'Bearer ' + auth.token } : {},
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    const hint = auth.mode === 'apikey' && (res.status === 403 || res.status === 404)
-      ? ' — с API-ключом видны только папки, открытые «Доступ по ссылке»'
-      : '';
-    throw new Error('Google Диск не отдал список файлов (HTTP ' + res.status + ')' + hint + ': ' + limit(body, 200));
-  }
-  const data = await res.json();
-  return data.files || [];
+  const headers = auth.mode === 'oauth' ? { authorization: 'Bearer ' + auth.token } : {};
+  const files = [];
+  let nextPageToken;
+  do {
+    if (nextPageToken) params.set('pageToken', nextPageToken);
+    const res = await fetch('https://www.googleapis.com/drive/v3/files?' + params, { headers });
+    if (!res.ok) {
+      const body = await res.text();
+      const hint = auth.mode === 'apikey' && (res.status === 403 || res.status === 404)
+        ? ' — с API-ключом видны только папки, открытые «Доступ по ссылке»'
+        : '';
+      throw new Error('Google Диск не отдал список файлов (HTTP ' + res.status + ')' + hint + ': ' + limit(body, 200));
+    }
+    const data = await res.json();
+    files.push(...(data.files || []));
+    nextPageToken = data.nextPageToken;
+  } while (nextPageToken);
+  return files;
 }
 
 async function driveDownloadResponse(env, fileId, rangeHeader = null) {
@@ -417,20 +424,20 @@ async function driveReadText(env, fileId) {
  * нормальный сценарий. Глубина ограничена, чтобы случайно указанный «Мой диск»
  * не превратился в обход всего хранилища.
  */
-async function driveCollectVideos(env, folderId, depth = 0, prefix = '', driveFolders = [{ id: folderId, name: '' }]) {
+async function driveCollectVideos(env, folderId, catalog, driveFolders = [{ id: folderId, name: '' }]) {
   const entries = await driveListFolder(env, folderId);
-  let result = entries
+  catalog.push({ id: folderId, path: driveFolders.slice(1).map(folder => folder.name).join(' / ') });
+  let files = entries
     .filter((f) => f.mimeType !== 'application/vnd.google-apps.folder')
-    .map((f) => ({ ...f, folderPath: prefix, driveFolders }));
+    .map((f) => ({ ...f, driveFolders }));
 
-  if (depth < 2) {
+  if (driveFolders.length < 3) {
     const subfolders = entries.filter((f) => f.mimeType === 'application/vnd.google-apps.folder');
     for (const sub of subfolders) {
-      result = result.concat(await driveCollectVideos(env, sub.id, depth + 1, prefix + sub.name + '/',
-        [...driveFolders, { id: sub.id, name: sub.name }]));
+      files = files.concat(await driveCollectVideos(env, sub.id, catalog, [...driveFolders, { id: sub.id, name: sub.name }]));
     }
   }
-  return result;
+  return files;
 }
 
 export async function syncAccountVideos(env, account) {
@@ -438,7 +445,8 @@ export async function syncAccountVideos(env, account) {
     return { status: 'error', message: 'У аккаунта не указана папка Google Диска' };
   }
 
-  const files = await driveCollectVideos(env, account.driveFolderId);
+  const catalog = [];
+  const files = await driveCollectVideos(env, account.driveFolderId, catalog);
   const videos = files.filter((f) => VIDEO_EXT.includes(extOf(f.name)));
   const captions = {};
   files
@@ -525,11 +533,15 @@ export async function syncAccountVideos(env, account) {
     return { ...post, driveFolders: file.driveFolders };
   });
   if (added || updatedFolders) await saveSocialPosts(env, latest, [...refreshed, ...imported]);
+  const catalogKey = KV_DRIVE_FOLDERS_PREFIX + account.driveFolderId;
+  const serializedCatalog = JSON.stringify(catalog);
+  const folderCatalogChanged = (await env.INSTALLS.get(catalogKey)) !== serializedCatalog;
+  if (folderCatalogChanged) await env.INSTALLS.put(catalogKey, serializedCatalog);
   if (added) {
     await socialLog(env, 'info', `Синхронизация «${account.name}»: добавлено роликов — ${added}`);
   }
 
-  return { status: 'ok', added, updatedFolders, seen: videos.length };
+  return { status: 'ok', added, updatedFolders, folderCatalogChanged, seen: videos.length };
 }
 
 // ────────────────────────────── Instagram ──────────────────────────────
@@ -1720,9 +1732,12 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     const [accounts, posts, log] = await Promise.all([
       getAccounts(env), getPosts(env), kvJson(env, KV_LOG, []),
     ]);
+    const driveRoots = new Set(accounts.map(account => account.driveFolderId).filter(Boolean));
+    const catalogs = await Promise.all([...driveRoots].map(id => kvJson(env, KV_DRIVE_FOLDERS_PREFIX + id, [])));
     return jsonResponse({
       settings: publicSettings(await getSettings(env)),
       accounts: accounts.map(publicAccount),
+      driveFolders: catalogs.flat(),
       posts: posts.slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))),
       log: log.slice(0, 40),
       serverTimeMsk: nowMsk().toISOString().slice(0, 16).replace('T', ' '),
