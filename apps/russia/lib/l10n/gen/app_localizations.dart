@@ -1732,6 +1732,12 @@ abstract class AppLocalizations {
   /// **'Цвет «{name}» открыт для всех машин.'**
   String gameRevealPaintBody(String name);
 
+  /// No description provided for @gamesGaragePaintPerModel.
+  ///
+  /// In ru, this message translates to:
+  /// **'У каждой машины своя окраска'**
+  String get gamesGaragePaintPerModel;
+
   /// No description provided for @gamePaintAllCars.
   ///
   /// In ru, this message translates to:

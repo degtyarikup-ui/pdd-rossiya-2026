@@ -28,6 +28,7 @@ const MAX_SWATCHES_PER_ROW := 6
 var data: Dictionary
 var car_index := 0
 var paint_index := 0
+var _model_paints := {}
 var sound_enabled := true
 var voice_enabled := false
 var voice_available := true
@@ -90,12 +91,20 @@ func _init(options: Dictionary, selection := {}) -> void:
 	for i in data.cars.size():
 		if data.cars[i].id == selection.get("id", ""):
 			car_index = i
+			if selection.has("paint"):
+				_model_paints[data.cars[i].id] = selection.paint
 			break
-	for i in data.cars[car_index].paints.size():
-		if data.cars[car_index].paints[i].paint == selection.get("paint", ""):
-			paint_index = i
-			break
+	paint_index = _saved_paint_index(car_index)
 	position_items = car_index
+
+
+func _saved_paint_index(index: int) -> int:
+	var vehicle: Dictionary = data.cars[index]
+	var saved: String = _model_paints.get(vehicle.id, vehicle.get("selected_paint", "red"))
+	for i in vehicle.paints.size():
+		if vehicle.paints[i].paint == saved:
+			return i
+	return 0
 
 
 func current() -> Dictionary:
@@ -326,7 +335,9 @@ func _stage(i: int) -> Dictionary:
 	studio.add_child(camera)
 	camera.position = Vector3(-5, 3.2, 6)
 	camera.look_at(Vector3(0, 0.7, 0))
-	var car := Models.player_car(data.cars[i].id, _shown_hex, current().paint == "leopard")
+	var vehicle: Dictionary = data.cars[i]
+	var paint: Dictionary = vehicle.paints[_saved_paint_index(i)]
+	var car := Models.player_car(vehicle.id, Color(paint.hex), paint.paint == "leopard")
 	studio.add_child(car)
 	var rect := TextureRect.new()
 	rect.texture = viewport.get_texture()
@@ -485,12 +496,11 @@ func _change_car(step: int) -> void:
 func _select_car(index: int) -> void:
 	if index == car_index:
 		return
-	var paint_name: String = current().paint
+	if _paint_tween != null and _paint_tween.is_running():
+		_paint_tween.kill()
+		_apply_paint(Color(current().hex))
 	car_index = index
-	paint_index = 0
-	for i in data.cars[car_index].paints.size():
-		if data.cars[car_index].paints[i].paint == paint_name:
-			paint_index = i
+	paint_index = _saved_paint_index(index)
 	GameSound.buzz(5)
 	_refresh()
 	vehicle_changed.emit(current())
@@ -611,14 +621,17 @@ func _select_paint(index: int) -> void:
 		return
 	var changed := index != paint_index
 	paint_index = index
+	var selection := current()
 	if changed:
+		_model_paints[selection.id] = selection.paint
+		selection["paint_changed"] = true
 		GameSound.buzz(5)
 	_update_swatches(changed)
-	_tint_cars(Color(current().hex), changed)
-	vehicle_changed.emit(current())
+	_tint_selected(Color(selection.hex), changed)
+	vehicle_changed.emit(selection)
 
 
-func _tint_cars(target: Color, animate: bool) -> void:
+func _tint_selected(target: Color, animate: bool) -> void:
 	if _paint_tween != null:
 		_paint_tween.kill()
 	if not animate or not is_inside_tree():
@@ -631,10 +644,11 @@ func _tint_cars(target: Color, animate: bool) -> void:
 
 func _apply_paint(colour: Color) -> void:
 	_shown_hex = colour
-	var leopard: bool = current().paint == "leopard"
-	for stage in _stages.values():
-		Models.repaint_player(stage.car, colour, leopard)
-		(stage.viewport as SubViewport).render_target_update_mode = SubViewport.UPDATE_ONCE
+	var stage: Dictionary = _stages.get(car_index, {})
+	if stage.is_empty():
+		return
+	Models.repaint_player(stage.car, colour, current().paint == "leopard")
+	(stage.viewport as SubViewport).render_target_update_mode = SubViewport.UPDATE_ONCE
 
 
 
@@ -1025,7 +1039,7 @@ func _refresh() -> void:
 			_model_label.modulate.a = 0.0
 			create_tween().tween_property(_model_label, "modulate:a", 1.0, 0.2)
 	_carousel.accessibility_name = car_name
-	_tint_cars(Color(current().hex), false)
+	_tint_selected(Color(current().hex), false)
 	_place_items()
 
 

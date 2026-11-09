@@ -122,12 +122,13 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
       final mileage = await garage.mileage(account);
       if (!mounted) return;
       final premium = ref.read(isPremiumProvider);
-      final selected = await garage.selection(premium: premium);
+      final selection = await garage.loadSelection(premium: premium);
       if (!mounted) return;
       await Navigator.of(context).push<void>(
         MaterialPageRoute(
           builder: (_) => GameGarage(
-            selected: selected,
+            selected: selection.car,
+            modelPaints: selection.modelPaints,
             models: garage.availableModels(premium: premium),
             paints: garage.availablePaints(premium: premium),
             correctTotal: garage.correctTotal,

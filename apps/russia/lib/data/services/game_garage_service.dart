@@ -97,6 +97,7 @@ class GameGarageService {
   ];
   static const _vehicleKey = 'game_vehicle';
   static const _paintKey = 'game_vehicle_paint';
+  static const _modelPaintsKey = 'game_vehicle_paints_v1';
   static const _mileageKey = 'game_garage_mileage_v1';
   static const _carsKey = 'game_garage_cars';
   static const _correctKey = 'game_garage_correct';
@@ -128,31 +129,89 @@ class GameGarageService {
   List<String> availablePaints({required bool premium}) =>
       premium ? allPaints : ownedPaints;
 
-  Future<GameCar> selection({
+  Future<GameCar> selection({required bool premium}) async =>
+      (await loadSelection(premium: premium)).car;
+
+  /// The shared palette controls availability. Each car keeps its own choice.
+  Future<({GameCar car, Map<String, String> modelPaints})> loadSelection({
     required bool premium,
     bool repair = false,
   }) => _serial(() async {
     if (!_loaded) await _load();
     final prefs = await SharedPreferences.getInstance();
+    final saved = _readModelPaints(prefs);
     final id = prefs.getString(_vehicleKey);
-    final paint = normalizePaint(prefs.getString(_paintKey) ?? starter.paint);
-    final car = GameCar(
-      availableModels(premium: premium).contains(id) ? id! : starter.id,
-      availablePaints(premium: premium).contains(paint) ? paint : starter.paint,
-    );
-    if (repair) await _writeSelection(prefs, car);
-    return car;
+    final available = availablePaints(premium: premium);
+    final modelPaints = {
+      for (final model in availableModels(premium: premium))
+        model: available.contains(saved[model]) ? saved[model]! : starter.paint,
+    };
+    final selectedId = modelPaints.containsKey(id) ? id! : starter.id;
+    final car = GameCar(selectedId, modelPaints[selectedId]!);
+    if (repair && await _writeModelPaints(prefs, saved)) {
+      await _writeSelection(prefs, car);
+    }
+    return (car: car, modelPaints: modelPaints);
   });
 
-  Future<bool> select(GameCar car, {required bool premium}) =>
-      _serial(() async {
-        if (!_loaded) await _load();
-        if (!availableModels(premium: premium).contains(car.id) ||
-            !availablePaints(premium: premium).contains(car.paint)) {
-          return false;
+  /// Flutter sets one paint. Godot sends all explicit edits from the visit,
+  /// including edits made to cars other than the final selection.
+  Future<bool> select(
+    GameCar car, {
+    required bool premium,
+    Map<String, String>? paintChanges,
+  }) => _serial(() async {
+    if (!_loaded) await _load();
+    final models = availableModels(premium: premium);
+    final paints = availablePaints(premium: premium);
+    if (!models.contains(car.id) || !paints.contains(car.paint)) return false;
+    final prefs = await SharedPreferences.getInstance();
+    final saved = _readModelPaints(prefs);
+    for (final entry in (paintChanges ?? {car.id: car.paint}).entries) {
+      if (models.contains(entry.key) && paints.contains(entry.value)) {
+        saved[entry.key] = entry.value;
+      }
+    }
+    final paint = saved[car.id];
+    final selected = GameCar(
+      car.id,
+      paints.contains(paint) ? paint! : starter.paint,
+    );
+    return await _writeModelPaints(prefs, saved) &&
+        await _writeSelection(prefs, selected);
+  });
+
+  Map<String, String> _readModelPaints(SharedPreferences prefs) {
+    final raw = prefs.getString(_modelPaintsKey);
+    if (raw != null) {
+      try {
+        final saved = jsonDecode(raw);
+        if (saved is Map) {
+          return {
+            for (final id in vehicleIds)
+              if (saved[id] case final String paint) id: normalizePaint(paint),
+          };
         }
-        return _writeSelection(await SharedPreferences.getInstance(), car);
-      });
+      } on FormatException {
+        // Fall back to the last selection if the new data is damaged.
+      }
+    }
+    final id = prefs.getString(_vehicleKey);
+    final paint = prefs.getString(_paintKey);
+    return {
+      if (paint != null)
+        (vehicleIds.contains(id) ? id! : starter.id): normalizePaint(paint),
+    };
+  }
+
+  Future<bool> _writeModelPaints(
+    SharedPreferences prefs,
+    Map<String, String> paints,
+  ) async {
+    final encoded = jsonEncode(paints);
+    return prefs.getString(_modelPaintsKey) == encoded ||
+        await prefs.setString(_modelPaintsKey, encoded);
+  }
 
   Future<bool> _writeSelection(SharedPreferences prefs, GameCar car) async {
     if (prefs.getString(_paintKey) != car.paint &&

@@ -562,6 +562,7 @@
       }
     }
   },
+  "gamesGaragePaintPerModel": "У каждой машины своя окраска",
   "gamePaintAllCars": "Открытые цвета доступны для всех машин",
   "gameRevealTitle": "Новая машина!",
   "gameRevealTap": "Нажмите на ворота",

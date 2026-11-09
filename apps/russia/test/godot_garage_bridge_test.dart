@@ -898,6 +898,13 @@ void main() {
     for (final car in cars) {
       expect(paints(car), GameGarageService.paints);
     }
+    expect(
+      {for (final car in cars) car['id']: car['selected_paint']},
+      {
+        for (final id in GameGarageService.models)
+          id: id == 'pickup' ? 'yellow' : 'red',
+      },
+    );
     expect(ride['selected'], {'id': 'pickup', 'paint': 'yellow'});
     expect(prefs.getString('game_vehicle_paint'), 'yellow');
     expect((ride['achievement'] as Map)['complete'], isTrue);
@@ -925,6 +932,30 @@ void main() {
     for (final car in cars) {
       expect(paints(car), ['red', 'blue', 'green']);
     }
+  });
+
+  testWidgets('City saves paint edits for more than the final car', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('game_garage_correct', 35);
+    await open(tester);
+    nativeResponse = jsonEncode({
+      'run_started': false,
+      'car': {'id': 'sedan', 'paint': 'white'},
+      'paint_changes': {'hatch': 'blue', 'sedan': 'white', 'wagon': 'pink'},
+    });
+    await launch(tester);
+    GameGarageService.instance.invalidate();
+    final saved = await GameGarageService.instance.loadSelection(
+      premium: false,
+    );
+    expect(saved.car.key, 'sedan:white');
+    expect(saved.modelPaints, {
+      'hatch': 'blue',
+      'sedan': 'white',
+      'wagon': 'red',
+    });
   });
 
   testWidgets('premium launches Mini with the shared palette', (tester) async {

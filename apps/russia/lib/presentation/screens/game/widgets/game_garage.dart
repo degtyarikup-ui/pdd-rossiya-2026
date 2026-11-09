@@ -68,6 +68,7 @@ class GameGarage extends StatefulWidget {
   const GameGarage({
     super.key,
     required this.selected,
+    this.modelPaints = const {},
     required this.models,
     required this.paints,
     required this.correctTotal,
@@ -76,6 +77,7 @@ class GameGarage extends StatefulWidget {
   });
 
   final GameCar selected;
+  final Map<String, String> modelPaints;
   final List<String> models, paints;
   final int correctTotal;
   final Map<String, int> mileageMm;
@@ -89,11 +91,22 @@ enum _GaragePreview { actual, newcomer, premium, earned }
 
 class _GameGarageState extends State<GameGarage> {
   late GameCar _selected = widget.selected;
+  late final Map<String, String> _modelPaints = {
+    ...widget.modelPaints,
+    widget.selected.id: widget.selected.paint,
+  };
+  final Map<String, String> _previewPaints = {};
   GameCar _previewSelected = GameGarageService.starter;
   _GaragePreview _preview = _GaragePreview.actual;
 
   bool get _isPreview => _preview != _GaragePreview.actual;
   GameCar get _car => _isPreview ? _previewSelected : _selected;
+
+  GameCar _paintedCar(String id) => GameCar(
+    id,
+    (_isPreview ? _previewPaints : _modelPaints)[id] ??
+        GameGarageService.starter.paint,
+  );
   List<String> get _models => switch (_preview) {
     _GaragePreview.actual => widget.models,
     _GaragePreview.newcomer => [GameGarageService.starter.id],
@@ -120,7 +133,7 @@ class _GameGarageState extends State<GameGarage> {
     final selected = await Navigator.of(context).push<GameCar>(
       MaterialPageRoute(
         builder: (_) => _GarageCarDetail(
-          car: GameCar(id, _car.paint),
+          car: _paintedCar(id),
           unlocked: _models.contains(id),
           paints: _paints,
           correctTotal: _correctTotal,
@@ -133,8 +146,10 @@ class _GameGarageState extends State<GameGarage> {
     setState(() {
       if (previewing) {
         _previewSelected = selected;
+        _previewPaints[selected.id] = selected.paint;
       } else {
         _selected = selected;
+        _modelPaints[selected.id] = selected.paint;
       }
     });
   }
@@ -154,6 +169,7 @@ class _GameGarageState extends State<GameGarage> {
       onSelected: (value) => setState(() {
         _preview = value;
         _previewSelected = GameGarageService.starter;
+        _previewPaints.clear();
       }),
       itemBuilder: (_) => [
         for (final option in options.entries)
@@ -209,7 +225,7 @@ class _GameGarageState extends State<GameGarage> {
                     height: width * .86,
                     child: _GarageCarCard(
                       key: ValueKey('garage-car-$id'),
-                      car: GameCar(id, _car.paint),
+                      car: _paintedCar(id),
                       unlocked: owned.contains(id),
                       selected: id == _car.id,
                       correctTotal: _correctTotal,
@@ -365,16 +381,6 @@ class _GarageCarCard extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 _GarageCarArt(car: car, locked: !unlocked),
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.center,
-                      end: Alignment.bottomCenter,
-                      colors: [Colors.transparent, Color(0xA60B1020)],
-                      stops: [.32, 1],
-                    ),
-                  ),
-                ),
                 Positioned(
                   left: 9,
                   right: 9,
@@ -820,7 +826,7 @@ class _GarageCarDetailState extends State<_GarageCarDetail> {
             ),
             const SizedBox(height: AppDimensions.spacingS),
             Text(
-              appL10n.gamePaintAllCars,
+              appL10n.gamesGaragePaintPerModel,
               style: TextStyle(color: colors.secondaryText),
             ),
             const SizedBox(height: AppDimensions.spacingL),

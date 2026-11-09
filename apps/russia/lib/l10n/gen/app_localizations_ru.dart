@@ -1008,6 +1008,9 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get gamesGaragePaintPerModel => 'У каждой машины своя окраска';
+
+  @override
   String get gamePaintAllCars => 'Открытые цвета доступны для всех машин';
 
   @override

@@ -809,6 +809,10 @@ class GodotGame {
     final unlimited = premium;
     final seen = await _seenModels();
     final prefs = await _prefs();
+    final selection = await garage.loadSelection(
+      premium: premium,
+      repair: true,
+    );
     final ids = garage.availableModels(premium: premium);
     final paints = garage.availablePaints(premium: premium);
     final cars = [
@@ -816,6 +820,7 @@ class GodotGame {
         {
           'id': id,
           'name': gameCarName(id),
+          'selected_paint': selection.modelPaints[id],
           // «НОВАЯ» until the model has been driven once (seen == null: no badge).
           'new': seen != null && !seen.contains(id),
           'paints': [
@@ -829,7 +834,6 @@ class GodotGame {
         },
     ];
     final pending = await _pendingRun();
-    final selected = await garage.selection(premium: premium, repair: true);
     final nextReward = garage.nextReward;
     final target =
         nextReward?.threshold ?? GameGarageService.rewards.last.threshold;
@@ -837,7 +841,7 @@ class GodotGame {
     final voice = prefs?.getBool(_cityVoiceKey) ?? settings.voiceEnabled;
     return {
       'cars': cars,
-      'selected': selected.toJson(),
+      'selected': selection.car.toJson(),
       'mileage_visit': GameGarageService.newVisitId(),
       'garage_correct': garage.correctTotal,
       'garage_premium': premium,
@@ -981,11 +985,21 @@ class GodotGame {
             .setVoiceSpeed(voiceSpeed.toDouble());
       }
       final car = GameCar.fromJson(summary['car']);
+      final rawPaints = summary['paint_changes'];
+      final paintChanges = rawPaints is Map
+          ? {
+              for (final entry in rawPaints.entries)
+                if (entry.key is String && entry.value is String)
+                  entry.key as String: entry.value as String,
+            }
+          : null;
       if (summary['tips_seen'] == true) {
         await _rememberTips();
       }
       if (summary['run_started'] != true) {
-        if (car != null) await _saveVehicle(car, premium: premium);
+        if (car != null) {
+          await _saveVehicle(car, premium: premium, paintChanges: paintChanges);
+        }
         return;
       }
 
@@ -1023,7 +1037,9 @@ class GodotGame {
       final unlocked = await GameGarageService.instance.recordCorrectAnswers(
         deltaCorrect,
       );
-      if (car != null) await _saveVehicle(car, premium: premium);
+      if (car != null) {
+        await _saveVehicle(car, premium: premium, paintChanges: paintChanges);
+      }
       if (deltaCorrect > 0) {
         ProgressSyncService.instance.scheduleSync();
       }
@@ -1152,9 +1168,17 @@ class GodotGame {
     }
   }
 
-  static Future<void> _saveVehicle(GameCar car, {required bool premium}) async {
+  static Future<void> _saveVehicle(
+    GameCar car, {
+    required bool premium,
+    Map<String, String>? paintChanges,
+  }) async {
     try {
-      if (await GameGarageService.instance.select(car, premium: premium)) {
+      if (await GameGarageService.instance.select(
+        car,
+        premium: premium,
+        paintChanges: paintChanges,
+      )) {
         ProgressSyncService.instance.scheduleSync();
       }
     } catch (_) {
@@ -1265,9 +1289,15 @@ class GodotGame {
     );
     if (choose != true) return;
     final garage = GameGarageService.instance;
-    final selected = await garage.selection(premium: false);
+    final selection = await garage.loadSelection(premium: false);
+    final id = reward.model ?? selection.car.id;
     await _saveVehicle(
-      GameCar(reward.model ?? selected.id, reward.paint ?? selected.paint),
+      GameCar(
+        id,
+        reward.paint ??
+            selection.modelPaints[id] ??
+            GameGarageService.starter.paint,
+      ),
       premium: false,
     );
   }

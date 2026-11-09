@@ -336,6 +336,7 @@
       }
     }
   },
+  "gamesGaragePaintPerModel": "Each car keeps its own paint",
   "gamePaintAllCars": "Unlocked colours are available for every car",
   "gameRevealTitle": "New car!",
   "gameRevealTap": "Tap the gate",

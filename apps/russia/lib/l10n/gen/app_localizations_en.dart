@@ -987,6 +987,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get gamesGaragePaintPerModel => 'Each car keeps its own paint';
+
+  @override
   String get gamePaintAllCars => 'Unlocked colours are available for every car';
 
   @override

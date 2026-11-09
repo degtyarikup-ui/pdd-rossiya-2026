@@ -183,6 +183,7 @@ void main() {
     expect(tester.getCenter(title).dy, greaterThan(card.center.dy));
     expect(tester.getCenter(distance).dx, lessThan(card.center.dx));
     expect(tester.getCenter(distance).dy, lessThan(card.center.dy));
+    expect(tester.widget<Text>(title).style?.color, Colors.white);
     final wagon = find.text(appL10n.gameCarWagon);
     await tester.ensureVisible(wagon);
     await tester.tap(wagon);
@@ -209,6 +210,20 @@ void main() {
     expect(find.byType(GameGarage), findsOneWidget);
     expect(prefs.getString('game_vehicle'), 'sedan');
     expect(prefs.getString('game_vehicle_paint'), 'blue');
+    await tester.tap(title);
+    await tester.pumpAndSettle();
+    expect(
+      find.text(appL10n.gamesGaragePaint(appL10n.gamePaintRed)),
+      findsOneWidget,
+    );
+    await tester.tap(find.byTooltip(appL10n.back));
+    await tester.pumpAndSettle();
+    await tester.tap(sedan);
+    await tester.pumpAndSettle();
+    expect(
+      find.text(appL10n.gamesGaragePaint(appL10n.gamePaintBlue)),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
     await close(tester);
   });

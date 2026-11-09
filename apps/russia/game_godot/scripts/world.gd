@@ -184,6 +184,7 @@ var run_end_sent := false         # the run_end event went out (once per visit)
 var mileage_mm := {}
 var mileage_baseline := 0
 var chosen := {}                  # { id, paint } of the car the player drove, for the app
+var paint_changes := {}           # explicit edits by model in the current run
 var tips_enabled := false         # the app says the first-drive tips are not seen yet
 var tip_step := -1                # 0..2 the tips card on the screen; -1 none
 var tip_drawn := -1               # the step shown on the card now
@@ -3396,12 +3397,15 @@ func _on_voice_premium_requested() -> void:
 ## reopening the pause menu. Newly earned paints apply to every owned model.
 func _live_garage_options() -> Dictionary:
 	var options := ride_options.duplicate(true)
+	var cars: Array = options.get("cars", [])
+	for car: Dictionary in cars:
+		if paint_changes.has(car.id):
+			car["selected_paint"] = paint_changes[car.id]
 	var rewards: Variant = options.get("reward_list")
 	if not options.has("garage_correct") or not rewards is Array or rewards.is_empty():
 		return options
 	var total := int(ride_options.garage_correct) + maxi(0, run.correct - int(resume_state.get("correct", 0)))
 	options.garage_correct = total
-	var cars: Array = options.get("cars", [])
 	var paints := {}
 	for car: Dictionary in cars:
 		for paint: Dictionary in car.get("paints", []):
@@ -3425,6 +3429,7 @@ func _live_garage_options() -> Dictionary:
 					if str(model.id) == id:
 						var earned := model.duplicate(true)
 						earned["new"] = true
+						earned["selected_paint"] = paint_changes.get(id, "red")
 						cars.append(earned)
 						break
 		if reward.has("paint"):
@@ -3465,6 +3470,8 @@ func _record_mileage_segment() -> void:
 
 func _on_vehicle_changed(selection: Dictionary) -> void:
 	_record_mileage_segment()
+	if selection.get("paint_changed", false):
+		paint_changes[selection.id] = selection.paint
 	chosen = {"id": selection.id, "paint": selection.paint}
 	_mount_car(selection.id, selection.hex, selection.paint == "leopard")
 
@@ -3636,6 +3643,7 @@ func _exit_summary() -> Dictionary:
 	out["question_history"] = question_history.snapshot()
 	out["run_started"] = run_started
 	out["car"] = chosen
+	out["paint_changes"] = paint_changes.duplicate()
 	out["tips_seen"] = tips_seen
 	out["resumed"] = resumed
 	out["finished"] = run.finished()

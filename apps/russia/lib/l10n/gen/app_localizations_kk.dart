@@ -990,6 +990,9 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String get gamesGaragePaintPerModel => 'Әр көліктің түсі бөлек сақталады';
+
+  @override
   String get gamePaintAllCars => 'Ашылған түстер барлық көліктерге қолжетімді';
 
   @override

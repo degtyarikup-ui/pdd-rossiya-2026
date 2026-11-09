@@ -291,12 +291,13 @@ func _check_pause_collection(options: Dictionary) -> void:
 		menu._select_paint(i)
 		await process_frame
 		var selection := menu.current()
-		for j in options.cars.size():
-			menu._change_car(1)
-			await process_frame
-			check(menu.current().paint == selection.paint and menu.current().hex == selection.hex,
-				"Every unlocked model keeps global paint %s" % selection.paint)
-			check(menu._palette.get_child_count() == 8, "Switching models keeps all eight shared paints")
+		menu._change_car(1)
+		await process_frame
+		check(menu.current().paint == "red", "Painting the hatch does not repaint the Cybertruck")
+		check(menu._palette.get_child_count() == 8, "Switching models keeps all eight shared paints")
+		menu._change_car(1)
+		await process_frame
+		check(menu.current() == selection, "The hatch remembers its own paint %s" % selection.paint)
 	await _settle_layout()
 	check(menu._box.find_children("*", "ProgressBar", true, false).is_empty(), "Pause omits achievement progress even when the host supplies it")
 	for label: Label in menu._box.find_children("*", "Label", true, false):
@@ -404,7 +405,17 @@ func _run() -> void:
 	world.pause_menu._select_paint(1)
 	check(_painted(world, Color("#317ED4")), "Pause palette changes the actual current car material")
 	world.pause_menu._change_car(1)
-	check(world.chosen.id == "cyber" and world.chosen.paint == "blue", "Pause applies another owned model and preserves available paint")
+	check(world.chosen.id == "cyber" and world.chosen.paint == "red", "Pause applies the Cybertruck with its own paint")
+	world.pause_menu._select_paint(6)
+	check(_painted(world, Color("#E8C547")), "The Cybertruck uses its selected paint in the ride")
+	world.pause_menu.resume_requested.emit()
+	await _settle_layout()
+	world._on_pause()
+	check(world.pause_menu.current().paint == "yellow", "Reopening pause restores the Cybertruck's paint")
+	world.pause_menu._change_car(1)
+	check(world.chosen.id == "hatch" and world.chosen.paint == "blue", "Reopening pause preserves the hatch's paint too")
+	check(world._exit_summary().paint_changes == {"hatch":"blue", "cyber":"yellow"},
+		"The result sends edits to both cars even when the hatch is the final selection")
 	world.pause_menu._sound_button.button_pressed = true
 	check(world.sound.enabled, "Pause speaker icon enables the game")
 	world.pause_menu._sound_button.button_pressed = false
