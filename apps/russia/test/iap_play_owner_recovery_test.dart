@@ -45,6 +45,18 @@ class PlayStore extends InAppPurchasePlatform {
   @override
   Future<bool> buyNonConsumable({required PurchaseParam purchaseParam}) async {
     launches++;
+    updates.add([
+      PurchaseDetails(
+        productID: purchaseParam.productDetails.id,
+        verificationData: PurchaseVerificationData(
+          localVerificationData: '',
+          serverVerificationData: '',
+          source: 'google_play',
+        ),
+        transactionDate: null,
+        status: PurchaseStatus.pending,
+      ),
+    ]);
     // Play cancellation has no product ID. It must clear the active reservation.
     updates.add([
       PurchaseDetails(
@@ -183,6 +195,8 @@ void main() {
               if (scenario == 'stale') {
                 expect(result, PurchaseResult.canceled);
                 expect(store.launches, launches + 1);
+                expect(await iap.buyProduct(tier), PurchaseResult.canceled);
+                expect(store.launches, launches + 2);
                 expect(
                   jsonDecode(prefs.getString('iap_pending_owners_v1')!),
                   isEmpty,

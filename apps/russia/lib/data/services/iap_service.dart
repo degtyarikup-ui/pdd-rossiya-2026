@@ -943,6 +943,7 @@ class IapService extends ChangeNotifier {
           (entry) => entry.$1.productID == product,
         )) {
       await _clearOwner(product);
+      _pendingProducts.remove(product);
     }
   }
 
