@@ -237,6 +237,7 @@
   "gamesGarageUnlockInCity": "«Тірі қаладағы» дұрыс жауаптар",
   "gamesGarageLoadFailed": "Гаражды ашу мүмкін болмады. Қайталап көріңіз.",
   "gamesGarageSave": "Сақтау",
+  "gamesGarageRotateCar": "Көлікті бұру",
   "gamesGarageSaveFailed": "Таңдауды сақтау мүмкін болмады. Қайталап көріңіз.",
   "gameGarage": "Көлік таңдау",
   "gameCarHatch": "Хэтчбек",

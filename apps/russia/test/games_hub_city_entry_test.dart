@@ -201,15 +201,21 @@ void main() {
     await tester.tap(sedan);
     await tester.pumpAndSettle();
     final backdrop = find.byKey(const ValueKey('garage-detail-background'));
-    final save = find.widgetWithText(FilledButton, appL10n.gamesGarageSave);
+    final save = find.widgetWithText(ElevatedButton, appL10n.gamesGarageSave);
+    final carPreview = find.byKey(const ValueKey('garage-turntable'));
     expect(tester.getRect(backdrop), const Rect.fromLTWH(0, 0, 390, 844));
-    expect(tester.getCenter(find.byType(Image)).dy, closeTo(422, 55));
+    expect(tester.getCenter(carPreview).dy, closeTo(422, 55));
     expect(tester.getCenter(find.text('0 км')).dx, greaterThan(300));
     expect(tester.getRect(save).bottom, greaterThan(810));
     expect(tester.getCenter(save).dx, closeTo(195, 1));
     expect(find.byIcon(Icons.lock_rounded), findsNWidgets(6));
     final lockedPink =
         '${appL10n.gamePaintPink} · ${appL10n.gamesGarageLocked}';
+    expect(
+      tester.getTopLeft(save).dy -
+          tester.getBottomLeft(find.byTooltip(lockedPink)).dy,
+      closeTo(32, 1),
+    );
     expect(paintIcon(lockedPink, Icons.lock_rounded), findsOneWidget);
     expect(
       paintIcon(appL10n.gamePaintRed, Icons.check_rounded),
@@ -299,7 +305,7 @@ void main() {
       findsOneWidget,
     );
     await tester.tap(
-      find.widgetWithText(FilledButton, appL10n.gamesGarageSave),
+      find.widgetWithText(ElevatedButton, appL10n.gamesGarageSave),
     );
     await tester.pumpAndSettle();
     expect(prefs.getString('game_vehicle'), isNull);

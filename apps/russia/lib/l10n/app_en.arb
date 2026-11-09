@@ -237,6 +237,7 @@
   "gamesGarageUnlockInCity": "Correct answers in Living City",
   "gamesGarageLoadFailed": "Could not open the garage. Try again.",
   "gamesGarageSave": "Save",
+  "gamesGarageRotateCar": "Rotate the car",
   "gamesGarageSaveFailed": "Could not save your selection. Try again.",
   "gameGarage": "Select a car",
   "gameCarHatch": "Hatchback",

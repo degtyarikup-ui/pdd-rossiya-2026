@@ -455,6 +455,7 @@
   "gamesGarageUnlockInCity": "Правильные ответы в «Живом городе»",
   "gamesGarageLoadFailed": "Не удалось открыть гараж. Попробуйте ещё раз.",
   "gamesGarageSave": "Сохранить",
+  "gamesGarageRotateCar": "Повернуть машину",
   "gamesGarageSaveFailed": "Не удалось сохранить выбор. Попробуйте ещё раз.",
   "gameGarage": "Выбор машины",
   "gameCarHatch": "Хэтчбек",

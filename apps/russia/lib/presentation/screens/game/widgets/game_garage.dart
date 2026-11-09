@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show SystemUiOverlayStyle;
+import 'package:flutter/services.dart' show SystemUiOverlayStyle, rootBundle;
 import 'package:intl/intl.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
@@ -350,20 +351,21 @@ String _odometer(BuildContext context, int millimeters) {
 }
 
 class _GarageBadge extends StatelessWidget {
-  const _GarageBadge(this.label, {this.premium = false});
+  const _GarageBadge(this.label, {this.premium = false}) : outlined = true;
+  const _GarageBadge.mileage(this.label) : premium = false, outlined = false;
 
   static const background = Color(0xD9162034);
   static const premiumInk = Color(0xFF352005);
 
   final String label;
-  final bool premium;
+  final bool premium, outlined;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       color: premium ? AppColors.of(context).gold : background,
       borderRadius: BorderRadius.circular(7),
-      border: Border.all(color: const Color(0x35FFFFFF)),
+      border: outlined ? Border.all(color: const Color(0x35FFFFFF)) : null,
     ),
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -447,7 +449,9 @@ class _GarageCarCard extends StatelessWidget {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
-                          child: _GarageBadge(detail, premium: premium),
+                          child: unlocked
+                              ? _GarageBadge.mileage(detail)
+                              : _GarageBadge(detail, premium: premium),
                         ),
                       ),
                       if (!unlocked || selected) ...[
@@ -608,6 +612,166 @@ class _GarageCarImage extends StatelessWidget {
 
 String _garagePreviewAsset(String id, String paint) =>
     'assets/game/garage/$id-$paint.webp';
+
+/// A packed set of studio renders from render_garage.gd. Decode only the
+/// visible car's paint and keep its viewing angle while the paint changes.
+class _GarageTurntable extends StatefulWidget {
+  const _GarageTurntable({super.key, required this.car, required this.locked});
+
+  final GameCar car;
+  final bool locked;
+
+  @override
+  State<_GarageTurntable> createState() => _GarageTurntableState();
+}
+
+class _GarageTurntableState extends State<_GarageTurntable> {
+  static const _frameCount = _TurntableFrame.grid * _TurntableFrame.grid;
+
+  ui.Image? _atlas;
+  String? _atlasKey;
+  bool _loading = false;
+  double _angle = 0;
+
+  int get _frame => _angle.round() % _frameCount;
+  String get _key =>
+      '${widget.car.id}-${widget.locked ? 'red' : widget.car.paint}';
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  @override
+  void didUpdateWidget(_GarageTurntable oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.car.key != widget.car.key ||
+        oldWidget.locked != widget.locked) {
+      unawaited(_load());
+    }
+  }
+
+  @override
+  void dispose() {
+    _atlas?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final key = _key;
+    if (_loading || _atlasKey == key) return;
+    _loading = true;
+    try {
+      final data = await rootBundle.load(
+        'assets/game/garage_turntable/$key.webp',
+      );
+      final codec = await ui.instantiateImageCodec(
+        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+      );
+      try {
+        final atlas = (await codec.getNextFrame()).image;
+        if (mounted && _key == key) {
+          final previous = _atlas;
+          setState(() {
+            _atlas = atlas;
+            _atlasKey = key;
+          });
+          previous?.dispose();
+        } else {
+          atlas.dispose();
+        }
+      } finally {
+        codec.dispose();
+      }
+    } catch (_) {
+      // The small catalog art remains available if the atlas cannot be loaded.
+      if (mounted && _key == key && _atlas != null) {
+        final previous = _atlas;
+        setState(() {
+          _atlas = null;
+          _atlasKey = null;
+        });
+        previous?.dispose();
+      }
+    } finally {
+      _loading = false;
+      if (mounted && _key != key) unawaited(_load());
+    }
+  }
+
+  void _rotateBy(double frames) {
+    final previous = _frame;
+    _angle = (_angle + frames) % _frameCount;
+    if (_frame != previous) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final atlas = _atlas;
+    final artwork = AspectRatio(
+      aspectRatio: 960 / 528,
+      child: atlas == null
+          ? _GarageCarImage(car: widget.car, locked: widget.locked)
+          : CustomPaint(painter: _TurntableFrame(atlas, _frame, widget.locked)),
+    );
+    if (widget.locked) return artwork;
+    return Semantics(
+      label: appL10n.gamesGarageRotateCar,
+      onIncrease: () => _rotateBy(1),
+      onDecrease: () => _rotateBy(-1),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.grab,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragUpdate: (details) {
+            final width = context.size!.width;
+            _rotateBy(-details.delta.dx * _frameCount / width);
+          },
+          child: RepaintBoundary(child: artwork),
+        ),
+      ),
+    );
+  }
+}
+
+class _TurntableFrame extends CustomPainter {
+  const _TurntableFrame(this.atlas, this.frame, this.locked);
+
+  // Keep the atlas grid in sync with render_garage.gd.
+  static const grid = 4;
+
+  final ui.Image atlas;
+  final int frame;
+  final bool locked;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final width = atlas.width / grid;
+    final height = atlas.height / grid;
+    canvas.drawImageRect(
+      atlas,
+      Rect.fromLTWH(
+        (frame % grid) * width,
+        (frame ~/ grid) * height,
+        width,
+        height,
+      ),
+      Offset.zero & size,
+      Paint()
+        ..filterQuality = FilterQuality.medium
+        ..colorFilter = locked
+            ? const ColorFilter.mode(AppColors.black, BlendMode.srcIn)
+            : null,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _TurntableFrame oldDelegate) =>
+      oldDelegate.atlas != atlas ||
+      oldDelegate.frame != frame ||
+      oldDelegate.locked != locked;
+}
 
 class _GaragePattern extends CustomPainter {
   const _GaragePattern(this.livery, {required this.cover});
@@ -824,7 +988,11 @@ class _GarageCarDetailState extends State<_GarageCarDetail> {
       scale: 1.18,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 580),
-        child: _GarageCarImage(car: car, locked: !widget.unlocked),
+        child: _GarageTurntable(
+          key: const ValueKey('garage-turntable'),
+          car: car,
+          locked: !widget.unlocked,
+        ),
       ),
     );
     final controls = widget.unlocked
@@ -879,7 +1047,7 @@ class _GarageCarDetailState extends State<_GarageCarDetail> {
                                       distance,
                                     ),
                                     excludeSemantics: true,
-                                    child: _GarageBadge(distance),
+                                    child: _GarageBadge.mileage(distance),
                                   )
                                 : null,
                           ),
@@ -910,18 +1078,15 @@ class _GarageCarDetailState extends State<_GarageCarDetail> {
                             ),
                           ),
                           if (widget.unlocked) ...[
-                            const SizedBox(height: AppDimensions.spacingL),
+                            const SizedBox(height: AppDimensions.spacingXXXL),
                             ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 420),
                               child: SizedBox(
                                 width: double.infinity,
-                                child: FilledButton(
+                                child: ElevatedButton(
                                   onPressed: _saving
                                       ? null
                                       : () => _select(car),
-                                  style: FilledButton.styleFrom(
-                                    minimumSize: const Size.fromHeight(48),
-                                  ),
                                   child: Text(appL10n.gamesGarageSave),
                                 ),
                               ),

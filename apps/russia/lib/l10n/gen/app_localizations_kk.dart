@@ -818,6 +818,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gamesGarageSave => 'Сақтау';
 
   @override
+  String get gamesGarageRotateCar => 'Көлікті бұру';
+
+  @override
   String get gamesGarageSaveFailed =>
       'Таңдауды сақтау мүмкін болмады. Қайталап көріңіз.';
 

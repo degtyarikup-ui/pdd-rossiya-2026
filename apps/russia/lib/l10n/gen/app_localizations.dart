@@ -1468,6 +1468,12 @@ abstract class AppLocalizations {
   /// **'Сохранить'**
   String get gamesGarageSave;
 
+  /// No description provided for @gamesGarageRotateCar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повернуть машину'**
+  String get gamesGarageRotateCar;
+
   /// No description provided for @gamesGarageSaveFailed.
   ///
   /// In ru, this message translates to:

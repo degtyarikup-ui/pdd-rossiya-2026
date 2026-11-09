@@ -815,6 +815,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamesGarageSave => 'Save';
 
   @override
+  String get gamesGarageRotateCar => 'Rotate the car';
+
+  @override
   String get gamesGarageSaveFailed =>
       'Could not save your selection. Try again.';
 
