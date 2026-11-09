@@ -16,6 +16,19 @@ void main(List<String> args) {
     final bank = QuestionBank.fromJson(
       jsonDecode(File(paths.single).readAsStringSync()) as Map<String, dynamic>,
     );
+    for (final question in bank.questions) {
+      for (final asset in question.imageAssets) {
+        if (!File(asset).existsSync()) {
+          throw FormatException('Missing image: $asset');
+        }
+      }
+    }
+    if (flags.contains('--require-ready') &&
+        File('assets/countries/by/preview_catalog.json').existsSync()) {
+      throw StateError(
+        'Local preview assets must be removed from a release workspace',
+      );
+    }
     if (flags.contains('--require-ready') && !bank.canStartExam) {
       throw StateError('Content/regulations not approved; release blocked');
     }

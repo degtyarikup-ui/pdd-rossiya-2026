@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../domain/question_bank.dart';
 import '../l10n/gen/app_localizations.dart';
 import 'exam_screen.dart';
+import 'content_preview_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Future<QuestionBank> Function() loader;
@@ -49,6 +50,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(l.intro),
+                    if (bank.previewOnly && bank.questions.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Text(l.previewNotice),
+                      Text(l.previewCount(bank.questions.length)),
+                      OutlinedButton(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                ContentPreviewScreen(questions: bank.questions),
+                          ),
+                        ),
+                        child: Text(l.previewOpen),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     Card(
                       child: Padding(

@@ -82,3 +82,6 @@ game_godot/icons/achievements/
 
 game_godot/icons/streak_flame.svg
 game_godot/icons/streak_flame.svg.import
+
+# Local licensed Belarus preview content; never publish the bank in Git.
+/apps/belarus/assets/countries/by/preview_*

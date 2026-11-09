@@ -85,4 +85,34 @@ class AppLocalizationsBe extends AppLocalizations {
   String questionNumber(int number) {
     return 'Пытанне $number з 10';
   }
+
+  @override
+  String get previewOpen => 'Прагляд базы';
+
+  @override
+  String get previewNotice =>
+      'Тэставая выбарка ПДД.by. Паўната і актуальнасць яшчэ правяраюцца.';
+
+  @override
+  String previewCount(int count) {
+    return 'Пытанняў у здымку: $count';
+  }
+
+  @override
+  String previewPosition(int number, int total) {
+    return '$number з $total';
+  }
+
+  @override
+  String get previewReveal => 'Паказаць адказ';
+
+  @override
+  String get previewPrevious => 'Назад';
+
+  @override
+  String get previewNext => 'Далей';
+
+  @override
+  String get previewImageError =>
+      'Не ўдалося загрузіць выяву. Пытанне нельга ацэньваць без ілюстрацыі.';
 }

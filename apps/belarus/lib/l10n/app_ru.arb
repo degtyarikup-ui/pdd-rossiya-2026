@@ -43,5 +43,30 @@
         "type": "int"
       }
     }
+  },
+  "previewOpen": "Просмотр базы",
+  "previewNotice": "Тестовая выборка ПДД.by. Полнота и актуальность ещё проверяются.",
+  "previewCount": "Вопросов в снимке: {count}",
+  "previewPosition": "{number} из {total}",
+  "previewReveal": "Показать ответ",
+  "previewPrevious": "Назад",
+  "previewNext": "Далее",
+  "previewImageError": "Не удалось загрузить изображение. Вопрос нельзя оценивать без иллюстрации.",
+  "@previewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@previewPosition": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   }
 }

@@ -237,6 +237,54 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Вопрос {number} из 10'**
   String questionNumber(int number);
+
+  /// No description provided for @previewOpen.
+  ///
+  /// In ru, this message translates to:
+  /// **'Просмотр базы'**
+  String get previewOpen;
+
+  /// No description provided for @previewNotice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тестовая выборка ПДД.by. Полнота и актуальность ещё проверяются.'**
+  String get previewNotice;
+
+  /// No description provided for @previewCount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вопросов в снимке: {count}'**
+  String previewCount(int count);
+
+  /// No description provided for @previewPosition.
+  ///
+  /// In ru, this message translates to:
+  /// **'{number} из {total}'**
+  String previewPosition(int number, int total);
+
+  /// No description provided for @previewReveal.
+  ///
+  /// In ru, this message translates to:
+  /// **'Показать ответ'**
+  String get previewReveal;
+
+  /// No description provided for @previewPrevious.
+  ///
+  /// In ru, this message translates to:
+  /// **'Назад'**
+  String get previewPrevious;
+
+  /// No description provided for @previewNext.
+  ///
+  /// In ru, this message translates to:
+  /// **'Далее'**
+  String get previewNext;
+
+  /// No description provided for @previewImageError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить изображение. Вопрос нельзя оценивать без иллюстрации.'**
+  String get previewImageError;
 }
 
 class _AppLocalizationsDelegate

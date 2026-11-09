@@ -43,5 +43,30 @@
         "type": "int"
       }
     }
+  },
+  "previewOpen": "Прагляд базы",
+  "previewNotice": "Тэставая выбарка ПДД.by. Паўната і актуальнасць яшчэ правяраюцца.",
+  "previewCount": "Пытанняў у здымку: {count}",
+  "previewPosition": "{number} з {total}",
+  "previewReveal": "Паказаць адказ",
+  "previewPrevious": "Назад",
+  "previewNext": "Далей",
+  "previewImageError": "Не ўдалося загрузіць выяву. Пытанне нельга ацэньваць без ілюстрацыі.",
+  "@previewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@previewPosition": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   }
 }

@@ -8,6 +8,7 @@ class Question {
   final String subject;
   final String sourceId;
   final String explanation;
+  final List<String> imageAssets;
 
   Question.fromJson(Map<String, dynamic> json)
     : id = json['id'] as String,
@@ -16,7 +17,10 @@ class Question {
       correctIndex = json['correctIndex'] as int,
       subject = json['subject'] as String,
       sourceId = json['sourceId'] as String,
-      explanation = json['explanation'] as String {
+      explanation = json['explanation'] as String,
+      imageAssets = List.unmodifiable(
+        (json['imageAssets'] as List? ?? []).cast<String>(),
+      ) {
     if (!id.startsWith('by:') ||
         text.trim().isEmpty ||
         answers.length < 2 ||
@@ -29,20 +33,28 @@ class Question {
         explanation.trim().isEmpty) {
       throw const FormatException('Invalid Belarus question');
     }
-    // Images need an explicitly reviewed asset pipeline before being supported.
-    if (json['image'] != null) throw const FormatException('Unsupported image');
+    if (json['image'] != null ||
+        imageAssets.any(
+          (path) => !RegExp(
+            r'^assets/countries/by/preview_[a-f0-9]{64}\.(jpg|jpeg|png|webp|gif)$',
+          ).hasMatch(path),
+        )) {
+      throw const FormatException('Invalid Belarus image asset');
+    }
   }
 }
 
 class QuestionBank {
   final String revision;
   final bool reviewed;
+  final bool previewOnly;
   final bool examRulesReviewed;
   final List<Question> questions;
 
   QuestionBank.fromJson(Map<String, dynamic> json)
     : revision = json['revision'] as String,
       reviewed = json['reviewStatus'] == 'approved',
+      previewOnly = json['previewOnly'] == true,
       examRulesReviewed = json['examRulesReviewed'] == true,
       questions = List.unmodifiable(
         (json['questions'] as List).map(
@@ -54,6 +66,11 @@ class QuestionBank {
         revision.isEmpty ||
         !['pending', 'approved'].contains(json['reviewStatus'])) {
       throw const FormatException('Invalid Belarus catalog');
+    }
+    if (!previewOnly && questions.any((q) => q.imageAssets.isNotEmpty)) {
+      throw const FormatException(
+        'Image questions currently require preview mode',
+      );
     }
     final sourceIds = <String>{};
     for (final source in json['sources'] as List) {
@@ -77,6 +94,7 @@ class QuestionBank {
   }
 
   bool get canStartExam =>
+      !previewOnly &&
       reviewed &&
       examRulesReviewed &&
       questions.where((q) => q.subject == 'pdd').length >= 9 &&

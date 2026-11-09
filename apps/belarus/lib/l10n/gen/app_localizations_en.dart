@@ -86,4 +86,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String questionNumber(int number) {
     return 'Question $number of 10';
   }
+
+  @override
+  String get previewOpen => 'Browse questions';
+
+  @override
+  String get previewNotice =>
+      'PDD.by test sample. Completeness and currency are still under review.';
+
+  @override
+  String previewCount(int count) {
+    return 'Questions in snapshot: $count';
+  }
+
+  @override
+  String previewPosition(int number, int total) {
+    return '$number of $total';
+  }
+
+  @override
+  String get previewReveal => 'Show answer';
+
+  @override
+  String get previewPrevious => 'Previous';
+
+  @override
+  String get previewNext => 'Next';
+
+  @override
+  String get previewImageError =>
+      'Image could not be loaded. This question cannot be assessed without its illustration.';
 }

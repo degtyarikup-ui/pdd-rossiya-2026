@@ -43,5 +43,30 @@
         "type": "int"
       }
     }
+  },
+  "previewOpen": "Browse questions",
+  "previewNotice": "PDD.by test sample. Completeness and currency are still under review.",
+  "previewCount": "Questions in snapshot: {count}",
+  "previewPosition": "{number} of {total}",
+  "previewReveal": "Show answer",
+  "previewPrevious": "Previous",
+  "previewNext": "Next",
+  "previewImageError": "Image could not be loaded. This question cannot be assessed without its illustration.",
+  "@previewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@previewPosition": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   }
 }
