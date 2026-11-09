@@ -28,8 +28,9 @@
 онлайн-наборе найдено только в HTML-комментарии, поэтому не используется как
 доказательство текущего ограничения. Тексты и ответы не подменяются догадками.
 
-Рабочая выгрузка — локальная `scratch/pddby-source/`, прогресс —
-`output/pddby-collect.log`. В приложение вопросы пока не перенесены:
+Рабочая выгрузка — локальная `scratch/pddby-source/`, прогресс единой задачи —
+`scratch/pddby-source/pipeline-status.json` и `pipeline-collect.log` в той же папке.
+В приложение вопросы пока не перенесены:
 `catalog.json` остаётся pending, экзамен отключён.
 
 Отклонены владельцем и не подлежат дальнейшему импорту:
@@ -98,6 +99,19 @@ W22543140 (№73 от 07.03.2025), W22644772 (№87 от 03.04.2026).
 ```sh
 python3.12 -m venv scratch/pddby-tools-venv
 scratch/pddby-tools-venv/bin/python -m pip install -r apps/belarus/tools/requirements-collect.txt
+scratch/pddby-tools-venv/bin/python apps/belarus/tools/run_pddby.py scratch/pddby-source
+```
+
+Единая задача возобновляет сбор из контрольной точки, затем скачивает недостающие
+изображения и запускает строгую проверку. Этап, PID и результат записываются в
+`pipeline-status.json`; ошибка любого этапа останавливает цепочку и не выдаётся за
+успех. Повторный запуск той же команды продолжает сохранённую работу. Два сборщика
+в одну папку одновременно не допускаются. Задача рассчитана на длительную работу:
+остановка по насыщению выборки остаётся эвристикой, а не доказательством полноты.
+
+Для отдельного короткого прохода или повторной проверки:
+
+```sh
 scratch/pddby-tools-venv/bin/python apps/belarus/tools/collect_pddby.py --output scratch/pddby-source --rounds 10
 python3 apps/belarus/tools/download_pddby_images.py scratch/pddby-source
 python3 apps/belarus/tools/review_pddby.py scratch/pddby-source --require-images
