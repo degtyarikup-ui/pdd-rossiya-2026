@@ -17,8 +17,7 @@
 | `assets/audio/feed/` | 1092 | 30.87 |
 | `assets/audio/game_questions/` | 236 | 30.93 |
 | `assets/game/` | 19 | 1.20 |
-| `assets/game/garage/` | 64 | 0.92 |
-| `assets/game/garage_turntable/` | 64 | 16.34 |
+| `assets/game/garage/` | 64 | 2.06 |
 | `assets/mascot/raster/cone-juggling-384-30.webp` | 1 | 0.86 |
 | `assets/mascot/raster/cone-juggling-poster-384.webp` | 1 | 0.02 |
 | `assets/countries/ru/questions/` | 25 | 15.86 |

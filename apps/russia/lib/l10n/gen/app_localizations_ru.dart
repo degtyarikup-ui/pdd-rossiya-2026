@@ -830,9 +830,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gamesGarageSave => 'Сохранить';
 
   @override
-  String get gamesGarageRotateCar => 'Повернуть машину';
-
-  @override
   String get gamesGarageSaveFailed =>
       'Не удалось сохранить выбор. Попробуйте ещё раз.';
 

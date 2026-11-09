@@ -1,4 +1,4 @@
-## Offline card art and optional --turntable atlases from the game models.
+## Offline garage art from the same meshes and paints as the games.
 ## Run with --path game_godot --script res://videos/render_garage.gd (with a GPU).
 extends SceneTree
 
@@ -11,13 +11,11 @@ const PAINTS := {
 }
 const CAMERA_POSITION := Vector3(-7, 3.35, 4.55)
 const CAMERA_TARGET := Vector3(0, 0.66, 0)
-const TURN_GRID := 4
 
 
 func _initialize() -> void:
-	var turntable := "--turntable" in OS.get_cmdline_user_args()
 	var viewport := SubViewport.new()
-	viewport.size = Vector2i(960, 528) if turntable else Vector2i(480, 264)
+	viewport.size = Vector2i(960, 528)
 	viewport.transparent_bg = true
 	viewport.msaa_3d = Viewport.MSAA_4X
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -46,34 +44,23 @@ func _initialize() -> void:
 	studio.add_child(camera)
 	camera.look_at_from_position(CAMERA_POSITION, CAMERA_TARGET)
 
-	var out := ProjectSettings.globalize_path("res://../assets/game/garage_turntable" if turntable else "res://../assets/game/garage")
+	var out := ProjectSettings.globalize_path("res://../assets/game/garage")
 	DirAccess.make_dir_recursive_absolute(out)
-	var grid := TURN_GRID if turntable else 1
-	var frame_count := grid * grid
 	var rect := Rect2i(Vector2i.ZERO, viewport.size)
 	for model: String in MODELS:
-		var tall_preview := turntable and model == "suv"
+		var tall_preview := model == "suv"
 		camera.size = 3.55 if model == "cyber" or tall_preview else 3.28
 		var target := CAMERA_TARGET + Vector3.UP * 0.16 if tall_preview else CAMERA_TARGET
-		var shadows: Array[Image] = []
-		for frame in frame_count:
-			_point_camera(camera, target, frame, frame_count)
-			shadows.append(await _shadow_of(model, studio, viewport))
+		camera.look_at_from_position(CAMERA_POSITION, target)
+		var shadow := await _shadow_of(model, studio, viewport)
 		for paint: String in PAINTS:
 			var car := Models.player_car(model, Color(PAINTS[paint]), paint == "leopard")
 			studio.add_child(car)
-			var atlas := Image.create_empty(viewport.size.x * grid, viewport.size.y * grid, false, Image.FORMAT_RGBA8)
-			for frame in frame_count:
-				_point_camera(camera, target, frame, frame_count)
-				await process_frame
-				await RenderingServer.frame_post_draw
-				var image := shadows[frame].duplicate() as Image
-				image.blend_rect(viewport.get_texture().get_image(), rect, Vector2i.ZERO)
-				@warning_ignore("integer_division")
-				var offset := Vector2i(frame % grid, frame / grid) * viewport.size
-				atlas.blit_rect(image, rect, offset)
-			var path := "%s/%s-%s.webp" % [out, model, paint]
-			var error := _save_turntable(atlas, path) if turntable else atlas.save_webp(path, true, 0.88)
+			await process_frame
+			await RenderingServer.frame_post_draw
+			var image := shadow.duplicate() as Image
+			image.blend_rect(viewport.get_texture().get_image(), rect, Vector2i.ZERO)
+			var error := image.save_webp("%s/%s-%s.webp" % [out, model, paint], true, 0.88)
 			if error != OK:
 				push_error("Cannot save garage art: %s/%s (%s)" % [model, paint, error])
 				quit(1)
@@ -83,28 +70,6 @@ func _initialize() -> void:
 			car.queue_free()
 		print("Garage preview: ", model)
 	quit()
-
-
-func _point_camera(camera: Camera3D, target: Vector3, frame: int, frame_count: int) -> void:
-	camera.look_at_from_position(CAMERA_POSITION.rotated(Vector3.UP, TAU * frame / frame_count), target)
-
-
-## Keep the high-resolution frames and compress soft alpha separately to fit
-## the Flutter asset budget. The catalog still uses Godot's built-in encoder.
-func _save_turntable(atlas: Image, path: String) -> Error:
-	var scratch := ProjectSettings.globalize_path("res://../scratch")
-	DirAccess.make_dir_recursive_absolute(scratch)
-	var png := "%s/garage-turntable-%d.png" % [scratch, OS.get_process_id()]
-	var error := atlas.save_png(png)
-	if error != OK:
-		return error
-	var output := []
-	var status := OS.execute("cwebp", ["-quiet", "-q", "84", "-alpha_q", "68", "-m", "6", png, "-o", path], output, true)
-	DirAccess.remove_absolute(png)
-	if status == 0:
-		return OK
-	push_error("cwebp failed (%d): %s" % [status, output])
-	return ERR_CANT_CREATE
 
 
 ## Bake a soft ground shadow from the projected mesh, with no runtime effects.

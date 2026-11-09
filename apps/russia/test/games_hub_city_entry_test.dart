@@ -139,6 +139,14 @@ void main() {
   Finder paintIcon(String name, IconData icon) =>
       find.descendant(of: find.byTooltip(name), matching: find.byIcon(icon));
 
+  void reduceMotion(WidgetTester tester) {
+    final dispatcher = tester.platformDispatcher;
+    dispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+      disableAnimations: true,
+    );
+    addTearDown(dispatcher.clearAccessibilityFeaturesTestValue);
+  }
+
   Finder getCity() => find.byKey(const ValueKey('games-card-city'));
   Finder getRuns() => find.byKey(const ValueKey('games-runs-status'));
 
@@ -167,6 +175,7 @@ void main() {
   testWidgets('Garage shows lock requirements and saves the chosen paint', (
     tester,
   ) async {
+    reduceMotion(tester);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('game_garage_correct', 10);
     await open(tester);
@@ -188,9 +197,11 @@ void main() {
     expect(tester.getCenter(distance).dy, lessThan(card.center.dy));
     expect(tester.widget<Text>(title).style?.color, Colors.white);
     final wagon = find.text(appL10n.gameCarWagon);
+    expect(tester.widget<Text>(wagon).style?.color, Colors.black);
     await tester.ensureVisible(wagon);
     await tester.tap(wagon);
     await tester.pumpAndSettle();
+    expect(tester.widget<Text>(wagon).style?.color, Colors.black);
     expect(find.text(appL10n.gamesGarageUnlockInCity), findsOneWidget);
     expect(find.text(appL10n.gameAchievementCount(10, 20)), findsOneWidget);
     expect(find.text(appL10n.gamesGarageSave), findsNothing);
@@ -202,7 +213,15 @@ void main() {
     await tester.pumpAndSettle();
     final backdrop = find.byKey(const ValueKey('garage-detail-background'));
     final save = find.widgetWithText(ElevatedButton, appL10n.gamesGarageSave);
-    final carPreview = find.byKey(const ValueKey('garage-turntable'));
+    final carPreview = find.byKey(const ValueKey('garage-detail-car'));
+    final carImage = find.descendant(
+      of: carPreview,
+      matching: find.byType(Image),
+    );
+    expect(
+      (tester.widget<Image>(carImage).image as AssetImage).assetName,
+      'assets/game/garage/sedan-red.webp',
+    );
     expect(tester.getRect(backdrop), const Rect.fromLTWH(0, 0, 390, 844));
     expect(tester.getCenter(carPreview).dy, closeTo(422, 55));
     expect(tester.getCenter(find.text('0 км')).dx, greaterThan(300));
@@ -233,6 +252,10 @@ void main() {
       paintIcon(appL10n.gamePaintBlue, Icons.check_rounded),
       findsOneWidget,
     );
+    expect(
+      (tester.widget<Image>(carImage).image as AssetImage).assetName,
+      'assets/game/garage/sedan-blue.webp',
+    );
     await tester.tap(save);
     await tester.pumpAndSettle();
     expect(find.byType(GameGarage), findsOneWidget);
@@ -259,6 +282,7 @@ void main() {
   testWidgets('Garage preview switches access without saving the car', (
     tester,
   ) async {
+    reduceMotion(tester);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('game_garage_correct', 200);
     await open(tester);
