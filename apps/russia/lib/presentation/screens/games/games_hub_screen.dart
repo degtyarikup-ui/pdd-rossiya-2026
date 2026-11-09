@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
+import 'package:pdd_app/data/services/progress_sync_service.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/presentation/screens/game/godot_game.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_leaderboard_sheet.dart';
@@ -29,12 +32,13 @@ class GamesHubScreen extends ConsumerWidget {
         body: appL10n.gameLockedHint,
       );
     }
-    return const _SignedInGamesHubScreen();
+    final account = ref.watch(currentUserProvider)?.id;
+    return _SignedInGamesHubScreen(key: ValueKey(account));
   }
 }
 
 class _SignedInGamesHubScreen extends ConsumerStatefulWidget {
-  const _SignedInGamesHubScreen();
+  const _SignedInGamesHubScreen({super.key});
 
   @override
   ConsumerState<_SignedInGamesHubScreen> createState() =>
@@ -48,7 +52,11 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
   bool _hasPendingRun = false;
   bool _openingCity = false;
   bool _openingPaywall = false;
-  int _weekScore = 0;
+  final _rating = GameLeaderboardService.instance;
+  int _ratingRequest = 0;
+  int? _weekScore;
+  DateTime? _ratingEndsAt;
+  bool _openingGarage = false;
   Timer? _timer;
   Future<int>? _loadedRuns;
   @override
@@ -57,7 +65,13 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
     WidgetsBinding.instance.addObserver(this);
     unawaited(_refreshRuns());
     unawaited(_refreshRating());
-    _timer = Timer.periodic(const Duration(minutes: 1), (_) => _refreshRuns());
+    _rating.scoreChanges.addListener(_refreshRating);
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      unawaited(_refreshRuns());
+      if (_ratingEndsAt?.isAfter(DateTime.now()) == false) {
+        unawaited(_refreshRating());
+      }
+    });
   }
 
   Future<void> _refreshRuns() async {
@@ -73,16 +87,77 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
     }
   }
 
-  /// Сохранённые очки показываем сразу, затем свежие. Без связи остаются
-  /// последние загруженные; без очков за неделю (или без входа) — 0.
   Future<void> _refreshRating() async {
-    final saved = await GameLeaderboardService.instance.lastKnown();
-    if (mounted && saved != null) {
-      setState(() => _weekScore = saved.me?.score ?? 0);
-    }
-    final board = await GameLeaderboardService.instance.fetch();
-    if (mounted && board != null) {
-      setState(() => _weekScore = board.me?.score ?? 0);
+    final request = ++_ratingRequest;
+    final earned = await _rating.hasEarnedPoints();
+    final cached = await _rating.lastKnown();
+    if (!mounted || request != _ratingRequest) return;
+    setState(() {
+      if (cached != null) {
+        _ratingEndsAt = cached.endsAt;
+        final score = cached.me?.score ?? 0;
+        if (score > 0 || earned || _weekScore != null) _weekScore = score;
+      } else if (_ratingEndsAt?.isAfter(DateTime.now()) == false) {
+        _ratingEndsAt = null;
+        if (_weekScore != null) _weekScore = 0;
+      }
+      if (earned) _weekScore ??= 0;
+    });
+    final board = await _rating.fetch();
+    if (!mounted || request != _ratingRequest || board == null) return;
+    final score = board.me?.score ?? 0;
+    setState(() {
+      _ratingEndsAt = board.endsAt;
+      if (score > 0 || earned || _weekScore != null) _weekScore = score;
+    });
+  }
+
+  Future<void> _openGarage() async {
+    if (_openingGarage) return;
+    _openingGarage = true;
+    HapticFeedbackHelper.tap();
+    final garage = GameGarageService.instance;
+    final account = ref.read(currentUserProvider)?.id;
+    try {
+      final mileage = await garage.mileage(account);
+      if (!mounted) return;
+      final premium = ref.read(isPremiumProvider);
+      final selected = await garage.selection(premium: premium);
+      if (!mounted) return;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => GameGarage(
+            selected: selected,
+            models: garage.availableModels(premium: premium),
+            paints: garage.availablePaints(premium: premium),
+            correctTotal: garage.correctTotal,
+            mileageMm: mileage,
+            onSelect: (car) async {
+              if (!mounted || ref.read(currentUserProvider)?.id != account) {
+                return false;
+              }
+              try {
+                final saved = await garage.select(
+                  car,
+                  premium: ref.read(isPremiumProvider),
+                );
+                if (saved) ProgressSyncService.instance.scheduleSync();
+                return saved;
+              } catch (_) {
+                return false;
+              }
+            },
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(appL10n.gamesGarageLoadFailed)));
+      }
+    } finally {
+      _openingGarage = false;
     }
   }
 
@@ -97,6 +172,7 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
   @override
   void dispose() {
     _timer?.cancel();
+    _rating.scoreChanges.removeListener(_refreshRating);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -249,6 +325,7 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
       runs: _runs,
       refillAt: _runsLoaded ? GameRunsService.instance.nextRefillAt : null,
       onCity: _openCity,
+      onGarage: _openGarage,
       onTrafficController: _openTrafficController,
       onSigns: () => _open(context, const SignSwiperScreen()),
       onCrossroads: _openCrossroads,

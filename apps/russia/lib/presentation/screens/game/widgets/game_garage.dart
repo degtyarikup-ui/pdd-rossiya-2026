@@ -3,22 +3,15 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:pdd_app/core/constants/app_dimensions.dart';
+import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 
 /// Every model the engine can build (used to validate ids from the bridge).
-const gameVehicleIds = [
-  'hatch',
-  'sedan',
-  'coupe',
-  'wagon',
-  'suv',
-  'pickup',
-  'cyber',
-];
-
 String gameCarName(String id) => switch (id) {
   'sedan' => appL10n.gameCarSedan,
   'coupe' => appL10n.gameCarCoupe,
@@ -66,340 +59,474 @@ double gameAchievementFraction(GameGarageService garage) {
 /// returns a PNG data URL or an empty string.
 typedef GameThumbnailLoader = Future<String> Function(String id, String paint);
 
-/// The garage sheet: owned cars as engine-rendered thumbnails, the premium
-/// cyber truck, and progress toward the next model or global colour.
+/// The collection and paint picker use the same catalogue as the Godot launch.
 class GameGarage extends StatefulWidget {
-  final GameCar selected;
-  final List<GameCar> cars;
-  final bool premium;
-  final int correctUntilNext;
-  final int correctTotal;
-  final GameGarageReward? nextReward;
-  final GameThumbnailLoader? thumbnail;
-  final Map<String, Uint8List> thumbnailCache;
-
   const GameGarage({
     super.key,
     required this.selected,
-    required this.cars,
-    required this.premium,
-    required this.correctUntilNext,
-    this.correctTotal = 0,
-    this.nextReward,
-    this.thumbnail,
-    this.thumbnailCache = const {},
+    required this.models,
+    required this.paints,
+    required this.correctTotal,
+    required this.mileageMm,
+    required this.onSelect,
   });
+
+  final GameCar selected;
+  final List<String> models, paints;
+  final int correctTotal;
+  final Map<String, int> mileageMm;
+  final Future<bool> Function(GameCar) onSelect;
 
   @override
   State<GameGarage> createState() => _GameGarageState();
 }
 
 class _GameGarageState extends State<GameGarage> {
-  /// The model whose colours are being chosen; null shows the model list.
-  String? _model;
-  late String _paint = GameGarageService.normalizePaint(widget.selected.paint);
+  late GameCar _selected = widget.selected;
 
-  List<String> get _models => widget.premium
-      ? gameVehicleIds
-      : [
-          for (final id in gameVehicleIds)
-            if (widget.cars.any((c) => c.id == id)) id,
-        ];
-
-  List<String> _paintsOf(String id) => [
-    for (final paint in GameGarageService.paints)
-      if (widget.premium ||
-          widget.cars.any(
-            (car) => GameGarageService.normalizePaint(car.paint) == paint,
-          ))
-        paint,
-  ];
-
-  /// Changing the model keeps the selected global paint when possible.
-  GameCar _listCar(String id) {
-    final paints = _paintsOf(id);
-    final preferred = GameGarageService.normalizePaint(widget.selected.paint);
-    return GameCar(id, paints.contains(preferred) ? preferred : paints.first);
-  }
-
-  void _openModel(String id) {
+  Future<void> _openCar(String id) async {
     HapticFeedbackHelper.select();
-    final paints = _paintsOf(id);
-    // A single colour: nothing to choose — take the car right away.
-    if (paints.length == 1) {
-      Navigator.pop(context, GameCar(id, paints.single));
-      return;
-    }
-    setState(() {
-      _model = id;
-      _paint = _listCar(id).paint;
-    });
+    final selected = await Navigator.of(context).push<GameCar>(
+      MaterialPageRoute(
+        builder: (_) => _GarageCarDetail(
+          car: GameCar(id, _selected.paint),
+          unlocked: widget.models.contains(id),
+          paints: widget.paints,
+          correctTotal: widget.correctTotal,
+          mileageMm: widget.mileageMm[id] ?? 0,
+          onSelect: widget.onSelect,
+        ),
+      ),
+    );
+    if (mounted && selected != null) setState(() => _selected = selected);
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final model = _model;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          child: model == null
-              ? _buildList(colors)
-              : _buildColours(colors, model),
+    // Show earned models in their unlock order, with the Premium model last.
+    final ids = [
+      GameGarageService.starter.id,
+      for (final reward in GameGarageService.rewards)
+        if (reward.model != null) reward.model!,
+      GameGarageService.cyber,
+    ];
+    return _GaragePage(
+      title: appL10n.gamesGarageTitle,
+      children: [
+        Text(
+          appL10n.gamesGarageCollection(widget.models.length, ids.length),
+          style: TextStyle(color: colors.secondaryText, fontSize: 14),
+        ),
+        const SizedBox(height: AppDimensions.spacingL),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const gap = AppDimensions.spacingM;
+            final scale = MediaQuery.textScalerOf(context).scale(16) / 16;
+            final minimumWidth = 144 * scale.clamp(1.0, 1.65);
+            final columns =
+                ((constraints.maxWidth + gap) / (minimumWidth + gap))
+                    .floor()
+                    .clamp(1, 3);
+            final width =
+                (constraints.maxWidth - (columns - 1) * gap) / columns;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: [
+                for (final id in ids)
+                  SizedBox(
+                    width: width,
+                    child: _GarageCarCard(
+                      car: GameCar(id, _selected.paint),
+                      unlocked: widget.models.contains(id),
+                      selected: id == _selected.id,
+                      correctTotal: widget.correctTotal,
+                      mileageMm: widget.mileageMm[id] ?? 0,
+                      onTap: () => _openCar(id),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _GaragePage extends StatelessWidget {
+  const _GaragePage({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Scaffold(
+      backgroundColor: colors.background,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: ListView(
+              padding: const EdgeInsets.all(AppDimensions.screenPadding),
+              children: [
+                Row(
+                  children: [
+                    Tooltip(
+                      message: appL10n.back,
+                      child: AppChromeIconButton(
+                        icon: Icons.arrow_back_rounded,
+                        onTap: () => Navigator.maybePop(context),
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.spacingM),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: colors.primaryText,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppDimensions.spacingL),
+                ...children,
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _header(AppThemeColors colors, String title, {VoidCallback? onBack}) =>
-      Row(
-        children: [
-          if (onBack != null)
-            IconButton(
-              tooltip: appL10n.back,
-              onPressed: onBack,
-              icon: const Icon(Icons.arrow_back_rounded),
-            ),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: colors.primaryText,
-              ),
-            ),
-          ),
-          IconButton(
-            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-            onPressed: () {
-              HapticFeedbackHelper.tap();
-              Navigator.pop(context);
-            },
-            icon: const Icon(Icons.close_rounded),
-          ),
-        ],
-      );
+GameGarageReward? _modelReward(String id) {
+  for (final reward in GameGarageService.rewards) {
+    if (reward.model == id) return reward;
+  }
+  return null;
+}
 
-  Widget _buildList(AppThemeColors colors) {
-    final models = _models;
-    return Column(
-      key: const ValueKey('garage-list'),
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _header(colors, appL10n.gameGarage),
-        if (!widget.premium && widget.nextReward != null)
-          Text(
-            gameRewardName(widget.nextReward!),
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: colors.primaryText,
-            ),
-          ),
-        if (!widget.premium)
-          Text(
-            widget.correctUntilNext == 0
-                ? appL10n.gameAchievementsComplete
-                : appL10n.gameAchievementRemaining(widget.correctUntilNext),
-            style: TextStyle(
-              fontFamily: 'Onest',
-              fontSize: 13,
-              color: colors.secondaryText,
-            ),
-          ),
-        if (!widget.premium) ...[
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(
-                Icons.workspace_premium_rounded,
-                size: 16,
-                color: colors.gold,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  appL10n.gameGaragePremiumCar,
-                  style: TextStyle(
-                    fontFamily: 'Onest',
-                    fontSize: 12,
-                    color: colors.secondaryText,
+String _odometer(BuildContext context, int millimeters) {
+  final format = NumberFormat.decimalPattern(
+    Localizations.localeOf(context).toLanguageTag(),
+  )..maximumFractionDigits = 3;
+  final km = millimeters / 1000000;
+  return '${millimeters > 0 && millimeters < 1000 ? '<${format.format(.001)}' : format.format(km)} ${appL10n.gameKilometers}';
+}
+
+class _GarageCarCard extends StatelessWidget {
+  const _GarageCarCard({
+    required this.car,
+    required this.unlocked,
+    required this.selected,
+    required this.correctTotal,
+    required this.mileageMm,
+    required this.onTap,
+  });
+
+  final GameCar car;
+  final bool unlocked, selected;
+  final int correctTotal, mileageMm;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final reward = _modelReward(car.id);
+    final name = gameCarName(car.id);
+    final detail = unlocked
+        ? _odometer(context, mileageMm)
+        : reward == null
+        ? appL10n.gamesPremiumBadge
+        : appL10n.gameAchievementCount(
+            correctTotal.clamp(0, reward.threshold),
+            reward.threshold,
+          );
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+      side: BorderSide(color: selected ? colors.accent : colors.divider),
+    );
+    return Semantics(
+      button: true,
+      onTap: onTap,
+      selected: selected,
+      label: unlocked
+          ? '$name, ${appL10n.gamesGarageOdometer(detail)}'
+          : '$name, ${appL10n.gamesGarageLocked}, $detail',
+      child: Material(
+        color: colors.cardBackground,
+        clipBehavior: Clip.antiAlias,
+        shape: shape,
+        child: InkWell(
+          onTap: onTap,
+          excludeFromSemantics: true,
+          child: ExcludeSemantics(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AspectRatio(
+                  aspectRatio: 1.65,
+                  child: _GarageCarArt(
+                    car: car,
+                    locked: !unlocked,
+                    selected: selected,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-        const SizedBox(height: 12),
-        Flexible(
-          child: GridView.builder(
-            shrinkWrap: true,
-            itemCount: models.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: MediaQuery.sizeOf(context).width >= 600 ? 4 : 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.1,
+                Padding(
+                  padding: const EdgeInsets.all(AppDimensions.spacingM),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: TextStyle(
+                          color: colors.primaryText,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        detail,
+                        style: TextStyle(
+                          color: colors.secondaryText,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            itemBuilder: (context, i) {
-              final car = _listCar(models[i]);
-              final isSelected = car.id == widget.selected.id;
-              final paints = _paintsOf(car.id).length;
-              return Semantics(
-                selected: isSelected,
-                button: true,
-                label: gameCarName(car.id),
-                child: Material(
-                  color: isSelected
-                      ? colors.accentSurface10
-                      : colors.cardBackground,
-                  borderRadius: BorderRadius.circular(18),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: () => _openModel(car.id),
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-                            child: GameCarThumbnail(
-                              car: car,
-                              loader: widget.thumbnail,
-                              cache: widget.thumbnailCache,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  gameCarName(car.id),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: car.id == GameGarageService.cyber
-                                        ? colors.gold
-                                        : colors.primaryText,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              // Several colours: a hint that a choice follows.
-                              if (paints > 1) ...[
-                                const SizedBox(width: 4),
-                                Icon(
-                                  Icons.palette_outlined,
-                                  size: 15,
-                                  color: colors.secondaryText,
-                                ),
-                              ],
-                              if (isSelected) ...[
-                                const SizedBox(width: 5),
-                                Icon(
-                                  Icons.check_circle_rounded,
-                                  size: 18,
-                                  color: colors.accent,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GarageCarArt extends StatelessWidget {
+  const _GarageCarArt({
+    required this.car,
+    this.locked = false,
+    this.selected = false,
+  });
+
+  final GameCar car;
+  final bool locked, selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final tint = gamePaintColors[car.paint]!;
+    final picture = Image.asset(
+      'assets/game/garage/${car.id}-${locked ? 'red' : car.paint}.webp',
+      fit: BoxFit.contain,
+      excludeFromSemantics: true,
+      gaplessPlayback: true,
+      color: locked ? AppColors.black : null,
+      colorBlendMode: BlendMode.srcIn,
+    );
+    return Ink(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: locked
+              ? const [Color(0xFF858E9A), Color(0xFF525C6B)]
+              : [
+                  Color.alphaBlend(
+                    tint.withValues(alpha: .24),
+                    colors.cardBackground,
+                  ),
+                  Color.alphaBlend(
+                    colors.accent.withValues(alpha: .09),
+                    colors.cardBackground,
+                  ),
+                ],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          picture,
+          if (locked || selected)
+            Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: locked ? const Color(0xFF29313C) : colors.accent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(
+                      locked ? Icons.lock_rounded : Icons.check_rounded,
+                      size: 15,
+                      color: AppColors.white,
                     ),
                   ),
                 ),
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ),
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildColours(AppThemeColors colors, String model) {
-    final paints = _paintsOf(model);
-    final car = GameCar(model, _paint);
-    return Column(
-      key: ValueKey('garage-$model'),
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _header(
-          colors,
-          gameCarName(model),
-          onBack: () {
-            HapticFeedbackHelper.tap();
-            setState(() => _model = null);
-          },
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 190,
-          child: GameCarThumbnail(
-            car: car,
-            loader: widget.thumbnail,
-            cache: widget.thumbnailCache,
+class _GarageCarDetail extends StatefulWidget {
+  const _GarageCarDetail({
+    required this.car,
+    required this.unlocked,
+    required this.paints,
+    required this.correctTotal,
+    required this.mileageMm,
+    required this.onSelect,
+  });
+
+  final GameCar car;
+  final bool unlocked;
+  final List<String> paints;
+  final int correctTotal, mileageMm;
+  final Future<bool> Function(GameCar) onSelect;
+
+  @override
+  State<_GarageCarDetail> createState() => _GarageCarDetailState();
+}
+
+class _GarageCarDetailState extends State<_GarageCarDetail> {
+  late String _paint = widget.car.paint;
+  bool _saving = false;
+
+  Future<void> _select(GameCar car) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    final saved = await widget.onSelect(car);
+    if (!mounted) return;
+    if (saved) {
+      HapticFeedbackHelper.confirm();
+      Navigator.pop(context, car);
+    } else {
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appL10n.gamesGarageSaveFailed)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final car = GameCar(widget.car.id, _paint);
+    final reward = _modelReward(car.id);
+    return PopScope(
+      canPop: !_saving,
+      child: _GaragePage(
+        title: gameCarName(car.id),
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+            child: SizedBox(
+              height: 200,
+              child: Material(
+                child: _GarageCarArt(car: car, locked: !widget.unlocked),
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            for (final paint in paints)
-              Semantics(
-                button: true,
-                selected: paint == _paint,
-                label: gamePaintName(paint),
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedbackHelper.select();
-                    setState(() => _paint = paint);
-                  },
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: gamePaintColors[paint],
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: paint == _paint ? colors.accent : colors.divider,
-                        width: paint == _paint ? 3 : 1,
+          const SizedBox(height: AppDimensions.spacingL),
+          if (widget.unlocked) ...[
+            Text(
+              appL10n.gamesGarageOdometer(_odometer(context, widget.mileageMm)),
+              style: TextStyle(color: colors.secondaryText, fontSize: 14),
+            ),
+            const SizedBox(height: AppDimensions.spacingL),
+            Text(
+              appL10n.gamesGaragePaint(gamePaintName(_paint)),
+              style: TextStyle(
+                color: colors.primaryText,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AppDimensions.spacingS),
+            Wrap(
+              spacing: AppDimensions.spacingS,
+              runSpacing: AppDimensions.spacingS,
+              children: [
+                for (final paint in widget.paints)
+                  Semantics(
+                    selected: paint == _paint,
+                    child: Tooltip(
+                      message: gamePaintName(paint),
+                      child: IconButton(
+                        onPressed: _saving
+                            ? null
+                            : () {
+                                HapticFeedbackHelper.select();
+                                setState(() => _paint = paint);
+                              },
+                        style: IconButton.styleFrom(
+                          backgroundColor: gamePaintColors[paint],
+                          foregroundColor:
+                              ThemeData.estimateBrightnessForColor(
+                                    gamePaintColors[paint]!,
+                                  ) ==
+                                  Brightness.dark
+                              ? AppColors.white
+                              : AppColors.black,
+                          side: BorderSide(
+                            color: paint == _paint
+                                ? colors.accent
+                                : colors.divider,
+                          ),
+                          minimumSize: const Size.square(48),
+                        ),
+                        icon: Icon(
+                          Icons.check_rounded,
+                          color: paint == _paint ? null : Colors.transparent,
+                        ),
                       ),
                     ),
                   ),
-                ),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.spacingS),
+            Text(
+              appL10n.gamePaintAllCars,
+              style: TextStyle(color: colors.secondaryText),
+            ),
+            const SizedBox(height: AppDimensions.spacingL),
+            FilledButton(
+              onPressed: _saving ? null : () => _select(car),
+              child: Text(appL10n.gameRevealChoose),
+            ),
+          ] else if (reward == null)
+            Text(appL10n.gameGaragePremiumCar)
+          else ...[
+            Text(appL10n.gamesGarageUnlockInCity),
+            const SizedBox(height: AppDimensions.spacingS),
+            Text(
+              appL10n.gameAchievementCount(
+                widget.correctTotal.clamp(0, reward.threshold),
+                reward.threshold,
               ),
+            ),
+            const SizedBox(height: AppDimensions.spacingS),
+            LinearProgressIndicator(
+              value: (widget.correctTotal / reward.threshold).clamp(0, 1),
+            ),
           ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          gamePaintName(_paint),
-          textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: 'Onest', color: colors.secondaryText),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          appL10n.gamePaintAllCars,
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 12, color: colors.secondaryText),
-        ),
-        const SizedBox(height: 16),
-        ElevatedButton(
-          onPressed: () {
-            HapticFeedbackHelper.confirm();
-            Navigator.pop(context, car);
-          },
-          child: Text(appL10n.gameRevealChoose),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -490,7 +617,7 @@ class _GameCarThumbnailState extends State<GameCarThumbnail> {
     final id = widget.car.id;
     // Every model has a bundled picture of the same mesh (default paint):
     // never an icon in place of the car.
-    if (gameVehicleIds.contains(id)) {
+    if (GameGarageService.vehicleIds.contains(id)) {
       return Image.asset(
         'assets/game/vehicle-$id.png',
         fit: BoxFit.contain,

@@ -34,6 +34,7 @@ var is_game_over := false
 var economy := {"lives": 5, "maxScore": 1500}
 var lives := 5
 var score := 0
+var distance_m := 0.0
 var touches := 0
 var wrong_spots := 0
 var combo := 0
@@ -256,6 +257,7 @@ func _start_run() -> void:
 	run_sequence += 1
 	lives = int(economy.lives)
 	score = 0
+	distance_m = 0.0
 	touches = 0
 	wrong_spots = 0
 	combo = 0
@@ -1042,6 +1044,7 @@ func _step(dt: float) -> void:
 			if absf(speed) > HIT_SPEED and hit_cooldown <= 0.0: _touch()
 			speed = 0.0
 		else:
+			distance_m += absf(speed * dt)
 			_auto_travel += absf(speed * dt)
 			pose = next
 	if not auto_drive and not level.get("search", false): _advance_segment()
@@ -1288,12 +1291,13 @@ func _end_run() -> void:
 
 func _run_summary() -> Dictionary:
 	return {"id": "%s-%d" % [session_id, run_sequence], "game": "parking", "score": score,
+		"mileage_mm": {vehicle_id: roundi(distance_m * 1000.0)},
 		"solved": parked_count, "wrong": touches + wrong_spots, "combo": max_combo, "finished": is_game_over}
 
 
 func _session_summary() -> Dictionary:
 	var runs := completed_runs.duplicate(true)
-	if not is_game_over and parked_count + touches + wrong_spots > 0: runs.append(_run_summary())
+	if not is_game_over and (parked_count + touches + wrong_spots > 0 or distance_m > 0.0): runs.append(_run_summary())
 	return {"game": "parking", "runs": runs, "result_action": ""}
 
 

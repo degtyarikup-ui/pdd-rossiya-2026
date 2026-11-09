@@ -965,6 +965,10 @@ void main() {
     'only city correct answers count and resumed answers count once',
     (tester) async {
       final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'game_garage_cars',
+        '[{"id":"hatch","paint":"gold"}]',
+      );
       await prefs.setString('game_vehicle_paint', 'gold');
       await open(tester);
       nativeResponse = jsonEncode({'solved': 30, 'score': 90, 'wrong': 0});
@@ -972,7 +976,7 @@ void main() {
       expect(launches.last, contains('--paint=#E8C547'));
       await launch(tester, 'Crossroads');
       expect(launches.last, contains('--paint=#E8C547'));
-      expect(prefs.getInt('game_garage_correct'), isNull);
+      expect(prefs.getInt('game_garage_correct'), 0);
 
       nativeResponse = citySummary(3);
       await launch(tester);

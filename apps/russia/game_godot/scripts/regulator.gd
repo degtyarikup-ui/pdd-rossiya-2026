@@ -303,6 +303,7 @@ func _start_game() -> void:
 
 	ui.hide_game_over()
 	ui.update_hud(score, combo, seconds_left, lives)
+	car.distance_m = 0.0
 	car.reset_to_start()
 
 	_pick_next_situation()
@@ -531,6 +532,7 @@ func _run_summary() -> Dictionary:
 	return {
 		"id": "%s-%d" % [session_id, run_sequence],
 		"game": "regulator", "score": score, "solved": solved_count,
+		"mileage_mm": {car.vehicle_id: roundi(car.distance_m * 1000.0)},
 		"wrong": wrong_count, "combo": max_combo, "finished": is_game_over,
 	}
 

@@ -8,6 +8,7 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
+import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 
 /// Mini games that are not ready for release: their cards are not shown. The screens,
 /// progress and leaderboards stay in the code; add a card id here to hide a game.
@@ -42,10 +43,12 @@ class GamesHubView extends StatelessWidget {
     this.onRoadSigns,
     this.onViolator,
     required this.onLeaderboard,
+    required this.onGarage,
     this.onRefilled,
   });
 
-  final int weekScore, runs;
+  final int? weekScore;
+  final int runs;
   final bool premium, runsLoaded, hasPendingRun;
   final DateTime? refillAt;
   final VoidCallback onCity,
@@ -54,7 +57,7 @@ class GamesHubView extends StatelessWidget {
       onCrossroads,
       onParking;
   final VoidCallback? onRoadSigns, onViolator;
-  final VoidCallback onLeaderboard;
+  final VoidCallback onLeaderboard, onGarage;
   final VoidCallback? onRefilled;
 
   @override
@@ -92,41 +95,19 @@ class GamesHubView extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: AppDimensions.spacingM),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: math.min(
-                            240,
-                            MediaQuery.sizeOf(context).width * .5,
-                          ),
-                        ),
-                        child: Tooltip(
-                          message: appL10n.gameLeaderboard,
-                          child: Semantics(
-                            label: appL10n.gamesWeeklyScore(weekScore),
-                            child: FilledButton.icon(
-                              key: const ValueKey('games-leaderboard'),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: colors.gold,
-                                foregroundColor: AppColors.white,
-                                minimumSize: const Size(64, 48),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
-                              ),
-                              onPressed: onLeaderboard,
-                              icon: const Icon(
-                                Icons.emoji_events_outlined,
-                                size: 22,
-                              ),
-                              label: Text(
-                                _number(context, weekScore),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                      if (weekScore case final score?) ...[
+                        _RatingButton(score: score, onPressed: onLeaderboard),
+                        const SizedBox(width: AppDimensions.spacingS),
+                      ],
+                      SizedBox(
+                        height: 48,
+                        child: Center(
+                          child: Tooltip(
+                            message: appL10n.gamesGarageTitle,
+                            child: AppChromeIconButton(
+                              key: const ValueKey('games-garage'),
+                              icon: Icons.garage_outlined,
+                              onTap: onGarage,
                             ),
                           ),
                         ),
@@ -243,6 +224,62 @@ class GamesHubView extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RatingButton extends StatelessWidget {
+  const _RatingButton({required this.score, required this.onPressed});
+
+  final int score;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    const key = ValueKey('games-leaderboard');
+    const icon = Icon(Icons.emoji_events_outlined, size: 22);
+    return Tooltip(
+      message: appL10n.gameLeaderboard,
+      child: score <= 0
+          ? IconButton.filled(
+              key: key,
+              onPressed: onPressed,
+              style: IconButton.styleFrom(
+                backgroundColor: colors.gold,
+                foregroundColor: AppColors.white,
+                minimumSize: const Size.square(48),
+              ),
+              icon: icon,
+            )
+          : ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: math.min(240, MediaQuery.sizeOf(context).width * .4),
+              ),
+              child: Semantics(
+                label: appL10n.gamesWeeklyScore(score),
+                child: FilledButton.icon(
+                  key: key,
+                  onPressed: onPressed,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.gold,
+                    foregroundColor: AppColors.white,
+                    minimumSize: const Size(64, 48),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                  icon: icon,
+                  label: Text(
+                    _number(context, score),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
     );
   }
 }

@@ -181,6 +181,8 @@ var _restarting := false
 var result_action := ""
 var run_started := false          # a run began (the app charges one run then)
 var run_end_sent := false         # the run_end event went out (once per visit)
+var mileage_mm := {}
+var mileage_baseline := 0
 var chosen := {}                  # { id, paint } of the car the player drove, for the app
 var tips_enabled := false         # the app says the first-drive tips are not seen yet
 var tip_step := -1                # 0..2 the tips card on the screen; -1 none
@@ -2225,6 +2227,7 @@ func _restart_result() -> void:
 	root.set_meta("city_completed_runs", previous)
 	var options := _live_garage_options()
 	options.erase("resume")
+	options["mileage_sequence"] = int(options.get("mileage_sequence", 1)) + 1
 	options.record = maxi(int(options.get("record", 0)), run.score)
 	options["available_runs"] = int(options.get("available_runs", 1)) - (0 if resumed else 1)
 	options.selected = chosen.duplicate()
@@ -3451,7 +3454,17 @@ func _live_garage_options() -> Dictionary:
 	return options
 
 
+func _record_mileage_segment() -> void:
+	var total := roundi(drive.distance_traveled * 1000.0)
+	var distance := total - mileage_baseline
+	if distance > 0 and chosen.has("id"):
+		var id: String = chosen.id
+		mileage_mm[id] = int(mileage_mm.get(id, 0)) + distance
+	mileage_baseline = total
+
+
 func _on_vehicle_changed(selection: Dictionary) -> void:
+	_record_mileage_segment()
 	chosen = {"id": selection.id, "paint": selection.paint}
 	_mount_car(selection.id, selection.hex)
 
@@ -3593,6 +3606,7 @@ func _start_ride() -> void:
 	if not resume_state.is_empty():
 		run.restore(resume_state)
 		drive.distance_traveled = float(run.distance_m)
+		mileage_baseline = roundi(drive.distance_traveled * 1000.0)
 		resumed = true
 	_report_run_start()
 	if not resumed and not _is_test_run(): Host.usage_start("game")
@@ -3609,7 +3623,11 @@ func _arg_text(name: String) -> String:
 
 ## What the app gets back: the run (run.gd summary), whether a run began, the car driven.
 func _exit_summary() -> Dictionary:
+	_record_mileage_segment()
 	var out := run.summary()
+	if ride_options.has("mileage_visit"):
+		out["mileage_id"] = "%s-%d" % [ride_options.mileage_visit, int(ride_options.get("mileage_sequence", 1))]
+		out["mileage_mm"] = mileage_mm.duplicate()
 	out["native_result"] = true
 	out["result_action"] = result_action
 	var previous: Array = get_tree().root.get_meta("city_completed_runs", [])

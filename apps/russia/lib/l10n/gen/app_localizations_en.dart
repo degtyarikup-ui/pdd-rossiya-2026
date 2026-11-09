@@ -775,6 +775,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameResolving => 'Gas - drive · arrows - steer';
 
   @override
+  String get gamesGarageTitle => 'Garage';
+
+  @override
+  String gamesGarageCollection(int unlocked, int total) {
+    return 'Cars unlocked: $unlocked of $total';
+  }
+
+  @override
+  String gamesGarageOdometer(String distance) {
+    return 'Mileage: $distance';
+  }
+
+  @override
+  String gamesGaragePaint(String paint) {
+    return 'Paint: $paint';
+  }
+
+  @override
+  String get gamesGarageLocked => 'Locked';
+
+  @override
+  String get gamesGarageUnlockInCity => 'Correct answers in Living City';
+
+  @override
+  String get gamesGarageLoadFailed => 'Could not open the garage. Try again.';
+
+  @override
+  String get gamesGarageSaveFailed =>
+      'Could not save your selection. Try again.';
+
+  @override
   String get gameGarage => 'Select a car';
 
   @override

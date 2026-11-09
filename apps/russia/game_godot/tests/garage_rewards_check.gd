@@ -146,6 +146,25 @@ func _check_completed_reward_lifecycle() -> void:
 	await _discard_world(world)
 
 
+func _check_mileage() -> void:
+	var options := _options(0, true)
+	options["mileage_visit"] = "123-abcd"
+	options["resume"] = {"distance_m": 100}
+	var world := _world(options)
+	world.drive.distance_traveled = 112.5
+	world._on_vehicle_changed({"id": "sedan", "paint": "blue", "hex": "#317ED4"})
+	world.drive.distance_traveled = 118.0
+	world._on_vehicle_changed({"id": "sedan", "paint": "red", "hex": "#ED4621"})
+	world.drive.distance_traveled = 118.3
+	var first: Dictionary = world._exit_summary()
+	check(first.mileage_id == "123-abcd-1", "Mileage has its own visit identity")
+	check(first.mileage_mm == {"hatch": 12500, "sedan": 5800},
+		"Resume, model switches and paint changes preserve each model's mileage")
+	check(world._exit_summary().mileage_mm == first.mileage_mm,
+		"Re-reading the same visit does not add mileage")
+	await _discard_world(world)
+
+
 func _run() -> void:
 	Ui.lang = "ru"
 	Host.io = ProjectSettings.globalize_path("res://../scratch/garage-rewards-regression")
@@ -311,6 +330,7 @@ func _run() -> void:
 		"Premium queues no notification for cars and colors already usable at launch")
 	await _discard_world(world)
 	await _check_completed_reward_lifecycle()
+	await _check_mileage()
 	Host.io_args = []
 	Host.io = ""
 	print("garage_rewards_check: ", "PASS" if failures == 0 else "%d failures" % failures)

@@ -15,6 +15,7 @@ import 'package:pdd_app/data/models/sign_swiper_model.dart';
 import 'package:pdd_app/data/models/traffic_controller_progress.dart';
 import 'package:pdd_app/data/models/crossroads_priority_progress.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/domain/services/sign_swiper_engine.dart';
@@ -99,6 +100,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          currentUserProvider.overrideWithValue(null),
           noAchievementAwards,
           isAuthenticatedProvider.overrideWithValue(true),
           progressDataSourceProvider.overrideWithValue(progress),
@@ -158,6 +160,8 @@ void main() {
         const TrafficControllerProgress(bestScore: 72, totalSolved: 3),
       );
       final prefs = await SharedPreferences.getInstance();
+      GameGarageService.instance.resetForTest();
+      await prefs.setInt('game_garage_correct', 5);
       await prefs.setString('game_vehicle', 'sedan');
       await prefs.setString('game_vehicle_paint', 'red');
       List<String>? launch;
@@ -214,6 +218,9 @@ void main() {
         ),
       );
       await tester.tap(find.text('Launch'));
+      for (var frame = 0; frame < 8; frame++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
       await tester.pumpAndSettle();
       expect(
         launch,
@@ -254,6 +261,8 @@ void main() {
         const CrossroadsPriorityProgress(bestScore: 80, totalSolved: 2),
       );
       final prefs = await SharedPreferences.getInstance();
+      GameGarageService.instance.resetForTest();
+      await prefs.setInt('game_garage_correct', 110);
       await prefs.setString('game_vehicle', 'suv');
       await prefs.setString('game_vehicle_paint', 'blue');
       List<String>? launch;
@@ -310,6 +319,9 @@ void main() {
         ),
       );
       await tester.tap(find.text('Launch'));
+      for (var frame = 0; frame < 8; frame++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
       await tester.pumpAndSettle();
       expect(
         launch,

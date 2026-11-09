@@ -23,6 +23,7 @@ import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/godot_game.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
 import 'package:pdd_app/presentation/screens/games/games_hub_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -112,6 +113,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          currentUserProvider.overrideWithValue(null),
           noAchievementAwards,
           isAuthenticatedProvider.overrideWithValue(true),
           isPremiumProvider.overrideWith((ref) => ref.watch(premium)),
@@ -158,6 +160,46 @@ void main() {
     expect(find.byType(GameRunsSheet, skipOffstage: false), findsNothing);
     expect(gameCalls, isEmpty);
   }
+
+  testWidgets('Garage shows lock requirements and saves the chosen paint', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('game_garage_correct', 10);
+    await open(tester);
+    await tester.tap(find.byKey(const ValueKey('games-garage')));
+    await tester.pumpAndSettle();
+    expect(find.byType(GameGarage), findsOneWidget);
+    expect(find.text(appL10n.gamesGarageCollection(2, 7)), findsOneWidget);
+    final wagon = find.text(appL10n.gameCarWagon);
+    await tester.ensureVisible(wagon);
+    await tester.tap(wagon);
+    await tester.pumpAndSettle();
+    expect(find.text(appL10n.gamesGarageUnlockInCity), findsOneWidget);
+    expect(find.text(appL10n.gameAchievementCount(10, 20)), findsOneWidget);
+    expect(find.text(appL10n.gameRevealChoose), findsNothing);
+    await tester.tap(find.byTooltip(appL10n.back));
+    await tester.pumpAndSettle();
+    final sedan = find.text(appL10n.gameCarSedan);
+    await tester.ensureVisible(sedan);
+    await tester.tap(sedan);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip(appL10n.gamePaintBlue));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(appL10n.gamesGaragePaint(appL10n.gamePaintBlue)),
+      findsOneWidget,
+    );
+    final choose = find.text(appL10n.gameRevealChoose);
+    await tester.ensureVisible(choose);
+    await tester.tap(choose);
+    await tester.pumpAndSettle();
+    expect(find.byType(GameGarage), findsOneWidget);
+    expect(prefs.getString('game_vehicle'), 'sedan');
+    expect(prefs.getString('game_vehicle_paint'), 'blue');
+    expect(tester.takeException(), isNull);
+    await close(tester);
+  });
 
   for (final part in ['cover', 'title', 'runs']) {
     testWidgets('City $part opens paywall directly when runs are exhausted', (

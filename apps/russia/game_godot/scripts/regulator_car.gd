@@ -23,6 +23,7 @@ var is_moving := false
 var move_progress := 0.0
 var move_duration := 1.9
 var move_elapsed := 0.0
+var distance_m := 0.0
 
 var active_blinker := ""                    # "L", "R", ""
 var blinker_timer := 0.0
@@ -241,7 +242,9 @@ func _process(delta: float) -> void:
 		var t := _ease_in_out(move_progress)
 
 		var pos_and_yaw := _evaluate_trajectory(active_move, t)
-		position = pos_and_yaw[0]
+		var next: Vector3 = pos_and_yaw[0]
+		distance_m += position.distance_to(next)
+		position = next
 		rotation.y = pos_and_yaw[1]
 
 		if move_progress >= 1.0:

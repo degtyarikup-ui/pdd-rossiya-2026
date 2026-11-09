@@ -789,6 +789,38 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameResolving => 'Газ — ехать · стрелки — рулить';
 
   @override
+  String get gamesGarageTitle => 'Гараж';
+
+  @override
+  String gamesGarageCollection(int unlocked, int total) {
+    return 'Открыто машин: $unlocked из $total';
+  }
+
+  @override
+  String gamesGarageOdometer(String distance) {
+    return 'Пробег: $distance';
+  }
+
+  @override
+  String gamesGaragePaint(String paint) {
+    return 'Цвет: $paint';
+  }
+
+  @override
+  String get gamesGarageLocked => 'Закрыто';
+
+  @override
+  String get gamesGarageUnlockInCity => 'Правильные ответы в «Живом городе»';
+
+  @override
+  String get gamesGarageLoadFailed =>
+      'Не удалось открыть гараж. Попробуйте ещё раз.';
+
+  @override
+  String get gamesGarageSaveFailed =>
+      'Не удалось сохранить выбор. Попробуйте ещё раз.';
+
+  @override
   String get gameGarage => 'Выбор машины';
 
   @override

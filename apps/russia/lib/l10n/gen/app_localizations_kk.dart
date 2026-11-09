@@ -777,6 +777,38 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameResolving => 'Газ — жүру · көрсеткілер — бұру';
 
   @override
+  String get gamesGarageTitle => 'Гараж';
+
+  @override
+  String gamesGarageCollection(int unlocked, int total) {
+    return 'Ашылған көлік: $unlocked / $total';
+  }
+
+  @override
+  String gamesGarageOdometer(String distance) {
+    return 'Жүріс: $distance';
+  }
+
+  @override
+  String gamesGaragePaint(String paint) {
+    return 'Түсі: $paint';
+  }
+
+  @override
+  String get gamesGarageLocked => 'Құлыптаулы';
+
+  @override
+  String get gamesGarageUnlockInCity => '«Тірі қаладағы» дұрыс жауаптар';
+
+  @override
+  String get gamesGarageLoadFailed =>
+      'Гаражды ашу мүмкін болмады. Қайталап көріңіз.';
+
+  @override
+  String get gamesGarageSaveFailed =>
+      'Таңдауды сақтау мүмкін болмады. Қайталап көріңіз.';
+
+  @override
   String get gameGarage => 'Көлік таңдау';
 
   @override

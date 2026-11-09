@@ -1396,6 +1396,54 @@ abstract class AppLocalizations {
   /// **'Газ — ехать · стрелки — рулить'**
   String get gameResolving;
 
+  /// No description provided for @gamesGarageTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Гараж'**
+  String get gamesGarageTitle;
+
+  /// No description provided for @gamesGarageCollection.
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыто машин: {unlocked} из {total}'**
+  String gamesGarageCollection(int unlocked, int total);
+
+  /// No description provided for @gamesGarageOdometer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пробег: {distance}'**
+  String gamesGarageOdometer(String distance);
+
+  /// No description provided for @gamesGaragePaint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цвет: {paint}'**
+  String gamesGaragePaint(String paint);
+
+  /// No description provided for @gamesGarageLocked.
+  ///
+  /// In ru, this message translates to:
+  /// **'Закрыто'**
+  String get gamesGarageLocked;
+
+  /// No description provided for @gamesGarageUnlockInCity.
+  ///
+  /// In ru, this message translates to:
+  /// **'Правильные ответы в «Живом городе»'**
+  String get gamesGarageUnlockInCity;
+
+  /// No description provided for @gamesGarageLoadFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось открыть гараж. Попробуйте ещё раз.'**
+  String get gamesGarageLoadFailed;
+
+  /// No description provided for @gamesGarageSaveFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось сохранить выбор. Попробуйте ещё раз.'**
+  String get gamesGarageSaveFailed;
+
   /// No description provided for @gameGarage.
   ///
   /// In ru, this message translates to:

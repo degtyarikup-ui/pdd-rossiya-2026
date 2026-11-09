@@ -50,7 +50,7 @@ void main() {
     bool dark = false,
     bool navigation = false,
     Locale locale = const Locale('ru'),
-    int weekScore = 45210,
+    int? weekScore = 45210,
     bool premium = false,
     bool runsLoaded = true,
     bool pending = false,
@@ -107,6 +107,7 @@ void main() {
               onRoadSigns: onRoadSigns ?? () {},
               onViolator: onViolator ?? () {},
               onLeaderboard: onLeaderboard ?? () {},
+              onGarage: () {},
               onRefilled: onRefilled,
             ),
             bottomNavigationBar: navigation ? const _AppNavigation() : null,
@@ -483,11 +484,27 @@ void main() {
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
-    await open(tester, weekScore: 0);
+    await open(tester, weekScore: null);
+    expect(find.byKey(const ValueKey('games-garage')), findsOneWidget);
+    expect(find.byKey(const ValueKey('games-leaderboard')), findsNothing);
     expect(find.text(appL10n.gamesPlay), findsNothing);
     expect(find.bySemanticsLabel(appL10n.gamesRecordScore('0')), findsNothing);
     expect(find.text(appL10n.gameSoonBadge), findsNothing);
     semantics.dispose();
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('An earned rating stays as a trophy when the score resets', (
+    tester,
+  ) async {
+    await open(tester, weekScore: 0);
+    final rating = find.byKey(const ValueKey('games-leaderboard'));
+    expect(rating, findsOneWidget);
+    expect(tester.widget(rating), isA<IconButton>());
+    expect(
+      find.descendant(of: rating, matching: find.byType(Text)),
+      findsNothing,
+    );
     await tester.pumpWidget(const SizedBox());
   });
 

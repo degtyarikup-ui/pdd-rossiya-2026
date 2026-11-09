@@ -21,6 +21,7 @@ import 'package:pdd_app/data/models/game_situation.dart';
 import 'package:pdd_app/data/models/question.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/data/services/game_question_history_service.dart';
@@ -60,8 +61,6 @@ class GodotGame {
 
   static const _channel = MethodChannel('pdd/godot_game');
   static const _bestScoreKey = 'game_best_score';
-  static const _vehicleKey = 'game_vehicle';
-  static const _paintKey = 'game_vehicle_paint';
   static const _seenModelsKey = 'game_seen_models';
   // The tips and the first-drive gas hint.
   static const _tipsSeenKey = 'game_tips_seen';
@@ -136,6 +135,7 @@ class GodotGame {
     int token,
   ) async {
     HapticFeedbackHelper.tap();
+    final account = AuthService.instance.currentUser?.id;
     final progress = ref.read(progressDataSourceProvider);
     final cityProgress = CityQuestionProgressService(
       progress,
@@ -183,6 +183,17 @@ class GodotGame {
         decoded['question_history'],
       );
       await cityProgress.importSummary(decoded);
+      final previous = decoded['city_runs'];
+      for (final visit in [
+        ...(previous is List ? previous : const []),
+        decoded,
+      ].whereType<Map>()) {
+        await GameGarageService.instance.recordMileage(
+          account,
+          visit['mileage_id'],
+          visit['mileage_mm'],
+        );
+      }
     } finally {
       historyLoading?.close();
     }
@@ -222,14 +233,14 @@ class GodotGame {
   ) async {
     HapticFeedbackHelper.tap();
     final lang = Localizations.localeOf(context).languageCode;
-    final prefs = await _prepare(context, _prefs);
-    if (!context.mounted) return;
-    final vehicle = prefs?.getString(_vehicleKey) ?? 'sedan';
-    final paint = GameGarageService.normalizePaint(
-      prefs?.getString(_paintKey) ?? GameGarageService.starter.paint,
+    final account = AuthService.instance.currentUser?.id;
+    final premium = ref.read(isPremiumProvider);
+    final car = await _prepare(
+      context,
+      () => GameGarageService.instance.selection(premium: premium),
     );
-    final paintHex = _hex(gamePaintColors[paint]!);
-    if (!context.mounted) return;
+    if (!context.mounted || car == null) return;
+    final paintHex = _hex(gamePaintColors[car.paint]!);
     final safe = _safeArea(context);
     String? json;
     try {
@@ -243,7 +254,7 @@ class GodotGame {
         '--lang=$lang',
         Theme.of(context).brightness == Brightness.dark ? '--dark' : '--light',
         ...safe,
-        '--vehicle=$vehicle',
+        '--vehicle=${car.id}',
         '--paint=$paintHex',
         if (!SoundEffectsService.instance.isEnabled) '--mute',
       ]);
@@ -252,8 +263,10 @@ class GodotGame {
     }
     if (json == null) return;
     final decoded = jsonDecode(json);
-    if (decoded is! Map || !context.mounted) return;
+    if (decoded is! Map) return;
     final map = decoded.cast<String, dynamic>();
+    await _recordMiniGameMileage(account, map);
+    if (!context.mounted) return;
     // A single native screen can contain several restarted rounds. Book each
     // round separately, including an unfinished round left with system Back.
     final loading = AppLoadingOverlay.show(
@@ -361,14 +374,14 @@ class GodotGame {
   }) async {
     HapticFeedbackHelper.tap();
     final lang = Localizations.localeOf(context).languageCode;
-    final prefs = await _prepare(context, _prefs);
-    if (!context.mounted) return;
-    final vehicle = prefs?.getString(_vehicleKey) ?? 'sedan';
-    final paint = GameGarageService.normalizePaint(
-      prefs?.getString(_paintKey) ?? GameGarageService.starter.paint,
+    final account = AuthService.instance.currentUser?.id;
+    final premium = ref.read(isPremiumProvider);
+    final car = await _prepare(
+      context,
+      () => GameGarageService.instance.selection(premium: premium),
     );
-    final paintHex = _hex(gamePaintColors[paint]!);
-    if (!context.mounted) return;
+    if (!context.mounted || car == null) return;
+    final paintHex = _hex(gamePaintColors[car.paint]!);
     final safe = _safeArea(context);
     String? json;
     try {
@@ -382,7 +395,7 @@ class GodotGame {
         '--lang=$lang',
         Theme.of(context).brightness == Brightness.dark ? '--dark' : '--light',
         ...safe,
-        '--vehicle=$vehicle',
+        '--vehicle=${car.id}',
         '--paint=$paintHex',
         if (!SoundEffectsService.instance.isEnabled) '--mute',
       ]);
@@ -391,8 +404,10 @@ class GodotGame {
     }
     if (json == null) return;
     final decoded = jsonDecode(json);
-    if (decoded is! Map || !context.mounted) return;
+    if (decoded is! Map) return;
     final map = decoded.cast<String, dynamic>();
+    await _recordMiniGameMileage(account, map);
+    if (!context.mounted) return;
     final loading = AppLoadingOverlay.show(
       context,
       label: appL10n.gameReturning,
@@ -444,6 +459,21 @@ class GodotGame {
     }
   }
 
+  static Future<void> _recordMiniGameMileage(
+    String? account,
+    Map<String, dynamic> summary,
+  ) async {
+    final runs = summary['runs'];
+    if (runs is! List) return;
+    for (final run in runs.whereType<Map>()) {
+      await GameGarageService.instance.recordMileage(
+        account,
+        run['id'],
+        run['mileage_mm'],
+      );
+    }
+  }
+
   /// Plays the 3D Violator mini-game on Godot.
   static Future<void> playViolator(BuildContext context, WidgetRef ref) =>
       _withRun(context, (_) => _playViolator(context, ref));
@@ -451,14 +481,13 @@ class GodotGame {
   static Future<void> _playViolator(BuildContext context, WidgetRef ref) async {
     HapticFeedbackHelper.tap();
     final lang = Localizations.localeOf(context).languageCode;
-    final prefs = await _prepare(context, _prefs);
-    if (!context.mounted) return;
-    final vehicle = prefs?.getString(_vehicleKey) ?? 'sedan';
-    final paint = GameGarageService.normalizePaint(
-      prefs?.getString(_paintKey) ?? GameGarageService.starter.paint,
+    final premium = ref.read(isPremiumProvider);
+    final car = await _prepare(
+      context,
+      () => GameGarageService.instance.selection(premium: premium),
     );
-    final paintHex = _hex(gamePaintColors[paint]!);
-    if (!context.mounted) return;
+    if (!context.mounted || car == null) return;
+    final paintHex = _hex(gamePaintColors[car.paint]!);
     final safe = _safeArea(context);
     String? json;
     try {
@@ -472,7 +501,7 @@ class GodotGame {
         '--lang=$lang',
         Theme.of(context).brightness == Brightness.dark ? '--dark' : '--light',
         ...safe,
-        '--vehicle=$vehicle',
+        '--vehicle=${car.id}',
         '--paint=$paintHex',
         if (!SoundEffectsService.instance.isEnabled) '--mute',
       ]);
@@ -777,8 +806,8 @@ class GodotGame {
     final unlimited = premium;
     final seen = await _seenModels();
     final prefs = await _prefs();
-    final ids = premium ? gameVehicleIds : garage.ownedModels;
-    final paints = premium ? GameGarageService.paints : garage.ownedPaints;
+    final ids = garage.availableModels(premium: premium);
+    final paints = garage.availablePaints(premium: premium);
     final cars = [
       for (final id in ids)
         {
@@ -797,20 +826,7 @@ class GodotGame {
         },
     ];
     final pending = await _pendingRun();
-    final savedId = prefs?.getString(_vehicleKey);
-    final selectedId = ids.contains(savedId)
-        ? savedId!
-        : GameGarageService.starter.id;
-    final savedPaint = prefs?.getString(_paintKey);
-    final normalizedPaint = GameGarageService.normalizePaint(
-      savedPaint ?? 'red',
-    );
-    final selectedPaint = paints.contains(normalizedPaint)
-        ? normalizedPaint
-        : GameGarageService.starter.paint;
-    if (savedId != selectedId || savedPaint != selectedPaint) {
-      await _saveVehicle(selectedId, selectedPaint);
-    }
+    final selected = await garage.selection(premium: premium, repair: true);
     final nextReward = garage.nextReward;
     final target =
         nextReward?.threshold ?? GameGarageService.rewards.last.threshold;
@@ -818,7 +834,8 @@ class GodotGame {
     final voice = prefs?.getBool(_cityVoiceKey) ?? settings.voiceEnabled;
     return {
       'cars': cars,
-      'selected': {'id': selectedId, 'paint': selectedPaint},
+      'selected': selected.toJson(),
+      'mileage_visit': GameGarageService.newVisitId(),
       'garage_correct': garage.correctTotal,
       'garage_premium': premium,
       'achievement': {
@@ -960,14 +977,14 @@ class GodotGame {
             .read(appSettingsProvider.notifier)
             .setVoiceSpeed(voiceSpeed.toDouble());
       }
-      final car = summary['car'];
-      if (car is Map && car['id'] is String && car['paint'] is String) {
-        await _saveVehicle(car['id'] as String, car['paint'] as String);
-      }
+      final car = GameCar.fromJson(summary['car']);
       if (summary['tips_seen'] == true) {
         await _rememberTips();
       }
-      if (summary['run_started'] != true) return;
+      if (summary['run_started'] != true) {
+        if (car != null) await _saveVehicle(car, premium: premium);
+        return;
+      }
 
       final resumed = summary['resumed'] == true;
       final finished = summary['finished'] == true;
@@ -979,9 +996,7 @@ class GodotGame {
           UsageReporter.track(UsageFeature.game);
         }
       }
-      if (car is Map && car['id'] is String) {
-        await _markDriven(car['id'] as String);
-      }
+      if (car != null) await _markDriven(car.id);
 
       final correct = (summary['correct'] as num?)?.toInt() ?? 0;
       final score = (summary['score'] as num?)?.toInt() ?? 0;
@@ -1005,6 +1020,7 @@ class GodotGame {
       final unlocked = await GameGarageService.instance.recordCorrectAnswers(
         deltaCorrect,
       );
+      if (car != null) await _saveVehicle(car, premium: premium);
       if (deltaCorrect > 0) {
         ProgressSyncService.instance.scheduleSync();
       }
@@ -1133,16 +1149,13 @@ class GodotGame {
     }
   }
 
-  static Future<void> _saveVehicle(String id, String paint) async {
+  static Future<void> _saveVehicle(GameCar car, {required bool premium}) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        _vehicleKey,
-        gameVehicleIds.contains(id) ? id : GameGarageService.starter.id,
-      );
-      await prefs.setString(_paintKey, GameGarageService.normalizePaint(paint));
+      if (await GameGarageService.instance.select(car, premium: premium)) {
+        ProgressSyncService.instance.scheduleSync();
+      }
     } catch (_) {
-      /* The car is kept for the next ride; a failed save is not a game error. */
+      // Selection storage must not interrupt returning from the game.
     }
   }
 
@@ -1249,23 +1262,11 @@ class GodotGame {
     );
     if (choose != true) return;
     final garage = GameGarageService.instance;
-    final prefs = await _prefs();
-    final savedId =
-        prefs?.getString(_vehicleKey) ?? GameGarageService.starter.id;
-    final savedPaint = GameGarageService.normalizePaint(
-      prefs?.getString(_paintKey) ?? GameGarageService.starter.paint,
+    final selected = await garage.selection(premium: false);
+    await _saveVehicle(
+      GameCar(reward.model ?? selected.id, reward.paint ?? selected.paint),
+      premium: false,
     );
-    if (reward.isModel) {
-      final paint = garage.ownedPaints.contains(savedPaint)
-          ? savedPaint
-          : GameGarageService.starter.paint;
-      await _saveVehicle(reward.model!, paint);
-    } else {
-      final id = garage.ownedModels.contains(savedId)
-          ? savedId
-          : GameGarageService.starter.id;
-      await _saveVehicle(id, reward.paint!);
-    }
   }
 
   static Future<void> _showResult(
@@ -1289,10 +1290,7 @@ class GodotGame {
       mistakes: mistakes,
       phase: GamePhase.gameOver,
     );
-    final prefs = await _prefs();
-    final car = prefs?.getString(_vehicleKey) ?? GameGarageService.starter.id;
-    final paint =
-        prefs?.getString(_paintKey) ?? GameGarageService.starter.paint;
+    final car = GameCar.fromJson(summary['car']) ?? GameGarageService.starter;
     if (!context.mounted) return;
     await showGeneralDialog<void>(
       context: context,
@@ -1302,8 +1300,8 @@ class GodotGame {
         child: Center(
           child: GameOverDialog(
             state: state,
-            vehicleId: car,
-            vehiclePaint: paint,
+            vehicleId: car.id,
+            vehiclePaint: car.paint,
             thumbnailCache: const {},
             onRestart: () {
               Navigator.of(ctx).pop();

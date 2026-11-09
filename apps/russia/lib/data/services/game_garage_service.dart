@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -51,6 +52,7 @@ class GameGarageService {
 
   static const models = ['hatch', 'sedan', 'coupe', 'wagon', 'suv', 'pickup'];
   static const cyber = 'cyber';
+  static const vehicleIds = [...models, cyber];
   static const cyberPaint = 'yellow';
   static const paintHex = {
     'red': 0xFFED4621,
@@ -87,6 +89,9 @@ class GameGarageService {
     GameGarageReward.paint(260, 'green'),
     GameGarageReward.paint(330, 'yellow'),
   ];
+  static const _vehicleKey = 'game_vehicle';
+  static const _paintKey = 'game_vehicle_paint';
+  static const _mileageKey = 'game_garage_mileage_v1';
   static const _carsKey = 'game_garage_cars';
   static const _correctKey = 'game_garage_correct';
   static const _unlocksKey = 'game_garage_unlocks';
@@ -110,6 +115,134 @@ class GameGarageService {
       for (final paint in ownedPaints) GameCar(id, paint),
   ]);
   int get correctTotal => _correct;
+
+  List<String> availableModels({required bool premium}) =>
+      premium ? vehicleIds : ownedModels;
+
+  List<String> availablePaints({required bool premium}) =>
+      premium ? paints : ownedPaints;
+
+  Future<GameCar> selection({
+    required bool premium,
+    bool repair = false,
+  }) => _serial(() async {
+    if (!_loaded) await _load();
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getString(_vehicleKey);
+    final paint = normalizePaint(prefs.getString(_paintKey) ?? starter.paint);
+    final car = GameCar(
+      availableModels(premium: premium).contains(id) ? id! : starter.id,
+      availablePaints(premium: premium).contains(paint) ? paint : starter.paint,
+    );
+    if (repair) await _writeSelection(prefs, car);
+    return car;
+  });
+
+  Future<bool> select(GameCar car, {required bool premium}) =>
+      _serial(() async {
+        if (!_loaded) await _load();
+        if (!availableModels(premium: premium).contains(car.id) ||
+            !availablePaints(premium: premium).contains(car.paint)) {
+          return false;
+        }
+        return _writeSelection(await SharedPreferences.getInstance(), car);
+      });
+
+  Future<bool> _writeSelection(SharedPreferences prefs, GameCar car) async {
+    if (prefs.getString(_paintKey) != car.paint &&
+        !await prefs.setString(_paintKey, car.paint)) {
+      return false;
+    }
+    return prefs.getString(_vehicleKey) == car.id ||
+        await prefs.setString(_vehicleKey, car.id);
+  }
+
+  /// An identifier independent of the competitive leaderboard run.
+  static String newVisitId() =>
+      '${DateTime.now().microsecondsSinceEpoch}-'
+      '${Random.secure().nextInt(0x7FFFFFFF).toRadixString(16)}';
+
+  Future<Map<String, int>> mileage(String? account) => _serial(() async {
+    if (account == null) return const {};
+    final prefs = await SharedPreferences.getInstance();
+    return _readMileage(prefs, account).totals;
+  });
+
+  /// Each summary is cumulative for this visit. Save its checkpoint and
+  /// the odometer together so retries and later checkpoints only add new travel.
+  Future<void> recordMileage(
+    String? account,
+    Object? visit,
+    Object? millimeters,
+  ) async {
+    if (account == null ||
+        visit is! String ||
+        !RegExp(r'^[0-9]+-[a-f0-9]+-[0-9]+$').hasMatch(visit) ||
+        millimeters is! Map ||
+        millimeters.isEmpty) {
+      return;
+    }
+    try {
+      await _serial(() async {
+        final prefs = await SharedPreferences.getInstance();
+        final data = _readMileage(prefs, account);
+        final previous = _distances(data.visits[visit]);
+        var changed = false;
+        for (final entry in _distances(millimeters).entries) {
+          final delta = entry.value - (previous[entry.key] ?? 0);
+          if (delta <= 0) continue;
+          previous[entry.key] = entry.value;
+          data.totals.update(
+            entry.key,
+            (total) => total + delta,
+            ifAbsent: () => delta,
+          );
+          changed = true;
+        }
+        if (!changed) return;
+        data.visits.remove(visit);
+        data.visits[visit] = previous;
+        if (data.visits.length > 256) {
+          data.visits.remove(data.visits.keys.first);
+        }
+        await prefs.setString(
+          '$_mileageKey:$account',
+          jsonEncode({'totals': data.totals, 'visits': data.visits}),
+        );
+      });
+    } catch (_) {
+      // Storage failure must not interrupt existing score and reward handling.
+    }
+  }
+
+  static Map<String, int> _distances(Object? value) => {
+    if (value is Map)
+      for (final id in vehicleIds)
+        if (value[id] case final num distance
+            when distance.isFinite && distance >= 1)
+          id: distance.toInt(),
+  };
+
+  static ({Map<String, int> totals, Map<String, dynamic> visits}) _readMileage(
+    SharedPreferences prefs,
+    String account,
+  ) {
+    try {
+      final data = jsonDecode(prefs.getString('$_mileageKey:$account') ?? '{}');
+      if (data is Map<String, dynamic>) {
+        return (
+          totals: _distances(data['totals']),
+          visits: data['visits'] is Map<String, dynamic>
+              ? data['visits'] as Map<String, dynamic>
+              : {},
+        );
+      }
+    } on FormatException {
+      // A damaged odometer entry does not affect rewards or selection.
+    }
+    return (totals: {}, visits: {});
+  }
+
   bool owns(String id, String paint) {
     final canonical = paintHex.containsKey(paint) ? paint : legacyPaints[paint];
     return canonical != null &&

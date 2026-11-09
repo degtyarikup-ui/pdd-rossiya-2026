@@ -30,6 +30,46 @@ void main() {
     expect(garage.owns('unknown', 'red'), isFalse);
   });
 
+  test('selection validates both rewards and expired Premium access', () async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('game_vehicle', 'cyber');
+    await prefs.setString('game_vehicle_paint', 'gold');
+    expect((await garage.selection(premium: true)).key, 'cyber:yellow');
+    expect((await garage.selection(premium: false)).key, 'hatch:red');
+    expect(
+      await garage.select(const GameCar('sedan', 'blue'), premium: false),
+      isFalse,
+    );
+    await garage.recordCorrectAnswers(10);
+    expect(
+      await garage.select(const GameCar('sedan', 'blue'), premium: false),
+      isTrue,
+    );
+    garage.invalidate();
+    expect((await garage.selection(premium: false)).key, 'sedan:blue');
+  });
+
+  test(
+    'mileage adds new travel once, across modes and across reloads',
+    () async {
+      const account = 'player';
+      final city = '${GameGarageService.newVisitId()}-1';
+      final resume = '${GameGarageService.newVisitId()}-1';
+      final parking = '${GameGarageService.newVisitId()}-1';
+      await garage.recordMileage(account, city, {'hatch': 10000, 'sedan': 720});
+      await Future.wait([
+        garage.recordMileage(account, city, {'hatch': 10000, 'sedan': 1200}),
+        garage.recordMileage(account, city, {'hatch': 10000, 'sedan': 1200}),
+        garage.recordMileage(account, resume, {'sedan': 3500}),
+        garage.recordMileage(account, parking, {'sedan': 420, 'npc': 99999}),
+      ]);
+      await garage.recordMileage(account, city, {'hatch': 5000, 'sedan': 600});
+      garage.resetForTest();
+      expect(await garage.mileage(account), {'hatch': 10000, 'sedan': 5120});
+      expect(await garage.mileage('another-player'), isEmpty);
+    },
+  );
+
   test(
     'correct answers outside Living City do not earn garage rewards',
     () async {
@@ -150,12 +190,7 @@ void main() {
       'coupe',
       'pickup',
     });
-    expect(garage.ownedPaints.toSet(), {
-      'red',
-      'blue',
-      'white',
-      'black',
-    });
+    expect(garage.ownedPaints.toSet(), {'red', 'blue', 'white', 'black'});
     expect(garage.nextReward!.model, 'suv');
     expect(garage.correctUntilNext, 30);
     expect(await garage.recordCorrectAnswers(1), isEmpty);

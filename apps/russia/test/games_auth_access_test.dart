@@ -68,6 +68,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          currentUserProvider.overrideWithValue(null),
           noAchievementAwards,
           isAuthenticatedProvider.overrideWith((ref) => ref.watch(signedIn)),
           isPremiumProvider.overrideWithValue(false),
