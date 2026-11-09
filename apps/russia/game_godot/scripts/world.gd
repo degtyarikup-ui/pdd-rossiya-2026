@@ -775,13 +775,13 @@ func _build_player() -> void:
 
 
 ## Replace the player model in its authored paint, keeping the ride position and motion.
-func _mount_car(id: String, hex: String) -> void:
+func _mount_car(id: String, hex: String, leopard := false) -> void:
 	var old := player.get_node_or_null("car")
 	if old:
 		Models.release_geometry(old)
 		player.remove_child(old)
 		old.queue_free()
-	var car := Models.player_car(id, Color(hex))
+	var car := Models.player_car(id, Color(hex), leopard)
 	car.name = "car"
 	player.add_child(car)
 	var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://models/index.json"))["vehicles/" + id].meta
@@ -3466,7 +3466,7 @@ func _record_mileage_segment() -> void:
 func _on_vehicle_changed(selection: Dictionary) -> void:
 	_record_mileage_segment()
 	chosen = {"id": selection.id, "paint": selection.paint}
-	_mount_car(selection.id, selection.hex)
+	_mount_car(selection.id, selection.hex, selection.paint == "leopard")
 
 
 ## Cross only thresholds earned in this visit. Opening pause and restoring an
@@ -3489,6 +3489,7 @@ func _notify_garage_rewards() -> void:
 			if model:
 				notice.model = target
 				notice.vehicle_hex = _reward_vehicle_hex()
+				notice.leopard = chosen.get("paint") == "leopard"
 			else:
 				notice.hex = str(item.get("hex", ""))
 			ui.show_reward(notice)
@@ -3509,7 +3510,7 @@ func _preview_reward(kind: String) -> void:
 			break
 	_on_resume()
 	if kind in ["car", "queue"]:
-		ui.show_reward({"id": prefix + "car", "name": Ui.t("gameCarSedan"), "model":"sedan", "vehicle_hex":_reward_vehicle_hex()})
+		ui.show_reward({"id": prefix + "car", "name": Ui.t("gameCarSedan"), "model":"sedan", "vehicle_hex":_reward_vehicle_hex(), "leopard":chosen.get("paint") == "leopard"})
 	if kind in ["paint", "queue"]:
 		ui.show_reward({"id": prefix + "paint", "name": Ui.t("gamePaintBlue"), "hex": hex})
 

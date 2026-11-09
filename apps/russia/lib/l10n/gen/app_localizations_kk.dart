@@ -863,6 +863,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gamePaintWhite => 'ақ';
 
   @override
+  String get gamePaintPink => 'қызғылт';
+
+  @override
+  String get gamePaintLeopard => 'қабылан өрнегі';
+
+  @override
   String get gamePaintBlack => 'қара';
 
   @override

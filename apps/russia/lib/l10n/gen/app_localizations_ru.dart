@@ -875,6 +875,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gamePaintWhite => 'белый';
 
   @override
+  String get gamePaintPink => 'розовый';
+
+  @override
+  String get gamePaintLeopard => 'леопардовый';
+
+  @override
   String get gamePaintBlack => 'чёрный';
 
   @override

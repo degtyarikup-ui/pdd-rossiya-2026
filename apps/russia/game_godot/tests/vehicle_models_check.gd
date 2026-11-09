@@ -50,6 +50,21 @@ func run() -> void:
 		check(paint!=other_paint and paint.get_shader_parameter("paint_colour")!=other_paint.get_shader_parameter("paint_colour"),id+" garage paints stay independent")
 		car.free();other.free()
 	check(all_vertices<14000 and all_triangles<7800,"all six shared cars remain below old traffic 28062 vertices / 9354 triangles")
+	for id in ["mini", "cyber"]:
+		var car := Models.player_car(id, Color("#F68A2D"), true)
+		var painted: ShaderMaterial
+		for mesh: MeshInstance3D in car.find_children("*", "MeshInstance3D", true, false):
+			for surface in mesh.mesh.get_surface_count():
+				var material := mesh.get_surface_override_material(surface)
+				if material is ShaderMaterial and material.get_shader_parameter("leopard"):
+					painted = material
+		check(painted != null, id + " patterned body paint")
+		Models.repaint_player(car, Color("#F16EA3"))
+		for mesh: MeshInstance3D in car.find_children("*", "MeshInstance3D", true, false):
+			for surface in mesh.mesh.get_surface_count():
+				var material := mesh.get_surface_override_material(surface)
+				check(not material is ShaderMaterial or not material.get_shader_parameter("leopard"), id + " plain pink replaces leopard")
+		car.free()
 	for kind in NpcVehicle.KINDS:
 		var npc := NpcVehicle.make(kind,Color("#778FAD"))
 		root.add_child(npc)

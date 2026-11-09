@@ -54,6 +54,60 @@ void main() {
     },
   );
 
+  test('dev rounds add to a private weekly board exactly once', () async {
+    SharedPreferences.setMockInitialValues({});
+    final auth = AuthService.instance;
+    final service = GameLeaderboardService.instance;
+    AuthService.setDebugSignInAvailableForTesting(true);
+    addTearDown(() {
+      auth.setSessionForTesting();
+      AuthService.setDebugSignInAvailableForTesting(null);
+    });
+
+    void signIn(String id) => auth.setSessionForTesting(
+      user: UserProfile(
+        id: id,
+        name: 'Tester',
+        email: '',
+        provider: AuthProviderType.google,
+        createdAt: DateTime.utc(2026),
+      ),
+      token: 'dev_token_$id',
+      expiresAt: DateTime.now().add(const Duration(hours: 1)),
+    );
+
+    signIn('dev_tester_1');
+    expect((await service.fetch())?.me, isNull);
+    final quiz = GameLeaderboardService.newRunId();
+    final signs = GameLeaderboardService.newRunId();
+    expect(await service.submitRun(40, runId: quiz), 1);
+    expect(await service.submitRun(12, runId: signs), 1);
+    await service.submitRun(40, runId: quiz);
+    final board = await service.fetch();
+    expect(board?.me?.score, 52);
+    expect(board?.me?.runs, 2);
+    signIn('dev_tester_2');
+    expect((await service.fetch())?.me, isNull);
+    signIn('dev_tester_1');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'dev_mock_game_rating_dev_tester_1',
+      '{"week":"2000-01-03","name":"Tester","runs":{"previous":52}}',
+    );
+    expect((await service.fetch())?.me, isNull);
+    expect(await service.hasEarnedPoints(), isTrue);
+    expect(
+      await service.reportProgress(
+        runId: quiz,
+        runScore: 60,
+        delta: 20,
+        newRun: false,
+      ),
+      isTrue,
+    );
+    expect((await service.fetch())?.me?.score, 20);
+  });
+
   test('ответ сервера разбирается: неделя, место и очки игрока', () {
     final board = GameLeaderboard.parse(_body);
 

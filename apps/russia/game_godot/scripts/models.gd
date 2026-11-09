@@ -133,25 +133,45 @@ static func crowd(parent: Node, path: String, count: int) -> MultiMesh:
 
 
 ## The detailed player car, painted.
-static func player_car(id: String, paint: Color) -> Node3D:
+static func player_car(id: String, paint: Color, leopard := false) -> Node3D:
 	var car: Node3D = (load("res://models/vehicles/%s.glb" % id) as PackedScene).instantiate()
+	repaint_player(car, paint, leopard)
+	return car
+
+
+static func repaint_player(car: Node3D, paint: Color, leopard := false) -> void:
 	var shared: ShaderMaterial
+	var legacy: ShaderMaterial
+	var tint := Vector3(paint.r, paint.g, paint.b)
 	for node in car.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
 		for i in mi.mesh.get_surface_count():
-			var mat := mi.mesh.surface_get_material(i)
-			if mat and mat.resource_name == "baked":
-				if shared == null: shared = vehicle_material(paint)
-				mi.set_surface_override_material(i, shared)
-			elif mat and mat.resource_name == "paint":
-				var own := (mat as BaseMaterial3D).duplicate() as BaseMaterial3D
-				own.albedo_color = paint
-				mi.set_surface_override_material(i, own)
-			elif mat is BaseMaterial3D and mat.resource_name == "lens" and mi.mesh.surface_get_arrays(i)[Mesh.ARRAY_COLOR] != null:
-				var own := (mat as BaseMaterial3D).duplicate() as BaseMaterial3D
-				own.vertex_color_use_as_albedo = true
-				mi.set_surface_override_material(i, own)
-	return car
+			var source := mi.mesh.surface_get_material(i)
+			var current := mi.get_surface_override_material(i)
+			if source == null: continue
+			if source.resource_name == "baked":
+				if shared == null:
+					shared = current as ShaderMaterial if current is ShaderMaterial else vehicle_material(paint)
+					shared.set_shader_parameter("paint_colour", tint)
+					shared.set_shader_parameter("cab_colour", tint)
+					shared.set_shader_parameter("leopard", leopard)
+				if current != shared: mi.set_surface_override_material(i, shared)
+			elif source.resource_name == "paint":
+				if leopard:
+					if legacy == null:
+						legacy = current as ShaderMaterial if current is ShaderMaterial else vehicle_material(paint)
+						legacy.set_shader_parameter("paint_colour", tint)
+						legacy.set_shader_parameter("legacy_body", true)
+						legacy.set_shader_parameter("leopard", true)
+					if current != legacy: mi.set_surface_override_material(i, legacy)
+				else:
+					var own := current as BaseMaterial3D if current is BaseMaterial3D else source.duplicate() as BaseMaterial3D
+					own.albedo_color = paint
+					if current != own: mi.set_surface_override_material(i, own)
+			elif current == null and source is BaseMaterial3D and source.resource_name == "lens" and mi.mesh.surface_get_arrays(i)[Mesh.ARRAY_COLOR] != null:
+				var lens := source.duplicate() as BaseMaterial3D
+				lens.vertex_color_use_as_albedo = true
+				mi.set_surface_override_material(i, lens)
 
 
 static var _contact_mesh: PlaneMesh

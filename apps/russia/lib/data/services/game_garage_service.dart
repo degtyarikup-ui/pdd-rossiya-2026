@@ -62,8 +62,13 @@ class GameGarageService {
     'yellow': 0xFFE8C547,
     'white': 0xFFF2F3F5,
     'black': 0xFF2B2F36,
+    'pink': 0xFFF16EA3,
+    'leopard': 0xFFF68A2D,
   };
   static const paints = ['red', 'blue', 'green', 'yellow', 'white', 'black'];
+  static const leopard = 'leopard';
+  static const premiumPaints = ['pink', leopard];
+  static const allPaints = [...paints, ...premiumPaints];
   static const legacyPaints = {
     'sand': 'yellow',
     'orange': 'red',
@@ -121,7 +126,7 @@ class GameGarageService {
       premium ? vehicleIds : ownedModels;
 
   List<String> availablePaints({required bool premium}) =>
-      premium ? paints : ownedPaints;
+      premium ? allPaints : ownedPaints;
 
   Future<GameCar> selection({
     required bool premium,
@@ -305,7 +310,7 @@ class GameGarageService {
               // Premium-only Mini never becomes a permanent garage reward.
               if (car.id == mini) continue;
               _models.add(car.id);
-              _paints.add(car.paint);
+              if (!premiumPaints.contains(car.paint)) _paints.add(car.paint);
             }
           }
         } catch (_) {

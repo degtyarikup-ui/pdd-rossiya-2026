@@ -44,7 +44,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   Timer? _timer;
   int _secondsLeft = GameEconomy.miniGameSeconds;
   int _score = 0;
-  String _ratingRunId = GameLeaderboardService.newRunId();
+  String _ratingRunId = '';
   int _combo = 0;
   int _maxCombo = 0;
   int _lives = GameEconomy.miniGameLives;

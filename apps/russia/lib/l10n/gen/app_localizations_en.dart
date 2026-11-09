@@ -860,6 +860,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamePaintWhite => 'white';
 
   @override
+  String get gamePaintPink => 'pink';
+
+  @override
+  String get gamePaintLeopard => 'leopard print';
+
+  @override
   String get gamePaintBlack => 'black';
 
   @override

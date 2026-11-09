@@ -1048,7 +1048,7 @@ func show_result(summary: Dictionary, selection := {}, best := 0, can_restart :=
 	results = MiniGameResults.new()
 	results.size = _view_size()
 	_root.add_child(results)
-	results.set_vehicle(str(selection.get("id", "hatch")), Color(str(selection.get("hex", "#ED4621"))))
+	results.set_vehicle(str(selection.get("id", "hatch")), Color(str(selection.get("hex", "#ED4621"))), selection.get("paint") == "leopard")
 	results.restart_pressed.connect(func():
 		if can_restart: restart_pressed.emit()
 		else: result_action_pressed.emit("premium")

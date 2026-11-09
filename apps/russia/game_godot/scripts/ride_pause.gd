@@ -326,7 +326,7 @@ func _stage(i: int) -> Dictionary:
 	studio.add_child(camera)
 	camera.position = Vector3(-5, 3.2, 6)
 	camera.look_at(Vector3(0, 0.7, 0))
-	var car := Models.player_car(data.cars[i].id, _shown_hex)
+	var car := Models.player_car(data.cars[i].id, _shown_hex, current().paint == "leopard")
 	studio.add_child(car)
 	var rect := TextureRect.new()
 	rect.texture = viewport.get_texture()
@@ -543,6 +543,10 @@ func _build_palette() -> void:
 			swatch.set_border_width_all(1)
 		fill.add_theme_stylebox_override("panel", swatch)
 		cell.add_child(fill)
+		if entry.paint == "leopard":
+			fill.draw.connect(func():
+				for point: Vector2 in [Vector2(0.27, 0.28), Vector2(0.69, 0.24), Vector2(0.52, 0.48), Vector2(0.27, 0.69), Vector2(0.74, 0.68)]:
+					fill.draw_circle(fill.size * point, fill.size.x * 0.09, Color("#2B1A17")))
 		fill.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		var check := Ui.icon(0xf636, 22, Color(Ui.LIGHT.text) if colour.get_luminance() > 0.5 else Color.WHITE)
 		check.name = "Check"
@@ -627,23 +631,11 @@ func _tint_cars(target: Color, animate: bool) -> void:
 
 func _apply_paint(colour: Color) -> void:
 	_shown_hex = colour
+	var leopard: bool = current().paint == "leopard"
 	for stage in _stages.values():
-		paint(stage.car, colour)
+		Models.repaint_player(stage.car, colour, leopard)
 		(stage.viewport as SubViewport).render_target_update_mode = SubViewport.UPDATE_ONCE
 
-
-## Repaint a car from [method Models.player_car] in place.
-static func paint(car: Node3D, colour: Color) -> void:
-	var tint := Vector3(colour.r, colour.g, colour.b)
-	for node in car.find_children("*", "MeshInstance3D", true, false):
-		var mi := node as MeshInstance3D
-		for i in mi.mesh.get_surface_count():
-			var mat := mi.get_surface_override_material(i)
-			if mat is ShaderMaterial:
-				mat.set_shader_parameter("paint_colour", tint)
-				mat.set_shader_parameter("cab_colour", tint)
-			elif mat is BaseMaterial3D and mat.resource_name == "paint":
-				mat.albedo_color = colour
 
 
 # --- Sound and voice ------------------------------------------------------------------------

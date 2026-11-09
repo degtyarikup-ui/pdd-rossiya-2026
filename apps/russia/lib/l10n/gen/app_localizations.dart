@@ -1552,6 +1552,18 @@ abstract class AppLocalizations {
   /// **'белый'**
   String get gamePaintWhite;
 
+  /// No description provided for @gamePaintPink.
+  ///
+  /// In ru, this message translates to:
+  /// **'розовый'**
+  String get gamePaintPink;
+
+  /// No description provided for @gamePaintLeopard.
+  ///
+  /// In ru, this message translates to:
+  /// **'леопардовый'**
+  String get gamePaintLeopard;
+
   /// No description provided for @gamePaintBlack.
   ///
   /// In ru, this message translates to:

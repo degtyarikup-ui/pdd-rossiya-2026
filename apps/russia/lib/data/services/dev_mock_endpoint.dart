@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:pdd_app/core/config/game_economy.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/referral_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -183,6 +184,79 @@ class DevMockEndpoint {
     };
   }
 
+  /// The mock account has its own weekly board and cumulative score per run.
+  static Future<http.Response> _gameRating(
+    SharedPreferences prefs,
+    String userId, {
+    Map<String, dynamic>? result,
+  }) async {
+    final moscow = DateTime.now().toUtc().add(const Duration(hours: 3));
+    final weekStart = DateTime.utc(
+      moscow.year,
+      moscow.month,
+      moscow.day - (moscow.weekday - DateTime.monday),
+    );
+    final endsAt = weekStart.add(const Duration(days: 7, hours: -3));
+    final week = weekStart.toIso8601String().substring(0, 10);
+    final key = 'dev_mock_game_rating_$userId';
+    final saved = jsonDecode(prefs.getString(key) ?? '{}') as Map;
+    final current = saved['week'] == week;
+    final runs = current
+        ? Map<String, int>.from(saved['runs'] as Map)
+        : <String, int>{};
+    var name = current ? saved['name'] as String : '';
+    var total = current
+        ? (saved['total'] as int? ??
+              runs.values.fold<int>(0, (sum, score) => sum + score))
+        : 0;
+    if (result != null) {
+      final id = result['runId'];
+      final score = result['runScore'] ?? result['score'];
+      if (id is! String || id.isEmpty || score is! int || score < 0) {
+        return http.Response('{"error":"invalid_score"}', 400);
+      }
+      final capped = score.clamp(0, GameEconomy.maxRunScore);
+      final delta = result['delta'];
+      final baseline = result['newRun'] == false && delta is int
+          ? (capped - delta).clamp(0, capped)
+          : 0;
+      final previous = runs[id] ?? baseline;
+      if (capped > previous) {
+        runs[id] = capped;
+        total += capped - previous;
+      }
+      if (result['name'] is String) name = result['name'] as String;
+      await prefs.setString(
+        key,
+        jsonEncode({'week': week, 'runs': runs, 'name': name, 'total': total}),
+      );
+    }
+    final row = total == 0
+        ? null
+        : {
+            'rank': 1,
+            'name': name,
+            'score': total,
+            'runs': runs.length,
+            'isMe': true,
+          };
+    return http.Response(
+      jsonEncode({
+        'week': week,
+        'endsAt': endsAt.toIso8601String(),
+        'total': row == null ? 0 : 1,
+        'top': [?row],
+        'me': row,
+        if (result != null) ...{
+          'ok': true,
+          'rank': row == null ? 0 : 1,
+          'weekScore': total,
+        },
+      }),
+      200,
+    );
+  }
+
   /// Handles GET requests for dev mock sessions.
   static Future<http.Response> handleGet(
     String path, {
@@ -192,6 +266,8 @@ class DevMockEndpoint {
     final userId = _extractUserId(headers);
     if (userId == null) return http.Response('{"error":"unauthorized"}', 401);
     final prefs = await SharedPreferences.getInstance();
+
+    if (path == '/api/game/leaderboard') return _gameRating(prefs, userId);
 
     if (path == '/api/user/referral') {
       final data = await _getUserReferralData(prefs, userId);
@@ -225,6 +301,17 @@ class DevMockEndpoint {
     final userId = _extractUserId(headers);
     if (userId == null) return http.Response('{"error":"unauthorized"}', 401);
     final prefs = await SharedPreferences.getInstance();
+
+    if (path == '/api/game/run') {
+      return http.Response('{"ok":true,"ranked":true}', 200);
+    }
+    if (path == '/api/game/score') {
+      return _gameRating(
+        prefs,
+        userId,
+        result: jsonDecode(body ?? '{}') as Map<String, dynamic>,
+      );
+    }
 
     if (path == '/api/user/referral/claim' || path == '/api/user/promo/claim') {
       Map<String, dynamic> bodyJson = {};
@@ -362,6 +449,7 @@ class DevMockEndpoint {
     if (path == '/api/user/delete') {
       await prefs.remove('dev_mock_referrals_$userId');
       await prefs.remove('dev_mock_premium_$userId');
+      await prefs.remove('dev_mock_game_rating_$userId');
       return http.Response(
         jsonEncode({'ok': true, 'deleted': userId}),
         200,

@@ -19,7 +19,7 @@ void main() {
     await garage.load();
     expect(GameGarageService.paints.length, 6);
     expect(
-      GameGarageService.paints.toSet(),
+      GameGarageService.allPaints.toSet(),
       GameGarageService.paintHex.keys.toSet(),
     );
     expect(garage.ownedModels, ['hatch']);
@@ -62,6 +62,23 @@ void main() {
       (await garage.selection(premium: false)).id,
       GameGarageService.starter.id,
     );
+  });
+
+  test('pink and leopard paint require active Premium', () async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('game_garage_correct', 442);
+    await prefs.setString(
+      'game_garage_cars',
+      '[{"id":"hatch","paint":"pink"}]',
+    );
+    for (final paint in GameGarageService.premiumPaints) {
+      final car = GameCar('hatch', paint);
+      expect(await garage.select(car, premium: false), isFalse);
+      expect(await garage.select(car, premium: true), isTrue);
+      expect((await garage.selection(premium: true)).key, car.key);
+      expect((await garage.selection(premium: false)).key, 'hatch:red');
+    }
+    expect(garage.ownedPaints, GameGarageService.paints);
   });
 
   test(

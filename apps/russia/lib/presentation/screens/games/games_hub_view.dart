@@ -240,7 +240,7 @@ class _RatingButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     const key = ValueKey('games-leaderboard');
-    const icon = Icon(Icons.emoji_events_outlined, size: 22);
+    const icon = Icon(Icons.emoji_events_outlined, size: 18);
     return Tooltip(
       message: appL10n.gameLeaderboard,
       child: score <= 0
@@ -250,7 +250,10 @@ class _RatingButton extends StatelessWidget {
               style: IconButton.styleFrom(
                 backgroundColor: colors.gold,
                 foregroundColor: AppColors.white,
-                minimumSize: const Size.square(48),
+                fixedSize: const Size.square(40),
+                shape: const CircleBorder(),
+                padding: EdgeInsets.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               icon: icon,
             )
@@ -266,7 +269,8 @@ class _RatingButton extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.gold,
                     foregroundColor: AppColors.white,
-                    minimumSize: const Size(64, 48),
+                    minimumSize: const Size(40, 40),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                   ),
                   icon: icon,
@@ -275,7 +279,7 @@ class _RatingButton extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

@@ -200,7 +200,7 @@ func _build_studio() -> void:
 	_studio.add_child(camera)
 	camera.transform = Transform3D(Basis.IDENTITY, Vector3(5, 3.2, 6)).looking_at(Vector3(0, 0.7, 0))
 
-func set_vehicle(id: String, paint: Color) -> void:
+func set_vehicle(id: String, paint: Color, leopard := false) -> void:
 	_subject = "vehicle"
 	game_mode = "city"
 	mistakes_button.visible = true
@@ -213,7 +213,7 @@ func set_vehicle(id: String, paint: Color) -> void:
 		_studio.remove_child(_car)
 		_car.queue_free()
 	var model := id if ResourceLoader.exists("res://models/vehicles/%s.glb" % id) else "sedan"
-	_car = Models.player_car(model, paint)
+	_car = Models.player_car(model, paint, leopard)
 	_studio.add_child(_car)
 	_wheel_starts.clear()
 	for wheel in _car.find_children("wheel_*", "", true, false):
@@ -301,7 +301,7 @@ func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record
 		for arg in Host.user_args():
 			if arg.begins_with("--vehicle="): vehicle = arg.trim_prefix("--vehicle=")
 			if arg.begins_with("--paint="): paint = Color(arg.trim_prefix("--paint="))
-		set_vehicle(vehicle, paint)
+		set_vehicle(vehicle, paint, "--leopard" in Host.user_args())
 	if not is_inside_tree(): return
 	if is_instance_valid(_reveal): _reveal.kill()
 	if is_instance_valid(_numbers): _numbers.kill()

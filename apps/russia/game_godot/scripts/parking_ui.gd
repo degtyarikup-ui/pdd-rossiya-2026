@@ -266,7 +266,7 @@ func _center_toast() -> void:
 		_toast.position.x = _toast_bounds.position.x + (_toast_bounds.size.x - _toast.size.x) * 0.5
 
 
-func show_results(score: int, solved: int, wrong: int, combo: int, record: bool, best: int, model: String, paint: Color) -> void:
+func show_results(score: int, solved: int, wrong: int, combo: int, record: bool, best: int, model: String, paint: Color, leopard := false) -> void:
 	if not await MiniGameHud.finish_life_loss(self): return
 	MiniGameHud.clear_life_loss(self)
 	_top_bar.visible = false
@@ -275,7 +275,7 @@ func show_results(score: int, solved: int, wrong: int, combo: int, record: bool,
 	wheel.release()
 	if is_instance_valid(_toast_tween): _toast_tween.kill()
 	_toast.modulate.a = 0.0
-	results.set_vehicle(model, paint)
+	results.set_vehicle(model, paint, leopard)
 	results.set_game_mode("parking")
 	results.mistakes_button.visible = false
 	results.show_results(score, solved, wrong, combo, record, best)

@@ -125,7 +125,7 @@ func _next() -> void:
 	if paint:
 		_clear_preview()
 	else:
-		_show_car(str(_current.get("model", str(_current.id).trim_prefix("model:"))), Color(str(_current.get("vehicle_hex", "#ED4621"))))
+		_show_car(str(_current.get("model", str(_current.id).trim_prefix("model:"))), Color(str(_current.get("vehicle_hex", "#ED4621"))), bool(_current.get("leopard", false)))
 	visible = true
 	set_process(true)
 	_apply_motion()
@@ -142,7 +142,7 @@ static func _foreground(background: Color) -> Color:
 
 ## The actual earned garage model, lit like RidePause. Render one transparent
 ## thumbnail on demand; no extra 3D frames or vehicle nodes remain after a reveal.
-func _show_car(model: String, paint: Color) -> void:
+func _show_car(model: String, paint: Color, leopard := false) -> void:
 	_clear_preview()
 	if not Models.CARS.has(model) and model != "cyber":
 		model = "sedan"
@@ -175,7 +175,7 @@ func _show_car(model: String, paint: Color) -> void:
 	studio.add_child(camera)
 	camera.position = Vector3(-5, 3.2, 6)
 	camera.look_at(Vector3(0, 0.7, 0))
-	_preview_car = Models.player_car(model, paint)
+	_preview_car = Models.player_car(model, paint, leopard)
 	studio.add_child(_preview_car)
 
 

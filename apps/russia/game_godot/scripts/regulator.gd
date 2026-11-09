@@ -201,7 +201,7 @@ func _setup_scene_objects() -> void:
 		elif arg.begins_with("--paint="):
 			vehicle_paint = Color(arg.trim_prefix("--paint="))
 
-	car = RegulatorCarScript.new(vehicle_id, vehicle_paint, junction.authored_network.data if junction.authored_network != null else {})
+	car = RegulatorCarScript.new(vehicle_id, vehicle_paint, junction.authored_network.data if junction.authored_network != null else {}, "--leopard" in Host.user_args())
 	car.name = "PlayerCar"
 	officer.rotation.y = car.authored_yaw - PI
 	car.maneuver_finished.connect(_on_car_maneuver_finished)

@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
+import 'package:pdd_app/data/services/dev_mock_endpoint.dart';
+import 'package:pdd_app/data/services/notifier_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// One row of the weekly game leaderboard.
@@ -177,13 +179,13 @@ class GameLeaderboardService {
     if (!auth.hasServerSession || !BackendConfig.hasNotifier) return;
     final operation = () async {
       try {
-        await http
-            .post(
-              Uri.parse('${BackendConfig.notifierUrl}/api/game/run'),
-              headers: auth.serverHeaders,
-              body: jsonEncode({'runId': id}),
-            )
-            .timeout(const Duration(seconds: 8));
+        await NotifierApi.post(
+          '/api/game/run',
+          idempotent: true,
+          headers: auth.serverHeaders,
+          body: jsonEncode({'runId': id}),
+          attempts: _attempts,
+        );
       } catch (_) {
         /* Unranked offline play remains available. */
       }
@@ -215,18 +217,18 @@ class GameLeaderboardService {
     try {
       await _waitForRegistration(runId);
       if (auth.currentUser?.id != user.id) return null;
-      final resp = await http
-          .post(
-            Uri.parse('${BackendConfig.notifierUrl}/api/game/score'),
-            headers: headers,
-            body: jsonEncode({
-              'userId': user.id,
-              'name': user.name,
-              'score': score,
-              'runId': runId,
-            }),
-          )
-          .timeout(const Duration(seconds: 8));
+      final resp = await NotifierApi.post(
+        '/api/game/score',
+        idempotent: true,
+        headers: headers,
+        attempts: _attempts,
+        body: jsonEncode({
+          'userId': user.id,
+          'name': user.name,
+          'score': score,
+          'runId': runId,
+        }),
+      );
       if (resp.statusCode != 200) return null;
       final data = jsonDecode(resp.body);
       if (data is! Map || data['ranked'] == false) return null;
@@ -256,24 +258,25 @@ class GameLeaderboardService {
     try {
       await _waitForRegistration(runId);
       if (auth.currentUser?.id != user.id) return false;
-      final resp = await http
-          .post(
-            Uri.parse('${BackendConfig.notifierUrl}/api/game/score'),
-            headers: headers,
-            body: jsonEncode({
-              'userId': user.id,
-              'name': user.name,
-              'runId': runId,
-              'delta': delta,
-              'runScore': runScore,
-              'newRun': newRun,
-            }),
-          )
-          .timeout(const Duration(seconds: 8));
-      if (resp.statusCode == 200 && (delta != 0 || runScore > 0)) {
-        _notifyScore(user.id);
-      }
-      return resp.statusCode == 200;
+      final resp = await NotifierApi.post(
+        '/api/game/score',
+        idempotent: true,
+        headers: headers,
+        attempts: _attempts,
+        body: jsonEncode({
+          'userId': user.id,
+          'name': user.name,
+          'runId': runId,
+          'delta': delta,
+          'runScore': runScore,
+          'newRun': newRun,
+        }),
+      );
+      if (resp.statusCode != 200) return false;
+      final data = jsonDecode(resp.body);
+      if (data is! Map || data['ranked'] == false) return false;
+      if (delta != 0 || runScore > 0) _notifyScore(user.id);
+      return true;
     } catch (e) {
       debugPrint('GameLeaderboardService.reportProgress: $e');
       return false;
@@ -286,6 +289,7 @@ class GameLeaderboardService {
     final user = AuthService.instance.currentUser;
     if (user == null ||
         !AuthService.instance.hasServerSession ||
+        AuthService.instance.isDevSession ||
         !BackendConfig.hasNotifier) {
       return null;
     }
@@ -314,11 +318,13 @@ class GameLeaderboardService {
     final userId = auth.currentUser?.id;
     final headers = auth.serverHeaders;
     try {
-      final response = await sendWithRetry(
-        (host) => http.get(_boardUri(host, userId), headers: headers),
-        hosts: BackendConfig.notifierHosts,
-        attempts: _attempts,
-      );
+      final response = DevMockEndpoint.shouldHandle(headers)
+          ? await NotifierApi.get('/api/game/leaderboard', headers: headers)
+          : await sendWithRetry(
+              (host) => http.get(_boardUri(host, userId), headers: headers),
+              hosts: BackendConfig.notifierHosts,
+              attempts: _attempts,
+            );
       if (auth.currentUser?.id != userId) return null;
       if (response.statusCode == 200) {
         final now = DateTime.now();

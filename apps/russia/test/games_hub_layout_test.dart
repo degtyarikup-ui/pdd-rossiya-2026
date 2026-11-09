@@ -501,9 +501,17 @@ void main() {
     final rating = find.byKey(const ValueKey('games-leaderboard'));
     expect(rating, findsOneWidget);
     expect(tester.widget(rating), isA<IconButton>());
+    final garage = find.byKey(const ValueKey('games-garage'));
+    expect(tester.getSize(rating), tester.getSize(garage));
     expect(
       find.descendant(of: rating, matching: find.byType(Text)),
       findsNothing,
+    );
+    await open(tester, weekScore: 12345);
+    expect(tester.getSize(rating).height, tester.getSize(garage).height);
+    expect(
+      tester.getSize(rating).width,
+      greaterThan(tester.getSize(garage).width),
     );
     await tester.pumpWidget(const SizedBox());
   });

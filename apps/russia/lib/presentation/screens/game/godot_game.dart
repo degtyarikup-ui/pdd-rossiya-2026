@@ -256,6 +256,7 @@ class GodotGame {
         ...safe,
         '--vehicle=${car.id}',
         '--paint=$paintHex',
+        if (car.paint == GameGarageService.leopard) '--leopard',
         if (!SoundEffectsService.instance.isEnabled) '--mute',
       ]);
     } on PlatformException {
@@ -397,6 +398,7 @@ class GodotGame {
         ...safe,
         '--vehicle=${car.id}',
         '--paint=$paintHex',
+        if (car.paint == GameGarageService.leopard) '--leopard',
         if (!SoundEffectsService.instance.isEnabled) '--mute',
       ]);
     } on PlatformException {
@@ -503,6 +505,7 @@ class GodotGame {
         ...safe,
         '--vehicle=${car.id}',
         '--paint=$paintHex',
+        if (car.paint == GameGarageService.leopard) '--leopard',
         if (!SoundEffectsService.instance.isEnabled) '--mute',
       ]);
     } on PlatformException {

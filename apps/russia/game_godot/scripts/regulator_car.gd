@@ -31,6 +31,7 @@ var blinker_state := false
 
 var vehicle_id := "sedan"
 var vehicle_paint := Color("#0574F8")
+var vehicle_leopard := false
 var authored_start := START_POS
 var authored_yaw := START_YAW
 var authored_paths := {}
@@ -39,9 +40,10 @@ var authored_center := Vector3.ZERO
 var authored_stop := START_POS
 
 
-func _init(id: String = "sedan", paint: Color = Color("#0574F8"), scene: Dictionary = {}) -> void:
+func _init(id: String = "sedan", paint: Color = Color("#0574F8"), scene: Dictionary = {}, leopard := false) -> void:
 	vehicle_id = id
 	vehicle_paint = paint
+	vehicle_leopard = leopard
 	if scene.has("stop"):
 		authored_start = Vector3(-float(scene.stop.x), 0, -float(scene.stop.z))
 		authored_yaw = float(scene.stop.get("yaw", 0)) + PI
@@ -158,9 +160,9 @@ func _align_authored_approach(points: Array[Vector3], move: RegulatorRules.Move)
 
 func _load_model() -> void:
 	if ResourceLoader.exists("res://models/vehicles/%s.glb" % vehicle_id):
-		car_root = Models.player_car(vehicle_id, vehicle_paint)
+		car_root = Models.player_car(vehicle_id, vehicle_paint, vehicle_leopard)
 	elif ResourceLoader.exists("res://models/vehicles/sedan.glb"):
-		car_root = Models.player_car("sedan", vehicle_paint)
+		car_root = Models.player_car("sedan", vehicle_paint, vehicle_leopard)
 	else:
 		# Fallback procedural car box if GLB is absent
 		car_root = _build_fallback_car()

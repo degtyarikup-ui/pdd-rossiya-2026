@@ -31,6 +31,8 @@ String gamePaintName(String paint) =>
       'white' => appL10n.gamePaintWhite,
       'black' => appL10n.gamePaintBlack,
       'yellow' => appL10n.gamePaintYellow,
+      'pink' => appL10n.gamePaintPink,
+      GameGarageService.leopard => appL10n.gamePaintLeopard,
       _ => appL10n.gamePaintRed,
     };
 
@@ -101,7 +103,8 @@ class _GameGarageState extends State<GameGarage> {
   List<String> get _paints => switch (_preview) {
     _GaragePreview.actual => widget.paints,
     _GaragePreview.newcomer => [GameGarageService.starter.paint],
-    _ => GameGarageService.paints,
+    _GaragePreview.premium => GameGarageService.allPaints,
+    _GaragePreview.earned => GameGarageService.paints,
   };
   int get _correctTotal => switch (_preview) {
     _GaragePreview.actual => widget.correctTotal,
@@ -325,6 +328,11 @@ class _GarageCarCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final reward = _modelReward(car.id);
     final name = gameCarName(car.id);
+    final premium = !unlocked && reward == null;
+    final badgeColor = premium
+        ? AppColors.of(context).gold
+        : const Color(0xD9162034);
+    final badgeText = premium ? const Color(0xFF352005) : AppColors.white;
     final detail = unlocked
         ? _odometer(context, mileageMm)
         : reward == null
@@ -380,7 +388,7 @@ class _GarageCarCard extends StatelessWidget {
                           alignment: Alignment.centerLeft,
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              color: const Color(0xD9162034),
+                              color: badgeColor,
                               borderRadius: BorderRadius.circular(7),
                               border: Border.all(
                                 color: const Color(0x35FFFFFF),
@@ -393,11 +401,13 @@ class _GarageCarCard extends StatelessWidget {
                               ),
                               child: Text(
                                 detail,
-                                style: const TextStyle(
-                                  color: AppColors.white,
+                                style: TextStyle(
+                                  color: badgeText,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  fontFeatures: [FontFeature.tabularFigures()],
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
                                 ),
                               ),
                             ),
@@ -408,9 +418,7 @@ class _GarageCarCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         DecoratedBox(
                           decoration: BoxDecoration(
-                            color: selected
-                                ? AppColors.accent
-                                : const Color(0xD9162034),
+                            color: selected ? AppColors.accent : badgeColor,
                             shape: BoxShape.circle,
                             border: Border.all(color: const Color(0x35FFFFFF)),
                           ),
@@ -420,7 +428,7 @@ class _GarageCarCard extends StatelessWidget {
                               selected
                                   ? Icons.check_rounded
                                   : Icons.lock_rounded,
-                              color: AppColors.white,
+                              color: premium ? badgeText : AppColors.white,
                               size: 15,
                             ),
                           ),
@@ -478,33 +486,30 @@ class _GarageCarArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final livery = _GarageLivery.values.byName(car.id);
+    final colors = AppColors.of(context);
+    final paint = gamePaintColors[car.paint]!;
+    final tint = Color.lerp(paint, AppColors.white, .24)!;
     return Stack(
       fit: StackFit.expand,
       children: [
         Ink(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(livery.light), Color(livery.dark)],
-            ),
+            color: locked
+                ? Color.lerp(colors.cardBackground, colors.secondaryText, .28)
+                : null,
+            gradient: locked
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color.lerp(Color(livery.light), tint, .64)!,
+                      Color.lerp(Color(livery.dark), paint, .45)!,
+                    ],
+                  ),
           ),
         ),
-        CustomPaint(painter: _GaragePattern(livery)),
-        Align(
-          alignment: const Alignment(0, .37),
-          child: FractionallySizedBox(
-            widthFactor: .82,
-            heightFactor: .14,
-            child: DecoratedBox(
-              decoration: const BoxDecoration(
-                gradient: RadialGradient(
-                  colors: [Color(0x750A111F), Color(0x000A111F)],
-                ),
-              ),
-            ),
-          ),
-        ),
+        if (!locked) CustomPaint(painter: _GaragePattern(livery)),
         Center(
           child: FractionallySizedBox(
             widthFactor: 1,
@@ -537,10 +542,10 @@ class _GaragePattern extends CustomPainter {
     canvas.save();
     canvas.clipRect(Offset.zero & size);
     canvas.scale(size.width / 160, size.height / 136);
-    final light = Paint()..color = const Color(0x58FFF7DF);
-    final dark = Paint()..color = const Color(0x300B1020);
+    final light = Paint()..color = const Color(0x2AFFF7DF);
+    final dark = Paint()..color = const Color(0x180B1020);
     final stroke = Paint()
-      ..color = const Color(0x70FFF7DF)
+      ..color = const Color(0x3AFFF7DF)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.4;
     switch (livery) {
@@ -657,6 +662,35 @@ class _GaragePattern extends CustomPainter {
       oldDelegate.livery != livery;
 }
 
+class _LeopardSwatch extends CustomPainter {
+  const _LeopardSwatch();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final ink = Paint()..color = const Color(0xFF2B1A17);
+    for (final (x, y, width, height) in const [
+      (.23, .24, .22, .16),
+      (.70, .13, .24, .17),
+      (.55, .45, .28, .19),
+      (.14, .68, .18, .25),
+      (.81, .66, .19, .26),
+      (.50, .85, .25, .14),
+    ]) {
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(x * size.width, y * size.height),
+          width: width * size.width,
+          height: height * size.height,
+        ),
+        ink,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _LeopardSwatch oldDelegate) => false;
+}
+
 class _GarageCarDetail extends StatefulWidget {
   const _GarageCarDetail({
     required this.car,
@@ -763,9 +797,21 @@ class _GarageCarDetailState extends State<_GarageCarDetail> {
                           ),
                           minimumSize: const Size.square(48),
                         ),
-                        icon: Icon(
-                          Icons.check_rounded,
-                          color: paint == _paint ? null : Colors.transparent,
+                        icon: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (paint == GameGarageService.leopard)
+                              const SizedBox.square(
+                                dimension: 26,
+                                child: CustomPaint(painter: _LeopardSwatch()),
+                              ),
+                            Icon(
+                              Icons.check_rounded,
+                              color: paint == _paint
+                                  ? null
+                                  : Colors.transparent,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -888,15 +934,14 @@ class _GameCarThumbnailState extends State<GameCarThumbnail> {
       return Image.memory(bytes, fit: BoxFit.contain, gaplessPlayback: true);
     }
     final id = widget.car.id;
+    final paint = GameGarageService.normalizePaint(widget.car.paint);
     // Every model has a bundled picture of the same mesh (default paint):
     // never an icon in place of the car.
     if (GameGarageService.vehicleIds.contains(id)) {
       return Image.asset(
-        id == GameGarageService.mini
-            ? _garagePreviewAsset(
-                id,
-                GameGarageService.normalizePaint(widget.car.paint),
-              )
+        id == GameGarageService.mini ||
+                GameGarageService.premiumPaints.contains(paint)
+            ? _garagePreviewAsset(id, paint)
             : 'assets/game/vehicle-$id.png',
         fit: BoxFit.contain,
         excludeFromSemantics: true,

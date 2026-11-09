@@ -52,6 +52,7 @@ var _play_all := false           # --all: every level in catalogue order (playte
 
 var vehicle_id := "sedan"
 var vehicle_paint := Color("#0574F8")
+var vehicle_leopard := false
 var geo: Dictionary
 var season_name := "summer"
 var sc: Scenery
@@ -159,6 +160,7 @@ func _setup_args() -> void:
 		elif arg.begins_with("--session-id="): session_id = arg.trim_prefix("--session-id=")
 		elif arg.begins_with("--vehicle="): vehicle_id = arg.trim_prefix("--vehicle=")
 		elif arg.begins_with("--paint="): vehicle_paint = Color(arg.trim_prefix("--paint="))
+		elif arg == "--leopard": vehicle_leopard = true
 		elif arg.begins_with("--season="): season_name = arg.trim_prefix("--season=")
 		elif arg == "--auto": auto_drive = true
 		elif arg == "--all": _play_all = true
@@ -908,7 +910,7 @@ func _paint_spots(inside: Dictionary, dt: float) -> void:
 
 
 func _build_car() -> void:
-	car = Models.player_car(vehicle_id, vehicle_paint)
+	car = Models.player_car(vehicle_id, vehicle_paint, vehicle_leopard)
 	for g: GeometryInstance3D in car.find_children("*", "GeometryInstance3D", true, false):
 		g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if level.get("night", false) else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	car.add_child(_contact_patch(geo))
@@ -1283,7 +1285,7 @@ func _end_run() -> void:
 	sound.suspended = true
 	var record := score > 0 and score > previous_best
 	# «parked of the run's levels»: touches cost lives and points, they are not extra levels.
-	ui.show_results(score, parked_count, run_levels.size() - parked_count, max_combo, record, previous_best, vehicle_id, vehicle_paint)
+	ui.show_results(score, parked_count, run_levels.size() - parked_count, max_combo, record, previous_best, vehicle_id, vehicle_paint, vehicle_leopard)
 	completed_runs.append(_run_summary())
 	previous_best = maxi(previous_best, score)
 	_checkpoint()

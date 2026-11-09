@@ -80,7 +80,6 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
     unawaited(_awardService.prepare());
     _lives = widget.initialLives;
     _secondsLeft = widget.initialSeconds;
-    _ratingRunId = GameLeaderboardService.newRunId();
 
     if (widget.initialDeck != null && widget.initialDeck!.isNotEmpty) {
       _deck = List.of(widget.initialDeck!);
@@ -528,7 +527,10 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
       totalSeconds: widget.initialSeconds,
       lives: _lives,
       totalLives: widget.initialLives,
-      onExit: () => Navigator.of(context).pop(),
+      onExit: () {
+        if (_totalAnswered > 0) _endGame();
+        Navigator.of(context).pop();
+      },
     );
   }
 
