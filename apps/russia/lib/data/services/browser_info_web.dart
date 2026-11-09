@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:pdd_app/data/services/acquisition_fields.dart';
+import 'package:pdd_app/data/services/web_checkout_route.dart';
 import 'package:web/web.dart' as web;
 
 /// Браузер/платформа напрямую из `navigator` — БЕЗ device_info_plus.
@@ -124,13 +125,10 @@ String? takeReferralParam() {
   return directCode?.isNotEmpty == true ? directCode : fragmentCode;
 }
 
-void setWebCheckoutTier(String tier) {
-  final uri = Uri.base;
-  final query = {...uri.queryParameters, 'checkout': 'sbp', 'tier': tier}
-    ..remove('oauth');
+void setWebCheckoutAddress(WebCheckoutRoute checkout) {
   web.window.history.replaceState(
     null,
     '',
-    uri.replace(queryParameters: query).toString(),
+    checkout.addressFor(Uri.base).toString(),
   );
 }

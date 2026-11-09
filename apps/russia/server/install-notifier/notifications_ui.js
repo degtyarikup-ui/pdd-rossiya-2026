@@ -122,7 +122,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .nf-msg .nf-expiry small{white-space:normal;overflow:visible;font-variant-numeric:tabular-nums}.nf-expiry{margin-top:7px}
 .nf-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.nf-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 7px;border-radius:6px;background:var(--nf-soft);color:#4A5262}.nf-tag svg{width:12px;height:12px}
 .nf-tag.ok{background:var(--success-subtle);color:var(--success)}.nf-tag.bad{background:var(--danger-subtle);color:var(--danger)}.nf-tag.test{background:#FFF4DE;color:#9A5B00}.nf-tag.wait{background:var(--primary-subtle);color:var(--primary)}
-.nf-stat{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;display:flex;gap:12px}.nf-stat span{display:inline-flex;align-items:center;gap:4px}.nf-stat svg{width:14px;height:14px;color:#A3AAB6}.nf-stat+small{margin-top:3px}
+.nf-stat{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;gap:4px 12px}.nf-stat span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.nf-stat svg{width:14px;height:14px;color:#A3AAB6}.nf-stat+small{margin-top:3px}
 .nf-acts{display:flex;gap:4px;justify-content:flex-end}.nf-ib{border:0;background:var(--nf-soft);color:#4A5262;border-radius:10px;height:34px;min-width:34px;padding:0 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px}
 .nf-ib:hover{background:#E9EDF2}.nf-ib.primary{background:var(--primary);color:#fff}.nf-ib.danger:hover{background:var(--danger-subtle);color:var(--danger)}.nf-ib svg{width:15px;height:15px}.nf-ib:disabled{opacity:.5}
 .nf-empty{padding:28px;text-align:center;color:var(--text-muted);font-size:13px}
@@ -542,10 +542,10 @@ function render(list){
    var dest=new URL(m.actionUrl);
    if(buyers||(m.action==='url'&&['pdd-drive.app','www.pdd-drive.app','pdd-drive.ru','www.pdd-drive.ru'].includes(dest.hostname)&&['/pay','/pay/'].includes(dest.pathname))){
     var count=m.buyerTracking||buyers?String(buyers):'—';
-    var label='Купили Премиум по СБП: '+(count==='—'?'нет данных':count);
+    var label='Купили Премиум по СБП по ссылке из уведомления: '+(count==='—'?'нет данных':count);
     if(!m.buyerTracking&&buyers)label+=' (с начала учёта)';
     if(m.buyerTracking&&c)label+='. Из кликов: '+(100*buyers/c).toFixed(1)+'%';
-    sales='<span role="img" aria-label="'+label+'" title="'+label+'">'+SVG.purchase+count+'</span>';
+    sales='<span role="img" aria-label="'+label+'" title="'+label+'">'+SVG.purchase+'Купили: '+count+'</span>';
    }
   }catch(_){}
   var who=m.target?'<span class="nf-tag test">Тест</span><small>'+esc(m.target)+'</small>':'<small>'+esc(audienceLabel(m))+'</small>';

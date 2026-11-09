@@ -100,8 +100,8 @@ if (process.argv.includes('--serve')) {
     await page.click('[data-feature="notifications"]');
     await page.waitForSelector('#nt-history .nf-msg');
     assert.equal(await page.locator('#nt-history .nf-msg').count(), 3);
-    const buyers = page.getByRole('img', { name: 'Купили Премиум по СБП: 3. Из кликов: 25.0%' });
-    assert.equal(await buyers.textContent(), '3');
+    const buyers = page.getByRole('img', { name: 'Купили Премиум по СБП по ссылке из уведомления: 3. Из кликов: 25.0%' });
+    assert.equal(await buyers.textContent(), 'Купили: 3');
     assert.equal(await buyers.locator('svg').count(), 1);
     // Picture only: the window shows the picture, the list shows an entry.
     await choose(page, 'input[name="nt-place"][value="popup"]');

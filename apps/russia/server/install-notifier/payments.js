@@ -41,6 +41,7 @@ export const PAY_DONE_URL = 'https://pdd-drive.app/pay-done/';
 
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/;
 const ORDER_RE = /^[0-9a-f-]{36}$/;
+const NOTICE_CAMPAIGN_RE = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 // Повтор того же выбора в течение этого времени не пишется заново, а
 // неоплаченный платёж переиспользуется (форма Platega живёт 15 минут).
 const REPEAT_MS = 10 * 60 * 1000;
@@ -136,6 +137,8 @@ export function buildSbpPurchaseMessage(order, expiresAt, esc, renewal = false) 
     `• <b>Пользователь:</b> ${esc(order.name || 'Без имени')}`,
     `• <b>Email:</b> ${esc(order.accountEmail || 'Не указан')}`,
     '• <b>Оплата:</b> СБП · Platega', '• <b>Автопродление:</b> нет', '',
+    NOTICE_CAMPAIGN_RE.test(order.noticeCampaignId || '')
+      ? `• <b>Переход к оплате:</b> из баннера / уведомления · <code>${esc(order.noticeCampaignId)}</code>` : null,
     ...premiumContextLines({ ...context, platform }, esc),
     context.metadataSource === 'profile' ? '• <b>Данные устройства:</b> из последнего профиля на момент создания заказа' : null,
     `• <b>ID аккаунта:</b> <code>${esc(order.userId)}</code>`,
@@ -166,7 +169,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
   const client = body.client === 'android' ? 'android' : 'web';
   const checkout = client === 'web' && body.checkout === 'sbp';
   const attribution = checkout && typeof body.noticeCampaignId === 'string' &&
-    /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(body.noticeCampaignId)
+    NOTICE_CAMPAIGN_RE.test(body.noticeCampaignId)
     ? { noticeCampaignId: body.noticeCampaignId } : {};
   const context = paymentContext(body, user);
   const live = webPaymentsLive(env);

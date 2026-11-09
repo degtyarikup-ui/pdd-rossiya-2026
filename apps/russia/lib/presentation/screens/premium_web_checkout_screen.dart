@@ -88,7 +88,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
   void initState() {
     super.initState();
     _tier = widget.initialTier;
-    setWebCheckoutTier(_tier.name);
+    _updateCheckoutAddress();
     _auth.addListener(_accountChanged);
     _premium.addListener(_premiumChanged);
     WidgetsBinding.instance.addObserver(this);
@@ -99,6 +99,10 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
     _accountChanged();
     unawaited(_loadAvailability());
   }
+
+  void _updateCheckoutAddress() => setWebCheckoutAddress(
+    WebCheckoutRoute(tier: _tier, campaignId: widget.campaignId),
+  );
 
   void _showStageStart() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -668,7 +672,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
                                     ? null
                                     : () => setState(() {
                                         _tier = tier;
-                                        setWebCheckoutTier(tier.name);
+                                        _updateCheckoutAddress();
                                       }),
                               ),
                               const SizedBox(height: 12),

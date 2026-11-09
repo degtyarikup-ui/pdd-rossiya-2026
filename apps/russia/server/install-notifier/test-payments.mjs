@@ -423,10 +423,17 @@ test('recover current unfinished order without browser storage; never expose ano
 
 test('banner buyers: pending checkout keeps original campaign and counts only a verified payment', async () => {
   const fake = fakePlatega(), env = baseEnv(), campaign = crypto.randomUUID();
+  const messages = [];
+  env.BOT_TOKEN = 'bot-test'; env.CHAT_ID = 'chat-test';
+  env.TELEGRAM = { idFromName: value => value, get: () => ({ fetch: async (url, init) => {
+    if (String(url).endsWith('/enqueue')) messages.push(JSON.parse(init.body));
+    return Response.json({ ok: true });
+  } }) };
   try {
     const token = await login(env);
     const start = async id => (await worker.fetch(req('/api/user/pay-intent', {
       email: 'a@b.ru', tier: 'weekly', method: 'sbp', checkout: 'sbp', noticeCampaignId: id,
+      client: 'web', platform: 'web', marketingSource: 'yandex', marketingMedium: 'organic',
     }, token), env)).json();
     const { order } = await start(campaign);
     assert.equal((await start(crypto.randomUUID())).order, order);
@@ -434,9 +441,21 @@ test('banner buyers: pending checkout keeps original campaign and counts only a 
     const notify = () => callback(env, { id: tx.id, status: 'CONFIRMED', payload: order });
     await notify();
     assert.equal(await env.INSTALLS.get(key), null);
+    assert.equal(messages.length, 0);
     tx.status = 'CONFIRMED';
     await notify();
     await notify();
+    assert.equal(JSON.parse(await env.INSTALLS.get(key)).buyer, 1);
+    assert.equal(messages.length, 1);
+    assert.ok(messages[0].text.includes('Переход к оплате:</b> из баннера / уведомления · <code>' + campaign + '</code>'));
+    assert.match(messages[0].text, /Источник:<\/b> Яндекс/);
+
+    const direct = await start(undefined);
+    const directTx = [...fake.txs.values()].at(-1);
+    directTx.status = 'CONFIRMED';
+    await callback(env, { id: directTx.id, status: 'CONFIRMED', payload: direct.order });
+    assert.equal(messages.length, 2);
+    assert.doesNotMatch(messages[1].text, /Переход к оплате:/);
     assert.equal(JSON.parse(await env.INSTALLS.get(key)).buyer, 1);
   } finally { fake.restore(); }
 });

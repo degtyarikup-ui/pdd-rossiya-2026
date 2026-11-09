@@ -1,3 +1,5 @@
+import 'package:pdd_app/data/services/web_checkout_route.dart';
+
 /// Реализация по умолчанию (Android/iOS/desktop) — на вебе подменяется
 /// [browser_info_web.dart] через условный импорт в install_reporter.dart.
 Map<String, String> browserInfoFields() => const {};
@@ -9,4 +11,4 @@ Map<String, String> browserAcquisitionFields() => const {};
 
 String? takeReferralParam() => null;
 
-void setWebCheckoutTier(String tier) {}
+void setWebCheckoutAddress(WebCheckoutRoute checkout) {}

@@ -42,6 +42,19 @@ class WebCheckoutRoute {
           );
   }
 
+  /// Preserve the current checkout's attribution when restoring the address
+  /// after OAuth or changing plans. A fresh, untagged checkout stays untagged.
+  Uri addressFor(Uri uri) {
+    final query = {...uri.queryParameters, 'checkout': 'sbp', 'tier': tier.name}
+      ..remove('oauth');
+    final campaign = _campaign(campaignId);
+    if (campaign != null) {
+      query['utm_source'] = 'in_app_banner';
+      query['utm_campaign'] = campaign;
+    }
+    return uri.replace(queryParameters: query);
+  }
+
   static bool validOrder(String? order) =>
       order != null &&
       RegExp(
