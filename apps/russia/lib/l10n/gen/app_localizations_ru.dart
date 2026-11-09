@@ -792,8 +792,23 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gamesGarageTitle => 'Гараж';
 
   @override
-  String gamesGarageCollection(int unlocked, int total) {
-    return 'Открыто машин: $unlocked из $total';
+  String get gameCarMini => 'Мини';
+
+  @override
+  String get gamesGaragePreview => 'Предпросмотр гаража';
+
+  @override
+  String get gamesGaragePreviewActual => 'Текущий прогресс';
+
+  @override
+  String get gamesGaragePreviewNew => 'Новый игрок';
+
+  @override
+  String get gamesGaragePreviewEarned => 'Все обычные машины';
+
+  @override
+  String gamesGarageDebugAnswers(int count) {
+    return 'Правильных ответов в городе: $count';
   }
 
   @override

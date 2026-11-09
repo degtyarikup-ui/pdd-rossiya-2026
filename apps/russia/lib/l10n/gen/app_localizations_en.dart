@@ -778,8 +778,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamesGarageTitle => 'Garage';
 
   @override
-  String gamesGarageCollection(int unlocked, int total) {
-    return 'Cars unlocked: $unlocked of $total';
+  String get gameCarMini => 'Mini';
+
+  @override
+  String get gamesGaragePreview => 'Garage preview';
+
+  @override
+  String get gamesGaragePreviewActual => 'Current progress';
+
+  @override
+  String get gamesGaragePreviewNew => 'New player';
+
+  @override
+  String get gamesGaragePreviewEarned => 'All standard cars';
+
+  @override
+  String gamesGarageDebugAnswers(int count) {
+    return 'Correct city answers: $count';
   }
 
   @override

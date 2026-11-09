@@ -106,7 +106,9 @@ class GamesHubView extends StatelessWidget {
                             message: appL10n.gamesGarageTitle,
                             child: AppChromeIconButton(
                               key: const ValueKey('games-garage'),
-                              icon: Icons.garage_outlined,
+                              icon: Icons.directions_car_rounded,
+                              backgroundColor: AppColors.accent,
+                              iconColor: AppColors.white,
                               onTap: onGarage,
                             ),
                           ),

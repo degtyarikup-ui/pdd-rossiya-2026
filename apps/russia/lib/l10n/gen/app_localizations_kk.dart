@@ -780,8 +780,23 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gamesGarageTitle => 'Гараж';
 
   @override
-  String gamesGarageCollection(int unlocked, int total) {
-    return 'Ашылған көлік: $unlocked / $total';
+  String get gameCarMini => 'Мини';
+
+  @override
+  String get gamesGaragePreview => 'Гаражды алдын ала қарау';
+
+  @override
+  String get gamesGaragePreviewActual => 'Ағымдағы прогресс';
+
+  @override
+  String get gamesGaragePreviewNew => 'Жаңа ойыншы';
+
+  @override
+  String get gamesGaragePreviewEarned => 'Барлық стандартты көлік';
+
+  @override
+  String gamesGarageDebugAnswers(int count) {
+    return 'Қаладағы дұрыс жауаптар: $count';
   }
 
   @override

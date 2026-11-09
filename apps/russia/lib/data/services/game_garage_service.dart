@@ -15,8 +15,7 @@ class GameCar {
     if (json is! Map) return null;
     final id = json['id'], paint = json['paint'];
     if (id is! String || paint is! String) return null;
-    if (!GameGarageService.models.contains(id) &&
-        id != GameGarageService.cyber) {
+    if (!GameGarageService.vehicleIds.contains(id)) {
       return null;
     }
     if (!GameGarageService.paintHex.containsKey(paint) &&
@@ -52,7 +51,9 @@ class GameGarageService {
 
   static const models = ['hatch', 'sedan', 'coupe', 'wagon', 'suv', 'pickup'];
   static const cyber = 'cyber';
-  static const vehicleIds = [...models, cyber];
+  static const mini = 'mini';
+  static const premiumModels = [mini, cyber];
+  static const vehicleIds = [...models, ...premiumModels];
   static const cyberPaint = 'yellow';
   static const paintHex = {
     'red': 0xFFED4621,
@@ -301,6 +302,8 @@ class GameGarageService {
           if (decoded is List) {
             for (final car
                 in decoded.map(GameCar.fromJson).whereType<GameCar>()) {
+              // Premium-only Mini never becomes a permanent garage reward.
+              if (car.id == mini) continue;
               _models.add(car.id);
               _paints.add(car.paint);
             }

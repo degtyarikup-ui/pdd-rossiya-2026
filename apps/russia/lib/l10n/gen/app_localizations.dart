@@ -1402,11 +1402,41 @@ abstract class AppLocalizations {
   /// **'Гараж'**
   String get gamesGarageTitle;
 
-  /// No description provided for @gamesGarageCollection.
+  /// No description provided for @gameCarMini.
   ///
   /// In ru, this message translates to:
-  /// **'Открыто машин: {unlocked} из {total}'**
-  String gamesGarageCollection(int unlocked, int total);
+  /// **'Мини'**
+  String get gameCarMini;
+
+  /// No description provided for @gamesGaragePreview.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предпросмотр гаража'**
+  String get gamesGaragePreview;
+
+  /// No description provided for @gamesGaragePreviewActual.
+  ///
+  /// In ru, this message translates to:
+  /// **'Текущий прогресс'**
+  String get gamesGaragePreviewActual;
+
+  /// No description provided for @gamesGaragePreviewNew.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый игрок'**
+  String get gamesGaragePreviewNew;
+
+  /// No description provided for @gamesGaragePreviewEarned.
+  ///
+  /// In ru, this message translates to:
+  /// **'Все обычные машины'**
+  String get gamesGaragePreviewEarned;
+
+  /// No description provided for @gamesGarageDebugAnswers.
+  ///
+  /// In ru, this message translates to:
+  /// **'Правильных ответов в городе: {count}'**
+  String gamesGarageDebugAnswers(int count);
 
   /// No description provided for @gamesGarageOdometer.
   ///

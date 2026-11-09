@@ -199,15 +199,128 @@ def car_parts(kind,hw,hl,roof):
     if kind in ('suv','wagon'):
         for side in [-1,1]:body.bar((side*rw*.78,roof+.012,rear_roof),(side*rw*.78,roof+.012,front_roof),.026,DARK)
     parts=[('body',body,'baked',None)]
-    for i,(x,z) in enumerate([(hw-.05,wheel_z[1]),(-hw+.05,wheel_z[1]),(hw-.05,wheel_z[0]),(-hw+.05,wheel_z[0])]):
-        wheel=VehicleMesh();wheel.wheel(0,0,0,radius,.19)
-        parts.append((f'wheel_{i}',wheel,'baked',('axle_front_'+str(i) if i<2 else 'axle_'+str(i),[x,radius,z])))
+    parts.extend(car_wheels(hw, wheel_z, radius))
     for side,label in [(1,'L'),(-1,'R')]:
         brake=VehicleMesh();brake.light(side*hw*.66,.65,-hl-.11,hw*.47,.14,True)
         parts.append(('brake_'+('0' if side>0 else '1'),brake,'lens',None))
         for rear in [False,True]:
             signal=VehicleMesh();signal.light(side*hw*.89,.65,(-hl-.12 if rear else hl+.12),.13,.105,rear,True)
             parts.append((f'blink_{label}_'+('rear' if rear else 'front'),signal,'lens',('blink_'+label,None)))
+    return parts
+
+
+def car_wheels(hw, wheel_z, radius):
+    parts = []
+    for i, (x, z) in enumerate([
+        (hw - .05, wheel_z[1]), (-hw + .05, wheel_z[1]),
+        (hw - .05, wheel_z[0]), (-hw + .05, wheel_z[0]),
+    ]):
+        wheel = VehicleMesh()
+        wheel.wheel(0, 0, 0, radius, .19)
+        axle = ('axle_front_' if i < 2 else 'axle_') + str(i)
+        parts.append((f'wheel_{i}', wheel, 'baked', (axle, [x, radius, z])))
+    return parts
+
+
+def mini_parts(hw, hl, roof):
+    """Short two-door city car with a floating roof and round headlamps."""
+    body = VehicleMesh()
+    wheel_z = [-1.09, 1.06]
+    radius = .295
+    stations = {-hl, -hl + .13, hl - .15, hl}
+    for center in wheel_z:
+        stations.update(center + offset for offset in [-.36, -.22, 0, .22, .36])
+    shell = []
+    for z in sorted(stations):
+        rounded = max(0, (abs(z) - (hl - .32)) / .32)
+        width = hw * (1 - .22 * rounded)
+        shoulder = .83 - .15 * rounded
+        sill = max(
+            [.30] + [
+                radius + math.sqrt((radius + .052) ** 2 - (z - center) ** 2)
+                for center in wheel_z if abs(z - center) < radius + .052
+            ]
+        )
+        shell.append((z, width, .26, shoulder, sill))
+    body.loft(shell, PAINT)
+
+    rear_base, rear_top, front_top, front_base = -1.43, -1.19, .36, .77
+    pillar = hw * .83
+    body.loft([
+        (rear_base, pillar, .77, .91),
+        (rear_top, pillar, .77, roof - .045),
+        (front_top, pillar, .77, roof - .045),
+        (front_base, pillar, .77, .91),
+    ], DARK)
+    body.loft([
+        (rear_top - .06, pillar * .96, roof - .09, roof - .02),
+        (rear_top + .10, pillar, roof - .07, roof),
+        (front_top - .09, pillar, roof - .07, roof),
+        (front_top + .04, pillar * .95, roof - .09, roof - .02),
+    ], WHITE)
+    for direction, base, top in [(1, front_base, front_top), (-1, rear_base, rear_top)]:
+        lower, upper = base - direction * .022, top + direction * .065
+        def pane_y(z):
+            return .91 + (roof - .955) * (z - base) / (top - base) + .008
+        points = [
+            (-pillar * .90, pane_y(lower), lower), (pillar * .90, pane_y(lower), lower),
+            (pillar * .83, pane_y(upper), upper), (-pillar * .83, pane_y(upper), upper),
+        ]
+        body.pane(points if direction > 0 else list(reversed(points)))
+    for side in [-1, 1]:
+        x = side * (pillar + .008)
+        for start, end, upper_start, upper_end in [
+            (-1.31, -.43, -1.15, -.43), (-.35, .64, -.35, .36),
+        ]:
+            points = [
+                (x, .91, start), (x, .91, end),
+                (x, roof - .16, upper_end), (x, roof - .16, upper_start),
+            ]
+            body.pane(points if side < 0 else list(reversed(points)))
+        body.box((side * (hw + .005), .75, -.23), (.024, .028, .14), METAL)
+        body.box((side * (hw + .006), .34, 0), (.018, .07, 1.44), DARK)
+    mirrors(body, pillar, .96, .52, color=WHITE, reach=.19)
+
+    # Bright fixed details and a small oval lens at each front corner.
+    for x in [-.14, .14]:
+        body.face([(x - .045, .834, .79), (x - .045, .83, 1.28),
+                   (x + .045, .83, 1.28), (x + .045, .834, .79)], WHITE)
+    body.box((0, .50, hl + .008), (.74, .19, .036), DARK)
+    for y in [.45, .50, .55]:
+        body.box((0, y, hl + .032), (.64, .018, .008), METAL)
+    for direction in [-1, 1]:
+        z = direction * (hl + .021)
+        body.box((0, .32, z), (hw * 1.24, .085, .06), DARK)
+        body.box((0, .35, z + direction * .033), (.31, .075, .012), WHITE)
+    for side in [-1, 1]:
+        x = side * hw * .64
+        rings = []
+        for lens_radius, z in [(.155, hl - .096), (.146, hl + .018), (.114, hl + .023)]:
+            rings.append([(x + lens_radius * math.cos(i * math.tau / 10),
+                           .69 + lens_radius * .91 * math.sin(i * math.tau / 10), z)
+                          for i in range(10)])
+        for row, color in [(0, PAINT), (1, METAL)]:
+            for i in range(10):
+                j = (i + 1) % 10
+                body.face([rings[row][i], rings[row][j], rings[row + 1][j],
+                           rings[row + 1][i]], color)
+        body.lamp = 1
+        lens = rings[-1]
+        for i in range(1, len(lens) - 1):
+            body.face([lens[0], lens[i], lens[i + 1]], FRONT)
+        body.lamp = 0
+
+    parts = [('body', body, 'baked', None), *car_wheels(hw, wheel_z, radius)]
+    for side, label in [(1, 'L'), (-1, 'R')]:
+        brake = VehicleMesh()
+        brake.light(side * hw * .70, .61, -hl - .016, .13, .19, rear=True)
+        parts.append(('brake_' + ('0' if side > 0 else '1'), brake, 'lens', None))
+        for rear in [False, True]:
+            signal = VehicleMesh()
+            signal.light(side * hw * .73, .48, (-hl - .018 if rear else hl + .005),
+                         .10, .045, rear, True)
+            parts.append((f'blink_{label}_' + ('rear' if rear else 'front'),
+                          signal, 'lens', ('blink_' + label, None)))
     return parts
 
 
@@ -469,6 +582,10 @@ def main():
     for kind,height in heights.items():
         meta=index['vehicles/'+kind]['meta']
         write_model(args.output/'vehicles'/(kind+'.glb'),car_parts(kind,meta['halfWidth'],meta['halfLength'],height),index)
+    mini = {'halfWidth': .81, 'halfLength': 1.65, 'height': 1.44, 'defaultPaint': '#ed4621'}
+    index.setdefault('vehicles/mini', {})['meta'] = mini
+    write_model(args.output/'vehicles/mini.glb',
+                mini_parts(mini['halfWidth'], mini['halfLength'], mini['height']), index)
     for kind in ['bus','truck','van','tanker','tram','motorcycle','cyclist','sidecar','tractor','cart','train']:
         if kind in ['bus','truck','van','tanker','tram']:mesh=cargo_model(kind)
         elif kind in ['motorcycle','cyclist']:mesh=two_wheeler(kind)

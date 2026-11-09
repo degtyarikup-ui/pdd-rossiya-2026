@@ -4,7 +4,7 @@
 ## godot --headless --path game_godot --script res://tests/parking_check.gd
 extends SceneTree
 
-const MODELS := ["hatch", "sedan", "coupe", "wagon", "suv", "pickup", "cyber"]
+const MODELS := ["hatch", "sedan", "coupe", "wagon", "suv", "pickup", "mini", "cyber"]
 var passed := 0
 var failed := 0
 

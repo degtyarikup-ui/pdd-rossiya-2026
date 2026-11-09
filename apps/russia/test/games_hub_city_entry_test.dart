@@ -170,7 +170,19 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('games-garage')));
     await tester.pumpAndSettle();
     expect(find.byType(GameGarage), findsOneWidget);
-    expect(find.text(appL10n.gamesGarageCollection(2, 7)), findsOneWidget);
+    expect(find.textContaining('Открыто машин'), findsNothing);
+    expect(find.byKey(const ValueKey('garage-car-mini')), findsOneWidget);
+    final hatch = find.byKey(const ValueKey('garage-car-hatch'));
+    final title = find.descendant(
+      of: hatch,
+      matching: find.text(appL10n.gameCarHatch),
+    );
+    final distance = find.descendant(of: hatch, matching: find.text('0 км'));
+    final card = tester.getRect(hatch);
+    expect(tester.getCenter(title).dx, closeTo(card.center.dx, 1));
+    expect(tester.getCenter(title).dy, greaterThan(card.center.dy));
+    expect(tester.getCenter(distance).dx, lessThan(card.center.dx));
+    expect(tester.getCenter(distance).dy, lessThan(card.center.dy));
     final wagon = find.text(appL10n.gameCarWagon);
     await tester.ensureVisible(wagon);
     await tester.tap(wagon);
@@ -198,6 +210,58 @@ void main() {
     expect(prefs.getString('game_vehicle'), 'sedan');
     expect(prefs.getString('game_vehicle_paint'), 'blue');
     expect(tester.takeException(), isNull);
+    await close(tester);
+  });
+
+  testWidgets('Garage preview switches access without saving the car', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('game_garage_correct', 200);
+    await open(tester);
+    await tester.tap(find.byKey(const ValueKey('games-garage')));
+    await tester.pumpAndSettle();
+    final menu = find.byKey(const ValueKey('garage-preview-menu'));
+    if (!const bool.fromEnvironment('GAME_DEBUG')) {
+      expect(menu, findsNothing);
+      await close(tester);
+      return;
+    }
+
+    Future<void> preset(String label) async {
+      await tester.tap(menu);
+      await tester.pumpAndSettle();
+      expect(find.text(appL10n.gamesGarageDebugAnswers(200)), findsOneWidget);
+      final option = find.ancestor(
+        of: find.text(label),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is CheckedPopupMenuItem,
+        ),
+      );
+      await tester.tap(option);
+      await tester.pumpAndSettle();
+    }
+
+    List<Widget> locks() =>
+        tester.widgetList(find.byIcon(Icons.lock_rounded)).toList();
+    await preset(appL10n.gamesGaragePreviewNew);
+    expect(locks(), hasLength(7));
+    await preset(appL10n.gamesGaragePreviewEarned);
+    expect(locks(), hasLength(2));
+    await preset(appL10n.gamesPremiumBadge);
+    expect(locks(), isEmpty);
+    final mini = find.text(appL10n.gameCarMini);
+    await tester.ensureVisible(mini);
+    await tester.tap(mini);
+    await tester.pumpAndSettle();
+    final choose = find.text(appL10n.gameRevealChoose);
+    await tester.ensureVisible(choose);
+    await tester.tap(choose);
+    await tester.pumpAndSettle();
+    expect(prefs.getString('game_vehicle'), isNull);
+    await preset(appL10n.gamesGaragePreviewActual);
+    expect(locks(), hasLength(2));
+    expect(prefs.getInt('game_garage_correct'), 200);
     await close(tester);
   });
 

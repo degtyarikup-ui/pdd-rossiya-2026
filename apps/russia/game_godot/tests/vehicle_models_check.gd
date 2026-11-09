@@ -23,7 +23,7 @@ func _initialize() -> void:
 func run() -> void:
 	var all_triangles := 0
 	var all_vertices := 0
-	for id in Models.CARS:
+	for id in Models.CARS + ["mini"]:
 		var car := Models.player_car(id,Color("#C0392B"))
 		var other := Models.player_car(id,Color("#4D7768"))
 		var meshes := car.find_children("*","MeshInstance3D",true,false)
@@ -39,7 +39,9 @@ func run() -> void:
 		var a := batch.surface_get_arrays(0)
 		var triangles: int=a[Mesh.ARRAY_INDEX].size()/3
 		var vertices: int=a[Mesh.ARRAY_VERTEX].size()
-		all_triangles+=triangles;all_vertices+=vertices
+		if id in Models.CARS:
+			all_triangles += triangles
+			all_vertices += vertices
 		check(triangles<=1300 and vertices<=2300,id+" phone geometry budget")
 		var lamps := Models.traffic_lenses(id)
 		check(lamps.size()==4 and lamps.filter(func(l):return l.side=="L").size()==2,id+" four actual indicator centres")

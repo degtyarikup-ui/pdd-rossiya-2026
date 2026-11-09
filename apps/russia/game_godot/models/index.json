@@ -433,5 +433,18 @@
    "tris": 2230
   },
   "source": "tools/godot_export/build_vehicles.py"
+ },
+ "vehicles/mini": {
+  "meta": {
+   "halfWidth": 0.81,
+   "halfLength": 1.65,
+   "height": 1.44,
+   "defaultPaint": "#ed4621"
+  },
+  "after": {
+   "meshes": 11,
+   "tris": 1272
+  },
+  "source": "tools/godot_export/build_vehicles.py"
  }
 }

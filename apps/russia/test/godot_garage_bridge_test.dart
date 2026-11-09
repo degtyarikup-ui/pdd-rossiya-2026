@@ -927,23 +927,21 @@ void main() {
     }
   });
 
-  testWidgets('premium has all seven models and the same eight colours', (
-    tester,
-  ) async {
+  testWidgets('premium launches Mini with the shared palette', (tester) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('game_vehicle', 'cyber');
+    await prefs.setString('game_vehicle', 'mini');
     await prefs.setString('game_vehicle_paint', 'purple');
     await open(tester, premium: true);
     await launch(tester);
 
     final ride = options();
     final cars = (ride['cars'] as List).cast<Map>();
-    expect(cars.length, 7);
+    expect(cars.length, 8);
     expect(cars.last['id'], 'cyber');
     for (final car in cars) {
       expect(paints(car), GameGarageService.paints);
     }
-    expect(ride['selected'], {'id': 'cyber', 'paint': 'red'});
+    expect(ride['selected'], {'id': 'mini', 'paint': 'red'});
     expect(ride['garage_premium'], isTrue);
   });
 

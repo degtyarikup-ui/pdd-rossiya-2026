@@ -3,7 +3,7 @@
 extends SceneTree
 
 const Models := preload("res://scripts/models.gd")
-const MODELS := ["hatch", "sedan", "wagon", "coupe", "suv", "pickup", "cyber"]
+const MODELS := ["hatch", "sedan", "wagon", "coupe", "suv", "pickup", "mini", "cyber"]
 const PAINTS := {
 	"red": "#ED4621", "blue": "#317ED4", "green": "#4D7768",
 	"yellow": "#E8C547", "white": "#F2F3F5", "black": "#2B2F36",
@@ -12,7 +12,7 @@ const PAINTS := {
 
 func _initialize() -> void:
 	var viewport := SubViewport.new()
-	viewport.size = Vector2i(400, 220)
+	viewport.size = Vector2i(480, 264)
 	viewport.transparent_bg = true
 	viewport.msaa_3d = Viewport.MSAA_4X
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -24,21 +24,25 @@ func _initialize() -> void:
 	environment.environment = Environment.new()
 	environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.environment.ambient_light_color = Color.WHITE
-	environment.environment.ambient_light_energy = 0.7
+	environment.environment.ambient_light_energy = 0.85
 	studio.add_child(environment)
 
 	var key := DirectionalLight3D.new()
-	key.rotation_degrees = Vector3(-48, -32, 0)
+	key.rotation_degrees = Vector3(-46, 38, 0)
 	studio.add_child(key)
+	var rim := DirectionalLight3D.new()
+	rim.rotation_degrees = Vector3(-24, -120, 0)
+	rim.light_energy = 0.5
+	studio.add_child(rim)
 
 	var camera := Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 3.85
 	studio.add_child(camera)
-	camera.look_at_from_position(Vector3(7, 3.7, 4.4), Vector3(0, 0.9, 0))
+	camera.look_at_from_position(Vector3(-7, 3.35, 4.55), Vector3(0, 0.83, 0))
 
 	var out := ProjectSettings.globalize_path("res://../assets/game/garage")
 	for model: String in MODELS:
+		camera.size = 3.55 if model == "cyber" else 3.28
 		for paint: String in PAINTS:
 			var car := Models.player_car(model, Color(PAINTS[paint]))
 			studio.add_child(car)

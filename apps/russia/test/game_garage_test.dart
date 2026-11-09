@@ -49,6 +49,21 @@ void main() {
     expect((await garage.selection(premium: false)).key, 'sedan:blue');
   });
 
+  test('Mini requires Premium even with legacy ownership data', () async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('game_garage_correct', 420);
+    await prefs.setString('game_garage_cars', '[{"id":"mini","paint":"blue"}]');
+    const mini = GameCar('mini', 'blue');
+    expect(await garage.select(mini, premium: false), isFalse);
+    expect(garage.availableModels(premium: false), isNot(contains(mini.id)));
+    expect(await garage.select(mini, premium: true), isTrue);
+    expect((await garage.selection(premium: true)).key, mini.key);
+    expect(
+      (await garage.selection(premium: false)).id,
+      GameGarageService.starter.id,
+    );
+  });
+
   test(
     'mileage adds new travel once, across modes and across reloads',
     () async {
