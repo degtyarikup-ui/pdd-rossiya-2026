@@ -233,10 +233,10 @@
   "gamesGaragePreviewEarned": "Барлық стандартты көлік",
   "gamesGarageDebugAnswers": "Қаладағы дұрыс жауаптар: {count}",
   "gamesGarageOdometer": "Жүріс: {distance}",
-  "gamesGaragePaint": "Түсі: {paint}",
   "gamesGarageLocked": "Құлыптаулы",
   "gamesGarageUnlockInCity": "«Тірі қаладағы» дұрыс жауаптар",
   "gamesGarageLoadFailed": "Гаражды ашу мүмкін болмады. Қайталап көріңіз.",
+  "gamesGarageSave": "Сақтау",
   "gamesGarageSaveFailed": "Таңдауды сақтау мүмкін болмады. Қайталап көріңіз.",
   "gameGarage": "Көлік таңдау",
   "gameCarHatch": "Хэтчбек",
@@ -336,7 +336,6 @@
       }
     }
   },
-  "gamesGaragePaintPerModel": "Әр көліктің түсі бөлек сақталады",
   "gamePaintAllCars": "Ашылған түстер барлық көліктерге қолжетімді",
   "gameRevealTitle": "Жаңа көлік!",
   "gameRevealTap": "Қақпаны басыңыз",

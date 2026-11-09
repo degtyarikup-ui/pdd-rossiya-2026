@@ -805,11 +805,6 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String gamesGaragePaint(String paint) {
-    return 'Түсі: $paint';
-  }
-
-  @override
   String get gamesGarageLocked => 'Құлыптаулы';
 
   @override
@@ -818,6 +813,9 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get gamesGarageLoadFailed =>
       'Гаражды ашу мүмкін болмады. Қайталап көріңіз.';
+
+  @override
+  String get gamesGarageSave => 'Сақтау';
 
   @override
   String get gamesGarageSaveFailed =>
@@ -988,9 +986,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String gameRevealPaintBody(String name) {
     return '$name түсі барлық көліктерге қолжетімді.';
   }
-
-  @override
-  String get gamesGaragePaintPerModel => 'Әр көліктің түсі бөлек сақталады';
 
   @override
   String get gamePaintAllCars => 'Ашылған түстер барлық көліктерге қолжетімді';

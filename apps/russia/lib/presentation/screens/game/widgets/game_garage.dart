@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 import 'package:intl/intl.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
@@ -267,29 +268,7 @@ class _GaragePage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Tooltip(
-                        message: appL10n.back,
-                        child: AppChromeIconButton(
-                          icon: Icons.arrow_back_rounded,
-                          onTap: () => Navigator.maybePop(context),
-                        ),
-                      ),
-                      const SizedBox(width: AppDimensions.spacingM),
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: TextStyle(
-                            color: colors.primaryText,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      ?action,
-                    ],
-                  ),
+                  _GarageHeader(title: title, action: action),
                   const SizedBox(height: AppDimensions.spacingL),
                   Expanded(
                     child: ListView(
@@ -309,6 +288,52 @@ class _GaragePage extends StatelessWidget {
   }
 }
 
+class _GarageHeader extends StatelessWidget {
+  const _GarageHeader({
+    required this.title,
+    this.action,
+    this.onArtwork = false,
+  });
+
+  final String title;
+  final Widget? action;
+  final bool onArtwork;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final ink = onArtwork ? AppColors.white : colors.primaryText;
+    return Row(
+      children: [
+        Tooltip(
+          message: appL10n.back,
+          child: AppChromeIconButton(
+            icon: Icons.arrow_back_rounded,
+            onTap: () => Navigator.maybePop(context),
+            backgroundColor: onArtwork ? _GarageBadge.background : null,
+            iconColor: ink,
+          ),
+        ),
+        const SizedBox(width: AppDimensions.spacingM),
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              color: ink,
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        if (action != null) ...[
+          const SizedBox(width: AppDimensions.spacingS),
+          action!,
+        ],
+      ],
+    );
+  }
+}
+
 GameGarageReward? _modelReward(String id) {
   for (final reward in GameGarageService.rewards) {
     if (reward.model == id) return reward;
@@ -322,6 +347,37 @@ String _odometer(BuildContext context, int millimeters) {
   )..maximumFractionDigits = 3;
   final km = millimeters / 1000000;
   return '${millimeters > 0 && millimeters < 1000 ? '<${format.format(.001)}' : format.format(km)} ${appL10n.gameKilometers}';
+}
+
+class _GarageBadge extends StatelessWidget {
+  const _GarageBadge(this.label, {this.premium = false});
+
+  static const background = Color(0xD9162034);
+  static const premiumInk = Color(0xFF352005);
+
+  final String label;
+  final bool premium;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: premium ? AppColors.of(context).gold : background,
+      borderRadius: BorderRadius.circular(7),
+      border: Border.all(color: const Color(0x35FFFFFF)),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: premium ? premiumInk : AppColors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+    ),
+  );
 }
 
 class _GarageCarCard extends StatelessWidget {
@@ -347,8 +403,7 @@ class _GarageCarCard extends StatelessWidget {
     final premium = !unlocked && reward == null;
     final badgeColor = premium
         ? AppColors.of(context).gold
-        : const Color(0xD9162034);
-    final badgeText = premium ? const Color(0xFF352005) : AppColors.white;
+        : _GarageBadge.background;
     final detail = unlocked
         ? _odometer(context, mileageMm)
         : reward == null
@@ -392,32 +447,7 @@ class _GarageCarCard extends StatelessWidget {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: badgeColor,
-                              borderRadius: BorderRadius.circular(7),
-                              border: Border.all(
-                                color: const Color(0x35FFFFFF),
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              child: Text(
-                                detail,
-                                style: TextStyle(
-                                  color: badgeText,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  fontFeatures: const [
-                                    FontFeature.tabularFigures(),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
+                          child: _GarageBadge(detail, premium: premium),
                         ),
                       ),
                       if (!unlocked || selected) ...[
@@ -434,7 +464,9 @@ class _GarageCarCard extends StatelessWidget {
                               selected
                                   ? Icons.check_rounded
                                   : Icons.lock_rounded,
-                              color: premium ? badgeText : AppColors.white,
+                              color: premium
+                                  ? _GarageBadge.premiumInk
+                                  : AppColors.white,
                               size: 15,
                             ),
                           ),
@@ -490,18 +522,53 @@ class _GarageCarArt extends StatelessWidget {
   final bool locked;
 
   @override
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.expand,
+    children: [
+      _GarageBackdrop(car: car, locked: locked),
+      Center(
+        child: FractionallySizedBox(
+          widthFactor: 1,
+          heightFactor: .82,
+          child: _GarageCarImage(car: car, locked: locked),
+        ),
+      ),
+    ],
+  );
+}
+
+class _GarageBackdrop extends StatelessWidget {
+  const _GarageBackdrop({
+    super.key,
+    required this.car,
+    required this.locked,
+    this.fullScreen = false,
+  });
+
+  final GameCar car;
+  final bool locked, fullScreen;
+
+  @override
   Widget build(BuildContext context) {
     final livery = _GarageLivery.values.byName(car.id);
     final colors = AppColors.of(context);
     final paint = gamePaintColors[car.paint]!;
     final tint = Color.lerp(paint, AppColors.white, .24)!;
+    Color surface(Color color) =>
+        fullScreen ? Color.lerp(color, const Color(0xFF151A29), .44)! : color;
     return Stack(
       fit: StackFit.expand,
       children: [
         Ink(
           decoration: BoxDecoration(
             color: locked
-                ? Color.lerp(colors.cardBackground, colors.secondaryText, .28)
+                ? surface(
+                    Color.lerp(
+                      colors.cardBackground,
+                      colors.secondaryText,
+                      .28,
+                    )!,
+                  )
                 : null,
             gradient: locked
                 ? null
@@ -509,45 +576,61 @@ class _GarageCarArt extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color.lerp(Color(livery.light), tint, .64)!,
-                      Color.lerp(Color(livery.dark), paint, .45)!,
+                      surface(Color.lerp(Color(livery.light), tint, .64)!),
+                      surface(Color.lerp(Color(livery.dark), paint, .45)!),
                     ],
                   ),
           ),
         ),
-        if (!locked) CustomPaint(painter: _GaragePattern(livery)),
-        Center(
-          child: FractionallySizedBox(
-            widthFactor: 1,
-            heightFactor: .82,
-            child: Image.asset(
-              _garagePreviewAsset(car.id, locked ? 'red' : car.paint),
-              fit: BoxFit.contain,
-              excludeFromSemantics: true,
-              gaplessPlayback: true,
-              color: locked ? AppColors.black : null,
-              colorBlendMode: BlendMode.srcIn,
-            ),
-          ),
-        ),
+        if (!locked)
+          CustomPaint(painter: _GaragePattern(livery, cover: fullScreen)),
       ],
     );
   }
+}
+
+class _GarageCarImage extends StatelessWidget {
+  const _GarageCarImage({required this.car, required this.locked});
+
+  final GameCar car;
+  final bool locked;
+
+  @override
+  Widget build(BuildContext context) => Image.asset(
+    _garagePreviewAsset(car.id, locked ? 'red' : car.paint),
+    fit: BoxFit.contain,
+    excludeFromSemantics: true,
+    gaplessPlayback: true,
+    color: locked ? AppColors.black : null,
+    colorBlendMode: BlendMode.srcIn,
+  );
 }
 
 String _garagePreviewAsset(String id, String paint) =>
     'assets/game/garage/$id-$paint.webp';
 
 class _GaragePattern extends CustomPainter {
-  const _GaragePattern(this.livery);
+  const _GaragePattern(this.livery, {required this.cover});
 
   final _GarageLivery livery;
+  final bool cover;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
     canvas.clipRect(Offset.zero & size);
-    canvas.scale(size.width / 160, size.height / 136);
+    final scaleX = size.width / 160;
+    final scaleY = size.height / 136;
+    if (cover) {
+      final scale = math.max(scaleX, scaleY);
+      canvas.translate(
+        (size.width - 160 * scale) / 2,
+        (size.height - 136 * scale) / 2,
+      );
+      canvas.scale(scale);
+    } else {
+      canvas.scale(scaleX, scaleY);
+    }
     final light = Paint()..color = const Color(0x2AFFF7DF);
     final dark = Paint()..color = const Color(0x180B1020);
     final stroke = Paint()
@@ -665,7 +748,7 @@ class _GaragePattern extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GaragePattern oldDelegate) =>
-      oldDelegate.livery != livery;
+      oldDelegate.livery != livery || oldDelegate.cover != cover;
 }
 
 class _LeopardSwatch extends CustomPainter {
@@ -674,20 +757,16 @@ class _LeopardSwatch extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final ink = Paint()..color = const Color(0xFF2B1A17);
-    for (final (x, y, width, height) in const [
-      (.23, .24, .22, .16),
-      (.70, .13, .24, .17),
-      (.55, .45, .28, .19),
-      (.14, .68, .18, .25),
-      (.81, .66, .19, .26),
-      (.50, .85, .25, .14),
+    for (final (x, y) in const [
+      (.27, .28),
+      (.69, .24),
+      (.52, .48),
+      (.27, .69),
+      (.74, .68),
     ]) {
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(x * size.width, y * size.height),
-          width: width * size.width,
-          height: height * size.height,
-        ),
+      canvas.drawCircle(
+        Offset(x * size.width, y * size.height),
+        size.width * .09,
         ink,
       );
     }
@@ -739,118 +818,311 @@ class _GarageCarDetailState extends State<_GarageCarDetail> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
     final car = GameCar(widget.car.id, _paint);
-    final reward = _modelReward(car.id);
+    final distance = _odometer(context, widget.mileageMm);
+    final artwork = Transform.scale(
+      scale: 1.18,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 580),
+        child: _GarageCarImage(car: car, locked: !widget.unlocked),
+      ),
+    );
+    final controls = widget.unlocked
+        ? _GaragePaintPicker(
+            selected: _paint,
+            available: widget.paints,
+            onSelect: _saving
+                ? null
+                : (paint) {
+                    HapticFeedbackHelper.select();
+                    setState(() => _paint = paint);
+                  },
+          )
+        : _GarageUnlockHint(
+            reward: _modelReward(car.id),
+            correctTotal: widget.correctTotal,
+          );
     return PopScope(
       canPop: !_saving,
-      child: _GaragePage(
-        title: gameCarName(car.id),
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-            child: SizedBox(
-              height: 200,
-              child: Material(
-                child: _GarageCarArt(car: car, locked: !widget.unlocked),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light.copyWith(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: Colors.transparent,
+          systemNavigationBarContrastEnforced: false,
+        ),
+        child: Scaffold(
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              _GarageBackdrop(
+                key: const ValueKey('garage-detail-background'),
+                car: car,
+                locked: !widget.unlocked,
+                fullScreen: true,
               ),
-            ),
-          ),
-          const SizedBox(height: AppDimensions.spacingL),
-          if (widget.unlocked) ...[
-            Text(
-              appL10n.gamesGarageOdometer(_odometer(context, widget.mileageMm)),
-              style: TextStyle(color: colors.secondaryText, fontSize: 14),
-            ),
-            const SizedBox(height: AppDimensions.spacingL),
-            Text(
-              appL10n.gamesGaragePaint(gamePaintName(_paint)),
-              style: TextStyle(
-                color: colors.primaryText,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: AppDimensions.spacingS),
-            Wrap(
-              spacing: AppDimensions.spacingS,
-              runSpacing: AppDimensions.spacingS,
-              children: [
-                for (final paint in widget.paints)
-                  Semantics(
-                    selected: paint == _paint,
-                    child: Tooltip(
-                      message: gamePaintName(paint),
-                      child: IconButton(
-                        onPressed: _saving
-                            ? null
-                            : () {
-                                HapticFeedbackHelper.select();
-                                setState(() => _paint = paint);
-                              },
-                        style: IconButton.styleFrom(
-                          backgroundColor: gamePaintColors[paint],
-                          foregroundColor:
-                              ThemeData.estimateBrightnessForColor(
-                                    gamePaintColors[paint]!,
-                                  ) ==
-                                  Brightness.dark
-                              ? AppColors.white
-                              : AppColors.black,
-                          side: BorderSide(
-                            color: paint == _paint
-                                ? colors.accent
-                                : colors.divider,
+              SafeArea(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: Padding(
+                      padding: const EdgeInsets.all(
+                        AppDimensions.screenPadding,
+                      ),
+                      child: Column(
+                        children: [
+                          _GarageHeader(
+                            title: gameCarName(car.id),
+                            onArtwork: true,
+                            action: widget.unlocked
+                                ? Semantics(
+                                    label: appL10n.gamesGarageOdometer(
+                                      distance,
+                                    ),
+                                    excludeSemantics: true,
+                                    child: _GarageBadge(distance),
+                                  )
+                                : null,
                           ),
-                          minimumSize: const Size.square(48),
-                        ),
-                        icon: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            if (paint == GameGarageService.leopard)
-                              const SizedBox.square(
-                                dimension: 26,
-                                child: CustomPaint(painter: _LeopardSwatch()),
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                if (constraints.maxHeight < 300 &&
+                                    constraints.maxWidth >= 520) {
+                                  return Row(
+                                    children: [
+                                      Expanded(child: Center(child: artwork)),
+                                      Expanded(child: Center(child: controls)),
+                                    ],
+                                  );
+                                }
+                                return Column(
+                                  children: [
+                                    Expanded(
+                                      child: Align(
+                                        alignment: const Alignment(0, .34),
+                                        child: artwork,
+                                      ),
+                                    ),
+                                    controls,
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                          if (widget.unlocked) ...[
+                            const SizedBox(height: AppDimensions.spacingL),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: FilledButton(
+                                  onPressed: _saving
+                                      ? null
+                                      : () => _select(car),
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(48),
+                                  ),
+                                  child: Text(appL10n.gamesGarageSave),
+                                ),
                               ),
-                            Icon(
-                              Icons.check_rounded,
-                              color: paint == _paint
-                                  ? null
-                                  : Colors.transparent,
                             ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.spacingS),
-            Text(
-              appL10n.gamesGaragePaintPerModel,
-              style: TextStyle(color: colors.secondaryText),
-            ),
-            const SizedBox(height: AppDimensions.spacingL),
-            FilledButton(
-              onPressed: _saving ? null : () => _select(car),
-              child: Text(appL10n.gameRevealChoose),
-            ),
-          ] else if (reward == null)
-            Text(appL10n.gameGaragePremiumCar)
-          else ...[
-            Text(appL10n.gamesGarageUnlockInCity),
-            const SizedBox(height: AppDimensions.spacingS),
-            Text(
-              appL10n.gameAchievementCount(
-                widget.correctTotal.clamp(0, reward.threshold),
-                reward.threshold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GarageUnlockHint extends StatelessWidget {
+  const _GarageUnlockHint({required this.reward, required this.correctTotal});
+
+  final GameGarageReward? reward;
+  final int correctTotal;
+
+  @override
+  Widget build(BuildContext context) {
+    final milestone = reward;
+    return DefaultTextStyle.merge(
+      style: const TextStyle(
+        color: AppColors.white,
+        fontWeight: FontWeight.w600,
+      ),
+      textAlign: TextAlign.center,
+      child: milestone == null
+          ? Text(appL10n.gameGaragePremiumCar)
+          : ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(appL10n.gamesGarageUnlockInCity),
+                  const SizedBox(height: AppDimensions.spacingS),
+                  Text(
+                    appL10n.gameAchievementCount(
+                      correctTotal.clamp(0, milestone.threshold),
+                      milestone.threshold,
+                    ),
+                  ),
+                  const SizedBox(height: AppDimensions.spacingS),
+                  LinearProgressIndicator(
+                    value: (correctTotal / milestone.threshold).clamp(0, 1),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: AppDimensions.spacingS),
-            LinearProgressIndicator(
-              value: (widget.correctTotal / reward.threshold).clamp(0, 1),
+    );
+  }
+}
+
+/// Keep the swatch geometry, colours and check mark in sync with ride_pause.gd.
+class _GaragePaintPicker extends StatelessWidget {
+  const _GaragePaintPicker({
+    required this.selected,
+    required this.available,
+    required this.onSelect,
+  });
+
+  final String selected;
+  final List<String> available;
+  final ValueChanged<String>? onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    const gap = 12.0;
+    const columns = 4;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxWidth: columns * 56 + (columns - 1) * gap,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final size = ((constraints.maxWidth - (columns - 1) * gap) / columns)
+              .clamp(40.0, 56.0);
+          return Wrap(
+            spacing: gap,
+            runSpacing: gap,
+            alignment: WrapAlignment.center,
+            children: [
+              for (final paint in GameGarageService.allPaints)
+                SizedBox.square(
+                  dimension: size,
+                  child: _GarageSwatch(
+                    paint: paint,
+                    selected: paint == selected,
+                    locked: !available.contains(paint),
+                    onSelect: onSelect == null ? null : () => onSelect!(paint),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _GarageSwatch extends StatelessWidget {
+  const _GarageSwatch({
+    required this.paint,
+    required this.selected,
+    required this.locked,
+    required this.onSelect,
+  });
+
+  final String paint;
+  final bool selected, locked;
+  final VoidCallback? onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final color = gamePaintColors[paint]!;
+    final luminance = color.computeLuminance();
+    final ink = luminance > .5 ? const Color(0xFF121212) : AppColors.white;
+    final name = gamePaintName(paint);
+    final label = locked ? '$name · ${appL10n.gamesGarageLocked}' : name;
+    const outerRadius = BorderRadius.all(Radius.circular(14));
+    return Semantics(
+      label: label,
+      button: true,
+      enabled: !locked && onSelect != null,
+      selected: selected,
+      child: Tooltip(
+        message: label,
+        excludeFromSemantics: true,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: locked ? null : onSelect,
+            borderRadius: outerRadius,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              padding: EdgeInsets.all(selected ? 4 : 0),
+              decoration: BoxDecoration(
+                color: colors.cardBackground,
+                borderRadius: outerRadius,
+              ),
+              foregroundDecoration: BoxDecoration(
+                borderRadius: outerRadius,
+                border: Border.all(
+                  width: 2,
+                  color: selected
+                      ? (luminance < .85 ? color : colors.secondaryText)
+                      : Colors.transparent,
+                ),
+              ),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(selected ? 10 : 12),
+                  border: luminance > .85
+                      ? Border.all(color: colors.divider)
+                      : null,
+                ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  alignment: Alignment.center,
+                  children: [
+                    if (paint == GameGarageService.leopard)
+                      const CustomPaint(painter: _LeopardSwatch()),
+                    if (selected)
+                      Icon(Icons.check_rounded, size: 22, color: ink)
+                    else if (locked)
+                      Center(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: luminance > .5
+                                ? const Color(0xCFFFFFFF)
+                                : const Color(0xC91B1A22),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.lock_rounded,
+                              size: 15,
+                              color: ink,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
-          ],
-        ],
+          ),
+        ),
       ),
     );
   }

@@ -1444,12 +1444,6 @@ abstract class AppLocalizations {
   /// **'Пробег: {distance}'**
   String gamesGarageOdometer(String distance);
 
-  /// No description provided for @gamesGaragePaint.
-  ///
-  /// In ru, this message translates to:
-  /// **'Цвет: {paint}'**
-  String gamesGaragePaint(String paint);
-
   /// No description provided for @gamesGarageLocked.
   ///
   /// In ru, this message translates to:
@@ -1467,6 +1461,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось открыть гараж. Попробуйте ещё раз.'**
   String get gamesGarageLoadFailed;
+
+  /// No description provided for @gamesGarageSave.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохранить'**
+  String get gamesGarageSave;
 
   /// No description provided for @gamesGarageSaveFailed.
   ///
@@ -1731,12 +1731,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Цвет «{name}» открыт для всех машин.'**
   String gameRevealPaintBody(String name);
-
-  /// No description provided for @gamesGaragePaintPerModel.
-  ///
-  /// In ru, this message translates to:
-  /// **'У каждой машины своя окраска'**
-  String get gamesGaragePaintPerModel;
 
   /// No description provided for @gamePaintAllCars.
   ///

@@ -817,11 +817,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String gamesGaragePaint(String paint) {
-    return 'Цвет: $paint';
-  }
-
-  @override
   String get gamesGarageLocked => 'Закрыто';
 
   @override
@@ -830,6 +825,9 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get gamesGarageLoadFailed =>
       'Не удалось открыть гараж. Попробуйте ещё раз.';
+
+  @override
+  String get gamesGarageSave => 'Сохранить';
 
   @override
   String get gamesGarageSaveFailed =>
@@ -1006,9 +1004,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String gameRevealPaintBody(String name) {
     return 'Цвет «$name» открыт для всех машин.';
   }
-
-  @override
-  String get gamesGaragePaintPerModel => 'У каждой машины своя окраска';
 
   @override
   String get gamePaintAllCars => 'Открытые цвета доступны для всех машин';

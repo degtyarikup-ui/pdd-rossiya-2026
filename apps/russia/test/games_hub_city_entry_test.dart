@@ -136,6 +136,9 @@ void main() {
     );
   }
 
+  Finder paintIcon(String name, IconData icon) =>
+      find.descendant(of: find.byTooltip(name), matching: find.byIcon(icon));
+
   Finder getCity() => find.byKey(const ValueKey('games-card-city'));
   Finder getRuns() => find.byKey(const ValueKey('games-runs-status'));
 
@@ -190,22 +193,41 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(appL10n.gamesGarageUnlockInCity), findsOneWidget);
     expect(find.text(appL10n.gameAchievementCount(10, 20)), findsOneWidget);
-    expect(find.text(appL10n.gameRevealChoose), findsNothing);
+    expect(find.text(appL10n.gamesGarageSave), findsNothing);
     await tester.tap(find.byTooltip(appL10n.back));
     await tester.pumpAndSettle();
     final sedan = find.text(appL10n.gameCarSedan);
     await tester.ensureVisible(sedan);
     await tester.tap(sedan);
     await tester.pumpAndSettle();
+    final backdrop = find.byKey(const ValueKey('garage-detail-background'));
+    final save = find.widgetWithText(FilledButton, appL10n.gamesGarageSave);
+    expect(tester.getRect(backdrop), const Rect.fromLTWH(0, 0, 390, 844));
+    expect(tester.getCenter(find.byType(Image)).dy, closeTo(422, 55));
+    expect(tester.getCenter(find.text('0 км')).dx, greaterThan(300));
+    expect(tester.getRect(save).bottom, greaterThan(810));
+    expect(tester.getCenter(save).dx, closeTo(195, 1));
+    expect(find.byIcon(Icons.lock_rounded), findsNWidgets(6));
+    final lockedPink =
+        '${appL10n.gamePaintPink} · ${appL10n.gamesGarageLocked}';
+    expect(paintIcon(lockedPink, Icons.lock_rounded), findsOneWidget);
+    expect(
+      paintIcon(appL10n.gamePaintRed, Icons.check_rounded),
+      findsOneWidget,
+    );
+    await tester.tap(find.byTooltip(lockedPink));
+    await tester.pumpAndSettle();
+    expect(
+      paintIcon(appL10n.gamePaintRed, Icons.check_rounded),
+      findsOneWidget,
+    );
     await tester.tap(find.byTooltip(appL10n.gamePaintBlue));
     await tester.pumpAndSettle();
     expect(
-      find.text(appL10n.gamesGaragePaint(appL10n.gamePaintBlue)),
+      paintIcon(appL10n.gamePaintBlue, Icons.check_rounded),
       findsOneWidget,
     );
-    final choose = find.text(appL10n.gameRevealChoose);
-    await tester.ensureVisible(choose);
-    await tester.tap(choose);
+    await tester.tap(save);
     await tester.pumpAndSettle();
     expect(find.byType(GameGarage), findsOneWidget);
     expect(prefs.getString('game_vehicle'), 'sedan');
@@ -213,7 +235,7 @@ void main() {
     await tester.tap(title);
     await tester.pumpAndSettle();
     expect(
-      find.text(appL10n.gamesGaragePaint(appL10n.gamePaintRed)),
+      paintIcon(appL10n.gamePaintRed, Icons.check_rounded),
       findsOneWidget,
     );
     await tester.tap(find.byTooltip(appL10n.back));
@@ -221,7 +243,7 @@ void main() {
     await tester.tap(sedan);
     await tester.pumpAndSettle();
     expect(
-      find.text(appL10n.gamesGaragePaint(appL10n.gamePaintBlue)),
+      paintIcon(appL10n.gamePaintBlue, Icons.check_rounded),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
@@ -269,9 +291,16 @@ void main() {
     await tester.ensureVisible(mini);
     await tester.tap(mini);
     await tester.pumpAndSettle();
-    final choose = find.text(appL10n.gameRevealChoose);
-    await tester.ensureVisible(choose);
-    await tester.tap(choose);
+    expect(locks(), isEmpty);
+    await tester.tap(find.byTooltip(appL10n.gamePaintPink));
+    await tester.pumpAndSettle();
+    expect(
+      paintIcon(appL10n.gamePaintPink, Icons.check_rounded),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.widgetWithText(FilledButton, appL10n.gamesGarageSave),
+    );
     await tester.pumpAndSettle();
     expect(prefs.getString('game_vehicle'), isNull);
     await preset(appL10n.gamesGaragePreviewActual);

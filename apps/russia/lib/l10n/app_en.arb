@@ -233,10 +233,10 @@
   "gamesGaragePreviewEarned": "All standard cars",
   "gamesGarageDebugAnswers": "Correct city answers: {count}",
   "gamesGarageOdometer": "Mileage: {distance}",
-  "gamesGaragePaint": "Paint: {paint}",
   "gamesGarageLocked": "Locked",
   "gamesGarageUnlockInCity": "Correct answers in Living City",
   "gamesGarageLoadFailed": "Could not open the garage. Try again.",
+  "gamesGarageSave": "Save",
   "gamesGarageSaveFailed": "Could not save your selection. Try again.",
   "gameGarage": "Select a car",
   "gameCarHatch": "Hatchback",
@@ -336,7 +336,6 @@
       }
     }
   },
-  "gamesGaragePaintPerModel": "Each car keeps its own paint",
   "gamePaintAllCars": "Unlocked colours are available for every car",
   "gameRevealTitle": "New car!",
   "gameRevealTap": "Tap the gate",

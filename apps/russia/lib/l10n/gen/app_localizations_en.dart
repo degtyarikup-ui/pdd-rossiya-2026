@@ -803,11 +803,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String gamesGaragePaint(String paint) {
-    return 'Paint: $paint';
-  }
-
-  @override
   String get gamesGarageLocked => 'Locked';
 
   @override
@@ -815,6 +810,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gamesGarageLoadFailed => 'Could not open the garage. Try again.';
+
+  @override
+  String get gamesGarageSave => 'Save';
 
   @override
   String get gamesGarageSaveFailed =>
@@ -985,9 +983,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String gameRevealPaintBody(String name) {
     return 'The $name colour is now available for every car.';
   }
-
-  @override
-  String get gamesGaragePaintPerModel => 'Each car keeps its own paint';
 
   @override
   String get gamePaintAllCars => 'Unlocked colours are available for every car';

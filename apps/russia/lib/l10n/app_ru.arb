@@ -451,11 +451,10 @@
   "@gamesGarageDebugAnswers": {"placeholders": {"count": {"type": "int"}}},
   "gamesGarageOdometer": "Пробег: {distance}",
   "@gamesGarageOdometer": {"placeholders": {"distance": {"type": "String"}}},
-  "gamesGaragePaint": "Цвет: {paint}",
-  "@gamesGaragePaint": {"placeholders": {"paint": {"type": "String"}}},
   "gamesGarageLocked": "Закрыто",
   "gamesGarageUnlockInCity": "Правильные ответы в «Живом городе»",
   "gamesGarageLoadFailed": "Не удалось открыть гараж. Попробуйте ещё раз.",
+  "gamesGarageSave": "Сохранить",
   "gamesGarageSaveFailed": "Не удалось сохранить выбор. Попробуйте ещё раз.",
   "gameGarage": "Выбор машины",
   "gameCarHatch": "Хэтчбек",
@@ -562,7 +561,6 @@
       }
     }
   },
-  "gamesGaragePaintPerModel": "У каждой машины своя окраска",
   "gamePaintAllCars": "Открытые цвета доступны для всех машин",
   "gameRevealTitle": "Новая машина!",
   "gameRevealTap": "Нажмите на ворота",
