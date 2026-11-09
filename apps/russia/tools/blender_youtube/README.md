@@ -53,3 +53,38 @@
 Перед выдачей дополнительно проверить все склейки, направления движения,
 видимость условий с места водителя, отсутствие пересечений и звучание речи.
 Публикация на YouTube этим инструментом не выполняется.
+
+## Быстрый вариант EEVEE
+
+После отказа владельца от многочасового Cycles-рендера создан отдельный проект
+`pdd_youtube_001_eevee.blend`. Исходный `.blend` и 812 кадров Cycles сохранены.
+Используются запечённое непрямое освещение улицы и упакованная HDR-панорама
+для отражений. Динамические cubemap-пробы, трассировка экранных лучей,
+микрорельеф и глубина резкости отключены; заполнение светом не строит дорогие
+мягкие тени. Тени солнца и контактные тени под машинами остаются.
+Это компромисс по свету и отражениям, а не идентичный Cycles результат.
+Разрешение 1920×1080 и частота 24 fps сохранены.
+
+Команды из `main/` (каждая следующая — после успешного завершения предыдущей):
+
+```sh
+/Applications/Blender.app/Contents/MacOS/Blender -b output/blender_youtube/pilot_001/pdd_youtube_001.blend --python-exit-code 2 --python apps/russia/tools/blender_youtube/bake_environment.py
+/Applications/Blender.app/Contents/MacOS/Blender -b output/blender_youtube/pilot_001/pdd_youtube_001.blend --python-exit-code 2 --python apps/russia/tools/blender_youtube/prepare_eevee.py
+/Applications/Blender.app/Contents/MacOS/Blender -b output/blender_youtube/pilot_001/pdd_youtube_001_eevee.blend --python-exit-code 2 --python apps/russia/tools/blender_youtube/render_eevee.py -- --preview
+python3 apps/russia/tools/blender_youtube/make_preview.py
+```
+
+Тест — 144 настоящих кадра, 6 секунд без звука: сопровождение, поворот взгляда
+из салона, левый поворот. Копия `pdd_youtube_001_fast_test.mp4` сохраняется
+на рабочий стол. Замеры — `fast_preview_timing.json`; прогноз полного времени
+делать по всем трём планам, не по первому кадру.
+
+Для полного рендера заменить `--preview` на `--full`, затем:
+
+```sh
+python3 apps/russia/tools/blender_youtube/finish.py --frames-dir frames_eevee --output-stem pdd_youtube_001_eevee
+```
+
+Кадры EEVEE не смешивать с Cycles: материалы и свет отличаются.
+После изменения сцены использовать новую папку кадров либо явно архивировать
+предыдущий тест: возобновление не проверяет соответствие кадров версии сцены.

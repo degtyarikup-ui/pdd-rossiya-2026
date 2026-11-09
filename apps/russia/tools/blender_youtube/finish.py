@@ -1,10 +1,15 @@
 """Mix a quiet street sound bed, normal subtitles and an exact-duration master."""
 from pathlib import Path
-import json, subprocess, sys, math, hashlib
+import json, subprocess, sys, math, hashlib, argparse
 import numpy as np
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT))
 from tools.signs_reel import audio
 OUT=ROOT/'output/blender_youtube/pilot_001'
+p=argparse.ArgumentParser()
+p.add_argument('--audio-only',action='store_true')
+p.add_argument('--frames-dir',default='frames')
+p.add_argument('--output-stem',default='pdd_youtube_001')
+args=p.parse_args()
 T=json.loads((OUT/'timeline.json').read_text());SR=24000;duration=T['duration']
 n=round(SR*duration);t=np.arange(n,dtype=np.float32)/SR
 rng=np.random.default_rng(3914)
@@ -41,15 +46,15 @@ for clip in T['clips']:
         subtitles.append(f'{len(subtitles)+1}\n{stamp(cursor)} --> {stamp(end)}\n{phrase.strip()}\n')
         cursor=end
 (OUT/'pdd_youtube_001.srt').write_text('\n'.join(subtitles))
-if '--audio-only' in sys.argv:sys.exit(0)
-frames=sorted((OUT/'frames').glob('frame_*.png'))
+if args.audio_only:sys.exit(0)
+frames=sorted((OUT/args.frames_dir).glob('frame_*.png'))
 assert len(frames)==T['frames'],(len(frames),T['frames'])
-target=OUT/'pdd_youtube_001.mp4'
-subprocess.run(['ffmpeg','-y','-v','warning','-framerate',str(T['fps']),'-start_number','1','-i',str(OUT/'frames/frame_%04d.png'),'-i',str(OUT/'master_audio.wav'),'-i',str(OUT/'pdd_youtube_001.srt'),'-map','0:v:0','-map','1:a:0','-map','2:0','-c:v','libx264','-preset','slow','-crf','17','-pix_fmt','yuv420p','-c:a','aac','-b:a','256k','-c:s','mov_text','-metadata:s:s:0','language=rus','-t',str(duration),'-movflags','+faststart',str(target)],check=True)
+target=OUT/f'{args.output_stem}.mp4'
+subprocess.run(['ffmpeg','-y','-v','warning','-framerate',str(T['fps']),'-start_number','1','-i',str(OUT/args.frames_dir/'frame_%04d.png'),'-i',str(OUT/'master_audio.wav'),'-i',str(OUT/'pdd_youtube_001.srt'),'-map','0:v:0','-map','1:a:0','-map','2:0','-c:v','libx264','-preset','slow','-crf','17','-pix_fmt','yuv420p','-c:a','aac','-b:a','256k','-c:s','mov_text','-metadata:s:s:0','language=rus','-t',str(duration),'-movflags','+faststart',str(target)],check=True)
 subprocess.run(['ffmpeg','-v','error','-i',str(target),'-f','null','-'],check=True)
 probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-show_format','-of','json',str(target)]))
 v=next(s for s in probe['streams'] if s['codec_type']=='video')
 assert (v['width'],v['height'],int(v['nb_frames']))==(1920,1080,T['frames'])
 assert abs(float(probe['format']['duration'])-duration)<1/T['fps']
-(OUT/'delivery.json').write_text(json.dumps(dict(sha256=hashlib.sha256(target.read_bytes()).hexdigest(),probe=probe),ensure_ascii=False,indent=2))
+(OUT/('delivery.json' if args.output_stem=='pdd_youtube_001' else args.output_stem+'_delivery.json')).write_text(json.dumps(dict(sha256=hashlib.sha256(target.read_bytes()).hexdigest(),probe=probe),ensure_ascii=False,indent=2))
 print(target)
