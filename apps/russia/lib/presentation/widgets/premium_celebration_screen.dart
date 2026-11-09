@@ -7,9 +7,8 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/celebration_screen.dart';
 
-/// Why Premium just became active: the person paid (store, SBP, restore) or
-/// it was granted from the admin panel. Both share one green screen.
-enum PremiumCelebrationReason { purchased, granted }
+/// How Premium was activated.
+enum PremiumCelebrationReason { purchased, granted, promoCode }
 
 /// Full-screen congratulations when Premium becomes active, in the same frame
 /// and motion as achievements and the daily streak.
@@ -28,7 +27,7 @@ class PremiumCelebrationScreen extends StatelessWidget {
   /// Null means lifetime access.
   final DateTime? expiresAt;
 
-  /// The admin's reason for a grant («Подарок»), shown instead of the body.
+  /// Optional details such as the admin's note or the number of days added.
   final String? message;
   final VoidCallback onContinue, onClose;
 
@@ -79,9 +78,9 @@ class PremiumCelebrationScreen extends StatelessWidget {
           : appL10n.premiumCelebrationPurchasedTitle,
       description: note != null && note.isNotEmpty
           ? note
-          : granted
-          ? appL10n.premiumCelebrationGrantedBody
-          : appL10n.premiumCelebrationPurchasedBody,
+          : reason == PremiumCelebrationReason.purchased
+          ? appL10n.premiumCelebrationPurchasedBody
+          : appL10n.premiumCelebrationGrantedBody,
       label: _accessLabel(),
       heroBuilder: (size) => PremiumKeyArtwork(size: size),
       details: const _PremiumPerks(),

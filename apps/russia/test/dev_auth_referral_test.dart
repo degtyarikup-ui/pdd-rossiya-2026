@@ -5,13 +5,15 @@ import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/dev_mock_endpoint.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/referral_service.dart';
-import 'package:pdd_app/l10n/gen/app_localizations.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/premium_celebration_screen.dart';
 import 'package:pdd_app/presentation/widgets/promo_code_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(initAppDateFormatting);
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -77,6 +79,70 @@ void main() {
     },
   );
 
+  testWidgets('a newly applied code opens the shared Premium screen', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await AuthService.instance.signInDebug(
+        accountId: 'dev_tester_1',
+        name: 'Tester',
+      );
+    });
+    bool? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async =>
+                  result = await PromoCodeSheet.show(context),
+              child: const Text('Ввести код'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Ввести код'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('promo-input-field')),
+      'FRIEND26',
+    );
+    await tester.pump();
+    await tester.runAsync(() async {
+      await tester.tap(find.byKey(const ValueKey('promo-activate-button')));
+      while (ReferralService.instance.claiming) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+    });
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PromoCodeSheet), findsNothing);
+    final screen = tester.widget<PremiumCelebrationScreen>(
+      find.byType(PremiumCelebrationScreen),
+    );
+    expect(screen.reason, PremiumCelebrationReason.promoCode);
+    expect(screen.expiresAt, isNotNull);
+    expect(screen.expiresAt, PremiumService.instance.expiresAt);
+    expect(find.text('Премиум открыт!'), findsOneWidget);
+    expect(find.text('Начислено: 2 дня Премиума.'), findsOneWidget);
+    expect(find.textContaining('Доступ до '), findsOneWidget);
+    expect(result, isNull);
+
+    await tester.tap(find.text('Отлично!'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PremiumCelebrationScreen), findsNothing);
+    expect(find.text('Ввести код'), findsOneWidget);
+    expect(result, isTrue);
+  });
+
   testWidgets('replayed promo displays already activated instead of new days', (
     tester,
   ) async {
@@ -112,6 +178,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Начислено: 7 дней Премиума.'), findsNothing);
+    expect(find.byType(PremiumCelebrationScreen), findsNothing);
   });
 
   test(

@@ -4,16 +4,18 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/referral_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/premium_celebration_screen.dart';
 
 class PromoCodeSheet extends StatefulWidget {
   const PromoCodeSheet({super.key});
 
-  static Future<bool?> show(BuildContext context) {
+  static Future<bool?> show(BuildContext context) async {
     HapticFeedbackHelper.tap();
-    return showModalBottomSheet<bool>(
+    final result = await showModalBottomSheet<ReferralClaimResult>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -21,6 +23,18 @@ class PromoCodeSheet extends StatefulWidget {
       constraints: const BoxConstraints(maxWidth: 600),
       builder: (_) => const PromoCodeSheet(),
     );
+    if (result == null) return null;
+
+    final premium = PremiumService.instance;
+    if (context.mounted && !result.alreadyApplied && premium.isPremium) {
+      await PremiumCelebrationScreen.show(
+        context,
+        reason: PremiumCelebrationReason.promoCode,
+        expiresAt: premium.expiresAt,
+        message: context.l10n.referralSuccessDays(result.daysAdded),
+      );
+    }
+    return true;
   }
 
   @override
@@ -102,6 +116,13 @@ class _PromoCodeSheetState extends State<PromoCodeSheet> {
     setState(() => _result = null);
     final result = await _service.claimCode(_code.text);
     if (!mounted || _currentAccount != account) return;
+    if (result.status == ReferralClaimStatus.success &&
+        !result.alreadyApplied) {
+      if (ModalRoute.of(context)?.isCurrent == true) {
+        Navigator.of(context).pop(result);
+      }
+      return;
+    }
     setState(() => _result = result);
     if (result.status == ReferralClaimStatus.success) {
       HapticFeedbackHelper.success();
@@ -110,7 +131,7 @@ class _PromoCodeSheetState extends State<PromoCodeSheet> {
     }
   }
 
-  bool get _claimed => _result?.status == ReferralClaimStatus.success;
+  bool get _alreadyApplied => _result?.alreadyApplied == true;
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +184,7 @@ class _PromoCodeSheetState extends State<PromoCodeSheet> {
                 ),
               ),
               const SizedBox(height: AppDimensions.spacingXXL),
-              if (_claimed) ...[
+              if (_alreadyApplied) ...[
                 Semantics(
                   liveRegion: true,
                   child: Row(
@@ -175,9 +196,7 @@ class _PromoCodeSheetState extends State<PromoCodeSheet> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          _result!.alreadyApplied
-                              ? l10n.promoAlreadyApplied
-                              : l10n.referralSuccessDays(_result!.daysAdded),
+                          l10n.promoAlreadyApplied,
                           style: theme.textTheme.titleSmall,
                         ),
                       ),
@@ -186,7 +205,7 @@ class _PromoCodeSheetState extends State<PromoCodeSheet> {
                 ),
                 const SizedBox(height: AppDimensions.spacingXL),
                 ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(true),
+                  onPressed: () => Navigator.of(context).pop(_result),
                   child: Text(l10n.done),
                 ),
               ] else ...[
