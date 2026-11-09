@@ -143,7 +143,7 @@ void main() {
       store.pending!.complete(store.response());
       await tester.pump();
       expect(iap.hasCompleteStoreProducts, true);
-      expect(notifications, 1);
+      expect(notifications, 2);
       expect(iap.storePrice(PremiumTier.weekly), '99 RUB');
       expect(store.queries, 1);
       store.pending = null;

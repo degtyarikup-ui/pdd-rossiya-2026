@@ -199,6 +199,8 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
       PurchaseFailure.storeRefused => appL10n.payErrorStoreRefused(store),
       PurchaseFailure.legacyOwnerRequired =>
         appL10n.purchaseLegacyOwnerRequired,
+      PurchaseFailure.accountMismatch => appL10n.purchaseAccountMismatch,
+      PurchaseFailure.paymentPending => appL10n.purchaseStorePending,
       PurchaseFailure.other => appL10n.payErrorGeneric,
     };
   }
@@ -376,7 +378,8 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
         _storeShown &&
         !IapService.instance.hasProductFor(_selectedTier) &&
         !IapService.instance.hasDeliveredProduct(_selectedTier);
-    final loadingPrice = missingPrice && _pricesLoading;
+    final loadingPrice =
+        missingPrice && (_pricesLoading || IapService.instance.loadingProducts);
     final reloadPrice = missingPrice && _pricesIncomplete;
     final buttonLabel = loadingPrice
         ? appL10n.paywallLoadingPrice
@@ -503,7 +506,7 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
                       const SizedBox(height: AppDimensions.spacingM),
                       _buildReferralCard(colors),
                       const SizedBox(height: AppDimensions.spacingXXL),
-                      if (reloadPrice && !loadingPrice) ...[
+                      if (reloadPrice && !loadingPrice && !_isLoading) ...[
                         InlineLoadError(
                           key: const ValueKey('premium-price-load-error'),
                           message: appL10n.paywallPriceUnavailable,

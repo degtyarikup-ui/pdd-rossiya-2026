@@ -472,6 +472,8 @@
   "payErrorStoreUnavailable": "{store} is unavailable. Try again later.",
   "payErrorStoreRefused": "Payment failed. Check your payment method in {store}.",
   "payErrorSwitchedToSbp": "Google Play couldn't process the payment. We've switched you to SBP — tap the button again.",
+  "purchaseStorePending": "The store is waiting for the previous purchase to finish. Complete it in Google Play or wait for payment confirmation.",
+  "purchaseAccountMismatch": "An unfinished purchase belongs to another app account. Sign in to the account that started the purchase and tap Restore.",
   "payErrorGeneric": "Purchase incomplete. If you were charged, tap Restore.",
   "payErrorUnexpected": "Something went wrong. Please try again.",
   "authSessionTemporary": "Login completed. The phone was unable to save the session: after restarting, you will need to log in again.",

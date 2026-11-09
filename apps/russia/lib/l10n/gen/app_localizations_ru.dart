@@ -1367,6 +1367,14 @@ class AppLocalizationsRu extends AppLocalizations {
       'Google Play не смог провести оплату. Мы переключили на оплату через СБП — нажмите кнопку ещё раз.';
 
   @override
+  String get purchaseStorePending =>
+      'Магазин ожидает завершения предыдущей покупки. Завершите её в Google Play или дождитесь подтверждения платежа.';
+
+  @override
+  String get purchaseAccountMismatch =>
+      'Незавершённая покупка связана с другим аккаунтом приложения. Войдите в аккаунт, с которого начинали покупку, и нажмите «Восстановить».';
+
+  @override
   String get payErrorGeneric =>
       'Покупка не завершилась. Если деньги списались, нажмите «Восстановить».';
 

@@ -1346,6 +1346,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Google Play couldn\'t process the payment. We\'ve switched you to SBP — tap the button again.';
 
   @override
+  String get purchaseStorePending =>
+      'The store is waiting for the previous purchase to finish. Complete it in Google Play or wait for payment confirmation.';
+
+  @override
+  String get purchaseAccountMismatch =>
+      'An unfinished purchase belongs to another app account. Sign in to the account that started the purchase and tap Restore.';
+
+  @override
   String get payErrorGeneric =>
       'Purchase incomplete. If you were charged, tap Restore.';
 

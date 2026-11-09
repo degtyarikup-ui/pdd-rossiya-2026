@@ -10,6 +10,8 @@ import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_inte
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/premium_plans_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pdd_app/data/services/iap_service.dart';
+import 'package:pdd_app/data/services/premium_service.dart';
 
 class PriceStore extends InAppPurchasePlatform {
   int queries = 0;
@@ -130,6 +132,48 @@ void main() {
       }
       expect(store.queries, 1);
       expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+  testWidgets('successful purchase price refresh does not show a load error', (
+    tester,
+  ) async {
+    try {
+      await tester.binding.setSurfaceSize(const Size(800, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: PremiumPlansSheet())),
+      );
+      await tester.pumpAndSettle();
+      final play = find.text(appL10n.paywallStoreGoogle);
+      await tester.ensureVisible(play);
+      await tester.tap(play);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('premium-price-load-error')),
+        findsNothing,
+      );
+      store.pending = Completer<ProductDetailsResponse>();
+      final refresh = IapService.instance.loadProducts(
+        phase: ProductLoadPhase.purchase,
+        purchaseTier: PremiumTier.weekly,
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('premium-price-load-error')),
+        findsNothing,
+      );
+      expect(find.text(appL10n.paywallLoadingPrice), findsWidgets);
+      store.pending!.complete(store.response());
+      await tester.pumpAndSettle();
+      await refresh;
+      expect(
+        find.byKey(const ValueKey('premium-price-load-error')),
+        findsNothing,
+      );
       await tester.pumpWidget(const SizedBox.shrink());
     } finally {
       debugDefaultTargetPlatformOverride = null;

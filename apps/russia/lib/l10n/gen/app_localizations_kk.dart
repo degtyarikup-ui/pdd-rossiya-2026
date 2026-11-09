@@ -1347,6 +1347,14 @@ class AppLocalizationsKk extends AppLocalizations {
       'Google Play төлемді өткізе алмады. Төлем СБП арқылы болатындай ауыстырдық — түймені қайта басыңыз.';
 
   @override
+  String get purchaseStorePending =>
+      'Дүкен алдыңғы сатып алудың аяқталуын күтуде. Оны Google Play арқылы аяқтаңыз немесе төлемнің расталуын күтіңіз.';
+
+  @override
+  String get purchaseAccountMismatch =>
+      'Аяқталмаған сатып алу қолданбадағы басқа аккаунтқа тиесілі. Сатып алуды бастаған аккаунтқа кіріп, «Қалпына келтіру» түймесін басыңыз.';
+
+  @override
   String get payErrorGeneric =>
       'Сатып алу аяқталмады. Ақша алынса, «Қалпына келтіру» түймесін басыңыз.';
 

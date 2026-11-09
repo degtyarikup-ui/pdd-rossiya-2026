@@ -13,6 +13,8 @@ import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import 'package:in_app_purchase_android/billing_client_wrappers.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
@@ -43,6 +45,12 @@ enum PurchaseFailure {
 
   /// A legacy Apple transaction needs ownership evidence from support.
   legacyOwnerRequired,
+
+  /// An unfinished store payment belongs to another app account.
+  accountMismatch,
+
+  /// The store is waiting for approval or completion of a pending payment.
+  paymentPending,
 }
 
 class _StoreProductQuery {
@@ -55,11 +63,16 @@ class _StoreProductQuery {
 
 class IapService extends ChangeNotifier {
   static final IapService instance = IapService._internal();
-  IapService._internal() : _onProductDiagnostic = null;
+  IapService._internal()
+    : _onProductDiagnostic = null,
+      _queryPlayPurchases = null;
   @visibleForTesting
   IapService.forTesting({
     void Function(String, Map<String, dynamic>)? onProductDiagnostic,
-  }) : _onProductDiagnostic = onProductDiagnostic;
+    Future<QueryPurchaseDetailsResponse> Function()? queryPlayPurchases,
+  }) : _onProductDiagnostic = onProductDiagnostic,
+       _queryPlayPurchases = queryPlayPurchases;
+  final Future<QueryPurchaseDetailsResponse> Function()? _queryPlayPurchases;
   final void Function(String, Map<String, dynamic>)? _onProductDiagnostic;
 
   // RuStore distributes the app with SBP payments only. Keep the guard at the
@@ -74,6 +87,7 @@ class IapService extends ChangeNotifier {
   Future<void> _purchaseQueue = Future.value();
   final Map<String, (PurchaseDetails, String?)> _pendingVerification = {};
   final Map<String, String> _pendingStoreOwners = {};
+  final Set<String> _pendingProducts = {};
   static const _ownersKey = 'iap_pending_owners_v1';
   bool _ownersLoaded = false;
 
@@ -222,10 +236,16 @@ class IapService extends ChangeNotifier {
     // may wait for another verification while the signed-in account changes.
     final ownedPurchases = purchases.map((purchase) {
       final owner =
+          _playPurchaseOwner(purchase) ??
           _pendingStoreOwners[purchase.productID] ??
           (purchase.productID == _currentPurchaseProductId
               ? _currentPurchaseOwner
               : _restoreOwner ?? AuthService.instance.currentUser?.id);
+      if (purchase.status == PurchaseStatus.pending) {
+        _pendingProducts.add(purchase.productID);
+      } else {
+        _pendingProducts.remove(purchase.productID);
+      }
       if (purchase.status == PurchaseStatus.pending && owner != null) {
         // Ask to Buy can complete after a temporary purchase-stream error.
         _pendingStoreOwners.putIfAbsent(purchase.productID, () => owner);
@@ -238,6 +258,83 @@ class IapService extends ChangeNotifier {
       return (purchase, owner);
     }).toList();
     _enqueuePurchaseWork(() => _onPurchaseUpdated(ownedPurchases));
+  }
+
+  // Play binds new purchases to the app account at checkout. A stale local
+  // product reservation must never override the account on a delivered receipt.
+  String? _playPurchaseOwner(PurchaseDetails purchase) {
+    if (purchase is! GooglePlayPurchaseDetails) return null;
+    final account = purchase.billingClientPurchase.obfuscatedAccountId;
+    return account == null || account.isEmpty ? null : 'googleplay:$account';
+  }
+
+  bool _ownerMatches(String? owner, String? userId) =>
+      owner == userId ||
+      (userId != null &&
+          owner == 'googleplay:${sha256.convert(utf8.encode(userId))}');
+
+  PurchaseResult _accountMismatch() {
+    _lastFailure = PurchaseFailure.accountMismatch;
+    _report('iap.buy', code: 'purchase_account_mismatch');
+    debugPrint('IapService: purchase blocked by another account owner');
+    return PurchaseResult.error;
+  }
+
+  Future<PurchaseResult?> _reconcilePlayOwner(String productId) async {
+    try {
+      final response =
+          await (_queryPlayPurchases?.call() ??
+                  _iap
+                      .getPlatformAddition<
+                        InAppPurchaseAndroidPlatformAddition
+                      >()
+                      .queryPastPurchases())
+              .timeout(productQueryTimeout);
+      if (response.error != null) {
+        _report('iap.owner', code: ErrorReporter.sdkCode(response.error!.code));
+        return PurchaseResult.storeUnavailable;
+      }
+      final purchases = response.pastPurchases
+          .where((purchase) => purchase.productID == productId)
+          .toList();
+      if (purchases.isNotEmpty) {
+        // Reuse delivery/verification, and return its result instead of opening
+        // a second payment after successfully restoring the first one.
+        final completer = Completer<PurchaseResult>();
+        _currentPurchaseCompleter = completer;
+        try {
+          _enqueuePurchases(purchases);
+          await _purchaseQueue;
+          if (completer.isCompleted) return await completer.future;
+          final owner =
+              _playPurchaseOwner(purchases.first) ??
+              _pendingStoreOwners[productId];
+          if (owner != null &&
+              !_ownerMatches(owner, AuthService.instance.currentUser?.id)) {
+            return _accountMismatch();
+          }
+          _lastFailure = PurchaseFailure.paymentPending;
+          return PurchaseResult.error;
+        } finally {
+          if (identical(_currentPurchaseCompleter, completer)) {
+            _currentPurchaseCompleter = null;
+          }
+        }
+      }
+      await _purchaseQueue;
+      if (_pendingVerification.values.any(
+            (entry) => entry.$1.productID == productId,
+          ) ||
+          _pendingProducts.contains(productId)) {
+        return _accountMismatch();
+      }
+      await _clearOwner(productId);
+      debugPrint('IapService: cleared stale Play reservation for $productId');
+      return null;
+    } catch (error) {
+      _report('iap.owner', error: error);
+      return PurchaseResult.storeUnavailable;
+    }
   }
 
   void _enqueuePurchaseWork(Future<void> Function() work) {
@@ -316,6 +413,7 @@ class IapService extends ChangeNotifier {
   static Duration productRetryUnit = const Duration(seconds: 2);
 
   Future<void>? _loadingProducts;
+  bool get loadingProducts => _loadingProducts != null;
   _StoreProductQuery? _storeProductQuery;
   bool _disposed = false;
   String? _purchaseProductId;
@@ -346,6 +444,7 @@ class IapService extends ChangeNotifier {
           _loadingProducts = null;
           _loadPhase = ProductLoadPhase.background;
           _purchaseProductId = null;
+          if (!_disposed) notifyListeners();
         });
   }
 
@@ -588,7 +687,10 @@ class IapService extends ChangeNotifier {
 
   bool _paymentBusy = false;
   Future<PurchaseResult> buyProduct(PremiumTier tier) async {
-    if (_paymentBusy) return PurchaseResult.error;
+    if (_paymentBusy) {
+      _report('iap.buy', code: 'purchase_in_progress');
+      return PurchaseResult.error;
+    }
     _paymentBusy = true;
     try {
       // A delivered receipt takes priority over a failed availability probe.
@@ -612,6 +714,14 @@ class IapService extends ChangeNotifier {
 
   bool _retryDeliveredProduct(PremiumTier tier) {
     if (!hasDeliveredProduct(tier)) return false;
+    final purchase = _pendingVerification.values.firstWhere(
+      (entry) => entry.$1.productID == _productIdForTier(tier),
+    );
+    if (purchase.$2 != null &&
+        !_ownerMatches(purchase.$2, AuthService.instance.currentUser?.id)) {
+      _accountMismatch();
+      return true;
+    }
     _lastFailure = PurchaseFailure.verificationPending;
     _lastErrorMessage = appL10n.purchaseVerificationPending;
     retryPendingPurchases();
@@ -626,7 +736,10 @@ class IapService extends ChangeNotifier {
     final owner = AuthService.instance.currentUser?.id;
     _lastErrorMessage = '';
     _lastFailure = PurchaseFailure.other;
-    if (!AuthService.instance.hasServerSession) return PurchaseResult.error;
+    if (!AuthService.instance.hasServerSession) {
+      _report('iap.buy', code: 'session_missing');
+      return PurchaseResult.error;
+    }
     if (!await _verificationAvailable()) {
       _report('iap.buy', code: _verificationError);
       return PurchaseResult.storeUnavailable;
@@ -652,18 +765,37 @@ class IapService extends ChangeNotifier {
 
     // StoreKit/Play may deliver an existing purchase while loading prices.
     if (_retryDeliveredProduct(tier)) return PurchaseResult.error;
-    final pendingOwner = _pendingStoreOwners[product.id];
-    if (pendingOwner != null && pendingOwner != owner) {
+    if (_currentPurchaseCompleter != null) {
+      _report('iap.buy', code: 'purchase_in_progress');
       return PurchaseResult.error;
     }
+    var pendingOwner = _pendingStoreOwners[product.id];
+    if (_pendingProducts.contains(product.id)) {
+      if (pendingOwner != null && !_ownerMatches(pendingOwner, owner)) {
+        return _accountMismatch();
+      }
+      _lastFailure = PurchaseFailure.paymentPending;
+      return PurchaseResult.error;
+    }
+    if (pendingOwner != null && !_ownerMatches(pendingOwner, owner)) {
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        final recovered = await _reconcilePlayOwner(product.id);
+        if (recovered != null) return recovered;
+        if (_retryDeliveredProduct(tier)) return PurchaseResult.error;
+        pendingOwner = _pendingStoreOwners[product.id];
+      }
+      if (pendingOwner != null && !_ownerMatches(pendingOwner, owner)) {
+        return _accountMismatch();
+      }
+    }
 
-    if (_currentPurchaseCompleter != null) return PurchaseResult.error;
     final completer = Completer<PurchaseResult>();
     _currentPurchaseCompleter = completer;
 
     if (AuthService.instance.currentUser?.id != owner ||
         !AuthService.instance.hasServerSession) {
       _currentPurchaseCompleter = null;
+      _report('iap.buy', code: 'account_changed');
       return PurchaseResult.error;
     }
     String? appleToken;
@@ -709,6 +841,7 @@ class IapService extends ChangeNotifier {
         // would prevent another signed-in account from opening this product.
         await _clearOwner(product.id);
         _report('iap.buy', code: 'purchase_not_started');
+        _lastFailure = PurchaseFailure.storeRefused;
         _safeCompletePurchase(PurchaseResult.error);
         return PurchaseResult.error;
       }
@@ -789,6 +922,30 @@ class IapService extends ChangeNotifier {
     return PremiumTier.weekly;
   }
 
+  @visibleForTesting
+  static String paymentErrorCode(IAPError? error) {
+    if (error?.source == 'google_play') {
+      for (final response in BillingResponse.values) {
+        if (response.toString() == error?.message) {
+          return 'play_${response.name}';
+        }
+      }
+    }
+    return ErrorReporter.sdkCode(error?.code);
+  }
+
+  Future<void> _clearFailedPurchaseOwner(PurchaseDetails purchase) async {
+    final product = purchase.productID.isNotEmpty
+        ? purchase.productID
+        : _currentPurchaseProductId;
+    if (product != null &&
+        !_pendingVerification.values.any(
+          (entry) => entry.$1.productID == product,
+        )) {
+      await _clearOwner(product);
+    }
+  }
+
   Future<void> _onPurchaseUpdated(
     List<(PurchaseDetails, String?)> purchaseDetailsList,
   ) async {
@@ -806,7 +963,7 @@ class IapService extends ChangeNotifier {
             'purchase_canceled',
             'user_canceled',
           ].contains(purchaseDetails.error?.code)) {
-            await _clearOwner(purchaseDetails.productID);
+            await _clearFailedPurchaseOwner(purchaseDetails);
             _safeCompletePurchase(PurchaseResult.canceled);
             _safeCompleteRestore(false);
             if (purchaseDetails.pendingCompletePurchase) {
@@ -814,10 +971,10 @@ class IapService extends ChangeNotifier {
             }
             continue;
           }
-          _report(
-            'iap.payment',
-            code: ErrorReporter.sdkCode(purchaseDetails.error?.code),
-          );
+          _report('iap.payment', code: paymentErrorCode(purchaseDetails.error));
+          if (purchaseDetails.productID.isNotEmpty) {
+            await _clearFailedPurchaseOwner(purchaseDetails);
+          }
           debugPrint('IapService: purchase error: ${purchaseDetails.error}');
           _lastErrorMessage = purchaseDetails.error?.message ?? 'Ошибка оплаты';
           _lastFailure = PurchaseFailure.storeRefused;
@@ -832,7 +989,9 @@ class IapService extends ChangeNotifier {
             key,
             () => (purchaseDetails, owner),
           );
-          if (pending.$2 != null && pending.$2 != auth.currentUser?.id) {
+          if (pending.$2 != null &&
+              !_ownerMatches(pending.$2, auth.currentUser?.id)) {
+            _accountMismatch();
             _safeCompletePurchase(PurchaseResult.error);
             _safeCompleteRestore(false);
             continue;
@@ -895,7 +1054,7 @@ class IapService extends ChangeNotifier {
           await _clearOwner(purchaseDetails.productID);
           continue;
         } else if (purchaseDetails.status == PurchaseStatus.canceled) {
-          await _clearOwner(purchaseDetails.productID);
+          await _clearFailedPurchaseOwner(purchaseDetails);
           _safeCompletePurchase(PurchaseResult.canceled);
           _safeCompleteRestore(false);
         }

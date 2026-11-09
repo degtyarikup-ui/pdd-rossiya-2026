@@ -2368,6 +2368,18 @@ abstract class AppLocalizations {
   /// **'Google Play не смог провести оплату. Мы переключили на оплату через СБП — нажмите кнопку ещё раз.'**
   String get payErrorSwitchedToSbp;
 
+  /// No description provided for @purchaseStorePending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Магазин ожидает завершения предыдущей покупки. Завершите её в Google Play или дождитесь подтверждения платежа.'**
+  String get purchaseStorePending;
+
+  /// No description provided for @purchaseAccountMismatch.
+  ///
+  /// In ru, this message translates to:
+  /// **'Незавершённая покупка связана с другим аккаунтом приложения. Войдите в аккаунт, с которого начинали покупку, и нажмите «Восстановить».'**
+  String get purchaseAccountMismatch;
+
   /// No description provided for @payErrorGeneric.
   ///
   /// In ru, this message translates to:
