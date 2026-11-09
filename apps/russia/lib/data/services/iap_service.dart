@@ -248,7 +248,7 @@ class IapService extends ChangeNotifier {
       }
       if (purchase.status == PurchaseStatus.pending && owner != null) {
         // Ask to Buy can complete after a temporary purchase-stream error.
-        _pendingStoreOwners.putIfAbsent(purchase.productID, () => owner);
+        _pendingStoreOwners[purchase.productID] = owner;
         unawaited(
           _saveOwners().catchError(
             (Object error) => _report('iap.owner', error: error),

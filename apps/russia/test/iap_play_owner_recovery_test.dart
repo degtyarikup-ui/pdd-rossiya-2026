@@ -217,6 +217,9 @@ void main() {
                 }
                 if (scenario == 'own_pending') {
                   expect(iap.lastFailure, PurchaseFailure.paymentPending);
+                  expect(await iap.buyProduct(tier), PurchaseResult.error);
+                  expect(iap.lastFailure, PurchaseFailure.paymentPending);
+                  expect(store.launches, launches);
                 }
                 if (scenario == 'query_error') {
                   expect(
