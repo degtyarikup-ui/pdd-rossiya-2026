@@ -374,6 +374,65 @@ func _pause_cycle(world: Node, label: String) -> void:
 	check(world.sound.process_mode == Node.PROCESS_MODE_INHERIT, label + ": audio processing resumes")
 
 
+func _check_locked_catalogue(options: Dictionary) -> void:
+	var collection := options.duplicate(true)
+	var palette: Array = collection.cars[0].paints
+	palette[4].locked = true
+	collection.garage_palette = palette
+	for car: Dictionary in collection.cars:
+		car.erase("paints")
+	collection.cars[0].selected_paint = "blue"
+	collection.cars[1].selected_paint = "yellow"
+	collection.cars[1].locked = true
+	collection.cars[1].premium_only = true
+	collection.selected = {"id": "hatch", "paint": "blue"}
+	collection.garage_premium = false
+	collection.voice_premium = false
+	Host.io = ProjectSettings.globalize_path("res://../scratch/ride-locked-catalogue")
+	DirAccess.make_dir_recursive_absolute(Host.io)
+	Host.io_args = ["--ride-options=" + JSON.stringify(collection), "--mute", "--lang=ru"]
+	var world: Node = load("res://main.tscn").instantiate()
+	root.add_child(world)
+	world.set_process(false)
+	await _settle_layout()
+	world._on_pause()
+	await _settle_layout()
+	var menu: RidePause = world.pause_menu
+	check(menu.current().paint == "blue", "The pause starts with the garage's selected paint")
+	check(menu._palette.get_child(4).disabled, "A locked colour is visible and disabled")
+	menu._select_paint(4)
+	check(world.chosen.paint == "blue", "A locked colour cannot be applied")
+	menu._select_paint(2)
+	var side := menu._carousel.size.x * 0.93
+	_click(menu, side, true)
+	_click(menu, side, false)
+	check(menu._locked(menu.car_index) and not menu._palette.visible, "A locked neighbour can be previewed")
+	check(world.chosen.id == "hatch" and world.chosen.paint == "green", "Previewing a lock keeps the active car and paint")
+	var request: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(Host.io.path_join("report-request.json")))
+	check(request.payload == {"request_kind": "garage_premium", "model": "cyber"}, "Tapping a locked car requests its paywall")
+	world._premium_bridge._on_data_result(request.request_id, "{}")
+	check(world.pause_menu == menu and world.paused, "Dismissal leaves the same paused ride and lock")
+	await _settle_carousel(menu)
+	var center := menu._carousel.size.x * 0.5
+	_click(menu, center, true)
+	_click(menu, center, false)
+	request = JSON.parse_string(FileAccess.get_file_as_string(Host.io.path_join("report-request.json")))
+	collection.cars[1].locked = false
+	palette[4].locked = false
+	world._premium_bridge._on_data_result(request.request_id, JSON.stringify({
+		"garage_premium": true, "cars": collection.cars, "garage_palette": palette, "voice_premium": true,
+	}))
+	await _settle_layout()
+	menu = world.pause_menu
+	check(world.paused and world.ride_options.unlimited, "Verified Premium updates the same paused ride")
+	check(menu.current().paint == "green", "Refreshing the catalogue preserves this ride's paint edits")
+	menu._change_car(1)
+	check(world.chosen.id == "cyber" and world.chosen.paint == "yellow", "The new car keeps its saved garage paint")
+	check(not menu._palette.get_child(4).disabled, "Premium opens the formerly locked colour immediately")
+	world.queue_free()
+	await _settle_layout()
+
+
 func _run() -> void:
 	var args := Array(OS.get_cmdline_user_args())
 	for arg in args:
@@ -390,6 +449,7 @@ func _run() -> void:
 	var options := _options()
 	await _check_pause_collection(options)
 	await _check_carousel(options)
+	await _check_locked_catalogue(options)
 	# Feed the normal embedded-host argument contract; all test output remains in scratch/.
 	Host.io = ProjectSettings.globalize_path("res://../scratch/ride-ui-regression")
 	DirAccess.make_dir_recursive_absolute(Host.io)

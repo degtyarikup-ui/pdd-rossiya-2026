@@ -686,9 +686,12 @@ class GodotGame {
             try {
               final report = jsonDecode(call.arguments as String);
               if (report is Map<String, dynamic>) {
-                if (report['request_kind'] == 'voice_premium') {
+                if (report['request_kind'] == 'voice_premium' ||
+                    report['request_kind'] == 'garage_premium') {
                   overlay.setVisible(false);
-                  return jsonEncode(await _requestVoicePremium(context, ref));
+                  return jsonEncode(
+                    await _requestPausePremium(context, ref, report),
+                  );
                 }
                 return await QuestionReportService.sendGameReport(report);
               }
@@ -717,7 +720,7 @@ class GodotGame {
         result = await Navigator.of(context).push<String>(
           GodotWebScreen.route(
             args: args,
-            onVoicePremium: () => _requestVoicePremium(context, ref),
+            onPremium: (request) => _requestPausePremium(context, ref, request),
           ),
         );
       } else {
@@ -756,44 +759,104 @@ class GodotGame {
 
   /// The native engine remains paused while Flutter presents its normal paywall.
   /// Recheck the authoritative entitlement after closing, including external SBP.
-  static Future<Map<String, dynamic>> _requestVoicePremium(
+  static Future<Map<String, dynamic>> _requestPausePremium(
     BuildContext context,
     WidgetRef ref,
+    Map<String, dynamic> request,
   ) async {
-    if (!context.mounted) return {'voice_premium': false};
+    if (!context.mounted) return {};
+    final garageRequest = request['request_kind'] == 'garage_premium';
+    final model = request['model'];
+    if (garageRequest &&
+        (model is! String || !GameGarageService.vehicleIds.contains(model))) {
+      return {};
+    }
+    final account = AuthService.instance.currentUser?.id;
+    bool sameAccount() =>
+        context.mounted && AuthService.instance.currentUser?.id == account;
     if (!ref.read(isPremiumProvider)) {
-      final result = await PremiumPaywallSheet.show(
-        context,
-        lockedFeature: appL10n.voicePremiumRequired,
-      );
+      final result = garageRequest
+          ? await showGaragePaywall(context, model as String)
+          : await PremiumPaywallSheet.show(
+              context,
+              lockedFeature: appL10n.voicePremiumRequired,
+            );
       if (result == false && !kIsWeb) {
         await PendingPaymentRecovery.waitForForeground();
-        if (!context.mounted) return {'voice_premium': false};
+        if (!context.mounted ||
+            AuthService.instance.currentUser?.id != account) {
+          return {};
+        }
         await PendingPaymentRecovery.instance.recover(context);
       }
     }
-    if (!context.mounted) return {'voice_premium': false};
+    if (!sameAccount()) return {};
     final premium = ref.read(isPremiumProvider);
     final settings = ref.read(appSettingsProvider);
-    if (premium) await (await _prefs())?.setBool(_cityVoiceKey, true);
-    if (!context.mounted) return {'voice_premium': false};
+    if (premium && !garageRequest) {
+      await (await _prefs())?.setBool(_cityVoiceKey, true);
+    }
+    final garage = GameGarageService.instance;
+    final selection = premium
+        ? await garage.loadSelection(premium: true)
+        : null;
+    final seen = premium ? await _seenModels() : null;
+    if (!sameAccount()) return {};
+    final active = ref.read(isPremiumProvider);
     return {
-      'voice_premium': premium,
-      'voice': premium,
-      'voice_available': [
-        'ru',
-        'en',
-        'kk',
-      ].contains(settings.effectiveLanguageCode),
-      'voice_speed': settings.voiceSpeed,
+      'voice_premium': active,
+      if (!garageRequest) ...{
+        'voice': active,
+        'voice_available': [
+          'ru',
+          'en',
+          'kk',
+        ].contains(settings.effectiveLanguageCode),
+        'voice_speed': settings.voiceSpeed,
+      },
       'voice_expires_at':
           (ref.read(premiumServiceProvider).expiresAt?.millisecondsSinceEpoch ??
               0) /
           1000.0,
+      if (selection != null && active) ...{
+        'garage_premium': true,
+        ..._garageCatalog(selection, GameGarageService.allPaints, seen),
+      },
     };
   }
 
-  /// Owned cars/paints and settings for immediate start and the pause menu.
+  static Map<String, dynamic> _garageCatalog(
+    GameGarageSelection selection,
+    List<String> unlockedPaints,
+    Set<String>? seen,
+  ) => {
+    'garage_palette': [
+      for (final paint in GameGarageService.allPaints)
+        {
+          'paint': paint,
+          'name': gamePaintName(paint),
+          'hex': _hex(gamePaintColors[paint]!),
+          'locked': !unlockedPaints.contains(paint),
+        },
+    ],
+    'cars': [
+      for (final id in GameGarageService.catalogModels)
+        {
+          'id': id,
+          'name': gameCarName(id),
+          'locked': !selection.modelPaints.containsKey(id),
+          'premium_only': GameGarageService.premiumModels.contains(id),
+          'selected_paint':
+              selection.savedModelPaints[id] ?? GameGarageService.starter.paint,
+          'new':
+              selection.modelPaints.containsKey(id) &&
+              seen != null &&
+              !seen.contains(id),
+        },
+    ],
+  };
+
+  /// The complete catalogue and current access for immediate start and pause.
   static Future<Map<String, dynamic>> _rideOptions(
     WidgetRef ref, {
     required String lang,
@@ -813,26 +876,6 @@ class GodotGame {
       premium: premium,
       repair: true,
     );
-    final ids = garage.availableModels(premium: premium);
-    final paints = garage.availablePaints(premium: premium);
-    final cars = [
-      for (final id in ids)
-        {
-          'id': id,
-          'name': gameCarName(id),
-          'selected_paint': selection.modelPaints[id],
-          // «НОВАЯ» until the model has been driven once (seen == null: no badge).
-          'new': seen != null && !seen.contains(id),
-          'paints': [
-            for (final paint in paints)
-              {
-                'paint': paint,
-                'name': gamePaintName(paint),
-                'hex': _hex(gamePaintColors[paint]!),
-              },
-          ],
-        },
-    ];
     final pending = await _pendingRun();
     final nextReward = garage.nextReward;
     final target =
@@ -840,7 +883,11 @@ class GodotGame {
     final voiceAvailable = ['ru', 'en', 'kk'].contains(lang);
     final voice = prefs?.getBool(_cityVoiceKey) ?? settings.voiceEnabled;
     return {
-      'cars': cars,
+      ..._garageCatalog(
+        selection,
+        garage.availablePaints(premium: premium),
+        seen,
+      ),
       'selected': selection.car.toJson(),
       'mileage_visit': GameGarageService.newVisitId(),
       'garage_correct': garage.correctTotal,

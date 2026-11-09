@@ -133,6 +133,25 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
             paints: garage.availablePaints(premium: premium),
             correctTotal: garage.correctTotal,
             mileageMm: mileage,
+            onLockedCar: (id) async {
+              if (!mounted || ref.read(currentUserProvider)?.id != account) {
+                return null;
+              }
+              if (!ref.read(isPremiumProvider)) {
+                await showGaragePaywall(context, id);
+              }
+              if (!mounted ||
+                  ref.read(currentUserProvider)?.id != account ||
+                  !ref.read(isPremiumProvider)) {
+                return null;
+              }
+              final refreshed = await garage.loadSelection(premium: true);
+              return mounted &&
+                      ref.read(currentUserProvider)?.id == account &&
+                      ref.read(isPremiumProvider)
+                  ? refreshed
+                  : null;
+            },
             onSelect: (car) async {
               if (!mounted || ref.read(currentUserProvider)?.id != account) {
                 return false;

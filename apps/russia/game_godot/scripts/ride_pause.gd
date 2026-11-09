@@ -1,4 +1,4 @@
-## The ride stays visible and frozen behind this menu. Only owned cars/paints arrive from Flutter.
+## The ride stays visible and frozen behind this menu. Flutter supplies the catalogue and access.
 ## Cars sit on a carousel: drag/swipe or tap a neighbour, the choice rolls into the centre and snaps.
 class_name RidePause
 extends CanvasLayer
@@ -10,6 +10,7 @@ signal sound_changed(enabled: bool)
 signal voice_changed(enabled: bool)
 signal voice_speed_changed(speed: float)
 signal voice_premium_requested
+signal garage_premium_requested(model: String)
 signal debug_menu_revealed
 signal debug_reward_requested(kind: String)
 signal debug_perf_changed(enabled: bool)
@@ -89,7 +90,7 @@ func _init(options: Dictionary, selection := {}) -> void:
 	voice_enabled = bool(options.get("voice", false)) and voice_available and voice_premium
 	debug_perf_visible = bool(options.get("debug_perf_visible", false))
 	for i in data.cars.size():
-		if data.cars[i].id == selection.get("id", ""):
+		if data.cars[i].id == selection.get("id", "") and not _locked(i):
 			car_index = i
 			if selection.has("paint"):
 				_model_paints[data.cars[i].id] = selection.paint
@@ -102,9 +103,13 @@ func _saved_paint_index(index: int) -> int:
 	var vehicle: Dictionary = data.cars[index]
 	var saved: String = _model_paints.get(vehicle.id, vehicle.get("selected_paint", "red"))
 	for i in vehicle.paints.size():
-		if vehicle.paints[i].paint == saved:
+		if vehicle.paints[i].paint == saved and not vehicle.paints[i].get("locked", false):
 			return i
 	return 0
+
+
+func _locked(index: int) -> bool:
+	return bool(data.cars[index].get("locked", false))
 
 
 func current() -> Dictionary:
@@ -345,6 +350,14 @@ func _stage(i: int) -> Dictionary:
 	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_carousel.add_child(rect)
+	if _locked(i):
+		rect.self_modulate = Color.BLACK
+		var lock := Ui.icon(0xf889, 24, Ui.c("gold") if vehicle.get("premium_only", false) else Color.WHITE)
+		lock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lock.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rect.add_child(lock)
+		lock.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_stages[i] = {"viewport": viewport, "car": car, "rect": rect}
 	return _stages[i]
 
@@ -363,6 +376,7 @@ func _place_items() -> void:
 		if far > 1.65:
 			if _stages.has(i):
 				_stages[i].rect.visible = false
+				_stages[i].viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 			continue
 		var stage := _stage(i)
 		var rect: TextureRect = stage.rect
@@ -417,6 +431,9 @@ func _on_carousel_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_right"):
 		_change_car(1)
 		_carousel.accept_event()
+	elif event.is_action_pressed("ui_accept") and _locked(car_index):
+		garage_premium_requested.emit(data.cars[car_index].id)
+		_carousel.accept_event()
 
 
 func _begin_drag(x: float) -> void:
@@ -456,9 +473,11 @@ func _end_drag(x: float) -> void:
 		var side := x - _carousel.size.x * 0.5
 		var centre_half := minf(_carousel.size.x * 0.72, _carousel.size.y * 2.0) * 0.5
 		if absf(side) > centre_half * 0.75:
-			_change_car(1 if side > 0.0 else -1)
+			_change_car(1 if side > 0.0 else -1, true)
 		else:
 			_snap_to(roundf(position_items))
+			if _locked(car_index):
+				garage_premium_requested.emit(data.cars[car_index].id)
 		return
 	if Time.get_ticks_msec() - _last_msec > 120:
 		_velocity = 0.0
@@ -481,7 +500,7 @@ func _snap_to(target: float) -> void:
 	_keep_live(SNAP_SECONDS)
 
 
-func _change_car(step: int) -> void:
+func _change_car(step: int, activate_locked := false) -> void:
 	if data.cars.size() < 2:
 		return
 	# Quick repeated taps/keys build on the car already rolling in.
@@ -491,6 +510,8 @@ func _change_car(step: int) -> void:
 		target = float(posmod(car_index + step, data.cars.size()))
 	_select_car(posmod(int(target), data.cars.size()))
 	_snap_to(target)
+	if activate_locked and _locked(car_index):
+		garage_premium_requested.emit(data.cars[car_index].id)
 
 
 func _select_car(index: int) -> void:
@@ -503,7 +524,8 @@ func _select_car(index: int) -> void:
 	paint_index = _saved_paint_index(index)
 	GameSound.buzz(5)
 	_refresh()
-	vehicle_changed.emit(current())
+	if not _locked(car_index):
+		vehicle_changed.emit(current())
 
 
 # --- Paints ---------------------------------------------------------------------------------
@@ -527,8 +549,9 @@ func _build_palette() -> void:
 		var colour := Color(entry.hex)
 		var cell := Button.new()
 		cell.custom_minimum_size = Vector2(48, 48)
-		cell.tooltip_text = entry.name
-		cell.accessibility_name = entry.name
+		cell.disabled = bool(entry.get("locked", false))
+		cell.tooltip_text = entry.name + " · " + Ui.t("gamesGarageLocked") if cell.disabled else entry.name
+		cell.accessibility_name = cell.tooltip_text
 		cell.set_meta("paint", entry.paint)
 		var ring := Ui.box(Ui.c("card"), RADIUS + 2)
 		ring.set_border_width_all(2)
@@ -565,6 +588,13 @@ func _build_palette() -> void:
 		check.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		fill.add_child(check)
 		check.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		if cell.disabled:
+			var lock := Ui.icon(0xf889, 16, Color(Ui.LIGHT.text) if colour.get_luminance() > 0.5 else Color.WHITE)
+			lock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			lock.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			fill.add_child(lock)
+			lock.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		check.resized.connect(func(): check.pivot_offset = check.size * 0.5)
 		cell.resized.connect(func(): cell.pivot_offset = cell.size * 0.5)
 		cell.button_down.connect(func(): _press(cell, true, 0.92))
@@ -617,7 +647,7 @@ func _inset(value: float, fill: Control) -> void:
 
 
 func _select_paint(index: int) -> void:
-	if index < 0 or index >= data.cars[car_index].paints.size():
+	if index < 0 or index >= data.cars[car_index].paints.size() or _locked(car_index) or data.cars[car_index].paints[index].get("locked", false):
 		return
 	var changed := index != paint_index
 	paint_index = index
@@ -645,7 +675,7 @@ func _tint_selected(target: Color, animate: bool) -> void:
 func _apply_paint(colour: Color) -> void:
 	_shown_hex = colour
 	var stage: Dictionary = _stages.get(car_index, {})
-	if stage.is_empty():
+	if stage.is_empty() or _locked(car_index):
 		return
 	Models.repaint_player(stage.car, colour, current().paint == "leopard")
 	(stage.viewport as SubViewport).render_target_update_mode = SubViewport.UPDATE_ONCE
@@ -1026,6 +1056,7 @@ func _button(text: String, background: Color, ink: Color, action: Callable) -> B
 
 
 func _refresh() -> void:
+	_palette.visible = not _locked(car_index)
 	if _palette.get_meta("car", -1) != car_index and _paint_names(car_index) != _palette_names():
 		_build_palette()
 	else:
@@ -1038,7 +1069,7 @@ func _refresh() -> void:
 		if not first:
 			_model_label.modulate.a = 0.0
 			create_tween().tween_property(_model_label, "modulate:a", 1.0, 0.2)
-	_carousel.accessibility_name = car_name
+	_carousel.accessibility_name = car_name + " · " + Ui.t("gamesGarageLocked") if _locked(car_index) else car_name
 	_tint_selected(Color(current().hex), false)
 	_place_items()
 

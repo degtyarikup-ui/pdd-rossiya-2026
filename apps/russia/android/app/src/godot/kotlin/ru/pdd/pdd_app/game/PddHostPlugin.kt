@@ -19,7 +19,7 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
     @UsedByGodot
     fun reportQuestion(requestId: String, json: String) {
         android.util.Log.i("PddQuestionReport", "Game submitted report")
-        val expectsData = runCatching { org.json.JSONObject(json).optString("request_kind") in setOf("leaderboard", "voice_premium") }.getOrDefault(false)
+        val expectsData = runCatching { org.json.JSONObject(json).optString("request_kind") in setOf("leaderboard", "voice_premium", "garage_premium") }.getOrDefault(false)
         host.runOnUiThread {
             @Suppress("DEPRECATION")
             val receiver = host.intent.getParcelableExtra<android.os.ResultReceiver>("pdd_report_receiver")

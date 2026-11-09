@@ -10,20 +10,19 @@ import 'package:pdd_app/presentation/screens/game/platform/godot_web_frame.dart'
 /// the route with the run's summary (JSON), as GodotGame's channel does on
 /// Android; the game's own screens (pause, questions, result) run inside it.
 class GodotWebScreen extends StatefulWidget {
-  const GodotWebScreen({super.key, required this.args, this.onVoicePremium});
+  const GodotWebScreen({super.key, required this.args, this.onPremium});
 
   final List<String> args;
-  final Future<Map<String, dynamic>> Function()? onVoicePremium;
+  final Future<Map<String, dynamic>> Function(Map<String, dynamic>)? onPremium;
 
   /// Keep the fullscreen road and the menu stationary throughout the handover.
   static PageRouteBuilder<String> route({
     required List<String> args,
-    Future<Map<String, dynamic>> Function()? onVoicePremium,
+    Future<Map<String, dynamic>> Function(Map<String, dynamic>)? onPremium,
   }) => PageRouteBuilder<String>(
     transitionDuration: const Duration(milliseconds: 180),
     reverseTransitionDuration: const Duration(milliseconds: 120),
-    pageBuilder: (_, _, _) =>
-        GodotWebScreen(args: args, onVoicePremium: onVoicePremium),
+    pageBuilder: (_, _, _) => GodotWebScreen(args: args, onPremium: onPremium),
     transitionsBuilder: (_, animation, _, child) => FadeTransition(
       opacity: CurvedAnimation(
         parent: animation,
@@ -41,7 +40,7 @@ class GodotWebScreen extends StatefulWidget {
 class _GodotWebScreenState extends State<GodotWebScreen> {
   late final GodotWebFrame _frame = GodotWebFrame(
     args: widget.args,
-    onVoicePremium: widget.onVoicePremium,
+    onPremium: widget.onPremium,
     onExit: _exit,
     onSummary: (json) => _summary = json,
     onEvent: (event) {

@@ -53,7 +53,7 @@ class GodotGameBridge(private val activity: Activity, messenger: BinaryMessenger
                                 val json = data.getString("json") ?: return
                                 if (pending !== result) { reply.send(0, null); return }
                                 val showPremium = runCatching {
-                                    org.json.JSONObject(json).optString("request_kind") == "voice_premium"
+                                    org.json.JSONObject(json).optString("request_kind") in setOf("voice_premium", "garage_premium")
                                 }.getOrDefault(false)
                                 if (showPremium) {
                                     activity.startActivity(Intent(activity, activity.javaClass)

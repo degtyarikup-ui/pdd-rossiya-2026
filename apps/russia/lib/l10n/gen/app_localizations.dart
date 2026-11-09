@@ -1444,6 +1444,12 @@ abstract class AppLocalizations {
   /// **'Пробег: {distance}'**
   String gamesGarageOdometer(String distance);
 
+  /// No description provided for @gamesGaragePaywallCar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Откройте «{name}» с Премиумом'**
+  String gamesGaragePaywallCar(String name);
+
   /// No description provided for @gamesGarageLocked.
   ///
   /// In ru, this message translates to:

@@ -805,6 +805,11 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String gamesGaragePaywallCar(String name) {
+    return '«$name» көлігін Премиуммен ашыңыз';
+  }
+
+  @override
   String get gamesGarageLocked => 'Құлыптаулы';
 
   @override

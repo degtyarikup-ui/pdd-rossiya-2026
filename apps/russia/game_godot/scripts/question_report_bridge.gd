@@ -13,9 +13,11 @@ var _plugin: Object
 
 func submit(payload: Dictionary) -> void:
 	if request_id != "": return
-	expects_data = payload.get("request_kind", "") in ["leaderboard", "voice_premium"]
+	var kind: String = payload.get("request_kind", "")
+	var paywall := kind in ["voice_premium", "garage_premium"]
+	expects_data = paywall or kind == "leaderboard"
 	request_id = "%s-%s" % [Time.get_ticks_usec(), get_instance_id()]
-	_deadline = 0 if payload.get("request_kind", "") == "voice_premium" else Time.get_ticks_msec() + 30000
+	_deadline = 0 if paywall else Time.get_ticks_msec() + 30000
 	if Host.embedded():
 		_plugin = Engine.get_singleton("PddHost")
 		if expects_data: _plugin.connect("game_data_result", _on_data_result)

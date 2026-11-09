@@ -425,7 +425,8 @@ static void HideGame(dispatch_block_t completion) {
   NSData *body = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
   if (!body) return;
   const NSUInteger generation = gRunGeneration;
-  const BOOL showPremium = [payload[@"request_kind"] isEqual:@"voice_premium"];
+  const BOOL showPremium = [payload[@"request_kind"] isEqual:@"voice_premium"] ||
+      [payload[@"request_kind"] isEqual:@"garage_premium"];
   UIWindow *pausedWindow = gGameWindow;
   if (showPremium && pausedWindow && !gGameClosing) {
     [EngineService() sceneWillResignActive:pausedWindow.windowScene];

@@ -26,6 +26,12 @@ class GameCar {
   }
 }
 
+typedef GameGarageSelection = ({
+  GameCar car,
+  Map<String, String> modelPaints,
+  Map<String, String> savedModelPaints,
+});
+
 /// A fixed milestone awards either one model or one colour for every model.
 class GameGarageReward {
   final int threshold;
@@ -95,6 +101,12 @@ class GameGarageService {
     GameGarageReward.paint(260, 'green'),
     GameGarageReward.paint(330, 'yellow'),
   ];
+  static final catalogModels = List<String>.unmodifiable([
+    starter.id,
+    for (final reward in rewards)
+      if (reward.model case final String model) model,
+    ...premiumModels,
+  ]);
   static const _vehicleKey = 'game_vehicle';
   static const _paintKey = 'game_vehicle_paint';
   static const _modelPaintsKey = 'game_vehicle_paints_v1';
@@ -133,7 +145,7 @@ class GameGarageService {
       (await loadSelection(premium: premium)).car;
 
   /// The shared palette controls availability. Each car keeps its own choice.
-  Future<({GameCar car, Map<String, String> modelPaints})> loadSelection({
+  Future<GameGarageSelection> loadSelection({
     required bool premium,
     bool repair = false,
   }) => _serial(() async {
@@ -151,7 +163,7 @@ class GameGarageService {
     if (repair && await _writeModelPaints(prefs, saved)) {
       await _writeSelection(prefs, car);
     }
-    return (car: car, modelPaints: modelPaints);
+    return (car: car, modelPaints: modelPaints, savedModelPaints: saved);
   });
 
   /// Flutter sets one paint. Godot sends all explicit edits from the visit,

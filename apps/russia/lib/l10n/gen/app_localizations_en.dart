@@ -803,6 +803,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String gamesGaragePaywallCar(String name) {
+    return 'Unlock $name with Premium';
+  }
+
+  @override
   String get gamesGarageLocked => 'Locked';
 
   @override

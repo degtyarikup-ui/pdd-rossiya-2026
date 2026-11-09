@@ -8,7 +8,7 @@ class GodotWebFrame {
     required void Function(String summaryJson) onExit,
     void Function(String summaryJson)? onSummary,
     void Function(Map<String, dynamic> event)? onEvent,
-    Future<Map<String, dynamic>> Function()? onVoicePremium,
+    Future<Map<String, dynamic>> Function(Map<String, dynamic>)? onPremium,
   });
 
   static Future<bool> available() async => false;

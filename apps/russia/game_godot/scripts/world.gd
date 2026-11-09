@@ -99,7 +99,7 @@ var sound: GameSound
 var voice: QuestionVoice
 var voice_timer_extended := false
 var voice_speed_time_credit := 0.0
-var _voice_bridge: Node
+var _premium_bridge: Node
 var dbg_t := 0.0
 var dbg_every := 0.0
 var perf_frames := 0
@@ -3355,6 +3355,8 @@ func _show_pause_menu() -> void:
 	pause_menu.voice_changed.connect(func(on): voice.set_enabled(on))
 	pause_menu.voice_speed_changed.connect(_on_voice_speed_changed)
 	pause_menu.voice_premium_requested.connect(_on_voice_premium_requested)
+	pause_menu.garage_premium_requested.connect(func(model):
+		_request_pause_premium({"request_kind": "garage_premium", "model": model}))
 	pause_menu.debug_menu_revealed.connect(func(): debug_menu_unlocked = true)
 	pause_menu.debug_reward_requested.connect(_preview_reward)
 	pause_menu.debug_perf_changed.connect(_set_debug_perf)
@@ -3373,23 +3375,67 @@ func _on_voice_speed_changed(value: float) -> void:
 
 
 func _on_voice_premium_requested() -> void:
-	if _exiting or not paused or is_instance_valid(_voice_bridge): return
-	_voice_bridge = preload("res://scripts/question_report_bridge.gd").new()
-	add_child(_voice_bridge)
+	_request_pause_premium({"request_kind": "voice_premium"})
+
+
+func _request_pause_premium(request: Dictionary) -> void:
+	if _exiting or not paused or is_instance_valid(_premium_bridge): return
+	_premium_bridge = preload("res://scripts/question_report_bridge.gd").new()
+	add_child(_premium_bridge)
 	if is_instance_valid(pause_menu): pause_menu._voice_button.disabled = true
-	_voice_bridge.data_received.connect(func(data: Dictionary):
-		_voice_bridge.queue_free()
-		_voice_bridge = null
+	_premium_bridge.data_received.connect(func(data: Dictionary):
+		_premium_bridge.queue_free()
+		_premium_bridge = null
 		if _exiting: return
-		voice.set_access(bool(data.get("voice_premium", false)), float(data.get("voice_expires_at", 0.0)))
-		voice.available = bool(data.get("voice_available", voice.available)) and Ui.lang in ["ru", "en", "kk"]
-		voice.set_speed(float(data.get("voice_speed", voice.speed)))
-		voice.set_enabled(bool(data.get("voice", false)))
-		if is_instance_valid(pause_menu):
+		if data.has("voice_premium"):
+			voice.set_access(bool(data.voice_premium), float(data.get("voice_expires_at", 0.0)))
+			ride_options.voice_premium = bool(data.voice_premium)
+			ride_options.voice_expires_at = float(data.get("voice_expires_at", 0.0))
+			voice.available = bool(data.get("voice_available", voice.available)) and Ui.lang in ["ru", "en", "kk"]
+			voice.set_speed(float(data.get("voice_speed", voice.speed)))
+			voice.set_enabled(bool(data.get("voice", voice.enabled)))
+			ride_options.voice = voice.enabled
+		var unlocked := _apply_garage_access(data)
+		if not is_instance_valid(pause_menu): return
+		if unlocked:
+			remove_child(pause_menu)
+			pause_menu.queue_free()
+			pause_menu = null
+			_show_pause_menu()
+		else:
 			pause_menu._voice_button.disabled = not voice.available
 			pause_menu.update_voice_access(voice.has_access(), voice.enabled, voice.speed)
 	)
-	_voice_bridge.submit({"request_kind": "voice_premium"})
+	_premium_bridge.submit(request)
+
+
+## The shared palette is sent once by Flutter to keep the web launch URL short.
+func _garage_cars(options: Dictionary) -> Array:
+	var cars: Array = options.get("cars", []).duplicate(true)
+	var palette: Variant = options.get("garage_palette")
+	if palette is Array:
+		for car: Dictionary in cars:
+			car.paints = palette
+	return cars
+
+
+func _apply_garage_access(data: Dictionary) -> bool:
+	var cars: Variant = data.get("cars")
+	if not bool(data.get("garage_premium", false)) or bool(ride_options.get("garage_premium", false)) or not cars is Array or cars.is_empty():
+		return false
+	ride_options.garage_premium = true
+	ride_options.unlimited = true
+	ride_options.cars = _garage_cars(data)
+	for car: Dictionary in ride_options.cars:
+		if car.id != chosen.get("id", ""): continue
+		var saved: String = paint_changes.get(car.id, car.selected_paint)
+		if saved != chosen.paint:
+			for paint: Dictionary in car.paints:
+				if paint.paint == saved and not paint.get("locked", false):
+					_on_vehicle_changed({"id": car.id, "paint": saved, "hex": paint.hex})
+					break
+		break
+	return true
 
 
 ## The host has already booked previous visits of a resumed ride. Add only
@@ -3407,7 +3453,9 @@ func _live_garage_options() -> Dictionary:
 	var total := int(ride_options.garage_correct) + maxi(0, run.correct - int(resume_state.get("correct", 0)))
 	options.garage_correct = total
 	var paints := {}
+	var cars_by_id := {}
 	for car: Dictionary in cars:
+		cars_by_id[car.id] = car
 		for paint: Dictionary in car.get("paints", []):
 			paints[str(paint.paint)] = paint.duplicate(true)
 	var next := {}
@@ -3424,7 +3472,12 @@ func _live_garage_options() -> Dictionary:
 			continue
 		if reward.has("model"):
 			var id := str(reward.model)
-			if not cars.any(func(car: Dictionary): return str(car.id) == id):
+			if cars_by_id.has(id):
+				var car: Dictionary = cars_by_id[id]
+				if car.get("locked", false):
+					car.locked = false
+					car["new"] = true
+			else:
 				for model: Dictionary in options.get("reward_models", []):
 					if str(model.id) == id:
 						var earned := model.duplicate(true)
@@ -3595,6 +3648,8 @@ func _start_ride() -> void:
 	if not options is Dictionary or options.get("cars", []).is_empty():
 		return
 	ride_options = options.duplicate(true)
+	ride_options.cars = _garage_cars(options)
+	ride_options.erase("garage_palette")
 	tips_enabled = bool(options.get("tips", false))
 	resume_state = options.get("resume", {})
 	sound.enabled = bool(options.get("sound", true)) and not _is_test_run()
@@ -3603,7 +3658,7 @@ func _start_ride() -> void:
 	voice.set_speed(float(options.get("voice_speed", 1.0)))
 	voice.set_enabled(bool(options.get("voice", false)))
 	GameSound.haptics = bool(options.get("haptics", true))
-	var selection := RidePause.new(options, options.get("selected", {}))
+	var selection := RidePause.new(ride_options, options.get("selected", {}))
 	var car := selection.current()
 	selection.free()
 	_on_vehicle_changed(car)

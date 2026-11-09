@@ -233,6 +233,7 @@
   "gamesGaragePreviewEarned": "All standard cars",
   "gamesGarageDebugAnswers": "Correct city answers: {count}",
   "gamesGarageOdometer": "Mileage: {distance}",
+  "gamesGaragePaywallCar": "Unlock {name} with Premium",
   "gamesGarageLocked": "Locked",
   "gamesGarageUnlockInCity": "Correct answers in Living City",
   "gamesGarageLoadFailed": "Could not open the garage. Try again.",

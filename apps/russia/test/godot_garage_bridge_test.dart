@@ -30,6 +30,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('pdd/godot_game');
   final garage = GameGarageService.instance;
+  final premiumState = StateProvider<bool>((_) => false);
   late ProgressDataSource progress;
   late List<List<String>> launches;
   late BuildContext gameContext;
@@ -86,7 +87,8 @@ void main() {
         overrides: [
           noAchievementAwards,
           progressDataSourceProvider.overrideWithValue(progress),
-          isPremiumProvider.overrideWithValue(premium),
+          premiumState.overrideWith((_) => premium),
+          isPremiumProvider.overrideWith((ref) => ref.watch(premiumState)),
           if (review != null)
             reviewPromptServiceProvider.overrideWithValue(review),
         ],
@@ -253,9 +255,9 @@ void main() {
         as Map,
   );
 
-  List<String> paints(Map car) => [
-    for (final paint in (car['paints'] as List).cast<Map>())
-      paint['paint'] as String,
+  List<String> availablePaints(Map ride) => [
+    for (final paint in (ride['garage_palette'] as List).cast<Map>())
+      if (paint['locked'] == false) paint['paint'] as String,
   ];
 
   String citySummary(int correct, {bool resumed = false}) => jsonEncode({
@@ -344,6 +346,86 @@ void main() {
         expect(response['voice_speed'], 1.0);
         expect(nativePending!.isCompleted, isFalse);
         expect(launches, hasLength(1));
+        nativePending!.complete(null);
+        await tester.pumpAndSettle();
+        await ride;
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('garage paywall updates the same pending ride on $platform', (
+      tester,
+    ) async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('game_garage_correct', 10);
+      await prefs.setString(
+        'game_vehicle_paints_v1',
+        jsonEncode({'hatch': 'blue', 'mini': 'leopard'}),
+      );
+      await open(tester);
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        nativePending = Completer<String?>();
+        final ride = GodotGame.play(gameContext, gameRef);
+        await pumpUntilLaunched(tester, 1);
+        const codec = StandardMethodCodec();
+        Future<Map<String, dynamic>> request({required bool confirm}) async {
+          final reply = Completer<Object?>();
+          tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+            channel.name,
+            codec.encodeMethodCall(
+              const MethodCall(
+                'reportQuestion',
+                '{"request_kind":"garage_premium","model":"mini"}',
+              ),
+            ),
+            (bytes) => reply.complete(codec.decodeEnvelope(bytes!)),
+          );
+          await tester.pump(const Duration(seconds: 2));
+          await tester.pump(const Duration(seconds: 2));
+          final paywall = find.byType(PremiumPaywallSheet);
+          expect(paywall, findsOneWidget);
+          expect(
+            find.text(appL10n.gamesGaragePaywallCar(appL10n.gameCarMini)),
+            findsOneWidget,
+          );
+          expect(nativePending!.isCompleted, isFalse);
+          expect(reply.isCompleted, isFalse);
+          if (confirm) {
+            ProviderScope.containerOf(
+              gameContext,
+            ).read(premiumState.notifier).state = true;
+            Navigator.of(tester.element(paywall)).pop(true);
+          } else {
+            await tester.tap(
+              find.byKey(const ValueKey('premium-close-benefits')),
+            );
+          }
+          await tester.pumpAndSettle();
+          return jsonDecode(await reply.future as String)
+              as Map<String, dynamic>;
+        }
+
+        final cancelled = await request(confirm: false);
+        expect(cancelled['garage_premium'], isNull);
+        final refreshed = await request(confirm: true);
+        expect(refreshed['garage_premium'], isTrue);
+        expect(refreshed.containsKey('voice'), isFalse);
+        expect(availablePaints(refreshed), GameGarageService.allPaints);
+        final cars = (refreshed['cars'] as List).cast<Map>();
+        expect(cars.map((car) => car['id']), GameGarageService.catalogModels);
+        expect(cars.every((car) => car['locked'] == false), isTrue);
+        expect(
+          cars.singleWhere((car) => car['id'] == 'mini')['selected_paint'],
+          'leopard',
+        );
+        expect(
+          cars.singleWhere((car) => car['id'] == 'hatch')['selected_paint'],
+          'blue',
+        );
+        expect(launches, hasLength(1));
+        expect(nativePending!.isCompleted, isFalse);
         nativePending!.complete(null);
         await tester.pumpAndSettle();
         await ride;
@@ -894,14 +976,20 @@ void main() {
 
     final ride = options();
     final cars = (ride['cars'] as List).cast<Map>();
-    expect(cars.map((car) => car['id']), GameGarageService.models);
-    for (final car in cars) {
-      expect(paints(car), GameGarageService.paints);
-    }
+    expect(cars.map((car) => car['id']), GameGarageService.catalogModels);
+    expect(
+      cars.where((car) => car['locked'] == true).map((car) => car['id']),
+      GameGarageService.premiumModels,
+    );
+    expect(availablePaints(ride), GameGarageService.paints);
+    expect(
+      (ride['garage_palette'] as List).length,
+      GameGarageService.allPaints.length,
+    );
     expect(
       {for (final car in cars) car['id']: car['selected_paint']},
       {
-        for (final id in GameGarageService.models)
+        for (final id in GameGarageService.catalogModels)
           id: id == 'pickup' ? 'yellow' : 'red',
       },
     );
@@ -927,11 +1015,13 @@ void main() {
     await open(tester);
     await launch(tester);
 
-    final cars = (options()['cars'] as List).cast<Map>();
-    expect(cars.map((car) => car['id']), ['hatch', 'sedan', 'pickup']);
-    for (final car in cars) {
-      expect(paints(car), ['red', 'blue', 'green']);
-    }
+    final ride = options();
+    final cars = (ride['cars'] as List).cast<Map>();
+    expect(
+      cars.where((car) => car['locked'] == false).map((car) => car['id']),
+      ['hatch', 'sedan', 'pickup'],
+    );
+    expect(availablePaints(ride), ['red', 'blue', 'green']);
   });
 
   testWidgets('City saves paint edits for more than the final car', (
@@ -969,9 +1059,8 @@ void main() {
     final cars = (ride['cars'] as List).cast<Map>();
     expect(cars.length, 8);
     expect(cars.last['id'], 'cyber');
-    for (final car in cars) {
-      expect(paints(car), GameGarageService.allPaints);
-    }
+    expect(cars.every((car) => car['locked'] == false), isTrue);
+    expect(availablePaints(ride), GameGarageService.allPaints);
     expect(ride['selected'], {'id': 'mini', 'paint': 'leopard'});
     expect(ride['garage_premium'], isTrue);
   });

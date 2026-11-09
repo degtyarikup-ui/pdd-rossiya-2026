@@ -817,6 +817,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String gamesGaragePaywallCar(String name) {
+    return 'Откройте «$name» с Премиумом';
+  }
+
+  @override
   String get gamesGarageLocked => 'Закрыто';
 
   @override

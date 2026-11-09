@@ -233,6 +233,7 @@
   "gamesGaragePreviewEarned": "Барлық стандартты көлік",
   "gamesGarageDebugAnswers": "Қаладағы дұрыс жауаптар: {count}",
   "gamesGarageOdometer": "Жүріс: {distance}",
+  "gamesGaragePaywallCar": "«{name}» көлігін Премиуммен ашыңыз",
   "gamesGarageLocked": "Құлыптаулы",
   "gamesGarageUnlockInCity": "«Тірі қаладағы» дұрыс жауаптар",
   "gamesGarageLoadFailed": "Гаражды ашу мүмкін болмады. Қайталап көріңіз.",

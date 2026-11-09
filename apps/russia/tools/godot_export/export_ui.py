@@ -22,7 +22,7 @@ KEYS = [
     'gameDebugPerfShow', 'gameDebugPerfHide',
     'gameCarSedan', 'gamePaintBlue',
     'gameExitToMenu', 'soundEffects', 'gameSeconds', 'gameContinue', 'gameFinishRide', 'gameCorrect', 'gameMistake', 'gameTimeUp', 'gameCorrectAnswer',
-    'gameGarage', 'gameLobbyRecord', 'gameLobbyColour', 'gameLobbyNewRun', 'gameRunsTitle',
+    'gameGarage', 'gamesGarageLocked', 'gameLobbyRecord', 'gameLobbyColour', 'gameLobbyNewRun', 'gameRunsTitle',
     'gameAchievementsTitle', 'gameAchievementsHint', 'gameAchievementProgress',
     'gameUnlockCar', 'gameUnlockPaint',
     'gameAchievementsComplete', 'gamePaintAllCars',

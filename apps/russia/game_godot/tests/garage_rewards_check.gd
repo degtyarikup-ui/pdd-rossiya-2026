@@ -225,6 +225,26 @@ func _run() -> void:
 		"The paint notification uses the host color name and exact shared palette swatch")
 	check(world._exit_summary().notified_rewards == ["model:sedan"],
 		"A queued paint is not reported before the player can read it")
+	var launch_options: Dictionary = world.ride_options
+	var full_catalogue := launch_options.duplicate(true)
+	var catalogue_palette: Array = full_catalogue.reward_paints.duplicate(true)
+	for paint: Dictionary in catalogue_palette:
+		paint.locked = paint.paint != "red"
+	full_catalogue.cars = [
+		{"id": "hatch", "paints": catalogue_palette},
+		{"id": "sedan", "locked": true, "selected_paint": "blue", "paints": catalogue_palette},
+		{"id": "wagon", "locked": true, "paints": catalogue_palette},
+	]
+	world.ride_options = full_catalogue
+	var live: Dictionary = world._live_garage_options()
+	check(live.cars.size() == 3 and not live.cars[1].locked and live.cars[2].locked,
+		"Milestones unlock the existing catalogue model in place")
+	check(not live.cars[1].paints[1].get("locked", false) and live.cars[1].paints[2].locked,
+		"The earned colour becomes available while the rest of the catalogue remains locked")
+	var updated := RidePause.new(live, {"id": "sedan"})
+	check(updated.current().paint == "blue", "A newly available model uses its previously saved paint")
+	updated.free()
+	world.ride_options = launch_options
 	options = _pause(world)
 	check(options.garage_correct == 10 and options.reward_list[1].unlocked, "Tenth correct answer opens blue during this ride")
 	_check_paints(options, ["red", "blue"], "New global color")

@@ -199,13 +199,16 @@ void main() {
     final wagon = find.text(appL10n.gameCarWagon);
     expect(tester.widget<Text>(wagon).style?.color, Colors.black);
     await tester.ensureVisible(wagon);
+    expect(find.text(appL10n.gameAchievementCount(10, 20)), findsOneWidget);
     await tester.tap(wagon);
     await tester.pumpAndSettle();
-    expect(tester.widget<Text>(wagon).style?.color, Colors.black);
-    expect(find.text(appL10n.gamesGarageUnlockInCity), findsOneWidget);
-    expect(find.text(appL10n.gameAchievementCount(10, 20)), findsOneWidget);
+    expect(find.byType(PremiumPaywallSheet), findsOneWidget);
+    expect(
+      find.text(appL10n.gamesGaragePaywallCar(appL10n.gameCarWagon)),
+      findsOneWidget,
+    );
     expect(find.text(appL10n.gamesGarageSave), findsNothing);
-    await tester.tap(find.byTooltip(appL10n.back));
+    await tester.tap(find.byKey(const ValueKey('premium-close-benefits')));
     await tester.pumpAndSettle();
     final sedan = find.text(appL10n.gameCarSedan);
     await tester.ensureVisible(sedan);
@@ -276,6 +279,37 @@ void main() {
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
+    await close(tester);
+  });
+
+  testWidgets('Garage opens the requested car after confirmed Premium', (
+    tester,
+  ) async {
+    reduceMotion(tester);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('game_vehicle_paints_v1', '{"mini":"leopard"}');
+    final container = await open(tester);
+    await tester.tap(find.byKey(const ValueKey('games-garage')));
+    await tester.pumpAndSettle();
+    final mini = find.byKey(const ValueKey('garage-car-mini'));
+    await tester.ensureVisible(mini);
+    await tester.tap(mini);
+    await tester.pumpAndSettle();
+    final paywall = find.byType(PremiumPaywallSheet);
+    expect(paywall, findsOneWidget);
+    container.read(premium.notifier).state = true;
+    Navigator.of(tester.element(paywall)).pop(true);
+    await tester.pumpAndSettle();
+    expect(find.text(appL10n.gameCarMini), findsOneWidget);
+    expect(
+      paintIcon(appL10n.gamePaintLeopard, Icons.check_rounded),
+      findsOneWidget,
+    );
+    expect(
+      find.widgetWithText(ElevatedButton, appL10n.gamesGarageSave),
+      findsOneWidget,
+    );
+    expect(prefs.getString('game_vehicle'), isNull);
     await close(tester);
   });
 

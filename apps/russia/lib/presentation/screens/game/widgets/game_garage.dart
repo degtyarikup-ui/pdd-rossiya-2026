@@ -12,6 +12,7 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 
 /// Every model the engine can build (used to validate ids from the bridge).
 String gameCarName(String id) => switch (id) {
@@ -47,6 +48,12 @@ String gameRewardName(GameGarageReward reward) => reward.isModel
     ? appL10n.gameAchievementModel(gameCarName(reward.model!))
     : appL10n.gameAchievementPaint(gamePaintName(reward.paint!));
 
+Future<bool?> showGaragePaywall(BuildContext context, String id) =>
+    PremiumPaywallSheet.show(
+      context,
+      lockedFeature: appL10n.gamesGaragePaywallCar(gameCarName(id)),
+    );
+
 double gameAchievementFraction(GameGarageService garage) {
   final next = garage.nextReward;
   if (next == null) return 1;
@@ -75,6 +82,7 @@ class GameGarage extends StatefulWidget {
     required this.correctTotal,
     required this.mileageMm,
     required this.onSelect,
+    this.onLockedCar,
   });
 
   final GameCar selected;
@@ -83,6 +91,7 @@ class GameGarage extends StatefulWidget {
   final int correctTotal;
   final Map<String, int> mileageMm;
   final Future<bool> Function(GameCar) onSelect;
+  final Future<GameGarageSelection?> Function(String id)? onLockedCar;
 
   @override
   State<GameGarage> createState() => _GameGarageState();
@@ -99,6 +108,8 @@ class _GameGarageState extends State<GameGarage> {
   final Map<String, String> _previewPaints = {};
   GameCar _previewSelected = GameGarageService.starter;
   _GaragePreview _preview = _GaragePreview.actual;
+  bool _purchasedPremium = false;
+  bool _openingPaywall = false;
 
   bool get _isPreview => _preview != _GaragePreview.actual;
   GameCar get _car => _isPreview ? _previewSelected : _selected;
@@ -109,13 +120,15 @@ class _GameGarageState extends State<GameGarage> {
         GameGarageService.starter.paint,
   );
   List<String> get _models => switch (_preview) {
-    _GaragePreview.actual => widget.models,
+    _GaragePreview.actual =>
+      _purchasedPremium ? GameGarageService.vehicleIds : widget.models,
     _GaragePreview.newcomer => [GameGarageService.starter.id],
     _GaragePreview.premium => GameGarageService.vehicleIds,
     _GaragePreview.earned => GameGarageService.models,
   };
   List<String> get _paints => switch (_preview) {
-    _GaragePreview.actual => widget.paints,
+    _GaragePreview.actual =>
+      _purchasedPremium ? GameGarageService.allPaints : widget.paints,
     _GaragePreview.newcomer => [GameGarageService.starter.paint],
     _GaragePreview.premium => GameGarageService.allPaints,
     _GaragePreview.earned => GameGarageService.paints,
@@ -129,8 +142,31 @@ class _GameGarageState extends State<GameGarage> {
   int _mileageOf(String id) => _isPreview ? 0 : widget.mileageMm[id] ?? 0;
 
   Future<void> _openCar(String id) async {
+    if (_openingPaywall) return;
     HapticFeedbackHelper.select();
     final previewing = _isPreview;
+    final unlock = widget.onLockedCar;
+    if (!previewing && !_models.contains(id) && unlock != null) {
+      _openingPaywall = true;
+      try {
+        final selection = await unlock(id);
+        if (!mounted || selection == null) return;
+        setState(() {
+          _purchasedPremium = true;
+          _modelPaints.addAll(selection.modelPaints);
+          _selected = selection.car;
+        });
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(appL10n.gamesGarageLoadFailed)),
+          );
+        }
+        return;
+      } finally {
+        _openingPaywall = false;
+      }
+    }
     final selected = await Navigator.of(context).push<GameCar>(
       MaterialPageRoute(
         builder: (_) => _GarageCarDetail(
@@ -194,12 +230,7 @@ class _GameGarageState extends State<GameGarage> {
   @override
   Widget build(BuildContext context) {
     // Ordinary models appear in unlock order, followed by the Premium pair.
-    final ids = [
-      GameGarageService.starter.id,
-      for (final reward in GameGarageService.rewards)
-        if (reward.model != null) reward.model!,
-      ...GameGarageService.premiumModels,
-    ];
+    final ids = GameGarageService.catalogModels;
     final owned = _models;
     return _GaragePage(
       title: appL10n.gamesGarageTitle,

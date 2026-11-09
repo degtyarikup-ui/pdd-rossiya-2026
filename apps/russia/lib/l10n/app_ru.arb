@@ -451,6 +451,8 @@
   "@gamesGarageDebugAnswers": {"placeholders": {"count": {"type": "int"}}},
   "gamesGarageOdometer": "Пробег: {distance}",
   "@gamesGarageOdometer": {"placeholders": {"distance": {"type": "String"}}},
+  "gamesGaragePaywallCar": "Откройте «{name}» с Премиумом",
+  "@gamesGaragePaywallCar": {"placeholders": {"name": {"type": "String"}}},
   "gamesGarageLocked": "Закрыто",
   "gamesGarageUnlockInCity": "Правильные ответы в «Живом городе»",
   "gamesGarageLoadFailed": "Не удалось открыть гараж. Попробуйте ещё раз.",
