@@ -132,13 +132,15 @@ class _CelebrationScreenState extends State<CelebrationScreen>
           fit: StackFit.expand,
           children: [
             IgnorePointer(
-              child: CustomPaint(
-                painter: _AwardGlow(
-                  center: _glowCenter,
-                  badgeSize: _glowBadgeSize,
-                  rotation: _spin,
-                  glowStrength:
-                      widget.glowStrength ?? (widget.isStreak ? .32 : 1),
+              child: RepaintBoundary(
+                child: CustomPaint(
+                  painter: _AwardGlow(
+                    center: _glowCenter,
+                    badgeSize: _glowBadgeSize,
+                    rotation: _spin,
+                    glowStrength:
+                        widget.glowStrength ?? (widget.isStreak ? .32 : 1),
+                  ),
                 ),
               ),
             ),

@@ -83,40 +83,38 @@ class PremiumCelebrationScreen extends StatelessWidget {
           ? appL10n.premiumCelebrationGrantedBody
           : appL10n.premiumCelebrationPurchasedBody,
       label: _accessLabel(),
-      heroBuilder: (size) => PremiumSeal(size: size),
+      heroBuilder: (size) => PremiumKeyArtwork(size: size),
       details: const _PremiumPerks(),
       actionLabel: appL10n.premiumCelebrationAction,
       background: AppColors.green,
-      glowStrength: .5,
+      glowStrength: .38,
       onContinue: onContinue,
       onClose: onClose,
     );
   }
 }
 
-/// White rosette with the Premium star; sparkles twinkle around it.
-class PremiumSeal extends StatefulWidget {
-  const PremiumSeal({super.key, required this.size});
+/// A car key with a winding road on its face and lights that fade around it.
+class PremiumKeyArtwork extends StatefulWidget {
+  const PremiumKeyArtwork({super.key, required this.size});
   final double size;
 
   @override
-  State<PremiumSeal> createState() => _PremiumSealState();
+  State<PremiumKeyArtwork> createState() => _PremiumKeyArtworkState();
 }
 
-class _PremiumSealState extends State<PremiumSeal>
+class _PremiumKeyArtworkState extends State<PremiumKeyArtwork>
     with SingleTickerProviderStateMixin {
   late final _twinkle = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 2400),
+    duration: const Duration(milliseconds: 5600),
   );
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (MediaQuery.disableAnimationsOf(context)) {
-      _twinkle
-        ..stop()
-        ..value = .25;
+      _twinkle.stop();
     } else if (!_twinkle.isAnimating) {
       _twinkle.repeat();
     }
@@ -130,101 +128,67 @@ class _PremiumSealState extends State<PremiumSeal>
 
   @override
   Widget build(BuildContext context) {
-    final size = widget.size;
-    final reduced = MediaQuery.disableAnimationsOf(context);
     return ExcludeSemantics(
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          Positioned.fill(child: CustomPaint(painter: _SealPainter())),
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: reduced ? 1 : 0, end: 1),
-            duration: Duration(milliseconds: reduced ? 0 : 900),
-            curve: const Interval(.3, 1, curve: Curves.elasticOut),
-            builder: (context, t, child) => Transform.rotate(
-              angle: (1 - t) * -.5,
-              child: Transform.scale(scale: t, child: child),
-            ),
-            child: SizedBox.square(
-              dimension: size * .4,
-              child: SvgPicture.asset(
-                'assets/images/premium/star.svg',
-                colorFilter: const ColorFilter.mode(
-                  AppColors.premiumRatingStar,
-                  BlendMode.srcIn,
+      child: SizedBox.square(
+        dimension: widget.size,
+        child: Stack(
+          clipBehavior: Clip.none,
+          fit: StackFit.expand,
+          children: [
+            SvgPicture.asset('assets/images/premium/celebration_key.svg'),
+            Positioned.fill(
+              left: -36,
+              right: -36,
+              top: -16,
+              bottom: -16,
+              child: IgnorePointer(
+                child: RepaintBoundary(
+                  child: CustomPaint(
+                    painter: _SparklesPainter(
+                      _twinkle,
+                      reducedMotion: MediaQuery.disableAnimationsOf(context),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(painter: _SparklesPainter(_twinkle)),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _SealPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final radius = size.shortestSide / 2 * .92;
-    const lobes = 16;
-    final seal = Path();
-    final step = math.pi * 2 / lobes;
-    Offset at(double angle, double r) =>
-        center + Offset(math.cos(angle), math.sin(angle)) * r;
-    final start = -math.pi / 2 - step / 2;
-    final start0 = at(start, radius * .9);
-    seal.moveTo(start0.dx, start0.dy);
-    for (var i = 0; i < lobes; i++) {
-      final control = at(start + step * (i + .5), radius * 1.08);
-      final end = at(start + step * (i + 1), radius * .9);
-      seal.quadraticBezierTo(control.dx, control.dy, end.dx, end.dy);
-    }
-    seal.close();
-    canvas.drawShadow(seal, const Color(0xFF0B5A37), 10, false);
-    canvas.drawPath(seal, Paint()..color = AppColors.white);
-    canvas.drawCircle(center, radius * .7, Paint()..color = AppColors.green);
-    canvas.drawCircle(
-      center,
-      radius * .62,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = math.max(1.5, radius * .02)
-        ..color = AppColors.white.withValues(alpha: .35),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _SealPainter oldDelegate) => false;
-}
-
 class _SparklesPainter extends CustomPainter {
-  _SparklesPainter(this.progress) : super(repaint: progress);
-  final Animation<double> progress;
+  _SparklesPainter(this.progress, {required this.reducedMotion})
+    : super(repaint: progress);
 
-  // (x, y) relative to the seal box, size relative to its side, phase.
+  final Animation<double> progress;
+  final bool reducedMotion;
+
+  // Position, radius relative to the short side, and phase of the fade cycle.
   static const _sparkles = [
-    (-.14, .16, .11, 0.0),
-    (1.1, .1, .08, .35),
-    (1.04, .88, .12, .6),
-    (-.06, .94, .07, .82),
-    (.5, -.16, .06, .18),
+    (.16, .32, .045, .30),
+    (.36, .13, .025, .56),
+    (.76, .23, .052, .40),
+    (.91, .48, .023, .91),
+    (.21, .76, .037, .79),
+    (.66, .86, .026, .23),
   ];
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = AppColors.white;
-    for (final (x, y, s, phase) in _sparkles) {
-      final wave = .5 + .5 * math.sin((progress.value + phase) * math.pi * 2);
-      final r = size.width * s * (.55 + .45 * wave);
+    final paint = Paint();
+    for (final (x, y, radius, phase) in _sparkles) {
+      // Leave the star completely dark for part of each cycle.
+      final cycle = (progress.value + phase) % 1;
+      final pulse = math.sin(math.pi * (cycle / .68).clamp(0.0, 1.0));
+      final intensity = reducedMotion ? .65 : pulse * pulse;
+      if (intensity < .01) continue;
+
+      final r = size.shortestSide * radius * (.72 + .28 * intensity);
       final c = Offset(size.width * x, size.height * y);
-      paint.color = AppColors.white.withValues(alpha: .55 + .45 * wave);
+      paint.color = AppColors.white.withValues(alpha: .9 * intensity);
       final w = r * .28;
       canvas.drawPath(
         Path()
@@ -240,7 +204,9 @@ class _SparklesPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _SparklesPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _SparklesPainter oldDelegate) =>
+      reducedMotion != oldDelegate.reducedMotion ||
+      progress != oldDelegate.progress;
 }
 
 /// What Premium opens, in the words of the benefits screen.

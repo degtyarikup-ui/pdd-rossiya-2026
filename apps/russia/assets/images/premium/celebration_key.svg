@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 216 216">
+  <defs>
+    <linearGradient id="metal" x1="60" y1="24" x2="153" y2="147" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F2FFF2"/>
+      <stop offset=".47" stop-color="#A9EACB"/>
+      <stop offset="1" stop-color="#53A785"/>
+    </linearGradient>
+    <linearGradient id="body" x1="77" y1="37" x2="143" y2="132" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#235949"/>
+      <stop offset="1" stop-color="#092E28"/>
+    </linearGradient>
+    <linearGradient id="blade" x1="89" y1="126" x2="132" y2="180" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F9BF59"/>
+      <stop offset=".39" stop-color="#FFEEAE"/>
+      <stop offset="1" stop-color="#F1BD56"/>
+    </linearGradient>
+    <linearGradient id="road" x1="105" y1="75" x2="105" y2="115" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#CFFF86"/>
+      <stop offset="1" stop-color="#6DE5A4"/>
+    </linearGradient>
+  </defs>
+  <g transform="rotate(-39 108 108)">
+    <path d="M92 122h34v39l-6 6 6 7v6l-7 7 5 7-12 12h-12l-8-8z" fill="#075539" opacity=".23" transform="translate(1 5)"/>
+    <path d="M98 17h20c20 0 35 16 37 37l4 47c2 26-12 45-36 48H93c-24-3-38-22-36-48l4-47c2-21 17-37 37-37z" fill="#075539" opacity=".22" transform="translate(0 7)"/>
+    <path d="M91 118h35v40l-8 7 8 8v7l-8 7 5 7-11 11h-12l-9-9z" fill="#A36929"/>
+    <path d="M91 116h34v38l-8 8 8 8v6l-8 7 5 7-10 11h-12l-9-9z" fill="url(#blade)" stroke="#FFE7A3" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M101 140v49l4 4" fill="none" stroke="#9B682E" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/>
+    <path d="M106 143v43" fill="none" stroke="#FFF6D7" stroke-opacity=".8" stroke-width="2" stroke-linecap="round"/>
+    <path d="M98 15h20c20 0 35 16 37 37l4 47c2 26-12 45-36 48H93c-24-3-38-22-36-48l4-47c2-21 17-37 37-37z M98 27a8 8 0 0 0 0 16h20a8 8 0 0 0 0-16z" fill="#164E3E" fill-rule="evenodd" transform="translate(0 4)"/>
+    <path d="M98 15h20c20 0 35 16 37 37l4 47c2 26-12 45-36 48H93c-24-3-38-22-36-48l4-47c2-21 17-37 37-37z M98 27a8 8 0 0 0 0 16h20a8 8 0 0 0 0-16z" fill="url(#metal)" fill-rule="evenodd"/>
+    <path d="M94 51h28c12 0 21 8 22 20l3 31c2 18-8 31-25 34H94c-17-3-27-16-25-34l3-31c1-12 10-20 22-20z" fill="url(#body)" stroke="#317C60" stroke-width="1.5"/>
+    <path d="M79 70c2-8 8-12 16-12h25" fill="none" stroke="#ECFFF3" stroke-opacity=".19" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M91 114c-5-10-5-17 2-23 4-4 9-6 16-10m-5 33c-4-10-2-15 4-20 5-4 10-7 15-13" fill="none" stroke="url(#road)" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M97 112c-4-10-2-16 4-21 4-4 10-6 15-10" fill="none" stroke="#E8FFCD" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="4 5"/>
+    <circle cx="127" cy="74" r="3" fill="#F6DB83"/>
+  </g>
+</svg>

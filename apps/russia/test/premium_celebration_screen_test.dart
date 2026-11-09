@@ -96,7 +96,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Доступ до 4 ноября 2026'), findsOneWidget);
-    expect(find.byType(PremiumSeal), findsOneWidget);
+    expect(find.byType(PremiumKeyArtwork), findsOneWidget);
     expect(
       find.textContaining(appL10n.premiumBenefitAiTitle, findRichText: true),
       findsOneWidget,
