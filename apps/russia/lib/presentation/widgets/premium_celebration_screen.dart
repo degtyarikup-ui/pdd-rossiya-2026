@@ -94,7 +94,7 @@ class PremiumCelebrationScreen extends StatelessWidget {
   }
 }
 
-/// A car key with a winding road on its face and lights that fade around it.
+/// A car key with lights that fade around it.
 class PremiumKeyArtwork extends StatefulWidget {
   const PremiumKeyArtwork({super.key, required this.size});
   final double size;

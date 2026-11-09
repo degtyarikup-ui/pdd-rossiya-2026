@@ -14,10 +14,6 @@
       <stop offset=".39" stop-color="#FFEEAE"/>
       <stop offset="1" stop-color="#F1BD56"/>
     </linearGradient>
-    <linearGradient id="road" x1="105" y1="75" x2="105" y2="115" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#CFFF86"/>
-      <stop offset="1" stop-color="#6DE5A4"/>
-    </linearGradient>
   </defs>
   <g transform="rotate(-39 108 108)">
     <path d="M92 122h34v39l-6 6 6 7v6l-7 7 5 7-12 12h-12l-8-8z" fill="#075539" opacity=".23" transform="translate(1 5)"/>
@@ -30,8 +26,11 @@
     <path d="M98 15h20c20 0 35 16 37 37l4 47c2 26-12 45-36 48H93c-24-3-38-22-36-48l4-47c2-21 17-37 37-37z M98 27a8 8 0 0 0 0 16h20a8 8 0 0 0 0-16z" fill="url(#metal)" fill-rule="evenodd"/>
     <path d="M94 51h28c12 0 21 8 22 20l3 31c2 18-8 31-25 34H94c-17-3-27-16-25-34l3-31c1-12 10-20 22-20z" fill="url(#body)" stroke="#317C60" stroke-width="1.5"/>
     <path d="M79 70c2-8 8-12 16-12h25" fill="none" stroke="#ECFFF3" stroke-opacity=".19" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M91 114c-5-10-5-17 2-23 4-4 9-6 16-10m-5 33c-4-10-2-15 4-20 5-4 10-7 15-13" fill="none" stroke="url(#road)" stroke-width="3.2" stroke-linecap="round"/>
-    <path d="M97 112c-4-10-2-16 4-21 4-4 10-6 15-10" fill="none" stroke="#E8FFCD" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="4 5"/>
-    <circle cx="127" cy="74" r="3" fill="#F6DB83"/>
+    <path fill="#C8F5DC" fill-rule="evenodd" d="
+      M90 91l4-10a6 6 0 0 1 6-4h16a6 6 0 0 1 6 4l4 10
+      a7 7 0 0 1 4 6v14a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-3H94v3a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V97a7 7 0 0 1 4-6z
+      M95 90h26l-3-8a2 2 0 0 0-2-1h-16a2 2 0 0 0-2 1z
+      M94 97a2.5 2.5 0 0 0 0 5h4a2.5 2.5 0 0 0 0-5z
+      M118 97a2.5 2.5 0 0 0 0 5h4a2.5 2.5 0 0 0 0-5z"/>
   </g>
 </svg>
