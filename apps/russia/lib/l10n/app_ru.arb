@@ -1838,7 +1838,6 @@
   "streakSubtitle50": "Тебя уже ничто не остановит на дороге!",
   "streakTitle100": "Космический уровень!",
   "streakSubtitle100": "Экзамен сдашь даже с закрытыми глазами!",
-  "premiumCelebrationHeading": "Премиум",
   "premiumCelebrationPurchasedTitle": "Премиум открыт!",
   "premiumCelebrationGrantedTitle": "Вам выдан Премиум!",
   "premiumCelebrationPurchasedBody": "Спасибо за поддержку! Все возможности уже открыты.",
@@ -2315,11 +2314,14 @@
   "referralCodeOnce": "Один код на аккаунт",
   "referralActivateButton": "Активировать",
   "referralActivating": "Активируем…",
-  "referralSuccessDays": "Начислено: {days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дня}} Премиума.",
+  "referralSuccessDays": "Начислено {days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дня}} по промокоду {code}",
   "@referralSuccessDays": {
     "placeholders": {
       "days": {
         "type": "int"
+      },
+      "code": {
+        "type": "String"
       }
     }
   },

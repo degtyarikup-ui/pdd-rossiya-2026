@@ -93,6 +93,7 @@ enum ReferralClaimStatus {
 
 class ReferralClaimResult {
   final ReferralClaimStatus status;
+  final String? code;
   final int daysAdded;
   final bool isReferral;
   final bool alreadyApplied;
@@ -100,6 +101,7 @@ class ReferralClaimResult {
 
   const ReferralClaimResult({
     required this.status,
+    this.code,
     this.daysAdded = 0,
     this.isReferral = true,
     this.alreadyApplied = false,
@@ -310,6 +312,7 @@ class ReferralService extends ChangeNotifier {
           data['daysAdded'] is int) {
         return ReferralClaimResult(
           status: ReferralClaimStatus.success,
+          code: code,
           daysAdded: data['daysAdded'] as int,
           isReferral: data['kind'] != 'promotion',
           alreadyApplied: data['alreadyApplied'] == true,

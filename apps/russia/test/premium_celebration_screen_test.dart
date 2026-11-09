@@ -91,6 +91,8 @@ void main() {
     );
 
     expect(find.text('Премиум открыт!'), findsOneWidget);
+    expect(find.text('Премиум'), findsNothing);
+    expect(find.byTooltip(appL10n.close), findsOneWidget);
     expect(
       find.text('Спасибо за поддержку! Все возможности уже открыты.'),
       findsOneWidget,
@@ -128,6 +130,7 @@ void main() {
     );
 
     expect(find.text('Вам выдан Премиум!'), findsOneWidget);
+    expect(find.text('Премиум'), findsNothing);
     expect(find.text('Подарок)'), findsOneWidget);
     expect(find.text('Доступ до 31 октября 2026'), findsOneWidget);
     await capture(tester, 'granted_ru');

@@ -14,13 +14,13 @@ import 'package:pdd_app/l10n/l10n.dart';
 class CelebrationScreen extends StatefulWidget {
   const CelebrationScreen({
     super.key,
-    required this.heading,
     required this.title,
     required this.description,
     required this.label,
     required this.heroBuilder,
     required this.onContinue,
     required this.onClose,
+    this.heading,
     this.titleWidget,
     this.position = 1,
     this.total = 1,
@@ -30,7 +30,8 @@ class CelebrationScreen extends StatefulWidget {
     this.details,
     this.actionLabel,
   });
-  final String heading, title, description, label;
+  final String? heading;
+  final String title, description, label;
   final Widget Function(double size) heroBuilder;
   final Widget? titleWidget;
   final VoidCallback onContinue, onClose;
@@ -154,19 +155,22 @@ class _CelebrationScreenState extends State<CelebrationScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            const SizedBox(width: 48),
-                            Expanded(
-                              child: Text(
-                                widget.heading,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.white,
+                            if (widget.heading case final String heading) ...[
+                              const SizedBox(width: 48),
+                              Expanded(
+                                child: Text(
+                                  heading,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.white,
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                             IconButton.filled(
                               tooltip: appL10n.close,
                               style: IconButton.styleFrom(

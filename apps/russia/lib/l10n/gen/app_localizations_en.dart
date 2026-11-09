@@ -3670,9 +3670,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'You\'ll pass the exam even with your eyes closed!';
 
   @override
-  String get premiumCelebrationHeading => 'Premium';
-
-  @override
   String get premiumCelebrationPurchasedTitle => 'Premium unlocked!';
 
   @override
@@ -4726,14 +4723,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get referralActivating => 'Redeeming…';
 
   @override
-  String referralSuccessDays(int days) {
+  String referralSuccessDays(int days, String code) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
       other: '$days days',
       one: '$days day',
     );
-    return 'You received $_temp0 of Premium.';
+    return 'You received $_temp0 with promo code $code';
   }
 
   @override

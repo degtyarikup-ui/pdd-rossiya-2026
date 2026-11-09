@@ -3682,9 +3682,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get streakSubtitle100 => 'Экзамен сдашь даже с закрытыми глазами!';
 
   @override
-  String get premiumCelebrationHeading => 'Премиум';
-
-  @override
   String get premiumCelebrationPurchasedTitle => 'Премиум открыт!';
 
   @override
@@ -4752,7 +4749,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get referralActivating => 'Активируем…';
 
   @override
-  String referralSuccessDays(int days) {
+  String referralSuccessDays(int days, String code) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
@@ -4761,7 +4758,7 @@ class AppLocalizationsRu extends AppLocalizations {
       few: '$days дня',
       one: '$days день',
     );
-    return 'Начислено: $_temp0 Премиума.';
+    return 'Начислено $_temp0 по промокоду $code';
   }
 
   @override

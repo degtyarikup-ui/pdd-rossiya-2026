@@ -72,7 +72,6 @@ class PremiumCelebrationScreen extends StatelessWidget {
     final granted = reason == PremiumCelebrationReason.granted;
     final note = message?.trim();
     return CelebrationScreen(
-      heading: appL10n.premiumCelebrationHeading,
       title: granted
           ? appL10n.premiumCelebrationGrantedTitle
           : appL10n.premiumCelebrationPurchasedTitle,

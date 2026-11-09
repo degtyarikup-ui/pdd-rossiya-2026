@@ -3672,9 +3672,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get streakSubtitle100 => 'Емтиханды көзің жұмық та тапсырасың!';
 
   @override
-  String get premiumCelebrationHeading => 'Премиум';
-
-  @override
   String get premiumCelebrationPurchasedTitle => 'Премиум ашылды!';
 
   @override
@@ -4715,8 +4712,8 @@ class AppLocalizationsKk extends AppLocalizations {
   String get referralActivating => 'Іске қосылуда…';
 
   @override
-  String referralSuccessDays(int days) {
-    return 'Сізге $days күн Премиум берілді.';
+  String referralSuccessDays(int days, String code) {
+    return '«$code» промокоды бойынша $days күн қосылды';
   }
 
   @override

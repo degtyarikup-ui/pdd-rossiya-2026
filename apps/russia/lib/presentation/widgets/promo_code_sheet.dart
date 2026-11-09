@@ -26,12 +26,13 @@ class PromoCodeSheet extends StatefulWidget {
     if (result == null) return null;
 
     final premium = PremiumService.instance;
-    if (context.mounted && !result.alreadyApplied && premium.isPremium) {
+    if (result.code case final String code
+        when context.mounted && !result.alreadyApplied && premium.isPremium) {
       await PremiumCelebrationScreen.show(
         context,
         reason: PremiumCelebrationReason.promoCode,
         expiresAt: premium.expiresAt,
-        message: context.l10n.referralSuccessDays(result.daysAdded),
+        message: context.l10n.referralSuccessDays(result.daysAdded, code),
       );
     }
     return true;

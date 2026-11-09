@@ -113,7 +113,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('promo-input-field')),
-      'FRIEND26',
+      'https://pdd-drive.app/app/?ref=friend26',
     );
     await tester.pump();
     await tester.runAsync(() async {
@@ -132,7 +132,7 @@ void main() {
     expect(screen.expiresAt, isNotNull);
     expect(screen.expiresAt, PremiumService.instance.expiresAt);
     expect(find.text('Премиум открыт!'), findsOneWidget);
-    expect(find.text('Начислено: 2 дня Премиума.'), findsOneWidget);
+    expect(find.text('Начислено 2 дня по промокоду FRIEND26'), findsOneWidget);
     expect(find.textContaining('Доступ до '), findsOneWidget);
     expect(result, isNull);
 
@@ -177,7 +177,7 @@ void main() {
       find.text('Этот код уже был активирован. Повторно дни не начисляются.'),
       findsOneWidget,
     );
-    expect(find.text('Начислено: 7 дней Премиума.'), findsNothing);
+    expect(find.text('Начислено 7 дней по промокоду PREMIUM7'), findsNothing);
     expect(find.byType(PremiumCelebrationScreen), findsNothing);
   });
 

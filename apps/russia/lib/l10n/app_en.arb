@@ -1223,7 +1223,6 @@
   "streakSubtitle50": "Nothing will stop you on the road now!",
   "streakTitle100": "Out-of-this-world level!",
   "streakSubtitle100": "You'll pass the exam even with your eyes closed!",
-  "premiumCelebrationHeading": "Premium",
   "premiumCelebrationPurchasedTitle": "Premium unlocked!",
   "premiumCelebrationGrantedTitle": "You've got Premium!",
   "premiumCelebrationPurchasedBody": "Thank you for your support! Everything is unlocked.",
@@ -1634,11 +1633,14 @@
   "referralCodeOnce": "One code per account",
   "referralActivateButton": "Redeem code",
   "referralActivating": "Redeeming…",
-  "referralSuccessDays": "You received {days, plural, one{{days} day} other{{days} days}} of Premium.",
+  "referralSuccessDays": "You received {days, plural, one{{days} day} other{{days} days}} with promo code {code}",
   "@referralSuccessDays": {
     "placeholders": {
       "days": {
         "type": "int"
+      },
+      "code": {
+        "type": "String"
       }
     }
   },

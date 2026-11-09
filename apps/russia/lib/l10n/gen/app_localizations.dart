@@ -6106,12 +6106,6 @@ abstract class AppLocalizations {
   /// **'Экзамен сдашь даже с закрытыми глазами!'**
   String get streakSubtitle100;
 
-  /// No description provided for @premiumCelebrationHeading.
-  ///
-  /// In ru, this message translates to:
-  /// **'Премиум'**
-  String get premiumCelebrationHeading;
-
   /// No description provided for @premiumCelebrationPurchasedTitle.
   ///
   /// In ru, this message translates to:
@@ -7927,8 +7921,8 @@ abstract class AppLocalizations {
   /// No description provided for @referralSuccessDays.
   ///
   /// In ru, this message translates to:
-  /// **'Начислено: {days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дня}} Премиума.'**
-  String referralSuccessDays(int days);
+  /// **'Начислено {days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дня}} по промокоду {code}'**
+  String referralSuccessDays(int days, String code);
 
   /// No description provided for @referralSignInRequired.
   ///

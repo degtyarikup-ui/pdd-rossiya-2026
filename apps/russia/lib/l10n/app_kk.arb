@@ -1223,7 +1223,6 @@
   "streakSubtitle50": "Енді жолда сені ешнәрсе тоқтата алмайды!",
   "streakTitle100": "Ғарыштық деңгей!",
   "streakSubtitle100": "Емтиханды көзің жұмық та тапсырасың!",
-  "premiumCelebrationHeading": "Премиум",
   "premiumCelebrationPurchasedTitle": "Премиум ашылды!",
   "premiumCelebrationGrantedTitle": "Сізге Премиум берілді!",
   "premiumCelebrationPurchasedBody": "Қолдауыңызға рахмет! Барлық мүмкіндіктер ашылды.",
@@ -1634,11 +1633,14 @@
   "referralCodeOnce": "Бір аккаунтқа бір код",
   "referralActivateButton": "Іске қосу",
   "referralActivating": "Іске қосылуда…",
-  "referralSuccessDays": "Сізге {days} күн Премиум берілді.",
+  "referralSuccessDays": "«{code}» промокоды бойынша {days} күн қосылды",
   "@referralSuccessDays": {
     "placeholders": {
       "days": {
         "type": "int"
+      },
+      "code": {
+        "type": "String"
       }
     }
   },
