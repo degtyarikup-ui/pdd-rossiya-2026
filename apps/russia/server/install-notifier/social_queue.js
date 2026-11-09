@@ -42,7 +42,7 @@ export async function readSocialPosts(env) {
 
 // Send only changed fields, together with their expected previous values. This
 // merges unrelated admin edits while rejecting a stale change to the same field.
-export async function saveSocialPosts(env, source, posts = source) {
+export async function saveSocialPosts(env, source, posts = source, guardFields = []) {
   validatePosts(posts);
   const before = queueSnapshots.get(source);
   if (!before) throw new Error('Social queue write requires a read snapshot');
@@ -58,7 +58,8 @@ export async function saveSocialPosts(env, source, posts = source) {
     const fields = [...new Set([...Object.keys(previous), ...Object.keys(post)])]
       .filter(key => !queueEqual(previous[key], post[key]));
     if (fields.length) changes.push({ id, fields: fields.map(key => ({ key,
-      before: previous[key] ?? null, after: post[key] ?? null })) });
+      before: previous[key] ?? null, after: post[key] ?? null })),
+      ...(guardFields.length ? { guards: guardFields.map(key => ({ key, value: previous[key] ?? null })) } : {}) });
   }
   for (const [id, post] of old) if (!next.has(id)) changes.push({ id, remove: post });
   if (changes.length) await queueRequest(env, 'change', { changes });
@@ -102,6 +103,9 @@ export class SocialQueueStore {
           if (current) removals.push(key);
         } else {
           if (!current || !Array.isArray(change.fields)) return new Response('conflict', { status: 409 });
+          if (change.guards?.some(({ key, value }) => !queueEqual(current[key] ?? null, value))) {
+            return new Response('conflict', { status: 409 });
+          }
           const next = { ...current };
           for (const field of change.fields) {
             if (typeof field.key !== 'string' || ['id', '__proto__', 'constructor', 'prototype'].includes(field.key)) return new Response('field', { status: 400 });

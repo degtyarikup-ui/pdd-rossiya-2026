@@ -16,7 +16,7 @@
 
 import { socialGuard, beginSocialWrite, completeSocialWrite, abandonSocialWrite, withSocialPublicationLease } from './social_guard.js';
 import { readSocialPosts, saveSocialPosts } from './social_queue.js';
-import { resumableYoutubeUpload } from './youtube_upload.js';
+import { resumableYoutubeUpload, youtubePermalink } from './youtube_upload.js';
 
 async function notifySocialFailure(notify, accountId, reason, text) {
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(accountId + '|' + reason));
@@ -424,7 +424,7 @@ async function driveReadText(env, fileId) {
  * нормальный сценарий. Глубина ограничена, чтобы случайно указанный «Мой диск»
  * не превратился в обход всего хранилища.
  */
-async function driveCollectVideos(env, folderId, catalog, driveFolders = [{ id: folderId, name: '' }]) {
+async function driveCollectVideos(env, folderId, catalog = [], driveFolders = [{ id: folderId, name: '' }]) {
   const entries = await driveListFolder(env, folderId);
   catalog.push({ id: folderId, path: driveFolders.slice(1).map(folder => folder.name).join(' / ') });
   let files = entries
@@ -488,6 +488,7 @@ export async function syncAccountVideos(env, account) {
       accountId: account.id,
       driveFileId: file.id,
       driveFolders: file.driveFolders,
+      youtubeFormat: file.driveFolders.some(folder => folder.name.toLowerCase() === 'youtube long videos') ? 'video' : 'shorts',
       fileName: file.name,
       sizeBytes: file.size ? parseInt(file.size, 10) : null,
       ...(contentMd5 ? { contentMd5 } : {}),
@@ -1026,8 +1027,32 @@ export async function refreshInstagramTokens(env) {
 
 function buildYoutubeTitle(post) {
   const raw = post.title || humanTitle(post.fileName);
+  if (post.youtubeFormat === 'video') return limit(raw.replace(/(^|\s)#shorts(?=\s|$)/gi, '').trim() || humanTitle(post.fileName), 100);
   if (raw.toLowerCase().includes('#shorts')) return limit(raw, 100);
   return limit(raw, 90).trim() + ' #shorts';
+}
+
+async function checkYoutubeFormat(env, post) {
+  if (!post.youtubeFormat) return;
+  const auth = await driveAuth(env);
+  const params = new URLSearchParams({
+    fields: 'videoMediaMetadata(width,height,durationMillis)',
+    supportsAllDrives: 'true',
+  });
+  if (auth.mode === 'apikey') params.set('key', auth.key);
+  const response = await fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(post.driveFileId) + '?' + params, {
+    headers: auth.mode === 'oauth' ? { authorization: 'Bearer ' + auth.token } : {},
+    signal: AbortSignal.timeout(10000),
+  }).catch(() => null);
+  if (!response?.ok) throw new Error('Не удалось проверить формат файла на Диске');
+  const { videoMediaMetadata: media } = await response.json().catch(() => ({}));
+  const duration = Number(media?.durationMillis);
+  if (!(media?.width > 0 && media?.height > 0 && duration > 0)) {
+    throw new Error('Диск ещё не определил размеры и длительность видео');
+  }
+  const isShort = media.width <= media.height && duration <= 180000;
+  if (isShort && post.youtubeFormat === 'video') throw new Error('Этот файл подходит для Shorts. Выберите Shorts или загрузите горизонтальную версию');
+  if (!isShort && post.youtubeFormat === 'shorts') throw new Error('Для Shorts нужно вертикальное или квадратное видео до 3 минут');
 }
 
 async function publishToYouTube(env, post, account) {
@@ -1036,18 +1061,26 @@ async function publishToYouTube(env, post, account) {
     async () => {
       const videoRes = await driveDownloadResponse(env, post.driveFileId);
       if (!videoRes.ok) throw new Error('Не удалось скачать ролик с Google Диска (HTTP ' + videoRes.status + ')');
+      if (Number(videoRes.headers.get('content-length')) > MAX_UPLOAD_BYTES) {
+        await videoRes.body?.cancel();
+        throw new Error('Файл больше 90 МБ');
+      }
       const bytes = await videoRes.arrayBuffer();
-      if (bytes.byteLength < 1000 || bytes.byteLength > MAX_UPLOAD_BYTES) throw new Error('Размер ролика вне допустимых пределов загрузки');
+      if (bytes.byteLength > MAX_UPLOAD_BYTES) throw new Error('Файл больше 90 МБ');
+      if (bytes.byteLength < 1000) throw new Error('Размер ролика вне допустимых пределов загрузки');
       return bytes;
     },
     async (accessToken, length) => {
+      await checkYoutubeFormat(env, post);
+      const tags = String(account.youtubeTags || '').split(',').map(t => t.trim()).filter(Boolean);
       const initRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
         method: 'POST', signal: AbortSignal.timeout(10000),
         headers: { authorization: 'Bearer ' + accessToken, 'content-type': 'application/json; charset=UTF-8',
           'x-upload-content-length': String(length), 'x-upload-content-type': 'video/mp4' },
         body: JSON.stringify({
           snippet: { title: buildYoutubeTitle(post), description: limit(post.caption || '', 4900),
-            tags: String(account.youtubeTags || '').split(',').map(t => t.trim()).filter(Boolean), categoryId: account.youtubeCategoryId || '27' },
+            tags: post.youtubeFormat === 'video' ? tags.filter(tag => !/^#?shorts$/i.test(tag)) : tags,
+            categoryId: account.youtubeCategoryId || '27' },
           status: { privacyStatus: account.youtubePrivacy || 'public', selfDeclaredMadeForKids: false },
         }),
       });
@@ -1213,7 +1246,7 @@ async function reconcileYoutube(env, post, account) {
   if (video.status?.uploadStatus !== 'processed' || !['public', 'unlisted'].includes(video.status?.privacyStatus)) {
     fail('Ролик YouTube существует, но недоступен для просмотра. Проверьте YouTube Studio', 'ERR_YT_PUBLICATION_UNCONFIRMED');
   }
-  return { videoId: video.id, permalink: 'https://youtube.com/shorts/' + video.id, alreadyPublished: true };
+  return { videoId: video.id, permalink: youtubePermalink(post, video.id), alreadyPublished: true };
 }
 
 // ────────────────────────────── публикация ──────────────────────────────
@@ -1325,8 +1358,10 @@ async function publishPostWithLease(env, postId, origin, notify, only) {
         await patchPost(env, postId, { youtubeNeedsReview: true });
         ytResult = await reconcileYoutube(env, post, account);
       }
-      post = (await getPosts(env)).find(p => p.id === postId);
       await patchPost(env, postId, { youtubeStatus: 'processing' });
+      const current = (await getPosts(env)).find(p => p.id === postId);
+      if (!current) throw new Error('Ролик удалён из очереди');
+      post = current;
       ytResult = ytResult || await publishToYouTube(env, post, account);
       await patchPost(env, postId, {
         youtubeStatus: 'published',
@@ -1857,6 +1892,10 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
   }
 
   if (path === '/api/admin/social/posts/update' && request.method === 'POST') {
+    const posts = await getPosts(env);
+    const index = posts.findIndex(p => p.id === body.id);
+    if (index === -1) return jsonResponse({ error: 'not found' }, 404);
+    const post = posts[index];
     const patch = {};
     ['title', 'caption'].forEach((key) => {
       if (typeof body[key] === 'string') patch[key] = body[key];
@@ -1864,13 +1903,29 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     if (body.targets !== undefined) {
       const targets = validTargets(body.targets);
       if (!targets) return jsonResponse({ error: 'Выберите Instagram или YouTube' }, 400);
-      const post = (await getPosts(env)).find(p => p.id === body.id);
-      if (post && !canChangeTargets(post)) return jsonResponse({ error: 'Площадки этого ролика уже нельзя изменить' }, 409);
+      if (!canChangeTargets(post)) return jsonResponse({ error: 'Площадки этого ролика уже нельзя изменить' }, 409);
       patch.targets = targets;
     }
+    if (body.youtubeFormat !== undefined) {
+      if (!['shorts', 'video'].includes(body.youtubeFormat)) return jsonResponse({ error: 'Выберите формат YouTube' }, 400);
+      if (!canChangeTargets(post) || post.youtubeStatus === 'published' || post.youtubeVideoId || post.youtubeNeedsReview) {
+        return jsonResponse({ error: 'Формат YouTube уже нельзя изменить' }, 409);
+      }
+      if (body.youtubeFormat !== post.youtubeFormat) patch.youtubeFormat = body.youtubeFormat;
+    }
     if (body.scheduledAt !== undefined) patch.scheduledAt = body.scheduledAt || null;
-    const updated = await patchPost(env, body.id, patch);
-    return jsonResponse(updated ? { ok: true } : { error: 'not found' }, updated ? 200 : 404);
+    posts[index] = { ...post, ...patch };
+    if (patch.youtubeFormat) {
+      const result = await withSocialPublicationLease(env, post.accountId, async ownedEnv => {
+        const { result: previous } = await beginSocialWrite(ownedEnv, post, 'youtube', false, true);
+        if (previous && previous.state !== 'absent') return jsonResponse({ error: 'Загрузка на YouTube уже началась' }, 409);
+        await saveSocialPosts(ownedEnv, posts, posts, ['status', 'instagramStatus', 'youtubeStatus', 'youtubeVideoId', 'youtubeNeedsReview']);
+        return jsonResponse({ ok: true });
+      });
+      return result instanceof Response ? result : jsonResponse({ error: result.message }, 409);
+    }
+    await saveSocialPosts(env, posts);
+    return jsonResponse({ ok: true });
   }
 
   // Пометить ролик выложенным, не публикуя его.

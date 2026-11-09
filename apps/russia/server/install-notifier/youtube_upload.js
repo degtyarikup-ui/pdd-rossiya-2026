@@ -6,15 +6,18 @@ function youtubeUploadPending() {
 function youtubeUploadUnconfirmed() {
   return Object.assign(new Error('Результат прежней загрузки YouTube не подтверждён. Новая загрузка остановлена до проверки'), { code: 'ERR_YT_PUBLICATION_UNCONFIRMED' });
 }
-const youtubeUploadResult = id => ({ videoId: id, permalink: 'https://youtube.com/shorts/' + id });
+export function youtubePermalink(post, id) {
+  return 'https://youtube.com/' + (post.youtubeFormat === 'video' ? 'watch?v=' : 'shorts/') + id;
+}
 const youtubeUploadChecksum = async bytes => [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
   .map(v => v.toString(16).padStart(2, '0')).join('');
 
 // Persist the session BEFORE sending bytes. A timeout is recovered using the
 // provider's status probe, never a second videos.insert. The URL stays in the DO.
 export async function resumableYoutubeUpload(env, post, getToken, loadBytes, initialize) {
+  const result = id => ({ videoId: id, permalink: youtubePermalink(post, id) });
   let write = await beginSocialWrite(env, post, 'youtube', false, true);
-  if (write.result?.state === 'done') return youtubeUploadResult(write.result.id);
+  if (write.result?.state === 'done') return result(write.result.id);
   let session = write.result?.session, offset = 0, bytes;
   if (write.result?.state === 'pending' && !session) throw youtubeUploadUnconfirmed();
   if (!session && post.youtubeNeedsReview) throw youtubeUploadUnconfirmed();
@@ -33,7 +36,7 @@ export async function resumableYoutubeUpload(env, post, getToken, loadBytes, ini
       throw youtubeUploadUnconfirmed();
     }
     await completeSocialWrite(env, post, write, data.id);
-    return youtubeUploadResult(data.id);
+    return result(data.id);
   };
 
   if (session) {
@@ -51,7 +54,7 @@ export async function resumableYoutubeUpload(env, post, getToken, loadBytes, ini
     bytes = await loadBytes();
     const url = await initialize(token, bytes.byteLength);
     write = await beginSocialWrite(env, post, 'youtube');
-    if (write.result?.state === 'done') return youtubeUploadResult(write.result.id);
+    if (write.result?.state === 'done') return result(write.result.id);
     session = { url, total: bytes.byteLength, sha256: await youtubeUploadChecksum(bytes) };
     await socialGuard(env, post.accountId, '/session', { key: write.key, owner: env.__SOCIAL_OWNER, session });
   }

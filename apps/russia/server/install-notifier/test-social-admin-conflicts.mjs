@@ -50,8 +50,8 @@ function fixture(t) {
   t.mock.method(globalThis, 'fetch', async () => { assert.fail('the fixture must not contact external services'); });
   const logs = [];
   t.mock.method(console, 'error', (...args) => logs.push(args));
-  const call = async (body, { authorized = true } = {}) => {
-    const response = await worker.fetch(new Request('https://fixture.invalid/api/admin/social/posts/bulk', {
+  const call = async (body, { authorized = true, action = 'bulk' } = {}) => {
+    const response = await worker.fetch(new Request('https://fixture.invalid/api/admin/social/posts/' + action, {
       method: 'POST', headers: { 'content-type': 'application/json', ...(authorized ? { authorization: 'Bearer fixture' } : {}) },
       body: JSON.stringify(body),
     }), env, { waitUntil: promise => tasks.push(promise) });
@@ -81,6 +81,24 @@ test('full Worker returns a reviewable 409 for a real stale bulk caption edit, p
   assert.equal(f.upstream.filter(item => item.operation === '/queue/change').length, 2, 'one winning write and one rejected write; no automatic replay');
   assert.ok(f.upstream.some(item => item.status === 409));
   assert.deepEqual(f.logs, [], 'a guarded conflict is not reported as a server failure');
+});
+
+test('a concurrent publication claim prevents a stale YouTube format edit', async t => {
+  const f = fixture(t);
+  const posts = await f.read();
+  posts[0] = { ...posts[0], youtubeStatus: 'queued', youtubeVideoId: null };
+  await saveSocialPosts(f.env, posts);
+  f.beforeChange(async () => {
+    const current = await f.read();
+    current[0].status = 'processing';
+    await saveSocialPosts(f.env, current);
+  });
+  const response = await f.call({ id: 'one', youtubeFormat: 'video' }, { action: 'update' });
+  assert.equal(response.status, 409);
+  assert.equal((await response.json()).code, 'social_queue_conflict');
+  const current = (await f.read())[0];
+  assert.equal(current.status, 'processing');
+  assert.equal(current.youtubeFormat, undefined);
 });
 
 for (const action of ['requeue', 'delete']) test(`stale bulk ${action} cannot erase a concurrently completed publication`, async t => {

@@ -156,9 +156,11 @@ export const SOCIAL_VIEW_HTML = `
     #social-view .sc-edit { width:34px; height:34px; padding:0; justify-content:center; }
     #social-view .sc-more { margin:18px auto 0; }
     #social-view .sc-more[hidden] { display:none; }
-    .sc-modal textarea.sc-input { background:var(--surface-gray); border:0; border-radius:10px; padding:10px 12px; }
+    .sc-modal textarea.sc-input, .sc-modal select.sc-input { background:var(--surface-gray); border:0; border-radius:10px; padding:10px 12px; }
     .sc-modal .sc-dialog-title { margin:0 0 18px; font-size:18px; font-weight:600; letter-spacing:-.3px; }
     .sc-modal .sc-targets { display:flex; gap:8px; flex-wrap:wrap; }
+    .sc-modal .sc-youtube-format { margin-top:12px; }
+    .sc-modal .sc-youtube-format[hidden] { display:none; }
     .sc-modal .sc-dialog-error { color:var(--danger); font-size:12px; margin-top:12px; }
     .sc-modal .sc-dialog-error:empty { display:none; }
     .sc-modal .sc-preview-content { display:grid; grid-template-columns:210px minmax(0,1fr); gap:24px; }
@@ -494,7 +496,7 @@ function scRetryButtons(p) {
       + SC_ICONS.ig + (uncertain ? 'Нужна проверка попытки' : p.instagramNeedsReview ? 'Новая публикация' : 'Повторить') + '</button>');
   }
   if (targets.indexOf('youtube') !== -1 && p.youtubeStatus !== 'published' && p.youtubeStatus !== 'processing') {
-    if (p.youtubeNeedsReview && p.youtubePermalink && /^https:\\/\\/(www\\.)?youtube\\.com\\/shorts\\/[A-Za-z0-9_-]+\\/?$/.test(p.youtubePermalink)) {
+    if (p.youtubeNeedsReview && p.youtubePermalink && /^https:\\/\\/(www\\.)?youtube\\.com\\/(shorts\\/|watch\\?v=)[A-Za-z0-9_-]+$/.test(p.youtubePermalink.replace(/\\/$/, ''))) {
       out.push('<a class="btn-action sc-retry" href="' + scEsc(p.youtubePermalink) + '" target="_blank" rel="noopener">' + SC_ICONS.yt + 'Проверить публикацию</a>');
       out.push('<button class="btn-action sc-retry" onclick="scRetry(event, \\'' + p.id + '\\', \\'youtube\\')">' + SC_ICONS.yt + 'Новая публикация</button>');
     } else out.push('<button class="btn-action sc-retry" onclick="scRetry(event, \\'' + p.id + '\\', \\'youtube\\')">'
@@ -719,7 +721,7 @@ function scModal(html, onOk) {
   bg.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') { e.preventDefault(); close(); }
     if (e.key !== 'Tab') return;
-    var nodes = Array.from(modal.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), a[href]')).filter(function (n) { return n.offsetParent !== null; });
+    var nodes = Array.from(modal.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href]')).filter(function (n) { return n.offsetParent !== null; });
     if (!nodes.length) { e.preventDefault(); return; }
     if (e.shiftKey && (document.activeElement === nodes[0] || document.activeElement === modal)) { e.preventDefault(); nodes[nodes.length - 1].focus(); }
     else if (!e.shiftKey && document.activeElement === nodes[nodes.length - 1]) { e.preventDefault(); nodes[0].focus(); }
@@ -741,8 +743,13 @@ function scTargetFields(targets, disabled) {
       + (t === 'instagram' ? SC_ICONS.ig + 'Instagram' : SC_ICONS.yt + 'YouTube') + '<span class="sc-target-check">✓</span></button>';
   }).join('') + '</div>';
 }
-function scBindTargets(bg) {
-  bg.querySelectorAll('[data-target]').forEach(function (el) { el.onclick = function () { el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); }; });
+function scBindTargets(bg, onChange) {
+  bg.querySelectorAll('[data-target]').forEach(function (el) {
+    el.onclick = function () {
+      el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+      if (onChange) onChange();
+    };
+  });
 }
 function scReadTargets(bg) {
   return Array.from(bg.querySelectorAll('[data-target][aria-pressed="true"]')).map(function (el) { return el.dataset.target; });
@@ -817,6 +824,8 @@ window.scPreview = function (id) {
   var p = (scState.posts || []).find(function (x) { return x.id === id; });
   if (!p) return;
   var editable = scCanEditTargets(p);
+  var formatEditable = editable && p.youtubeStatus !== 'published' && !p.youtubeVideoId && !p.youtubeNeedsReview;
+  var regularVideo = p.youtubeFormat === 'video';
   var when = p.scheduledAt ? scMsk(p.scheduledAt).replace(' ', 'T') : '';
   var links = '';
   if (p.instagramPermalink && p.instagramPermalink.startsWith('https://')) links += '<a href="' + scEsc(p.instagramPermalink) + '" target="_blank" rel="noopener" class="sc-pill ok">Instagram ↗</a> ';
@@ -827,23 +836,35 @@ window.scPreview = function (id) {
     if (editable) {
       patch.targets = scReadTargets(box);
       if (!patch.targets.length) throw new Error('Выберите хотя бы одну соцсеть');
+      if (formatEditable && patch.targets.indexOf('youtube') !== -1) {
+        var format = box.querySelector('#sc-m-youtube-format').value;
+        if (format !== p.youtubeFormat) patch.youtubeFormat = format;
+      }
       patch.scheduledAt = w ? new Date(new Date(w + ':00.000Z').getTime() - 3 * 3600000).toISOString() : null;
     }
     await scApi('posts/update', patch);
     await loadSocial(true);
   };
   var bg = scModal('<div class="sc-preview-content"><div class="sc-preview-media">'
-    + '<video src="/s/v/' + scEsc(p.streamToken) + '" poster="/s/t/' + scEsc(p.streamToken) + '" controls playsinline preload="none" style="width:100%;aspect-ratio:9/16;background:#17191E;border-radius:12px;object-fit:cover;"></video>'
+    + '<video src="/s/v/' + scEsc(p.streamToken) + '" poster="/s/t/' + scEsc(p.streamToken) + '" controls playsinline preload="none" style="width:100%;aspect-ratio:' + (regularVideo ? '16/9' : '9/16') + ';background:#17191E;border-radius:12px;object-fit:contain;"></video>'
     + '<div style="margin-top:10px">' + links + '</div></div><div>'
     + '<h3 class="sc-dialog-title">' + scEsc(p.title || scPrettyName(p.fileName)) + '</h3>'
     + '<div class="form-group"><label class="form-label">Соцсети</label>' + scTargetFields(scTargetsOf(p), !editable) + '</div>'
+    + '<div class="form-group sc-youtube-format" hidden><label class="form-label" for="sc-m-youtube-format">Формат YouTube</label>'
+    + '<select id="sc-m-youtube-format" class="sc-input"' + (formatEditable ? '' : ' disabled') + '>'
+    + '<option value="shorts">Shorts</option><option value="video"' + (regularVideo ? ' selected' : '') + '>Обычное видео</option></select></div>'
     + '<div class="form-group" style="margin-top:16px"><label class="form-label" for="sc-m-title">Заголовок YouTube</label><input id="sc-m-title" class="sc-input" value="' + scEsc(p.title || '') + '"></div>'
     + '<div class="form-group" style="margin-top:12px"><label class="form-label" for="sc-m-cap2">Описание</label><textarea id="sc-m-cap2" class="sc-input" style="width:100%;min-height:110px">' + scEsc(p.caption || '') + '</textarea></div>'
     + '<div class="form-group" style="margin-top:12px"><label class="form-label" for="sc-m-when">Дата и время · МСК</label><input type="datetime-local" id="sc-m-when" class="sc-input" value="' + when + '"' + (!editable ? ' disabled' : '') + '></div>'
     + (editable ? '<div style="margin-top:18px"><button class="btn-action btn-primary" id="sc-preview-publish">' + (p.status === 'failed' ? 'Повторить публикацию' : 'Опубликовать сейчас') + '</button></div>' : '')
     + '</div></div>', async function (box) { await save(box); scToast('Сохранено'); });
   bg.querySelector('.sc-modal').classList.add('wide');
-  scBindTargets(bg);
+  var formatField = bg.querySelector('.sc-youtube-format');
+  function updateFormatVisibility() {
+    formatField.hidden = scReadTargets(bg).indexOf('youtube') === -1 || !(formatEditable || p.youtubeFormat);
+  }
+  scBindTargets(bg, updateFormatVisibility);
+  updateFormatVisibility();
   if (editable) bg.querySelector('#sc-preview-publish').onclick = async function () {
     this.disabled = true;
     try { await save(bg); await scPublishNow(id); }

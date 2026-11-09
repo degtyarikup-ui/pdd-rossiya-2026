@@ -319,8 +319,8 @@ test('Drive sync reads later pages and lists newly discovered folders even witho
     pages.push([folderId, pageToken]);
     if (folderId === root && !pageToken) return Response.json({nextPageToken:'next'});
     if (folderId === root) return fail ? new Response(null,{status:503}) : Response.json({files:[
-      {id:'empty',name:'YouTube long videos',mimeType:folderType},
-      {id:'with-video',name:'Короткие ролики',mimeType:folderType},
+      {id:'empty',name:'Пустая папка',mimeType:folderType},
+      {id:'with-video',name:'YouTube long videos',mimeType:folderType},
     ]});
     if (folderId === 'with-video') return Response.json({files:[{id:'clip',name:'clip.mp4',mimeType:'video/mp4'}]});
     assert.equal(folderId,'empty');
@@ -336,11 +336,11 @@ test('Drive sync reads later pages and lists newly discovered folders even witho
     assert.deepEqual(pages,[[root,null],[root,'next'],['empty',null],['with-video',null]]);
     const catalog = [
       {id:root,path:''},
-      {id:'empty',path:'YouTube long videos'},
-      {id:'with-video',path:'Короткие ролики'},
+      {id:'empty',path:'Пустая папка'},
+      {id:'with-video',path:'YouTube long videos'},
     ];
     assert.deepEqual(await folders(),catalog);
-    assert.deepEqual(f.read('posts').map(p=>[p.driveFileId,p.scheduledAt]),[['clip',null]]);
+    assert.deepEqual(f.read('posts').map(p=>[p.driveFileId,p.scheduledAt,p.youtubeFormat]),[['clip',null,'video']]);
     assert.equal((await sync()).folderCatalogChanged,false);
     fail = true;
     assert.equal((await sync()).status,'error');
@@ -393,6 +393,51 @@ test('manual platform retry preserves an already published destination and refus
   assert.equal((await (await call('posts/publish-platform',{id:'partial',platform:'youtube'})).json()).ok,true);
   assert.deepEqual(read('posts'),before);
   assert.equal((await call('posts/publish-platform',{id:'busy',platform:'youtube'})).status,409);
+});
+
+test('YouTube format controls upload validation, title, tags and the resulting link', async t => {
+  const f = setup();
+  await f.env.INSTALLS.put('social:accounts',JSON.stringify([{id:'a',targets:['youtube'],youtubeTags:'пдд, shorts'}]));
+  await f.env.INSTALLS.put('social:settings',JSON.stringify({
+    googleClientId:'fixture',googleClientSecret:'fixture',googleRefreshToken:'fixture',workerOrigin:'https://w.test',
+  }));
+  const post = {id:'p',accountId:'a',driveFileId:'drive',fileName:'lesson.mp4',title:'Урок',status:'queued',targets:['youtube']};
+  const uploads = [];
+  let media = {width:1080,height:1920,durationMillis:'180000'};
+  t.mock.method(globalThis,'fetch',async (url, options) => {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'oauth2.googleapis.com') return Response.json({access_token:'fixture'});
+    if (parsed.pathname === '/drive/v3/files/drive') {
+      return parsed.searchParams.get('alt') === 'media'
+        ? new Response(new Uint8Array(2000))
+        : Response.json({videoMediaMetadata:media});
+    }
+    if (parsed.pathname === '/upload/youtube/v3/videos') {
+      uploads.push(JSON.parse(options.body).snippet);
+      return new Response(null,{headers:{location:'https://upload.fixture/session'}});
+    }
+    assert.equal(parsed.hostname,'upload.fixture');
+    return Response.json({id:'newVideo123'});
+  });
+  await f.env.INSTALLS.put('social:posts',JSON.stringify([post]));
+  assert.equal((await f.call('posts/update',{id:'p',youtubeFormat:'auto'})).status,400);
+  assert.equal((await f.call('posts/update',{id:'p',youtubeFormat:'video'})).status,200);
+  const rejected = await publishPost(f.env,'p','https://w.test');
+  assert.match(rejected.message,/Выберите Shorts/);
+  assert.equal(uploads.length,0);
+
+  assert.equal((await f.call('posts/update',{id:'p',youtubeFormat:'shorts'})).status,200);
+  const shorts = await publishPost(f.env,'p','https://w.test');
+  assert.equal(shorts.youtube.permalink,'https://youtube.com/shorts/newVideo123');
+  assert.equal(uploads[0].title,'Урок #shorts');
+  assert.equal((await f.call('posts/update',{id:'p',youtubeFormat:'video'})).status,409);
+
+  await f.env.INSTALLS.put('social:posts',JSON.stringify([{...post,title:'Урок #shorts',youtubeFormat:'video'}]));
+  media = {width:1920,height:1080,durationMillis:'60000'};
+  const ordinary = await publishPost(f.env,'p','https://w.test');
+  assert.equal(ordinary.youtube.permalink,'https://youtube.com/watch?v=newVideo123');
+  assert.equal(uploads[1].title,'Урок');
+  assert.deepEqual(uploads[1].tags,['пдд']);
 });
 
 for (const mode of ['missing','available','private','api-error','changed','lost-upload']) {

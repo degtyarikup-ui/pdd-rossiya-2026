@@ -213,13 +213,18 @@ if(process.argv.includes('--serve')) {
       await modal.locator('[data-ok]').click();await modal.waitFor({state:'hidden'});
       assert.deepEqual((await read('posts'))[0].targets,['instagram']);
       await row.locator('.sc-title').click();
+      const format = modal.getByRole('combobox',{name:'Формат YouTube'});
+      assert.equal(await format.isVisible(),false);
       await modal.locator('[data-target="instagram"]').click();
       await modal.locator('[data-ok]').click();
       assert.equal(await modal.isVisible(),true,'empty targets retain the editor');
       assert.match(await modal.locator('[role="alert"]').innerText(),/соцсеть/);
       await modal.locator('[data-target="instagram"]').click();await modal.locator('[data-target="youtube"]').click();
+      assert.equal(await format.inputValue(),'shorts');
+      await format.selectOption({label:'Обычное видео'});
       await modal.locator('[data-ok]').click();await modal.waitFor({state:'hidden'});
       assert.deepEqual((await read('posts'))[0].targets,['instagram','youtube']);
+      assert.equal((await read('posts'))[0].youtubeFormat,'video');
       await page.locator('#sc-search').fill('нет такого видео');assert.match(await page.locator('#sc-list').innerText(),/не найдены/);
       await page.locator('#sc-search').clear();
       await page.locator('[data-filter="failed"]').click();await page.locator('[data-post="fail"]').waitFor();
@@ -240,6 +245,7 @@ if(process.argv.includes('--serve')) {
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`no overflow at ${width}`);
         await screenshot('mobile-'+width);
         await row.locator('.sc-title').click();
+        assert.equal(await format.inputValue(),'video');
         assert.equal(await page.evaluate(()=>document.querySelector('.sc-modal').getBoundingClientRect().right<=innerWidth),true);
         await screenshot('dialog-'+width);
         await page.keyboard.press('Escape');await modal.waitFor({state:'hidden'});
