@@ -204,7 +204,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
   });
   (stats.withdrawals||[]).forEach(function(item){
    var received=item.feeMode==='included'?item.amount-item.fee:item.amount;
-   rows.push({key:'withdrawal:'+item.id,id:item.id,kind:'withdrawal',date:item.date,title:item.title||'Вывод средств',sourceKey:item.store,source:stores[item.store]||'Другое',amountUsd:item.receivedUsd,amount:received,currency:item.currency,sub:item.fee>0?'Комиссия '+money(item.fee,item.currency):'Без комиссии',editKind:'withdrawal',original:item});
+   rows.push({key:'withdrawal:'+item.id,id:item.id,kind:'withdrawal',date:item.date,title:item.title||'Вывод средств',sourceKey:item.store,source:stores[item.store]||'Другое',amountUsd:item.receivedUsd,amount:received,currency:item.currency,feeUsd:item.feeUsd,sub:item.fee>0?'':'Без комиссии',editKind:'withdrawal',original:item});
    if(item.feeUsd>0)rows.push({key:'withdrawal-fee:'+item.id,id:item.id,kind:'commission',date:item.date,title:'Комиссия за вывод',sourceKey:item.store,source:stores[item.store]||'Другое',amountUsd:item.feeUsd,amount:item.fee,currency:item.currency,sub:item.title||'Вывод средств',editKind:'withdrawal',original:item,hiddenInAll:true});
   });
   if(stats.expenses.ai?.includedInTotal&&stats.expenses.ai.periodUsd>0)rows.push({key:'ai',kind:'expense',date:range.to,dateLabel:'За всё время',title:'Gemini',sourceKey:'other',source:'Проект',amountUsd:stats.expenses.ai.periodUsd,sub:'',original:{}});
