@@ -138,6 +138,14 @@ void main() {
               keepUntilResolved: true,
             );
           }
+          // No connection: the order is kept and the caller can reassure.
+          status = 'offline';
+          expect(
+            await premium.checkPendingPayment(),
+            PremiumService.pendingPaymentUnreachable,
+          );
+          expect(await PendingPayment.current(ownerId: 'google_A'), order);
+          status = 'creating';
           await auth.completeSignInForTesting(user('B'), 'credential');
           final before = checks;
           expect(await premium.checkPendingPayment(), isNull);
@@ -162,6 +170,7 @@ void main() {
             );
           }
           if (request.url.path == '/api/user/pay-check') {
+            if (status == 'offline') throw http.ClientException('offline');
             checks++;
             expect(jsonDecode(request.body)['order'], order);
             return http.Response(

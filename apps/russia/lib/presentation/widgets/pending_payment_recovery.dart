@@ -14,7 +14,9 @@ class PendingPaymentRecovery {
     Future<String?> Function()? checkPayment,
     Future<void> Function(BuildContext)? celebrate,
     void Function(BuildContext)? canceled,
-  }) : _checkPayment =
+    void Function(BuildContext)? unreachable,
+  }) : _unreachable = unreachable ?? _showUnreachable,
+       _checkPayment =
            checkPayment ?? PremiumService.instance.checkPendingPayment,
        _celebrate = celebrate ?? _showCelebration,
        _canceled = canceled ?? _showCanceled;
@@ -24,6 +26,8 @@ class PendingPaymentRecovery {
   final Future<String?> Function() _checkPayment;
   final Future<void> Function(BuildContext) _celebrate;
   final void Function(BuildContext) _canceled;
+  final void Function(BuildContext) _unreachable;
+  bool _unreachableShown = false;
   Future<void>? _inFlight;
   BuildContext? _presentationContext;
   BuildContext? _callerContext;
@@ -53,8 +57,16 @@ class PendingPaymentRecovery {
       await _celebrate(context);
     } else if (status == 'canceled') {
       _canceled(context);
+    } else if (status == PremiumService.pendingPaymentUnreachable &&
+        !_unreachableShown) {
+      // Once per launch: the check repeats on every return to the app.
+      _unreachableShown = true;
+      _unreachable(context);
     }
   }
+
+  static void _showUnreachable(BuildContext context) =>
+      AppToast.show(context, appL10n.webPayCheckUnreachable);
 
   static Future<void> _showCelebration(BuildContext context) =>
       PremiumCelebrationScreen.show(

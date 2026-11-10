@@ -768,6 +768,10 @@ class PremiumService extends ChangeNotifier {
     }
   }
 
+  /// [checkPendingPayment] result: an unfinished order exists, but its status
+  /// could not be read (no connection to the server).
+  static const pendingPaymentUnreachable = 'unreachable';
+
   /// Android: оплата, которую человек начал в браузере. Проверяется при
   /// возврате в приложение; заказ закрывается, когда сервер получил
   /// окончательный статус (подтверждён, отменён, возврат).
@@ -776,6 +780,9 @@ class PremiumService extends ChangeNotifier {
     final order = await PendingPayment.current(ownerId: owner);
     if (order == null) return null;
     final status = await checkWebPayment(order);
+    // The order stays saved and is checked again on the next return; the
+    // payment provider also confirms it to the server without the app.
+    if (status == null) return pendingPaymentUnreachable;
     if ([
       'confirmed',
       'canceled',

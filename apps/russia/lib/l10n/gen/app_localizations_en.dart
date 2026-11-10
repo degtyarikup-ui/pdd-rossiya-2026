@@ -1352,7 +1352,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Google sign-in is unavailable. Check Google Play services.';
 
   @override
-  String get authErrorNetwork => 'Couldn’t connect. Try another network.';
+  String get authErrorNetwork => 'No connection, try another network';
 
   @override
   String get authErrorTimeout => 'Sign-in took too long. Try again.';
@@ -1727,6 +1727,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get webPayFailed =>
       'Couldn\'t open the payment. Check your internet and try again.';
+
+  @override
+  String get webPayNoConnection => 'No connection, try another network';
+
+  @override
+  String get webPayCheckUnreachable =>
+      'No connection — couldn’t check your payment. If you paid, Premium will turn on by itself';
 
   @override
   String get webPayNeedsAccount =>

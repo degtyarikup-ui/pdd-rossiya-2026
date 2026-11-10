@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/presentation/widgets/pending_payment_recovery.dart';
 
 void main() {
@@ -125,4 +126,31 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await wait;
   });
+
+  testWidgets(
+    'an unreadable order status tells the payer once per launch not to pay again',
+    (tester) async {
+      var notices = 0, canceled = 0;
+      final recovery = PendingPaymentRecovery(
+        checkPayment: () async => PremiumService.pendingPaymentUnreachable,
+        canceled: (_) => canceled++,
+        unreachable: (_) => notices++,
+      );
+      await tester.pumpWidget(const MaterialApp(home: Text('Home')));
+      final context = tester.element(find.text('Home'));
+      await recovery.recover(context);
+      await recovery.recover(context);
+      expect(notices, 1);
+      expect(canceled, 0);
+      // No pending order or still pending: no notice at all.
+      for (final status in [null, 'pending']) {
+        var shown = 0;
+        await PendingPaymentRecovery(
+          checkPayment: () async => status,
+          unreachable: (_) => shown++,
+        ).recover(context);
+        expect(shown, 0, reason: '$status');
+      }
+    },
+  );
 }

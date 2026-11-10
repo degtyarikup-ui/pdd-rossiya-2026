@@ -1373,7 +1373,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Вход через Google недоступен. Проверьте сервисы Google Play.';
 
   @override
-  String get authErrorNetwork => 'Нет связи. Попробуйте другую сеть.';
+  String get authErrorNetwork => 'Нет связи, попробуйте другую сеть';
 
   @override
   String get authErrorTimeout => 'Ответ не пришёл вовремя. Попробуйте ещё раз.';
@@ -1753,6 +1753,13 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get webPayFailed =>
       'Не получилось открыть оплату. Проверьте интернет и попробуйте ещё раз.';
+
+  @override
+  String get webPayNoConnection => 'Нет связи, попробуйте другую сеть';
+
+  @override
+  String get webPayCheckUnreachable =>
+      'Нет связи — не удалось проверить оплату. Если вы оплатили, Премиум включится сам';
 
   @override
   String get webPayNeedsAccount =>

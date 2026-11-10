@@ -1354,7 +1354,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Google арқылы кіру қолжетімсіз. Google Play қызметтерін тексеріңіз.';
 
   @override
-  String get authErrorNetwork => 'Байланыс жоқ. Басқа желіге қосылып көріңіз.';
+  String get authErrorNetwork => 'Байланыс жоқ, басқа желіге қосылып көріңіз';
 
   @override
   String get authErrorTimeout => 'Жауап уақытында келмеді. Қайталап көріңіз.';
@@ -1730,6 +1730,13 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get webPayFailed =>
       'Төлемді ашу мүмкін болмады. Интернетті тексеріп, қайталап көріңіз.';
+
+  @override
+  String get webPayNoConnection => 'Байланыс жоқ, басқа желіге қосылып көріңіз';
+
+  @override
+  String get webPayCheckUnreachable =>
+      'Байланыс жоқ — төлемді тексеру мүмкін болмады. Төлеген болсаңыз, Премиум өзі қосылады';
 
   @override
   String get webPayNeedsAccount =>

@@ -47,6 +47,7 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
   );
   bool _sending = false;
   bool _failed = false;
+  bool _noConnection = false;
   String? _creationErrorCode;
   String? _creationOrder;
 
@@ -131,6 +132,8 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
       setState(() {
         _sending = false;
         _failed = true;
+        // No payment link came back, so nothing could be paid.
+        _noConnection = start == null;
       });
     }
   }
@@ -183,7 +186,9 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
                   errorText: invalid
                       ? appL10n.webPayEmailInvalid
                       : _failed
-                      ? appL10n.webPayFailed
+                      ? (_noConnection
+                            ? appL10n.webPayNoConnection
+                            : appL10n.webPayFailed)
                       : null,
                   filled: true,
                   fillColor: colors.searchFieldFill,

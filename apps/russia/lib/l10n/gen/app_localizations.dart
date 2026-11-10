@@ -2389,7 +2389,7 @@ abstract class AppLocalizations {
   /// No description provided for @authErrorNetwork.
   ///
   /// In ru, this message translates to:
-  /// **'Нет связи. Попробуйте другую сеть.'**
+  /// **'Нет связи, попробуйте другую сеть'**
   String get authErrorNetwork;
 
   /// No description provided for @authErrorTimeout.
@@ -2997,6 +2997,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не получилось открыть оплату. Проверьте интернет и попробуйте ещё раз.'**
   String get webPayFailed;
+
+  /// No description provided for @webPayNoConnection.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет связи, попробуйте другую сеть'**
+  String get webPayNoConnection;
+
+  /// No description provided for @webPayCheckUnreachable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет связи — не удалось проверить оплату. Если вы оплатили, Премиум включится сам'**
+  String get webPayCheckUnreachable;
 
   /// No description provided for @webPayNeedsAccount.
   ///
