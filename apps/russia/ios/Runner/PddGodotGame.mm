@@ -223,6 +223,7 @@ static BOOL ShowGame(void) {
   gGameWindow.alpha = 0;
   [gGameWindow makeKeyAndVisible];
   if (scene.activationState == UISceneActivationStateForegroundActive) {
+    [gChannel invokeMethod:@"gameVoiceActive" arguments:@YES];
     [EngineService() sceneDidBecomeActive:scene];
   }
   [gController.godotView startRendering];
@@ -338,6 +339,8 @@ static void HideGame(dispatch_block_t completion) {
   [files removeItemAtPath:[folder stringByAppendingPathComponent:kLoadingFileName] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"usage.json"] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"report-request.json"] error:nil];
+  [files removeItemAtPath:[folder stringByAppendingPathComponent:@"voice-request.json"] error:nil];
+  [files removeItemAtPath:[folder stringByAppendingPathComponent:@"voice-result.json"] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"report-result.json"] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"share-request.json"] error:nil];
   gLastLoadingState = nil;
@@ -349,9 +352,6 @@ static void HideGame(dispatch_block_t completion) {
             stringByAppendingString:category]];
     [gameArgs addObject:[@"--question-images-dir=" stringByAppendingString:pictures]];
   }
-  NSString *questionAudio = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:
-      @"Frameworks/App.framework/flutter_assets/assets/audio/game_questions"];
-  [gameArgs addObject:[@"--question-audio-dir=" stringByAppendingString:questionAudio]];
   NSString *answerAudio = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:
       @"Frameworks/App.framework/flutter_assets/assets/audio"];
   [gameArgs addObject:[@"--answer-audio-dir=" stringByAppendingString:answerAudio]];
@@ -367,7 +367,8 @@ static void HideGame(dispatch_block_t completion) {
 - (void)pollSummary {
   [self pollLoading];
   [self pollUsage];
-  [self pollQuestionReport];
+  [self pollRequest:@"report-request.json" resultFile:@"report-result.json"];
+  [self pollRequest:@"voice-request.json" resultFile:@"voice-result.json"];
   [self pollShare];
   NSString *path = [ExchangeFolder() stringByAppendingPathComponent:@"summary.json"];
   NSData *data = [NSData dataWithContentsOfFile:path];
@@ -412,8 +413,8 @@ static void HideGame(dispatch_block_t completion) {
 }
 
 /// The Flutter service owns the session and device metadata, also while its window is hidden.
-- (void)pollQuestionReport {
-  NSString *path = [ExchangeFolder() stringByAppendingPathComponent:@"report-request.json"];
+- (void)pollRequest:(NSString *)requestFile resultFile:(NSString *)resultFile {
+  NSString *path = [ExchangeFolder() stringByAppendingPathComponent:requestFile];
   NSData *data = [NSData dataWithContentsOfFile:path];
   if (!data) return;
   [NSFileManager.defaultManager removeItemAtPath:path error:nil];
@@ -440,6 +441,7 @@ static void HideGame(dispatch_block_t completion) {
       [pausedWindow makeKeyAndVisible];
       pausedWindow.alpha = 1;
       if (pausedWindow.windowScene.activationState == UISceneActivationStateForegroundActive) {
+        [gChannel invokeMethod:@"gameVoiceActive" arguments:@YES];
         [EngineService() sceneDidBecomeActive:pausedWindow.windowScene];
       }
     }
@@ -450,7 +452,7 @@ static void HideGame(dispatch_block_t completion) {
       if ([payload isKindOfClass:NSDictionary.class]) response[@"data"] = payload;
     }
     NSData *reply = [NSJSONSerialization dataWithJSONObject:response options:0 error:nil];
-    [reply writeToFile:[ExchangeFolder() stringByAppendingPathComponent:@"report-result.json"]
+    [reply writeToFile:[ExchangeFolder() stringByAppendingPathComponent:resultFile]
               options:NSDataWritingAtomic error:nil];
   }];
 }
@@ -510,6 +512,7 @@ static void HideGame(dispatch_block_t completion) {
 // The engine's lifecycle hooks, passed on as the template's app delegate does.
 - (void)sceneWillResignActive:(UIScene *)scene {
   if (gEngineStarted && IsGameVisible()) {
+    [gChannel invokeMethod:@"gameVoiceActive" arguments:@NO];
     [EngineService() sceneWillResignActive:scene];
   }
 }
@@ -518,6 +521,7 @@ static void HideGame(dispatch_block_t completion) {
   // Godot's focus-in starts its renderer and audio, including after backgrounding.
   // A hidden game must stay stopped while the player uses the Flutter screens.
   if (gEngineStarted && IsGameVisible()) {
+    [gChannel invokeMethod:@"gameVoiceActive" arguments:@YES];
     [EngineService() sceneDidBecomeActive:scene];
   }
 }

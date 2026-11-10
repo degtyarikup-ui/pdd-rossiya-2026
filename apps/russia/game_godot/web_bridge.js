@@ -1,6 +1,14 @@
 // Fixed host operations for Godot. Arguments remain data: no eval or generated JS.
 (() => {
   let reply = '';
+  let voiceReply = '';
+  window.addEventListener('message', event => {
+    if (event.source !== window.parent || event.origin !== window.location.origin) return;
+    try {
+      const data = JSON.parse(event.data);
+      if (data.bridge === 'pdd-godot' && data.kind === 'voice_audio_result') voiceReply = event.data;
+    } catch {}
+  });
   const onReply = event => {
     if (event.source !== window.parent || event.origin !== window.location.origin) return;
     try {
@@ -22,6 +30,7 @@
       window.removeEventListener('message', onReply);
       window.addEventListener('message', onReply);
     },
+    voiceReply: () => voiceReply,
     reportReply: () => reply,
     endReport() { window.removeEventListener('message', onReply); reply = ''; },
   });

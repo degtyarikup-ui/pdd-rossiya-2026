@@ -105,7 +105,6 @@ flutter:
     - assets/icons/game/
     - assets/audio/
     - assets/audio/feed/
-    - assets/audio/game_questions/
     - assets/game/
     - assets/game/garage/
     # Only the production loader and static fallback; experiments stay unbundled.

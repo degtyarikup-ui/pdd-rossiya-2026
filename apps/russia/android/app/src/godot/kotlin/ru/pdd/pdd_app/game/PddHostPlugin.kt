@@ -19,7 +19,7 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
     @UsedByGodot
     fun reportQuestion(requestId: String, json: String) {
         android.util.Log.i("PddQuestionReport", "Game submitted report")
-        val expectsData = runCatching { org.json.JSONObject(json).optString("request_kind") in setOf("leaderboard", "voice_premium", "garage_premium") }.getOrDefault(false)
+        val expectsData = runCatching { org.json.JSONObject(json).optString("request_kind") in setOf("leaderboard", "voice_premium", "garage_premium", "voice_audio") }.getOrDefault(false)
         host.runOnUiThread {
             @Suppress("DEPRECATION")
             val receiver = host.intent.getParcelableExtra<android.os.ResultReceiver>("pdd_report_receiver")
@@ -111,18 +111,6 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
         if (kind !in setOf("correct", "incorrect", "tick", "streak")) return byteArrayOf()
         return try {
             host.assets.open("flutter_assets/assets/audio/$kind.wav").use { it.readBytes() }
-        } catch (_: java.io.IOException) {
-            byteArrayOf()
-        }
-    }
-
-    /** The existing studio voice, converted once into the shared Flutter MP3 assets. */
-    @UsedByGodot
-    fun questionAudioBytes(hash: String): ByteArray {
-        if (!hash.matches(Regex("[a-f0-9]{32}"))) return byteArrayOf()
-        return try {
-            host.assets.open("flutter_assets/assets/audio/game_questions/q_$hash.mp3")
-                .use { it.readBytes() }
         } catch (_: java.io.IOException) {
             byteArrayOf()
         }

@@ -788,24 +788,32 @@ iOS — через `--answer-audio-dir`, веб — из соседних Flutte
 сцены: запросы начинаются после её присоединения к дереву, когда родитель уже
 может принимать дочерние узлы `HTTPRequest`.
 
-Озвучка вопросов — существующие российские записи `assets/audio/feed/q_<id>.opus`,
-без системного синтеза речи. Godot не декодирует Opus, поэтому
-`python3 tools/godot_export/export_question_audio.py` один раз преобразует только
-используемые вопросы в MP3 в общем каталоге `assets/audio/game_questions/`.
-Преобразование повторяется лишь при изменении записи или повреждении результата;
-MP3 и локальный манифест не коммитятся. В Git лежит небольшой индекс
-`game_godot/questions/audio.json`: исходный ID вопроса, файл и длительность для
-каждой сцены. Генератор проверяет дословное совпадение вопроса и порядка ответов
-с исходным билетом. На Android записи читает `PddHost.questionAudioBytes`, на iOS
-передаётся `--question-audio-dir`, веб читает соседние Flutter-ресурсы; в пакет
-встроенной игры записи повторно не входят. Standalone-экспорт временно включает
-ссылки на те же MP3 и убирает их после сборки.
+Озвучка вопросов в приложении использует единственный пак
+`assets/audio/feed/q_<id>.opus`. Встроенный Godot передаёт Flutter полный снимок
+состояния через `SharedQuestionVoice`: исходный ID, идентификатор воспроизведения,
+ревизию, паузу и скорость. `GameVoiceService` использует отдельный экземпляр
+общего `TtsService`, сохраняя проверки Premium и аккаунта. Android использует
+Binder-мост, iOS — отдельные атомарные `voice-request.json`/`voice-result.json`,
+веб — сообщения между iframe и Flutter. Запросы озвучки не занимают канал жалоб
+или paywall на iOS/вебе. Устаревшие ответы не запускают звук; пауза сохраняет
+позицию, ответ и выход останавливают плеер. Таймер получает длительность после
+подтверждения воспроизведения общим плеером.
 
-`setup_game.sh`, `build.sh`, `build_dev.sh` и скрипты экспорта Godot запускают
-генератор автоматически. Перед прямым `flutter build` или запуском Godot из
-свежей копии сначала запустите его вручную. Проверки без пересборки записей:
-`python3 tools/godot_export/export_question_audio.py --check` и
-`python3 -m unittest tools/godot_export/test_question_audio.py`.
+MP3 в `assets/audio/game_questions/` — только локальные производные для запуска
+Godot без Flutter (редактор/standalone). Они исключены из `pubspec.yaml` и не
+входят в мобильные и веб-сборки приложения. `export_question_audio.py` сохраняет
+индекс сцен и проверяет исходный текст и порядок ответов. Standalone-экспорт
+временно подключает MP3 ссылками; встроенная игра получает флаг
+`--shared-question-voice` и не декодирует эти файлы.
+
+Проверки: `python3 tools/godot_export/export_question_audio.py --check`,
+`python3 -m unittest tools/godot_export/test_question_audio.py`,
+`flutter test test/game_voice_service_test.dart test/tts_locale_test.dart`,
+Godot `tests/shared_question_voice_check.gd` и `tests/question_voice_check.gd`.
+После изменения транспорта проверять озвучку, скорость, паузу/фон, смену вопроса
+и выход на устройствах Android/iOS; headless-проверки не подтверждают работу
+платформенного аудиодекодера.
+
 Записи есть только на русском. Озвучка всех языков доступна только с Премиумом:
 русский использует записи без синтезированного fallback, английский и казахский —
 системный голос соответствующего языка через `DisplayServer.tts_*`. Нет голоса —

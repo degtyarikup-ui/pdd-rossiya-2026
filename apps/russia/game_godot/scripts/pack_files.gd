@@ -6,7 +6,8 @@
 ## Embedded native games read Flutter pictures too, so the game pack has no
 ## duplicate photographs. Desktop reads the canonical source; standalone exports
 ## without Flutter include their own pictures. Studio question audio follows the
-## same contract: MP3 derivatives are shared Flutter assets, never embedded twice.
+## same contract. MP3 derivatives are for standalone/editor only; the embedded
+## game delegates canonical Opus playback to Flutter via SharedQuestionVoice.
 class_name PackFiles
 extends RefCounted
 
@@ -83,7 +84,7 @@ static func _is_question_audio(path: String) -> bool:
 static func _question_audio_bytes(res_path: String) -> PackedByteArray:
 	var file := res_path.get_file()
 	if Host.embedded():
-		return Engine.get_singleton("PddHost").questionAudioBytes(file.get_basename().trim_prefix("q_"))
+		return PackedByteArray() # Embedded voice is played by Flutter, never decoded here.
 	for arg in Host.user_args():
 		if str(arg).begins_with("--question-audio-dir="):
 			var path := str(arg).trim_prefix("--question-audio-dir=").path_join(file)

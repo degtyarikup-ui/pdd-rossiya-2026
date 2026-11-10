@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/game_voice_service.dart';
 import 'package:pdd_app/data/models/achievement.dart';
 import 'package:pdd_app/data/services/achievement_award_service.dart';
 import 'package:pdd_app/presentation/widgets/achievement_labels.dart';
@@ -613,6 +614,7 @@ class GodotGame {
   ) async {
     final overlay = AppLoadingOverlay.show(context, label: appL10n.gameLoading);
     final started = DateTime.now();
+    final voice = GameVoiceService();
     try {
       final awards = ref.read(achievementAwardServiceProvider);
       await awards.prepare();
@@ -664,6 +666,7 @@ class GodotGame {
       args = GameSeason.launchArguments(args, DateTime.now());
       args = [
         ...args,
+        '--shared-question-voice',
         '--usage-session=${GameLeaderboardService.newRunId()}',
         '--achievement-awards=${jsonEncode(awardData)}',
         '--loading-label=${appL10n.gameLoading}',
@@ -673,6 +676,10 @@ class GodotGame {
       ];
       if (!kIsWeb) {
         _channel.setMethodCallHandler((call) async {
+          if (call.method == 'gameVoiceActive' && call.arguments is bool) {
+            await voice.setHostActive(call.arguments as bool);
+            return null;
+          }
           if (call.method == 'gameEvent' && call.arguments is String) {
             try {
               final event = jsonDecode(call.arguments as String);
@@ -686,6 +693,9 @@ class GodotGame {
             try {
               final report = jsonDecode(call.arguments as String);
               if (report is Map<String, dynamic>) {
+                if (report['request_kind'] == 'voice_audio') {
+                  return jsonEncode(await voice.apply(report));
+                }
                 if (report['request_kind'] == 'voice_premium' ||
                     report['request_kind'] == 'garage_premium') {
                   overlay.setVisible(false);
@@ -750,6 +760,7 @@ class GodotGame {
       }
       return result;
     } finally {
+      await voice.dispose();
       if (!kIsWeb) {
         _channel.setMethodCallHandler(null);
       }

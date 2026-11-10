@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:pdd_app/data/services/game_voice_service.dart';
 import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:ui_web' as ui;
@@ -16,6 +18,7 @@ class GodotWebFrame {
 
   final Future<Map<String, dynamic>> Function(Map<String, dynamic>)? _onPremium;
   bool _premiumBusy = false;
+  final _voice = GameVoiceService();
 
   final _frame = web.HTMLIFrameElement();
   final _container = web.HTMLDivElement();
@@ -138,7 +141,10 @@ class GodotWebFrame {
     web.window.addEventListener('message', _listener);
     _loadListener = ((web.Event _) => _watchBootstrapFailure()).toJS;
     _frame.addEventListener('load', _loadListener);
-    _visibilityListener = ((web.Event _) => _updatePlayback()).toJS;
+    _visibilityListener = ((web.Event _) {
+      unawaited(_voice.setHostActive(!web.document.hidden));
+      _updatePlayback();
+    }).toJS;
     web.document.addEventListener('visibilitychange', _visibilityListener);
     ui.platformViewRegistry.registerViewFactory(_viewType, (_) => _container);
     _frame.src = Uri.base
@@ -151,6 +157,21 @@ class GodotWebFrame {
     final id = event['request_id'];
     final payload = event['payload'];
     if (id is! String || payload is! Map<String, dynamic>) return;
+    if (payload['request_kind'] == 'voice_audio') {
+      final result = await _voice.apply(payload);
+      if (!_disposed) {
+        _frame.contentWindow?.postMessage(
+          jsonEncode({
+            'bridge': 'pdd-godot',
+            'kind': 'voice_audio_result',
+            'request_id': id,
+            'data': result,
+          }).toJS,
+          web.window.location.origin.toJS,
+        );
+      }
+      return;
+    }
     if (payload['request_kind'] == 'voice_premium' ||
         payload['request_kind'] == 'garage_premium') {
       if (_premiumBusy) return;
@@ -259,6 +280,7 @@ class GodotWebFrame {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    unawaited(_voice.dispose());
     web.window.removeEventListener('message', _listener);
     _frame.removeEventListener('load', _loadListener);
     web.document.removeEventListener('visibilitychange', _visibilityListener);

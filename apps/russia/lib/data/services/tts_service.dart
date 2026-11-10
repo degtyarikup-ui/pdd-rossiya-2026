@@ -16,8 +16,9 @@ enum NarrationStatus { idle, loading, playing, voiceUnavailable, unavailable }
 /// Premium narration: studio recordings in Russian, device voices in English
 /// and Kazakh. Russian never falls back to synthesized speech.
 class TtsService {
-  TtsService._()
-    : _hasPremium = (() => PremiumService.instance.isPremium),
+  TtsService._({bool gamePlayback = false})
+    : _gamePlayback = gamePlayback,
+      _hasPremium = (() => PremiumService.instance.isPremium),
       _premiumExpiresAt = (() => PremiumService.instance.expiresAt),
       _premiumChanges = PremiumService.instance,
       _loadAsset = ((path) async {
@@ -36,7 +37,9 @@ class TtsService {
     required ValueListenable<bool> premium,
     DateTime? Function()? premiumExpiresAt,
     FlutterTts? systemTts,
-  }) : _audioPlayer = player,
+    bool gamePlayback = false,
+  }) : _gamePlayback = gamePlayback,
+       _audioPlayer = player,
        _tts = systemTts,
        _loadAsset = loadAsset,
        _hasPremium = (() => premium.value),
@@ -45,8 +48,12 @@ class TtsService {
     _premiumChanges.addListener(_onPremiumChanged);
   }
 
+  /// Independent lifecycle for the native game; shares the canonical recordings.
+  factory TtsService.forGame() => TtsService._(gamePlayback: true);
+
   static final TtsService instance = TtsService._();
 
+  final bool _gamePlayback;
   final Future<void> Function(String) _loadAsset;
   final bool Function() _hasPremium;
   final DateTime? Function() _premiumExpiresAt;
@@ -163,12 +170,16 @@ class TtsService {
       try {
         await player.setAudioContext(
           AudioContext(
-            android: const AudioContextAndroid(
+            android: AudioContextAndroid(
               isSpeakerphoneOn: false,
               stayAwake: false,
               contentType: AndroidContentType.speech,
               usageType: AndroidUsageType.media,
-              audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+              // The native game already owns focus. A second process must not
+              // duck or suspend Godot when the shared narration starts.
+              audioFocus: _gamePlayback
+                  ? AndroidAudioFocus.none
+                  : AndroidAudioFocus.gainTransientMayDuck,
             ),
             iOS: AudioContextIOS(
               category: AVAudioSessionCategory.playback,

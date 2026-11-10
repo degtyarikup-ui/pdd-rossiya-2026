@@ -18,6 +18,7 @@ var available := true
 var premium := false
 var premium_expires_at := 0.0
 var speed := 1.0
+var _shared: SharedQuestionVoice
 var _bus_name := ""
 var _pitch: AudioEffectPitchShift
 var _clips: Dictionary = {}
@@ -43,6 +44,10 @@ var _synth_timer_budget := 120.0
 
 
 func _ready() -> void:
+	if SharedQuestionVoice.supported():
+		_shared = SharedQuestionVoice.new()
+		_shared.acknowledged.connect(_on_shared_result)
+		add_child(_shared)
 	if FileAccess.file_exists(AUDIO_INDEX):
 		var index: Variant = JSON.parse_string(FileAccess.get_file_as_string(AUDIO_INDEX))
 		if index is Dictionary and index.get("language", "") == "ru":
@@ -100,6 +105,8 @@ func set_speed(value: float) -> void:
 		_pitch.pitch_scale = 1.0 / speed
 		var bus := AudioServer.get_bus_index(_bus_name)
 		if bus > 0: AudioServer.set_bus_effect_enabled(bus, 0, not is_equal_approx(speed, 1.0))
+	if not is_equal_approx(old, speed) and _shared != null and not _active_id.is_empty() and Ui.lang == "ru":
+		_sync_shared()
 	if not is_equal_approx(old, speed) and _synth_started:
 		_synth_offset += _synth_boundary
 		_synth_boundary = 0
@@ -146,6 +153,7 @@ func set_enabled(on: bool) -> void:
 ## is loaded quietly there and starts only after the player returns to the card.
 func suspend() -> void:
 	_suspended = true
+	if _shared != null: _sync_shared()
 	if _synth_started: _tts_pause()
 	if is_instance_valid(_player):
 		_player.stream_paused = true
@@ -158,6 +166,9 @@ func resume() -> void:
 	if Ui.lang in ["en", "kk"]:
 		if _synth_started: _tts_resume()
 		elif not _synth_completed: _start_synth()
+		return
+	if _shared != null:
+		_sync_shared()
 		return
 	if _ready_to_play:
 		_start_loaded()
@@ -178,6 +189,7 @@ func shutdown() -> void:
 
 func _cancel_audio() -> void:
 	_request += 1
+	if _shared != null: _shared.apply("", str(_request), true, speed)
 	_tts_utterance += 1
 	if _synth_started and _tts_available(): _tts_stop()
 	_synth_started = false
@@ -218,6 +230,9 @@ func _load_active() -> void:
 				_synth_text += "%d. %s. " % [i + 1, str(answers[i])]
 		if not _suspended: _start_synth()
 		return
+	if _shared != null:
+		_sync_shared()
+		return
 	_active_path = AUDIO_FOLDER + _file_for(_active_id)
 	var path := _active_path
 	var token := _request
@@ -225,6 +240,20 @@ func _load_active() -> void:
 	# Web requests can complete after an answer, a setting change or scene teardown.
 	# Capturing a weak reference leaves no callback pointing at a freed game node.
 	PackFiles.fetch(path, QuestionVoice._fetch_done.bind(holder, token, path))
+
+
+func _sync_shared() -> void:
+	var clip := str(_clips.get(_active_id, {}).get("sourceQuestionId", "")) if enabled and has_access() and not _closed and Ui.lang == "ru" else ""
+	_shared.apply(clip, "%s-%s" % [get_instance_id(), _request], _suspended, speed)
+
+func _on_shared_result(data: Dictionary) -> void:
+	if _closed or not enabled or not can_play(_active_id) or _active_id.is_empty(): return
+	if not data.get("ok", false):
+		_shared.apply("", str(_request), true, speed)
+		playback_unavailable.emit()
+	elif data.get("playing", false) and not _suspended and not _started:
+		_started = true
+		playback_started.emit(float(data.get("duration", duration(_active_id))))
 
 
 static func _fetch_done(ok: bool, holder: WeakRef, token: int, path: String) -> void:
