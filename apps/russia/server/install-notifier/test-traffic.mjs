@@ -127,19 +127,23 @@ test('simultaneous scores import the old board, preserve totals and delete throu
   assert.equal(JSON.parse(await e.INSTALLS.get(key)).u5, undefined);
 });
 
-test('registrations use one atomic outbox and durable Telegram deduplication', async () => {
+test('registrations count once without individual Telegram notifications', async () => {
   const e = setup();
   const user = { id: 'apple_test', provider: 'apple', app: 'ru', platform: 'ios', name: 'Test' };
   const body = { installId: user.id, legacyKey: 'notified_reg:' + user.id, registrationUser: user };
   const result = await Promise.all(Array.from({ length: 20 }, () => trafficRequest(e, 'counter:registered_users', 'install', body)));
   assert.equal(result.filter(r => r.isNew).length, 1);
-  await alarm(e.TRAFFIC.objects.get('counter:registered_users'));
+  const record = e.TRAFFIC.objects.get('counter:registered_users');
+  const pending = await record.state.storage.list({ prefix: 'out:' });
+  const [outKey, item] = pending.entries().next().value;
+  assert.equal(item.telegram, undefined);
+  // Simulate a registration persisted by the previous deployment.
+  await record.state.storage.put(outKey, { ...item, telegram: { text: 'old registration', topic: 'registrations' } });
+  await alarm(record);
+  assert.equal((await record.state.storage.list({ prefix: 'out:' })).size, 0);
   assert.equal((await queued(e.STATS.objects.get('main'))).size, 1);
-  const queue = e.TELEGRAM.objects.get(e.CHAT_ID);
-  assert.equal((await queued(queue)).size, 1);
-  const duplicate = await e.TELEGRAM.get(e.CHAT_ID).fetch('https://telegram/enqueue', { method: 'POST', body: JSON.stringify({ text: 'retry', dedupKey: body.legacyKey }) });
-  assert.equal((await duplicate.json()).duplicate, true);
-  assert.equal((await queued(queue)).size, 1);
+  assert.equal(e.TELEGRAM.objects.size, 0);
+  assert.equal(await e.INSTALLS.get('counter:registered_users'), '1');
 });
 
 test('partial KV failure + worker restart replay the persisted totals exactly once, even with stale KV reads', async () => {

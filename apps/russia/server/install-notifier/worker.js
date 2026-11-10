@@ -2984,28 +2984,23 @@ async function saveUserProfile(env, user) {
     return merged;
   }
 
-  // Trigger instant Telegram notification for registered users (provider !== 'guest')
+  // Count registrations for analytics and daily summaries without individual alerts.
   if (merged.provider && merged.provider !== 'guest' && !merged.suspect) {
     const notifKey = 'notified_reg:' + merged.id;
     try {
       const alreadyNotified = await env.INSTALLS.get(notifKey);
       if (!alreadyNotified) {
-        const regCount = await kvIncr(env, 'counter:registered_users');
+        await kvIncr(env, 'counter:registered_users');
         await trackStats(env, null, { kind: 'analytics', event: {
           type: 'registration',
           marketingSource: merged.marketingSource,
           app: merged.app,
           platform: merged.platform,
         } });
-        if (env.BOT_TOKEN && env.CHAT_ID) {
-          const msg = buildUserRegistrationMessage(merged, regCount);
-          const notification = await sendTelegram(env, msg, null, { topic: 'registrations' });
-          if (!notification.ok) throw new Error('registration notification queue unavailable');
-        }
         await env.INSTALLS.put(notifKey, '1');
       }
     } catch (e) {
-      console.error('Registration telegram notify error:', e);
+      console.error('Registration analytics error:', e);
     }
   }
 

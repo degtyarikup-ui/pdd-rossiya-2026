@@ -91,6 +91,9 @@ export class TelegramQueue {
   }
   async enqueue(body) {
     const { text, dedupKey, photoBase64, messages, topic } = body;
+    if (topic === 'registrations' || String(dedupKey || '').startsWith('notified_reg:')) {
+      return Response.json({ ok: true, suppressed: true });
+    }
     const explicitThreadId = body.threadId ?? body.message_thread_id;
     const resolvedThreadId = explicitThreadId ? Number(explicitThreadId) : await getTopicThreadId(this.env, topic);
     const items = messages || [{ text, ...(photoBase64 ? { photoBase64 } : {}) }];
@@ -342,6 +345,12 @@ export class TelegramQueue {
       const entries = await this.state.storage.list({ prefix: 'q:', limit: 1 });
       if (!entries.size) return;
       const [key, item] = entries.entries().next().value;
+      // Old queue records have no topic/dedup key, only the formatted text.
+      if (/Всего с аккаунтом: #/.test(item.text || '')) {
+        await this.state.storage.delete(key);
+        if ((await this.state.storage.list({ prefix: 'q:', limit: 1 })).size) await this.state.storage.setAlarm(Date.now() + 1000);
+        return;
+      }
       const readyAt = Math.max(item.notBefore || 0, await this.state.storage.get('telegram:retry_at') || 0);
       if (readyAt > Date.now()) { await this.state.storage.setAlarm(readyAt); return; }
       let delay = 3100;

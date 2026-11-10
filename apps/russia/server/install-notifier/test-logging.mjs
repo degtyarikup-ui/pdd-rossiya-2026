@@ -81,7 +81,7 @@ test('first known acquisition survives subsequent profile sync and missing field
   assert.equal((await call({marketingSource:'instagram',marketingCampaign:'later'})).status,200);
   const saved=JSON.parse(await env.INSTALLS.get('user:'+id));
   assert.equal(saved.marketingSource,'threads');assert.equal(saved.marketingCampaign,'launch');assert.equal(saved.device,'Phone');
-  assert.equal((await state.storage.list({prefix:'q:'})).size,1,'no duplicate registration');
+  assert.equal((await state.storage.list({prefix:'q:'})).size,0,'no individual registration notification');
 });
 test('seven-day chart uses 22–22 slots and missing history is explicitly unavailable',async()=>{
   const {env}=setup();await env.INSTALLS.put('slot:2026-10-03:night',JSON.stringify({installs:5,registrations:2}));await env.INSTALLS.put('slot:2026-10-03:day',JSON.stringify({installs:8,registrations:6}));
@@ -311,19 +311,19 @@ test('Premium report leaves an amount unavailable when the CBR rate for its day 
   assert.doesNotMatch(premium.text, /\$1\.24/);
 });
 
-test('Telegram topics route errors, purchases and registrations to configured thread IDs with resilient fallback', async () => {
+test('Telegram topics route errors and purchases to configured thread IDs with resilient fallback', async () => {
   const { env, state, queue } = setup();
   env.TELEGRAM_TOPIC_REGISTRATIONS = 101;
   env.TELEGRAM_TOPIC_PURCHASES = 202;
   env.TELEGRAM_TOPIC_ERRORS = 303;
 
-  // 1. Registrations
+  // 1. Purchases
   await queue.fetch(new Request('https://queue/enqueue', {
     method: 'POST',
-    body: JSON.stringify({ text: 'New user registered', topic: 'registrations' }),
+    body: JSON.stringify({ text: 'Purchase', topic: 'purchases' }),
   }));
   const regItem = (await state.storage.list({ prefix: 'q:' })).values().next().value;
-  assert.equal(regItem.threadId, 101);
+  assert.equal(regItem.threadId, 202);
 
   // 2. Alarm sends with message_thread_id in payload
   let sentBody = null;
@@ -334,8 +334,8 @@ test('Telegram topics route errors, purchases and registrations to configured th
       return Response.json({ ok: true });
     };
     await queue.alarm();
-    assert.equal(sentBody.message_thread_id, 101);
-    assert.equal(sentBody.text, 'New user registered');
+    assert.equal(sentBody.message_thread_id, 202);
+    assert.equal(sentBody.text, 'Purchase');
 
     // 3. Fallback when topic is deleted (Telegram returns 400 Bad Request with thread error)
     await queue.fetch(new Request('https://queue/enqueue', {
@@ -453,5 +453,20 @@ test('reconciliation reports the failing KV step without exposing cursor, accoun
         assert.equal(await kv.get(cursorKey), privateMarker);
       }
     }
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+ test('registration alerts are suppressed, including legacy queued messages', async () => {
+  const { queue, state } = setup();
+  const response = await queue.fetch(new Request('https://queue/enqueue', { method: 'POST', body: JSON.stringify({text:'New user',topic:'registrations'}) }));
+  assert.equal((await response.json()).suppressed, true);
+  await state.storage.put('q:0000000000000001', {text:'🇷🇺 Test\nВсего с аккаунтом: #9 616',threadId:101});
+  const originalFetch = globalThis.fetch;
+  let sent = 0;
+  try {
+    globalThis.fetch = async () => { sent++; return Response.json({ok:true}); };
+    await queue.alarm();
+    assert.equal(sent, 0);
+    assert.equal((await state.storage.list({prefix:'q:'})).size, 0);
   } finally { globalThis.fetch = originalFetch; }
 });

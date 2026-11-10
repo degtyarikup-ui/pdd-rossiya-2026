@@ -1,4 +1,3 @@
-import { buildUserRegistrationMessage } from './worker.js';
 import { awardGameScore, gameDailySummary, validGameRunId } from './game_scoring.js';
 
 // One object per counter / weekly board. KV remains a compatibility snapshot;
@@ -60,7 +59,6 @@ export class TrafficState {
           if (body.analytics || body.registrationUser) {
             const event = body.analytics || { type: 'registration', marketingSource: body.registrationUser.marketingSource, app: body.registrationUser.app, platform: body.registrationUser.platform };
             const outbox = { id: key + ':' + (body.installId || next), ts: Date.now(), kind: 'analytics', event };
-            if (body.registrationUser) outbox.telegram = { text: buildUserRegistrationMessage(body.registrationUser, next), dedupKey: body.legacyKey, topic: 'registrations' };
             await txn.put('out:' + (nonNew ? crypto.randomUUID() : String(next).padStart(16, '0')), outbox);
           }
           return next;
@@ -111,7 +109,7 @@ export class TrafficState {
       const value = await this.state.storage.get('value');
       try {
         // Outbox was committed together with the number. Retrying delivery
-        // cannot double-count analytics or enqueue duplicate Telegram messages.
+        // cannot double-count analytics.
         const entries = await this.state.storage.list({ prefix: 'out:', limit: 100 });
         for (const [outKey, item] of entries) {
           const { telegram, ...analytics } = item;
@@ -120,12 +118,7 @@ export class TrafficState {
             const result = await stats.fetch('https://stats/enqueue', { method: 'POST', body: JSON.stringify(analytics) });
             if (!result.ok) throw new Error('analytics queue unavailable');
           } else throw new Error('analytics binding missing');
-          if (telegram && this.env.BOT_TOKEN && this.env.CHAT_ID) {
-            if (!this.env.TELEGRAM) throw new Error('telegram binding missing');
-            const queue = this.env.TELEGRAM.get(this.env.TELEGRAM.idFromName(String(this.env.CHAT_ID)));
-            const result = await queue.fetch('https://telegram/enqueue', { method: 'POST', body: JSON.stringify(telegram) });
-            if (!result.ok) throw new Error('telegram queue unavailable');
-          }
+          // Discard legacy registration notifications; keep their analytics.
           await this.state.storage.delete(outKey);
         }
         if ((await this.state.storage.list({ prefix: 'out:', limit: 1 })).size) await this.state.storage.setAlarm(Date.now() + 60000);
