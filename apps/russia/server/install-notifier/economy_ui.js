@@ -1,3 +1,4 @@
+import { BRAND_SVGS, PLATEGA_LOGO } from './brand_icons.js';
 import { splitProfit } from './economy_shares.js';
 
 // Экономика: итог периода и единый журнал с отдельным учётом переводов и комиссий.
@@ -23,6 +24,7 @@ export const ECONOMY_VIEW_HTML = String.raw`
 #ec-receipts-body tr[data-row-kind="expense"]{--ec-operation:#B44337;--ec-operation-bg:#FCEEEA}
 #ec-receipts-body tr[data-row-kind="withdrawal"]{--ec-operation:#1D60B4;--ec-operation-bg:#EAF2FF}
 #ec-receipts-body tr[data-row-kind="commission"]{--ec-operation:#94620B;--ec-operation-bg:#FFF3DC}
+.ec-source-logo{display:inline-flex;width:14px;height:14px;vertical-align:-3px;margin-right:4px;align-items:center;justify-content:center}.ec-source-logo svg,.ec-source-logo img{display:block;width:14px;height:14px}
 .ec-operation{display:flex;align-items:center;gap:12px;min-width:0}.ec-operation-text{min-width:0;flex:1}.ec-operation-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 36px;width:36px;height:36px;border-radius:11px;background:var(--ec-operation-bg);color:var(--ec-operation)}.ec-operation-icon svg{width:19px;height:19px}
 #ec-receipts-body .ec-row-title{font-size:13px;font-weight:650}#ec-receipts-body .ec-sub{font-size:11px;margin-top:4px}
 .ec-type-badge{display:inline-flex;align-items:center;white-space:nowrap;padding:5px 9px;border-radius:7px;background:var(--ec-operation-bg);color:var(--ec-operation);font-size:11px;font-weight:600;line-height:1.35}
@@ -79,6 +81,8 @@ export const ECONOMY_CLIENT_JS = String.raw`
 (function() {
  'use strict';
  var splitProfit=${splitProfit.toString()};
+ var sourceLogos=${JSON.stringify({appstore:BRAND_SVGS.apple,googleplay:BRAND_SVGS.gplay,rustore:BRAND_SVGS.rustore,web:'<img src="data:image/svg+xml,'+encodeURIComponent(PLATEGA_LOGO)+'" alt="">'})};
+ function sourceLogo(key){return sourceLogos[key]?'<span class="ec-source-logo" aria-hidden="true">'+sourceLogos[key]+'</span>':'';}
  var stats=null,period='month',receiptMode='all',page=0,requestId=0,loading=null,dialogContext=null,saving=false,returnFocus=null,journal=[],plategaData=null,plategaLoading=false;
  var stores={web:'СБП · Platega',appstore:'App Store',googleplay:'Google Play',rustore:'RuStore',other:'Другое'};
  var frequencies={once:'Без повторения',monthly:'Ежемесячно',yearly:'Ежегодно'};
@@ -215,7 +219,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
   el('ec-receipts-body').innerHTML=rows.length?rows.slice(page*size,(page+1)*size).map(function(row){
    var sign=row.kind==='income'?'+':row.kind==='expense'||row.kind==='commission'?'−':'';
    var sub=[row.source,row.sub].filter(Boolean).join(' · ');
-   return '<tr data-row-kind="'+row.kind+'"><td class="ec-date">'+esc(row.dateLabel||dateText(row.date,true))+'</td><td class="ec-name"><div class="ec-operation">'+operationIcon(row.kind)+'<div class="ec-operation-text"><button type="button" class="ec-row-title" '+rowAction(row)+'>'+esc(row.title)+'</button><span class="ec-sub">'+esc(sub)+'</span></div></div></td><td class="ec-kind"><span class="ec-type-badge">'+kindLabels[row.kind]+'</span></td><td class="ec-money '+row.kind+'">'+sign+usd(row.amountUsd)+(row.feeUsd>0?'<span class="ec-sub">Комиссия −'+usd(row.feeUsd)+'</span>':'')+(row.currency==='RUB'&&row.amount!=null?'<span class="ec-sub">'+money(row.amount,'RUB')+'</span>':'')+'</td><td class="ec-cell-action"><button type="button" class="ec-edit" '+rowAction(row)+' aria-label="'+esc((row.editKind?'Редактировать ':'Подробнее: ')+row.title)+'" title="'+(row.editKind?'Редактировать':'Подробнее')+'">'+(row.editKind?editIcon:infoIcon)+'</button></td></tr>';
+   return '<tr data-row-kind="'+row.kind+'"><td class="ec-date">'+esc(row.dateLabel||dateText(row.date,true))+'</td><td class="ec-name"><div class="ec-operation">'+operationIcon(row.kind)+'<div class="ec-operation-text"><button type="button" class="ec-row-title" '+rowAction(row)+'>'+esc(row.title)+'</button><span class="ec-sub">'+sourceLogo(row.sourceKey)+esc(sub)+'</span></div></div></td><td class="ec-kind"><span class="ec-type-badge">'+kindLabels[row.kind]+'</span></td><td class="ec-money '+row.kind+'">'+sign+usd(row.amountUsd)+(row.feeUsd>0?'<span class="ec-sub">Комиссия −'+usd(row.feeUsd)+'</span>':'')+(row.currency==='RUB'&&row.amount!=null?'<span class="ec-sub">'+money(row.amount,'RUB')+'</span>':'')+'</td><td class="ec-cell-action"><button type="button" class="ec-edit" '+rowAction(row)+' aria-label="'+esc((row.editKind?'Редактировать ':'Подробнее: ')+row.title)+'" title="'+(row.editKind?'Редактировать':'Подробнее')+'">'+(row.editKind?editIcon:infoIcon)+'</button></td></tr>';
   }).join(''):'<tr><td colspan="5" class="ec-empty">'+(query||source!=='all'?'Ничего не найдено':'За этот период операций нет')+'</td></tr>';
   set('ec-page-info',rows.length?(page*size+1)+'–'+Math.min((page+1)*size,rows.length)+' из '+rows.length:'');el('ec-prev').disabled=page===0;el('ec-next').disabled=page>=pages-1;
  }
