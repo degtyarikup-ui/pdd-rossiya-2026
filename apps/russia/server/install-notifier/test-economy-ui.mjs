@@ -179,6 +179,18 @@ if (process.argv.includes('--serve')) {
       assert.match(await page.locator('#ec-fx-status').innerText(),/ЦБ.*95/);
       assert.equal(initial.receipts.some(row=>row.isTest),false);
       assert.match(await page.locator('#ec-receipts-body').innerText(), /Анна/);
+      const sbpRow = page.locator('#ec-receipts-body tr').filter({ has: page.locator('[data-detail-key="receipt:fixture-sbp"]') });
+      assert.match(await sbpRow.innerText(), /Комиссия −\$0,24/);
+      await open('#ec-receipts-body .ec-edit[data-detail-key="receipt:fixture-sbp"]');
+      assert.match(await page.locator('#ec-form').innerText(), /МСК/);
+      await page.locator('#ec-cancel').click();
+      assert.equal(await page.locator('[data-detail-key="payment-fees"]').count(), 0);
+      await mode('commission');
+      const feeRow = page.locator('#ec-receipts-body tr').filter({ hasText: 'Комиссия Platega' });
+      assert.equal(await feeRow.count(), 1);
+      assert.doesNotMatch(await feeRow.innerText(), /За период/);
+      assert.match(await feeRow.innerText(), /−\$0,24/);
+      await mode('all');
       assert.equal(await page.locator('#ec-expense-register').getAttribute('open'), null);
       await screenshot('desktop');
       // Provider balances are current reference values and never become revenue.
