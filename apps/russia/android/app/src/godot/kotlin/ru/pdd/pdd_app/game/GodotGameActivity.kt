@@ -63,6 +63,12 @@ class GodotGameActivity : FragmentActivity(), GodotHost {
         loader = MascotLoadingOverlay(this, "--dark" in arguments, "--reduce-motion" in arguments)
         content.addView(loader, FrameLayout.LayoutParams(-1, -1))
         setContentView(content)
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(content) { _, insets ->
+            content.post { updateSafeBottom() }
+            insets
+        }
+        surface.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> updateSafeBottom() }
+        androidx.core.view.ViewCompat.requestApplyInsets(content)
         styleLoadingBars()
         if ("--loader-profile" in arguments && android.os.Build.VERSION.SDK_INT >= 24) {
             loaderProfiler = LoaderFrameProfiler(window).also { it.start(loadingPhase) }
@@ -125,12 +131,30 @@ class GodotGameActivity : FragmentActivity(), GodotHost {
     override fun getHostPlugins(engine: Godot): MutableSet<GodotPlugin> {
         val plugin = PddHostPlugin(engine, this)
         hostPlugin = plugin
-        return mutableSetOf(plugin)
+        return mutableSetOf(plugin, GameInsetsPlugin(engine, this))
     }
 
     override fun getActivity(): Activity = this
 
     override fun getGodot(): Godot? = fragment?.godot
+
+    @Volatile var safeBottomDp: Double = 0.0
+        private set
+
+    private fun updateSafeBottom() {
+        if (!::surface.isInitialized || surface.height == 0) return
+        val insets = androidx.core.view.ViewCompat.getRootWindowInsets(window.decorView) ?: return
+        // Reserve transient navigation too: answers must not jump when bars appear.
+        val navigation = insets.getInsetsIgnoringVisibility(
+            androidx.core.view.WindowInsetsCompat.Type.navigationBars()).bottom
+        val gestures = insets.getInsets(
+            androidx.core.view.WindowInsetsCompat.Type.systemGestures()).bottom
+        val location = IntArray(2)
+        surface.getLocationInWindow(location)
+        val alreadyOutsideSurface = (window.decorView.height - location[1] - surface.height).coerceAtLeast(0)
+        safeBottomDp = ((maxOf(navigation, gestures) - alreadyOutsideSurface).coerceAtLeast(0) /
+            resources.displayMetrics.density).toDouble()
+    }
 
     private fun argument(name: String): String =
         arguments.firstOrNull { it.startsWith("$name=") }?.substringAfter('=') ?: ""

@@ -9,6 +9,7 @@ import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/question_identity.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 
 enum NarrationStatus { idle, loading, playing, voiceUnavailable, unavailable }
@@ -160,12 +161,28 @@ class TtsService {
   Future<void> _ensureConfigured() async {
     if (_configured) return;
     final player = _audioPlayer ??= AudioPlayer();
-    _completionSubscription ??= player.onPlayerComplete.listen((_) {
-      if (!_usingSystem && _hasSource) {
+    _completionSubscription ??= player.onPlayerComplete.listen(
+      (_) {
+        if (!_usingSystem && _hasSource) {
+          _hasSource = false;
+          _status.value = NarrationStatus.idle;
+        }
+      },
+      // The player reports a failed playback (a recording this device cannot
+      // decode, a lost audio output) as a stream error. Without a handler it
+      // became an unhandled application error and the button stayed "playing".
+      onError: (Object error, StackTrace _) {
+        if (_usingSystem || !_hasSource) return;
         _hasSource = false;
-        _status.value = NarrationStatus.idle;
-      }
-    });
+        _status.value = NarrationStatus.unavailable;
+        ErrorReporter.report(
+          ErrorCategory.app,
+          'narration.playback',
+          code: 'playback_failed',
+          error: error,
+        );
+      },
+    );
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       try {
         await player.setAudioContext(

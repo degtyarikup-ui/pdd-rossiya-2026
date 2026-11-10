@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 import 'package:pdd_app/data/services/tts_service.dart';
 
@@ -25,6 +26,11 @@ class GameVoiceService {
     final playback = state['playback'];
     final paused = state['paused'];
     final rate = state['speed'];
+    if (const bool.fromEnvironment('GAME_DEBUG')) {
+      debugPrint(
+        'GameVoice input revision=$revision type=${revision.runtimeType} clip=$clip playback=$playback paused=$paused speed=$rate disposed=$_disposed last=$_revision',
+      );
+    }
     if (_disposed ||
         revision is! int ||
         revision <= _revision ||
@@ -34,6 +40,9 @@ class GameVoiceService {
         rate is! num ||
         ![0.8, 1.0, 1.2, 1.5].contains(rate.toDouble()) ||
         (clip.isNotEmpty && !RegExp(r'^[a-f0-9]{32}$').hasMatch(clip))) {
+      if (const bool.fromEnvironment('GAME_DEBUG')) {
+        debugPrint('GameVoice rejected state');
+      }
       return Future.value({'ok': false});
     }
     _revision = revision;
@@ -60,6 +69,11 @@ class GameVoiceService {
           question: '',
           answers: const [],
         );
+        if (const bool.fromEnvironment('GAME_DEBUG')) {
+          debugPrint(
+            'GameVoice loaded duration=$duration status=${_narration.status.value}',
+          );
+        }
         // Pause/speed snapshots can arrive during loading. They still own this
         // clip; record the successful load so resume never restarts its phrase.
         if (!_disposed &&
@@ -80,7 +94,12 @@ class GameVoiceService {
       };
     });
     _queue = task.then<void>((_) {}, onError: (Object _, StackTrace _) {});
-    return task.catchError((Object _) => <String, dynamic>{'ok': false});
+    return task.catchError((Object error) {
+      if (const bool.fromEnvironment('GAME_DEBUG')) {
+        debugPrint('GameVoice error ${error.runtimeType}');
+      }
+      return <String, dynamic>{'ok': false};
+    });
   }
 
   /// iOS/web can suspend their render/poll loop before Godot's pause arrives.

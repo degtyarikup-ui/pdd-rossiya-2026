@@ -1395,6 +1395,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось завершить вход. Попробуйте ещё раз.';
 
   @override
+  String get authRetry => 'Повторить';
+
+  @override
   String get paySuccessActivated => 'Премиум включён. Спасибо!';
 
   @override

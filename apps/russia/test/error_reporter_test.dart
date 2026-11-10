@@ -17,6 +17,50 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  test('an unlisted plugin code keeps a fingerprint, never the raw value', () {
+    final context = ErrorReporter.contextFor(
+      error: PlatformException(
+        code: 'AndroidAudioError',
+        message: 'TOP_SECRET',
+      ),
+      context: {'stage': 'unhandled'},
+    );
+    expect(context['stage'], 'unhandled');
+    expect(context['sdkCodeHash'], matches(RegExp(r'^[a-f0-9]{16}$')));
+    expect(
+      DiagnosticContext.sanitize(context)['sdkCodeHash'],
+      context['sdkCodeHash'],
+    );
+    expect(context.toString(), isNot(contains('AndroidAudioError')));
+    expect(context.toString(), isNot(contains('TOP_SECRET')));
+    // The same plugin code always gives the same fingerprint; another differs.
+    expect(
+      ErrorReporter.contextFor(
+        error: PlatformException(code: 'AndroidAudioError'),
+      )['sdkCodeHash'],
+      context['sdkCodeHash'],
+    );
+    expect(
+      ErrorReporter.contextFor(
+        error: PlatformException(code: 'DarwinAudioError'),
+      )['sdkCodeHash'],
+      isNot(context['sdkCodeHash']),
+    );
+    // Listed codes already say what failed; a caller's own fingerprint wins.
+    expect(
+      ErrorReporter.contextFor(error: PlatformException(code: 'network_error')),
+      isEmpty,
+    );
+    expect(
+      ErrorReporter.contextFor(
+        error: PlatformException(code: 'x'),
+        context: {'sdkCodeHash': 'a' * 16},
+      )['sdkCodeHash'],
+      'a' * 16,
+    );
+    expect(ErrorReporter.contextFor(error: StateError('x')), isEmpty);
+  });
+
   test('image diagnostics distinguish their subsystem without raw text', () {
     final image = DiagnosticContext.frameworkStage('image resource service');
     expect(image, 'framework_image');

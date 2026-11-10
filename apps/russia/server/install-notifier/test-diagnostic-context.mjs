@@ -153,16 +153,15 @@ test('auth transport preserves bounded HTTP status and stage without raw respons
  assert.equal(sanitizeDiagnosticContext({httpStatus:999}).httpStatus,undefined);
 });
 
-test('bare framework HTTP alerts group across builds per platform but keep actionable detail and CSV rows', async () => {
+test('bare framework network failures stay in the CSV without alerts, other framework errors still alert', async () => {
   const {env, storage} = setup();
   const event = {origin:'client', category:'app', operation:'flutter.framework', code:'network:http',
     platform:'iOS', appVersion:'2.2.9', context:{stage:'framework'}};
-  for (const delta of [{}, {platform:'ios', appVersion:'2.2.10'}, {platform:'android'}, {status:403},
-    {context:{stage:'framework', frames:['package:pdd_app/main.dart:42']}}]) {
+  for (const delta of [{}, {platform:'android', appVersion:'2.2.10'},
+    {context:{stage:'framework', frames:['package:pdd_app/main.dart:42']}}, {code:'invalid_response'}]) {
     await reportIncident(env, {...event, ...delta, id:id()});
   }
-  assert.deepEqual(entries(storage, 'log:').map(row => row.notificationReason),
-    ['sent', 'grouped', 'sent', 'sent', 'sent']);
-  assert.equal(entries(storage, 'q:').length, 4);
-  assert.equal(diagnosticNotificationPolicy(event).windowMs, 6 * 3600000);
+  assert.deepEqual(entries(storage, 'log:').map(row => row.notificationReason).sort(),
+    ['environment', 'environment', 'environment', 'sent']);
+  assert.equal(entries(storage, 'q:').length, 1);
 });

@@ -1375,6 +1375,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get authErrorResponse => 'Кіру аяқталмады. Қайталап көріңіз.';
 
   @override
+  String get authRetry => 'Қайталау';
+
+  @override
   String get paySuccessActivated => 'Премиум қосылды. Рақмет!';
 
   @override

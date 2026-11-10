@@ -35,6 +35,7 @@ const GROUP_GAP := 16.0
 
 
 func _ready() -> void:
+	Ui.watch_insets(self, _layout)
 	layer = 10
 	var root := Control.new()
 	_root = root

@@ -32,10 +32,10 @@ const messages = async state => [...(await state.storage.list({ prefix: 'q:' }))
 
 test('diagnostics require the app key, validate a whole batch and enforce actual byte limits', async () => {
   const { env, state } = setup();
-  const valid = { installId: 'b'.repeat(32), events: [event()] };
+  const valid = { installId: 'b'.repeat(32), events: [event({ code: 'missing_credential' })] };
   assert.equal((await handleClientIncident(request(valid, { 'x-install-secret': '' }), env)).status, 403);
   assert.equal((await handleClientIncident(request('x'.repeat(16385)), env)).status, 413);
-  for (const body of [{ ...valid, installId: 'wrong' }, { ...valid, events: [event(), event({ ts: 0 })] }, { ...valid, events: [event({ category: 'infrastructure' })] }, { ...valid, events: [event({ operation: '<script>' })] }]) {
+  for (const body of [{ ...valid, installId: 'wrong' }, { ...valid, events: [event({ code: 'missing_credential' }), event({ ts: 0 })] }, { ...valid, events: [event({ category: 'infrastructure' })] }, { ...valid, events: [event({ operation: '<script>' })] }]) {
     assert.equal((await handleClientIncident(request(body), env)).status, 400);
   }
   assert.equal((await messages(state)).length, 0);
@@ -47,13 +47,13 @@ test('diagnostics require the app key, validate a whole batch and enforce actual
 test('messages escape HTML, omit raw secrets and only show verified account identity', async () => {
   const { env, state } = setup();
   const token = await signSession(env, { user: { id: 'google_real' }, expiresAt: Date.now() + 60000, generation: '' });
-  const body = { installId: 'b'.repeat(32), events: [event({ userId: 'google_fake', message: 'credential=TOP_SECRET', stack: 'Bearer TOP_SECRET', device: '<phone>' })] };
+  const body = { installId: 'b'.repeat(32), events: [event({ code: 'missing_credential', userId: 'google_fake', message: 'credential=TOP_SECRET', stack: 'Bearer TOP_SECRET', device: '<phone>' })] };
   await handleClientIncident(request(body, { authorization: 'Bearer ' + token }), env);
   const text = (await messages(state))[0];
   assert.doesNotMatch(text, /TOP_SECRET|google_fake|<phone>|b{32}/);
   assert.match(text, /&lt;phone&gt;/);
   assert.match(text, /Установка:/);
-  body.events = [event({ id: 'c'.repeat(32), operation: 'auth.session', userId: 'google_real' })];
+  body.events = [event({ id: 'c'.repeat(32), operation: 'auth.session', code: 'invalid_response', userId: 'google_real' })];
   await handleClientIncident(request(body, { authorization: 'Bearer ' + token }), env);
   assert.match((await messages(state))[1], /google_real/);
 });
@@ -268,7 +268,7 @@ test('storage outage retains trusted session context and unverified clients cann
   assert.match((await messages(state))[0], /Анна/);
   assert.match((await messages(state))[0], /anna@example.org/);
   env.INSTALLS = new Storage();
-  await handleClientIncident(request({ installId: 'b'.repeat(32), events: [event({ id: 'd'.repeat(32), operation: 'auth.session', userId: 'google_fake', user: { id: 'google_fake', name: 'FAKE_NAME', email: 'fake@example.org' }, userName: 'FAKE_NAME' })] }), env);
+  await handleClientIncident(request({ installId: 'b'.repeat(32), events: [event({ id: 'd'.repeat(32), operation: 'auth.session', code: 'invalid_response', userId: 'google_fake', user: { id: 'google_fake', name: 'FAKE_NAME', email: 'fake@example.org' }, userName: 'FAKE_NAME' })] }), env);
   const message = (await messages(state))[1];
   assert.match(message, /Аккаунт ещё не определён/);
   assert.doesNotMatch(message, /FAKE_NAME|fake@example.org|google_fake/);

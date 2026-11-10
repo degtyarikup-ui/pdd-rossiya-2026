@@ -18,7 +18,7 @@ class Storage {
   async transaction(fn) { return fn(this); }
 }
 const RECEIVED = Date.parse('2026-10-27T10:06:00Z');
-const OCCURRED = Date.parse('2026-10-22T10:37:17Z');
+const OCCURRED = Date.parse('2026-10-26T10:37:17Z');
 function setup(t) {
   const originalNow = Date.now, originalFetch = globalThis.fetch;
   let now = RECEIVED;
@@ -40,7 +40,7 @@ const request = events => new Request('https://test/api/diagnostics', { method: 
   body: JSON.stringify({ installId: 'b'.repeat(32), events }) });
 const messages = async f => [...(await f.state.storage.list({ prefix: 'q:' })).values()].map(item => item.text);
 
-test('old client event received today keeps original time and appears in today export with trusted receipt', async t => {
+test('delayed client event keeps original time and appears in today export with trusted receipt', async t => {
   const f = setup(t);
   assert.equal((await handleClientIncident(request([event({ receivedAt: 1 })]), f.env)).status, 200);
   const records = await f.queue.readErrorLog(exportStart('day', RECEIVED));
@@ -49,7 +49,7 @@ test('old client event received today keeps original time and appears in today e
   assert.equal(records[0].receivedAt, RECEIVED, 'client cannot choose the reception time');
   assert.equal(records[0].code, 'storekit_no_response', 'catalog failure remains actionable');
   const message = (await messages(f))[0];
-  assert.match(message, /Время события на устройстве: 22\.10\.2026, 13:37:17 МСК/);
+  assert.match(message, /Время события на устройстве: 26\.10\.2026, 13:37:17 МСК/);
   assert.match(message, /Получено сервером: 27\.10\.2026, 13:06:00 МСК/);
   assert.match(message, /отложенная отправка.*неточные часы/);
   let exported;
@@ -59,7 +59,7 @@ test('old client event received today keeps original time and appears in today e
   assert.match(exported.fileName, /sutki-2026-10-27/);
   const [header, row] = exported.csv.slice(1).trim().split('\r\n').map(line => line.split(';'));
   assert.equal(header.length, 44);
-  assert.equal(row[0], '22.10.2026 13:37:17');
+  assert.equal(row[0], '26.10.2026 13:37:17');
   assert.equal(header[43], 'Получено сервером (МСК)');
   assert.equal(row[43], '27.10.2026 13:06:00');
 });
@@ -127,20 +127,15 @@ test('legacy records fall back to event time without rewriting existing keys', a
   assert.equal(mskStamp(errorLogTime(records[0])), mskStamp(recent));
 });
 
-test('delayed auth batches stay within Telegram size limit and retain all original event records', async t => {
+test('a report older than a day is kept for the export without a chat message', async t => {
   const f = setup(t);
-  const events = Array.from({ length: 8 }, (_, i) => event({ id: (i + 1).toString(16).padStart(32, '0'),
-    category: 'auth', operation: i % 2 ? 'auth.session' : 'auth.provider', code: 'timeout:' + (i + 1) + 'x',
-    provider: ['google', 'apple', 'yandex', 'telegram'][i % 4], device: '&'.repeat(100),
-    context: { stage: 'provider', attempt: i + 1, errorType: 'TimeoutException', frames: ['auth_service.dart:1234:56'] } }));
-  assert.equal((await handleClientIncident(request(events), f.env)).status, 200);
-  const queued = await messages(f);
-  assert.ok(queued.length >= 1);
-  assert.ok(queued.length < events.length, 'related events still coalesce');
-  for (const text of queued) {
-    assert.ok(text.length <= 4096, 'delayed receipt lines must fit the existing limit');
-    assert.match(text, /Получено сервером/);
-  }
-  assert.equal((await f.queue.readErrorLog(exportStart('day', RECEIVED))).length, events.length);
-  for (const item of events) assert.equal(queued.filter(text => text.includes('Код: <code>' + item.code + '</code>')).length, 1);
+  const old = RECEIVED - 5 * 86400000;
+  assert.equal((await handleClientIncident(request([event({ ts: old })]), f.env)).status, 200);
+  assert.deepEqual(await messages(f), []);
+  const [record] = await f.queue.readErrorLog(exportStart('day', RECEIVED));
+  assert.equal(record.ts, old);
+  assert.equal(record.receivedAt, RECEIVED);
+  assert.equal(record.sent, false);
+  assert.equal(record.notificationReason, 'stale');
+  assert.match(buildErrorCsv([record]), /нет \(пришло с опозданием больше суток\)/);
 });

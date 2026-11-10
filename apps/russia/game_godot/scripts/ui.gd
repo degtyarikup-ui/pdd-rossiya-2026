@@ -169,6 +169,8 @@ static func insets(viewport: Viewport) -> Dictionary:
 		safe["top"] = maxf(float(safe["top"]), top_dp * dp(viewport))
 	if bottom_dp >= 0.0:
 		safe["bottom"] = maxf(float(safe["bottom"]), bottom_dp * dp(viewport))
+	if Engine.has_singleton("PddInsets"):
+		safe["bottom"] = maxf(float(safe["bottom"]), float(Engine.get_singleton("PddInsets").bottomDp()) * dp(viewport))
 	return safe
 
 
@@ -225,3 +227,19 @@ static func _engine_insets(viewport: Viewport) -> Dictionary:
 		"left": maxf(0.0, safe.position.x) * scale,
 		"right": maxf(0.0, win.x - (safe.position.x + safe.size.x)) * scale,
 	}
+
+
+## Native window insets can arrive after the first frame, without a viewport resize.
+## Only relayout when geometry actually changes; existing spacing is the floor.
+static func watch_insets(node: Node, relayout: Callable) -> void:
+	var previous := [insets(node.get_viewport())]
+	var timer := Timer.new()
+	timer.wait_time = 0.2
+	timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	node.add_child(timer)
+	timer.timeout.connect(func():
+		var current := insets(node.get_viewport())
+		if current != previous[0]:
+			previous[0] = current
+			relayout.call())
+	timer.start()

@@ -97,6 +97,7 @@ func _process(delta: float) -> void:
 
 
 func _ready() -> void:
+	Ui.watch_insets(self, _layout)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 

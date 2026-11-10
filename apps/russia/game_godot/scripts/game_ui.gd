@@ -89,6 +89,7 @@ func _ready() -> void:
 	_top = ins.top / _u
 	_bottom = ins.bottom / _u
 	_build_hud()
+	Ui.watch_insets(self, _refresh_safe_bottom)
 
 
 func _view_size() -> Vector2:
@@ -510,6 +511,8 @@ func _sheet_shell(max_ratio: float, top_padding := 12, bottom_padding := 10) -> 
 	panel.set_meta("scroll", scroll)
 	panel.set_meta("box", box)
 	panel.set_meta("layout", layout)
+	panel.set_meta("base_padding", top_padding + bottom_padding)
+	panel.set_meta("bottom_padding", bottom_padding)
 	panel.set_meta("padding", top_padding + bottom_padding + int(_bottom))
 	return [panel, box]
 
@@ -1079,3 +1082,25 @@ func _wide_button(text: String, bg: Color, fg: Color, action: Callable) -> Panel
 	btn.add_child(bl)
 	_tap(btn, action)
 	return btn
+
+
+func _refresh_safe_bottom() -> void:
+	var next_bottom: float = Ui.insets(get_viewport()).bottom / _u
+	if is_equal_approx(next_bottom, _bottom): return
+	_bottom = next_bottom
+	# Update open and warmed sheets in place, preserving answers, scroll and timers.
+	for panel in _root.get_children():
+		if not panel.has_meta("base_padding") or bool(panel.get_meta("closing", false)): continue
+		var margin: MarginContainer = panel.get_child(0)
+		margin.add_theme_constant_override("margin_bottom", int(panel.get_meta("bottom_padding")) + int(_bottom))
+		panel.set_meta("padding", int(panel.get_meta("base_padding")) + int(_bottom))
+		var fixed_height := float(panel.get_meta("padding"))
+		if panel.has_meta("footer"):
+			fixed_height += panel.get_meta("footer").get_combined_minimum_size().y + panel.get_meta("layout").get_theme_constant("separation")
+		var height := floorf(minf(panel.get_meta("box").get_combined_minimum_size().y + fixed_height,
+			minf(float(panel.get_meta("max_h")), _view_size().y - (_top + 100.0))))
+		panel.get_meta("scroll").custom_minimum_size.y = maxf(0.0, height - fixed_height)
+		var motion = panel.get_meta("motion", null)
+		if motion is Tween and motion.is_running(): motion.kill()
+		panel.size.y = height
+		panel.position.y = _view_size().y - height

@@ -40,7 +40,7 @@ export function errorLogRecord(incident, { ts, sent, level, reason }) {
     id: String(incident.id || ''),
     level: level || '',
     sent: Boolean(sent),
-    notificationReason: ['sent', 'coalesced', 'grouped', 'burst_limit', 'info_only'].includes(reason) ? reason : '',
+    notificationReason: ['sent', 'coalesced', 'grouped', 'burst_limit', 'info_only', 'environment', 'stale', 'test_device'].includes(reason) ? reason : '',
     origin: incident.origin || '',
     category: incident.category || '',
     operation: incident.operation || '',
@@ -99,12 +99,20 @@ const HEADER = [
   'Получено сервером (МСК)',
 ];
 
+const NOT_SENT_LABELS = {
+  info_only: 'нет (для сведения)',
+  burst_limit: 'нет (ограничение потока)',
+  environment: 'нет (связь или устройство человека — в суточной сводке)',
+  stale: 'нет (пришло с опозданием больше суток)',
+  test_device: 'нет (эмулятор или тестовое устройство)',
+};
+
 function rowOf(record) {
   record = { ...record, context: sanitizeDiagnosticContext(record.context) };
   return [
     mskStamp(record.ts),
     record.level,
-    record.sent ? 'да' : record.notificationReason === 'info_only' ? 'нет (для сведения)' : record.notificationReason === 'burst_limit' ? 'нет (ограничение потока)' : 'нет (повтор, свёрнуто)',
+    record.sent ? 'да' : NOT_SENT_LABELS[record.notificationReason] || 'нет (повтор, свёрнуто)',
     record.origin === 'client' ? 'приложение' : record.origin === 'server' ? 'сервер' : '',
     record.category,
     record.operation,

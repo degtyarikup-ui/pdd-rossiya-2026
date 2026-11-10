@@ -42,6 +42,27 @@ enum AuthFailure {
   response,
 }
 
+/// A system sign-in window stayed open past its limit: left unfinished, not failed.
+class _SignInAbandoned implements Exception {
+  const _SignInAbandoned();
+}
+
+/// An account already confirmed by Google, Apple or Yandex whose exchange with
+/// our server failed only because of the connection.
+class _PendingCredential {
+  _PendingCredential({
+    required this.provider,
+    required this.credential,
+    required this.expectedUserId,
+    required this.name,
+    required this.authorizationCode,
+    DateTime? until,
+  }) : until = until ?? DateTime.now().add(AuthService.retryWindow);
+  final String provider, credential;
+  final String? expectedUserId, name, authorizationCode;
+  final DateTime until;
+}
+
 class _SignInAttempt {
   _SignInAttempt(this.id, this.provider, this.revision, this.previousSession)
     : client = http.Client();
@@ -81,6 +102,42 @@ class AuthService extends ChangeNotifier {
   bool sessionIsTemporary = false;
   Uri? appleManualRevocationUrl;
   bool appleRevocationPending = false;
+
+  /// How long a confirmed account may be retried against our server. Shorter
+  /// than the lifetime of any provider's confirmation; kept in memory only.
+  static const retryWindow = Duration(minutes: 4);
+  _PendingCredential? _pendingCredential;
+
+  /// The last sign-in stopped at the connection to our server after the
+  /// account was already chosen: [retrySignIn] repeats only that last step.
+  bool get canRetrySignIn {
+    final pending = _pendingCredential;
+    return pending != null &&
+        DateTime.now().isBefore(pending.until) &&
+        !isSigningIn;
+  }
+
+  /// Repeats the exchange with our server for the account chosen a moment
+  /// ago, so a dropped connection does not send the person through Google,
+  /// Apple or Yandex again.
+  Future<bool> retrySignIn() {
+    final pending = _pendingCredential;
+    if (pending == null || !canRetrySignIn) return Future.value(false);
+    return _runSignIn(
+      pending.provider,
+      (attempt) => _completeCredential(
+        attempt,
+        pending.credential,
+        expectedUserId: pending.expectedUserId,
+        name: pending.name,
+        authorizationCode: pending.authorizationCode,
+        retryUntil: pending.until,
+      ),
+    );
+  }
+
+  /// The sign-in screen closed: a kept confirmation must not outlive it.
+  void discardSignInRetry() => _pendingCredential = null;
 
   _SignInAttempt? _activeSignIn;
   _SignInAttempt? _providerHold;
@@ -203,19 +260,41 @@ class AuthService extends ChangeNotifier {
     _updateSignInBusy();
   }
 
+  /// How long a system sign-in window (Google, Apple) may stay open. Adding an
+  /// account to the phone with a password and a confirmation code easily takes
+  /// several minutes; the old two-minute limit dropped such sign-ins when the
+  /// person finally finished. The limit only guards against a window that
+  /// never reports back.
+  @visibleForTesting
+  static Duration interactiveWindowLimit = const Duration(minutes: 10);
+
+  /// A browser does not always report a closed sign-in window, so the web
+  /// limit stays short: it is the only thing that ends such an attempt.
+  @visibleForTesting
+  static Duration browserWindowLimit = const Duration(minutes: 2);
+
   /// [timeout] null: our own sheets (Yandex, Telegram) always resolve when
   /// closed, and typing a password or an SMS code may take longer than any
   /// limit — a timeout there would drop a login that is still in progress.
+  ///
+  /// [interactive]: the request is a window the person is working in. When it
+  /// outlives [timeout], nothing failed — the sign-in was left unfinished, so
+  /// it ends like a closed window: no error report, an invitation to try again.
   Future<T> _providerRequest<T>(
     _SignInAttempt attempt,
     Future<T> Function() request, {
     Duration? timeout = const Duration(minutes: 2),
+    bool interactive = false,
   }) async {
     attempt.providerPending = true;
     try {
       // The request still starts synchronously from the browser button gesture.
       final pending = request();
-      return await (timeout == null ? pending : pending.timeout(timeout));
+      if (timeout == null) return await pending;
+      return await pending.timeout(
+        timeout,
+        onTimeout: interactive ? () => throw const _SignInAbandoned() : null,
+      );
     } finally {
       attempt.providerPending = false;
       _releaseProviderHold(attempt);
@@ -240,6 +319,9 @@ class AuthService extends ChangeNotifier {
           : null,
     );
     _activeSignIn = attempt;
+    // Every new attempt starts clean; only a connection failure of this
+    // attempt may leave something to retry.
+    _pendingCredential = null;
     lastFailure = AuthFailure.cancelled;
     lastDiagnosticId = null;
     _updateSignInBusy();
@@ -264,7 +346,8 @@ class AuthService extends ChangeNotifier {
   }
 
   void _recordSignInError(Object error, _SignInAttempt attempt) {
-    if ((error is SignInWithAppleAuthorizationException &&
+    if (error is _SignInAbandoned ||
+        (error is SignInWithAppleAuthorizationException &&
             error.code == AuthorizationErrorCode.canceled) ||
         (error is PlatformException &&
             [
@@ -465,6 +548,7 @@ class AuthService extends ChangeNotifier {
   static void setDebugSignInAvailableForTesting(bool? value) {
     _debugSignInOverride = value;
   }
+
   @visibleForTesting
   static void setDevPackageForTesting(bool value) {
     _devPackage = value;
@@ -480,8 +564,7 @@ class AuthService extends ChangeNotifier {
       _debugSignInOverride ??
       (_devPackage ||
           (const bool.fromEnvironment('GAME_DEBUG') &&
-              (kDebugMode ||
-                  const bool.fromEnvironment('GAME_DEBUG_DEVICE'))));
+              (kDebugMode || const bool.fromEnvironment('GAME_DEBUG_DEVICE'))));
   static bool _devPackage = false;
 
   Future<bool> signInDebug({String? accountId, String? name}) async {
@@ -560,7 +643,12 @@ class AuthService extends ChangeNotifier {
       // in other Cloud projects than the Web client, and Google rejects
       // the pair (DEVELOPER_ERROR). Android sends an access token instead.
     );
-    final account = await _providerRequest(attempt, googleSignIn.signIn);
+    final account = await _providerRequest(
+      attempt,
+      googleSignIn.signIn,
+      timeout: interactiveWindowLimit,
+      interactive: true,
+    );
     return account == null || !_wanted(attempt)
         ? false
         : await _completeGoogleAccount(attempt, account);
@@ -576,7 +664,14 @@ class AuthService extends ChangeNotifier {
   Future<bool> signInWithGoogleWeb(Future<String> Function() request) =>
       _runSignIn('google', (attempt) async {
         // request opens Google's window synchronously from the button gesture.
-        final credential = await _providerRequest(attempt, request);
+        // A browser does not always report a closed window: the limit ends
+        // such an attempt quietly instead of showing a failure.
+        final credential = await _providerRequest(
+          attempt,
+          request,
+          timeout: browserWindowLimit,
+          interactive: true,
+        );
         return _wanted(attempt)
             ? await _completeCredential(attempt, credential)
             : false;
@@ -671,6 +766,8 @@ class AuthService extends ChangeNotifier {
             AppleIDAuthorizationScopes.fullName,
           ],
         ),
+        timeout: interactiveWindowLimit,
+        interactive: true,
       );
     } else {
       credential = await _providerRequest(
@@ -687,6 +784,8 @@ class AuthService extends ChangeNotifier {
             ),
           ),
         ),
+        timeout: browserWindowLimit,
+        interactive: true,
       );
     }
 
@@ -948,6 +1047,9 @@ class AuthService extends ChangeNotifier {
     String? expectedUserId,
     String? name,
     String? authorizationCode,
+    // A retry keeps the original deadline: repeating must not extend the life
+    // of a provider confirmation.
+    DateTime? retryUntil,
   }) async {
     if (!_wanted(attempt)) return false;
     final provider = attempt.provider;
@@ -967,29 +1069,46 @@ class AuthService extends ChangeNotifier {
     if (!_wanted(attempt)) return false;
     // Сессия выдаётся без записи на сервере — повторить запрос безопасно.
     final stats = attempt.stats;
-    final response = await sendWithRetry(
-      (host) => attempt.client.post(
-        Uri.parse('$host/api/auth/session'),
-        headers: serverHeaders,
-        body: jsonEncode({
-          'provider': provider,
-          'credential': credential,
-          'name': ?name,
-          if (authorizationCode != null && authorizationCode.isNotEmpty)
-            'authorizationCode': authorizationCode,
-          'platform': metadata['platform'],
-          'appVersion': metadata['version'],
-          'device': metadata['device'],
-        }),
-      ),
-      hosts: BackendConfig.notifierHosts,
-      stillWanted: () => _wanted(attempt),
-      stats: stats,
-      acceptLateSuccess: true,
-      // Only session issuance is safe to retry. A temporary provider/JWKS
-      // outage must not be shown as rejected credentials after one HTTP reply.
-      retryStatusCodes: const {500, 502, 503, 504},
-    );
+    final http.Response response;
+    try {
+      response = await sendWithRetry(
+        (host) => attempt.client.post(
+          Uri.parse('$host/api/auth/session'),
+          headers: serverHeaders,
+          body: jsonEncode({
+            'provider': provider,
+            'credential': credential,
+            'name': ?name,
+            if (authorizationCode != null && authorizationCode.isNotEmpty)
+              'authorizationCode': authorizationCode,
+            'platform': metadata['platform'],
+            'appVersion': metadata['version'],
+            'device': metadata['device'],
+          }),
+        ),
+        hosts: BackendConfig.notifierHosts,
+        stillWanted: () => _wanted(attempt),
+        stats: stats,
+        acceptLateSuccess: true,
+        // Only session issuance is safe to retry. A temporary provider/JWKS
+        // outage must not be shown as rejected credentials after one HTTP reply.
+        retryStatusCodes: const {500, 502, 503, 504},
+      );
+    } catch (error) {
+      // The account is confirmed; only our server was out of reach. Keep the
+      // confirmation briefly so "Retry" does not reopen the provider window.
+      if (_wanted(attempt) && isRetryableNetworkError(error)) {
+        _pendingCredential = _PendingCredential(
+          provider: provider,
+          credential: credential,
+          expectedUserId: expectedUserId,
+          name: name,
+          authorizationCode: authorizationCode,
+          until: retryUntil,
+        );
+      }
+      rethrow;
+    }
     if (!_wanted(attempt)) return false;
     final diagnosticId = response.headers['x-auth-diagnostic-id'];
     if (diagnosticId != null &&
@@ -1048,6 +1167,7 @@ class AuthService extends ChangeNotifier {
     final hadSession = hasServerSession;
     final wasDevSession = isDevSession;
     cancelSignIn();
+    _pendingCredential = null;
     _signingOut = true;
     _updateSignInBusy();
     try {

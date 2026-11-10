@@ -1,6 +1,6 @@
-import { diagnosticNotificationPolicy, authTransportIdentity } from './diagnostic_context.js';
+import { diagnosticNotificationPolicy } from './diagnostic_context.js';
+import { diagnosticSignal, trackSignal, buildSpikeMessage, buildSignalDigest, SIGNAL_REASONS } from './diagnostic_signal.js';
 import { incidentGuide } from './incident_copy.js';
-import { buildAuthTransportMessage } from './diagnostics.js';
 import { processTelegramMessageUpdate } from './support_chat.js';
 import { isReportPhotoUrl } from './report_questions.js';
 import { buildIncidentBatchMessage, incidentBatchIdentity, INCIDENT_BATCH_WINDOW_MS, INCIDENT_BATCH_MAX } from './incident_batch.js';
@@ -52,6 +52,16 @@ export async function pollErrorCommands(env) {
   return response.ok ? response.json() : null;
 }
 
+// Суточная сводка фоновых сбоев (связь или устройство человека): одна строка
+// в подчате ошибок вместо отдельных сообщений. Тот же экземпляр, что ведёт журнал.
+export async function sendErrorDigest(env) {
+  if (!env?.TELEGRAM || !env.BOT_TOKEN || !env.CHAT_ID) return null;
+  const stub = env.TELEGRAM.get(env.TELEGRAM.idFromName(String(env.CHAT_ID)));
+  const response = await stub.fetch('https://telegram/error-digest', { method: 'POST' });
+  if (!response.ok) throw new Error('error digest unavailable');
+  return response.json();
+}
+
 // Webhook and polling share the log-owning DO and its serial command handler.
 export async function handleErrorExportUpdate(env, update) {
   if (!env?.TELEGRAM || !parseExportCommand(update?.message?.text)) return false;
@@ -83,6 +93,7 @@ export class TelegramQueue {
       if (new URL(request.url).pathname === '/incident') return this.enqueueIncident(await request.json());
       if (new URL(request.url).pathname === '/export-command') return Response.json({ handled: await this.handleExportUpdate(await request.json()) });
       if (new URL(request.url).pathname === '/poll-commands') return Response.json(await this.pollErrorCommands());
+      if (new URL(request.url).pathname === '/error-digest') return this.enqueueSignalDigest();
       if (new URL(request.url).pathname === '/setup-topics') {
         return setupTelegramTopics(request, this.env, (_env, text, dedupKey, options) => this.enqueue({ text, dedupKey, ...options }));
       }
@@ -149,6 +160,9 @@ export class TelegramQueue {
     const now = Date.now(), windowMs = 10 * 60000;
     const policy = diagnosticNotificationPolicy(incident);
     const urgent = incidentGuide(incident).level === 'critical';
+    // Связь или устройство человека, опоздавшие и тестовые события: в журнал и
+    // суточную сводку, без отдельного сообщения. Срочные (оплата) сюда не попадают.
+    const signal = urgent ? null : diagnosticSignal(incident, now);
     // Separate urgent cooldowns from lower-severity rechecks and isolate payers/orders.
     if (urgent) fingerprint = JSON.stringify(['urgent', fingerprint, incident.payment?.orderId || incident.payment?.txId ||
       (incident.category === 'purchase' ? incident.userId || incident.installation : null)]);
@@ -161,20 +175,14 @@ export class TelegramQueue {
     stored.pendingBatches ||= {};
     for (const [key, pending] of Object.entries(stored.pendingBatches)) if (pending.until <= now) delete stored.pendingBatches[key];
     const group = stored.groups[fingerprint];
-    const transportIdentity = authTransportIdentity(incident);
-    const identity = urgent ? null : transportIdentity || incidentBatchIdentity(incident);
-    // Related auth attempts may update an unattempted alert only during its
-    // original three-second window. Thereafter the hour cooldown records each
-    // repeat/provider for CSV and the next eligible warning, without live edits.
-    const mayNotify = policy.notify && (transportIdentity || !(group && now - group.at < policy.windowMs));
+    const identity = urgent || signal ? null : incidentBatchIdentity(incident);
+    const mayNotify = !signal && policy.notify && !(group && now - group.at < policy.windowMs);
     const pending = mayNotify && identity ? stored.pendingBatches[identity] : null;
     const previousItem = pending ? await this.state.storage.get(pending.key) : null;
-    const entry = { incident, repeats: group?.repeats || 0, overflow: stored.overflow,
-      ...(transportIdentity && group?.authTransportProviders ? { authTransportProviders: group.authTransportProviders } : {}) };
+    const entry = { incident, repeats: group?.repeats || 0, overflow: stored.overflow };
     const entries = previousItem?.incidentBatch?.entries;
-    const buildMessage = transportIdentity ? buildAuthTransportMessage : buildIncidentBatchMessage;
     const combined = entries && entries.length < INCIDENT_BATCH_MAX
-      ? buildMessage([...entries, entry]) : null;
+      ? buildIncidentBatchMessage([...entries, entry]) : null;
     const merge = combined && combined.length <= 4096;
     if (now - stored.window >= windowMs) { stored.window = now; stored.count = 0; stored.urgentClientCount = 0; }
     // Mobile diagnostics are client supplied. Their own budget cannot exhaust
@@ -182,21 +190,28 @@ export class TelegramQueue {
     const limited = urgent ? incident.origin === 'client' && (stored.urgentClientCount || 0) >= 20 : stored.count >= 20;
     let text = null;
     let reason = 'sent';
-    if (!urgent && !policy.notify) { reason = 'info_only'; }
+    let signalKey = null, signalState = null;
+    if (signal) {
+      reason = signal.kind;
+      if (signal.kind === 'environment') {
+        // Всплеск: таких сбоев стало заметно больше обычного — одно общее сообщение.
+        signalKey = 'signals:' + signal.family;
+        const tracked = trackSignal(await this.state.storage.get(signalKey), incident, now);
+        signalState = tracked.state;
+        if (tracked.spike) text = buildSpikeMessage(signal.family, tracked.spike);
+      }
+    }
+    else if (!urgent && !policy.notify) { reason = 'info_only'; }
     else if (!merge && group && now - group.at < policy.windowMs) {
       group.repeats++;
-      if (transportIdentity) {
-        group.authTransportProviders ||= {};
-        group.authTransportProviders[incident.provider] = (group.authTransportProviders[incident.provider] || 0) + 1;
-      }
       reason = 'grouped';
     }
     else if (!merge && limited) { stored.overflow++; reason = 'burst_limit'; }
     else {
       if (urgent && incident.origin === 'client') stored.urgentClientCount = (stored.urgentClientCount || 0) + 1;
       if (!urgent && !merge) stored.count++;
-      stored.groups[fingerprint] = { at: merge && transportIdentity && group ? group.at : now, repeats: 0 };
-      text = merge ? combined : buildMessage([entry]);
+      stored.groups[fingerprint] = { at: now, repeats: 0 };
+      text = merge ? combined : buildIncidentBatchMessage([entry]);
       if (merge) reason = 'coalesced';
       stored.overflow = 0;
     }
@@ -221,10 +236,19 @@ export class TelegramQueue {
           }
         }
       }
+      if (signalKey) await txn.put(signalKey, signalState);
       await txn.put('errors:state', stored);
     });
-    await this.logIncident(incident, Boolean(text), now, reason);
-    return Response.json({ ok: true, suppressed: !text });
+    // Сообщение о всплеске — общее: сама запись в чат отдельно не уходила.
+    await this.logIncident(incident, Boolean(text) && !signal, now, reason);
+    return Response.json({ ok: true, suppressed: !text || Boolean(signal) });
+  }
+  async enqueueSignalDigest() {
+    const now = Date.now();
+    const text = buildSignalDigest(await this.readErrorLog(now - 86400000), now);
+    if (!text) return Response.json({ ok: true, empty: true });
+    return this.enqueue({ text, topic: 'errors',
+      dedupKey: 'error_digest:' + new Date(now + 3 * 3600000).toISOString().slice(0, 10) });
   }
   // Журнал для выгрузки. Запись после очереди и в отдельном try: сбой журнала
   // не должен терять уведомление или менять ответ.
@@ -232,7 +256,8 @@ export class TelegramQueue {
     try {
       const ts = Number.isFinite(incident.ts) ? incident.ts : now;
       const receivedAt = Number.isFinite(incident.receivedAt) ? incident.receivedAt : now;
-      const record = errorLogRecord({ ...incident, receivedAt }, { ts, sent, level: errorLevelLabel(incident), reason });
+      const record = errorLogRecord({ ...incident, receivedAt }, { ts, sent, reason,
+        level: SIGNAL_REASONS.includes(reason) ? 'Фон' : errorLevelLabel(incident) });
       await this.state.storage.put(errorLogKey(receivedAt, record.id || now), record);
     } catch (error) {
       console.error('Error log write failed', error?.name || 'unknown');

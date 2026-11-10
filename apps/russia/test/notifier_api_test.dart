@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -49,6 +52,64 @@ void main() {
       );
     },
   );
+  test(
+    'a one-shot request moves to the other address only when the first was never reached',
+    () async {
+      final primary = Uri.parse(BackendConfig.notifierUrl).host;
+      for (final (error, expectedHosts) in <(Object, int)>[
+        (const SocketException('Failed host lookup: \'blocked\''), 2),
+        (const HandshakeException('Connection terminated during handshake'), 2),
+        (
+          const SocketException(
+            'Connection refused',
+            osError: OSError('Connection refused', 111),
+          ),
+          2,
+        ),
+        // The server may already have acted: never send the operation twice.
+        (TimeoutException('no answer'), 1),
+        (
+          const SocketException(
+            'Connection reset by peer',
+            osError: OSError('Connection reset by peer', 104),
+          ),
+          1,
+        ),
+        (const HttpException('Connection closed before full header'), 1),
+      ]) {
+        NotifierRoute.reset();
+        final hosts = <String>[];
+        Future<http.Response> send() => http.runWithClient(
+          () => NotifierApi.post(
+            '/api/user/pay-intent',
+            idempotent: false,
+            body: 'order',
+          ),
+          () => MockClient((request) async {
+            hosts.add(request.url.host);
+            if (request.url.host == primary) throw error;
+            return http.Response('{}', 200);
+          }),
+        );
+        if (expectedHosts == 2) {
+          expect((await send()).statusCode, 200, reason: '$error');
+          expect(hosts, [
+            primary,
+            Uri.parse(BackendConfig.notifierHosts.last).host,
+          ]);
+          // The address that worked is used first from now on.
+          expect(
+            NotifierApi.uri('/x').host,
+            Uri.parse(BackendConfig.notifierHosts.last).host,
+          );
+        } else {
+          await expectLater(send(), throwsA(same(error)), reason: '$error');
+          expect(hosts, [primary]);
+        }
+      }
+    },
+  );
+
   test('unknown creation outcome sends exactly one request', () async {
     var calls = 0;
     await http.runWithClient(

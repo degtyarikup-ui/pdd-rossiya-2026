@@ -2422,6 +2422,12 @@ abstract class AppLocalizations {
   /// **'Не удалось завершить вход. Попробуйте ещё раз.'**
   String get authErrorResponse;
 
+  /// No description provided for @authRetry.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторить'**
+  String get authRetry;
+
   /// No description provided for @paySuccessActivated.
   ///
   /// In ru, this message translates to:

@@ -1373,6 +1373,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authErrorResponse => 'Couldn’t finish signing in. Try again.';
 
   @override
+  String get authRetry => 'Try again';
+
+  @override
   String get paySuccessActivated => 'Premium is on. Thank you!';
 
   @override

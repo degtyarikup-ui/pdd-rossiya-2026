@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -129,12 +130,27 @@ class ErrorReporter {
       operation,
       code: code ?? (error == null ? 'operation_failed' : codeFor(error)),
       provider: provider,
-      context: {
-        ...?context,
-        if (stack != null) 'frames': DiagnosticContext.frames(stack),
-      },
+      context: contextFor(error: error, context: context, stack: stack),
     ),
   );
+
+  /// Technical context of a report. An unlisted plugin code is reported as
+  /// `sdk_error`; its fingerprint tells apart the plugins behind it without
+  /// keeping the raw value.
+  @visibleForTesting
+  static Map<String, dynamic> contextFor({
+    Object? error,
+    Map<String, dynamic>? context,
+    StackTrace? stack,
+  }) => {
+    if (error is PlatformException && sdkCode(error.code) == 'sdk_error')
+      'sdkCodeHash': sha256
+          .convert(utf8.encode(error.code))
+          .toString()
+          .substring(0, 16),
+    ...?context,
+    if (stack != null) 'frames': DiagnosticContext.frames(stack),
+  };
 
   Future<void> record(
     ErrorCategory category,

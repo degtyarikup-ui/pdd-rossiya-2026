@@ -77,6 +77,7 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
   void dispose() {
     _auth.signInBusy.removeListener(_busyChanged);
     _cancelOwnedAttempt();
+    _auth.discardSignInRetry();
     super.dispose();
   }
 
@@ -216,6 +217,16 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 12),
+                      // The account is already chosen; only the connection to
+                      // us failed. Repeat that step without the provider window.
+                      if (!_busy && _auth.canRetrySignIn) ...[
+                        FilledButton(
+                          key: const ValueKey('auth-retry-button'),
+                          onPressed: () => _handleAuth(_auth.retrySignIn),
+                          child: Text(appL10n.authRetry),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                     ],
 
                     // OAuth Buttons

@@ -481,6 +481,7 @@
   "authErrorCredential": "Couldn’t verify your sign-in. Select your account again.",
   "authErrorServer": "Sign-in is temporarily unavailable. Try again in a few minutes.",
   "authErrorResponse": "Couldn’t finish signing in. Try again.",
+  "authRetry": "Try again",
   "paySuccessActivated": "Premium is on. Thank you!",
   "payRestoreSuccess": "Purchases restored.",
   "payRestoreNone": "No purchases found. Sign in to the store account you paid with.",

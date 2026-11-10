@@ -31,7 +31,7 @@ import { getAdsConfig, filterAdsForClient } from './ads_config.js';
 export { TrafficState } from './traffic_state.js';
 export { TelegramQueue, resolveTopicThreadId, getTopicThreadId, telegramChatId } from './telegram_queue.js';
 export { SocialPublisher } from './social_guard.js';
-import { pollErrorCommands, getTopicThreadId, telegramChatId } from './telegram_queue.js';
+import { pollErrorCommands, sendErrorDigest, getTopicThreadId, telegramChatId } from './telegram_queue.js';
 import { readTelegramTopics, setupTelegramTopics } from './telegram_topics.js';
 import {
   handleSupportSendMessage,
@@ -852,7 +852,7 @@ export function buildReportMessage(b, user = null) {
 // Крон автопостинга (см. wrangler.toml). Раз в пять минут, а не раз в час:
 // он же доводит до конца публикации, которые Cloudflare оборвал на полпути.
 const HOURLY_CRON = '*/5 * * * *';
-const CRON_TASKS = new Set(['game_week', 'provider_keys', 'reconcile', 'autopost', 'threads', 'notifications', 'daily_report', 'reviews']);
+const CRON_TASKS = new Set(['game_week', 'provider_keys', 'reconcile', 'autopost', 'threads', 'notifications', 'daily_report', 'reviews', 'error_digest']);
 // Marks which scheduled task failed; the error itself is passed on unchanged.
 const cronTask = (task, work) => Promise.resolve(work).catch(error => {
   if (error && typeof error === 'object') { try { error.cronTask = task; } catch (_) {} }
@@ -4339,6 +4339,8 @@ const workerHandlers = {
     if (!env.BOT_TOKEN || !env.CHAT_ID) return;
 
     ctx.waitUntil(cronTask('reviews', pollReviews(env)));
+    // Фоновые сбои за сутки (связь или устройство человека) — одной строкой в подчат ошибок.
+    ctx.waitUntil(cronTask('error_digest', sendErrorDigest(env)));
 
     // If stats are still draining, preserve this report and retry from the
     // existing five-minute cron instead of publishing incomplete totals.
