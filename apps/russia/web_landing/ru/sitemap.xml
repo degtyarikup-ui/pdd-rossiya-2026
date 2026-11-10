@@ -3,13 +3,13 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://pdd-drive.app/</loc>
-    <lastmod>2026-11-04</lastmod>
+    <lastmod>2026-11-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://pdd-drive.app/blog/</loc>
-    <lastmod>2026-11-04</lastmod>
+    <lastmod>2026-11-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -18,6 +18,20 @@
     <lastmod>2026-07-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://pdd-drive.app/blog/gotov-li-k-ekzamenu-pdd/</loc>
+    <lastmod>2026-11-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.app/blog/gotov-li-k-ekzamenu-pdd/cover.jpg</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://pdd-drive.app/blog/bilety-pdd-ab-i-cd-otlichiya/</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://pdd-drive.app/blog/bilety-pdd-ab-i-cd-otlichiya/cover.jpg</image:loc></image:image>
   </url>
   <url>
     <loc>https://pdd-drive.app/blog/dopolnitelnye-voprosy-na-ekzamene-pdd/</loc>
@@ -441,19 +455,19 @@
   </url>
   <url>
     <loc>https://pdd-drive.app/blog/ekzamen-i-prava/</loc>
-    <lastmod>2026-11-04</lastmod>
+    <lastmod>2026-11-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://pdd-drive.app/blog/spravochnik-pdd/</loc>
-    <lastmod>2026-11-04</lastmod>
+    <lastmod>2026-11-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://pdd-drive.app/blog/podgotovka-k-ekzamenu/</loc>
-    <lastmod>2026-11-04</lastmod>
+    <lastmod>2026-11-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>

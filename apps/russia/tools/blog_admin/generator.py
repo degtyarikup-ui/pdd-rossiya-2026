@@ -205,7 +205,7 @@ def _url(slug):
 def _cover_url(a):
     if a.get("cover"):
         return "%s/blog/%s/%s" % (BASE, a["slug"], a["cover"])
-    return "%s/assets/og-image.png" % BASE
+    return "%s/assets/og-image.png?v=2" % BASE
 
 
 # --- Рендер страницы статьи ---------------------------------------------------
@@ -592,7 +592,7 @@ def render_cluster_hubs(arts=None):
   <meta property="og:title" content="{title} — блог ПДД Россия 2026">
   <meta property="og:description" content="{desc}">
   <meta property="og:url" content="{url}">
-  <meta property="og:image" content="{base}/assets/og-image.png">
+  <meta property="og:image" content="{base}/assets/og-image.png?v=2">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="ru_RU">
@@ -700,7 +700,7 @@ def render_blog_index(arts=None):
   <meta property="og:title" content="Блог о ПДД и экзамене в ГИБДД — ПДД Россия 2026">
   <meta property="og:description" content="Статьи о подготовке к теоретическому экзамену в ГИБДД: разборы правил дорожного движения, изменения законодательства и советы по обучению в автошколе.">
   <meta property="og:url" content="https://pdd-drive.app/blog/">
-  <meta property="og:image" content="https://pdd-drive.app/assets/og-image.png">
+  <meta property="og:image" content="https://pdd-drive.app/assets/og-image.png?v=2">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="ru_RU">
@@ -1225,7 +1225,7 @@ def render_glossary():
   <meta property="og:title" content="{title}">
   <meta property="og:description" content="{desc}">
   <meta property="og:url" content="{url}">
-  <meta property="og:image" content="{base}/assets/og-image.png">
+  <meta property="og:image" content="{base}/assets/og-image.png?v=2">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="ru_RU">
