@@ -88,6 +88,15 @@ static func text_scale() -> float:
 	return clampf(value, 0.5, 3.0) if value > 0.0 else 1.0
 
 
+const CHROME_BORDER := Color("#C8D1DC")
+const CHROME_BORDER_SOFT := Color("#DCE2EA")
+
+
+## Returns the resting hairline border colour for floating Light Theme cards.
+static func chrome_border(soft := false) -> Color:
+	return CHROME_BORDER_SOFT if soft else CHROME_BORDER
+
+
 static func box(color: Color, radius := 8, top_only := false) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = color
@@ -97,6 +106,42 @@ static func box(color: Color, radius := 8, top_only := false) -> StyleBoxFlat:
 	else:
 		s.set_corner_radius_all(radius)
 	s.anti_aliasing = true
+	return s
+
+
+## Adds a soft elevation shadow and, in Light Theme, a 1 dp hairline border so floating
+## white chrome stays separated from winter snow and bright 3D geometry.
+static func elevate(s: StyleBoxFlat, hairline := true) -> StyleBoxFlat:
+	if s == null:
+		return null
+	s.shadow_color = Color(0.05, 0.08, 0.14, 0.24 if dark else 0.16)
+	s.shadow_size = 8 if dark else 10
+	s.shadow_offset = Vector2(0, 2)
+	if hairline and not dark:
+		# Unset content margins (< 0) would cause borders to expand layout minimum_size.
+		if s.content_margin_left < 0.0:
+			s.set_content_margin_all(0.0)
+		s.set_border_width_all(1)
+		s.border_color = CHROME_BORDER
+	return s
+
+
+## Variant of elevate() for bottom-docked panels with rounded top corners: casts an upward
+## shadow and omits the bottom border so flush screen edges remain clean.
+static func elevate_sheet(s: StyleBoxFlat) -> StyleBoxFlat:
+	if s == null:
+		return null
+	s.shadow_color = Color(0.05, 0.08, 0.14, 0.24 if dark else 0.16)
+	s.shadow_size = 12
+	s.shadow_offset = Vector2(0, -2)
+	if not dark:
+		if s.content_margin_left < 0.0:
+			s.set_content_margin_all(0.0)
+		s.border_width_left = 1
+		s.border_width_top = 1
+		s.border_width_right = 1
+		s.border_width_bottom = 0
+		s.border_color = CHROME_BORDER
 	return s
 
 

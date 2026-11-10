@@ -273,14 +273,14 @@ func _build_top_bar() -> void:
 	_hud = PanelContainer.new()
 	_hud.custom_minimum_size.y = CHROME
 	_hud.size_flags_horizontal = SIZE_EXPAND_FILL
-	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), MiniGameHud.RADIUS, MiniGameHud.HUD_PAD, 4))
+	_hud.add_theme_stylebox_override("panel", Ui.elevate(_padded(Ui.c("card"), MiniGameHud.RADIUS, MiniGameHud.HUD_PAD, 4)))
 	_hud_row.add_child(_hud)
 
 	# Blitz / practice: a compact segmented card in the free bottom-left corner,
 	# the counterpart of the camera button, so the top bar matches the other games.
 	_mode_pill = PanelContainer.new()
 	_mode_pill.custom_minimum_size.y = CHROME
-	_mode_pill.add_theme_stylebox_override("panel", _padded(Ui.c("card"), MiniGameHud.RADIUS, 4, 4))
+	_mode_pill.add_theme_stylebox_override("panel", Ui.elevate(_padded(Ui.c("card"), MiniGameHud.RADIUS, 4, 4)))
 	add_child(_mode_pill)
 
 	var mode_tabs := HBoxContainer.new()
@@ -413,10 +413,10 @@ func _build_top_bar() -> void:
 	_hud_line1.add_child(_lives_container)
 
 	_caption_card = PanelContainer.new()
-	# A transparent border of its own: a solved junction flashes it green.
-	_caption_style = _padded(Ui.c("card"), 16, 14, 12)
+	# A 2 dp border of its own: a solved junction flashes it green, resting softly in light theme.
+	_caption_style = Ui.elevate(_padded(Ui.c("card"), 16, 14, 12), false)
 	_caption_style.set_border_width_all(2)
-	_caption_style.border_color = Color(Ui.c("green"), 0.0)
+	_caption_style.border_color = Color(Ui.c("green"), 0.0) if Ui.dark else Ui.chrome_border(true)
 	_caption_card.add_theme_stylebox_override("panel", _caption_style)
 	_top_bar.add_child(_caption_card)
 	_caption_content = VBoxContainer.new()
@@ -652,11 +652,12 @@ func _animate_step(finished: bool) -> void:
 	if not finished: return
 	if is_instance_valid(_caption_tween): _caption_tween.kill()
 	_caption_tween = create_tween()
-	_caption_style.border_color = Color(Ui.c("green"), 0.0)
+	var rest_border := Color(Ui.c("green"), 0.0) if Ui.dark else Ui.chrome_border(true)
+	_caption_style.border_color = rest_border
 	_caption_tween.tween_property(_caption_style, "border_color", Color(Ui.c("green"), 0.95), 0.14)
 	_caption_tween.parallel().tween_property(_caption_style, "bg_color", Ui.c("green_light"), 0.14)
 	_caption_tween.tween_interval(0.35)
-	_caption_tween.tween_property(_caption_style, "border_color", Color(Ui.c("green"), 0.0), 0.4)
+	_caption_tween.tween_property(_caption_style, "border_color", rest_border, 0.4)
 	_caption_tween.parallel().tween_property(_caption_style, "bg_color", Ui.c("card"), 0.4)
 
 
@@ -1085,6 +1086,8 @@ func _chrome_btn(icon: int, tooltip: String) -> Button:
 	button.add_theme_font_override("font", Ui._icon_font)
 	button.add_theme_font_size_override("font_size", MiniGameHud.CLOSE_ICON_SIZE)
 	_style_button(button, Ui.c("card"), Ui.c("text"))
+	for state in ["normal", "hover", "pressed"]:
+		Ui.elevate(button.get_theme_stylebox(state) as StyleBoxFlat)
 	return button
 
 

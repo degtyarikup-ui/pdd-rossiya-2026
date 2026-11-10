@@ -163,7 +163,7 @@ func _build_top_bar() -> void:
 
 func _build_toast() -> void:
 	_toast = Panel.new()
-	_toast_style = Ui.box(Ui.c("card"), 12)
+	_toast_style = Ui.elevate(Ui.box(Ui.c("card"), 12))
 	for side in ["left", "right"]: _toast_style.set("content_margin_" + side, 16.0)
 	for side in ["top", "bottom"]: _toast_style.set("content_margin_" + side, 10.0)
 	_toast.add_theme_stylebox_override("panel", _toast_style)
@@ -177,7 +177,7 @@ func _build_toast() -> void:
 
 func _build_gear() -> void:
 	_gear = PanelContainer.new()
-	_gear_style = Ui.box(Ui.c("card"), 16)
+	_gear_style = Ui.elevate(Ui.box(Ui.c("card"), 16))
 	for side in ["left", "right", "top", "bottom"]: _gear_style.set("content_margin_" + side, 5.0)
 	_gear.add_theme_stylebox_override("panel", _gear_style)
 	var row := HBoxContainer.new()
@@ -235,6 +235,7 @@ func set_gear(gear: int) -> void:
 func toast(text: String, kind := "", seconds := 1.4) -> void:
 	_toast_label.text = text
 	_toast_style.bg_color = Ui.c("green") if kind == "good" else (Ui.c("red") if kind == "bad" else Ui.c("card"))
+	_toast_style.set_border_width_all(1 if (kind == "" and not Ui.dark) else 0)
 	_toast_label.add_theme_color_override("font_color", Ui.c("white") if kind != "" else Ui.c("text"))
 	_toast.reset_size()
 	_center_toast()
@@ -294,7 +295,7 @@ func hide_results() -> void:
 func _card(min_size: Vector2, radius: int) -> PanelContainer:
 	var box := PanelContainer.new()
 	box.custom_minimum_size = min_size
-	box.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), radius))
+	box.add_theme_stylebox_override("panel", Ui.elevate(Ui.box(Ui.c("card"), radius)))
 	return box
 
 

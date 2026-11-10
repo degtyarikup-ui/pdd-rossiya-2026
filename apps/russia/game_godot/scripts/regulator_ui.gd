@@ -138,7 +138,7 @@ func _build_top_bar() -> void:
 	_hud = PanelContainer.new()
 	_hud.size_flags_horizontal = SIZE_EXPAND_FILL
 	_hud.custom_minimum_size = Vector2(0, CHROME)
-	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), MiniGameHud.RADIUS, HUD_PAD, 8.0))
+	_hud.add_theme_stylebox_override("panel", Ui.elevate(_padded(Ui.c("card"), MiniGameHud.RADIUS, HUD_PAD, 8.0)))
 	_top_bar.add_child(_hud)
 
 	var lines := VBoxContainer.new()
@@ -265,7 +265,7 @@ func _build_bottom() -> void:
 
 	var bulb := PanelContainer.new()
 	bulb.custom_minimum_size = Vector2(48, 48)
-	bulb.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 12))
+	bulb.add_theme_stylebox_override("panel", Ui.elevate(Ui.box(Ui.c("card"), 12)))
 	_hint_bulb = Ui.icon(ICON_BULB_OUTLINE, 22, Ui.c("accent"))
 	bulb.add_child(_centered(_hint_bulb))
 	bulb.add_child(_tap(_on_hint_pressed))
@@ -281,7 +281,7 @@ func _build_bottom() -> void:
 	hint.add_child(_hint_text)
 
 	_panel = PanelContainer.new()
-	_panel_style = Ui.box(Ui.c("card"), 24, true)
+	_panel_style = Ui.elevate_sheet(Ui.box(Ui.c("card"), 24, true))
 	_panel_style.content_margin_left = SCREEN_PAD
 	_panel_style.content_margin_right = SCREEN_PAD
 	_panel_style.content_margin_top = 16.0
@@ -578,7 +578,7 @@ func _chrome_button(icon_code: int, action: Callable) -> PanelContainer:
 	var box := PanelContainer.new()
 	box.custom_minimum_size = Vector2(CHROME, CHROME)
 	box.size_flags_vertical = SIZE_SHRINK_BEGIN
-	box.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), MiniGameHud.RADIUS))
+	box.add_theme_stylebox_override("panel", Ui.elevate(Ui.box(Ui.c("card"), MiniGameHud.RADIUS)))
 	box.add_child(_centered(Ui.icon(icon_code, MiniGameHud.CLOSE_ICON_SIZE, Ui.c("text"))))
 	if action.is_valid():
 		box.add_child(_tap(action))

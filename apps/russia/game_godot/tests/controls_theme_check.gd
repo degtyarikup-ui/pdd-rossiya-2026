@@ -31,12 +31,19 @@ func _run() -> void:
 			var resting_icon := Ui.c("accent" if name in ["left", "right"] else "text")
 			check(style.bg_color == Ui.c("card"), "%s: %s uses the selected surface" % [tag, name])
 			check(icon.modulate == resting_icon, "%s: %s icon contrasts with its surface" % [tag, name])
+			check(style.shadow_size > 0, "%s: %s has elevation shadow" % [tag, name])
+			if not dark:
+				check(style.border_width_left > 0 and style.border_color != Ui.c("card"),
+					"%s: %s separates white surface from snow" % [tag, name])
 			controls._press(name, true)
 			check(style.bg_color == Ui.c("red" if name == "brake" else "accent"), "%s: %s held colour" % [tag, name])
 			check(icon.modulate == Color.WHITE, "%s: %s held icon is white" % [tag, name])
+			check(style.border_width_left == 0, "%s: %s held fills cleanly without border" % [tag, name])
 			controls._press(name, false)
 			check(style.bg_color == Ui.c("card") and icon.modulate == resting_icon,
 				"%s: %s release restores the selected theme" % [tag, name])
+			if not dark:
+				check(style.border_width_left > 0, "%s: %s release restores snow border" % [tag, name])
 		controls.queue_free()
 		var ui := GameUi.new()
 		root.add_child(ui)
@@ -45,7 +52,12 @@ func _run() -> void:
 		# distance pill through its label rather than accidentally testing warnings.
 		var distance: Node = ui._distance.get_parent()
 		while not distance is PanelContainer: distance = distance.get_parent()
-		check(distance.get_theme_stylebox("panel").bg_color == Ui.c("card"), tag + ": distance uses the selected surface")
+		var distance_style: StyleBoxFlat = distance.get_theme_stylebox("panel")
+		check(distance_style.bg_color == Ui.c("card"), tag + ": distance uses the selected surface")
+		check(distance_style.shadow_size > 0, tag + ": distance pill has elevation shadow")
+		if not dark:
+			check(distance_style.border_width_left > 0 and distance_style.border_color != Ui.c("card"),
+				tag + ": distance pill has light hairline border")
 		check(ui._distance.get_theme_color("font_color") == Ui.c("text"), tag + ": distance text contrasts with its surface")
 		var location: TextureRect = distance.find_children("*", "TextureRect", true, false)[0]
 		check(location.modulate == Ui.c("text"), tag + ": distance icon follows its text")
@@ -55,6 +67,17 @@ func _run() -> void:
 		check(ui._speed_big.get_theme_color("font_color") == Color.WHITE, tag + ": speed remains visible over the world")
 		check(ui._run_pill.get_theme_stylebox("panel") is StyleBoxEmpty, tag + ": progress retains its overlay geometry")
 		ui.queue_free()
+		var winter_ui := GameUi.new()
+		winter_ui.snow = true
+		root.add_child(winter_ui)
+		var snow_ink := Color(Ui.LIGHT["text"])
+		check(winter_ui._run_big.get_theme_color("font_color") == snow_ink, tag + ": winter progress stays dark on snow")
+		check(winter_ui._run_small.get_theme_color("font_color") == snow_ink, tag + ": winter total stays dark on snow")
+		check(winter_ui._speed_big.get_theme_color("font_color") == snow_ink, tag + ": winter speed stays dark on snow")
+		check(winter_ui._speed_small.get_theme_color("font_color") == snow_ink, tag + ": winter unit stays dark on snow")
+		check(winter_ui._run_pill.get_theme_stylebox("panel") is StyleBoxEmpty, tag + ": winter progress keeps overlay geometry")
+		check(winter_ui._speed_pill.get_theme_stylebox("panel") is StyleBoxEmpty, tag + ": winter speed keeps overlay geometry")
+		winter_ui.queue_free()
 		await process_frame
 	Ui.dark = original_dark
 	print("controls_theme_check: %d checks, %s" % [checks, "PASS" if failures == 0 else "%d failures" % failures])

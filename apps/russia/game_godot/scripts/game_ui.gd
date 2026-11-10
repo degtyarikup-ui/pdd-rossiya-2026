@@ -164,12 +164,12 @@ func _pill(icon: String, color: Color, foreground := Color.WHITE) -> Array:
 
 func _build_hud() -> void:
 	var w := _view_size().x
-	var white := Color.WHITE
+	var metric_ink := Color(Ui.LIGHT["text"]) if snow else Color.WHITE
 	# Pause (round, 44 px).
 	var pause := PanelContainer.new()
 	pause.position = Vector2(14, _top + 8)
 	pause.custom_minimum_size = Vector2(44, 44)
-	pause.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 22))
+	pause.add_theme_stylebox_override("panel", Ui.elevate(Ui.box(Ui.c("card"), 22)))
 	var bars := HBoxContainer.new()
 	bars.alignment = BoxContainer.ALIGNMENT_CENTER
 	bars.add_theme_constant_override("separation", 5)
@@ -209,6 +209,7 @@ func _build_hud() -> void:
 	var v := _pill("hud_warning", Ui.c("red"))
 	_violations = v[1]
 	var d := _pill("hud_location", Ui.c("card"), Ui.c("text"))
+	Ui.elevate((d[0] as PanelContainer).get_theme_stylebox("panel") as StyleBoxFlat)
 	_distance = d[1]
 	row.add_child(d[0])
 	var s := _pill("hud_star", Ui.c("gold"))
@@ -217,8 +218,8 @@ func _build_hud() -> void:
 	row.add_child(v[0])
 	row.add_child(_limit)
 	# Answered questions (left) and speed (right).
-	_run_big = Ui.scaled_label("0", 20, 800, white)
-	_run_small = Ui.scaled_label(" / 20", 12, 800, white)
+	_run_big = Ui.scaled_label("0", 20, 800, metric_ink)
+	_run_small = Ui.scaled_label(" / 20", 12, 800, metric_ink)
 	var run := HBoxContainer.new()
 	run.add_theme_constant_override("separation", 0)
 	run.position = Vector2(25, _top + 8 + 44 + 22)
@@ -228,8 +229,8 @@ func _build_hud() -> void:
 	_run_pill = _metric_pill(run)
 	_root.add_child(_run_pill)
 	_hud_nodes.append(_run_pill)
-	_speed_big = Ui.scaled_label("0", 20, 800, white)
-	_speed_small = Ui.scaled_label(" " + Ui.t("gameSpeedUnit"), 12, 800, white)
+	_speed_big = Ui.scaled_label("0", 20, 800, metric_ink)
+	_speed_small = Ui.scaled_label(" " + Ui.t("gameSpeedUnit"), 12, 800, metric_ink)
 	var sp := HBoxContainer.new()
 	sp.add_theme_constant_override("separation", 0)
 	sp.alignment = BoxContainer.ALIGNMENT_END
@@ -389,7 +390,7 @@ func set_hud_visible(on: bool) -> void:
 func show_tip(text: String, step: int, last: bool) -> void:
 	if _tip == null:
 		_tip = PanelContainer.new()
-		_tip.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 20))
+		_tip.add_theme_stylebox_override("panel", Ui.elevate(Ui.box(Ui.c("card"), 20)))
 		_tip.mouse_filter = Control.MOUSE_FILTER_STOP
 		_tip.set_anchors_preset(Control.PRESET_TOP_WIDE)
 		_tip.offset_left = 16.0
@@ -443,7 +444,7 @@ func hide_tip() -> void:
 func show_gas_hint(text: String) -> void:
 	if _gas_hint == null:
 		_gas_hint = PanelContainer.new()
-		_gas_hint.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 12))
+		_gas_hint.add_theme_stylebox_override("panel", Ui.elevate(Ui.box(Ui.c("card"), 12)))
 		_gas_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_gas_hint.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 		_gas_hint.offset_right = -130.0

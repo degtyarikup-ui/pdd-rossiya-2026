@@ -57,6 +57,7 @@ func _add(root: Control, name: String, icon_path: String, caption: String, size:
 	var style := StyleBoxFlat.new()
 	style.bg_color = bg
 	style.set_corner_radius_all(radius)
+	Ui.elevate(style)
 	panel.add_theme_stylebox_override("panel", style)
 	var icon := TextureRect.new()
 	icon.texture = load(icon_path)
@@ -177,6 +178,7 @@ func _press(name: String, down: bool) -> void:
 	var panel: Panel = _buttons[name]
 	var style: StyleBoxFlat = panel.get_theme_stylebox("panel")
 	style.bg_color = Ui.c("red" if name == "brake" else "accent") if down else panel.get_meta("bg")
+	style.set_border_width_all(0 if (down or Ui.dark) else 1)
 	var fg: Color = Ui.c("white") if down else panel.get_meta("fg")
 	(panel.get_meta("icon") as TextureRect).modulate = fg
 	var caption = panel.get_meta("label") if panel.has_meta("label") else null   # no label for a button without a caption (gas)

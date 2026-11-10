@@ -335,7 +335,7 @@ func _build_top_bar() -> void:
 	_hud = PanelContainer.new()
 	_hud.size_flags_horizontal = SIZE_EXPAND_FILL
 	_hud.custom_minimum_size = Vector2(0, CHROME)
-	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 12, HUD_PAD, 8.0))
+	_hud.add_theme_stylebox_override("panel", Ui.elevate(_padded(Ui.c("card"), 12, HUD_PAD, 8.0)))
 	_top_bar.add_child(_hud)
 
 	var lines := VBoxContainer.new()
@@ -479,7 +479,7 @@ func _chrome_button(icon_code: int, action: Callable) -> PanelContainer:
 	var box := PanelContainer.new()
 	box.custom_minimum_size = Vector2(CHROME, CHROME)
 	box.size_flags_vertical = SIZE_SHRINK_BEGIN
-	box.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 12))
+	box.add_theme_stylebox_override("panel", Ui.elevate(Ui.box(Ui.c("card"), 12)))
 	var center := CenterContainer.new()
 	center.add_child(Ui.icon(icon_code, 18, Ui.c("text")))
 	box.add_child(center)
@@ -642,7 +642,7 @@ func _build_toast() -> void:
 	_toast = PanelContainer.new()
 	_toast.mouse_filter = MOUSE_FILTER_IGNORE
 	_toast.visible = false
-	var box := Ui.box(Ui.c("card"), 14)
+	var box := Ui.elevate(Ui.box(Ui.c("card"), 14))
 	box.content_margin_left = 14
 	box.content_margin_right = 14
 	box.content_margin_top = 8
@@ -703,7 +703,7 @@ func _build_classification_modal() -> void:
 	_modal = PanelContainer.new()
 	_modal.visible = false
 	_modal.mouse_filter = MOUSE_FILTER_STOP
-	var modal_box := Ui.box(Ui.c("card"), 20, true)
+	var modal_box := Ui.elevate_sheet(Ui.box(Ui.c("card"), 20, true))
 	modal_box.content_margin_left = 16
 	modal_box.content_margin_right = 16
 	modal_box.content_margin_top = 12
@@ -971,7 +971,7 @@ func show_difficulty_picker(current: String) -> void:
 		_picker.queue_free()
 	_picker = PanelContainer.new()
 	_picker.mouse_filter = MOUSE_FILTER_STOP
-	var box := Ui.box(Ui.c("card"), 20)
+	var box := Ui.elevate(Ui.box(Ui.c("card"), 20))
 	box.content_margin_left = 16
 	box.content_margin_right = 16
 	box.content_margin_top = 20
@@ -1053,7 +1053,7 @@ func _build_coach() -> void:
 	_coach = PanelContainer.new()
 	_coach.visible = false
 	_coach.mouse_filter = MOUSE_FILTER_STOP
-	var box := Ui.box(Ui.c("card"), 16)
+	var box := Ui.elevate(Ui.box(Ui.c("card"), 16))
 	box.content_margin_left = 16
 	box.content_margin_right = 16
 	box.content_margin_top = 14

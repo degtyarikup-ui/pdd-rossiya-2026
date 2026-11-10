@@ -84,16 +84,27 @@ func _check_results(result: MiniGameResults, palette: Dictionary, context: Strin
 	_ink(result.restart_button, "accent", Ui.LIGHT, context + " restart text")
 
 
+func _separated(style: StyleBoxFlat, context: String, label: String) -> void:
+	var is_light := context == "light"
+	_check(style != null and style.shadow_size > 0 and (not is_light or (style.border_width_top > 0 and not style.border_color.is_equal_approx(Ui.c("card")))), label)
+
+
 func _check_mini_games(palette: Dictionary, context: String) -> void:
 	var regulator := RegulatorUi.new()
 	var crossroads := CrossroadsUi.new()
+	var parking := ParkingUi.new()
+	var violator := ViolatorUi.new()
 	root.add_child(regulator)
 	root.add_child(crossroads)
+	root.add_child(parking)
+	root.add_child(violator)
 	regulator.update_hud(100, 3, 30, 4)
 	_surface(regulator._hud, "card", palette, context + " regulator HUD")
+	_separated(regulator._hud.get_theme_stylebox("panel") as StyleBoxFlat, context, context + " regulator HUD separated")
 	_ink(regulator._score_label, "text", palette, context + " regulator score")
 	_ink(regulator._timer_label, "text", palette, context + " regulator timer")
 	_surface(regulator._panel, "card", palette, context + " regulator question panel")
+	_separated(regulator._panel.get_theme_stylebox("panel") as StyleBoxFlat, context, context + " regulator question panel separated")
 	_ink(regulator._question, "text", palette, context + " regulator question")
 	for entry: Dictionary in regulator.move_buttons.values():
 		_surface(entry.panel, "gray", palette, context + " regulator answer surface")
@@ -105,12 +116,18 @@ func _check_mini_games(palette: Dictionary, context: String) -> void:
 	crossroads.update_hud(100, 30, 4, 3)
 	crossroads.update_caption("", "", 1, 3, true)
 	_surface(crossroads._hud, "card", palette, context + " crossroads HUD")
+	_separated(crossroads._hud.get_theme_stylebox("panel") as StyleBoxFlat, context, context + " crossroads HUD separated")
+	_surface(crossroads._mode_pill, "card", palette, context + " crossroads mode pill")
+	_separated(crossroads._mode_pill.get_theme_stylebox("panel") as StyleBoxFlat, context, context + " crossroads mode pill separated")
 	_ink(crossroads._score_label, "text", palette, context + " crossroads score")
 	_ink(crossroads._timer_label, "text", palette, context + " crossroads timer")
 	_surface(crossroads._caption_card, "card", palette, context + " crossroads task panel")
+	_separated(crossroads._caption_card.get_theme_stylebox("panel") as StyleBoxFlat, context, context + " crossroads task panel separated")
 	_ink(crossroads._caption_prompt, "text", palette, context + " crossroads task text")
 	_surface(crossroads._step_pill, "field", palette, context + " crossroads step surface")
 	_button(crossroads._close_btn, "card", palette, context + " crossroads close control")
+	_separated(crossroads._close_btn.get_theme_stylebox("normal") as StyleBoxFlat, context, context + " crossroads close separated")
+	_separated(crossroads._reset_cam_btn.get_theme_stylebox("normal") as StyleBoxFlat, context, context + " crossroads reset camera separated")
 	_ink(crossroads._close_btn, "text", palette, context + " crossroads close icon")
 	crossroads.show_collision_modal("", "Theme explanation", "", false)
 	# The crash card is red in both themes, with white text over a grey, dimmed world.
@@ -120,8 +137,24 @@ func _check_mini_games(palette: Dictionary, context: String) -> void:
 	_button(crossroads._collision_next_btn, "accent", palette, context + " crossroads continue control")
 	crossroads.show_results(100, 4, 1, 3, true, 0)
 	_check_results(crossroads._results, palette, context + " crossroads")
+
+	_surface(parking._gear, "card", palette, context + " parking gear pill")
+	_separated(parking._gear.get_theme_stylebox("panel") as StyleBoxFlat, context, context + " parking gear separated")
+	_surface(parking._toast, "card", palette, context + " parking toast")
+	_separated(parking._toast.get_theme_stylebox("panel") as StyleBoxFlat, context, context + " parking toast separated")
+	_surface(violator._hud, "card", palette, context + " violator HUD")
+	_separated(violator._hud.get_theme_stylebox("panel") as StyleBoxFlat, context, context + " violator HUD separated")
+	_surface(violator._close_btn, "card", palette, context + " violator close control")
+	_separated(violator._close_btn.get_theme_stylebox("panel") as StyleBoxFlat, context, context + " violator close separated")
+	_surface(violator._coach, "card", palette, context + " violator coach card")
+	_separated(violator._coach.get_theme_stylebox("panel") as StyleBoxFlat, context, context + " violator coach separated")
+	_surface(violator._modal, "card", palette, context + " violator modal")
+	_separated(violator._modal.get_theme_stylebox("panel") as StyleBoxFlat, context, context + " violator modal separated")
+
 	regulator.queue_free()
 	crossroads.queue_free()
+	parking.queue_free()
+	violator.queue_free()
 	await process_frame
 
 
@@ -129,6 +162,7 @@ func _check_city(palette: Dictionary, context: String) -> void:
 	var ui := GameUi.new()
 	root.add_child(ui)
 	_surface(ui._hud_nodes[0], "card", palette, context + " city pause control")
+	_separated(ui._hud_nodes[0].get_theme_stylebox("panel") as StyleBoxFlat, context, context + " city pause separated")
 	var question := {"ticket": "1 / 1", "title": "Theme question", "options": ["First", "Second"], "explanation": "Theme explanation"}
 	ui.show_question(question, 15.0)
 	_surface(ui._card, "card", palette, context + " city question panel")
