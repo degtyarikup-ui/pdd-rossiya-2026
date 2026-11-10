@@ -4582,6 +4582,14 @@ func _rebase_timing(label: String, start: int) -> int:
 
 
 func _freeze_world_actors() -> void:
+	# Disabling a parent's process mode automatically pauses its audio children.
+	# Capture the original flags first, or thaw would restore that automatic pause.
+	for node in find_children("*","AudioStreamPlayer",true,false):
+		# QuestionVoice preserves its own paused position and handles settings changed
+		# inside the garage. Restoring an old generic flag would undo that choice.
+		if is_instance_valid(voice) and node == voice._player: continue
+		frozen_audio.append({"node":weakref(node),"paused":node.stream_paused})
+		node.stream_paused=true
 	for node in get_children():
 		if (node is Node3D and node!=player) or node==sound:
 			frozen_nodes.append({"node":weakref(node),"mode":node.process_mode})
@@ -4589,12 +4597,6 @@ func _freeze_world_actors() -> void:
 	for node in find_children("*","RigidBody3D",true,false):
 		frozen_bodies.append({"node":weakref(node),"freeze":node.freeze,"linear":node.linear_velocity,"angular":node.angular_velocity,"transform":node.global_transform})
 		node.freeze=true
-	for node in find_children("*","AudioStreamPlayer",true,false):
-		# QuestionVoice preserves its own paused position and handles settings changed
-		# inside the garage. Restoring an old generic flag would undo that choice.
-		if is_instance_valid(voice) and node == voice._player: continue
-		frozen_audio.append({"node":weakref(node),"paused":node.stream_paused})
-		node.stream_paused=true
 
 func _thaw_world_actors() -> void:
 	for saved in frozen_nodes:

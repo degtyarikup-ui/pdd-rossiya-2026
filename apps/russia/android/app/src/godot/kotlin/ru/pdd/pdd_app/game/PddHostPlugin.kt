@@ -8,6 +8,39 @@ import ru.pdd.pdd_app.GodotReportReceiver
 
 /** `Engine.get_singleton("PddHost")` in the game (game_godot/scripts/host.gd). */
 class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPlugin(godot) {
+    private var hostBound = false
+    private val hostConnection = object : android.content.ServiceConnection {
+        override fun onServiceConnected(name: android.content.ComponentName, service: android.os.IBinder) {
+            android.util.Log.i("PddGameHost", "Flutter host bound to visible game")
+        }
+        override fun onServiceDisconnected(name: android.content.ComponentName) {
+            android.util.Log.w("PddGameHost", "Flutter host disconnected")
+        }
+    }
+
+    private fun bindHost() {
+        if (!hostBound) {
+            hostBound = host.bindService(
+                android.content.Intent(host, ru.pdd.pdd_app.GameHostService::class.java),
+                hostConnection, android.content.Context.BIND_AUTO_CREATE)
+        }
+    }
+
+    private fun unbindHost() {
+        if (hostBound) {
+            host.unbindService(hostConnection)
+            hostBound = false
+        }
+    }
+
+    override fun onMainCreate(activity: android.app.Activity?): android.view.View? {
+        bindHost()
+        return null
+    }
+    override fun onMainStart() { bindHost() }
+    override fun onMainStop() { unbindHost() }
+    override fun onMainDestroy() { unbindHost() }
+
     override fun getPluginName() = "PddHost"
     private val cancelLoading = SignalInfo("cancel_loading")
     private val gameDataResult = SignalInfo("game_data_result", String::class.java, String::class.java)
@@ -188,6 +221,9 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
     override fun onGodotTerminating() {
         if (performanceState.isInitialized()) performanceState.value.close()
         performanceExecutor?.shutdownNow()
-        host.runOnUiThread { host.finish() }
+        host.runOnUiThread {
+            unbindHost()
+            host.finish()
+        }
     }
 }

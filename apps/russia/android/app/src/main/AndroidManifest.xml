@@ -76,6 +76,8 @@
         <meta-data
             android:name="com.dexterous.flutterlocalnotifications.default_notification_icon"
             android:resource="@drawable/ic_notification" />
+        <!-- Bound only while the separate Godot Activity is visible. Main process. -->
+        <service android:name=".GameHostService" android:exported="false" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

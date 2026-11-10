@@ -783,7 +783,11 @@ iOS — через `--answer-audio-dir`, веб — из соседних Flutte
 общие записи. Шум шин проходит отдельный НЧ-фильтр; 240-мс кольцевой буфер
 заполняется одним блоком на кадр. Затухание покинувшего сцену транспорта
 начинается с запасом 80 мс, чтобы обычный интервал кадров не модулировал двигатель.
-Проверки: `tests/sound_check.gd`, `tests/transport_audio_check.gd` и `tests/sound_resume_check.gd` (headless и native).
+Проверки: `tests/sound_check.gd`, `tests/transport_audio_check.gd`,
+`tests/sound_resume_check.gd` и `tests/ride_audio_state_check.gd` (headless и native).
+`World._freeze_world_actors` сохраняет `stream_paused` до отключения обработки
+родителей: Godot сам ставит дочерние потоки на паузу при `PROCESS_MODE_DISABLED`.
+Снимок после отключения ошибочно закреплял тишину двигателя после «Продолжить».
 `tests/web_startup_audio_check.gd` проверяет HTTP-загрузку общих WAV при запуске
 сцены: запросы начинаются после её присоединения к дереву, когда родитель уже
 может принимать дочерние узлы `HTTPRequest`.
@@ -793,7 +797,11 @@ iOS — через `--answer-audio-dir`, веб — из соседних Flutte
 состояния через `SharedQuestionVoice`: исходный ID, идентификатор воспроизведения,
 ревизию, паузу и скорость. `GameVoiceService` использует отдельный экземпляр
 общего `TtsService`, сохраняя проверки Premium и аккаунта. Android использует
-Binder-мост, iOS — отдельные атомарные `voice-request.json`/`voice-result.json`,
+Binder-мост. Пока Android-игра видима, `PddHostPlugin` привязывается к
+`GameHostService` в процессе Flutter: Android не переводит нужный игре плеер
+в cached/frozen через минуту после скрытия Flutter Activity. При `onStop` и
+завершении игры привязка снимается; фоновой службы и wake lock нет.
+iOS использует отдельные атомарные `voice-request.json`/`voice-result.json`,
 веб — сообщения между iframe и Flutter. Запросы озвучки не занимают канал жалоб
 или paywall на iOS/вебе. Устаревшие ответы не запускают звук; пауза сохраняет
 позицию, ответ и выход останавливают плеер. Таймер получает длительность после
