@@ -88,4 +88,4 @@ User-agent: Diffbot
 Allow: /
 Disallow: /app/
 
-Sitemap: https://pdd-drive.ru/sitemap.xml
+Sitemap: https://pdd-drive.app/sitemap.xml
