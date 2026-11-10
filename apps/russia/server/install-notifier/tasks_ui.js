@@ -398,13 +398,6 @@ export const TASKS_VIEW_HTML = `
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
     }
 
-    /* Верхний ряд карточки: Бейджи (версия, приоритет) и стрелки */
-    .task-card-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-    }
     .task-badges {
       display: flex;
       flex-wrap: wrap;
@@ -435,42 +428,6 @@ export const TASKS_VIEW_HTML = `
       background: #F3F4F6;
       color: #6B7280;
       border: 1px solid #E5E7EB;
-    }
-
-    /* Стрелки быстрого сдвига статуса */
-    .task-move-btns {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      opacity: 0.7;
-      transition: opacity 0.12s;
-    }
-    .task-card:hover .task-move-btns {
-      opacity: 1;
-    }
-    .task-btn-step {
-      border: none;
-      background: var(--surface-gray);
-      color: var(--text-muted);
-      border-radius: 6px;
-      width: 22px;
-      height: 22px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 0;
-      transition: all 0.12s ease;
-    }
-    .task-btn-step:hover:not(:disabled) {
-      background: var(--primary);
-      color: #FFFFFF;
-    }
-    .task-btn-step:disabled {
-      opacity: 0.2;
-      cursor: default;
     }
 
     /* Умная типографика задачи: Заголовок + Описание */
@@ -574,14 +531,6 @@ export const TASKS_VIEW_HTML = `
       display: flex;
       align-items: center;
       gap: 7px;
-    }
-    .task-date-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      color: #9CA3AF;
     }
     .task-foot-actions {
       display: flex;
@@ -1276,10 +1225,6 @@ VIEW_TITLES.tasks = 'Задачи';
   }
 
   function renderCard(t) {
-    var statusIdx = STATUS_DEFS.findIndex(function(s) { return s.id === (t.status || 'idea'); });
-    var canMoveLeft = statusIdx > 0;
-    var canMoveRight = statusIdx < STATUS_DEFS.length - 2; // перед архивом
-
     var badgesHtml = '';
     if (t.version) {
       badgesHtml += '<span class="task-badge version" title="Версия">' + esc(t.version) + '</span>';
@@ -1319,13 +1264,7 @@ VIEW_TITLES.tasks = 'Задачи';
     var isLong = parts.body.length > 180 || (parts.body.match(/\\n/g) || []).length > 3;
 
     return '<div class="task-card" draggable="true" data-task-id="' + t.id + '">' +
-      '<div class="task-card-top">' +
-        '<div class="task-badges">' + badgesHtml + '</div>' +
-        '<div class="task-move-btns">' +
-          '<button class="task-btn-step" data-move-task="' + t.id + '" data-dir="prev" ' + (canMoveLeft ? '' : 'disabled') + ' title="Предыдущий статус">←</button>' +
-          '<button class="task-btn-step" data-move-task="' + t.id + '" data-dir="next" ' + (canMoveRight ? '' : 'disabled') + ' title="Следующий статус">→</button>' +
-        '</div>' +
-      '</div>' +
+      (badgesHtml ? '<div class="task-badges">' + badgesHtml + '</div>' : '') +
       imagePreviewHtml +
       '<div class="task-card-content" data-edit-task="' + t.id + '">' +
         '<div class="task-card-title">' + esc(parts.title) + '</div>' +
@@ -1335,10 +1274,6 @@ VIEW_TITLES.tasks = 'Задачи';
       otherAttsHtml +
       '<div class="task-card-foot">' +
         '<div class="task-foot-left">' +
-          '<span class="task-date-badge">' +
-            '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
-            formatDate(t.updatedAt || t.createdAt) +
-          '</span>' +
           (Array.isArray(t.attachments) && t.attachments.length ? '<span style="font-size:11px; color:#9CA3AF;">📎 ' + t.attachments.length + '</span>' : '') +
         '</div>' +
         '<div class="task-foot-actions">' +
@@ -1453,30 +1388,6 @@ VIEW_TITLES.tasks = 'Задачи';
     var colAddBtn = e.target.closest('[data-add-to-status]');
     if (colAddBtn) {
       openModal(null, colAddBtn.dataset.addToStatus);
-      return;
-    }
-
-    // Шаг стрелками
-    var stepBtn = e.target.closest('[data-move-task]');
-    if (stepBtn) {
-      var taskId = stepBtn.dataset.moveTask;
-      var dir = stepBtn.dataset.dir;
-      var task = allTasks.find(function(t) { return t.id === taskId; });
-      if (!task) return;
-
-      var curIdx = STATUS_DEFS.findIndex(function(s) { return s.id === (task.status || 'idea'); });
-      var nextIdx = dir === 'next' ? curIdx + 1 : curIdx - 1;
-      if (nextIdx >= 0 && nextIdx < STATUS_DEFS.length) {
-        var nextStatus = STATUS_DEFS[nextIdx].id;
-        task.status = nextStatus;
-        render();
-        try {
-          await api('/move', 'POST', { id: taskId, status: nextStatus });
-        } catch (err) {
-          notify('Не удалось обновить статус: ' + err.message, true);
-          loadTasks();
-        }
-      }
       return;
     }
 
