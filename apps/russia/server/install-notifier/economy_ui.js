@@ -147,7 +147,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
    if(!data.configured){set('ec-platega-status','Platega не подключена');el('ec-platega-body').innerHTML='';return;}
    set('ec-platega-status','Обновлено '+new Date(data.updatedAt||Date.now()).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}));
    var balances=(data.balances||[]).filter(function(item){return Number.isFinite(Number(item.amount));});
-   el('ec-platega-body').innerHTML=balances.length?balances.map(function(item){return '<div class="ec-platega-balance"><span class="ec-caption">'+esc(item.currency==='RUB'?'USD · из RUB':item.currency)+'</span><strong>'+(item.currency==='RUB'&&stats?.fx?usd(item.amount/stats.fx.rubPerUsd):item.currency==='USD'?usd(item.amount):esc(num(item.amount)))+'</strong>'+(item.frozenBalance!=null?'<span class="ec-caption">Заморожено '+esc(num(item.frozenBalance))+'</span>':'')+'</div>';}).join(''):'<div class="ec-caption">Балансы не получены</div>';
+   el('ec-platega-body').innerHTML=balances.length?balances.map(function(item){return '<div class="ec-platega-balance"><span class="ec-caption">'+esc(item.currency==='RUB'?'Рублёвый баланс':item.currency==='USDT'?'Доступно к выводу · USDT':item.currency)+'</span><strong>'+(item.currency==='RUB'?money(item.amount,'RUB'):item.currency==='USD'?usd(item.amount):esc(num(item.amount)))+'</strong>'+(item.frozenBalance>0?'<span class="ec-caption">В обработке '+esc(num(item.frozenBalance))+'</span>':'')+'</div>';}).join(''):'<div class="ec-caption">Балансы не получены</div>';
   }
   try{
    if(window.AdminData)await AdminData.load('/api/admin/economy/platega',{view:'ec-platega-body',ttl:15000,force:force===true,onData:accept});
