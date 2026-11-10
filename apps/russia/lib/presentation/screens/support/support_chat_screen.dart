@@ -17,6 +17,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:pdd_app/presentation/widgets/support_chat_image.dart';
+import 'package:pdd_app/presentation/widgets/support_chat_message_text.dart';
 
 /// Экран интерактивного чата техподдержки приложения.
 class SupportChatScreen extends StatefulWidget {
@@ -726,13 +727,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                       padding: EdgeInsets.symmetric(
                         horizontal: imageProvider != null ? 4 : 0,
                       ),
-                      child: Text(
-                        msg.displayText,
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          color: isUser ? Colors.white : colors.primaryText,
-                          height: 1.35,
-                        ),
+                      child: SupportChatMessageText(
+                        text: msg.displayText,
+                        isUser: isUser,
                       ),
                     ),
                   const SizedBox(height: 4),

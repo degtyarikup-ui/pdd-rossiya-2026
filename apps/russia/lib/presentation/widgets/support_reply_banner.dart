@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/data/models/support_chat_message.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/widgets/support_chat_message_text.dart';
 
 /// A short banner from the top of the screen with an operator reply: the manager's picture,
 /// the name and the start of the text. A tap opens the support chat; it hides by itself.
@@ -26,7 +27,7 @@ class SupportReplyBanner {
     entry = OverlayEntry(
       builder: (context) => _BannerView(
         text: reply.displayText.isNotEmpty
-            ? reply.displayText
+            ? stripMarkdownLinks(reply.displayText)
             : appL10n.supportChatPhoto,
         onTap: () {
           hide();
