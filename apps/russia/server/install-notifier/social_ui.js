@@ -832,7 +832,7 @@ window.scPreview = function (id) {
   if (p.youtubePermalink && p.youtubePermalink.startsWith('https://')) links += '<a href="' + scEsc(p.youtubePermalink) + '" target="_blank" rel="noopener" class="sc-pill ok">YouTube ↗</a>';
   var save = async function (box) {
     var w = box.querySelector('#sc-m-when').value;
-    var patch = { id: id, title: box.querySelector('#sc-m-title').value, caption: box.querySelector('#sc-m-cap2').value };
+    var patch = { id: id, title: box.querySelector('#sc-m-title').value, caption: box.querySelector('#sc-m-cap2').value, youtubeTags: box.querySelector('#sc-m-tags').value };
     if (editable) {
       patch.targets = scReadTargets(box);
       if (!patch.targets.length) throw new Error('Выберите хотя бы одну соцсеть');
@@ -855,6 +855,7 @@ window.scPreview = function (id) {
     + '<option value="shorts">Shorts</option><option value="video"' + (regularVideo ? ' selected' : '') + '>Обычное видео</option></select></div>'
     + '<div class="form-group" style="margin-top:16px"><label class="form-label" for="sc-m-title">Заголовок YouTube</label><input id="sc-m-title" class="sc-input" value="' + scEsc(p.title || '') + '"></div>'
     + '<div class="form-group" style="margin-top:12px"><label class="form-label" for="sc-m-cap2">Описание</label><textarea id="sc-m-cap2" class="sc-input" style="width:100%;min-height:110px">' + scEsc(p.caption || '') + '</textarea></div>'
+    + '<div class="form-group" style="margin-top:12px"><label class="form-label" for="sc-m-tags">Теги YouTube · через запятую, пусто — теги канала</label><input id="sc-m-tags" class="sc-input" value="' + scEsc(p.youtubeTags || '') + '"></div>'
     + '<div class="form-group" style="margin-top:12px"><label class="form-label" for="sc-m-when">Дата и время · МСК</label><input type="datetime-local" id="sc-m-when" class="sc-input" value="' + when + '"' + (!editable ? ' disabled' : '') + '></div>'
     + (editable ? '<div style="margin-top:18px"><button class="btn-action btn-primary" id="sc-preview-publish">' + (p.status === 'failed' ? 'Повторить публикацию' : 'Опубликовать сейчас') + '</button></div>' : '')
     + '</div></div>', async function (box) { await save(box); scToast('Сохранено'); });

@@ -1032,6 +1032,19 @@ function buildYoutubeTitle(post) {
   return limit(raw, 90).trim() + ' #shorts';
 }
 
+// YouTube rejects a snippet whose tags exceed 500 characters in total.
+export function youtubeTagList(raw) {
+  const tags = [];
+  let total = 0;
+  for (const tag of String(raw || '').split(',').map(t => t.trim()).filter(Boolean)) {
+    const cost = tag.length + (tag.includes(' ') ? 2 : 0) + (tags.length ? 1 : 0);
+    if (total + cost > 500) break;
+    tags.push(tag);
+    total += cost;
+  }
+  return tags;
+}
+
 async function checkYoutubeFormat(env, post) {
   if (!post.youtubeFormat) return;
   const auth = await driveAuth(env);
@@ -1072,7 +1085,7 @@ async function publishToYouTube(env, post, account) {
     },
     async (accessToken, length) => {
       await checkYoutubeFormat(env, post);
-      const tags = String(account.youtubeTags || '').split(',').map(t => t.trim()).filter(Boolean);
+      const tags = youtubeTagList(String(post.youtubeTags || '').trim() || account.youtubeTags);
       const initRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
         method: 'POST', signal: AbortSignal.timeout(10000),
         headers: { authorization: 'Bearer ' + accessToken, 'content-type': 'application/json; charset=UTF-8',
@@ -1900,6 +1913,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     ['title', 'caption'].forEach((key) => {
       if (typeof body[key] === 'string') patch[key] = body[key];
     });
+    if (typeof body.youtubeTags === 'string') patch.youtubeTags = body.youtubeTags.slice(0, 1000);
     if (body.targets !== undefined) {
       const targets = validTargets(body.targets);
       if (!targets) return jsonResponse({ error: 'Выберите Instagram или YouTube' }, 400);
