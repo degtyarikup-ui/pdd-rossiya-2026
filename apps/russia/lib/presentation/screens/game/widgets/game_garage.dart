@@ -1034,6 +1034,17 @@ class _GarageCarDetailState extends State<_GarageCarDetail> {
                                     ],
                                   );
                                 }
+                                if (constraints.maxHeight < 300) {
+                                  // Large text can leave less room than the
+                                  // paint picker needs on a short phone. Keep
+                                  // Save visible and let the preview/paints
+                                  // scroll instead of overflowing the footer.
+                                  return SingleChildScrollView(
+                                    child: Column(
+                                      children: [artwork, controls],
+                                    ),
+                                  );
+                                }
                                 return Column(
                                   children: [
                                     Expanded(

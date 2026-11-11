@@ -475,9 +475,7 @@ class _AchievementGridCell extends StatelessWidget {
     final unlocked = achievement.isUnlocked;
     final metal = TierMetal.of(achievement.level);
     final next = achievement.nextTarget;
-    final progress = next == null
-        ? 1.0
-        : (achievement.value / next).clamp(0.0, 1.0).toDouble();
+    final progress = achievement.nextLevelProgress;
 
     final Widget card = Material(
       color: unlocked ? Colors.transparent : colors.cardBackground,

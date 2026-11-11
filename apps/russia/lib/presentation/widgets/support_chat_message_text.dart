@@ -36,7 +36,7 @@ class LinkSpanInfo {
 String stripMarkdownLinks(String text) {
   if (text.isEmpty) return text;
   return text.replaceAllMapped(
-    RegExp(r'\[([^\]]+)\]\([^\)]+\)'),
+    RegExp(r'\[([^\]]+)\]\((?:[^\s()]|\([^\s()]*\))+\)'),
     (match) => match.group(1) ?? '',
   );
 }
@@ -45,8 +45,10 @@ String stripMarkdownLinks(String text) {
 String normalizeChatUrl(String rawUrl) {
   final trimmed = rawUrl.trim();
   if (trimmed.isEmpty) return '';
-  if (RegExp(r'^[a-zA-Z][a-zA-Z0-9+.-]*:', caseSensitive: false)
-      .hasMatch(trimmed)) {
+  if (RegExp(
+    r'^[a-zA-Z][a-zA-Z0-9+.-]*:',
+    caseSensitive: false,
+  ).hasMatch(trimmed)) {
     return trimmed;
   }
   return 'https://$trimmed';
@@ -67,7 +69,7 @@ List<LinkSpanInfo> parseChatLinks(String text) {
   if (text.isEmpty) return const [];
 
   final regex = RegExp(
-    r'''(\[(?<mdText>[^\]]+)\]\((?<mdUrl>[^\s\)]+)\))|(?<rawUrl>(?:https?:\/\/|www\.|t\.me\/|(?:[a-zA-Z0-9-]+\.)+(?:ru|com|org|net|online|io|me|dev|app|edu|gov|рф)(?:\/[^\s<>"'{}|\\^`\[\]]*)?)[^\s<>"'{}|\\^`\[\]]*)|(?<email>[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})''',
+    r'''(\[(?<mdText>[^\]]+)\]\((?<mdUrl>(?:[^\s()]|\([^\s()]*\))+)\))|(?<email>[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})|(?<rawUrl>(?:https?:\/\/|www\.|t\.me\/|(?:[a-zA-Z0-9-]+\.)+(?:ru|com|org|net|online|io|me|dev|app|edu|gov|рф)(?:\/[^\s<>"'{}|\\^`\[\]]*)?)[^\s<>"'{}|\\^`\[\]]*)''',
     caseSensitive: false,
   );
 
@@ -93,10 +95,7 @@ List<LinkSpanInfo> parseChatLinks(String text) {
         _addPlainText(result, rawUrl);
       } else {
         result.add(
-          LinkSpanInfo(
-            text: cleaned.url,
-            url: normalizeChatUrl(cleaned.url),
-          ),
+          LinkSpanInfo(text: cleaned.url, url: normalizeChatUrl(cleaned.url)),
         );
         if (cleaned.trailing.isNotEmpty) {
           _addPlainText(result, cleaned.trailing);
@@ -109,10 +108,7 @@ List<LinkSpanInfo> parseChatLinks(String text) {
         _addPlainText(result, email);
       } else {
         result.add(
-          LinkSpanInfo(
-            text: cleaned.url,
-            url: 'mailto:${cleaned.url}',
-          ),
+          LinkSpanInfo(text: cleaned.url, url: 'mailto:${cleaned.url}'),
         );
         if (cleaned.trailing.isNotEmpty) {
           _addPlainText(result, cleaned.trailing);
@@ -212,7 +208,11 @@ class _SupportChatMessageTextState extends State<SupportChatMessageText> {
     final uri = Uri.tryParse(url);
     if (uri == null) {
       if (mounted) {
-        AppToast.show(context, appL10n.linkOpenFailed, type: AppToastType.error);
+        AppToast.show(
+          context,
+          appL10n.linkOpenFailed,
+          type: AppToastType.error,
+        );
       }
       return;
     }
@@ -223,11 +223,19 @@ class _SupportChatMessageTextState extends State<SupportChatMessageText> {
         mode: LaunchMode.externalApplication,
       );
       if (!launched && mounted) {
-        AppToast.show(context, appL10n.linkOpenFailed, type: AppToastType.error);
+        AppToast.show(
+          context,
+          appL10n.linkOpenFailed,
+          type: AppToastType.error,
+        );
       }
     } catch (_) {
       if (mounted) {
-        AppToast.show(context, appL10n.linkOpenFailed, type: AppToastType.error);
+        AppToast.show(
+          context,
+          appL10n.linkOpenFailed,
+          type: AppToastType.error,
+        );
       }
     }
   }
@@ -254,12 +262,7 @@ class _SupportChatMessageTextState extends State<SupportChatMessageText> {
           ),
         );
       } else {
-        spans.add(
-          TextSpan(
-            text: part.text,
-            style: baseStyle,
-          ),
-        );
+        spans.add(TextSpan(text: part.text, style: baseStyle));
       }
     }
     return spans;
@@ -270,14 +273,16 @@ class _SupportChatMessageTextState extends State<SupportChatMessageText> {
     final colors = AppColors.of(context);
     final isUser = widget.isUser;
 
-    final baseStyle = widget.style ??
+    final baseStyle =
+        widget.style ??
         TextStyle(
           fontSize: 14.5,
           color: isUser ? Colors.white : colors.primaryText,
           height: 1.35,
         );
 
-    final effectiveLinkStyle = widget.linkStyle ??
+    final effectiveLinkStyle =
+        widget.linkStyle ??
         TextStyle(
           fontSize: baseStyle.fontSize,
           height: baseStyle.height,

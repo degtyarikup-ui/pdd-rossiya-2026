@@ -50,7 +50,11 @@ func check_exit(expected: Dictionary) -> void:
 			break
 	var result = JSON.parse_string(FileAccess.get_file_as_string(exchange.path_join("summary.json")))
 	expect(result is Dictionary and result.get("event") == "exit", "exit waits for its cover before handing the summary to iOS")
-	expect(result is Dictionary and result.get("summary") == JSON.parse_string(JSON.stringify(expected)),
+	# Every host result includes achievement receipts, even when this fixture has
+	# no awards. Keep comparing the complete payload, including the caller's data.
+	var delivered := expected.duplicate(true)
+	delivered["achievement_awards"] = {}
+	expect(result is Dictionary and result.get("summary") == JSON.parse_string(JSON.stringify(delivered)),
 		"exit preserves the original summary and ignores a second exit")
 	var cover := root.get_node_or_null(Host.EXIT_LAYER)
 	expect(cover != null and is_equal_approx(cover.get_child(0).modulate.a, 1.0), "exit leaves an opaque cover until the next request")

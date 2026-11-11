@@ -11,6 +11,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test(
+    'next tier starts empty and only counts progress since the last award',
+    () {
+      AchievementProgress coverage(int value) => AchievementProgress(
+        id: AchievementId.coverage,
+        levels: const [100, 300, 500, 800],
+        value: value,
+      );
+      expect(coverage(0).nextLevelProgress, 0);
+      expect(coverage(50).nextLevelProgress, .5);
+      expect(coverage(100).nextLevelProgress, 0);
+      expect(coverage(200).nextLevelProgress, .5);
+      expect(coverage(300).nextLevelProgress, 0);
+      expect(coverage(400).nextLevelProgress, .5);
+      expect(coverage(500).nextLevelProgress, 0);
+      expect(coverage(650).nextLevelProgress, .5);
+      expect(coverage(800).nextLevelProgress, 1);
+      expect(coverage(900).nextLevelProgress, 1);
+    },
+  );
+
   test('each game unlocks its own achievement tiers at the boundary', () {
     const tiers = {
       AchievementId.game: AchievementThresholds.game,

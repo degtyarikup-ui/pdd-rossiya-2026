@@ -234,7 +234,7 @@ func _check_ui() -> void:
 				_check("UI: D/R letters remain visible" + detail, _labels_fit(ui._gear) and ui._gear_label.text == "D" and ui._reverse_label.text == "R")
 				_check("UI: selected gear is highlighted" + detail, (ui._drive_style.bg_color.a > 0.0) == (gear > 0) and (ui._reverse_style.bg_color.a > 0.0) == (gear < 0))
 				var selected := ui._reverse_style if gear < 0 else ui._drive_style
-				_check("UI: both gears use the accent, without a border" + detail, selected.bg_color == Ui.c("accent") and ui._gear_style.border_width_left == 0 and ui._gear.scale == Vector2.ONE)
+				_check("UI: both gears use the accent, without a border" + detail, selected.bg_color == Ui.c("accent") and selected.border_width_left == 0 and ui._gear.scale == Vector2.ONE)
 			ui.set_gear(1)
 			var wheel_rect := ui.wheel.get_global_rect()
 			_check("UI: steering wheel stays inside viewport" + suffix, _contained(wheel_rect, viewport_size))

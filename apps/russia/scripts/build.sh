@@ -19,11 +19,22 @@ cd "$(dirname "$0")/.."
 source scripts/android_env.sh
 dart tools/multi_app/check_boundaries.dart
 
-# Store builds must use the calendar, never the development winter preview.
-if [[ "${EXTRA_DEFINES:-}" == *GAME_DEBUG* || "${EXTRA_DEFINES:-}" == *DEV_SEASON* ]]; then
-  echo "Ошибка: GAME_DEBUG и DEV_SEASON разрешены только в dev-сборках." >&2
-  exit 1
+# Validate the actual inputs, including JSON/dotenv files. A dev flag hidden in
+# Firebase config must fail before engine export or App Store Connect upload.
+EXTRA_DEFINES_ARR=()
+if [[ "$TARGET" == "web" && -n "${GOOGLE_WEB_CLIENT_ID:-}" ]]; then
+  EXTRA_DEFINES_ARR+=(--dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID")
 fi
+FIREBASE_DEFINES="secrets/firebase/$COUNTRY.defines.json"
+if [[ "$TARGET" != "web" && -f "$FIREBASE_DEFINES" ]]; then
+  EXTRA_DEFINES_ARR+=(--dart-define-from-file="$FIREBASE_DEFINES")
+fi
+if [[ -n "${EXTRA_DEFINES:-}" ]]; then
+  # Preserve the existing whitespace-separated format without pathname globbing.
+  read -r -d '' -a ENV_DEFINES < <(printf '%s\0' "$EXTRA_DEFINES")
+  EXTRA_DEFINES_ARR+=("${ENV_DEFINES[@]}")
+fi
+python3 tools/android_build/validate_release_defines.py ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
 
 # Shared studio recordings must exist before Flutter packs its assets.
 python3 tools/godot_export/export_question_audio.py
@@ -56,26 +67,6 @@ case "$TARGET" in
   aab|apk|rustore-apk) ./scripts/godot_android_assets.sh ;;
   ipa) ./scripts/godot_ios_assets.sh ;;
 esac
-
-# Дополнительные параметры сборки через окружение.
-# GAME_DEBUG / NOTIF_TEST / SCREEN не включают отладку в release.
-EXTRA_DEFINES_ARR=()
-if [[ "$TARGET" == "web" ]]; then
-  # Public OAuth client ID (not a client secret). Default is in AuthService.
-  if [[ -n "${GOOGLE_WEB_CLIENT_ID:-}" ]]; then
-    EXTRA_DEFINES_ARR+=(--dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID")
-  fi
-fi
-# Firebase client IDs are configured per country; sender private keys are never
-# included in the application. Builds without this optional file keep pushes off.
-FIREBASE_DEFINES="secrets/firebase/$COUNTRY.defines.json"
-if [[ "$TARGET" != "web" && -f "$FIREBASE_DEFINES" ]]; then
-  EXTRA_DEFINES_ARR+=(--dart-define-from-file="$FIREBASE_DEFINES")
-fi
-if [[ -n "${EXTRA_DEFINES:-}" ]]; then
-  # shellcheck disable=SC2206
-  EXTRA_DEFINES_ARR+=($EXTRA_DEFINES)
-fi
 
 # Контент страны обязан лежать внутри артефакта. Проверка дешёвая, а цена
 # ошибки — релиз, где все экраны пишут «не удалось загрузить данные».

@@ -39,6 +39,9 @@ func run() -> void:
 		check(world.sound._player.playing and not world.sound._player.stream_paused,
 			"World restores audible driving after garage cycle %d" % cycle)
 	world.queue_free()
+	# This test deliberately allocates a real generator even with Dummy audio.
+	# Let its mixer consume the queued stop before shutting down the process.
+	await create_timer(0.2).timeout
 	await process_frame
 	print("ride_audio_state_check: %d failures" % failures)
 	quit(1 if failures else 0)

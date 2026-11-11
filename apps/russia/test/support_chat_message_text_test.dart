@@ -15,7 +15,8 @@ void main() {
     });
 
     test('Markdown-ссылки [Текст](url)', () {
-      const text = 'Перейдите на [наш сайт](https://pdd-drive.online/pay) для оплаты.';
+      const text =
+          'Перейдите на [наш сайт](https://pdd-drive.online/pay) для оплаты.';
       final parts = parseChatLinks(text);
       expect(parts.length, 3);
       expect(parts[0].isLink, isFalse);
@@ -77,6 +78,30 @@ void main() {
       expect(parts[2].text, '.');
     });
 
+    test('email whose mailbox looks like a domain still opens mail', () {
+      final parts = parseChatLinks('ivan.ru@example.com');
+      expect(parts, const [
+        LinkSpanInfo(
+          text: 'ivan.ru@example.com',
+          url: 'mailto:ivan.ru@example.com',
+        ),
+      ]);
+    });
+
+    test(
+      'markdown links keep balanced URL parentheses in chat and previews',
+      () {
+        const url = 'https://en.wikipedia.org/wiki/Car_(automobile)';
+        const message = 'Read [the article]($url).';
+        expect(parseChatLinks(message), const [
+          LinkSpanInfo(text: 'Read '),
+          LinkSpanInfo(text: 'the article', url: url),
+          LinkSpanInfo(text: '.'),
+        ]);
+        expect(stripMarkdownLinks(message), 'Read the article.');
+      },
+    );
+
     test('Отделение знаков препинания на конце ссылки', () {
       final tests = [
         ('https://site.ru.', 'https://site.ru', '.'),
@@ -100,7 +125,10 @@ void main() {
       const text = 'https://en.wikipedia.org/wiki/Car_(automobile) статья';
       final parts = parseChatLinks(text);
       expect(parts.first.isLink, isTrue);
-      expect(parts.first.text, 'https://en.wikipedia.org/wiki/Car_(automobile)');
+      expect(
+        parts.first.text,
+        'https://en.wikipedia.org/wiki/Car_(automobile)',
+      );
       expect(parts.first.url, 'https://en.wikipedia.org/wiki/Car_(automobile)');
       expect(parts.last.text, ' статья');
     });
@@ -193,7 +221,8 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: SupportChatMessageText(
-              text: 'Посетите [Оплату](https://pdd-drive.online/pay) пожалуйста.',
+              text:
+                  'Посетите [Оплату](https://pdd-drive.online/pay) пожалуйста.',
               isUser: true,
               onTapUrl: (url) {
                 openedUrl = url;

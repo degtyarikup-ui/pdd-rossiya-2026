@@ -2,7 +2,7 @@ name: pdd_app
 description: "ПДД Россия 2026 — билеты и экзамен"
 publish_to: 'none'
 resolution: workspace
-version: 2.2.14+77
+version: 2.2.15+78
 
 environment:
   sdk: ^3.11.4

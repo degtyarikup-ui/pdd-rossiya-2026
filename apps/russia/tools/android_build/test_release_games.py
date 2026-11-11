@@ -1,5 +1,6 @@
 """A release cannot silently omit games or reuse a failed engine export."""
 import os
+import json
 import sys
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[4]))
 from pathlib import Path
@@ -20,6 +21,9 @@ class ReleaseGameTests(unittest.TestCase):
         shutil.copytree(ROOT.parents[1] / 'tools/multi_app', root / 'tools/multi_app')
         for name in ('build.sh', 'android_env.sh'):
             shutil.copyfile(ROOT / 'scripts' / name, root / 'scripts' / name)
+        (root / 'tools/android_build').mkdir(parents=True)
+        shutil.copyfile(ROOT / 'tools/android_build/validate_release_defines.py',
+                        root / 'tools/android_build/validate_release_defines.py')
         tools = root / 'tools/godot_export'
         tools.mkdir(parents=True)
         (tools / 'export_question_audio.py').write_text('pass\n')
@@ -94,6 +98,67 @@ with zipfile.ZipFile(path,'w') as z:
                                         env=dict(env, FAIL_GAME=failed), capture_output=True, text=True)
                 self.assertEqual(result.returncode == 0, failed == '0', result.stdout + result.stderr)
                 self.assertEqual((root / 'calls').read_text().splitlines()[-1], 'web')
+
+    def test_development_inputs_stop_before_any_export_or_upload(self):
+        for target in ('aab', 'rustore-apk', 'ipa', 'web'):
+            for flag in ('GAME_DEBUG=true', 'GAME_DEBUG_DEVICE=true',
+                         'DEV_SEASON=winter', 'DEVICE_REGION=RU',
+                         'NOTIF_TEST=true', 'SCREEN=games', 'GIT_COMMIT=fixture',
+                         'STORE=rustore', 'COUNTRY=by', 'dart.vm.product=false'):
+                for mode in ('inline', 'json', 'env'):
+                    with self.subTest(target=target, flag=flag, mode=mode), tempfile.TemporaryDirectory() as tmp:
+                        root = Path(tmp)
+                        env = self.fixture(root)
+                        key, value = flag.split('=', 1)
+                        if mode == 'inline':
+                            extra = '--dart-define=' + flag
+                        else:
+                            config = root / ('defines.' + mode)
+                            config.write_text(json.dumps({key: value}) if mode == 'json' else flag + '\n')
+                            extra = '--dart-define-from-file=' + str(config)
+                        result = subprocess.run(['bash', 'scripts/build.sh', 'ru', target], cwd=root,
+                                                env=dict(env, EXTRA_DEFINES=extra), capture_output=True, text=True)
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertIn('Release configuration rejected', result.stderr)
+                        self.assertFalse((root / 'calls').exists())
+
+    def test_firebase_config_cannot_enable_debug_mode(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env = self.fixture(root)
+            firebase = root / 'secrets/firebase/ru.defines.json'
+            firebase.parent.mkdir(parents=True)
+            firebase.write_text('{"FIREBASE_API_KEY":"private-fixture-value","GAME_DEBUG":true}')
+            result = subprocess.run(['bash', 'scripts/build.sh', 'ru', 'ipa'], cwd=root,
+                                    env=env, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn('private-fixture-value', result.stdout + result.stderr)
+            self.assertFalse((root / 'calls').exists())
+
+    def test_extra_flags_cannot_override_release_mode_or_application_id(self):
+        for flag in ('--debug', '--profile', '-Pdev', '--target=other.dart'):
+            with self.subTest(flag=flag), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                env = self.fixture(root)
+                result = subprocess.run(['bash', 'scripts/build.sh', 'ru', 'aab'], cwd=root,
+                                        env=dict(env, EXTRA_DEFINES=flag), capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((root / 'calls').exists())
+
+    def test_release_accepts_firebase_and_multiline_production_defines(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env = self.fixture(root)
+            firebase = root / 'secrets/firebase/ru.defines.json'
+            firebase.parent.mkdir(parents=True)
+            firebase.write_text('{"ENABLE_REMOTE_PUSH":true,"FIREBASE_PROJECT_ID":"fixture"}')
+            result = subprocess.run(['bash', 'scripts/build.sh', 'ru', 'aab'], cwd=root,
+                                    env=dict(env, EXTRA_DEFINES='--dart-define=FEATURE_A=true\n--dart-define FEATURE_B=on'),
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            calls = (root / 'calls').read_text()
+            self.assertIn('--dart-define-from-file=secrets/firebase/ru.defines.json', calls)
+            self.assertIn('--dart-define=FEATURE_A=true --dart-define FEATURE_B=on', calls)
 
 
 if __name__ == '__main__':

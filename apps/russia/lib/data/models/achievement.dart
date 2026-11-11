@@ -71,6 +71,15 @@ class AchievementProgress {
   bool get isMaxed => level == levels.length;
 
   int? get nextTarget => isMaxed ? null : levels[level];
+
+  /// Progress within the next tier, excluding thresholds already earned.
+  double get nextLevelProgress {
+    final currentLevel = level;
+    if (currentLevel == levels.length) return 1;
+    final previous = currentLevel == 0 ? 0 : levels[currentLevel - 1];
+    final next = levels[currentLevel];
+    return ((value - previous) / (next - previous)).clamp(0.0, 1.0);
+  }
 }
 
 List<AchievementProgress> computeAchievements({
