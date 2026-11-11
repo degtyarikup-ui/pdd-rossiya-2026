@@ -298,9 +298,20 @@ final trackedQuestionProgressProvider = FutureProvider<Map<String, dynamic>>((
 final statsProvider = FutureProvider<Map<String, int>>((ref) async {
   final progress = await ref.watch(trackedQuestionProgressProvider.future);
   final tickets = await ref.watch(ticketsProvider.future);
-  final correct = progress.values
-      .where((value) => value['isCorrect'] == true)
-      .length;
+  // Несколько официальных вопросов повторяются в двух билетах с одним id.
+  // Прогресс хранится по id, а счётчики считаются по местам в билетах:
+  // ответ на такой вопрос засчитывается в обоих билетах, и итог сходится
+  // с общим числом вопросов (800 из 800, а не 794).
+  int correct = 0;
+  int answeredSlots = 0;
+  for (final ticket in tickets) {
+    for (final q in ticket['questions'] as List) {
+      final snapshot = progress[q.id as String];
+      if (snapshot == null) continue;
+      answeredSlots++;
+      if (snapshot['isCorrect'] == true) correct++;
+    }
+  }
 
   int passedTickets = 0;
   for (final ticket in tickets) {
@@ -332,10 +343,10 @@ final statsProvider = FutureProvider<Map<String, int>>((ref) async {
 
   return {
     'correctAnswers': correct,
-    'answeredQuestions': progress.length,
-    'wrongQuestions': progress.values.where((value) {
-      return value is Map<String, dynamic> && value['isCorrect'] == false;
-    }).length,
+    'answeredQuestions': answeredSlots,
+    'wrongQuestions': progress.values
+        .where((value) => value['isCorrect'] == false)
+        .length,
     'passedTickets': passedTickets,
     'totalQuestions': totalQuestions,
     'totalTickets': tickets.length,
