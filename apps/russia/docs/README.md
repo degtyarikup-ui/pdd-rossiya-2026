@@ -15,6 +15,7 @@
 | **Сборка Android на другом компьютере, загрузка зависимостей, Wi-Fi** | [build/android.md](build/android.md) |
 | **Вход, оплата, Премиум** | [premium/README.md](premium/README.md), [web-payments-launch](premium/web-payments-launch.md), [web-auth](premium/web-auth.md), [subscription-fix](premium/subscription-fix-2026-10-02.md) |
 | 3D-игра и мини-игры | [game/README.md](game/README.md) |
+| **Значки достижений (3D-формат, карточка, уровни)** | [application/achievements-3d.md](application/achievements-3d.md) |
 | Релизы и сторы | [release/](release/) — выпуск через API ([store-api.md](release/store-api.md)), аудиты, листинг Play, политика конфиденциальности, промпты обновления |
 | Эксплуатация | [ops/](ops/) — логирование ошибок, уведомления, аналитика, разбор сбоев |
 | Источники пользователей и покупки Premium | [ops/user-acquisition.md](ops/user-acquisition.md) — поля, переходы сайт → магазин → аккаунт, ограничения поиска в сторах |
