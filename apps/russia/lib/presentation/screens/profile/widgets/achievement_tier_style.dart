@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:pdd_app/data/models/achievement.dart';
 
 /// Оформление уровня ачивки (вариант «Лучи», docs/application/achievements-3d.md):
-/// фон карточки с лучами металла, сегментная полоска, сияние крупных значков
-/// и фон экрана награды. Металл уровня: 1 бронза, 2 серебро, 3 золото, 4 платина.
+/// фон карточки в цвет металла, сегментная полоска и фон экрана награды. Металл уровня: 1 бронза, 2 серебро, 3 золото, 4 платина.
 @immutable
 class TierMetal {
   const TierMetal({
@@ -83,103 +82,11 @@ Offset achievementFocus(AchievementId id) => switch (id) {
   AchievementId.rank => const Offset(.479, .463),
 };
 
-/// Мягкое сияние цвета металла за крупным значком.
-class TierHaloPainter extends CustomPainter {
-  TierHaloPainter({
-    required this.level,
-    required this.isDark,
-    required this.focus,
-  });
-
-  final int level;
-  final bool isDark;
-  final Offset focus;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final m = TierMetal.of(level);
-    final s = size.width;
-    final c = Offset(focus.dx * s, focus.dy * s + s * .04);
-    final strength =
-        (isDark ? .62 : .5) * (.55 + .15 * level) * (level == 2 ? 1.35 : 1);
-    final r = s * (.42 + .03 * level);
-    canvas.drawCircle(
-      c,
-      r,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [
-            m.glow.withValues(alpha: strength),
-            m.glow.withValues(alpha: strength * .45),
-            m.glow.withValues(alpha: 0),
-          ],
-          stops: const [0, .5, 1],
-        ).createShader(Rect.fromCircle(center: c, radius: r)),
-    );
-  }
-
-  @override
-  bool shouldRepaint(TierHaloPainter old) =>
-      old.level != level || old.isDark != isDark || old.focus != focus;
-}
-
-/// Четырёхлучевые блики поверх крупного значка; их число равно уровню.
-class TierSparklePainter extends CustomPainter {
-  TierSparklePainter({required this.level});
-
-  final int level;
-
-  static const _spots = [
-    (Offset(.79, .11), .115),
-    (Offset(.18, .19), .08),
-    (Offset(.86, .47), .07),
-    (Offset(.15, .54), .06),
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final tint = TierMetal.of(level).glow;
-    final s = size.width;
-    for (var i = 0; i < level.clamp(1, 4); i++) {
-      final (pos, k) = _spots[i];
-      final c = Offset(pos.dx * s, pos.dy * s);
-      final r = k * s;
-      canvas.drawCircle(
-        c,
-        r * .55,
-        Paint()
-          ..color = tint.withValues(alpha: .55)
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * .35),
-      );
-      canvas.drawPath(
-        _star(c, r),
-        Paint()
-          ..shader = RadialGradient(
-            colors: [Colors.white, Color.lerp(Colors.white, tint, .45)!],
-          ).createShader(Rect.fromCircle(center: c, radius: r)),
-      );
-    }
-  }
-
-  static Path _star(Offset c, double r) {
-    final w = r * .16;
-    return Path()
-      ..moveTo(c.dx, c.dy - r)
-      ..quadraticBezierTo(c.dx + w, c.dy - w, c.dx + r, c.dy)
-      ..quadraticBezierTo(c.dx + w, c.dy + w, c.dx, c.dy + r)
-      ..quadraticBezierTo(c.dx - w, c.dy + w, c.dx - r, c.dy)
-      ..quadraticBezierTo(c.dx - w, c.dy - w, c.dx, c.dy - r)
-      ..close();
-  }
-
-  @override
-  bool shouldRepaint(TierSparklePainter old) => old.level != level;
-}
-
-/// Фон карточки полученной ачивки в сетке: оттенок металла сверху вниз и
-/// неподвижные лучи от центра предмета, гаснущие к краям.
-class AchievementRaysBackground extends StatelessWidget {
-  const AchievementRaysBackground({
+/// Фон полученной ачивки (карточка в сетке и шапка листа деталей): ровный
+/// оттенок металла с тонкой рамкой, пятно света за предметом и едва заметные
+/// лучи. Границы карточки остаются чёткими в обеих темах.
+class AchievementTierBackground extends StatelessWidget {
+  const AchievementTierBackground({
     super.key,
     required this.level,
     required this.focus,
@@ -199,7 +106,7 @@ class AchievementRaysBackground extends StatelessWidget {
     final m = TierMetal.of(level);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final base = isDark ? const Color(0xFF1C1D22) : Colors.white;
-    final tint = isDark ? m.deep : m.light;
+    final tint = isDark ? m.deep : Color.lerp(m.mid, m.deep, .2)!;
     final borderRadius = BorderRadius.circular(radius);
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -208,10 +115,12 @@ class AchievementRaysBackground extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color.lerp(base, tint, isDark ? .42 : .7)!,
-            Color.lerp(base, tint, isDark ? .12 : .18)!,
+            Color.lerp(base, tint, isDark ? .55 : .30)!,
+            Color.lerp(base, tint, isDark ? .30 : .16)!,
           ],
-          stops: const [0, .78],
+        ),
+        border: Border.all(
+          color: (isDark ? m.mid : tint).withValues(alpha: isDark ? .30 : .34),
         ),
       ),
       child: ClipRRect(
@@ -220,7 +129,7 @@ class AchievementRaysBackground extends StatelessWidget {
           children: [
             Positioned.fill(
               child: CustomPaint(
-                painter: _RaysPainter(
+                painter: _TierStagePainter(
                   metal: m,
                   isDark: isDark,
                   focus: focus,
@@ -237,35 +146,77 @@ class AchievementRaysBackground extends StatelessWidget {
   }
 }
 
-class _RaysPainter extends CustomPainter {
-  _RaysPainter({
+/// Декор за крупным значком без рамки (лист деталей): пятно света и лучи
+/// цвета металла, плавно уходящие в прозрачность.
+class AchievementTierAura extends StatelessWidget {
+  const AchievementTierAura({
+    super.key,
+    required this.level,
+    required this.focus,
+    required this.badgeSize,
+    required this.height,
+    required this.child,
+  });
+
+  final int level;
+  final Offset focus;
+  final double badgeSize, height;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    painter: _TierStagePainter(
+      metal: TierMetal.of(level),
+      isDark: Theme.of(context).brightness == Brightness.dark,
+      focus: focus,
+      badgeSize: badgeSize,
+      badgeTop: (height - badgeSize) / 2,
+      aura: true,
+    ),
+    child: SizedBox(
+      height: height,
+      child: Center(child: child),
+    ),
+  );
+}
+
+class _TierStagePainter extends CustomPainter {
+  _TierStagePainter({
     required this.metal,
     required this.isDark,
     required this.focus,
     required this.badgeSize,
     required this.badgeTop,
+    this.aura = false,
   });
 
   final TierMetal metal;
   final bool isDark;
+
+  /// Без тонированной подложки: свет — цвет металла в обеих темах.
+  final bool aura;
   final Offset focus;
   final double badgeSize, badgeTop;
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Значок стоит по центру карточки, сверху отступ badgeTop.
+    // Значок стоит по центру по ширине, сверху отступ badgeTop.
     final c = Offset(
       (size.width - badgeSize) / 2 + focus.dx * badgeSize,
       badgeTop + focus.dy * badgeSize,
     );
-    final reach = size.longestSide * 1.1;
-    final silver = identical(metal, TierMetal.silver);
-    canvas.saveLayer(Offset.zero & size, Paint());
+    // Свет: в светлой теме белый, в тёмной — цвет металла.
+    final tinted = isDark || aura;
+    final light = tinted ? metal.glow : Colors.white;
+    final reach = badgeSize * (aura ? 1.35 : 1.25);
+    // Слой по кругу лучей, а не по границам виджета: без рамки лучи гаснут
+    // плавно во все стороны и не обрезаются.
+    final bounds = Rect.fromCircle(center: c, radius: reach);
+    canvas.saveLayer(bounds, Paint());
     final rayPaint = Paint()
-      ..color = (isDark ? metal.mid : Color.lerp(metal.mid, metal.deep, .35)!)
-          .withValues(alpha: isDark ? .42 : (silver ? .4 : .3));
+      ..color = light.withValues(alpha: isDark ? .13 : (aura ? .2 : .34));
     const count = 12;
-    const halfWidth = .075;
+    const halfWidth = .085;
     for (var i = 0; i < count; i++) {
       final a = i * 2 * math.pi / count - math.pi / 2;
       canvas.drawPath(
@@ -283,39 +234,41 @@ class _RaysPainter extends CustomPainter {
         rayPaint,
       );
     }
-    // Лучи гаснут к краям карточки и не заходят под подпись.
+    // Лучи гаснут уже у края предмета и не доходят до подписи.
     canvas.drawRect(
-      Offset.zero & size,
+      bounds,
       Paint()
         ..blendMode = BlendMode.dstIn
         ..shader = const RadialGradient(
-          colors: [Colors.white, Color(0x66FFFFFF), Color(0x00FFFFFF)],
-          stops: [0, .22, .5],
-        ).createShader(Rect.fromCircle(center: c, radius: reach)),
+          colors: [Colors.white, Color(0x80FFFFFF), Color(0x00FFFFFF)],
+          stops: [0, .5, 1],
+        ).createShader(bounds),
     );
     canvas.restore();
-    // Мягкое свечение прямо за предметом.
-    final r = size.width * .42;
+    final r = badgeSize * .72;
     canvas.drawCircle(
       c,
       r,
       Paint()
         ..shader = RadialGradient(
           colors: [
-            metal.glow.withValues(alpha: isDark ? .45 : .38),
-            metal.glow.withValues(alpha: 0),
+            light.withValues(alpha: isDark ? .34 : (aura ? .36 : .8)),
+            light.withValues(alpha: isDark ? .12 : (aura ? .13 : .3)),
+            light.withValues(alpha: 0),
           ],
+          stops: const [0, .55, 1],
         ).createShader(Rect.fromCircle(center: c, radius: r)),
     );
   }
 
   @override
-  bool shouldRepaint(_RaysPainter old) =>
+  bool shouldRepaint(_TierStagePainter old) =>
       old.metal != metal ||
       old.isDark != isDark ||
       old.focus != focus ||
       old.badgeSize != badgeSize ||
-      old.badgeTop != badgeTop;
+      old.badgeTop != badgeTop ||
+      old.aura != aura;
 }
 
 /// Полоска уровня из сегментов: полученные уровни залиты цветом металла,

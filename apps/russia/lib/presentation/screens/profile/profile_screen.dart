@@ -66,15 +66,8 @@ class ProfileScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: AppDimensions.spacingS),
-              Center(
-                child: AchievementBadge(
-                  id: achievement.id,
-                  imageLevel: achievement.level == 0 ? 1 : achievement.level,
-                  unlocked: achievement.isUnlocked,
-                  size: 140,
-                ),
-              ),
-              const SizedBox(height: 16),
+              _AchievementSheetHero(achievement: achievement),
+              const SizedBox(height: 18),
               Text(
                 title,
                 style: TextStyle(
@@ -297,17 +290,17 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppDimensions.spacingS),
 
-              // Сетка значков: 3 колонки, карточки в ряду одной высоты
+              // Сетка значков: 2 колонки, карточки в ряду одной высоты
               // (IntrinsicHeight), без фиксированной высоты — крупный
               // системный шрифт просто делает ряд выше.
-              for (var row = 0; row < achievements.length; row += 3) ...[
-                if (row > 0) const SizedBox(height: 10),
+              for (var row = 0; row < achievements.length; row += 2) ...[
+                if (row > 0) const SizedBox(height: 12),
                 IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      for (var col = 0; col < 3; col++) ...[
-                        if (col > 0) const SizedBox(width: 10),
+                      for (var col = 0; col < 2; col++) ...[
+                        if (col > 0) const SizedBox(width: 12),
                         Expanded(
                           child: row + col < achievements.length
                               ? _AchievementGridCell(
@@ -466,8 +459,8 @@ class _AchievementGridCell extends StatelessWidget {
 
   const _AchievementGridCell({required this.achievement, required this.onTap});
 
-  static const double _badgeSize = 68;
-  static const double _badgeTop = 14;
+  static const double _badgeSize = 116;
+  static const double _badgeTop = 16;
 
   @override
   Widget build(BuildContext context) {
@@ -493,7 +486,7 @@ class _AchievementGridCell extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, _badgeTop, 8, 12),
+          padding: const EdgeInsets.fromLTRB(12, _badgeTop, 12, 14),
           child: Column(
             children: [
               AchievementBadge(
@@ -502,11 +495,11 @@ class _AchievementGridCell extends StatelessWidget {
                 unlocked: unlocked,
                 size: _badgeSize,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: 15,
                   height: 1.2,
                   fontWeight: FontWeight.w600,
                   color: colors.primaryText,
@@ -525,7 +518,7 @@ class _AchievementGridCell extends StatelessWidget {
                 fill: unlocked ? metal.ink(isDark) : colors.accent,
                 track: colors.searchFieldFill,
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: 8),
               Text(
                 unlocked
                     ? achievementMetalName(achievement.level)
@@ -537,7 +530,7 @@ class _AchievementGridCell extends StatelessWidget {
                         next ?? 0,
                       ),
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: unlocked ? FontWeight.w600 : FontWeight.w400,
                   color: unlocked ? metal.ink(isDark) : colors.secondaryText,
                 ),
@@ -553,7 +546,7 @@ class _AchievementGridCell extends StatelessWidget {
       button: true,
       excludeSemantics: true,
       child: unlocked
-          ? AchievementRaysBackground(
+          ? AchievementTierBackground(
               level: achievement.level,
               focus: achievementFocus(achievement.id),
               badgeSize: _badgeSize,
@@ -562,6 +555,40 @@ class _AchievementGridCell extends StatelessWidget {
               child: card,
             )
           : card,
+    );
+  }
+}
+
+/// Шапка листа деталей: крупный значок без рамки; у полученного — свет и
+/// лучи цвета металла, уходящие в прозрачность.
+class _AchievementSheetHero extends StatelessWidget {
+  const _AchievementSheetHero({required this.achievement});
+
+  final AchievementProgress achievement;
+
+  static const double _badgeSize = 156;
+  static const double _height = 188;
+
+  @override
+  Widget build(BuildContext context) {
+    final badge = AchievementBadge(
+      id: achievement.id,
+      imageLevel: achievement.level == 0 ? 1 : achievement.level,
+      unlocked: achievement.isUnlocked,
+      size: _badgeSize,
+    );
+    if (!achievement.isUnlocked) {
+      return SizedBox(
+        height: _height,
+        child: Center(child: badge),
+      );
+    }
+    return AchievementTierAura(
+      level: achievement.level,
+      focus: achievementFocus(achievement.id),
+      badgeSize: _badgeSize,
+      height: _height,
+      child: badge,
     );
   }
 }

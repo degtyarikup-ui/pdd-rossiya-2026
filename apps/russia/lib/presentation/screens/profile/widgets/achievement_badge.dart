@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/data/models/achievement.dart';
-import 'package:pdd_app/presentation/screens/profile/widgets/achievement_tier_style.dart';
 
 /// Приглушение неполученного значка: 75% к оттенкам серого (luminance
 /// 0.2126 / 0.7152 / 0.0722) и 25% исходного цвета — металл угадывается,
@@ -82,25 +81,6 @@ class AchievementBadge extends StatelessWidget {
           colorFilter: const ColorFilter.matrix(achievementGrayscaleMatrix),
           child: badgeWidget,
         ),
-      );
-    }
-
-    // Крупный полученный значок (лист деталей, экран награды): сияние
-    // металла за ним и блики, их число равно уровню.
-    if (unlocked && size >= 100) {
-      badgeWidget = Stack(
-        fit: StackFit.expand,
-        children: [
-          CustomPaint(
-            painter: TierHaloPainter(
-              level: clampedLevel,
-              isDark: isDark,
-              focus: achievementFocus(id),
-            ),
-          ),
-          badgeWidget,
-          CustomPaint(painter: TierSparklePainter(level: clampedLevel)),
-        ],
       );
     }
 
