@@ -1912,6 +1912,18 @@ class AppLocalizationsKk extends AppLocalizations {
   String get achievementRankFirst => '1 орын';
 
   @override
+  String get achievementMetalBronze => 'Қола';
+
+  @override
+  String get achievementMetalSilver => 'Күміс';
+
+  @override
+  String get achievementMetalGold => 'Алтын';
+
+  @override
+  String get achievementMetalPlatinum => 'Платина';
+
+  @override
   String get paywallPriceUnavailable => 'Баға жүктелмеді';
 
   @override

@@ -7,6 +7,7 @@ import 'package:pdd_app/data/models/achievement.dart';
 import 'package:pdd_app/data/services/achievement_award_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/profile/widgets/achievement_badge.dart';
+import 'package:pdd_app/presentation/screens/profile/widgets/achievement_tier_style.dart';
 import 'package:pdd_app/presentation/widgets/achievement_labels.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
@@ -192,6 +193,7 @@ class AchievementAwardScreen extends StatelessWidget {
   final int position, total;
   @override
   Widget build(BuildContext context) => CelebrationScreen(
+    background: TierMetal.of(achievement.level).award,
     heading: appL10n.achievementAwardTitle,
     title: achievementTitle(achievement.id),
     description: achievementDescription(achievement.id),

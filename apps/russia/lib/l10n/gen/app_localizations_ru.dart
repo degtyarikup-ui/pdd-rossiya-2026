@@ -1932,6 +1932,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get achievementRankFirst => '1 место';
 
   @override
+  String get achievementMetalBronze => 'Бронза';
+
+  @override
+  String get achievementMetalSilver => 'Серебро';
+
+  @override
+  String get achievementMetalGold => 'Золото';
+
+  @override
+  String get achievementMetalPlatinum => 'Платина';
+
+  @override
   String get paywallPriceUnavailable => 'Не удалось загрузить цену';
 
   @override

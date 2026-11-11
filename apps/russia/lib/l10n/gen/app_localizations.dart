@@ -3298,6 +3298,30 @@ abstract class AppLocalizations {
   /// **'1 место'**
   String get achievementRankFirst;
 
+  /// No description provided for @achievementMetalBronze.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бронза'**
+  String get achievementMetalBronze;
+
+  /// No description provided for @achievementMetalSilver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Серебро'**
+  String get achievementMetalSilver;
+
+  /// No description provided for @achievementMetalGold.
+  ///
+  /// In ru, this message translates to:
+  /// **'Золото'**
+  String get achievementMetalGold;
+
+  /// No description provided for @achievementMetalPlatinum.
+  ///
+  /// In ru, this message translates to:
+  /// **'Платина'**
+  String get achievementMetalPlatinum;
+
   /// No description provided for @paywallPriceUnavailable.
   ///
   /// In ru, this message translates to:

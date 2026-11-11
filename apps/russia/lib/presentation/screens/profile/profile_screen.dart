@@ -15,6 +15,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/user_avatar.dart';
 import 'package:pdd_app/presentation/widgets/achievement_labels.dart';
 import 'package:pdd_app/presentation/screens/profile/widgets/achievement_badge.dart';
+import 'package:pdd_app/presentation/screens/profile/widgets/achievement_tier_style.dart';
 import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
 import 'package:pdd_app/presentation/screens/support/support_chat_screen.dart';
 import 'package:pdd_app/presentation/widgets/notifications_bell_button.dart';
@@ -465,80 +466,102 @@ class _AchievementGridCell extends StatelessWidget {
 
   const _AchievementGridCell({required this.achievement, required this.onTap});
 
+  static const double _badgeSize = 68;
+  static const double _badgeTop = 14;
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final title = achievementTitle(achievement.id);
     final semanticsLabel = appL10n.achievementSemanticsLabel(
       title,
       achievement.level,
       achievement.levels.length,
     );
-
+    final unlocked = achievement.isUnlocked;
+    final metal = TierMetal.of(achievement.level);
     final next = achievement.nextTarget;
     final progress = next == null
         ? 1.0
         : (achievement.value / next).clamp(0.0, 1.0).toDouble();
 
+    final Widget card = Material(
+      color: unlocked ? Colors.transparent : colors.cardBackground,
+      borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, _badgeTop, 8, 12),
+          child: Column(
+            children: [
+              AchievementBadge(
+                id: achievement.id,
+                imageLevel: achievement.level == 0 ? 1 : achievement.level,
+                unlocked: unlocked,
+                size: _badgeSize,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.2,
+                  fontWeight: FontWeight.w600,
+                  color: colors.primaryText,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const Spacer(),
+              const SizedBox(height: 10),
+              // Сегменты — уровни; следующий заполняется по прогрессу.
+              TierLevelBar(
+                level: achievement.level,
+                total: achievement.levels.length,
+                progress: progress,
+                fill: unlocked ? metal.ink(isDark) : colors.accent,
+                track: colors.searchFieldFill,
+              ),
+              const SizedBox(height: 7),
+              Text(
+                unlocked
+                    ? achievementMetalName(achievement.level)
+                    // У «Покорителя рейтинга» цель — место, а не число.
+                    : achievement.id == AchievementId.rank
+                    ? _rankLevelLabel(0)
+                    : appL10n.achievementProgressFormat(
+                        achievement.value,
+                        next ?? 0,
+                      ),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: unlocked ? FontWeight.w600 : FontWeight.w400,
+                  color: unlocked ? metal.ink(isDark) : colors.secondaryText,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
     return Semantics(
       label: semanticsLabel,
       button: true,
       excludeSemantics: true,
-      child: Material(
-        color: colors.cardBackground,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 14, 8, 12),
-            child: Column(
-              children: [
-                AchievementBadge(
-                  id: achievement.id,
-                  imageLevel: achievement.level == 0 ? 1 : achievement.level,
-                  unlocked: achievement.isUnlocked,
-                  size: 68,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    height: 1.2,
-                    fontWeight: FontWeight.w500,
-                    color: colors.primaryText,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const Spacer(),
-                const SizedBox(height: 8),
-                // Прогресс до следующего уровня; на максимуме — полная.
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 4,
-                    color: achievement.isMaxed ? colors.green : colors.accent,
-                    backgroundColor: colors.searchFieldFill,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  appL10n.achievementLevelFormat(
-                    achievement.level,
-                    achievement.levels.length,
-                  ),
-                  style: TextStyle(fontSize: 11.5, color: colors.secondaryText),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      child: unlocked
+          ? AchievementRaysBackground(
+              level: achievement.level,
+              focus: achievementFocus(achievement.id),
+              badgeSize: _badgeSize,
+              badgeTop: _badgeTop,
+              radius: AppDimensions.cardRadius,
+              child: card,
+            )
+          : card,
     );
   }
 }

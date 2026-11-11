@@ -41,6 +41,9 @@ for L in 1 2 3 4; do cp "$O/streak_${L}_512.png" apps/russia/assets/images/achie
 `--blend файл.blend` сохраняет сцену, чтобы открыть её в Blender. Путь к
 файлу с пробелами брать в кавычки, иначе argparse молча завершит Blender.
 
+Для лёгких PNG (в 2–3 раза меньше) — `pip3 install imagequant`: `post.py`
+сам квантует 512 px через libimagequant.
+
 Нужны Blender 5.x (Cycles, Metal) и системные шрифты macOS: DIN Condensed Bold
 и PTSans.ttc (начертание PT Sans Narrow Bold извлекается в
 `~/Library/Caches/pdd-achievements/`).

@@ -54,3 +54,11 @@ String achievementDescription(AchievementId id) {
       return appL10n.achievementDescSignSwiper;
   }
 }
+
+/// Металл уровня ачивки: 1 бронза, 2 серебро, 3 золото, 4 платина.
+String achievementMetalName(int level) => switch (level.clamp(1, 4)) {
+  1 => appL10n.achievementMetalBronze,
+  2 => appL10n.achievementMetalSilver,
+  3 => appL10n.achievementMetalGold,
+  _ => appL10n.achievementMetalPlatinum,
+};

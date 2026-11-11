@@ -1098,6 +1098,10 @@
     }
   },
   "achievementRankFirst": "1 место",
+  "achievementMetalBronze": "Бронза",
+  "achievementMetalSilver": "Серебро",
+  "achievementMetalGold": "Золото",
+  "achievementMetalPlatinum": "Платина",
   "paywallPriceUnavailable": "Не удалось загрузить цену",
   "paywallLoadingPrice": "Загружаем цену…",
   "paywallReloadPrice": "Обновить цену",

@@ -1910,6 +1910,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get achievementRankFirst => '1st place';
 
   @override
+  String get achievementMetalBronze => 'Bronze';
+
+  @override
+  String get achievementMetalSilver => 'Silver';
+
+  @override
+  String get achievementMetalGold => 'Gold';
+
+  @override
+  String get achievementMetalPlatinum => 'Platinum';
+
+  @override
   String get paywallPriceUnavailable => 'Couldn’t load the price';
 
   @override

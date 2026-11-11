@@ -6,7 +6,8 @@ python3 post.py <raw.png> <out_prefix>
   → <out_prefix>_guide.png — контроль композиции на сетке 68 pt: крестик там,
     где приложение рисует центр лучей (_signCenter), и рамка 90%.
 
-512 px — файл для apps/russia/assets/images/achievements/<id>_<level>.png.
+512 px — файл для apps/russia/assets/images/achievements/<id>_<level>.png
+(палитровый PNG через libimagequant, если установлен пакет imagequant).
 """
 
 import sys
@@ -82,11 +83,27 @@ def guide(img):
     return g
 
 
+def save_app_png(img, path):
+    """PNG для приложения: палитра через libimagequant (pip install imagequant) —
+    в 2–3 раза легче без видимых потерь. Без пакета — обычный PNG."""
+    try:
+        import imagequant
+    except ImportError:
+        print("imagequant не установлен — PNG без сжатия палитрой")
+        img.save(path, optimize=True)
+        return
+    try:
+        q = imagequant.quantize_pil_image(img, dithering_level=1.0, max_quality=95, min_quality=80)
+    except RuntimeError:  # сложные свечения не укладываются в порог 80
+        q = imagequant.quantize_pil_image(img, dithering_level=1.0, max_quality=95, min_quality=0)
+    q.save(path, "PNG", optimize=True)
+
+
 def main():
     src, prefix = sys.argv[1], sys.argv[2]
     img = process(src)
     img.resize((1024, 1024), Image.LANCZOS).save(prefix + "_1024.png")
-    img.resize((512, 512), Image.LANCZOS).save(prefix + "_512.png", optimize=True)
+    save_app_png(img.resize((512, 512), Image.LANCZOS), prefix + "_512.png")
     guide(img).convert("RGB").save(prefix + "_guide.png")
     print("ok", prefix)
 
