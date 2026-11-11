@@ -17,6 +17,7 @@
 import { socialGuard, beginSocialWrite, completeSocialWrite, abandonSocialWrite, withSocialPublicationLease } from './social_guard.js';
 import { readSocialPosts, saveSocialPosts } from './social_queue.js';
 import { resumableYoutubeUpload, youtubePermalink } from './youtube_upload.js';
+import { loadYoutubeThumbnail, setYoutubeThumbnail } from './youtube_thumbnail.js';
 
 async function notifySocialFailure(notify, accountId, reason, text) {
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(accountId + '|' + reason));
@@ -1375,9 +1376,15 @@ async function publishPostWithLease(env, postId, origin, notify, only) {
       const current = (await getPosts(env)).find(p => p.id === postId);
       if (!current) throw new Error('Ролик удалён из очереди');
       post = current;
+      const thumbnail = await loadYoutubeThumbnail(env, post);
       ytResult = ytResult || await publishToYouTube(env, post, account);
+      // The upload result is already durable. A thumbnail failure can retry
+      // thumbnails.set without ever creating a second video.
+      const thumbnailSha256 = await setYoutubeThumbnail(thumbnail, ytResult.videoId,
+        () => googleAccessToken(env, account.youtubeRefreshToken || null));
       await patchPost(env, postId, {
         youtubeStatus: 'published',
+        ...(thumbnailSha256 ? { youtubeThumbnailSha256: thumbnailSha256, youtubeThumbnailStatus: 'applied' } : {}),
         youtubeNeedsReview: false,
         ...(post.youtubeReplacementAttempt ? { youtubeReplacementAttempt: { ...post.youtubeReplacementAttempt, stage: 'published' } } : {}),
         youtubeVideoId: ytResult.videoId,
@@ -1688,6 +1695,11 @@ export async function handleVideoThumb(env, request, streamToken) {
   if (!post) return new Response('Not found', { status: 404 });
 
   try {
+    const custom = await loadYoutubeThumbnail(env, post);
+    if (custom) return new Response(custom.bytes, { headers: {
+      'content-type': custom.mimeType, 'cache-control': 'private, no-cache',
+      'etag': '"' + custom.sha256 + '"', 'x-content-type-options': 'nosniff',
+    } });
     const auth = await driveAuth(env);
     let url = 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(post.driveFileId) +
               '?fields=thumbnailLink';

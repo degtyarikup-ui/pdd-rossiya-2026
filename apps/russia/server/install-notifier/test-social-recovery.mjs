@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runAutoPost, publishPost } from './social.js';
+import { runAutoPost, publishPost, handleVideoThumb } from './social.js';
+import { youtubeThumbnailKey } from './youtube_thumbnail.js';
 import { SocialPublisher } from './social_guard.js';
 import { readSocialPosts } from './social_queue.js';
 
@@ -10,7 +11,7 @@ class Storage {
   async delete(k){this.data.delete(k);}async list({prefix=''}){return new Map([...this.data].filter(([k])=>k.startsWith(prefix)).map(([k,v])=>[k,structuredClone(v)]));}
   async getAlarm(){return this.alarm;}async setAlarm(t){this.alarm=t;}async transaction(fn){return fn(this);}
 }
-function fixture(t,{ig='missing',yt='missing',postPatch={},queue=true,failLog=false,failMediaSave=false}={}){
+function fixture(t,{ig='missing',yt='missing',postPatch={},queue=true,failLog=false,failMediaSave=false,failThumbnail=false}={}){
   const post={id:'p',accountId:'a',fileName:'game_006.mp4',driveFileId:'drive',streamToken:'fixture',caption:'caption',targets:['instagram','youtube'],
     status:'failed',instagramStatus:'failed',youtubeStatus:'failed',instagramNeedsReview:true,instagramReviewReason:'media_unavailable',youtubeNeedsReview:true,
     instagramContainerId:'100',instagramMediaId:'101',instagramPermalink:'https://www.instagram.com/reel/old/',youtubeVideoId:'oldVideo123',
@@ -32,6 +33,10 @@ function fixture(t,{ig='missing',yt='missing',postPatch={},queue=true,failLog=fa
   const calls=[];
   t.mock.method(globalThis,'fetch',async(input,options={})=>{
     const url=new URL(input),method=options.method||'GET';calls.push({url,method,body:options.body});
+    if(url.pathname.endsWith('/thumbnails/set')) {
+      if(failThumbnail){failThumbnail=false;throw new TypeError('lost thumbnail response');}
+      return Response.json({items:[{default:{url:'https://fixture.invalid/cover.png'}}]});
+    }
     if(url.hostname==='graph.instagram.com'){
       if(method==='POST'&&url.pathname.endsWith('/media'))return Response.json({id:'200'});
       if(method==='POST'&&url.pathname.endsWith('/media_publish')){published=true;return Response.json({id:'201'});}
@@ -52,7 +57,8 @@ function fixture(t,{ig='missing',yt='missing',postPatch={},queue=true,failLog=fa
       if(yt==='temporary')return Response.json({error:{}},{status:503});
       return Response.json({items:yt==='missing'?[]:[{id:post.youtubeVideoId,snippet:{channelId:'channel'},status:{uploadStatus:'processed',privacyStatus:yt==='private'?'private':'public'}}]});
     }
-    if(url.pathname.startsWith('/drive/v3/files/'))return new Response(new Uint8Array(2000));
+    if(url.pathname.startsWith('/drive/v3/files/'))return url.searchParams.has('fields')
+      ? Response.json({videoMediaMetadata:{width:1920,height:1080,durationMillis:'30000'}}) : new Response(new Uint8Array(2000));
     if(url.pathname.startsWith('/upload/youtube/')&&method==='POST')return new Response('',{headers:{location:'https://www.googleapis.com/upload/youtube/v3/videos?upload_id=fixture'}});
     if(url.pathname.startsWith('/upload/youtube/')&&method==='PUT')return Response.json({id:'newVideo123'});
     throw Error('Unexpected provider request '+url.pathname);
@@ -60,6 +66,35 @@ function fixture(t,{ig='missing',yt='missing',postPatch={},queue=true,failLog=fa
   return {env,post,next,calls,restart:()=>objects.clear(),current:async()=> (await readSocialPosts(env)).find(p=>p.id==='p'),
     creates:platform=>calls.filter(c=>c.method==='POST'&&(platform==='instagram'?c.url.pathname.endsWith('/media'):c.url.pathname.startsWith('/upload/youtube/'))).length};
 }
+
+test('custom cover preview and retry preserve schedule and upload the video only once',async t=>{
+  const f=fixture(t,{failThumbnail:true,postPatch:{targets:['youtube'],youtubeFormat:'video',youtubeVideoId:null,youtubeNeedsReview:false,youtubeStatus:'queued',status:'queued'}});
+  const bytes=Uint8Array.from([137,80,78,71,13,10,26,10,...new Array(24).fill(0)]);
+  const sha256=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(v=>v.toString(16).padStart(2,'0')).join('');
+  await f.env.INSTALLS.put(youtubeThumbnailKey('drive'),JSON.stringify({schema:1,mimeType:'image/png',data:Buffer.from(bytes).toString('base64'),sha256}));
+  const preview=await handleVideoThumb(f.env,new Request('https://fixture.invalid'),'fixture');
+  assert.equal(preview.status,200);assert.equal(preview.headers.get('content-type'),'image/png');
+  assert.deepEqual(new Uint8Array(await preview.arrayBuffer()),bytes);
+  await publishPost(f.env,'p','https://fixture.invalid',null,['youtube']);
+  assert.equal((await f.current()).youtubeStatus,'failed');
+  f.restart();
+  await publishPost(f.env,'p','https://fixture.invalid',null,['youtube']);
+  const post=await f.current();
+  assert.equal(post.youtubeStatus,'published');assert.equal(post.youtubeVideoId,'newVideo123');
+  assert.equal(post.youtubeThumbnailSha256,sha256);assert.equal(post.youtubeThumbnailStatus,'applied');
+  assert.equal(post.scheduledAt,f.post.scheduledAt);
+  assert.equal(f.calls.filter(c=>c.method==='POST'&&c.url.pathname==='/upload/youtube/v3/videos').length,1);
+  const thumbnails=f.calls.filter(c=>c.url.pathname.endsWith('/thumbnails/set'));
+  assert.equal(thumbnails.length,2);assert.ok(thumbnails.every(c=>c.url.searchParams.get('videoId')==='newVideo123'));
+  assert.deepEqual(thumbnails[1].body,bytes);
+});
+
+test('corrupt custom cover stops publication before video upload',async t=>{
+  const f=fixture(t,{postPatch:{targets:['youtube'],youtubeFormat:'video',youtubeVideoId:null,youtubeNeedsReview:false}});
+  await f.env.INSTALLS.put(youtubeThumbnailKey('drive'),'{broken');
+  await publishPost(f.env,'p','https://fixture.invalid',null,['youtube']);
+  assert.equal(f.creates('youtube'),0);assert.match((await f.current()).error,/Обложка YouTube повреждена/);
+});
 test('scheduled unavailable legacy IDs are archived and replaced exactly once; future queue is untouched',async t=>{
   const f=fixture(t);await runAutoPost(f.env,'https://fixture.invalid');
   let p=await f.current();assert.equal(p.status,'published');assert.equal(p.instagramMediaId,'201');assert.equal(p.youtubeVideoId,'newVideo123');
