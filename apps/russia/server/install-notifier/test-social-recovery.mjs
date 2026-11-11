@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runAutoPost, publishPost, handleVideoThumb } from './social.js';
-import { youtubeThumbnailKey } from './youtube_thumbnail.js';
+import { youtubeThumbnailKey, thumbnailRetryDelays } from './youtube_thumbnail.js';
+thumbnailRetryDelays.ms=[0,0];
 import { SocialPublisher } from './social_guard.js';
 import { readSocialPosts } from './social_queue.js';
 
@@ -11,7 +12,7 @@ class Storage {
   async delete(k){this.data.delete(k);}async list({prefix=''}){return new Map([...this.data].filter(([k])=>k.startsWith(prefix)).map(([k,v])=>[k,structuredClone(v)]));}
   async getAlarm(){return this.alarm;}async setAlarm(t){this.alarm=t;}async transaction(fn){return fn(this);}
 }
-function fixture(t,{ig='missing',yt='missing',postPatch={},queue=true,failLog=false,failMediaSave=false,failThumbnail=false}={}){
+function fixture(t,{ig='missing',yt='missing',postPatch={},queue=true,failLog=false,failMediaSave=false,failThumbnail=0,thumbnailStatus=0}={}){
   const post={id:'p',accountId:'a',fileName:'game_006.mp4',driveFileId:'drive',streamToken:'fixture',caption:'caption',targets:['instagram','youtube'],
     status:'failed',instagramStatus:'failed',youtubeStatus:'failed',instagramNeedsReview:true,instagramReviewReason:'media_unavailable',youtubeNeedsReview:true,
     instagramContainerId:'100',instagramMediaId:'101',instagramPermalink:'https://www.instagram.com/reel/old/',youtubeVideoId:'oldVideo123',
@@ -34,7 +35,7 @@ function fixture(t,{ig='missing',yt='missing',postPatch={},queue=true,failLog=fa
   t.mock.method(globalThis,'fetch',async(input,options={})=>{
     const url=new URL(input),method=options.method||'GET';calls.push({url,method,body:options.body});
     if(url.pathname.endsWith('/thumbnails/set')) {
-      if(failThumbnail){failThumbnail=false;throw new TypeError('lost thumbnail response');}
+      if(failThumbnail){failThumbnail--;if(thumbnailStatus)return Response.json({},{status:thumbnailStatus});throw new TypeError('lost thumbnail response');}
       return Response.json({items:[{default:{url:'https://fixture.invalid/cover.png'}}]});
     }
     if(url.hostname==='graph.instagram.com'){
@@ -68,7 +69,7 @@ function fixture(t,{ig='missing',yt='missing',postPatch={},queue=true,failLog=fa
 }
 
 test('custom cover preview and retry preserve schedule and upload the video only once',async t=>{
-  const f=fixture(t,{failThumbnail:true,postPatch:{targets:['youtube'],youtubeFormat:'video',youtubeVideoId:null,youtubeNeedsReview:false,youtubeStatus:'queued',status:'queued'}});
+  const f=fixture(t,{failThumbnail:3,postPatch:{targets:['youtube'],youtubeFormat:'video',youtubeVideoId:null,youtubeNeedsReview:false,youtubeStatus:'queued',status:'queued'}});
   const bytes=Uint8Array.from([137,80,78,71,13,10,26,10,...new Array(24).fill(0)]);
   const sha256=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(v=>v.toString(16).padStart(2,'0')).join('');
   await f.env.INSTALLS.put(youtubeThumbnailKey('drive'),JSON.stringify({schema:1,mimeType:'image/png',data:Buffer.from(bytes).toString('base64'),sha256}));
@@ -85,10 +86,33 @@ test('custom cover preview and retry preserve schedule and upload the video only
   assert.equal(post.scheduledAt,f.post.scheduledAt);
   assert.equal(f.calls.filter(c=>c.method==='POST'&&c.url.pathname==='/upload/youtube/v3/videos').length,1);
   const thumbnails=f.calls.filter(c=>c.url.pathname.endsWith('/thumbnails/set'));
-  assert.equal(thumbnails.length,2);assert.ok(thumbnails.every(c=>c.url.searchParams.get('videoId')==='newVideo123'));
-  assert.deepEqual(thumbnails[1].body,bytes);
+  assert.equal(thumbnails.length,4,'three attempts, then one on the manual retry');assert.ok(thumbnails.every(c=>c.url.searchParams.get('videoId')==='newVideo123'));
+  assert.deepEqual(thumbnails[3].body,bytes);
 });
 
+async function withCover(f){
+  const bytes=Uint8Array.from([137,80,78,71,13,10,26,10,...new Array(24).fill(0)]);
+  const sha256=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(v=>v.toString(16).padStart(2,'0')).join('');
+  await f.env.INSTALLS.put(youtubeThumbnailKey('drive'),JSON.stringify({schema:1,mimeType:'image/png',data:Buffer.from(bytes).toString('base64'),sha256}));
+}
+const coverPost={targets:['youtube'],youtubeFormat:'video',youtubeVideoId:null,youtubeNeedsReview:false,youtubeStatus:'queued',status:'queued'};
+test('a brief YouTube hiccup while setting the cover is retried within the same publication',async t=>{
+  for(const thumbnailStatus of [0,503,429]){
+    const f=fixture(t,{failThumbnail:2,thumbnailStatus,postPatch:coverPost});await withCover(f);
+    await publishPost(f.env,'p','https://fixture.invalid',null,['youtube']);
+    const post=await f.current();
+    assert.equal(post.youtubeStatus,'published',String(thumbnailStatus));assert.equal(post.youtubeThumbnailStatus,'applied');
+    assert.equal(f.calls.filter(c=>c.url.pathname.endsWith('/thumbnails/set')).length,3);
+    assert.equal(f.calls.filter(c=>c.method==='POST'&&c.url.pathname==='/upload/youtube/v3/videos').length,1);
+    t.mock.restoreAll();
+  }
+});
+test('a refused cover is not retried and says what to check',async t=>{
+  const f=fixture(t,{failThumbnail:5,thumbnailStatus:403,postPatch:coverPost});await withCover(f);
+  await publishPost(f.env,'p','https://fixture.invalid',null,['youtube']);
+  assert.equal(f.calls.filter(c=>c.url.pathname.endsWith('/thumbnails/set')).length,1);
+  assert.match((await f.current()).error,/не принял обложку \(HTTP 403\)/);
+});
 test('corrupt custom cover stops publication before video upload',async t=>{
   const f=fixture(t,{postPatch:{targets:['youtube'],youtubeFormat:'video',youtubeVideoId:null,youtubeNeedsReview:false}});
   await f.env.INSTALLS.put(youtubeThumbnailKey('drive'),'{broken');
