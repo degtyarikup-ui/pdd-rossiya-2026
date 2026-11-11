@@ -11,11 +11,15 @@
 | `render.py` | рендер одного уровня |
 | `post.py` | кадр 90%, растворение стойки, 1024/512 и контрольный `_guide.png` |
 | `present.py` | лист приёмки: 4 уровня крупно и в сетке 68 pt |
+| `textures/*.py` | печать прав и билетов (PIL) — запустить один раз до рендера `exams` и `tickets` |
 
 ```sh
 B=/Applications/Blender.app/Contents/MacOS/Blender
 T=apps/russia/tools/achievements/3d
 O="$PWD/../output/achievements_3d"
+
+# печать для прав и билетов (один раз, кладётся в ~/Library/Caches/pdd-achievements/)
+python3 $T/textures/license_print.py && python3 $T/textures/ticket_print.py
 
 # пробный кадр (секунды; первый запуск компилирует ядра Metal несколько минут)
 $B -b --factory-startup --python $T/render.py -- --achievement streak --level 4 \

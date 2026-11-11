@@ -33,11 +33,32 @@ def process(src):
     top, bottom = rows[0], rows[-1]
     # Ширина стойки — по нижним строкам; всё, что втрое шире, — знак или табличка.
     pole_w = np.median(cover[bottom - 20:bottom - 2])
-    wide_bottom = np.nonzero(cover > pole_w * 3.0)[0][-1]
+    if pole_w > 0.3 * cover.max():
+        # Парящий предмет без стойки (машинка, права): только кадрирование.
+        return frame(Image.fromarray((a * 255 + 0.5).astype(np.uint8)))
+    wide = cover > pole_w * 3.0
+    wide_bottom = np.nonzero(wide)[0][-1]
     obj_h = wide_bottom - top
+    # Первый сплошной блок широких строк — главный элемент (знак, светофор).
+    main_end = np.nonzero(wide)[0][0]
+    while main_end + 1 < len(wide) and wide[main_end + 1]:
+        main_end += 1
+    if main_end >= wide_bottom - 2:
+        # Без таблички: стойка видна дольше, чтобы центр главного элемента
+        # оставался в FOCUS, как у знаков с табличкой.
+        main_h = main_end - top
+        f0, f1 = top + 1.38 * main_h, top + 1.73 * main_h
+    else:
+        f0, f1 = wide_bottom + 0.015 * obj_h, wide_bottom + 0.20 * obj_h
+    # Если стойка уходит за край рендера, растворение заканчивается у края.
+    f1 = min(f1, alpha.shape[0] - 3)
+    f0 = min(f0, f1 - 0.12 * obj_h)
     y = np.arange(alpha.shape[0], dtype=np.float32)[:, None]
-    a[..., 3] = alpha * (1.0 - smoothstep(wide_bottom + 0.015 * obj_h, wide_bottom + 0.20 * obj_h, y))
-    out = Image.fromarray((np.clip(a, 0, 1) * 255 + 0.5).astype(np.uint8))
+    a[..., 3] = alpha * (1.0 - smoothstep(f0, f1, y))
+    return frame(Image.fromarray((np.clip(a, 0, 1) * 255 + 0.5).astype(np.uint8)))
+
+
+def frame(out):
     out = out.crop(out.getchannel("A").point(lambda v: 255 if v > 3 else 0).getbbox())
     w, h = out.size
     side = int(round(max(w, h) / FILL))

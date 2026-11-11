@@ -35,9 +35,12 @@ def main():
 
     scene = importlib.import_module(f"scenes.{args.achievement}")
     kit.clear_scene()
-    kit.assemble(scene.build(kit, args.level))
+    # VIEW в сцене — свой ракурс для парящих предметов (машинка, права).
+    view = {"yaw": kit.YAW, "pitch": kit.PITCH, "roll": kit.ROLL, "cam_z": -0.72, **getattr(scene, "VIEW", {})}
+    kit.assemble(scene.build(kit, args.level), view["yaw"], view["pitch"], view["roll"])
     kit.setup_world_and_lights()
-    kit.setup_camera_and_render(args.out, args.res, args.samples, args.cpu)
+    kit.setup_camera_and_render(args.out, args.res, args.samples, args.cpu, frame=getattr(scene, "FRAME", 1.0),
+                                cam_z=view["cam_z"])
     if args.blend:
         bpy.ops.wm.save_as_mainfile(filepath=args.blend)
     bpy.ops.render.render(write_still=True)

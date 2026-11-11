@@ -331,6 +331,68 @@ def enamel_gradient(name, bottom, top, y0, y1, rough=0.2):
     return mat
 
 
+def led_material(name, color, strength=7.0, dots=90.0):
+    """Светодиодное поле: светящиеся точки сеткой на тёмной подложке."""
+    mat = bpy.data.materials.new(name)
+    nb = NB(mat)
+    p = nb.principled()
+    grid = nb.voronoi(nb.coords(), dots, rnd=0.0)
+    mask = nb.ramp(grid.outputs["Distance"], [(0.18, (1, 1, 1)), (0.34, (0, 0, 0))])
+    p.inputs["Base Color"].default_value = (*[c * 0.25 for c in color], 1.0)
+    p.inputs["Emission Color"].default_value = (*color, 1.0)
+    nb.link(nb.math("MULTIPLY", mask, strength), p.inputs["Emission Strength"])
+    p.inputs["Roughness"].default_value = 0.2
+    p.inputs["Coat Weight"].default_value = 1.0
+    p.inputs["Coat Roughness"].default_value = 0.03
+    return mat
+
+
+def lens_material(name, color):
+    """Выключенная линза: тёмное цветное стекло с кольцами френеля."""
+    mat = bpy.data.materials.new(name)
+    nb = NB(mat)
+    p = nb.principled()
+    p.inputs["Base Color"].default_value = (*color, 1.0)
+    p.inputs["Roughness"].default_value = 0.12
+    p.inputs["Coat Weight"].default_value = 1.0
+    p.inputs["Coat Roughness"].default_value = 0.02
+    rings = nb.n("ShaderNodeTexWave", wave_type="RINGS")
+    rings.inputs["Scale"].default_value = 28.0
+    nb.link(nb.coords(), rings.inputs["Vector"])
+    nb.link(nb.bump(rings.outputs["Fac"], 0.12, 0.002), p.inputs["Normal"])
+    return mat
+
+
+def paint_metallic(name, level):
+    """Автомобильная краска «металлик» цвета уровня под толстым лаком."""
+    color = srgb(205, 210, 218) if TIERS[level].get("galvanized") else TIERS[level]["color"]
+    mat = bpy.data.materials.new(name)
+    nb = NB(mat)
+    p = nb.principled()
+    flakes = nb.voronoi(nb.coords(), 900.0, rnd=1.0)
+    tone = nb.ramp(flakes.outputs["Distance"], [(0.0, tuple(c * 1.05 for c in color)), (0.5, tuple(c * 0.86 for c in color))])
+    grime = grime_mask(nb, 0.2, 0.03)
+    nb.link(nb.mix_rgb(grime, tone, srgb(90, 84, 72), "MULTIPLY"), p.inputs["Base Color"])
+    p.inputs["Metallic"].default_value = 0.85
+    p.inputs["Roughness"].default_value = 0.32
+    p.inputs["Coat Weight"].default_value = 1.0
+    p.inputs["Coat Roughness"].default_value = 0.03
+    wave = nb.noise(nb.coords(), 3.0, detail=2)
+    nb.link(nb.bump(wave.outputs["Fac"], 0.03, 0.02), p.inputs["Coat Normal"])
+    return mat
+
+
+def plain_material(name, color, rough=0.5, metallic=0.0, coat=0.0):
+    mat = bpy.data.materials.new(name)
+    nb = NB(mat)
+    p = nb.principled()
+    p.inputs["Base Color"].default_value = (*color, 1.0)
+    p.inputs["Roughness"].default_value = rough
+    p.inputs["Metallic"].default_value = metallic
+    p.inputs["Coat Weight"].default_value = coat
+    return mat
+
+
 def metal_material(name, tier, axis="Z"):
     """Металл уровня. axis: Z — шлифовка вдоль стойки, R — круговая (корпус)."""
     mat = bpy.data.materials.new(name)
@@ -423,6 +485,69 @@ def circle_path(r, cx=0.0, cy=0.0, n=8):
 def polygon_path(points):
     """Многоугольник с прямыми рёбрами (скругление даёт фаска кривой)."""
     return [(p, p, p) for p in points]
+
+
+def rounded_polygon_path(points, r):
+    """Многоугольник со скруглёнными углами радиуса r (дуги — кубические Безье)."""
+    n = len(points)
+    out = []
+    for i in range(n):
+        p = Vector((*points[i], 0))
+        a = Vector((*points[i - 1], 0))
+        b = Vector((*points[(i + 1) % n], 0))
+        la, lb = (a - p).length, (b - p).length
+        if la < 1e-9 or lb < 1e-9:
+            continue
+        u, v = (a - p) / la, (b - p) / lb
+        theta = u.angle(v)
+        if theta < 1e-4 or theta > math.pi - 1e-4:
+            out.append(((p.x, p.y), (p.x, p.y), (p.x, p.y)))
+            continue
+        # Радиус не больше, чем позволяют соседние рёбра: иначе контур
+        # перехлёстывается и даёт выбросы.
+        d = min(r / math.tan(theta / 2), 0.45 * min(la, lb))
+        r = d * math.tan(theta / 2)
+        h = 4 / 3 * math.tan((math.pi - theta) / 4) * r
+        p1, p2 = p + u * d, p + v * d
+        out.append(((p1.x, p1.y), (p1.x, p1.y), ((p1 - u * h).x, (p1 - u * h).y)))
+        out.append(((p2.x, p2.y), ((p2 - v * h).x, (p2 - v * h).y), (p2.x, p2.y)))
+    return out
+
+
+def round_corner(a, p, b, r):
+    """Скругление одной вершины p между соседями a и b: 1–2 точки пути."""
+    return _corner_points(a, p, b, r)
+
+
+def _corner_points(a, p, b, r):
+    pa, pp, pb = Vector((*a, 0)), Vector((*p, 0)), Vector((*b, 0))
+    la, lb = (pa - pp).length, (pb - pp).length
+    if la < 1e-9 or lb < 1e-9:
+        return [(p, p, p)]
+    u, v = (pa - pp) / la, (pb - pp) / lb
+    theta = u.angle(v)
+    if theta < 1e-4 or theta > math.pi - 1e-4:
+        return [(p, p, p)]
+    d = min(r / math.tan(theta / 2), 0.45 * min(la, lb))
+    r = d * math.tan(theta / 2)
+    h = 4 / 3 * math.tan((math.pi - theta) / 4) * r
+    p1, p2 = pp + u * d, pp + v * d
+    return [((p1.x, p1.y), (p1.x, p1.y), ((p1 - u * h).x, (p1 - u * h).y)),
+            ((p2.x, p2.y), ((p2 - v * h).x, (p2 - v * h).y), (p2.x, p2.y))]
+
+
+def regular_points(n, circum_r, cx=0.0, cy=0.0, start=math.pi / 2):
+    return [(cx + circum_r * math.cos(start + 2 * math.pi * i / n), cy + circum_r * math.sin(start + 2 * math.pi * i / n))
+            for i in range(n)]
+
+
+def rotate_path(path, ang, cx=0.0, cy=0.0):
+    c, s_ = math.cos(ang), math.sin(ang)
+
+    def rot(q):
+        x, y = q[0] - cx, q[1] - cy
+        return (cx + x * c - y * s_, cy + x * s_ + y * c)
+    return [(rot(a), rot(hi), rot(ho)) for a, hi, ho in path]
 
 
 def rrect_path(w, h, r, cx=0.0, cy=0.0):
@@ -524,7 +649,7 @@ def box(name, size, loc, mat, bevel=0.003):
     obj = bpy.context.active_object
     obj.name = name
     obj.scale = size
-    bpy.ops.object.transform_apply(scale=True)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     mod = obj.modifiers.new("bevel", "BEVEL")
     mod.width = bevel
     mod.segments = 3
@@ -541,7 +666,7 @@ def rivet(name, x, y, z_back, mat, r=0.0115):
     obj = bpy.context.active_object
     obj.name = name
     obj.scale = (1, 1, 0.42)
-    bpy.ops.object.transform_apply(scale=True)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     obj.data.materials.append(mat)
     for poly in obj.data.polygons:
         poly.use_smooth = True
@@ -595,9 +720,43 @@ def plate_8x(mats, y, w=0.90, h=0.315, r=0.042):
     return parts
 
 
-def plate_text(mats, text, y, x=0.0):
-    """Подпись таблички: PT Sans Narrow Bold, высота 0.142. Возвращает (объект, ширина)."""
-    return text_mesh("PlateWord", text, font_plate(), 0.142, 0.0018, 0.0026, EMBOSS, [mats.ink], cx=x, cy=y, spacing=1.06)
+def plate_text(mats, text, y, x=0.0, max_w=None):
+    """Подпись таблички: PT Sans Narrow Bold, высота 0.142; длинное слово
+    уменьшается до max_w. Возвращает (объект, ширина)."""
+    obj, w = text_mesh("PlateWord", text, font_plate(), 0.142, 0.0018, 0.0026, EMBOSS, [mats.ink], cx=x, cy=y, spacing=1.06)
+    if max_w and w > max_w:
+        k = max_w / w
+        obj.scale = (k, k, 1)
+        w = max_w
+    return obj, w
+
+
+def plate_icon_word(mats, y, word, icon_w, build_icon, w=0.90):
+    """Пиктограмма слева + слово справа, вместе по центру таблички.
+    build_icon(cx) возвращает детали пиктограммы с центром в x=cx."""
+    gap = 0.035
+    word_obj, ww = plate_text(mats, word, y, max_w=w - 0.17 - icon_w - gap)
+    x0 = -(icon_w + gap + ww) / 2
+    parts = build_icon(x0 + icon_w / 2)
+    word_obj.location.x = x0 + icon_w + gap + ww / 2
+    return parts + [word_obj]
+
+
+def plate_number(mats, y, number, w=0.62, h=0.315):
+    """Табличка 8.x только с числом (DIN Condensed Bold)."""
+    parts = plate_8x(mats, y, w=w, h=h)
+    num, _ = text_mesh("PlateNumber", number, FONT_DIGITS, 0.19, 0.0022, 0.003, EMBOSS, [mats.ink], cy=y, spacing=1.06)
+    return parts + [num]
+
+
+def exclamation(mats, cx, cy, h):
+    """Восклицательный знак высотой h: скруглённая черта и точка."""
+    bar_h, dot_r = h * 0.68, h * 0.125
+    return [
+        curve_mesh("ExclBar", [rrect_path(h * 0.2, bar_h, h * 0.09, cx, cy + h / 2 - bar_h / 2)],
+                   0.002, 0.003, EMBOSS, [mats.ink], res=12, bres=3),
+        curve_mesh("ExclDot", [circle_path(dot_r, cx, cy - h / 2 + dot_r)], 0.002, 0.003, EMBOSS, [mats.ink], res=12, bres=3),
+    ]
 
 
 def pole(mats, mounts_y, top=0.32, plate_rails=()):
@@ -701,7 +860,7 @@ def setup_world_and_lights():
     card("CardTop", (0.0, 0.4, 2.6), (3.0, 1.2), 1.2)
 
 
-def setup_camera_and_render(out, res=2048, samples=384, cpu=False):
+def setup_camera_and_render(out, res=2048, samples=384, cpu=False, frame=1.0, cam_z=-0.72):
     sc = bpy.context.scene
     cam_d = bpy.data.cameras.new("Cam")
     cam_d.lens = 85
@@ -710,7 +869,8 @@ def setup_camera_and_render(out, res=2048, samples=384, cpu=False):
     sc.collection.objects.link(cam)
     sc.camera = cam
     target = Vector((0.0, 0.0, -0.33))
-    cam.location = (0.0, -4.55, -0.72)  # чуть снизу: знак смотрит на зрителя
+    # Чуть снизу: знак смотрит на зрителя. frame > 1 отодвигает камеру для высоких объектов.
+    cam.location = target + (Vector((0.0, -4.55, cam_z)) - target) * frame
     cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
 
     sc.render.engine = "CYCLES"
