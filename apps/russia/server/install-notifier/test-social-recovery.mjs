@@ -35,6 +35,8 @@ function fixture(t,{ig='missing',yt='missing',postPatch={},queue=true,failLog=fa
   t.mock.method(globalThis,'fetch',async(input,options={})=>{
     const url=new URL(input),method=options.method||'GET';calls.push({url,method,body:options.body});
     if(url.pathname.endsWith('/thumbnails/set')) {
+      // Cloudflare Workers only accept 'follow' and 'manual'.
+      assert.ok(['follow','manual',undefined].includes(options.redirect),'unsupported redirect mode '+options.redirect);
       if(failThumbnail){failThumbnail--;if(thumbnailStatus)return Response.json({},{status:thumbnailStatus});throw new TypeError('lost thumbnail response');}
       return Response.json({items:[{default:{url:'https://fixture.invalid/cover.png'}}]});
     }

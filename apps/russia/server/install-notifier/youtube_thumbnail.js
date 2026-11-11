@@ -43,7 +43,9 @@ export async function setYoutubeThumbnail(thumbnail, videoId, getToken) {
     let response;
     try {
       response = await fetch('https://www.googleapis.com/upload/youtube/v3/thumbnails/set?uploadType=media&videoId=' + encodeURIComponent(videoId), {
-        method: 'POST', redirect: 'error', signal: AbortSignal.timeout(15000),
+        // Workers reject redirect:'error' before sending; 'manual' returns any 3xx
+        // as a response, which is treated as a refusal below.
+        method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(15000),
         headers: { authorization: 'Bearer ' + token, 'content-type': thumbnail.mimeType },
         body: thumbnail.bytes,
       });
