@@ -131,13 +131,16 @@ export const SOCIAL_VIEW_HTML = `
     .sc-menu { position:absolute; right:0; top:38px; z-index:5; min-width:190px; padding:6px; border-radius:12px; background:#fff; box-shadow:0 8px 32px #17223622; display:grid; gap:4px; }
     .sc-menu .btn-action { justify-content:flex-start; }
     #social-view .sc-video-list { display:grid; gap:2px; }
-    #social-view .sc-card { display:grid; grid-template-columns:24px 68px minmax(130px,1fr) minmax(180px,.65fr) 140px 34px; align-items:center; gap:18px; padding:14px 10px; border-radius:12px; background:transparent; }
+    #social-view .sc-card { display:grid; --sc-thumb-width:68px; grid-template-columns:24px var(--sc-thumb-width) minmax(130px,1fr) minmax(180px,.65fr) 140px 34px; align-items:center; gap:18px; padding:14px 10px; border-radius:12px; background:transparent; }
     #social-view .sc-card+.sc-card { border-top:1px solid var(--admin-divider)!important; }
     #social-view .sc-card:hover { background:#F8F9FB; }
     #social-view .sc-card.sel { background:var(--primary-subtle); }
     #social-view .sc-card.sel .sc-poster { opacity:1; }
     #social-view .sc-pick { position:static; width:17px; height:17px; margin:0; accent-color:var(--primary); }
-    #social-view .sc-poster { border:0; padding:0; width:68px; aspect-ratio:9/16; border-radius:8px; }
+    #social-view .sc-poster { border:0; padding:0; width:var(--sc-thumb-width); aspect-ratio:9/16; border-radius:8px; }
+    #social-view .sc-card.sc-landscape { --sc-thumb-width:160px; }
+    #social-view .sc-landscape .sc-poster { aspect-ratio:16/9; }
+    #social-view .sc-landscape .sc-poster img { object-fit:contain; }
     #social-view .sc-play { opacity:1; background:transparent; }
     #social-view .sc-play span { width:25px; height:25px; background:#FFFFFFDA; }
     #social-view .sc-body { padding:0; min-width:0; }
@@ -165,8 +168,8 @@ export const SOCIAL_VIEW_HTML = `
     .sc-modal .sc-dialog-error:empty { display:none; }
     .sc-modal .sc-preview-content { display:grid; grid-template-columns:210px minmax(0,1fr); gap:24px; }
     @media(max-width:1100px) {
-      #social-view .sc-card { grid-template-columns:20px 60px minmax(100px,1fr) 175px 30px; gap:12px; }
-      #social-view .sc-poster { width:60px; grid-row:1/3; }
+      #social-view .sc-card { --sc-thumb-width:60px; grid-template-columns:20px var(--sc-thumb-width) minmax(100px,1fr) 175px 30px; gap:12px; }
+      #social-view .sc-poster { width:var(--sc-thumb-width); grid-row:1/3; }
       #social-view .sc-card>.sc-pick { grid-row:1/3; }
       #social-view .sc-date { grid-column:3/5; grid-row:2; display:flex; align-items:center; gap:8px; }
       #social-view .sc-date small { margin:0; }
@@ -182,8 +185,9 @@ export const SOCIAL_VIEW_HTML = `
       #social-view .sc-save-group { margin-left:0; flex:1; justify-content:flex-end; }
       #social-view .sc-destinations { flex-basis:100%; }
       #social-view .sc-library-head { align-items:flex-start; }
-      #social-view .sc-card { grid-template-columns:18px 56px minmax(0,1fr) 30px; gap:10px; padding:14px 4px; }
-      #social-view .sc-poster { width:56px; grid-row:1/4; }
+      #social-view .sc-card { --sc-thumb-width:56px; grid-template-columns:18px var(--sc-thumb-width) minmax(0,1fr) 30px; gap:10px; padding:14px 4px; }
+      #social-view .sc-poster { width:var(--sc-thumb-width); grid-row:1/4; }
+      #social-view .sc-card.sc-landscape { --sc-thumb-width:112px; }
       #social-view .sc-card>.sc-pick { grid-row:1/4; }
       #social-view .sc-platforms { grid-column:3; grid-row:2; gap:4px; }
       #social-view .sc-platform { font-size:10px; gap:5px; }
@@ -336,11 +340,12 @@ function scMskShort(iso) {
   return s.slice(8, 10) + '.' + s.slice(5, 7) + ' ' + s.slice(11);   // 02.09 19:00
 }
 
-var scLoadId=0, scConnectionDirty=false;
+var scLoadId=0, scConnectionDirty=false, scThumbRevision=Date.now();
+function scThumbUrl(p) { return "/s/t/" + encodeURIComponent(p.streamToken) + "?v=" + scThumbRevision; }
 async function loadSocial(force) {
   var id=++scLoadId;
   function accept(data){
-    if(id!==scLoadId)return;scState=data;
+    if(id!==scLoadId)return;scState=data;scThumbRevision=Math.max(Date.now(),scThumbRevision+1);
     document.getElementById('sc-clock').textContent=scState.serverTimeMsk||'—';
     scRenderStatus();scRenderSchedule();scRenderList();scRenderLog();
   }
@@ -573,10 +578,10 @@ function scRenderList() {
     var a = (scState.accounts || []).find(function (a) { return a.id === p.accountId; }) || {};
     var date = p.status === 'published' ? (p.publishedAt ? scMskShort(p.publishedAt) : 'Опубликовано') : p.status === 'processing' ? 'Публикуется…' : p.status === 'failed' ? 'Нужен повтор' : p.scheduledAt ? scMskShort(p.scheduledAt) : 'Без даты';
     var sub = p.status === 'published' ? 'Опубликовано · МСК' : p.scheduledAt ? 'По дате · МСК' : a.active === false ? 'Автопубликация на паузе' : 'Ожидает планирования';
-    return '<article class="sc-card' + (scSelected[p.id] ? ' sel' : '') + '" data-post="' + scEsc(p.id) + '">'
+    return '<article class="sc-card' + (p.youtubeFormat === 'video' ? ' sc-landscape' : '') + (scSelected[p.id] ? ' sel' : '') + '" data-post="' + scEsc(p.id) + '">'
       + '<input type="checkbox" class="sc-pick" data-pick="' + scEsc(p.id) + '" aria-label="Выбрать ' + scEsc(p.title || scPrettyName(p.fileName)) + '"' + (scSelected[p.id] ? ' checked' : '') + '>'
       + '<button class="sc-poster" data-preview="' + scEsc(p.id) + '" aria-label="Смотреть ' + scEsc(p.title || scPrettyName(p.fileName)) + '">'
-      + '<img src="/s/t/' + scEsc(p.streamToken) + '" loading="lazy" alt="" onerror="this.style.display=\\'none\\'">'
+      + '<img src="' + scEsc(scThumbUrl(p)) + '" loading="lazy" alt="" onerror="this.style.display=\\'none\\'">'
       + '<div class="sc-play"><span>' + SC_ICONS.play + '</span></div></button>'
       + '<div class="sc-body"><button class="sc-title" data-preview="' + scEsc(p.id) + '">' + scEsc(p.title || scPrettyName(p.fileName)) + '</button>'
       + '<div class="sc-file" title="' + scEsc(p.fileName) + '">' + scEsc(p.fileName) + '</div>'
@@ -846,7 +851,7 @@ window.scPreview = function (id) {
     await loadSocial(true);
   };
   var bg = scModal('<div class="sc-preview-content"><div class="sc-preview-media">'
-    + '<video src="/s/v/' + scEsc(p.streamToken) + '" poster="/s/t/' + scEsc(p.streamToken) + '" controls playsinline preload="none" style="width:100%;aspect-ratio:' + (regularVideo ? '16/9' : '9/16') + ';background:#17191E;border-radius:12px;object-fit:contain;"></video>'
+    + '<video src="/s/v/' + scEsc(p.streamToken) + '" poster="' + scEsc(scThumbUrl(p)) + '" controls playsinline preload="none" style="width:100%;aspect-ratio:' + (regularVideo ? '16/9' : '9/16') + ';background:#17191E;border-radius:12px;object-fit:contain;"></video>'
     + '<div style="margin-top:10px">' + links + '</div></div><div>'
     + '<h3 class="sc-dialog-title">' + scEsc(p.title || scPrettyName(p.fileName)) + '</h3>'
     + '<div class="form-group"><label class="form-label">Соцсети</label>' + scTargetFields(scTargetsOf(p), !editable) + '</div>'

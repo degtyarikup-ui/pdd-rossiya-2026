@@ -60,6 +60,44 @@ if(process.argv.includes('--serve')) {
   const preview=await startPreview();console.log(`Isolated social preview: ${preview.url}/admin#publications/videos`);
   for(const signal of ['SIGINT','SIGTERM'])process.on(signal,async()=>{await preview.close();process.exit(0);});
 } else {
+  test('landscape covers retain their full frame and refresh cached posters in list and dialog', {timeout:90000},async()=>{
+    const {chromium}=createRequire(import.meta.url)('playwright');
+    const preview=await startPreview();
+    const posts=JSON.parse(await preview.env.INSTALLS.get('social:posts'));
+    posts[0].youtubeFormat='video';posts[0].title='Кто проедет первым?';
+    await preview.env.INSTALLS.put('social:posts',JSON.stringify(posts));
+    const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
+    const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
+    await page.route('**/*',async route=>{
+      const url=new URL(route.request().url());
+      if(url.origin!==preview.url)return route.abort();
+      if(url.pathname.startsWith('/s/t/')&&process.env.SOCIAL_UI_COVER)return route.fulfill({contentType:'image/png',body:await readFile(process.env.SOCIAL_UI_COVER)});
+      return route.continue();
+    });
+    try {
+      await page.goto(preview.url+'/admin#publications/videos');
+      const poster=page.locator('[data-post="q"] .sc-poster');await poster.waitFor();
+      const image=poster.locator('img'),before=await image.getAttribute('src');
+      assert.match(before,/\?v=\d+$/);
+      const box=await poster.boundingBox();assert.ok(Math.abs(box.width/box.height-16/9)<0.01);
+      assert.equal(await image.evaluate(el=>getComputedStyle(el).objectFit),'contain');
+      await page.locator('#sc-refresh').click();
+      await page.waitForFunction(old=>document.querySelector('[data-post="q"] .sc-poster img').getAttribute('src')!==old,before);
+      await poster.click();
+      const video=page.locator('.sc-modal video');await video.waitFor();
+      assert.equal(await video.getAttribute('poster'),await image.getAttribute('src'));
+      await page.keyboard.press('Escape');
+      for(const width of [1440,390]) {
+        await page.setViewportSize({width,height:1000});
+        const box=await poster.boundingBox();assert.ok(Math.abs(box.width/box.height-16/9)<0.01);
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+        if(process.env.SOCIAL_UI_SCREENSHOTS){
+          const dir=fileURLToPath(new URL('../../output/social-ui/',import.meta.url));await mkdir(dir,{recursive:true});
+          await page.screenshot({path:dir+'landscape-'+width+'.png',fullPage:true,animations:'disabled'});
+        }
+      }
+    } finally {await browser.close();await preview.close();}
+  });
   test('Drive folder filters scope bulk dates, include hidden rows and descendants, and retain an empty selection', {timeout:90000},async()=>{
     const {chromium}=createRequire(import.meta.url)('playwright');
     const preview=await startPreview();
