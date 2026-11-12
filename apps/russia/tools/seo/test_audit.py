@@ -15,7 +15,7 @@ class LlmsLinkTests(unittest.TestCase):
             root = Path(directory)
             (root / "robots.txt").write_text("User-agent: *\nAllow: /\nSitemap: https://pdd-drive.ru/sitemap.xml\n", encoding="utf-8")
             for name in ("llms.txt", "llms-full.txt"):
-                (root / name).write_text("[App](https://pdd-drive.ru/app/)\n[Missing](https://pdd-drive.ru/blog/missing/)\n", encoding="utf-8")
+                (root / name).write_text(f"[App]({audit.BASE}/app/)\n[Missing]({audit.BASE}/blog/missing/)\n", encoding="utf-8")
             with patch.object(audit, "SITE", directory):
                 report = audit.Report()
                 audit.check_robots_and_llms(report, {"/", "/blog/"})
