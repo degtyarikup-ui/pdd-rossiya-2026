@@ -37,6 +37,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
 import 'package:pdd_app/presentation/screens/game/godot_web_screen.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:pdd_app/presentation/screens/game/platform/achievement_art.dart';
 import 'package:pdd_app/presentation/screens/game/platform/godot_web_frame.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_garage.dart';
@@ -61,6 +62,12 @@ class GodotGame {
   GodotGame._();
 
   static const _channel = MethodChannel('pdd/godot_game');
+
+  /// Готовит картинки наград для игры (см. `prepareAchievementArt`).
+  /// Тесты подменяют её: файловый ввод-вывод не идёт в замороженном времени.
+  @visibleForTesting
+  static Future<String> Function(Iterable<String> assetKeys) prepareArt =
+      prepareAchievementArt;
   static const _bestScoreKey = 'game_best_score';
   static const _seenModelsKey = 'game_seen_models';
   // The tips and the first-drive gas hint.
@@ -632,17 +639,28 @@ class GodotGame {
         overlay.close();
         return null;
       }
+      final awardGame = args.contains('--regulator')
+          ? 'trafficController'
+          : args.any(
+              (a) => ['--crossroads', '--parking', '--violator'].contains(a),
+            )
+          ? ''
+          : 'game';
+      var art = '';
+      try {
+        art = await prepareArt(nativeAwardArt(snapshots, receipts, awardGame));
+      } catch (_) {}
+      if (!context.mounted) {
+        overlay.close();
+        return null;
+      }
       final awardData = {
         'streak': await awards.nativeStreak(started),
         'sound': SoundEffectsService.instance.isEnabled,
         'session': GameLeaderboardService.newRunId(),
-        'game': args.contains('--regulator')
-            ? 'trafficController'
-            : args.any(
-                (a) => ['--crossroads', '--parking', '--violator'].contains(a),
-              )
-            ? ''
-            : 'game',
+        'game': awardGame,
+        // Папка (или адрес) с картинками `<id>_<level>.webp` для наград.
+        'art': art,
         'shown': receipts,
         'items': [
           for (final a in snapshots)

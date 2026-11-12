@@ -13,9 +13,6 @@ const List<double> achievementGrayscaleMatrix = <double>[
   0, 0, 0, 1, 0, //
 ];
 
-String achievementAsset(AchievementId id, int level) =>
-    'assets/images/achievements/${id.name}_$level.png';
-
 class AchievementBadge extends StatelessWidget {
   final AchievementId id;
   final int imageLevel;

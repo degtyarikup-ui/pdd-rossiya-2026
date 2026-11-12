@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Заглушки картинок достижений: assets/images/achievements/<id>_<level>.png.
+"""Заглушки картинок достижений: assets/images/achievements/<id>_<level>.webp.
 
 Пока настоящие значки не нарисованы, приложение показывает эти. Готовую
 картинку кладут под тем же именем поверх заглушки — код менять не нужно.
@@ -200,7 +200,7 @@ def main() -> None:
         if key not in selected:
             continue
         for i, (number, word) in enumerate(levels, start=1):
-            badge(shape, kind, i, number, word).save(OUT / f"{key}_{i}.png", optimize=True)
+            badge(shape, kind, i, number, word).save(OUT / f"{key}_{i}.webp", quality=82, method=6)
     print(f"{sum(len(BADGES[k][2]) for k in selected)} значков → {OUT.relative_to(ROOT)}")
 
 

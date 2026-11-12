@@ -534,4 +534,28 @@ void main() {
     expect(tester.binding.hasScheduledFrame, isFalse);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  test('game receives only the badges a run can award', () {
+    AchievementProgress item(AchievementId id, List<int> levels, int value) =>
+        AchievementProgress(id: id, levels: levels, value: value);
+    final art = nativeAwardArt(
+      [
+        item(AchievementId.game, AchievementThresholds.game, 220),
+        item(AchievementId.streak, AchievementThresholds.streak, 3),
+        item(AchievementId.exams, AchievementThresholds.exams, 3),
+        item(AchievementId.quiz, AchievementThresholds.quiz, 30),
+      ],
+      {'game': 2, 'streak': 3, 'exams': 1, 'quiz': 2},
+      'game',
+    );
+    expect(art, [
+      'assets/images/achievements/game_3.webp',
+      'assets/images/achievements/game_4.webp',
+      'assets/images/achievements/streak_4.webp',
+      'assets/images/achievements/exams_2.webp',
+    ]);
+    for (final key in art) {
+      expect(File(key).existsSync(), isTrue, reason: key);
+    }
+  });
 }

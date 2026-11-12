@@ -415,11 +415,11 @@ void main() {
 
   group('Achievement asset files existence', () {
     test(
-      'для каждого AchievementId и уровня 1..4 файл assets/images/achievements/<id>_<level>.png существует',
+      'для каждого AchievementId и уровня 1..4 файл assets/images/achievements/<id>_<level>.webp существует',
       () {
         for (final id in AchievementId.values) {
           for (var level = 1; level <= 4; level++) {
-            final filePath = 'assets/images/achievements/${id.name}_$level.png';
+            final filePath = 'assets/images/achievements/${id.name}_$level.webp';
             final file = File(filePath);
             expect(
               file.existsSync(),

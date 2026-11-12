@@ -86,13 +86,11 @@ for lang in ('ru', 'en', 'kk'):
 (ROOT / 'game_godot/data/ui.json').write_text(json.dumps(out, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
 print('ok', {k: len(v) for k, v in out.items()})
 
-# Both renderers use the same badge artwork. Keep the originals in assets/.
-badges = ROOT / 'assets/images/achievements'
-if badges.is_dir():
-    target = ROOT / 'game_godot/icons/achievements'
-    target.mkdir(parents=True, exist_ok=True)
-    for badge in badges.glob('*.png'):
-        shutil.copy2(badge, target / badge.name)
+# Badge artwork is not copied: Flutter passes the few images a run can award
+# (`art` in --achievement-awards), so the game build carries no second set.
+stale = ROOT / 'game_godot/icons/achievements'
+if stale.is_dir():
+    shutil.rmtree(stale)
 
 flame = ROOT / 'assets/images/fire.svg'
 if flame.is_file():

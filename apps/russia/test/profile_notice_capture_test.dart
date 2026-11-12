@@ -173,7 +173,7 @@ void main() {
           'assets/images/premium/rays_lime.png',
           'assets/images/premium/rays_blue.png',
           for (final achievement in _achievements)
-            'assets/images/achievements/${achievement.id.name}_${achievement.level == 0 ? 1 : achievement.level}.png',
+            'assets/images/achievements/${achievement.id.name}_${achievement.level == 0 ? 1 : achievement.level}.webp',
         ];
         for (final path in assets) {
           await precacheImage(AssetImage(path), context);

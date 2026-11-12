@@ -9,7 +9,7 @@
 | `badge3d.py` | общий набор: материалы, металлы уровней, детали знаков, свет, камера, рендер |
 | `scenes/<id>.py` | объект конкретной ачивки: `LEVELS` и `build(kit, level)` |
 | `render.py` | рендер одного уровня |
-| `post.py` | кадр 90%, растворение стойки, 1024/512 и контрольный `_guide.png` |
+| `post.py` | кадр 90%, растворение стойки, 1024 PNG, 512 WebP для приложения и контрольный `_guide.png` |
 | `present.py` | лист приёмки: 4 уровня крупно и в сетке 68 pt |
 | `textures/*.py` | печать прав и билетов (PIL) — запустить один раз до рендера `exams` и `tickets` |
 
@@ -33,16 +33,16 @@ for L in 1 2 3 4; do
 done
 python3 $T/present.py streak "$O" "«Без пропусков»"
 
-# в приложение и в Godot
-for L in 1 2 3 4; do cp "$O/streak_${L}_512.png" apps/russia/assets/images/achievements/streak_$L.png; done
-(cd apps/russia && python3 tools/godot_export/export_ui.py)
+# в приложение (игра своей копии не держит: Flutter передаёт ей нужные значки)
+for L in 1 2 3 4; do cp "$O/streak_${L}_512.webp" apps/russia/assets/images/achievements/streak_$L.webp; done
 ```
 
 `--blend файл.blend` сохраняет сцену, чтобы открыть её в Blender. Путь к
 файлу с пробелами брать в кавычки, иначе argparse молча завершит Blender.
 
-Для лёгких PNG (в 2–3 раза меньше) — `pip3 install imagequant`: `post.py`
-сам квантует 512 px через libimagequant.
+Файл для приложения — WebP 512 px с прозрачностью, качество 82 (`APP_QUALITY`
+в `post.py`): вдвое легче палитрового PNG, без ступенек на металле и фото.
+Сжимать из полного кадра, а не пережимать готовый файл.
 
 Нужны Blender 5.x (Cycles, Metal) и системные шрифты macOS: DIN Condensed Bold
 и PTSans.ttc (начертание PT Sans Narrow Bold извлекается в

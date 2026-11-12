@@ -293,8 +293,9 @@ Google Play: документированная HTTPS-ссылка на карт
 Незаконченный заезд лишь сохраняет прогресс, экран вручения не открывает.
 Для старого формата summary остаётся Flutter-показ перед `GameOverDialog`.
 
-Графика общая с профилем; `tools/godot_export/export_ui.py` копирует её из
-`assets/images/achievements/` в генерируемую `game_godot/icons/achievements/`.
+Графика общая с профилем (`assets/images/achievements/<id>_<level>.webp`), своей
+копии в игре нет: Flutter передаёт в `art` папку с нужными значками
+(`nativeAwardArt`, `platform/achievement_art_*.dart`), в вебе — адрес ассетов.
 Оба экрана используют единое оформление `CelebrationScreen`: сияние, плавно
 затухающие лучи с оборотом за 60 секунд, появление значка и счётчик дней.
 У серии оранжевый фон `AppColors.gold` и белое векторное пламя `BurningFlame`;

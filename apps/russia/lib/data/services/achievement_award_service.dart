@@ -49,6 +49,26 @@ final achievementAwardServiceProvider = Provider<AchievementAwardService>((
   );
 });
 
+/// Значки, которые игра может вручить за запуск: уже заработанные, но ещё не
+/// показанные уровни, а у ачивки самой игры ([game]) и серии дней — все уровни
+/// выше показанного, потому что за заезд они могут вырасти.
+List<String> nativeAwardArt(
+  Iterable<AchievementProgress> items,
+  Map<String, int> shown,
+  String game,
+) => [
+  for (final a in items)
+    for (
+      var level = (shown[a.id.name] ?? 0) + 1;
+      level <=
+          (a.id.name == game || a.id == AchievementId.streak
+              ? a.levels.length
+              : a.level);
+      level++
+    )
+      achievementAsset(a.id, level),
+];
+
 class AchievementAwardService {
   AchievementAwardService({
     required this.scope,

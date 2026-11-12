@@ -18,6 +18,7 @@ func _config(session: String, game := "game", value := 0, daily: Dictionary = {}
 	Host.io = "achievement-test"
 	Host.io_args = ["--reduce-motion", "--achievement-awards=" + JSON.stringify({
 		"session": session, "game": game, "shown": {"game": 0, "streak": 0}, "streak": daily,
+		"art": ProjectSettings.globalize_path("res://../assets/images/achievements/"),
 		"items": [
 			{"id": "game", "value": 0, "levels": [100, 200, 300, 450], "title": "Гонщик", "description": "За очки заезда", "labels": ["1 / 4", "2 / 4", "3 / 4", "4 / 4"]},
 			{"id": "streak", "value": value, "levels": [3, 7, 14, 30], "title": "Без пропусков", "description": "За занятия", "labels": ["1 / 4", "2 / 4", "3 / 4", "4 / 4"]},

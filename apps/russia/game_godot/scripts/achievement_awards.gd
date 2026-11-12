@@ -10,6 +10,8 @@ static var _items: Array = []
 static var _game := ""
 static var _earned: Dictionary = {}
 static var _streak: Dictionary = {}
+## Folder path or web URL with `<id>_<level>.webp`; the game ships no copy.
+static var _art_source := ""
 
 var _queue: Array = []
 var _index := 0
@@ -45,6 +47,7 @@ static func pending(score: int) -> Array:
 		_session = str(data.get("session", ""))
 		_items = data.get("items", []).duplicate(true)
 		_game = str(data.get("game", ""))
+		_art_source = str(data.get("art", ""))
 		_earned = {}
 		var streak: Variant = data.get("streak")
 		_streak = streak.duplicate(true) if streak is Dictionary else {}
@@ -224,17 +227,35 @@ func _process(delta: float) -> void:
 		_rotation = fposmod(_rotation + delta * TAU / 60.0, TAU)
 		_radiance_material.set_shader_parameter("ray_rotation", _rotation)
 
+## Flutter hands over only the badges this run can award (see nativeAwardArt).
+func _load_badge(award: Dictionary, level: int) -> void:
+	if _art_source.is_empty(): return
+	var source := _art_source + "%s_%d.webp" % [award.get("id", ""), level]
+	if not source.begins_with("http"):
+		if FileAccess.file_exists(source):
+			var image := Image.load_from_file(source)
+			if image: _art.texture = ImageTexture.create_from_image(image)
+		return
+	var request := HTTPRequest.new()
+	add_child(request)
+	request.request_completed.connect(func(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+		request.queue_free()
+		if result != HTTPRequest.RESULT_SUCCESS or code != 200 or _queue.is_empty(): return
+		if _queue[_index] != award: return
+		var image := Image.new()
+		if image.load_webp_from_buffer(body) == OK: _art.texture = ImageTexture.create_from_image(image))
+	if request.request(source) != OK: request.queue_free()
+
 func _show_award() -> void:
 	var award: Dictionary = _queue[_index]
 	var streak: bool = award.get("kind") == "streak"
 	var level := int(award.get("level", 0))
-	var path := "res://icons/achievements/%s_%d.png" % [award.get("id", ""), level]
 	for tween in [_reveal, _count]:
 		if is_instance_valid(tween): tween.kill()
 	_art.scale = Vector2.ONE
 	_art.modulate = Color.WHITE
 	_art.texture = null
-	if not streak and ResourceLoader.exists(path): _art.texture = load(path)
+	if not streak: _load_badge(award, level)
 	_flame.visible = streak
 	_flame.phase = 0.0
 	_flame._motion_changed()

@@ -26,6 +26,10 @@ enum AchievementId {
   rank,
 }
 
+/// Картинка значка уровня (1..4): WebP 512 px, общий для профиля и игры.
+String achievementAsset(AchievementId id, int level) =>
+    'assets/images/achievements/${id.name}_$level.webp';
+
 abstract final class AchievementThresholds {
   static const List<int> streak = [3, 7, 14, 30];
   static const List<int> coverageBase = [100, 300, 500];
