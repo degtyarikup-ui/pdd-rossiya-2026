@@ -495,8 +495,10 @@ class ProgressDataSource {
   AchievementStats getAchievementStats() =>
       AchievementStats.fromJson(_loadMap(_keyAchievementStats));
 
-  Future<void> _saveAchievementStats(AchievementStats stats) =>
-      _prefs.setString(_keyAchievementStats, json.encode(stats.toJson()));
+  Future<void> _saveAchievementStats(AchievementStats stats) async {
+    await _prefs.setString(_keyAchievementStats, json.encode(stats.toJson()));
+    ProgressSyncService.instance.scheduleSync();
+  }
 
   /// Знак открыт в справочнике — для ачивки «Знаток знаков».
   Future<void> recordSignViewed(String signNumber) async {
@@ -791,7 +793,10 @@ class ProgressDataSource {
         'signs': getSignSwiperProgress().toJson(),
         'crossroads': getCrossroadsPriorityProgress().toJson(),
         'parking': getParkingProgress().toJson(),
+        'violator': getViolatorProgress().toJson(),
+        'roadSigns': getRoadSignsProgress().toJson(),
       },
+      'achievementStats': getAchievementStats().toJson(),
       'resetAt': _prefs.getInt(_keyResetAt) ?? 0,
       'favoriteStatesAb': _loadMap(_keyFavoriteStatesAb),
       'favoriteStatesCd': _loadMap(_keyFavoriteStatesCd),
@@ -1135,6 +1140,7 @@ class ProgressDataSource {
         _keyStreakStartDate,
         _keyStreakActiveDays,
         _keyStreakCelebrationPending,
+        _keyAchievementStats,
       ]) {
         _prefs.remove(key);
       }
@@ -1151,8 +1157,23 @@ class ProgressDataSource {
       _keyCrossroadsPriority,
       Map<String, dynamic>.from(games['crossroads'] as Map),
     );
-    if (games['parking'] is Map) {
-      _saveMap(_keyParking, Map<String, dynamic>.from(games['parking'] as Map));
+    for (final entry in {
+      'parking': _keyParking,
+      'violator': _keyViolator,
+      'roadSigns': _keyRoadSigns,
+    }.entries) {
+      if (games[entry.key] is Map) {
+        _saveMap(
+          entry.value,
+          Map<String, dynamic>.from(games[entry.key] as Map),
+        );
+      }
+    }
+    if (data['achievementStats'] is Map) {
+      _saveMap(
+        _keyAchievementStats,
+        Map<String, dynamic>.from(data['achievementStats'] as Map),
+      );
     }
     _saveMap(
       _keyFavoriteStatesAb,

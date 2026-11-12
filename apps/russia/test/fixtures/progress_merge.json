@@ -274,6 +274,25 @@
           "totalSolved": 0,
           "totalSwiped": 0,
           "trainingCount": 0
+        },
+        "parking": {
+          "bestScore": 0,
+          "maxCombo": 0,
+          "totalSolved": 0,
+          "trainingCount": 0
+        },
+        "violator": {
+          "bestScore": 0,
+          "maxCombo": 0,
+          "totalViolatorsCaught": 0,
+          "totalSolved": 0,
+          "gamesPlayed": 0
+        },
+        "roadSigns": {
+          "bestScore": 0,
+          "maxCombo": 0,
+          "totalAnswered": 0,
+          "totalCorrect": 0
         }
       }
     }
@@ -313,6 +332,168 @@
       "examResultsAb": [
         "{\"completedAt\":\"2026-10-13T10:00:00Z\",\"passed\":true}"
       ]
+    }
+  },
+  {
+    "name": "quiz offender and parking records use highest values",
+    "local": {
+      "miniGames": {
+        "parking": {
+          "bestScore": 40,
+          "totalSolved": 12
+        },
+        "violator": {
+          "totalViolatorsCaught": 300,
+          "gamesPlayed": 9
+        },
+        "roadSigns": {
+          "maxCombo": 25,
+          "totalAnswered": 80
+        }
+      }
+    },
+    "remote": {
+      "miniGames": {
+        "parking": {
+          "bestScore": 90,
+          "totalSolved": 3,
+          "trainingCount": 2
+        },
+        "violator": {
+          "bestScore": 700,
+          "totalViolatorsCaught": 120
+        },
+        "roadSigns": {
+          "maxCombo": 60,
+          "totalCorrect": 50
+        }
+      }
+    },
+    "expected": {
+      "miniGames": {
+        "regulator": {
+          "bestScore": 0,
+          "maxCombo": 0,
+          "totalSolved": 0,
+          "totalSwiped": 0,
+          "trainingCount": 0
+        },
+        "signs": {
+          "bestScore": 0,
+          "maxCombo": 0,
+          "totalSolved": 0,
+          "totalSwiped": 0,
+          "trainingCount": 0
+        },
+        "crossroads": {
+          "bestScore": 0,
+          "maxCombo": 0,
+          "totalSolved": 0,
+          "totalSwiped": 0,
+          "trainingCount": 0
+        },
+        "parking": {
+          "bestScore": 90,
+          "maxCombo": 0,
+          "totalSolved": 12,
+          "trainingCount": 2
+        },
+        "violator": {
+          "bestScore": 700,
+          "maxCombo": 0,
+          "totalViolatorsCaught": 300,
+          "totalSolved": 0,
+          "gamesPlayed": 9
+        },
+        "roadSigns": {
+          "bestScore": 0,
+          "maxCombo": 60,
+          "totalAnswered": 80,
+          "totalCorrect": 50
+        }
+      }
+    }
+  },
+  {
+    "name": "achievement counters grow and viewed signs are a union",
+    "local": {
+      "achievementStats": {
+        "marathonBest": 420,
+        "earlyDays": 3,
+        "earlyLast": "2026-11-10",
+        "nightDays": 1,
+        "comebacks": 2,
+        "signsViewed": [
+          "1.1",
+          "2.4"
+        ]
+      }
+    },
+    "remote": {
+      "achievementStats": {
+        "marathonBest": 150,
+        "earlyDays": 5,
+        "earlyLast": "2026-11-02",
+        "nightLast": "2026-11-11",
+        "nightDays": 4,
+        "signsViewed": [
+          "2.4",
+          "3.1"
+        ]
+      }
+    },
+    "expected": {
+      "achievementStats": {
+        "marathonBest": 420,
+        "earlyDays": 5,
+        "nightDays": 4,
+        "comebacks": 2,
+        "earlyLast": "2026-11-10",
+        "nightLast": "2026-11-11",
+        "signsViewed": [
+          "1.1",
+          "2.4",
+          "3.1"
+        ]
+      }
+    }
+  },
+  {
+    "name": "a reset clears achievement counters from the older side",
+    "local": {
+      "resetAt": 50,
+      "achievementStats": {
+        "earlyDays": 1,
+        "earlyLast": "2026-11-12",
+        "signsViewed": [
+          "1.1"
+        ]
+      }
+    },
+    "remote": {
+      "resetAt": 10,
+      "achievementStats": {
+        "marathonBest": 800,
+        "earlyDays": 30,
+        "comebacks": 4,
+        "signsViewed": [
+          "2.4",
+          "3.1"
+        ]
+      }
+    },
+    "expected": {
+      "achievementStats": {
+        "marathonBest": 0,
+        "earlyDays": 1,
+        "nightDays": 0,
+        "comebacks": 0,
+        "earlyLast": "2026-11-12",
+        "nightLast": null,
+        "signsViewed": [
+          "1.1"
+        ]
+      }
     }
   }
 ]

@@ -79,17 +79,48 @@ export function mergeProgress(existing, incoming) {
   out.settings = {...object(ex.settings), ...object(inc.settings)};
   out.game = mergeGame(ex.game, inc.game);
   out.miniGames = mergeMiniGames(ex.miniGames, inc.miniGames);
+  out.achievementStats = mergeAchievementStats(
+    time(ex.resetAt) < reset ? {} : ex.achievementStats,
+    time(inc.resetAt) < reset ? {} : inc.achievementStats);
   out.updatedAt = new Date().toISOString();
   return out;
 }
 
+// Numeric mini-game fields, all merged by maximum. Same list as
+// miniGameCounters in lib/data/models/progress_snapshot.dart.
+const swipeGame = ['bestScore','maxCombo','totalSolved','totalSwiped','trainingCount'];
+export const MINI_GAME_COUNTERS = {
+  regulator: swipeGame, signs: swipeGame, crossroads: swipeGame,
+  parking: ['bestScore','maxCombo','totalSolved','trainingCount'],
+  violator: ['bestScore','maxCombo','totalViolatorsCaught','totalSolved','gamesPlayed'],
+  roadSigns: ['bestScore','maxCombo','totalAnswered','totalCorrect'],
+};
+const MAX_SIGNS_VIEWED = 1000;
+
 export function mergeMiniGames(a, b) {
   const out = {};
-  for (const game of ['regulator','signs','crossroads']) {
+  for (const [game, keys] of Object.entries(MINI_GAME_COUNTERS)) {
     out[game] = {};
-    for (const key of ['bestScore','maxCombo','totalSolved','totalSwiped','trainingCount']) {
+    for (const key of keys) {
       out[game][key] = Math.max(time(object(object(a)[game])[key]), time(object(object(b)[game])[key]));
     }
   }
+  return out;
+}
+
+// Achievement counters: numbers only grow, viewed signs are a union and the
+// last early/night day is the later date. A reset clears them like the streak.
+export function mergeAchievementStats(a, b) {
+  const x = object(a), y = object(b);
+  const later = key => {
+    const p = typeof x[key] === 'string' ? x[key] : null;
+    const q = typeof y[key] === 'string' ? y[key] : null;
+    return p === null ? q : q === null ? p : (p >= q ? p : q);
+  };
+  const out = {};
+  for (const key of ['marathonBest','earlyDays','nightDays','comebacks']) out[key] = Math.max(time(x[key]), time(y[key]));
+  out.earlyLast = later('earlyLast');
+  out.nightLast = later('nightLast');
+  out.signsViewed = [...new Set([...strings(x.signsViewed), ...strings(y.signsViewed)])].sort().slice(0, MAX_SIGNS_VIEWED);
   return out;
 }

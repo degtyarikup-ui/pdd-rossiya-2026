@@ -1,5 +1,43 @@
 import 'dart:convert';
 
+/// Числовые поля мини-игр в слепке; все сливаются по максимуму.
+/// Тот же список — в server/install-notifier/progress_merge.js.
+const Map<String, List<String>> miniGameCounters = {
+  'regulator': [
+    'bestScore',
+    'maxCombo',
+    'totalSolved',
+    'totalSwiped',
+    'trainingCount',
+  ],
+  'signs': [
+    'bestScore',
+    'maxCombo',
+    'totalSolved',
+    'totalSwiped',
+    'trainingCount',
+  ],
+  'crossroads': [
+    'bestScore',
+    'maxCombo',
+    'totalSolved',
+    'totalSwiped',
+    'trainingCount',
+  ],
+  'parking': ['bestScore', 'maxCombo', 'totalSolved', 'trainingCount'],
+  'violator': [
+    'bestScore',
+    'maxCombo',
+    'totalViolatorsCaught',
+    'totalSolved',
+    'gamesPlayed',
+  ],
+  'roadSigns': ['bestScore', 'maxCombo', 'totalAnswered', 'totalCorrect'],
+};
+
+/// Предел списка открытых знаков в слепке (в справочнике их 312).
+const int maxSignsViewed = 1000;
+
 /// Offline changes are merged at import, rather than replaced by a snapshot
 /// that was sent before the user answered. Deletions carry a timestamp too.
 Map<String, dynamic> mergeProgressSnapshots(
@@ -96,17 +134,11 @@ Map<String, dynamic> mergeProgressSnapshots(
     out['examResults$suffix'] = exams.toList();
   }
   final miniGames = <String, dynamic>{};
-  for (final game in ['regulator', 'signs', 'crossroads']) {
-    final a = map(map(local['miniGames'])[game]);
-    final b = map(map(remote['miniGames'])[game]);
-    miniGames[game] = {
-      for (final key in [
-        'bestScore',
-        'maxCombo',
-        'totalSolved',
-        'totalSwiped',
-        'trainingCount',
-      ])
+  for (final game in miniGameCounters.entries) {
+    final a = map(map(local['miniGames'])[game.key]);
+    final b = map(map(remote['miniGames'])[game.key]);
+    miniGames[game.key] = {
+      for (final key in game.value)
         key: time(a[key]) > time(b[key]) ? time(a[key]) : time(b[key]),
     };
   }
@@ -122,6 +154,31 @@ Map<String, dynamic> mergeProgressSnapshots(
   final latest = time(a['lastActiveDate']) > time(b['lastActiveDate']) ? a : b;
   int maximum(String key) =>
       time(a[key]) > time(b[key]) ? time(a[key]) : time(b[key]);
+  // Счётчики ачивок, как и серия, сбрасываются вместе с прогрессом.
+  final sa = time(local['resetAt']) < reset
+      ? <String, dynamic>{}
+      : map(local['achievementStats']);
+  final sb = time(remote['resetAt']) < reset
+      ? <String, dynamic>{}
+      : map(remote['achievementStats']);
+  String? later(String key) {
+    final x = sa[key] is String ? sa[key] as String : null;
+    final y = sb[key] is String ? sb[key] as String : null;
+    if (x == null) return y;
+    if (y == null) return x;
+    return x.compareTo(y) >= 0 ? x : y;
+  }
+
+  out['achievementStats'] = {
+    for (final key in ['marathonBest', 'earlyDays', 'nightDays', 'comebacks'])
+      key: time(sa[key]) > time(sb[key]) ? time(sa[key]) : time(sb[key]),
+    'earlyLast': later('earlyLast'),
+    'nightLast': later('nightLast'),
+    'signsViewed': ({
+      ...list(sa['signsViewed']),
+      ...list(sb['signsViewed']),
+    }.toList()..sort()).take(maxSignsViewed).toList(),
+  };
   out['streak'] = {
     'current': maximum('current'),
     'longest': maximum('longest'),

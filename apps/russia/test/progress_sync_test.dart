@@ -1,5 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdd_app/data/models/crossroads_priority_progress.dart';
+import 'package:pdd_app/data/models/marathon_progress.dart';
+import 'package:pdd_app/data/models/road_signs_model.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/models/violator_progress.dart';
 import 'package:pdd_app/data/models/traffic_controller_progress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
@@ -258,5 +262,39 @@ void main() {
     expect(garage.correctTotal, 40);
     expect(garage.owns('pickup', 'green'), isTrue);
     expect(garage.owns('sedan', 'blue'), isTrue);
+  });
+
+  test('achievement data follows the account to a new device', () async {
+    final phone = ProgressDataSource();
+    await phone.init();
+    await phone.recordActivity(date: DateTime(2026, 11, 2, 7, 30));
+    await phone.recordSignViewed('1.1');
+    await phone.recordSignViewed('2.4');
+    await phone.saveMarathon(
+      TicketCategory.ab,
+      const MarathonProgress(answers: {'a': 0, 'b': 1}),
+    );
+    await phone.saveViolatorProgress(
+      const ViolatorProgress(totalViolatorsCaught: 120, gamesPlayed: 4),
+    );
+    await phone.saveRoadSignsProgress(const RoadSignsProgress(maxCombo: 30));
+    await phone.saveParkingProgress(
+      const CrossroadsPriorityProgress(totalSolved: 21),
+    );
+    final snapshot = phone.exportProgressSnapshot();
+
+    SharedPreferences.setMockInitialValues({});
+    final tablet = ProgressDataSource();
+    await tablet.init();
+    await tablet.recordSignViewed('3.1');
+    await tablet.importProgressSnapshot(snapshot);
+
+    final stats = tablet.getAchievementStats();
+    expect(stats.marathonBest, 2);
+    expect(stats.earlyDays, 1);
+    expect(stats.signsViewed, {'1.1', '2.4', '3.1'});
+    expect(tablet.getViolatorProgress().totalViolatorsCaught, 120);
+    expect(tablet.getRoadSignsProgress().maxCombo, 30);
+    expect(tablet.getParkingProgress().totalSolved, 21);
   });
 }
