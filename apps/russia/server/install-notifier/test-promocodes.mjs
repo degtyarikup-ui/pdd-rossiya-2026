@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from './worker.js';
 import { fixture, identity, session, request } from './fixture-account.mjs';
-import { accountRead } from './account_state.js';
+import { accountRead, accountWrite } from './account_state.js';
 const DAY = 86400000;
 const admin = (env, body) => worker.fetch(request('/api/admin/promocodes', body, 'fixture-admin'), env);
 const campaign = (code, extra = {}) => ({ operation: 'create', code, days: 7, maxUses: 10,
@@ -144,6 +144,36 @@ test('history pagination, authorization and metadata validation',async()=>{
  assert.equal(new Set([...first.claims,...next.claims].map(c=>c.userId)).size,55);
  assert.equal((await admin(env,campaign('INVALID',{title:'x'.repeat(101)}))).status,400);
  assert.equal((await admin(env,campaign('INVALID',{notes:{bad:true}}))).status,400);
+});
+
+test('admin history reads current profile identity without exposing private fields or recreated accounts',async()=>{
+ const {env}=fixture();const id='google_profile',token=await user(env,id,30*DAY);
+ await admin(env,campaign('PROFILE7'));await claim(env,token,'PROFILE7');
+ const original=JSON.parse(await accountRead(env,id,'user:'+id));
+ const current={...original,name:'Анна',email:'anna@example.invalid',avatarUrl:'https://example.invalid/avatar.png',pushToken:'private-push-token'};
+ await accountWrite(env,id,'user:'+id,JSON.stringify(current));
+ // A stale projection must not supply the name or email for this view.
+ await env.INSTALLS.put('user:'+id,JSON.stringify({...original,name:'Old name'}));
+ const history=()=>worker.fetch(request('/api/admin/promocodes?code=PROFILE7',undefined,'fixture-admin'),env);
+ const response=await history();assert.equal(response.status,200);assert.equal(response.headers.get('Cache-Control'),'no-store');
+ const row=(await response.json()).claims[0];
+ assert.deepEqual(row.user,{name:current.name,email:current.email,avatarUrl:current.avatarUrl});
+ assert.equal(row.registeredAt,original.createdAt);assert.equal(row.status,'done');
+ assert.ok(!JSON.stringify(row).includes('private-push-token'));
+ await accountWrite(env,id,'user:'+id,null);
+ assert.equal((await (await history()).json()).claims[0].user,null);
+ await accountWrite(env,id,'user:'+id,JSON.stringify({...current,createdAt:new Date().toISOString()}));
+ const recreated=(await (await history()).json()).claims[0];
+ assert.equal(recreated.user,null);assert.equal(recreated.registeredAt,original.createdAt);
+});
+
+test('admin history profile read failures do not become deleted accounts or an empty history',async()=>{
+ const {env}=fixture();const id='google_unavailable',token=await user(env,id);
+ await admin(env,campaign('PROFILE7'));await claim(env,token,'PROFILE7');
+ const get=env.ACCOUNTS.get;
+ env.ACCOUNTS.get=accountId=>accountId===id?{fetch:async()=>Response.json({error:'unavailable'},{status:503})}:get(accountId);
+ const response=await worker.fetch(request('/api/admin/promocodes?code=PROFILE7',undefined,'fixture-admin'),env);
+ assert.ok(response.status>=500);assert.equal((await response.json()).claims,undefined);
 });
 
 test('expired campaign notes can be edited without restarting the campaign',async()=>{

@@ -1,4 +1,5 @@
-import { accountRpc } from './account_state.js';
+import { accountRead, accountRpc } from './account_state.js';
+import { mapAdminReads } from './admin_reads.js';
 import { sanitizeCode, codeRpc, liveUser, readClaimCode } from './referrals.js';
 import { extendEntitlement, applyEntitlements } from './entitlements.js';
 import { putUserRecord } from './user_store.js';
@@ -20,9 +21,23 @@ export async function handlePromoClaim(request, env, user, jsonResponse) {
 export async function handlePromoAdmin(request, env) {
   if (request.method === 'GET') {
     const url = new URL(request.url);
-    return rpc(env, url.searchParams.has('code')
+    const history = url.searchParams.has('code');
+    const response = await rpc(env, history
       ? { operation: 'history', code: url.searchParams.get('code'), cursor: url.searchParams.get('cursor') }
       : { operation: 'list' });
+    if (!history || !response.ok) return response;
+    const data = await response.json();
+    // Read only this page, outside the catalog lock, from authoritative profiles.
+    data.claims = await mapAdminReads(data.claims, async claim => {
+      const raw = await accountRead(env, claim.userId, 'user:' + claim.userId);
+      const user = raw ? JSON.parse(raw) : null;
+      // A recreated account must not supply identity for an earlier activation.
+      const sameProfile = user && (user.createdAt || null) === claim.registeredAt;
+      return { ...claim, user: sameProfile ? {
+        name: user.name || null, email: user.email || null, avatarUrl: user.avatarUrl || null,
+      } : null };
+    });
+    return json(data);
   }
   if (request.method !== 'POST') return fail('method_not_allowed', 405);
   let body;
@@ -119,7 +134,7 @@ export async function promoCatalog(storage, env, body, serial) {
     if (body.cursor && (typeof body.cursor !== 'string' || !body.cursor.startsWith(prefix) || body.cursor.length > 300)) return fail('invalid_cursor');
     const rows = await storage.list({ prefix, ...(body.cursor ? { start: body.cursor } : {}), limit: 51 });
     const entries = [...rows];
-    return json({ claims: entries.slice(0, 50).map(([, job]) => ({ userId: job.userId,
+    return json({ claims: entries.slice(0, 50).map(([, job]) => ({ userId: job.userId, registeredAt: job.createdAt || null,
       days: job.days, claimedAt: job.claimedAt || null, status: job.failed ? 'failed' : job.done ? 'done' : 'pending' })),
       cursor: entries.length > 50 ? entries[50][0] : null });
   }

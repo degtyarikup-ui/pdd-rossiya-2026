@@ -4,10 +4,10 @@ import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
 import worker from './worker.js';
-import { fixture, request } from './fixture-account.mjs';
+import { fixture, identity, request } from './fixture-account.mjs';
 async function preview(){
- const {env}=fixture();const server=createServer(async(req,res)=>{try{const chunks=[];for await(const c of req)chunks.push(c);const headers=new Headers(req.headers);headers.set('authorization','Bearer '+env.ADMIN_PASSWORD);const response=await worker.fetch(new Request('http://127.0.0.1'+req.url,{method:req.method,headers,...(chunks.length?{body:Buffer.concat(chunks)}:{})}),env,{waitUntil:p=>p.catch(()=>{})});res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));}catch(e){res.writeHead(500);res.end(String(e));}});
- await new Promise(r=>server.listen(0,'127.0.0.1',r));return {env,url:'http://127.0.0.1:'+server.address().port,close:()=>{server.closeAllConnections();server.close();}};
+ const {env,states}=fixture();const server=createServer(async(req,res)=>{try{const chunks=[];for await(const c of req)chunks.push(c);const headers=new Headers(req.headers);headers.set('authorization','Bearer '+env.ADMIN_PASSWORD);const response=await worker.fetch(new Request('http://127.0.0.1'+req.url,{method:req.method,headers,...(chunks.length?{body:Buffer.concat(chunks)}:{})}),env,{waitUntil:p=>p.catch(()=>{})});res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));}catch(e){res.writeHead(500);res.end(String(e));}});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));return {env,states,url:'http://127.0.0.1:'+server.address().port,close:()=>{server.closeAllConnections();server.close();}};
 }
 test('promo CRUD, conflicts, filters, routing, history, safe text, mobile and load errors',{timeout:120000},async()=>{
  const app=await preview();const {chromium}=createRequire(import.meta.url)('playwright');const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
@@ -23,6 +23,23 @@ test('promo CRUD, conflicts, filters, routing, history, safe text, mobile and lo
  await page.locator('[data-action="toggle"]').click();await page.locator('#pc-body').filter({hasText:'Отключён'}).waitFor();
  await page.locator('[data-action="duplicate"]').click();assert.equal(await page.locator('[name="code"]').inputValue(),'');await fill('code','SECOND9');await fill('title','<img src=x onerror=alert(1)>');await page.locator('#pc-save').click();await page.locator('#pc-dialog').waitFor({state:'hidden'});await page.locator('[data-code="SECOND9"]').waitFor();assert.equal(await page.locator('#pc-body img').count(),0);
  await page.locator('[data-code="SECOND9"] [data-action="history"]').click();await page.locator('#pc-history').filter({hasText:'Активаций пока нет'}).waitFor();await page.locator('#pc-history-close').click();
+ const registeredAt='2026-10-01T09:15:00.000Z',claimedAt='2026-11-12T17:32:00.000Z';
+ await page.route('**/fixture-avatar.svg',route=>route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" fill="#0574F8"/></svg>'}));
+ const profiles=[{...identity('google_anna'),name:'Анна Иванова',email:'anna@example.invalid',avatarUrl:app.url+'/fixture-avatar.svg',createdAt:registeredAt},{...identity('google_boris'),name:'<img src=x onerror=alert(1)>',email:'boris@example.invalid',avatarUrl:app.url+'/missing-avatar.png',createdAt:registeredAt}];
+ for(const profile of profiles)await app.env.INSTALLS.put('user:'+profile.id,JSON.stringify(profile));
+ for(const [id,status] of [['google_anna','done'],['google_boris','pending'],['google_deleted','failed']])await app.states.get('promotions').put('promo-claim:SECOND9:'+id,{userId:id,createdAt:registeredAt,claimedAt,days:9,done:status!=='pending',failed:status==='failed'});
+ await page.locator('[data-code="SECOND9"] [data-action="history"]').click();await page.locator('#pc-history').filter({hasText:'anna@example.invalid'}).waitFor();
+ assert.deepEqual(await page.locator('#pc-history th').allTextContents(),['Пользователь','Регистрация · МСК','Активация · МСК','Начисление']);
+ const anna=page.locator('#pc-history tr').filter({hasText:'Анна Иванова'});assert.ok((await anna.textContent()).includes('01.10.26, 12:15'));assert.ok((await anna.textContent()).includes('12.11.26, 20:32'));
+ assert.equal(await anna.locator('img.uv-avatar').count(),1);assert.equal(await anna.getByRole('img',{name:'Начислено'}).count(),1);
+ await page.waitForFunction(()=>document.querySelector('#pc-history a[href="#users/google_boris"] div.uv-avatar'));
+ assert.ok((await page.locator('#pc-history').textContent()).includes('<img src=x onerror=alert(1)>'));assert.equal(await page.locator('#pc-history .pc-user-copy img').count(),0);
+ assert.equal(await page.locator('#pc-history').getByText('Ожидает',{exact:true}).count(),1);assert.equal(await page.locator('#pc-history').getByText('Аккаунт недоступен',{exact:true}).count(),1);assert.equal(await page.locator('#pc-history').getByText('Аккаунт удалён',{exact:true}).count(),1);
+ assert.ok(!(await page.locator('#pc-history-dialog').textContent()).includes('Принятые заявки'));assert.ok(!(await page.locator('#pc-history').textContent()).includes('google_'));
+ await page.screenshot({path:'../../output/promocodes-ui/history-desktop.png'});
+ await page.setViewportSize({width:390,height:844});assert.equal(await page.locator('#pc-history-dialog').evaluate(d=>d.scrollWidth<=d.clientWidth),true);assert.equal(await page.locator('#pc-history').evaluate(d=>d.scrollWidth<=d.clientWidth),true);await page.screenshot({path:'../../output/promocodes-ui/history-mobile.png'});
+ await anna.locator('[data-user]').click();await page.waitForFunction(()=>location.hash==='#users/google_anna');assert.equal(await page.locator('#pc-history-dialog').isVisible(),false);
+ await page.setViewportSize({width:1440,height:1050});await page.locator('[data-feature="promocodes"]').click();
  await page.locator('[data-code="SECOND9"] [data-action="edit"]').click();await worker.fetch(request('/api/admin/promocodes',{operation:'toggle',code:'SECOND9',enabled:false},'fixture-admin'),app.env);
  await fill('days','10');await page.locator('#pc-save').click();await page.locator('#pc-form-error').filter({hasText:'другой вкладке'}).waitFor();await page.locator('#pc-cancel').click();await page.locator('#pc-refresh').click();await page.waitForFunction(()=>document.querySelectorAll('#pc-body .pc-badge.paused').length===2);
  await page.locator('[data-code="SECOND9"] [data-action="edit"]').click();await page.locator('#pc-delete').click();await page.locator('#pc-delete').click();await page.locator('#pc-dialog').waitFor({state:'hidden'});await page.locator('[data-code="SECOND9"]').waitFor({state:'detached'});
