@@ -2325,6 +2325,83 @@ class AppLocalizationsEn extends AppLocalizations {
       'Score 100, 200, 300 and 450 points in a single game of Sign-Swiper.';
 
   @override
+  String get achievementTitleQuiz => 'Quiz Whiz';
+
+  @override
+  String get achievementDescQuiz =>
+      'Get a streak of 10, 25, 50 and 100 correct answers in a row in Quiz.';
+
+  @override
+  String get achievementTitleViolator => 'Inspector';
+
+  @override
+  String get achievementDescViolator =>
+      'Catch 25, 100, 250 and 500 offenders in Offender.';
+
+  @override
+  String get achievementTitleParking => 'Parking Pro';
+
+  @override
+  String get achievementDescParking =>
+      'Complete 5, 20, 50 and 100 parking tasks in Parking.';
+
+  @override
+  String get achievementTitleCrossroads => 'Traffic Solver';
+
+  @override
+  String get achievementDescCrossroads =>
+      'Clear 10, 30, 75 and 150 intersections in Clear the intersection.';
+
+  @override
+  String get achievementTitleMarathon => 'Marathoner';
+
+  @override
+  String get achievementDescMarathon =>
+      'Answer 50, 150, 400 and 800 questions in a single marathon.';
+
+  @override
+  String get achievementTitlePerfect => 'Straight A\'s';
+
+  @override
+  String get achievementDescPerfect =>
+      'Tickets solved without a single mistake. The top level is every ticket.';
+
+  @override
+  String get achievementTitleExamReady => 'Exam Ready';
+
+  @override
+  String get achievementDescExamReady =>
+      'Pass 3, 5, 10 and 20 practice exams in a row without failing.';
+
+  @override
+  String get achievementTitleSignsExpert => 'Walking Rulebook';
+
+  @override
+  String get achievementDescSignsExpert =>
+      'Open 20, 60, 150 and 300 different signs in the reference.';
+
+  @override
+  String get achievementTitleEarlyBird => 'Early Bird';
+
+  @override
+  String get achievementDescEarlyBird =>
+      'Days you practised between 5 and 9 a.m.';
+
+  @override
+  String get achievementTitleNightDriver => 'Night Driver';
+
+  @override
+  String get achievementDescNightDriver =>
+      'Days you practised between 10 p.m. and 4 a.m.';
+
+  @override
+  String get achievementTitleComeback => 'Comeback';
+
+  @override
+  String get achievementDescComeback =>
+      'Return to practice after a break of a week or longer.';
+
+  @override
   String get gameTrafficSignalQuestion => 'What does the signal allow?';
 
   @override

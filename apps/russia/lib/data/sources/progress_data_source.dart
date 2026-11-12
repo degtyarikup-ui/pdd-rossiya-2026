@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import 'package:pdd_app/data/models/achievement_stats.dart';
 import 'package:pdd_app/data/models/marathon_progress.dart';
 import 'package:pdd_app/data/models/progress_snapshot.dart';
 import 'package:pdd_app/data/models/question_identity.dart';
@@ -27,6 +28,7 @@ class ProgressDataSource {
   static const String _keyViolator = 'violator_progress';
   static const String _keyRoadSignsBest = 'roadSignsBest';
   static const String _keyViolatorBest = 'violatorBest';
+  static const String _keyAchievementStats = 'achievement_stats';
   static const String _legacyProgress = 'question_progress';
   static const String _legacyTicketProgress = 'ticket_progress';
   static const String _legacyFavorites = 'favorites';
@@ -387,6 +389,7 @@ class ProgressDataSource {
     await _prefs.remove(_keyStreakStartDate);
     await _prefs.remove(_keyStreakActiveDays);
     await _prefs.remove(_keyStreakCelebrationPending);
+    await _prefs.remove(_keyAchievementStats);
     ProgressSyncService.instance.scheduleSync();
     _imports.add(++_importRevision);
   }
@@ -417,10 +420,12 @@ class ProgressDataSource {
   /// Any successfully started learning/game activity counts, even before an
   /// answer. The receipt is consumed only by a completed activity's queue.
   Future<void> recordActivity({DateTime? date}) async {
-    final today = _dateOnly(date ?? DateTime.now());
+    final now = date ?? DateTime.now();
+    final today = _dateOnly(now);
     final lastIso = _prefs.getString(_keyStreakLastActive);
     final last = lastIso != null ? DateTime.tryParse(lastIso) : null;
     final lastDay = last != null ? _dateOnly(last) : null;
+    await _recordActivityAchievements(now, today, lastDay);
 
     if (lastDay != null && !today.isAfter(lastDay)) {
       // День уже зачтён — стрик и так растёт корректно.
@@ -460,6 +465,46 @@ class ProgressDataSource {
       _prefs.setBool(_keyStreakCelebrationPending, true),
     ]);
     ProgressSyncService.instance.scheduleSync();
+  }
+
+  /// Счётчики ачивок «Ранняя пташка», «Ночной водитель» и «Возвращение».
+  /// Время суток засчитывается раз в день и даже если день уже зачтён в
+  /// серию: вечернее занятие после утреннего тоже считается.
+  Future<void> _recordActivityAchievements(
+    DateTime now,
+    DateTime today,
+    DateTime? lastDay,
+  ) async {
+    final stats = getAchievementStats();
+    final day = _isoDate(today);
+    var next = stats;
+    if (AchievementStats.isEarly(now) && stats.earlyLast != day) {
+      next = next.copyWith(earlyDays: next.earlyDays + 1, earlyLast: day);
+    }
+    if (AchievementStats.isNight(now) && stats.nightLast != day) {
+      next = next.copyWith(nightDays: next.nightDays + 1, nightLast: day);
+    }
+    if (lastDay != null &&
+        Streak.dayDistance(lastDay, today) >=
+            AchievementStats.comebackGapDays) {
+      next = next.copyWith(comebacks: next.comebacks + 1);
+    }
+    if (!identical(next, stats)) await _saveAchievementStats(next);
+  }
+
+  AchievementStats getAchievementStats() =>
+      AchievementStats.fromJson(_loadMap(_keyAchievementStats));
+
+  Future<void> _saveAchievementStats(AchievementStats stats) =>
+      _prefs.setString(_keyAchievementStats, json.encode(stats.toJson()));
+
+  /// Знак открыт в справочнике — для ачивки «Знаток знаков».
+  Future<void> recordSignViewed(String signNumber) async {
+    final stats = getAchievementStats();
+    if (signNumber.isEmpty || stats.signsViewed.contains(signNumber)) return;
+    await _saveAchievementStats(
+      stats.copyWith(signsViewed: {...stats.signsViewed, signNumber}),
+    );
   }
 
   /// Прочитать текущее состояние серии.
@@ -645,6 +690,12 @@ class ProgressDataSource {
       jsonEncode(progress.toJson()),
     );
     if (!saved) throw StateError('Could not save marathon');
+    final stats = getAchievementStats();
+    if (progress.answers.length > stats.marathonBest) {
+      await _saveAchievementStats(
+        stats.copyWith(marathonBest: progress.answers.length),
+      );
+    }
   }
 
   Future<bool> consumePendingStreakCelebration() async {

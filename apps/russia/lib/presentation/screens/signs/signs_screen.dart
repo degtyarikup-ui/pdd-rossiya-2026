@@ -476,6 +476,10 @@ class SignCategoryScreen extends StatelessWidget {
                             ),
                             onTap: () {
                               HapticFeedbackHelper.tap();
+                              // Для ачивки «Знаток знаков».
+                              ProviderScope.containerOf(context, listen: false)
+                                  .read(progressDataSourceProvider)
+                                  .recordSignViewed(signNumber);
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(

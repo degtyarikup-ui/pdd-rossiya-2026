@@ -4060,6 +4060,138 @@ abstract class AppLocalizations {
   /// **'Наберите 100, 200, 300 и 450 очков за одну игру в «Знак-свайпер».'**
   String get achievementDescSignSwiper;
 
+  /// No description provided for @achievementTitleQuiz.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знаток квиза'**
+  String get achievementTitleQuiz;
+
+  /// No description provided for @achievementDescQuiz.
+  ///
+  /// In ru, this message translates to:
+  /// **'Наберите серию из 10, 25, 50 и 100 верных ответов подряд в «Квизе».'**
+  String get achievementDescQuiz;
+
+  /// No description provided for @achievementTitleViolator.
+  ///
+  /// In ru, this message translates to:
+  /// **'Инспектор'**
+  String get achievementTitleViolator;
+
+  /// No description provided for @achievementDescViolator.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поймайте 25, 100, 250 и 500 нарушителей в игре «Нарушитель».'**
+  String get achievementDescViolator;
+
+  /// No description provided for @achievementTitleParking.
+  ///
+  /// In ru, this message translates to:
+  /// **'Мастер парковки'**
+  String get achievementTitleParking;
+
+  /// No description provided for @achievementDescParking.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выполните 5, 20, 50 и 100 парковок в игре «Парковка».'**
+  String get achievementDescParking;
+
+  /// No description provided for @achievementTitleCrossroads.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрулил'**
+  String get achievementTitleCrossroads;
+
+  /// No description provided for @achievementDescCrossroads.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрулите 10, 30, 75 и 150 перекрёстков в игре «Разрули перекрёсток».'**
+  String get achievementDescCrossroads;
+
+  /// No description provided for @achievementTitleMarathon.
+  ///
+  /// In ru, this message translates to:
+  /// **'Марафонец'**
+  String get achievementTitleMarathon;
+
+  /// No description provided for @achievementDescMarathon.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответьте на 50, 150, 400 и 800 вопросов за один марафон.'**
+  String get achievementDescMarathon;
+
+  /// No description provided for @achievementTitlePerfect.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отличник ПДД'**
+  String get achievementTitlePerfect;
+
+  /// No description provided for @achievementDescPerfect.
+  ///
+  /// In ru, this message translates to:
+  /// **'Билеты, решённые без единой ошибки. Последний уровень — все билеты.'**
+  String get achievementDescPerfect;
+
+  /// No description provided for @achievementTitleExamReady.
+  ///
+  /// In ru, this message translates to:
+  /// **'Готов к экзамену'**
+  String get achievementTitleExamReady;
+
+  /// No description provided for @achievementDescExamReady.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сдайте 3, 5, 10 и 20 пробных экзаменов подряд без провала.'**
+  String get achievementDescExamReady;
+
+  /// No description provided for @achievementTitleSignsExpert.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ходячий справочник'**
+  String get achievementTitleSignsExpert;
+
+  /// No description provided for @achievementDescSignsExpert.
+  ///
+  /// In ru, this message translates to:
+  /// **'Откройте 20, 60, 150 и 300 разных знаков в справочнике.'**
+  String get achievementDescSignsExpert;
+
+  /// No description provided for @achievementTitleEarlyBird.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ранняя пташка'**
+  String get achievementTitleEarlyBird;
+
+  /// No description provided for @achievementDescEarlyBird.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дни, когда вы занимались с 5 до 9 утра.'**
+  String get achievementDescEarlyBird;
+
+  /// No description provided for @achievementTitleNightDriver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ночной водитель'**
+  String get achievementTitleNightDriver;
+
+  /// No description provided for @achievementDescNightDriver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дни, когда вы занимались с 22:00 до 4:00.'**
+  String get achievementDescNightDriver;
+
+  /// No description provided for @achievementTitleComeback.
+  ///
+  /// In ru, this message translates to:
+  /// **'Возвращение'**
+  String get achievementTitleComeback;
+
+  /// No description provided for @achievementDescComeback.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вернитесь к учёбе после перерыва в неделю и больше.'**
+  String get achievementDescComeback;
+
   /// No description provided for @gameTrafficSignalQuestion.
   ///
   /// In ru, this message translates to:

@@ -1,3 +1,6 @@
+import 'package:pdd_app/data/models/achievement_stats.dart';
+
+/// Порядок значений — порядок в сетке при равном уровне.
 enum AchievementId {
   streak,
   coverage,
@@ -9,6 +12,17 @@ enum AchievementId {
   game,
   trafficController,
   signSwiper,
+  quiz,
+  violator,
+  parking,
+  crossroads,
+  marathon,
+  perfect,
+  examReady,
+  signsExpert,
+  earlyBird,
+  nightDriver,
+  comeback,
   rank,
 }
 
@@ -25,6 +39,39 @@ abstract final class AchievementThresholds {
   static const List<int> game = [100, 200, 300, 450];
   static const List<int> trafficController = [150, 300, 600, 900];
   static const List<int> signSwiper = [100, 200, 300, 450];
+
+  /// «Знаток квиза»: лучшая серия верных ответов в «Дорожных знаках».
+  static const List<int> quiz = [10, 25, 50, 100];
+
+  /// «Инспектор»: всего пойманных нарушителей.
+  static const List<int> violator = [25, 100, 250, 500];
+
+  /// «Мастер парковки»: всего выполненных парковок.
+  static const List<int> parking = [5, 20, 50, 100];
+
+  /// «Разрулил»: всего решённых перекрёстков.
+  static const List<int> crossroads = [10, 30, 75, 150];
+
+  /// «Марафонец»: больше всего вопросов в одном марафоне.
+  static const List<int> marathon = [50, 150, 400, 800];
+
+  /// «Отличник ПДД»: билетов без единой ошибки; последний уровень — все.
+  static const List<int> perfectBase = [10, 20, 30];
+
+  /// «Готов к экзамену»: экзаменов, сданных подряд без провала.
+  static const List<int> examReady = [3, 5, 10, 20];
+
+  /// «Знаток знаков»: разных знаков, открытых в справочнике (всего 312).
+  static const List<int> signsExpert = [20, 60, 150, 300];
+
+  /// «Ранняя пташка»: дней с учёбой с 5 до 9 утра.
+  static const List<int> earlyBird = [5, 15, 30, 60];
+
+  /// «Ночной водитель»: дней с учёбой с 22 до 4 часов.
+  static const List<int> nightDriver = [10, 30, 60, 100];
+
+  /// «Возвращение»: возвращений к учёбе после перерыва в неделю.
+  static const List<int> comeback = [1, 3, 5, 10];
 
   /// «Покоритель рейтинга»: уровни — топ-100 / топ-10 / топ-3 / 1 место.
   /// Модель считает «чем больше, тем лучше», а место — наоборот, поэтому
@@ -91,6 +138,11 @@ List<AchievementProgress> computeAchievements({
   int? bestWeeklyRank,
   int trafficControllerBestScore = 0,
   int signSwiperBestScore = 0,
+  int quizBestCombo = 0,
+  int violatorsCaught = 0,
+  int parkingSolved = 0,
+  int crossroadsSolved = 0,
+  AchievementStats extra = const AchievementStats(),
 }) {
   final totalQuestions = stats['totalQuestions'] ?? 0;
   final totalTickets = stats['totalTickets'] ?? 0;
@@ -219,9 +271,99 @@ List<AchievementProgress> computeAchievements({
       value: signSwiperBestScore,
     ),
   );
-  result.add(rankAchievement);
+  AchievementProgress simple(AchievementId id, List<int> levels, int value) =>
+      AchievementProgress(id: id, levels: levels, value: value);
+  result
+    ..add(simple(AchievementId.quiz, AchievementThresholds.quiz, quizBestCombo))
+    ..add(
+      simple(
+        AchievementId.violator,
+        AchievementThresholds.violator,
+        violatorsCaught,
+      ),
+    )
+    ..add(
+      simple(
+        AchievementId.parking,
+        AchievementThresholds.parking,
+        parkingSolved,
+      ),
+    )
+    ..add(
+      simple(
+        AchievementId.crossroads,
+        AchievementThresholds.crossroads,
+        crossroadsSolved,
+      ),
+    )
+    ..add(
+      simple(
+        AchievementId.marathon,
+        AchievementThresholds.marathon,
+        extra.marathonBest,
+      ),
+    );
+  if (totalTickets > 0) {
+    result.add(
+      simple(AchievementId.perfect, [
+        ...AchievementThresholds.perfectBase.where((t) => t < totalTickets),
+        totalTickets,
+      ], stats['perfectTickets'] ?? 0),
+    );
+  }
+  result
+    ..add(
+      simple(
+        AchievementId.examReady,
+        AchievementThresholds.examReady,
+        longestPassedExamRun(examResults),
+      ),
+    )
+    ..add(
+      simple(
+        AchievementId.signsExpert,
+        AchievementThresholds.signsExpert,
+        extra.signsViewed.length,
+      ),
+    )
+    ..add(
+      simple(
+        AchievementId.earlyBird,
+        AchievementThresholds.earlyBird,
+        extra.earlyDays,
+      ),
+    )
+    ..add(
+      simple(
+        AchievementId.nightDriver,
+        AchievementThresholds.nightDriver,
+        extra.nightDays,
+      ),
+    )
+    ..add(
+      simple(
+        AchievementId.comeback,
+        AchievementThresholds.comeback,
+        extra.comebacks,
+      ),
+    )
+    ..add(rankAchievement);
 
   return result;
+}
+
+/// Самая длинная серия сданных экзаменов подряд, по времени завершения.
+int longestPassedExamRun(List<Map<String, dynamic>> examResults) {
+  DateTime when(Map<String, dynamic> r) =>
+      DateTime.tryParse('${r['completedAt'] ?? r['date'] ?? ''}') ??
+      DateTime.fromMillisecondsSinceEpoch(0);
+  final ordered = [...examResults]..sort((a, b) => when(a).compareTo(when(b)));
+  var best = 0, run = 0;
+  for (final r in ordered) {
+    run = r['passed'] == true ? run + 1 : 0;
+    if (run > best) best = run;
+  }
+  return best;
 }
 
 /// Полученные значки сначала; при равном уровне сохраняем порядок типов.

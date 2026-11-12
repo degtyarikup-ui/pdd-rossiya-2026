@@ -39,6 +39,11 @@ final achievementAwardServiceProvider = Provider<AchievementAwardService>((
             .getTrafficControllerProgress()
             .bestScore,
         signSwiperBestScore: data.getSignSwiperProgress().bestScore,
+        quizBestCombo: data.getRoadSignsProgress().maxCombo,
+        violatorsCaught: data.getViolatorProgress().totalViolatorsCaught,
+        parkingSolved: data.getParkingProgress().totalSolved,
+        crossroadsSolved: data.getCrossroadsPriorityProgress().totalSolved,
+        extra: data.getAchievementStats(),
       );
     },
   );
@@ -136,7 +141,18 @@ class AchievementAwardService {
     try {
       final progress = await load();
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.containsKey(storageKey)) return;
+      if (prefs.containsKey(storageKey)) {
+        // Ачивки, добавленные обновлением, тоже начинают с текущего уровня:
+        // уже набранное не превращается в пачку поздравлений.
+        final shown = _read(prefs);
+        final added = {
+          for (final item in progress)
+            if (!shown.containsKey(item.id.name)) item.id.name: item.level,
+        };
+        if (added.isEmpty) return;
+        await prefs.setString(storageKey, jsonEncode({...shown, ...added}));
+        return;
+      }
       await prefs.setString(
         storageKey,
         jsonEncode({for (final item in progress) item.id.name: item.level}),

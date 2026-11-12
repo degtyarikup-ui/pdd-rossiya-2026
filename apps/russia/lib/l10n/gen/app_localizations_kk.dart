@@ -2328,6 +2328,83 @@ class AppLocalizationsKk extends AppLocalizations {
       '«Белгі-свайпер» ойынында бір раундта 100, 200, 300 және 450 ұпай жинаңыз.';
 
   @override
+  String get achievementTitleQuiz => 'Квиз білгірі';
+
+  @override
+  String get achievementDescQuiz =>
+      '«Квизде» қатарынан 10, 25, 50 және 100 дұрыс жауап беріңіз.';
+
+  @override
+  String get achievementTitleViolator => 'Инспектор';
+
+  @override
+  String get achievementDescViolator =>
+      '«Ереже бұзушы» ойынында 25, 100, 250 және 500 бұзушыны ұстаңыз.';
+
+  @override
+  String get achievementTitleParking => 'Тұрақ шебері';
+
+  @override
+  String get achievementDescParking =>
+      '«Тұрақ» ойынында 5, 20, 50 және 100 рет көлік қойыңыз.';
+
+  @override
+  String get achievementTitleCrossroads => 'Реттеуші';
+
+  @override
+  String get achievementDescCrossroads =>
+      '«Қиылысты реттеңіз» ойынында 10, 30, 75 және 150 қиылысты реттеңіз.';
+
+  @override
+  String get achievementTitleMarathon => 'Марафоншы';
+
+  @override
+  String get achievementDescMarathon =>
+      'Бір марафонда 50, 150, 400 және 800 сұраққа жауап беріңіз.';
+
+  @override
+  String get achievementTitlePerfect => 'ЖҚЕ үздігі';
+
+  @override
+  String get achievementDescPerfect =>
+      'Бірде-бір қатесіз шешілген билеттер. Соңғы деңгей — барлық билеттер.';
+
+  @override
+  String get achievementTitleExamReady => 'Емтиханға дайын';
+
+  @override
+  String get achievementDescExamReady =>
+      'Қатарынан 3, 5, 10 және 20 сынақ емтиханын құламай тапсырыңыз.';
+
+  @override
+  String get achievementTitleSignsExpert => 'Тірі анықтамалық';
+
+  @override
+  String get achievementDescSignsExpert =>
+      'Анықтамалықта 20, 60, 150 және 300 түрлі белгіні ашыңыз.';
+
+  @override
+  String get achievementTitleEarlyBird => 'Ерте тұрған';
+
+  @override
+  String get achievementDescEarlyBird =>
+      'Таңғы 5-тен 9-ға дейін оқыған күндер.';
+
+  @override
+  String get achievementTitleNightDriver => 'Түнгі жүргізуші';
+
+  @override
+  String get achievementDescNightDriver =>
+      '22:00-ден 4:00-ге дейін оқыған күндер.';
+
+  @override
+  String get achievementTitleComeback => 'Қайта оралу';
+
+  @override
+  String get achievementDescComeback =>
+      'Бір апта не одан ұзақ үзілістен кейін оқуға қайта оралыңыз.';
+
+  @override
   String get gameTrafficSignalQuestion => 'Сигнал нені рұқсат етеді?';
 
   @override

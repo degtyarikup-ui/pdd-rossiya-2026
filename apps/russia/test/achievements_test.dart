@@ -316,7 +316,8 @@ void main() {
 
         expect(list.any((a) => a.id == AchievementId.coverage), isFalse);
         expect(list.any((a) => a.id == AchievementId.tickets), isFalse);
-        expect(list.length, 9);
+        expect(list.any((a) => a.id == AchievementId.perfect), isFalse);
+        expect(list.length, AchievementId.values.length - 3);
       },
     );
 

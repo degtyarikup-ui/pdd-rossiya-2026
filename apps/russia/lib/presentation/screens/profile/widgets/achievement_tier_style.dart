@@ -80,6 +80,17 @@ Offset achievementFocus(AchievementId id) => switch (id) {
   AchievementId.attempts => const Offset(.504, .314),
   AchievementId.tickets => const Offset(.494, .468),
   AchievementId.rank => const Offset(.479, .463),
+  AchievementId.quiz => const Offset(.5, .31),
+  AchievementId.violator => const Offset(.514, .46),
+  AchievementId.parking => const Offset(.508, .56),
+  AchievementId.crossroads => const Offset(.512, .47),
+  AchievementId.marathon => const Offset(.5, .33),
+  AchievementId.perfect => const Offset(.498, .49),
+  AchievementId.examReady => const Offset(.461, .53),
+  AchievementId.signsExpert => const Offset(.506, .48),
+  AchievementId.earlyBird => const Offset(.498, .48),
+  AchievementId.nightDriver => const Offset(.494, .47),
+  AchievementId.comeback => const Offset(.5, .32),
 };
 
 /// Фон полученной ачивки (карточка в сетке и шапка листа деталей): ровный

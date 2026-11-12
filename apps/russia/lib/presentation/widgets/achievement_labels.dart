@@ -25,6 +25,28 @@ String achievementTitle(AchievementId id) {
       return appL10n.achievementTitleTrafficController;
     case AchievementId.signSwiper:
       return appL10n.achievementTitleSignSwiper;
+    case AchievementId.quiz:
+      return appL10n.achievementTitleQuiz;
+    case AchievementId.violator:
+      return appL10n.achievementTitleViolator;
+    case AchievementId.parking:
+      return appL10n.achievementTitleParking;
+    case AchievementId.crossroads:
+      return appL10n.achievementTitleCrossroads;
+    case AchievementId.marathon:
+      return appL10n.achievementTitleMarathon;
+    case AchievementId.perfect:
+      return appL10n.achievementTitlePerfect;
+    case AchievementId.examReady:
+      return appL10n.achievementTitleExamReady;
+    case AchievementId.signsExpert:
+      return appL10n.achievementTitleSignsExpert;
+    case AchievementId.earlyBird:
+      return appL10n.achievementTitleEarlyBird;
+    case AchievementId.nightDriver:
+      return appL10n.achievementTitleNightDriver;
+    case AchievementId.comeback:
+      return appL10n.achievementTitleComeback;
   }
 }
 
@@ -52,6 +74,28 @@ String achievementDescription(AchievementId id) {
       return appL10n.achievementDescTrafficController;
     case AchievementId.signSwiper:
       return appL10n.achievementDescSignSwiper;
+    case AchievementId.quiz:
+      return appL10n.achievementDescQuiz;
+    case AchievementId.violator:
+      return appL10n.achievementDescViolator;
+    case AchievementId.parking:
+      return appL10n.achievementDescParking;
+    case AchievementId.crossroads:
+      return appL10n.achievementDescCrossroads;
+    case AchievementId.marathon:
+      return appL10n.achievementDescMarathon;
+    case AchievementId.perfect:
+      return appL10n.achievementDescPerfect;
+    case AchievementId.examReady:
+      return appL10n.achievementDescExamReady;
+    case AchievementId.signsExpert:
+      return appL10n.achievementDescSignsExpert;
+    case AchievementId.earlyBird:
+      return appL10n.achievementDescEarlyBird;
+    case AchievementId.nightDriver:
+      return appL10n.achievementDescNightDriver;
+    case AchievementId.comeback:
+      return appL10n.achievementDescComeback;
   }
 }
 

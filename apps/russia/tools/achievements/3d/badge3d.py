@@ -58,7 +58,8 @@ FILM = {
 TIERS = {
     1: {"name": "bronze", "color": srgb(196, 120, 72), "rough": 0.24, "rough_var": 0.14, "aniso": 0.5,
         "grime": srgb(70, 62, 48)},
-    2: {"name": "galvanized", "color": srgb(200, 203, 208), "galvanized": True, "aniso": 0.2},
+    2: {"name": "silver", "color": srgb(208, 212, 219), "rough": 0.2, "rough_var": 0.12, "aniso": 0.5,
+        "grime": srgb(96, 98, 104)},
     3: {"name": "gold", "color": srgb(255, 196, 92), "rough": 0.16, "rough_var": 0.12, "aniso": 0.5,
         "grime": srgb(110, 88, 50)},
     4: {"name": "platinum", "color": srgb(110, 165, 250), "rough": 0.13, "rough_var": 0.1, "aniso": 0.5,

@@ -314,6 +314,7 @@ final statsProvider = FutureProvider<Map<String, int>>((ref) async {
   }
 
   int passedTickets = 0;
+  int perfectTickets = 0;
   for (final ticket in tickets) {
     final questions = ticket['questions'] as List;
     int answeredCount = 0;
@@ -334,6 +335,9 @@ final statsProvider = FutureProvider<Map<String, int>>((ref) async {
             CountryConfig.current.examRules.passThreshold(questions.length)) {
       passedTickets++;
     }
+    if (answeredCount == questions.length && correctCount == answeredCount) {
+      perfectTickets++;
+    }
   }
 
   final totalQuestions = tickets.fold<int>(
@@ -348,6 +352,7 @@ final statsProvider = FutureProvider<Map<String, int>>((ref) async {
         .where((value) => value['isCorrect'] == false)
         .length,
     'passedTickets': passedTickets,
+    'perfectTickets': perfectTickets,
     'totalQuestions': totalQuestions,
     'totalTickets': tickets.length,
   };
@@ -460,6 +465,19 @@ final achievementsProvider =
         bestWeeklyRank: bestWeeklyRank,
         trafficControllerBestScore: trafficScore,
         signSwiperBestScore: signScore,
+        quizBestCombo: ref.watch(
+          roadSignsProgressProvider.select((s) => s.maxCombo),
+        ),
+        violatorsCaught: ref.watch(
+          violatorProgressProvider.select((s) => s.totalViolatorsCaught),
+        ),
+        parkingSolved: ref.watch(
+          parkingProgressProvider.select((s) => s.totalSolved),
+        ),
+        crossroadsSolved: ref.watch(
+          crossroadsPriorityProgressProvider.select((s) => s.totalSolved),
+        ),
+        extra: dataSource.getAchievementStats(),
       );
     });
 
@@ -515,7 +533,9 @@ final isPremiumProvider = Provider<bool>((ref) {
     // Entitlement expiry need not produce a network/account event. Refresh the
     // controls at the deadline so they lock as soon as playback loses access.
     final expiryTimer = Timer(
-      remaining.isNegative ? Duration.zero : remaining + const Duration(milliseconds: 1),
+      remaining.isNegative
+          ? Duration.zero
+          : remaining + const Duration(milliseconds: 1),
       ref.invalidateSelf,
     );
     ref.onDispose(expiryTimer.cancel);
@@ -741,10 +761,9 @@ class CrossroadsPriorityProgressController
 }
 
 final roadSignsProgressProvider =
-    StateNotifierProvider<
-      RoadSignsProgressController,
-      RoadSignsProgress
-    >((ref) {
+    StateNotifierProvider<RoadSignsProgressController, RoadSignsProgress>((
+      ref,
+    ) {
       final ds = ref.watch(progressDataSourceProvider);
       final controller = RoadSignsProgressController(ds);
       ref.listen(progressImportsProvider, (_, next) {
@@ -782,10 +801,7 @@ class RoadSignsProgressController extends StateNotifier<RoadSignsProgress> {
 }
 
 final violatorProgressProvider =
-    StateNotifierProvider<
-      ViolatorProgressController,
-      ViolatorProgress
-    >((ref) {
+    StateNotifierProvider<ViolatorProgressController, ViolatorProgress>((ref) {
       final ds = ref.watch(progressDataSourceProvider);
       final controller = ViolatorProgressController(ds);
       ref.listen(progressImportsProvider, (_, next) {
@@ -821,4 +837,3 @@ class ViolatorProgressController extends StateNotifier<ViolatorProgress> {
     await _dataSource.saveViolatorProgress(state);
   }
 }
-

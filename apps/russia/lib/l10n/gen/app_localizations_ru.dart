@@ -2343,6 +2343,83 @@ class AppLocalizationsRu extends AppLocalizations {
       'Наберите 100, 200, 300 и 450 очков за одну игру в «Знак-свайпер».';
 
   @override
+  String get achievementTitleQuiz => 'Знаток квиза';
+
+  @override
+  String get achievementDescQuiz =>
+      'Наберите серию из 10, 25, 50 и 100 верных ответов подряд в «Квизе».';
+
+  @override
+  String get achievementTitleViolator => 'Инспектор';
+
+  @override
+  String get achievementDescViolator =>
+      'Поймайте 25, 100, 250 и 500 нарушителей в игре «Нарушитель».';
+
+  @override
+  String get achievementTitleParking => 'Мастер парковки';
+
+  @override
+  String get achievementDescParking =>
+      'Выполните 5, 20, 50 и 100 парковок в игре «Парковка».';
+
+  @override
+  String get achievementTitleCrossroads => 'Разрулил';
+
+  @override
+  String get achievementDescCrossroads =>
+      'Разрулите 10, 30, 75 и 150 перекрёстков в игре «Разрули перекрёсток».';
+
+  @override
+  String get achievementTitleMarathon => 'Марафонец';
+
+  @override
+  String get achievementDescMarathon =>
+      'Ответьте на 50, 150, 400 и 800 вопросов за один марафон.';
+
+  @override
+  String get achievementTitlePerfect => 'Отличник ПДД';
+
+  @override
+  String get achievementDescPerfect =>
+      'Билеты, решённые без единой ошибки. Последний уровень — все билеты.';
+
+  @override
+  String get achievementTitleExamReady => 'Готов к экзамену';
+
+  @override
+  String get achievementDescExamReady =>
+      'Сдайте 3, 5, 10 и 20 пробных экзаменов подряд без провала.';
+
+  @override
+  String get achievementTitleSignsExpert => 'Ходячий справочник';
+
+  @override
+  String get achievementDescSignsExpert =>
+      'Откройте 20, 60, 150 и 300 разных знаков в справочнике.';
+
+  @override
+  String get achievementTitleEarlyBird => 'Ранняя пташка';
+
+  @override
+  String get achievementDescEarlyBird =>
+      'Дни, когда вы занимались с 5 до 9 утра.';
+
+  @override
+  String get achievementTitleNightDriver => 'Ночной водитель';
+
+  @override
+  String get achievementDescNightDriver =>
+      'Дни, когда вы занимались с 22:00 до 4:00.';
+
+  @override
+  String get achievementTitleComeback => 'Возвращение';
+
+  @override
+  String get achievementDescComeback =>
+      'Вернитесь к учёбе после перерыва в неделю и больше.';
+
+  @override
   String get gameTrafficSignalQuestion => 'Что разрешает сигнал?';
 
   @override
