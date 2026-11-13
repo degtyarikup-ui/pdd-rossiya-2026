@@ -1,6 +1,7 @@
-## Level select of «Парковка»: every level as a card on the brand background, like the shared
-## result screen — a picture of the location (art/parking_levels, rendered by Parking's --thumbs),
-## its number and stars. The next level to play breathes, the rest are dimmed behind a lock.
+## Level select of «Парковка»: every level as a card on the app's own background — a picture of
+## the location (art/parking_levels, rendered by Parking's --thumbs) with its number and stars
+## laid over a soft shade at the bottom. The next level to play breathes in the accent colour,
+## the rest are greyed behind a lock.
 ## Three cards in a row on a phone, more on a wide screen; the list scrolls. Whatever changed since the menu was last on screen is played back when it opens:
 ## new stars pop in, the total counts up and the next lock opens. Sizes are dp (ParkingUi).
 class_name ParkingLevelMenu
@@ -17,19 +18,19 @@ const GAP := 10.0
 const PAD := 14.0                # room round the grid for the breathing outline
 const TILE_WIDE := 150.0         # a row holds as many cards of about this width as fit, three at least
 const TILE_MAX := 190.0
-const PICTURE := 0.68            # height of a card's picture to its width
-const FOOTER := 32.0
+const PICTURE := 0.82            # height of a card to its width
 const RADIUS := 14
 const GOLD := Color("#FFA53C")
 const PICTURES := "res://art/parking_levels/%02d.jpg"
-## The picture fills its box (cropped, never stretched) under the card's rounded top corners;
-## `locked` fades it to a dim blue monochrome.
+## The picture fills the card (cropped, never stretched) with rounded corners and a shade at the
+## bottom for the number and stars; `locked` fades it to a quiet grey of the theme.
 const PICTURE_SHADER := """
 shader_type canvas_item;
 uniform float locked = 0.0;
 uniform vec2 box = vec2(110.0, 76.0);
 uniform float radius = 14.0;
 uniform float image_aspect = 1.3333;
+uniform vec3 locked_tint = vec3(0.79, 0.81, 0.85);
 varying vec4 tint;
 void vertex() { tint = COLOR; }
 void fragment() {
@@ -39,9 +40,10 @@ void fragment() {
 	else uv.x = (uv.x - 0.5) * aspect / image_aspect + 0.5;
 	vec4 c = texture(TEXTURE, uv);
 	float grey = dot(c.rgb, vec3(0.299, 0.587, 0.114));
-	c.rgb = mix(c.rgb, mix(vec3(grey), vec3(0.04, 0.30, 0.68), 0.5) * 0.82, locked);
+	c.rgb = mix(c.rgb, mix(vec3(grey), locked_tint, 0.62), locked);
+	c.rgb *= 1.0 - 0.58 * smoothstep(0.5, 1.0, UV.y);
 	vec2 p = UV * box;
-	vec2 q = vec2(min(p.x, box.x - p.x), p.y);
+	vec2 q = min(p, box - p);
 	float a = 1.0;
 	if (q.x < radius && q.y < radius) a = 1.0 - smoothstep(radius - 1.0, radius, length(q - vec2(radius)));
 	COLOR = vec4(c.rgb, a) * tint;
@@ -72,7 +74,7 @@ func _init() -> void:
 	mouse_filter = MOUSE_FILTER_STOP
 	_calm = Host.user_args().has("--reduce-motion")
 	var background := ColorRect.new()
-	background.color = Color(Ui.LIGHT.accent)
+	background.color = Ui.c("background")
 	background.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	background.mouse_filter = MOUSE_FILTER_IGNORE
 	add_child(background)
@@ -83,9 +85,9 @@ func _init() -> void:
 	_grid = Control.new()
 	_grid.mouse_filter = MOUSE_FILTER_PASS
 	_scroll.add_child(_grid)
-	_close = MiniGameResults._header_button(MiniGameHud.ICON_CLOSE, func(): exit_pressed.emit(), Ui.t("gameExit"))
+	_close = MiniGameResults._header_button(MiniGameHud.ICON_CLOSE, func(): exit_pressed.emit(), Ui.t("gameExit"), Ui.c("text"))
 	add_child(_close)
-	_title = Ui.label(Ui.t("gamesParkingTitle"), 20, 700, Color.WHITE)
+	_title = Ui.label(Ui.t("gamesParkingTitle"), 20, 700, Ui.c("text"))
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_title.clip_text = true
@@ -93,7 +95,10 @@ func _init() -> void:
 	add_child(_title)
 	_pill = PanelContainer.new()
 	_pill.mouse_filter = MOUSE_FILTER_IGNORE
-	var pill := Ui.box(Color(1, 1, 1, 0.16), 16)
+	var pill := Ui.box(Ui.c("card"), 16)
+	if not Ui.dark:
+		pill.border_color = Ui.chrome_border(true)
+		pill.set_border_width_all(1)
 	pill.content_margin_left = 10
 	pill.content_margin_right = 12
 	pill.content_margin_top = 5
@@ -105,7 +110,7 @@ func _init() -> void:
 	total_star.lit = true
 	total_star.custom_minimum_size = Vector2(20, 20)
 	row.add_child(total_star)
-	_total = Ui.label("0/0", 15, 800, Color.WHITE)
+	_total = Ui.label("0/0", 15, 800, Ui.c("text"))
 	_total.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(_total)
 	_pill.add_child(row)
@@ -173,7 +178,7 @@ func layout(bounds: Rect2) -> void:
 	var area := Vector2(bounds.size.x, maxf(60.0, bounds.end.y - area_top))
 	var columns := clampi(roundi(area.x / TILE_WIDE), 3, 6)
 	var wide := floorf(minf(TILE_MAX, (area.x - GAP * (columns - 1)) / columns))
-	var high := floorf(wide * PICTURE) + FOOTER
+	var high := floorf(wide * PICTURE)
 	var rows := ceili(float(_tiles.size()) / columns)
 	var content := Vector2(columns * wide + GAP * (columns - 1), rows * high + GAP * (rows - 1))
 	_scroll.position = Vector2(0.0, area_top)
@@ -305,7 +310,7 @@ class Tile extends Control:
 	var _picture: TextureRect
 	var _material: ShaderMaterial
 	var _number: Label
-	var _lock: Label
+	var _lock: Control           # the white lock over a locked picture
 	var _marks: Array[ParkingStar] = []
 	var _pulse: Tween
 	var _press: Tween
@@ -318,15 +323,19 @@ class Tile extends Control:
 		mouse_filter = MOUSE_FILTER_PASS
 		_halo = Panel.new()
 		_halo.mouse_filter = MOUSE_FILTER_IGNORE
-		var outline := Ui.box(Color.TRANSPARENT, ParkingLevelMenu.RADIUS)
-		outline.border_color = Color.WHITE
+		var outline := Ui.box(Color.TRANSPARENT, ParkingLevelMenu.RADIUS + 2)
+		outline.border_color = Ui.c("accent")
 		outline.set_border_width_all(2)
 		_halo.add_theme_stylebox_override("panel", outline)
 		_halo.visible = false
 		add_child(_halo)
 		_card = Panel.new()
 		_card.mouse_filter = MOUSE_FILTER_IGNORE
-		_style = Ui.box(Color.WHITE, ParkingLevelMenu.RADIUS)
+		_style = Ui.box(Ui.c("gray"), ParkingLevelMenu.RADIUS)
+		# A short, light shadow: a grid of cards, not floating chrome.
+		_style.shadow_color = Color(0.05, 0.08, 0.14, 0.3 if Ui.dark else 0.1)
+		_style.shadow_size = 4
+		_style.shadow_offset = Vector2(0, 2)
 		_card.add_theme_stylebox_override("panel", _style)
 		add_child(_card)
 		_picture = TextureRect.new()
@@ -339,21 +348,33 @@ class Tile extends Control:
 		_material = ShaderMaterial.new()
 		_material.shader = _shader
 		_material.set_shader_parameter("radius", float(ParkingLevelMenu.RADIUS))
+		var tint := Color("#26292F") if Ui.dark else Color("#C9CED8")
+		_material.set_shader_parameter("locked_tint", Vector3(tint.r, tint.g, tint.b))
 		_picture.material = _material
 		add_child(_picture)
-		_number = Ui.label("", 16, 800, Color(Ui.LIGHT.accent))
+		_number = Ui.label("", 17, 800, Color.WHITE)
 		_number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_number.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.35))
+		_number.add_theme_constant_override("shadow_offset_y", 1)
+		_number.add_theme_constant_override("shadow_offset_x", 0)
 		_number.mouse_filter = MOUSE_FILTER_IGNORE
 		add_child(_number)
 		for i in ParkingProgress.MAX_STARS:
 			var mark := ParkingStar.new()
-			mark.on_dark = false
+			mark.ghost = true
 			add_child(mark)
 			_marks.append(mark)
-		_lock = Ui.icon(ParkingLevelMenu.ICON_LOCK, 26, Color.WHITE)
-		_lock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_lock.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_lock = Control.new()
 		_lock.mouse_filter = MOUSE_FILTER_IGNORE
+		var glyph := Ui.icon(ParkingLevelMenu.ICON_LOCK, 26, Color.WHITE)
+		glyph.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.25))
+		glyph.add_theme_constant_override("shadow_offset_y", 1)
+		glyph.add_theme_constant_override("shadow_offset_x", 0)
+		glyph.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+		glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		glyph.mouse_filter = MOUSE_FILTER_IGNORE
+		_lock.add_child(glyph)
 		add_child(_lock)
 
 	func place(at: Vector2, extent: Vector2) -> void:
@@ -365,8 +386,7 @@ class Tile extends Control:
 			panel.position = Vector2.ZERO
 			panel.size = size
 			panel.pivot_offset = size * 0.5
-		var footer := ParkingLevelMenu.FOOTER
-		var view := Vector2(extent.x, extent.y - footer)
+		var view := extent
 		if _picture.texture == null:
 			var path := ParkingLevelMenu.PICTURES % (index + 1)
 			if ResourceLoader.exists(path): _picture.texture = load(path)
@@ -375,28 +395,31 @@ class Tile extends Control:
 		_picture.position = Vector2.ZERO
 		_picture.size = view
 		_material.set_shader_parameter("box", view)
+		# Number bottom left, stars bottom right, both on the shade of the picture.
+		var line := 26.0
+		var bottom := extent.y - 7.0
 		_number.text = str(index + 1)
-		_number.position = Vector2(11.0, view.y)
-		_number.size = Vector2(extent.x * 0.4, footer)
-		_number.pivot_offset = Vector2(8.0, footer * 0.5)
+		_number.position = Vector2(10.0, bottom - line)
+		_number.size = Vector2(extent.x * 0.4, line)
+		_number.pivot_offset = Vector2(8.0, line * 0.5)
 		var mark := 15.0 if extent.x >= 104.0 else 13.0
-		var pitch := mark + 3.0
+		var pitch := mark + 2.0
 		for i in _marks.size():
 			_marks[i].size = Vector2(mark, mark)
-			_marks[i].position = Vector2(extent.x - 10.0 - (_marks.size() - i) * pitch + 3.0, view.y + (footer - mark) * 0.5)
+			_marks[i].position = Vector2(extent.x - 9.0 - (_marks.size() - i) * pitch + 2.0, bottom - line * 0.5 - mark * 0.5)
 			_marks[i].pivot_offset = _marks[i].size * 0.5
-		_lock.add_theme_font_size_override("font_size", roundi(clampf(view.y * 0.36, 22.0, 34.0)))
-		_lock.position = Vector2.ZERO
-		_lock.size = view
-		_lock.pivot_offset = view * 0.5
+		var glyph := clampf(extent.y * 0.34, 24.0, 36.0)
+		(_lock.get_child(0) as Label).add_theme_font_size_override("font_size", roundi(glyph))
+		_lock.size = Vector2(glyph, glyph) * 1.4
+		_lock.position = (extent - _lock.size) * 0.5 - Vector2(0.0, 6.0)
+		_lock.pivot_offset = _lock.size * 0.5
 		if _halo.visible: set_current(true)
 
 	func paint(stars: int, open: bool, current: bool) -> void:
 		_stars = stars
 		_open = open
-		_style.bg_color = Color.WHITE if open else Color(1, 1, 1, 0.16)
 		_material.set_shader_parameter("locked", 0.0 if open else 1.0)
-		_number.add_theme_color_override("font_color", Color(Ui.LIGHT.accent) if open else Color(1, 1, 1, 0.75))
+		_number.add_theme_color_override("font_color", Color.WHITE if open else Color(1, 1, 1, 0.8))
 		_lock.visible = not open
 		_lock.modulate.a = 1.0
 		_lock.scale = Vector2.ONE
@@ -408,7 +431,7 @@ class Tile extends Control:
 			_marks[i].glint = 0.0
 		set_current(current)
 
-	## The level to play next: a white outline that slowly spreads from the card and fades.
+	## The level to play next: an accent outline that slowly spreads from the card and fades.
 	func set_current(on: bool) -> void:
 		if is_instance_valid(_pulse): _pulse.kill()
 		_halo.visible = on
@@ -446,7 +469,7 @@ class Tile extends Control:
 			tween.tween_property(mark, "scale", Vector2.ONE, 0.4).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 			tween.parallel().tween_method(func(value: float): mark.glint = value, 0.0, 1.0, 0.45).set_delay(0.1)
 
-	## The lock lets go, the picture takes its colours and the card turns white.
+	## The lock lets go and the picture takes its colours.
 	func unlock(delay: float, current: bool) -> void:
 		_open = true
 		for mark in _marks:
@@ -460,9 +483,8 @@ class Tile extends Control:
 		tween.parallel().tween_property(_lock, "modulate:a", 0.0, 0.2)
 		tween.tween_callback(func():
 			_lock.visible = false
-			_number.add_theme_color_override("font_color", Color(Ui.LIGHT.accent)))
+			_number.add_theme_color_override("font_color", Color.WHITE))
 		tween.tween_method(func(value: float): _material.set_shader_parameter("locked", value), 1.0, 0.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		tween.parallel().tween_property(_style, "bg_color", Color.WHITE, 0.3)
 		tween.parallel().tween_property(self, "scale", Vector2.ONE, 0.4).from(Vector2.ONE * 1.05).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		for mark in _marks: tween.parallel().tween_property(mark, "modulate:a", 1.0, 0.25)
 		tween.tween_callback(set_current.bind(current))

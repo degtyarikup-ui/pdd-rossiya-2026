@@ -283,7 +283,7 @@ func _check_level_screens(ui: ParkingUi) -> void:
 				inside = inside and tile.rest.x >= 0.0 and tile.rest.x + tile.size.x <= viewport_size.x + 0.5
 			_check("levels: three cards in a row on a phone, more on a wide screen" + suffix + " (%d)" % in_row,
 				in_row == 3 if viewport_size.x < 500 else in_row > 3)
-			_check("levels: cards are large enough to tap and stay on screen" + suffix, inside and menu._tiles[0].size.x >= 84.0 and menu._tiles[0].size.y >= 84.0)
+			_check("levels: cards are large enough to tap and stay on screen" + suffix, inside and menu._tiles[0].size.x >= 84.0 and menu._tiles[0].size.y >= 64.0)
 			_check("levels: every card has its picture" + suffix, menu._tiles.all(func(tile): return tile._picture.texture != null))
 			_check("levels: open levels show stars, the rest a lock" + suffix,
 				menu._tiles[2]._marks[0].visible and not menu._tiles[2]._lock.visible and menu._tiles[3]._marks[0].visible

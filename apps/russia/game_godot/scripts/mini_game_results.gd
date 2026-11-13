@@ -643,7 +643,7 @@ func dismiss_review() -> bool:
 	return true
 
 ## Mirrors Flutter's ResultHeaderButton: a white glyph on a fixed, clear tap target.
-static func _header_button(code: int, action: Callable, label: String) -> Button:
+static func _header_button(code: int, action: Callable, label: String, tint := Color.WHITE) -> Button:
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(48, 48)
 	button.size_flags_horizontal = SIZE_SHRINK_CENTER
@@ -652,13 +652,13 @@ static func _header_button(code: int, action: Callable, label: String) -> Button
 	button.tooltip_text = label
 	for state in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
 		var box := Ui.box(Color.TRANSPARENT, 24)
-		if state == "hover": box.bg_color = Color(1, 1, 1, 0.08)
-		if state in ["pressed", "hover_pressed"]: box.bg_color = Color(1, 1, 1, 0.12)
+		if state == "hover": box.bg_color = Color(tint, 0.08)
+		if state in ["pressed", "hover_pressed"]: box.bg_color = Color(tint, 0.12)
 		if state == "focus":
-			box.border_color = Color.WHITE
+			box.border_color = tint
 			box.set_border_width_all(2)
 		button.add_theme_stylebox_override(state, box)
-	var icon := Ui.icon(code, 24, Color.WHITE)
+	var icon := Ui.icon(code, 24, tint)
 	icon.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

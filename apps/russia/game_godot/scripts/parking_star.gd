@@ -22,6 +22,11 @@ var on_dark := false:
 	set(value):
 		on_dark = value
 		queue_redraw()
+## An empty star over a picture: translucent white, the picture shows through.
+var ghost := false:
+	set(value):
+		ghost = value
+		queue_redraw()
 var glint := 0.0:
 	set(value):
 		glint = value
@@ -81,6 +86,10 @@ func _draw() -> void:
 		draw_polygon(gloss, _shade(shape, radius, Color(1, 1, 1, 0.42), Color(1, 1, 1, 0.1), Color(1, 1, 1, 0.0)))
 		moved.append(moved[0])
 		draw_polyline(moved, Color(RIM, 0.75), maxf(1.0, radius * 0.045), true)
+	elif ghost:
+		draw_colored_polygon(moved, Color(1, 1, 1, 0.3))
+		moved.append(moved[0])
+		draw_polyline(moved, Color(1, 1, 1, 0.75), maxf(1.0, radius * 0.07), true)
 	else:
 		var top := Color("#2E323B") if on_dark else Color("#E8ECF3")
 		var bottom := Color("#252830") if on_dark else Color("#D3D9E4")
