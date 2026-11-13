@@ -642,23 +642,26 @@ func dismiss_review() -> bool:
 	_visibility_changed()
 	return true
 
-## Mirrors Flutter's ResultHeaderButton: a white glyph on a fixed, clear tap target.
-static func _header_button(code: int, action: Callable, label: String, tint := Color.WHITE) -> Button:
+## ResultHeaderButton by default; `filled` mirrors AppChromeIconButton on app backgrounds.
+static func _header_button(code: int, action: Callable, label: String, tint := Color.WHITE, filled := false) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(48, 48)
+	var extent := MiniGameHud.CHROME if filled else 48.0
+	button.custom_minimum_size = Vector2(extent, extent)
 	button.size_flags_horizontal = SIZE_SHRINK_CENTER
 	button.size_flags_vertical = SIZE_SHRINK_CENTER
 	button.accessibility_name = label
 	button.tooltip_text = label
 	for state in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
-		var box := Ui.box(Color.TRANSPARENT, 24)
-		if state == "hover": box.bg_color = Color(tint, 0.08)
-		if state in ["pressed", "hover_pressed"]: box.bg_color = Color(tint, 0.12)
-		if state == "focus":
+		var background := Ui.c("card") if filled else Color.TRANSPARENT
+		var box := Ui.box(background, MiniGameHud.RADIUS if filled else 24)
+		if state == "hover": box.bg_color = background.lerp(tint, 0.08) if filled else Color(tint, 0.08)
+		if state in ["pressed", "hover_pressed"]: box.bg_color = background.lerp(tint, 0.12) if filled else Color(tint, 0.12)
+		if state == "focus" and filled: box.bg_color = background.lerp(Ui.c("accent"), 0.12)
+		if state == "focus" and not filled:
 			box.border_color = tint
 			box.set_border_width_all(2)
 		button.add_theme_stylebox_override(state, box)
-	var icon := Ui.icon(code, 24, tint)
+	var icon := Ui.icon(code, MiniGameHud.CLOSE_ICON_SIZE if filled else 24, tint)
 	icon.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

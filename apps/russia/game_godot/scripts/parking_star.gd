@@ -11,6 +11,11 @@ const RIM := Color("#E0780C")
 const OUTER_ROUND := 0.3
 const INNER_ROUND := 0.2
 
+var shadow_enabled := true:
+	set(value):
+		shadow_enabled = value
+		queue_redraw()
+
 var lit := false:
 	set(value):
 		if lit == value: return
@@ -76,9 +81,10 @@ func _draw() -> void:
 	var moved := PackedVector2Array()
 	for p in shape: moved.append(p + centre)
 	if lit:
-		var shadow := PackedVector2Array()
-		for p in moved: shadow.append(p + Vector2(0.0, radius * 0.08))
-		draw_colored_polygon(shadow, Color(0.55, 0.26, 0.0, 0.2))
+		if shadow_enabled:
+			var shadow := PackedVector2Array()
+			for p in moved: shadow.append(p + Vector2(0.0, radius * 0.08))
+			draw_colored_polygon(shadow, Color(0.55, 0.26, 0.0, 0.2))
 		draw_polygon(moved, _shade(shape, radius, TOP, MIDDLE, BOTTOM))
 		# Gloss: a smaller star on the upper half, white fading to nothing.
 		var gloss := PackedVector2Array()

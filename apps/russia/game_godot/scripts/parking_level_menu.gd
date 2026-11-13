@@ -48,7 +48,7 @@ void fragment() {
 	c.rgb = clamp(mix(vec3(grey), c.rgb, vibrance), vec3(0.0), vec3(1.0));
 	c.rgb *= 1.0 - 0.58 * smoothstep(0.5, 1.0, UV.y);
 	// Fully conceal the scene until unlocked; only a restrained tonal falloff remains.
-	vec3 surface = locked_surface * mix(1.08, 0.94, smoothstep(0.0, 1.0, UV.y));
+	vec3 surface = locked_surface * mix(1.02, 0.98, smoothstep(0.0, 1.0, UV.y));
 	c.rgb = mix(c.rgb, surface, locked);
 	// Smooth clipping at the image edge, without a visible border.
 	vec2 q = abs((UV - 0.5) * box) - (box * 0.5 - radius);
@@ -94,7 +94,7 @@ func _init() -> void:
 	_grid = Control.new()
 	_grid.mouse_filter = MOUSE_FILTER_PASS
 	_scroll.add_child(_grid)
-	_close = MiniGameResults._header_button(MiniGameHud.ICON_CLOSE, func(): exit_pressed.emit(), Ui.t("gameExit"), Ui.c("text"))
+	_close = MiniGameResults._header_button(MiniGameHud.ICON_CLOSE, func(): exit_pressed.emit(), Ui.t("gameExit"), Ui.c("text"), true)
 	add_child(_close)
 	_title = Ui.label(Ui.t("gamesParkingTitle"), 20, 700, Ui.c("text"))
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -105,9 +105,6 @@ func _init() -> void:
 	_pill = PanelContainer.new()
 	_pill.mouse_filter = MOUSE_FILTER_IGNORE
 	var pill := Ui.box(Ui.c("card"), 16)
-	if not Ui.dark:
-		pill.border_color = Ui.chrome_border(true)
-		pill.set_border_width_all(1)
 	pill.content_margin_left = 10
 	pill.content_margin_right = 12
 	pill.content_margin_top = 5
@@ -117,6 +114,7 @@ func _init() -> void:
 	row.add_theme_constant_override("separation", 4)
 	var total_star := ParkingStar.new()
 	total_star.lit = true
+	total_star.shadow_enabled = false
 	total_star.custom_minimum_size = Vector2(20, 20)
 	row.add_child(total_star)
 	_total = Ui.label("0/0", 15, 800, Ui.c("text"))
@@ -159,8 +157,8 @@ func layout(bounds: Rect2) -> void:
 	pivot_offset = size * 0.5
 	if _tiles.is_empty(): return
 	var top := bounds.position.y
-	_close.size = Vector2(48, 48)
-	_close.position = Vector2(bounds.position.x - 12.0, top)
+	_close.size = Vector2(MiniGameHud.CHROME, MiniGameHud.CHROME)
+	_close.position = Vector2(bounds.position.x, top + (HEADER - MiniGameHud.CHROME) * 0.5)
 	# The widest total keeps the pill, and the title centred between the sides, from shifting.
 	var shown := _total.text
 	_total.text = "%d/%d" % [_tiles.size() * ParkingProgress.MAX_STARS, _tiles.size() * ParkingProgress.MAX_STARS]
@@ -169,7 +167,7 @@ func layout(bounds: Rect2) -> void:
 	_total.text = shown
 	_pill.reset_size()
 	_pill.position = Vector2(bounds.end.x - _pill.size.x, top + (HEADER - _pill.size.y) * 0.5)
-	var side := maxf(48.0 - 12.0, _pill.size.x) + 10.0
+	var side := maxf(MiniGameHud.CHROME, _pill.size.x) + 10.0
 	var room := maxf(40.0, bounds.size.x - side * 2.0)
 	var wanted := mini(26, roundi(20.0 * Ui.text_scale()))
 	var width := Ui.font(700).get_string_size(_title.text, HORIZONTAL_ALIGNMENT_LEFT, -1, wanted).x
@@ -302,7 +300,7 @@ class Tile extends Control:
 	var rest := Vector2.ZERO
 	var _stars := 0
 	var _open := false
-	var _locked_ink := Ui.c("secondary") if Ui.dark else Color(1, 1, 1, 0.55)
+	var _locked_ink := Ui.c("secondary")
 	var _card: Panel
 	var _style: StyleBoxFlat
 	var _picture: TextureRect
@@ -321,9 +319,6 @@ class Tile extends Control:
 		_card = Panel.new()
 		_card.mouse_filter = MOUSE_FILTER_IGNORE
 		_style = Ui.box(Ui.c("gray"), ParkingLevelMenu.RADIUS)
-		_style.shadow_color = Color(0.05, 0.08, 0.14, 0.3 if Ui.dark else 0.1)
-		_style.shadow_size = 4
-		_style.shadow_offset = Vector2(0, 2)
 		_card.add_theme_stylebox_override("panel", _style)
 		add_child(_card)
 		_picture = TextureRect.new()
@@ -336,28 +331,23 @@ class Tile extends Control:
 		_material = ShaderMaterial.new()
 		_material.shader = _shader
 		_material.set_shader_parameter("radius", float(ParkingLevelMenu.RADIUS))
-		var surface := Ui.c("gray") if Ui.dark else Color("#8A90A2")
+		var surface := Ui.c("gray")
 		_material.set_shader_parameter("locked_surface", Vector3(surface.r, surface.g, surface.b))
 		_picture.material = _material
 		add_child(_picture)
 		_number = Ui.label("", 17, 800, Color.WHITE)
 		_number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		_number.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.35))
-		_number.add_theme_constant_override("shadow_offset_y", 1)
-		_number.add_theme_constant_override("shadow_offset_x", 0)
 		_number.mouse_filter = MOUSE_FILTER_IGNORE
 		add_child(_number)
 		for i in ParkingProgress.MAX_STARS:
 			var mark := ParkingStar.new()
 			mark.ghost = true
+			mark.shadow_enabled = false
 			add_child(mark)
 			_marks.append(mark)
 		_lock = Control.new()
 		_lock.mouse_filter = MOUSE_FILTER_IGNORE
 		var glyph := Ui.icon(ParkingLevelMenu.ICON_LOCK, 26, _locked_ink)
-		glyph.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.25))
-		glyph.add_theme_constant_override("shadow_offset_y", 1)
-		glyph.add_theme_constant_override("shadow_offset_x", 0)
 		glyph.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 		glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
