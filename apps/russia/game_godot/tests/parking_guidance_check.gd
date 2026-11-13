@@ -288,7 +288,10 @@ func _check_level_screens(ui: ParkingUi) -> void:
 			_check("levels: open levels show stars, the rest a lock" + suffix,
 				menu._tiles[2]._marks[0].visible and not menu._tiles[2]._lock.visible and menu._tiles[3]._marks[0].visible
 				and menu._tiles[4]._lock.visible and not menu._tiles[4]._marks[0].visible)
-			_check("levels: only the next level breathes" + suffix, menu._tiles[3]._halo.visible and not menu._tiles[2]._halo.visible and not menu._tiles[4]._halo.visible)
+			_check("levels: only the next level has a frame and play arrow" + suffix,
+				menu._tiles[3]._outline.visible and menu._tiles[3]._launch.visible
+				and not menu._tiles[2]._outline.visible and not menu._tiles[2]._launch.visible
+				and not menu._tiles[4]._outline.visible and not menu._tiles[4]._launch.visible)
 			chosen.clear()
 			menu._on_tile(menu._tiles[10])
 			_check("levels: a locked level cannot be chosen" + suffix, chosen.is_empty())
