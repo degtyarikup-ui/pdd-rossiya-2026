@@ -21,7 +21,6 @@ const PICTURE := 0.68            # height of a card's picture to its width
 const FOOTER := 32.0
 const RADIUS := 14
 const GOLD := Color("#FFA53C")
-const STAR_EMPTY := Color("#D9DEE8")
 const PICTURES := "res://art/parking_levels/%02d.jpg"
 ## The picture fills its box (cropped, never stretched) under the card's rounded top corners;
 ## `locked` fades it to a dim blue monochrome.
@@ -102,7 +101,10 @@ func _init() -> void:
 	_pill.add_theme_stylebox_override("panel", pill)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
-	row.add_child(Ui.icon(MiniGameHud.ICON_STAR, 18, GOLD))
+	var total_star := ParkingStar.new()
+	total_star.lit = true
+	total_star.custom_minimum_size = Vector2(20, 20)
+	row.add_child(total_star)
 	_total = Ui.label("0/0", 15, 800, Color.WHITE)
 	_total.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(_total)
@@ -304,7 +306,7 @@ class Tile extends Control:
 	var _material: ShaderMaterial
 	var _number: Label
 	var _lock: Label
-	var _marks: Array[Label] = []
+	var _marks: Array[ParkingStar] = []
 	var _pulse: Tween
 	var _press: Tween
 	var _shake: Tween
@@ -344,10 +346,8 @@ class Tile extends Control:
 		_number.mouse_filter = MOUSE_FILTER_IGNORE
 		add_child(_number)
 		for i in ParkingProgress.MAX_STARS:
-			var mark := Ui.icon(MiniGameHud.ICON_STAR, 16, ParkingLevelMenu.STAR_EMPTY)
-			mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			mark.mouse_filter = MOUSE_FILTER_IGNORE
+			var mark := ParkingStar.new()
+			mark.on_dark = false
 			add_child(mark)
 			_marks.append(mark)
 		_lock = Ui.icon(ParkingLevelMenu.ICON_LOCK, 26, Color.WHITE)
@@ -379,16 +379,17 @@ class Tile extends Control:
 		_number.position = Vector2(11.0, view.y)
 		_number.size = Vector2(extent.x * 0.4, footer)
 		_number.pivot_offset = Vector2(8.0, footer * 0.5)
-		var mark := 16.0 if extent.x >= 104.0 else 14.0
+		var mark := 15.0 if extent.x >= 104.0 else 13.0
+		var pitch := mark + 3.0
 		for i in _marks.size():
-			_marks[i].add_theme_font_size_override("font_size", roundi(mark))
 			_marks[i].size = Vector2(mark, mark)
-			_marks[i].position = Vector2(extent.x - 9.0 - (_marks.size() - i) * mark, view.y + (footer - mark) * 0.5)
+			_marks[i].position = Vector2(extent.x - 10.0 - (_marks.size() - i) * pitch + 3.0, view.y + (footer - mark) * 0.5)
 			_marks[i].pivot_offset = _marks[i].size * 0.5
 		_lock.add_theme_font_size_override("font_size", roundi(clampf(view.y * 0.36, 22.0, 34.0)))
 		_lock.position = Vector2.ZERO
 		_lock.size = view
 		_lock.pivot_offset = view * 0.5
+		if _halo.visible: set_current(true)
 
 	func paint(stars: int, open: bool, current: bool) -> void:
 		_stars = stars
@@ -403,7 +404,8 @@ class Tile extends Control:
 			_marks[i].visible = open
 			_marks[i].modulate.a = 1.0
 			_marks[i].scale = Vector2.ONE
-			_marks[i].add_theme_color_override("font_color", ParkingLevelMenu.GOLD if i < stars else ParkingLevelMenu.STAR_EMPTY)
+			_marks[i].lit = i < stars
+			_marks[i].glint = 0.0
 		set_current(current)
 
 	## The level to play next: a white outline that slowly spreads from the card and fades.
@@ -412,8 +414,9 @@ class Tile extends Control:
 		_halo.visible = on
 		_halo.scale = Vector2.ONE
 		_halo.modulate.a = 0.7 if on else 0.0
-		if not on or calm or not is_inside_tree(): return
-		var grown := Vector2.ONE + Vector2(14.0, 14.0) / size.max(Vector2.ONE)
+		# Laid out first: the outline spreads by a fixed 7 dp on each side, whatever the card's size.
+		if not on or calm or not is_inside_tree() or size.x < 8.0: return
+		var grown := Vector2.ONE + Vector2(14.0, 14.0) / size
 		_pulse = create_tween().set_loops()
 		_pulse.tween_property(_halo, "scale", grown, 1.3).from(Vector2.ONE).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		_pulse.parallel().tween_property(_halo, "modulate:a", 0.0, 1.3).from(0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
@@ -436,10 +439,12 @@ class Tile extends Control:
 			var tween := create_tween()
 			tween.tween_interval(delay + 0.16 * (i - from))
 			tween.tween_callback(func():
-				mark.add_theme_color_override("font_color", ParkingLevelMenu.GOLD)
-				mark.scale = Vector2.ONE * 0.2
+				mark.lit = true
+				mark.scale = Vector2.ONE * 1.9
 				GameSound.buzz(8))
-			tween.tween_property(mark, "scale", Vector2.ONE, 0.34).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			tween.tween_property(mark, "scale", Vector2(0.9, 0.9), 0.14).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+			tween.tween_property(mark, "scale", Vector2.ONE, 0.4).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+			tween.parallel().tween_method(func(value: float): mark.glint = value, 0.0, 1.0, 0.45).set_delay(0.1)
 
 	## The lock lets go, the picture takes its colours and the card turns white.
 	func unlock(delay: float, current: bool) -> void:
