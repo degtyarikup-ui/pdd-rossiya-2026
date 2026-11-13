@@ -24,7 +24,38 @@ const Map<String, List<String>> miniGameCounters = {
     'totalSwiped',
     'trainingCount',
   ],
-  'parking': ['bestScore', 'maxCombo', 'totalSolved', 'trainingCount'],
+  // level1…level25 — звёзды уровней «Парковки» (0–3), лучший результат.
+  'parking': [
+    'bestScore',
+    'maxCombo',
+    'totalSolved',
+    'trainingCount',
+    'level1',
+    'level2',
+    'level3',
+    'level4',
+    'level5',
+    'level6',
+    'level7',
+    'level8',
+    'level9',
+    'level10',
+    'level11',
+    'level12',
+    'level13',
+    'level14',
+    'level15',
+    'level16',
+    'level17',
+    'level18',
+    'level19',
+    'level20',
+    'level21',
+    'level22',
+    'level23',
+    'level24',
+    'level25',
+  ],
   'violator': [
     'bestScore',
     'maxCombo',
@@ -36,6 +67,9 @@ const Map<String, List<String>> miniGameCounters = {
 };
 
 /// Предел списка открытых знаков в слепке (в справочнике их 312).
+/// Уровней в «Парковке» (game_godot/scripts/parking_locations.gd).
+const int parkingLevelCount = 25;
+
 const int maxSignsViewed = 1000;
 
 /// Offline changes are merged at import, rather than replaced by a snapshot

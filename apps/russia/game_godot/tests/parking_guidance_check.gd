@@ -213,7 +213,7 @@ func _check_ui() -> void:
 		for viewport_size in [Vector2i(390, 844), Vector2i(320, 568), Vector2i(844, 390)]:
 			root.content_scale_size = viewport_size
 			root.size = viewport_size
-			ui.set_hud(1500, 5, 5, 3)
+			ui.set_hud(25, 3)
 			await process_frame
 			await process_frame
 			ui._layout()
@@ -248,13 +248,73 @@ func _check_ui() -> void:
 				_check("UI: feedback is localized" + suffix + " " + key, ui._toast_label.text == Ui.t(key) and ui._toast_label.text != key)
 				_check("UI: feedback fits the viewport" + suffix + " " + key, _contained(ui._toast.get_global_rect(), viewport_size) and _labels_fit(ui._toast))
 				_check("UI: feedback does not move the camera opening" + suffix + " " + key, ui.play_rect().is_equal_approx(area))
-	ui.show_results(500, 5, 0, 5, true, 400, "sedan", Color("#0574F8"))
-	_check("UI: results hide the driving HUD", ui.results.visible and not ui._top_bar.visible and not ui._gear.visible and not ui.wheel.visible and is_zero_approx(ui._toast.modulate.a))
-	ui.hide_results()
-	_check("UI: restart restores the compact driving HUD", not ui.results.visible and ui._top_bar.visible and ui._gear.visible)
+	await _check_level_screens(ui)
 	ui.queue_free()
 	Ui.lang = previous_lang
 	await process_frame
+
+
+## The level list and a level's result on a phone, a small phone and a phone on its side.
+func _check_level_screens(ui: ParkingUi) -> void:
+	var progress := ParkingProgress.parse("3,2,1")
+	ui.setup_levels(progress)
+	var chosen: Array[int] = []
+	ui.level_chosen.connect(func(index: int): chosen.append(index))
+	for lang in ["ru", "en", "kk"]:
+		Ui.lang = lang
+		for viewport_size in [Vector2i(390, 844), Vector2i(320, 568), Vector2i(844, 390)]:
+			root.content_scale_size = viewport_size
+			root.size = viewport_size
+			var suffix := " %s %s" % [lang, viewport_size]
+			ui.show_menu(true)
+			await process_frame
+			ui._layout()
+			await process_frame
+			var menu := ui.menu
+			_check("levels: the list hides the driving HUD" + suffix, menu.visible and menu.opaque and not ui._top_bar.visible and not ui._gear.visible and not ui.wheel.visible)
+			_check("levels: one card per level" + suffix, menu._tiles.size() == ParkingLevels.COUNT)
+			for control: Control in [menu._close, menu._title, menu._pill]:
+				_check("levels: header stays inside viewport" + suffix, _contained(control.get_global_rect(), viewport_size))
+			_check("levels: header labels fit" + suffix, _labels_fit(menu._pill) and menu._total.text == "6/%d" % (ParkingLevels.COUNT * 3))
+			var in_row := 0
+			var inside := true
+			for tile in menu._tiles:
+				if is_equal_approx(tile.rest.y, menu._tiles[0].rest.y): in_row += 1
+				inside = inside and tile.rest.x >= 0.0 and tile.rest.x + tile.size.x <= viewport_size.x + 0.5
+			_check("levels: three cards in a row on a phone, more on a wide screen" + suffix + " (%d)" % in_row,
+				in_row == 3 if viewport_size.x < 500 else in_row > 3)
+			_check("levels: cards are large enough to tap and stay on screen" + suffix, inside and menu._tiles[0].size.x >= 84.0 and menu._tiles[0].size.y >= 84.0)
+			_check("levels: every card has its picture" + suffix, menu._tiles.all(func(tile): return tile._picture.texture != null))
+			_check("levels: open levels show stars, the rest a lock" + suffix,
+				menu._tiles[2]._marks[0].visible and not menu._tiles[2]._lock.visible and menu._tiles[3]._marks[0].visible
+				and menu._tiles[4]._lock.visible and not menu._tiles[4]._marks[0].visible)
+			_check("levels: only the next level breathes" + suffix, menu._tiles[3]._halo.visible and not menu._tiles[2]._halo.visible and not menu._tiles[4]._halo.visible)
+			chosen.clear()
+			menu._on_tile(menu._tiles[10])
+			_check("levels: a locked level cannot be chosen" + suffix, chosen.is_empty())
+			menu._on_tile(menu._tiles[3])
+			menu._on_tile(menu._tiles[1])
+			_check("levels: an open level is chosen once" + suffix, chosen == [3])
+			ui.dismiss_menu()
+			ui.show_driving()
+			_check("levels: a chosen level restores the driving HUD" + suffix, ui._top_bar.visible and ui._gear.visible and ui.wheel.visible)
+			for case: Array in [[7, 2, true, true, 3], [7, 0, false, false, 2], [25, 3, true, false, 2]]:
+				ui.show_level_result(case[0], case[1], case[2], case[3])
+				await process_frame
+				await process_frame
+				var result := ui.result
+				var detail := suffix + " %s" % [case]
+				_check("result: shown over the scene without the driving HUD" + detail, result.visible and not ui._top_bar.visible and not ui.wheel.visible)
+				_check("result: card stays inside viewport" + detail, _contained(result._card.get_global_rect(), viewport_size))
+				_check("result: texts fit" + detail, _labels_fit(result._card) and result._caption.text == Ui.t("gameParkingLevel", {"number": case[0]}))
+				_check("result: stars earned" + detail, result.stars == case[1] and result._marks.filter(func(mark): return mark.visible).size() == case[1])
+				_check("result: actions offered" + detail, result._actions.get_child_count() == case[4])
+				ui.hide_level_result()
+	# What changed since the list was last on screen is played back when it opens.
+	progress.record(3, 2)
+	ui.show_menu(true)
+	_check("levels: new stars and the next level appear when the list opens", ui.menu._shown[3] == 2 and ui.menu._total.text.begins_with("8/") or ui.menu._shown_total == 8)
+	ui.dismiss_menu()
 
 
 ## The wheel turns with a finger around it, keeps its position after release, straightens on
@@ -266,6 +326,8 @@ func _check_wheel() -> void:
 	root.add_child(scene)
 	for i in 4: await process_frame
 	scene._load_level(0)
+	scene._begin_level()         # past the level list: the wheel is on screen
+	scene.ui.menu.visible = false
 	scene.set_process(false)
 	var wheel: ParkingWheel = scene.ui.wheel
 	_check("wheel: replaces the steering arrows", not scene.controls._buttons.left.visible and not scene.controls._buttons.right.visible)

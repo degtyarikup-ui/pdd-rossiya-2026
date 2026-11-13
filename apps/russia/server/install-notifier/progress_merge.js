@@ -91,7 +91,9 @@ export function mergeProgress(existing, incoming) {
 const swipeGame = ['bestScore','maxCombo','totalSolved','totalSwiped','trainingCount'];
 export const MINI_GAME_COUNTERS = {
   regulator: swipeGame, signs: swipeGame, crossroads: swipeGame,
-  parking: ['bestScore','maxCombo','totalSolved','trainingCount'],
+  // level1…level25: stars of the «Парковка» levels (0–3), the best result of each.
+  parking: ['bestScore','maxCombo','totalSolved','trainingCount',
+    ...Array.from({ length: 25 }, (_, i) => `level${i + 1}`)],
   violator: ['bestScore','maxCombo','totalViolatorsCaught','totalSolved','gamesPlayed'],
   roadSigns: ['bestScore','maxCombo','totalAnswered','totalCorrect'],
 };

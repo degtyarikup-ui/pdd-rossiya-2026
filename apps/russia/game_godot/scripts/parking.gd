@@ -1,4 +1,6 @@
-## «Парковка» mini-game on Godot: 25 locations (scripts/parking_locations.gd), the city's
+## «Парковка» mini-game on Godot: 25 levels in catalogue order (scripts/parking_locations.gd),
+## chosen from a level list; each is finished with one to three stars — the lives left of three —
+## and opens the next (scripts/parking_progress.gd). The city's
 ## pedals (scripts/controls.gd), a steering wheel that keeps its lock (scripts/parking_wheel.gd)
 ## and a D/R switch, the garage car, and the way into the spot drawn on the asphalt one step
 ## at a time (scripts/parking_guide.gd); a short task is shown at the start. The white
@@ -26,29 +28,30 @@ const HOLD := 0.55               # standing still in the spot this long parks th
 const HIT_SPEED := 0.2
 const PITCH := deg_to_rad(58.0)
 const FOV := 50.0
+const LEVEL_LIVES := 3           # a touch or a wrong space costs one; the lives left are the stars
 
 var auto_drive := false          # tests: follows the shown way by itself
 var parked_count := 0
 var is_game_over := false
 
-var economy := {"lives": 5, "maxScore": 1500}
-var lives := 5
-var score := 0
+var economy := {"maxScore": 1500}
+var progress := ParkingProgress.new()
+var playing := false             # a level is being driven: not the level list, not a result
+var level_stars := 0             # rating of the level just finished
+var lives := LEVEL_LIVES
+var score := 0                   # of this attempt: the app's rating counts every parked level
 var distance_m := 0.0
 var touches := 0
 var wrong_spots := 0
-var combo := 0
-var max_combo := 0
-var previous_best := 0
 var session_id := "parking"
 var run_sequence := 0
 var completed_runs: Array[Dictionary] = []
 var level_index := 0             # the level being played (ParkingLevels.build id)
-var run_size := 5                # normal run: three daytime, one night, one independent search
-var run_levels: Array[int] = []  # randomly chosen once, retained in stage order for this run
-var run_pos := 0
-var _forced_level := -1          # --level=N: the run starts with that level (debugging, shots)
-var _play_all := false           # --all: every level in catalogue order (playtesting)
+var _forced_level := -1          # --level=N: straight into that level, past the list (debugging, shots)
+var _play_all := false           # --all: every level in catalogue order without stopping (playtesting)
+var _attempt_parked := false
+var _pristine := false           # the loaded level has not been driven yet
+var _switching := false          # a level is being swapped behind the veil or the list
 
 var vehicle_id := "sedan"
 var vehicle_paint := Color("#0574F8")
@@ -124,11 +127,29 @@ func _ready() -> void:
 	add_child(layer)
 	ui = ParkingUiScript.new()
 	ui.exit_pressed.connect(_on_exit)
-	ui.restart_pressed.connect(_start_run)
+	ui.menu_pressed.connect(_to_menu)
+	ui.level_chosen.connect(_on_level_chosen)
+	ui.next_pressed.connect(func(): _switch_to(level_index + 1))
+	ui.retry_pressed.connect(func(): _switch_to(level_index))
 	ui.gear_pressed.connect(_toggle_gear)
+	ui.menu_covered.connect(_on_menu_covered)
+	ui.result.set_sound(sound.play)
 	layer.add_child(ui)
 	_setup_quality()
-	_start_run()
+	ui.setup_levels(progress)
+	for arg: String in Host.user_args():
+		if arg.begins_with("--thumbs="):
+			_render_thumbs(arg.trim_prefix("--thumbs="), loader)
+			return
+	if _forced_level >= 0 or auto_drive or _play_all:
+		_load_level(maxi(0, _forced_level))
+		_begin_level()
+	else:
+		# The level most likely to be chosen is ready behind the list.
+		_load_level(progress.current())
+		controls.set_active(false)
+		sound.suspended = true
+		ui.show_menu(true)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	if not is_inside_tree() or _exiting: return
@@ -156,7 +177,7 @@ func _setup_args() -> void:
 	for arg: String in Host.user_args():
 		if arg.begins_with("--lang="): Ui.lang = arg.trim_prefix("--lang=")
 		elif arg == "--no-haptics": GameSound.haptics = false
-		elif arg.begins_with("--best-score="): previous_best = maxi(0, int(arg.trim_prefix("--best-score=")))
+		elif arg.begins_with("--stars="): progress = ParkingProgress.parse(arg.trim_prefix("--stars="))
 		elif arg.begins_with("--session-id="): session_id = arg.trim_prefix("--session-id=")
 		elif arg.begins_with("--vehicle="): vehicle_id = arg.trim_prefix("--vehicle=")
 		elif arg.begins_with("--paint="): vehicle_paint = Color(arg.trim_prefix("--paint="))
@@ -222,7 +243,7 @@ func _setup_quality() -> void:
 func _update_frame_budget(delta: float) -> void:
 	_log_performance(delta)
 	if not adaptive_quality: return
-	var eligible := _ready_for_play and not is_game_over and done_timer < 0.0
+	var eligible := _ready_for_play and playing and done_timer < 0.0
 	var target := Engine.max_fps if Engine.max_fps > 0 else _display_hz
 	var update: Dictionary = frame_budget.sample(delta, eligible, target)
 	if update.is_empty(): return
@@ -241,7 +262,7 @@ func _update_frame_budget(delta: float) -> void:
 
 ## One line in the log every 10 s of driving (logcat on Android): the real frame rate on a phone.
 func _log_performance(delta: float) -> void:
-	if not _ready_for_play or is_game_over: return
+	if not _ready_for_play or not playing: return
 	_perf.time += delta
 	_perf.frames += 1
 	_perf.worst = maxf(_perf.worst, delta)
@@ -252,58 +273,131 @@ func _log_performance(delta: float) -> void:
 	_perf = {"time": 0.0, "frames": 0, "worst": 0.0}
 
 
-# --- Run and levels ---
+# --- Levels ---
 
-func _start_run() -> void:
-	if _exiting: return
-	run_sequence += 1
-	lives = int(economy.lives)
-	score = 0
-	distance_m = 0.0
-	touches = 0
-	wrong_spots = 0
-	combo = 0
-	max_combo = 0
-	parked_count = 0
-	is_game_over = false
-	sound.suspended = false
-	ui.hide_results()
-	controls.set_active(true)
-	run_levels = _draw_levels()
-	run_pos = 0
-	_load_level(run_levels[0])
+## Pictures of the levels for the level list (art/parking_levels/NN.jpg): the empty location
+## from a low three-quarter view, without the player's car, guides or space frames.
+## godot --path game_godot --resolution 960x720 parking.tscn -- --parking --season=summer --thumbs=<dir>
+func _render_thumbs(dir: String, loader: Node) -> void:
+	_exiting = true              # nothing drives or frames the camera
+	ui.visible = false
+	controls.set_active(false)
+	if is_instance_valid(loader): loader.dismiss()
+	var views: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/parking_thumbs.json"))
+	DirAccess.make_dir_recursive_absolute(dir)
+	for index in ParkingLevels.COUNT:
+		if _forced_level >= 0 and index != _forced_level: continue
+		_exiting = false
+		_load_level(index)
+		_exiting = true
+		car.visible = false
+		guide.visible = false
+		for view: Dictionary in _spot_views: view.frame.visible = false
+		if is_instance_valid(lighting):
+			for light in lighting.headlights: light.visible = false
+		var shot: Dictionary = views.get(ParkingLocations.IDS[index], {})
+		var target: Dictionary = level.target
+		var look := Vector3(target.c.x, 0.6, target.c.y) + Vector3(float(shot.get("dx", 0.0)), 0.0, float(shot.get("dz", 0.0)))
+		var yaw := deg_to_rad(float(shot.get("yaw", 32.0)))
+		var pitch := deg_to_rad(float(shot.get("pitch", 34.0)))
+		var back := Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * float(shot.get("dist", 21.0))
+		camera.fov = float(shot.get("fov", 42.0))
+		camera.h_offset = 0.0
+		camera.v_offset = 0.0
+		camera.look_at_from_position(look + back, look)
+		var seen: Array[Vector3] = [look, look + Vector3(3, 0, 0), look - Vector3(3, 0, 0)]
+		for frame in 8:
+			if not _building_pools.is_empty(): sc.update_occluders(camera, seen, 1.0)
+			await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png(dir.path_join("%02d.png" % (index + 1)))
+	get_tree().quit()
+
+
+## The player picked a level in the list.
+func _on_level_chosen(index: int) -> void:
+	if _exiting or _switching or playing or not progress.unlocked(index): return
+	_switching = true
+	get_viewport().disable_3d = false
 	Host.usage_start("parking")
+	if index != level_index or not _pristine: _load_level(index)
+	# Two frames under the list: the level's shaders and shadows are drawn before it shows.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not is_inside_tree() or _exiting: return
+	_begin_level()
+	ui.dismiss_menu()
+	_switching = false
 
 
-## A normal run is three different daytime tasks, one night task, then an independent search.
-## Smaller test runs take a prefix; longer test runs append the remaining shuffled catalogue.
-## --level moves its category's chosen level to the front; --all keeps catalogue order.
-func _draw_levels() -> Array[int]:
-	if _play_all:
-		var every: Array[int] = []
-		for i in range(maxi(0, _forced_level), ParkingLevels.COUNT): every.append(i)
-		return every
-	var count := clampi(run_size, 1, ParkingLevels.COUNT)
-	var pools: Array = [[], [], []] # daytime guided, night guided, independent search
-	var forced_category := -1
-	for i in ParkingLevels.COUNT:
-		var category := 2 if i >= ParkingLocations.GUIDED else (
-			1 if ParkingLocations.IDS[i] in ParkingNightLayout.LOCATIONS else 0)
-		if i == _forced_level: forced_category = category
-		else: pools[category].append(i)
-	for pool: Array in pools: pool.shuffle()
-	var picked: Array[int] = []
-	if forced_category >= 0: picked.append(_forced_level)
-	for category in 3:
-		var slots: int = [3, 1, 1][category] - (1 if category == forced_category else 0)
-		for i in slots: picked.append(pools[category][i])
-	if count > 5:
-		var remainder: Array[int] = []
-		for i in ParkingLevels.COUNT:
-			if i not in picked: remainder.append(i)
-		remainder.shuffle()
-		picked.append_array(remainder)
-	return picked.slice(0, count)
+## «Дальше» and «ещё раз» on a result: the level changes behind a short dip to dark.
+func _switch_to(index: int) -> void:
+	if _exiting or _switching or index < 0 or index >= ParkingLevels.COUNT or not progress.unlocked(index): return
+	_switching = true
+	var wait := ui.cover()
+	if wait > 0.0:
+		await get_tree().create_timer(wait).timeout
+		if not is_inside_tree() or _exiting: return
+	_load_level(index)
+	_begin_level()
+	await get_tree().process_frame
+	if not is_inside_tree() or _exiting: return
+	ui.uncover()
+	_switching = false
+
+
+## Back to the level list: from a result, or leaving a level half-way (the attempt is kept
+## for the app's statistics, without a star).
+func _to_menu() -> void:
+	if _exiting or _switching or ui.menu.visible: return
+	if playing:
+		if touches + wrong_spots > 0: completed_runs.append(_run_summary())
+		playing = false
+		is_game_over = true
+		done_timer = -1.0
+		speed = 0.0
+		_checkpoint()
+	controls.set_active(false)
+	sound.suspended = true
+	ui.show_menu()
+
+
+## The list hides the scene completely: nothing 3D is drawn until a level is chosen.
+func _on_menu_covered() -> void:
+	if not playing and not _switching: get_viewport().disable_3d = true
+
+
+## Hands the loaded level to the driver.
+func _begin_level() -> void:
+	run_sequence += 1
+	_pristine = false
+	playing = true
+	sound.suspended = false
+	controls.set_active(true)
+	ui.show_driving()
+	_refresh_hud()
+	ui.toast(Ui.t(level.mission), "", 3.0)
+
+
+## A level ends parked (stars for the lives left) or with no lives.
+func _finish_level(success: bool) -> void:
+	if is_game_over: return
+	is_game_over = true
+	playing = false
+	done_timer = -1.0
+	speed = 0.0
+	level_stars = maxi(1, ParkingProgress.rating(lives)) if success else 0
+	if success: progress.record(level_index, level_stars)
+	completed_runs.append(_run_summary())
+	_checkpoint()
+	if _play_all and success and level_index + 1 < ParkingLevels.COUNT:
+		_load_level(level_index + 1)
+		_begin_level()
+		return
+	controls.set_active(false)
+	sound.suspended = true
+	_paint_way()
+	ui.show_level_result(level_index + 1, level_stars, success, success and level_index + 1 < ParkingLevels.COUNT)
 
 
 func _load_level(index: int) -> void:
@@ -324,6 +418,15 @@ func _load_level(index: int) -> void:
 	_guide_index = 0
 	hit_cooldown = 0.0
 	shake = 0.0
+	# A loaded level is a fresh attempt.
+	lives = LEVEL_LIVES
+	score = 0
+	distance_m = 0.0
+	touches = 0
+	wrong_spots = 0
+	is_game_over = false
+	_attempt_parked = false
+	_pristine = true
 	if is_instance_valid(root3d):
 		root3d.hide()
 		Models.release_geometry(root3d)
@@ -358,11 +461,10 @@ func _load_level(index: int) -> void:
 	_refresh_hud()
 	_update_guidance(0.0)
 	_frame_camera(true)
-	ui.toast(Ui.t(level.mission), "", 3.0)
 
 
 func _refresh_hud() -> void:
-	ui.set_hud(score, run_pos + 1, run_levels.size(), lives)
+	ui.set_hud(level_index + 1, lives)
 	ui.set_gear(gear)
 
 
@@ -993,11 +1095,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	if _exiting: return
-	if not is_game_over and _ready_for_play:
+	# Under the level list nothing moves and nothing is drawn.
+	if not playing and ui.menu_open(): return
+	if playing and _ready_for_play:
 		if done_timer >= 0.0:
 			done_timer -= delta
 			speed = move_toward(speed, 0.0, BRAKE * delta)
-			if done_timer < 0.0: _next_level()
+			if done_timer < 0.0: _finish_level(true)
 		else:
 			for i in 4: _step(delta / 4.0)
 	_place_car()
@@ -1066,14 +1170,13 @@ func _touch() -> void:
 	shake = 0.3
 	touches += 1
 	level_touches += 1
-	combo = 0
 	lives -= 1
 	sound.play("crash")
 	GameSound.buzz(70)
 	ui.toast(Ui.t("gameParkingTouch"), "bad")
 	_refresh_hud()
 	_checkpoint()
-	if lives <= 0: _end_run()
+	if lives <= 0: _finish_level(false)
 
 
 func _advance_segment() -> void:
@@ -1125,7 +1228,6 @@ func _wrong_spot(spot: Dictionary) -> void:
 			view.tried = true
 	wrong_spots += 1
 	lives -= 1
-	combo = 0
 	sound.play("incorrect")
 	GameSound.buzz(80)
 	ui.toast(Ui.t(spot.reason), "bad", 3.0)
@@ -1144,7 +1246,7 @@ func _wrong_spot(spot: Dictionary) -> void:
 		_paint_way()
 	_refresh_hud()
 	_checkpoint()
-	if lives <= 0: _end_run()
+	if lives <= 0: _finish_level(false)
 
 
 func _parked(spot: Dictionary) -> void:
@@ -1155,11 +1257,9 @@ func _parked(spot: Dictionary) -> void:
 	if spot.get("either_heading", false): angle = minf(angle, absf(PI - angle))
 	var accuracy := clampf(1.0 - rad_to_deg(angle) / 14.0 - off / 0.7, 0.0, 1.0)
 	var gain := maxi(20, 60 + roundi(40.0 * accuracy) - 15 * level_touches)
-	score = mini(score + gain, int(economy.maxScore))
+	score = mini(gain, int(economy.maxScore))
 	parked_count += 1
-	if level_touches == 0:
-		combo += 1
-		max_combo = maxi(max_combo, combo)
+	_attempt_parked = true
 	sound.play("correct")
 	GameSound.buzz(20)
 	ui.toast("%s  +%d" % [Ui.t("gameParkingParked"), gain], "good")
@@ -1168,14 +1268,6 @@ func _parked(spot: Dictionary) -> void:
 	_paint_way()
 	_refresh_hud()
 	_checkpoint()
-
-
-func _next_level() -> void:
-	run_pos += 1
-	if run_pos >= run_levels.size():
-		_end_run()
-		return
-	_load_level(run_levels[run_pos])
 
 
 # Autopilot (tests and --auto): plays the way exactly, segment by segment.
@@ -1273,34 +1365,23 @@ func _update_occluders(delta: float) -> void:
 	sc.update_occluders(camera, targets, delta)
 
 
-# --- End, summary, exit ---
+# --- Summary, exit ---
 
-func _end_run() -> void:
-	if is_game_over: return
-	is_game_over = true
-	done_timer = -1.0
-	speed = 0.0
-	controls.set_active(false)
-	_paint_way()
-	sound.suspended = true
-	var record := score > 0 and score > previous_best
-	# «parked of the run's levels»: touches cost lives and points, they are not extra levels.
-	ui.show_results(score, parked_count, run_levels.size() - parked_count, max_combo, record, previous_best, vehicle_id, vehicle_paint, vehicle_leopard)
-	completed_runs.append(_run_summary())
-	previous_best = maxi(previous_best, score)
-	_checkpoint()
-
-
+## One attempt at a level is one run for the app: a parked level, its score and its mistakes.
 func _run_summary() -> Dictionary:
+	var clean := _attempt_parked and touches + wrong_spots == 0
 	return {"id": "%s-%d" % [session_id, run_sequence], "game": "parking", "score": score,
+		"level": level_index + 1, "stars": level_stars if is_game_over and _attempt_parked else 0,
 		"mileage_mm": {vehicle_id: roundi(distance_m * 1000.0)},
-		"solved": parked_count, "wrong": touches + wrong_spots, "combo": max_combo, "finished": is_game_over}
+		"solved": 1 if _attempt_parked else 0, "wrong": touches + wrong_spots, "combo": 1 if clean else 0,
+		"finished": is_game_over}
 
 
+## `stars` is the whole record, one number per level: the app keeps the best of each.
 func _session_summary() -> Dictionary:
 	var runs := completed_runs.duplicate(true)
-	if not is_game_over and (parked_count + touches + wrong_spots > 0 or distance_m > 0.0): runs.append(_run_summary())
-	return {"game": "parking", "runs": runs, "result_action": ""}
+	if playing and (_attempt_parked or touches + wrong_spots > 0 or distance_m > 0.0): runs.append(_run_summary())
+	return {"game": "parking", "runs": runs, "stars": progress.to_array(), "result_action": ""}
 
 
 func _checkpoint() -> void:
@@ -1330,5 +1411,6 @@ func _exit_tree() -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
-		if ui != null and ui.results.dismiss_review(): return
-		_on_exit.call_deferred()
+		# Back leaves a level for the list, and the list for the app.
+		if ui != null and not ui.menu.visible: _to_menu.call_deferred()
+		else: _on_exit.call_deferred()

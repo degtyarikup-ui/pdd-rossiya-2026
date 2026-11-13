@@ -75,6 +75,7 @@ KEYS += ["gameParking" + name for name in (
     "MissionExit", "MissionYard", "Disabled", "Crosswalk", "Driveway", "SignHotel",
     "SignSchool", "SignMarket", "SignFuel", "SignShop", "SignWash", "SignOffice", "SignStation",
     "SignCafe", "SignExam", "SignExit", "SignMall", "SignSchoolBuilding",
+    "Level", "Next", "Levels",
 )]
 out = {}
 for lang in ('ru', 'en', 'kk'):

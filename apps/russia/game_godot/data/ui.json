@@ -274,7 +274,10 @@
   "gameParkingSignExam": "АВТОДРОМ",
   "gameParkingSignExit": "ВЫХОД",
   "gameParkingSignMall": "ТОРГОВЫЙ ЦЕНТР",
-  "gameParkingSignSchoolBuilding": "ШКОЛА"
+  "gameParkingSignSchoolBuilding": "ШКОЛА",
+  "gameParkingLevel": "Уровень {number}",
+  "gameParkingNext": "Дальше",
+  "gameParkingLevels": "Уровни"
  },
  "en": {
   "violatorClassificationTitle": "Choose the violation",
@@ -551,7 +554,10 @@
   "gameParkingSignExam": "TEST GROUND",
   "gameParkingSignExit": "EXIT",
   "gameParkingSignMall": "SHOPPING CENTRE",
-  "gameParkingSignSchoolBuilding": "SCHOOL"
+  "gameParkingSignSchoolBuilding": "SCHOOL",
+  "gameParkingLevel": "Level {number}",
+  "gameParkingNext": "Next",
+  "gameParkingLevels": "Levels"
  },
  "kk": {
   "violatorClassificationTitle": "Бұзушылықты таңдаңыз",
@@ -828,6 +834,9 @@
   "gameParkingSignExam": "АВТОДРОМ",
   "gameParkingSignExit": "ШЫҒУ",
   "gameParkingSignMall": "САУДА ОРТАЛЫҒЫ",
-  "gameParkingSignSchoolBuilding": "МЕКТЕП"
+  "gameParkingSignSchoolBuilding": "МЕКТЕП",
+  "gameParkingLevel": "{number}-деңгей",
+  "gameParkingNext": "Әрі қарай",
+  "gameParkingLevels": "Деңгейлер"
  }
 }

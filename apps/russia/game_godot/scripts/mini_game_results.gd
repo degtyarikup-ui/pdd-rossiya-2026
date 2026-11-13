@@ -534,14 +534,14 @@ func _button(text: String, primary: bool) -> Button:
 	_connect_button_feedback(button)
 	return button
 
-func _connect_button_feedback(button: Button) -> void:
+static func _connect_button_feedback(button: Button) -> void:
 	button.resized.connect(func(): button.pivot_offset = button.size * 0.5)
 	button.button_down.connect(func(): _press_button(button, true))
 	button.button_up.connect(func(): _press_button(button, false))
 	button.focus_exited.connect(func(): _press_button(button, false))
 	button.pressed.connect(func(): GameSound.buzz(8))
 
-func _press_button(button: Button, down: bool) -> void:
+static func _press_button(button: Button, down: bool) -> void:
 	if button.disabled or not button.is_inside_tree(): return
 	var previous: Tween = button.get_meta("press_tween") if button.has_meta("press_tween") else null
 	if is_instance_valid(previous): previous.kill()
@@ -643,7 +643,7 @@ func dismiss_review() -> bool:
 	return true
 
 ## Mirrors Flutter's ResultHeaderButton: a white glyph on a fixed, clear tap target.
-func _header_button(code: int, action: Callable, label: String) -> Button:
+static func _header_button(code: int, action: Callable, label: String) -> Button:
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(48, 48)
 	button.size_flags_horizontal = SIZE_SHRINK_CENTER

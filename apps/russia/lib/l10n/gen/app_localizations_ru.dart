@@ -3520,6 +3520,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameParkingJunction => 'Ближе 5 м к перекрёстку нельзя';
 
   @override
+  String gameParkingLevel(int number) {
+    return 'Уровень $number';
+  }
+
+  @override
+  String get gameParkingNext => 'Дальше';
+
+  @override
+  String get gameParkingLevels => 'Уровни';
+
+  @override
   String get gamesSignsTitle => 'Это знак';
 
   @override

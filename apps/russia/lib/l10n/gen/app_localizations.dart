@@ -5878,6 +5878,24 @@ abstract class AppLocalizations {
   /// **'Ближе 5 м к перекрёстку нельзя'**
   String get gameParkingJunction;
 
+  /// No description provided for @gameParkingLevel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уровень {number}'**
+  String gameParkingLevel(int number);
+
+  /// No description provided for @gameParkingNext.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дальше'**
+  String get gameParkingNext;
+
+  /// No description provided for @gameParkingLevels.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уровни'**
+  String get gameParkingLevels;
+
   /// No description provided for @gamesSignsTitle.
   ///
   /// In ru, this message translates to:

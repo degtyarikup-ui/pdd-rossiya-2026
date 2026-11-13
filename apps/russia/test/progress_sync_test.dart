@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdd_app/data/models/progress_snapshot.dart';
 import 'package:pdd_app/data/models/crossroads_priority_progress.dart';
 import 'package:pdd_app/data/models/marathon_progress.dart';
 import 'package:pdd_app/data/models/road_signs_model.dart';
@@ -297,4 +298,32 @@ void main() {
     expect(tablet.getRoadSignsProgress().maxCombo, 30);
     expect(tablet.getParkingProgress().totalSolved, 21);
   });
+  test(
+    'parking level stars keep the best result and follow the account',
+    () async {
+      final phone = ProgressDataSource();
+      await phone.init();
+      expect(phone.getParkingStars(), List.filled(parkingLevelCount, 0));
+      await phone.saveParkingStars([3, 1]);
+      // A worse replay never lowers a level; out-of-range values are clamped.
+      await phone.saveParkingStars([2, 2, 9]);
+      expect(phone.getParkingStars().take(4), [3, 2, 3, 0]);
+      // The record of the same entry survives a saved result and the reverse.
+      await phone.saveParkingProgress(
+        const CrossroadsPriorityProgress(totalSolved: 3, bestScore: 90),
+      );
+      expect(phone.getParkingStars().take(3), [3, 2, 3]);
+      await phone.saveParkingStars([3, 3]);
+      expect(phone.getParkingProgress().totalSolved, 3);
+      final snapshot = phone.exportProgressSnapshot();
+
+      SharedPreferences.setMockInitialValues({});
+      final tablet = ProgressDataSource();
+      await tablet.init();
+      await tablet.saveParkingStars([1, 0, 0, 2]);
+      await tablet.importProgressSnapshot(snapshot);
+      expect(tablet.getParkingStars().take(5), [3, 3, 3, 2, 0]);
+      expect(tablet.getParkingProgress().bestScore, 90);
+    },
+  );
 }

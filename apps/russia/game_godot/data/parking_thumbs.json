@@ -1,0 +1,5 @@
+{
+ "hotel": {"yaw": -14, "pitch": 34, "dist": 19, "dx": -2.5},
+ "street_turn": {"yaw": -150},
+ "industrial_turn": {"yaw": 150}
+}

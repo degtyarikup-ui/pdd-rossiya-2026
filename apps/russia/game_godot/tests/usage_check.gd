@@ -60,6 +60,10 @@ func _run() -> void:
 			scene.call("_on_difficulty_chosen", "easy")
 			check(Host._usage_events.is_empty() and scene.get("tutorial_step") == "watch", "Violator tutorial is not an extra round")
 			scene.call("_tutorial_complete")
+		if mode == "parking":
+			for frame in 5: await process_frame
+			check(Host._usage_events.is_empty(), "Parking level list is not a round")
+			scene.call("_on_level_chosen", 0)
 		for frame in 240:
 			await process_frame
 			if not Host._usage_events.is_empty(): break
@@ -69,8 +73,13 @@ func _run() -> void:
 			scene.call("_on_restart_pressed")
 			check(Host._usage_events.size() == 1, "Violator restart picker does not count a start")
 			scene.call("_on_difficulty_chosen", "easy")
+		elif mode == "parking":
+			# Back to the list and into a level again: a new visit. Retries and «next» are not.
+			for frame in 4: await process_frame
+			scene.call("_to_menu")
+			scene.call("_on_level_chosen", 0)
 		else:
-			scene.call("_start_run" if mode == "parking" else "_start_game")
+			scene.call("_start_game")
 		check(Host._usage_events.size() == 2, mode + " restart counts before an answer")
 		scene.set("_exiting", true)
 		Models.release_geometry(scene)

@@ -792,7 +792,10 @@ class ProgressDataSource {
         'regulator': getTrafficControllerProgress().toJson(),
         'signs': getSignSwiperProgress().toJson(),
         'crossroads': getCrossroadsPriorityProgress().toJson(),
-        'parking': getParkingProgress().toJson(),
+        'parking': {
+          ...getParkingProgress().toJson(),
+          ..._parkingStarsJson(getParkingStars()),
+        },
         'violator': getViolatorProgress().toJson(),
         'roadSigns': getRoadSignsProgress().toJson(),
       },
@@ -913,9 +916,58 @@ class ProgressDataSource {
   }
 
   Future<void> saveParkingProgress(CrossroadsPriorityProgress progress) async {
-    await _prefs.setString(_keyParking, jsonEncode(progress.toJson()));
+    await _prefs.setString(
+      _keyParking,
+      jsonEncode({
+        ..._parkingStarsJson(getParkingStars()),
+        ...progress.toJson(),
+      }),
+    );
     ProgressSyncService.instance.scheduleSync();
   }
+
+  /// Звёзды уровней «Парковки» (0–3 за каждый из [parkingLevelCount]): лежат в
+  /// той же записи, что и рекорд, ключами `level1…level25` — так они
+  /// синхронизируются вместе с остальными счётчиками мини-игр.
+  List<int> getParkingStars() {
+    Map<String, dynamic> stored = const {};
+    try {
+      final raw = _prefs.getString(_keyParking);
+      if (raw != null && raw.isNotEmpty) {
+        stored = jsonDecode(raw) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return [
+      for (var i = 1; i <= parkingLevelCount; i++)
+        ((stored['level$i'] as num?)?.toInt() ?? 0).clamp(0, 3),
+    ];
+  }
+
+  /// Сохраняет лучший результат каждого уровня: звёзды не убывают.
+  Future<void> saveParkingStars(List<int> stars) async {
+    final current = getParkingStars();
+    var changed = false;
+    for (var i = 0; i < current.length && i < stars.length; i++) {
+      final value = stars[i].clamp(0, 3);
+      if (value > current[i]) {
+        current[i] = value;
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    await _prefs.setString(
+      _keyParking,
+      jsonEncode({
+        ...getParkingProgress().toJson(),
+        ..._parkingStarsJson(current),
+      }),
+    );
+    ProgressSyncService.instance.scheduleSync();
+  }
+
+  Map<String, int> _parkingStarsJson(List<int> stars) => {
+    for (var i = 0; i < stars.length; i++) 'level${i + 1}': stars[i],
+  };
 
   RoadSignsProgress getRoadSignsProgress() {
     final raw = _prefs.getString(_keyRoadSigns);

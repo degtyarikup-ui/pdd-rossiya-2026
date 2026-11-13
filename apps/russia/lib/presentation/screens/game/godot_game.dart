@@ -353,21 +353,30 @@ class GodotGame {
       );
 
   /// Plays the 3D «Парковка» mini-game on Godot (same flow as the crossroads).
-  static Future<void> playParking(BuildContext context, WidgetRef ref) =>
-      _withRun(
+  static Future<void> playParking(BuildContext context, WidgetRef ref) {
+    final data = ref.read(progressDataSourceProvider);
+    return _withRun(
+      context,
+      (_) => _playCrossroads(
         context,
-        (_) => _playCrossroads(
-          context,
-          ref,
-          flag: '--parking',
-          progressProvider: parkingProgressProvider,
-          feature: UsageFeature.parking,
-          economy: {
-            'lives': GameEconomy.miniGameLives,
-            'maxScore': GameEconomy.maxRunScore,
-          },
-        ),
-      );
+        ref,
+        flag: '--parking',
+        progressProvider: parkingProgressProvider,
+        feature: UsageFeature.parking,
+        economy: {'maxScore': GameEconomy.maxRunScore},
+        // Звёзды уровней: игра показывает их в списке уровней и возвращает
+        // обновлённый список в итоге сеанса.
+        extraArgs: ['--stars=${data.getParkingStars().join(',')}'],
+        onSummary: (summary) async {
+          final stars = summary['stars'];
+          if (stars is! List) return;
+          await data.saveParkingStars([
+            for (final value in stars) value is num ? value.toInt() : 0,
+          ]);
+        },
+      ),
+    );
+  }
 
   static Future<void> _playCrossroads(
     BuildContext context,
@@ -380,6 +389,8 @@ class GodotGame {
     progressProvider,
     required UsageFeature feature,
     required Map<String, Object> economy,
+    List<String> extraArgs = const [],
+    Future<void> Function(Map<String, dynamic> summary)? onSummary,
   }) async {
     HapticFeedbackHelper.tap();
     final lang = Localizations.localeOf(context).languageCode;
@@ -400,6 +411,7 @@ class GodotGame {
         '--best-score=${ref.read(progressProvider).bestScore}',
         '--session-id=${GameLeaderboardService.newRunId()}',
         '--economy=${jsonEncode(economy)}',
+        ...extraArgs,
         if (!HapticFeedbackHelper.enabled) '--no-haptics',
         '--lang=$lang',
         Theme.of(context).brightness == Brightness.dark ? '--dark' : '--light',
@@ -417,6 +429,7 @@ class GodotGame {
     if (decoded is! Map) return;
     final map = decoded.cast<String, dynamic>();
     await _recordMiniGameMileage(account, map);
+    await onSummary?.call(map);
     if (!context.mounted) return;
     final loading = AppLoadingOverlay.show(
       context,

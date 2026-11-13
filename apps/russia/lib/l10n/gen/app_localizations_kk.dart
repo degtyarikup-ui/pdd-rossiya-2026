@@ -3510,6 +3510,17 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameParkingJunction => 'Қиылысқа 5 м-ден жақын болмайды';
 
   @override
+  String gameParkingLevel(int number) {
+    return '$number-деңгей';
+  }
+
+  @override
+  String get gameParkingNext => 'Әрі қарай';
+
+  @override
+  String get gameParkingLevels => 'Деңгейлер';
+
+  @override
   String get gamesSignsTitle => 'Бұл — белгі';
 
   @override

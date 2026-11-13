@@ -68,7 +68,7 @@ func _run() -> void:
 		match kind:
 			"regulator": other.update_hud(0, 0, 60, 4)
 			"crossroads": other.update_hud(0, 60, 4, 0)
-			"parking": other.set_hud(0, 1, 10, 4)
+			"parking": other.set_hud(1, 2)
 		check(other.has_meta("life_loss_feedback"), kind + " shares life-loss animation")
 		MiniGameHud.clear_life_loss(other)
 		check(not other.get_meta("life_loss_feedback").visible, kind + " cancels feedback")

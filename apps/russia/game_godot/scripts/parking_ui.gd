@@ -1,24 +1,29 @@
-## Native UI of «Парковка»: the regulator's top bar (close, a HUD card with score, level and
-## lives), a short toast, the steering wheel (scripts/parking_wheel.gd) in place of the city's
-## arrows with the D/R switch above it, and the shared result screen. The pedals stay the
+## Native UI of «Парковка»: the level list (scripts/parking_level_menu.gd), the regulator's top
+## bar (back to the levels, a HUD card with the level and its three lives), a short toast, the
+## steering wheel (scripts/parking_wheel.gd) in place of the city's arrows with the D/R switch
+## above it, and the level's result (scripts/parking_level_result.gd). The pedals stay the
 ## city's (scripts/controls.gd). Laid out in dp like RegulatorUi.
 class_name ParkingUi
 extends Control
 
-signal exit_pressed()
-signal restart_pressed()
+signal exit_pressed()             # leave the game (the level list's close)
+signal menu_pressed()             # back to the level list
+signal level_chosen(index: int)
+signal next_pressed()
+signal retry_pressed()
 signal gear_pressed()
+signal menu_covered()
 
 const SCREEN_PAD := 20.0
 const CHROME := 40.0
 const GEAR_H := 56.0
+const LIVES := 3
 
 
 var _top_bar: HBoxContainer
-var _score_label: Label
 var _level_label: Label
 var _hearts: Array[Label] = []
-var _lives_value := 5
+var _lives_value := LIVES
 var _toast: Panel
 var _toast_style: StyleBoxFlat
 var _toast_label: Label
@@ -36,7 +41,11 @@ var _controls_top := 0.0
 var _bar_width := 0.0
 var _toast_bounds := Rect2()
 var _play_bounds := Rect2()
-var results: MiniGameResults
+var menu: ParkingLevelMenu
+var result: ParkingLevelResult
+var _veil: ColorRect
+var _veil_tween: Tween
+var _driving := true
 
 
 func _init() -> void:
@@ -48,10 +57,22 @@ func _init() -> void:
 	_build_gear()
 	wheel = ParkingWheel.new()
 	add_child(wheel)
-	results = MiniGameResults.new()
-	results.restart_pressed.connect(func(): restart_pressed.emit())
-	results.exit_pressed.connect(func(): exit_pressed.emit())
-	add_child(results)
+	result = ParkingLevelResult.new()
+	result.next_pressed.connect(func(): next_pressed.emit())
+	result.retry_pressed.connect(func(): retry_pressed.emit())
+	result.menu_pressed.connect(func(): menu_pressed.emit())
+	add_child(result)
+	menu = ParkingLevelMenu.new()
+	menu.level_chosen.connect(func(index: int): level_chosen.emit(index))
+	menu.exit_pressed.connect(func(): exit_pressed.emit())
+	menu.covered.connect(_on_menu_covered)
+	add_child(menu)
+	# A short dip to dark hides the swap of one level's scenery for another's.
+	_veil = ColorRect.new()
+	_veil.color = Color("#0B0D12")
+	_veil.mouse_filter = MOUSE_FILTER_STOP
+	_veil.visible = false
+	add_child(_veil)
 
 
 func _ready() -> void:
@@ -102,20 +123,21 @@ func _layout() -> void:
 	_toast.position.y = scene_top
 	_fit_hud()
 	_center_toast()
-	results.size = size
 	var right := float(safe.right) / u + 20.0
-	results.layout(Rect2(left + 20.0, top + 16.0, maxf(160.0, size.x - left - 20.0 - right), maxf(100.0, size.y - top - bottom - 32.0)))
+	var inner := Rect2(left + 20.0, top + 8.0, maxf(160.0, size.x - left - 20.0 - right), maxf(100.0, size.y - top - bottom - 20.0))
+	for screen: Control in [menu, result, _veil]:
+		screen.position = Vector2.ZERO
+		screen.size = size
+	menu.layout(inner)
+	result.layout(inner)
 
 
 func _fit_hud() -> void:
-	var room := maxf(36.0, _bar_width - CHROME - 12.0 - 24.0 - 22.0 - 87.0 - 30.0)
+	var room := maxf(36.0, _bar_width - CHROME - 12.0 - 24.0 - 12.0 - LIVES * 18.0)
 	# Keep the fixed-height HUD compact, including the app's largest text setting.
-	var wanted_score := mini(28, roundi(18.0 * Ui.text_scale()))
-	var wanted_level := mini(24, roundi(14.0 * Ui.text_scale()))
-	var width := Ui.font(800).get_string_size(_score_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, wanted_score).x + Ui.font(700).get_string_size(_level_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, wanted_level).x
-	var fit := minf(1.0, room / maxf(1.0, width))
-	_score_label.add_theme_font_size_override("font_size", maxi(12, roundi(wanted_score * fit)))
-	_level_label.add_theme_font_size_override("font_size", maxi(11, roundi(wanted_level * fit)))
+	var wanted := mini(26, roundi(16.0 * Ui.text_scale()))
+	var width := Ui.font(800).get_string_size(_level_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, wanted).x
+	_level_label.add_theme_font_size_override("font_size", maxi(11, floori(wanted * minf(1.0, room / maxf(1.0, width)))))
 	_top_bar.set_deferred("size", Vector2(_bar_width, CHROME))
 
 
@@ -134,7 +156,7 @@ func _build_top_bar() -> void:
 	add_child(_top_bar)
 	var close := _card(Vector2(CHROME, CHROME), 12)
 	close.add_child(_centered(Ui.icon(RegulatorUi.ICON_CLOSE, 18, Ui.c("text"))))
-	close.add_child(_tap(func(): exit_pressed.emit()))
+	close.add_child(_tap(func(): menu_pressed.emit()))
 	_top_bar.add_child(close)
 	var hud := _card(Vector2(0, CHROME), 12)
 	hud.size_flags_horizontal = SIZE_EXPAND_FILL
@@ -144,17 +166,13 @@ func _build_top_bar() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	hud.add_child(row)
-	row.add_child(Ui.icon(RegulatorUi.ICON_STAR, 22, Ui.c("gold")))
-	_score_label = Ui.scaled_label("0", 18, 800, Ui.c("text"))
-	row.add_child(_score_label)
-	row.add_child(_expand())
-	_level_label = Ui.scaled_label("1/5", 14, 700, Ui.c("secondary"))
+	_level_label = Ui.scaled_label(Ui.t("gameParkingLevel", {"number": 1}), 16, 800, Ui.c("text"))
 	row.add_child(_level_label)
 	row.add_child(_expand())
 	var lives := HBoxContainer.new()
 	lives.add_theme_constant_override("separation", 3)
 	row.add_child(lives)
-	for i in 5:
+	for i in LIVES:
 		var heart := Ui.icon(RegulatorUi.ICON_HEART, 15, Ui.c("red"))
 		_hearts.append(heart)
 		lives.add_child(heart)
@@ -205,14 +223,13 @@ func _build_gear() -> void:
 	add_child(_gear)
 
 
-func set_hud(score: int, level: int, count: int, lives: int) -> void:
+func set_hud(level: int, lives: int) -> void:
 	if lives < _lives_value:
 		MiniGameHud.show_life_loss(self, _top_bar, _lives_value - lives)
 	_lives_value = lives
-	var changed := _score_label.text != str(score) or _level_label.text != "%d/%d" % [level, count]
-	if changed:
-		_score_label.text = str(score)
-		_level_label.text = "%d/%d" % [level, count]
+	var text := Ui.t("gameParkingLevel", {"number": level})
+	if _level_label.text != text:
+		_level_label.text = text
 		if is_inside_tree(): _fit_hud()
 	for i in _hearts.size():
 		var heart := char(RegulatorUi.ICON_HEART if i < lives else RegulatorUi.ICON_HEART_EMPTY)
@@ -268,29 +285,82 @@ func _center_toast() -> void:
 		_toast.position.x = _toast_bounds.position.x + (_toast_bounds.size.x - _toast.size.x) * 0.5
 
 
-func show_results(score: int, solved: int, wrong: int, combo: int, record: bool, best: int, model: String, paint: Color, leopard := false) -> void:
+func setup_levels(progress: ParkingProgress) -> void:
+	menu.setup(progress)
+	if is_inside_tree(): _layout()
+
+
+## The level list over everything. `instant`: the first screen, nothing to fade from.
+func show_menu(instant := false) -> void:
+	_set_driving(false)
+	menu.open(instant)
+
+
+func dismiss_menu() -> void:
+	menu.dismiss()
+
+
+func menu_open() -> bool:
+	return menu.visible and menu.opaque
+
+
+func _on_menu_covered() -> void:
+	result.hide_result()
+	menu_covered.emit()
+
+
+## The wheel, the switch and the HUD of a level being driven.
+func show_driving() -> void:
+	MiniGameHud.clear_life_loss(self)
+	result.hide_result()
+	_toast.modulate.a = 0.0
+	_set_driving(true)
+
+
+func _set_driving(on: bool) -> void:
+	_driving = on
+	_top_bar.visible = on
+	_gear.visible = on
+	wheel.visible = on
+	if not on:
+		wheel.release()
+		if is_instance_valid(_toast_tween): _toast_tween.kill()
+		_toast.modulate.a = 0.0
+
+
+## Waits for the last life's feedback to be read, like the shared result screen.
+func show_level_result(number: int, stars: int, success: bool, has_next: bool) -> void:
 	if not await MiniGameHud.finish_life_loss(self): return
+	if menu_open(): return      # the player went back to the list meanwhile
 	MiniGameHud.clear_life_loss(self)
-	_top_bar.visible = false
-	_gear.visible = false
-	wheel.visible = false
-	wheel.release()
-	if is_instance_valid(_toast_tween): _toast_tween.kill()
-	_toast.modulate.a = 0.0
-	results.set_vehicle(model, paint, leopard)
-	results.set_game_mode("parking")
-	results.mistakes_button.visible = false
-	results.show_results(score, solved, wrong, combo, record, best)
-	_layout()
+	_set_driving(false)
+	result.show_result(number, stars, success, has_next)
 
 
-func hide_results() -> void:
-	MiniGameHud.clear_life_loss(self)
-	results.hide_results()
-	_top_bar.visible = true
-	_gear.visible = true
-	wheel.visible = true
-	_toast.modulate.a = 0.0
+func hide_level_result() -> void:
+	result.hide_result()
+
+
+## Fades to dark and returns how long that takes: swap the level after it, then uncover().
+func cover() -> float:
+	if is_instance_valid(_veil_tween): _veil_tween.kill()
+	_veil.visible = true
+	if not is_inside_tree() or Host.user_args().has("--reduce-motion"):
+		_veil.modulate.a = 1.0
+		return 0.0
+	_veil_tween = create_tween()
+	_veil_tween.tween_property(_veil, "modulate:a", 1.0, 0.16).from(0.0)
+	return 0.17
+
+
+func uncover() -> void:
+	if is_instance_valid(_veil_tween): _veil_tween.kill()
+	if not is_inside_tree() or Host.user_args().has("--reduce-motion"):
+		_veil.visible = false
+		return
+	_veil_tween = create_tween()
+	_veil_tween.tween_property(_veil, "modulate:a", 0.0, 0.26).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_veil_tween.tween_callback(func(): _veil.visible = false)
 
 
 func _card(min_size: Vector2, radius: int) -> PanelContainer:

@@ -127,7 +127,7 @@ func _check_rules_spots() -> void:
 func _check_scene() -> void:
 	var scene: Node = load("res://parking.tscn").instantiate()
 	scene.set("auto_drive", true)
-	scene.set("run_size", ParkingLevels.COUNT)   # the autopilot drives every level once
+	scene.set("_play_all", true)   # the autopilot drives every level once, without stopping
 	root.add_child(scene)
 	var parked := 0
 	for frame in 120 * 1200:
@@ -137,20 +137,12 @@ func _check_scene() -> void:
 		if scene.is_game_over: break
 	_check("autopilot parks every level (%d)" % parked, parked == ParkingLevels.COUNT)
 	_check("autopilot follows the clear way without touching", scene.touches == 0)
-	_check("results count the run's levels, not touches", scene.ui.results._answered_total == ParkingLevels.COUNT)
-	# A normal run: three daytime tasks, one night task, then one independent search.
-	scene.run_size = 5
-	for attempt in 30:
-		var drawn: Array[int] = scene._draw_levels()
-		var distinct := {}
-		for i in drawn: distinct[i] = true
-		var ordered := drawn.size() == 5
-		for slot in drawn.size():
-			var level := ParkingLevels.build(drawn[slot])
-			ordered = ordered and (level.search if slot == 4 else not level.search and bool(level.night) == (slot == 3))
-		_check("a run draws 5 different levels in day/night/search order", ordered and distinct.size() == 5)
+	_check("a clean drive earns three stars on every level", scene.progress.total() == ParkingLevels.COUNT * ParkingProgress.MAX_STARS)
+	_check("the last level ends on its result", scene.ui.result.visible and scene.ui.result.stars == ParkingProgress.MAX_STARS)
 	var summary: Dictionary = scene.call("_session_summary")
-	_check("summary names the game", summary.game == "parking" and summary.runs.size() >= 1)
+	_check("summary names the game", summary.game == "parking")
+	_check("every parked level is one run of the summary", summary.runs.size() == ParkingLevels.COUNT)
+	_check("summary carries the stars of every level", summary.stars.size() == ParkingLevels.COUNT and not summary.stars.has(0))
 	# Detach live geometry before destroying its materials during test teardown.
 	scene._exiting = true
 	Models.release_geometry(scene)

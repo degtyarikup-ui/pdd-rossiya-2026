@@ -1617,6 +1617,16 @@
   "gameParkingBusStop": "Ближе 15 м к остановке нельзя",
   "gameParkingNoStopping": "Знак 3.27: остановка запрещена",
   "gameParkingJunction": "Ближе 5 м к перекрёстку нельзя",
+  "gameParkingLevel": "Уровень {number}",
+  "@gameParkingLevel": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "gameParkingNext": "Дальше",
+  "gameParkingLevels": "Уровни",
   "gamesSignsTitle": "Это знак",
   "gamesCrossroadsTitle": "Перекрёсток",
   "gamesPlay": "Играть",

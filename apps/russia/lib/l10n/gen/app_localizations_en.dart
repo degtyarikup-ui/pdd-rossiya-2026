@@ -3504,6 +3504,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameParkingJunction => 'Not within 5 m of a junction';
 
   @override
+  String gameParkingLevel(int number) {
+    return 'Level $number';
+  }
+
+  @override
+  String get gameParkingNext => 'Next';
+
+  @override
+  String get gameParkingLevels => 'Levels';
+
+  @override
   String get gamesSignsTitle => 'Sign quiz';
 
   @override
