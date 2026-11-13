@@ -196,4 +196,20 @@ void main() {
     expect((await voice.apply(state(2, speed: 99)))['ok'], false);
     expect(player.sources, isEmpty);
   });
+  test('Kazakh language plays Russian canonical Opus recording in game', () async {
+    final kkNarration = TtsService.forTesting(
+      player: player,
+      loadAsset: (_) async {},
+      premium: premium,
+      gamePlayback: true,
+    );
+    await kkNarration.updateLanguage('kk');
+    final kkVoice = GameVoiceService(narration: kkNarration);
+    final res = await kkVoice.apply(state(1));
+    expect(res['ok'], true);
+    expect(res['playing'], true);
+    expect(res['duration'], 12);
+    expect(player.sources, ['audio/feed/q_$clip.opus']);
+    await kkVoice.dispose();
+  });
 }

@@ -121,10 +121,12 @@ func _player_checks() -> void:
 	check(not voice._player.playing and voice._player.stream == null, "Late fetch after answer cannot resurrect audio")
 	voice.begin("no_recording")
 	check(voice._player.stream == null and not voice._player.playing, "Missing recording stays silent without synthesized fallback")
-	for language in ["en", "kk"]:
-		Ui.lang = language
-		voice.begin(JUNCTION)
-		check(voice._player.stream == null, "No Russian recording for " + language)
+	Ui.lang = "en"
+	voice.begin(JUNCTION)
+	check(voice._player.stream == null, "No Russian recording for en")
+	Ui.lang = "kk"
+	voice.begin(JUNCTION)
+	check(voice._player.stream is AudioStreamMP3 and voice._player.playing, "Kazakh uses Russian recorded clip")
 	Ui.lang = "ru"
 	voice.available = false
 	voice.begin(JUNCTION)
@@ -167,28 +169,33 @@ func _premium_speed_and_language_checks() -> void:
 	check(not voice.enabled and not voice._player.playing, "Expired entitlement immediately stops playback")
 	voice.set_access(true)
 	voice.set_enabled(true)
-	for language in ["en", "kk"]:
-		Ui.lang = language
-		voice.set_speed(1.2)
-		voice.begin("translated", {"title":"Question in " + language, "options":["First", "Second"]})
-		check(voice.speech[-1].voice == language + "-voice" and voice.speech[-1].text.contains("1. First"), "Synth uses exact selected language and numbered answers: " + language)
-		check(is_equal_approx(voice.speech[-1].speed, 1.2) and voice._player.stream == null, "Translation uses selected speed and no Russian clip")
-		check(is_equal_approx(voice.question_tick_delta(1.0, 2.2), 0.2), "Question timer preserves two seconds while synthetic speech is active")
-		check(is_zero_approx(voice.question_tick_delta(0.5, 2.0)), "Long synthetic speech cannot time out the question")
-		voice._on_synth_boundary(9, voice._tts_utterance)
-		var prior: Dictionary = voice.speech[-1]
-		voice.set_speed(1.5)
-		check(voice.speech[-1].text == str(prior.text).substr(9), "Synthetic rate change continues at last word boundary")
-		voice.suspend()
-		check(voice.pause_count > 0, "Translated voice follows pause")
-		voice.resume()
-		check(voice.resume_count > 0, "Translated voice resumes same utterance")
-		var count := voice.speech.size()
-		voice._on_synth_ended(voice._tts_utterance)
-		check(is_equal_approx(voice.question_tick_delta(1.0, 2.0), 1.0), "Natural completion releases timer with two seconds to answer")
-		voice.suspend()
-		voice.resume()
-		check(voice.speech.size() == count, "Completed translation does not replay after pause")
+	Ui.lang = "kk"
+	voice.begin(JUNCTION)
+	check(voice._player.stream is AudioStreamMP3 and voice._player.playing and voice.speech.is_empty(),
+		"Kazakh uses Russian recorded clip without synthetic fallback")
+	check(voice.duration(JUNCTION) > 0.0, "Kazakh uses recorded clip duration")
+	voice.stop()
+	Ui.lang = "en"
+	voice.set_speed(1.2)
+	voice.begin("translated", {"title":"Question in en", "options":["First", "Second"]})
+	check(voice.speech[-1].voice == "en-voice" and voice.speech[-1].text.contains("1. First"), "Synth uses exact selected language and numbered answers: en")
+	check(is_equal_approx(voice.speech[-1].speed, 1.2) and voice._player.stream == null, "Translation uses selected speed and no Russian clip")
+	check(is_equal_approx(voice.question_tick_delta(1.0, 2.2), 0.2), "Question timer preserves two seconds while synthetic speech is active")
+	check(is_zero_approx(voice.question_tick_delta(0.5, 2.0)), "Long synthetic speech cannot time out the question")
+	voice._on_synth_boundary(9, voice._tts_utterance)
+	var prior: Dictionary = voice.speech[-1]
+	voice.set_speed(1.5)
+	check(voice.speech[-1].text == str(prior.text).substr(9), "Synthetic rate change continues at last word boundary")
+	voice.suspend()
+	check(voice.pause_count > 0, "Translated voice follows pause")
+	voice.resume()
+	check(voice.resume_count > 0, "Translated voice resumes same utterance")
+	var count := voice.speech.size()
+	voice._on_synth_ended(voice._tts_utterance)
+	check(is_equal_approx(voice.question_tick_delta(1.0, 2.0), 1.0), "Natural completion releases timer with two seconds to answer")
+	voice.suspend()
+	voice.resume()
+	check(voice.speech.size() == count, "Completed translation does not replay after pause")
 	voice.begin("stalled", {"title":"Hung engine"})
 	voice._synth_timer_budget = 0.1
 	voice.set_enabled(false)

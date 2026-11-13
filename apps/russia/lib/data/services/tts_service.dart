@@ -14,8 +14,9 @@ import 'package:pdd_app/data/services/premium_service.dart';
 
 enum NarrationStatus { idle, loading, playing, voiceUnavailable, unavailable }
 
-/// Premium narration: studio recordings in Russian, device voices in English
-/// and Kazakh. Russian never falls back to synthesized speech.
+/// Premium narration: Russian studio recordings for Russian and Kazakh, and
+/// device voices for English. Russian and Kazakh never fall back to
+/// synthesized speech.
 class TtsService {
   TtsService._({bool gamePlayback = false})
     : _gamePlayback = gamePlayback,
@@ -231,7 +232,7 @@ class TtsService {
     if (!_isCurrent(token)) return null;
     _status.value = NarrationStatus.loading;
     _onPremiumChanged();
-    if (_languageCode != 'ru') {
+    if (_languageCode == 'en') {
       return _playSystem(token, question, answers);
     }
     if (rawQuestionId == null) {

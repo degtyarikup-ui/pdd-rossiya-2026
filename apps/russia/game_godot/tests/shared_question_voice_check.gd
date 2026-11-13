@@ -47,6 +47,14 @@ func _run() -> void:
 	check(snapshot().payload.clip == "", "Premium revocation stops host narration")
 	voice.shutdown()
 	check(snapshot().payload.clip == "", "Exit leaves no pending playback")
+	Ui.lang = "kk"
+	voice._closed = false
+	voice.set_access(true)
+	voice.set_enabled(true)
+	voice.begin("ticket_10_13")
+	var kk_snap := snapshot()
+	check(not str(kk_snap.payload.clip).is_empty(), "Kazakh sends Russian source question ID to host player")
+	voice.shutdown()
 	voice.queue_free()
 	await process_frame
 	Host.io = ""

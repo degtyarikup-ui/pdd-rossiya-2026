@@ -72,14 +72,18 @@ func _ready() -> void:
 		DisplayServer.tts_set_utterance_callback(DisplayServer.TTS_UTTERANCE_ENDED, _on_synth_ended)
 
 
+func _uses_recorded_voice() -> bool:
+	return Ui.lang in ["ru", "kk"]
+
+
 func can_play(id: String) -> bool:
 	if not has_access() or not available: return false
-	if Ui.lang in ["en", "kk"]: return not id.is_empty()
-	return Ui.lang == "ru" and _clips.has(id) and not _file_for(id).is_empty()
+	if Ui.lang == "en": return not id.is_empty()
+	return _uses_recorded_voice() and _clips.has(id) and not _file_for(id).is_empty()
 
 
 func duration(id: String) -> float:
-	if Ui.lang != "ru": return 0.0
+	if not _uses_recorded_voice(): return 0.0
 	return maxf(0.0, float(_clips.get(id, {}).get("duration", 0.0))) / speed if can_play(id) else 0.0
 
 
@@ -105,7 +109,7 @@ func set_speed(value: float) -> void:
 		_pitch.pitch_scale = 1.0 / speed
 		var bus := AudioServer.get_bus_index(_bus_name)
 		if bus > 0: AudioServer.set_bus_effect_enabled(bus, 0, not is_equal_approx(speed, 1.0))
-	if not is_equal_approx(old, speed) and _shared != null and not _active_id.is_empty() and Ui.lang == "ru":
+	if not is_equal_approx(old, speed) and _shared != null and not _active_id.is_empty() and _uses_recorded_voice():
 		_sync_shared()
 	if not is_equal_approx(old, speed) and _synth_started:
 		_synth_offset += _synth_boundary
@@ -163,7 +167,7 @@ func resume() -> void:
 	_suspended = false
 	if not enabled or not can_play(_active_id) or _closed:
 		return
-	if Ui.lang in ["en", "kk"]:
+	if Ui.lang == "en":
 		if _synth_started: _tts_resume()
 		elif not _synth_completed: _start_synth()
 		return
@@ -221,7 +225,7 @@ func _load_active() -> void:
 	if not can_play(_active_id):
 		playback_unavailable.emit()
 		return
-	if Ui.lang in ["en", "kk"]:
+	if Ui.lang == "en":
 		_synth_text = str(_active_card.get("title", "")).strip_edges()
 		var answers: Array = _active_card.get("options", [])
 		if not answers.is_empty():
@@ -243,7 +247,7 @@ func _load_active() -> void:
 
 
 func _sync_shared() -> void:
-	var clip := str(_clips.get(_active_id, {}).get("sourceQuestionId", "")) if enabled and has_access() and not _closed and Ui.lang == "ru" else ""
+	var clip := str(_clips.get(_active_id, {}).get("sourceQuestionId", "")) if enabled and has_access() and not _closed and _uses_recorded_voice() else ""
 	_shared.apply(clip, "%s-%s" % [get_instance_id(), _request], _suspended, speed)
 
 func _on_shared_result(data: Dictionary) -> void:
@@ -300,7 +304,7 @@ func _start_loaded() -> void:
 
 
 func _start_synth() -> void:
-	if _closed or _suspended or not enabled or not can_play(_active_id) or Ui.lang not in ["en", "kk"] or _synth_text.is_empty(): return
+	if _closed or _suspended or not enabled or not can_play(_active_id) or Ui.lang != "en" or _synth_text.is_empty(): return
 	if not _tts_available():
 		voice_unavailable.emit()
 		return
@@ -321,7 +325,7 @@ func _start_synth() -> void:
 ## The cumulative budget belongs to the card, not the utterance: toggles/rate
 ## changes cannot farm time and a broken native engine cannot hold it forever.
 func question_tick_delta(delta: float, remaining: float) -> float:
-	if Ui.lang not in ["en", "kk"] or not enabled or not has_access() or not (_synth_started or _voice_wait_until > 0): return delta
+	if Ui.lang != "en" or not enabled or not has_access() or not (_synth_started or _voice_wait_until > 0): return delta
 	_synth_timer_budget = maxf(0.0, _synth_timer_budget - delta)
 	if _synth_timer_budget <= 0.0:
 		_cancel_audio()

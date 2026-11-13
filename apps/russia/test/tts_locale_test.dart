@@ -296,15 +296,57 @@ void main() {
   });
 
   test(
-    'English and Kazakh use selected device locale and never Russian audio',
+    'Kazakh uses Russian studio recordings and never system TTS',
     () async {
-      for (final language in ['en', 'kk']) {
-        await voice.updateLanguage(language);
-        expect(await play(), isNotNull);
-      }
-      expect(systemTts.languages, ['en-US', 'kk-KZ']);
-      expect(systemTts.spoken, hasLength(2));
-      expect(systemTts.spoken.last, contains('1 — Да'));
+      await voice.updateLanguage('kk');
+      await voice.configure(enabled: true, speed: 1.5);
+      expect(await play('question:v:ticket_2_3'), const Duration(seconds: 8));
+      expect(loads, ['assets/audio/feed/q_question.opus']);
+      expect(player.sources, ['audio/feed/q_question.opus']);
+      expect(player.rates, [1.5]);
+      expect(player.starts, 1);
+      expect(systemTts.languages, isEmpty);
+      expect(systemTts.spoken, isEmpty);
+    },
+  );
+
+  test('missing recording in Kazakh never falls back to system TTS', () async {
+    final kkPlayer = _Player();
+    final kkTts = _SystemTts();
+    final kkPremium = ValueNotifier(true);
+    final kkVoice = TtsService.forTesting(
+      player: kkPlayer,
+      systemTts: kkTts,
+      loadAsset: (_) => Future<void>.error(StateError('missing')),
+      premium: kkPremium,
+    );
+    addTearDown(() async {
+      await kkVoice.dispose();
+      kkPremium.dispose();
+    });
+    await kkVoice.updateLanguage('kk');
+    await kkVoice.configure(enabled: true, speed: 1);
+    expect(
+      await kkVoice.speakOrPlayFeedItem(
+        rawQuestionId: 'missing',
+        question: 'Сұрақ?',
+        answers: ['Иә', 'Жоқ'],
+      ),
+      isNull,
+    );
+    expect(kkVoice.status.value, NarrationStatus.unavailable);
+    expect(kkTts.spoken, isEmpty);
+    expect(kkTts.languages, isEmpty);
+  });
+
+  test(
+    'English uses selected device locale and never Russian audio',
+    () async {
+      await voice.updateLanguage('en');
+      expect(await play(), isNotNull);
+      expect(systemTts.languages, ['en-US']);
+      expect(systemTts.spoken, hasLength(1));
+      expect(systemTts.spoken.single, contains('1 — Да'));
       expect(player.sources, isEmpty);
       expect(loads, isEmpty);
     },
@@ -312,7 +354,7 @@ void main() {
 
   test('missing device language reports explicit unavailable voice', () async {
     systemTts.available = false;
-    await voice.updateLanguage('kk');
+    await voice.updateLanguage('en');
     expect(await play(), isNull);
     expect(voice.status.value, NarrationStatus.voiceUnavailable);
     expect(systemTts.spoken, isEmpty);
