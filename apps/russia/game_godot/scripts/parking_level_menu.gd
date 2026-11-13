@@ -1,7 +1,7 @@
 ## Level select of «Парковка»: every level as a card on the app's own background — a picture of
 ## the location (art/parking_levels, rendered by Parking's --thumbs) with its number and stars
-## laid over a soft shade at the bottom. A short, still accent under the number marks the next
-## level; the rest are greyed behind a white lock.
+## laid over a soft shade at the bottom. A bright, gently saturated grade reveals the real
+## scenery; locked levels keep a softer version of its colours behind a white lock.
 ## Three cards in a row on a phone, more on a wide screen; the list scrolls. Whatever changed since the menu was last on screen is played back when it opens:
 ## new stars pop in, the total counts up and the next lock opens. Sizes are dp (ParkingUi).
 class_name ParkingLevelMenu
@@ -23,14 +23,14 @@ const RADIUS := 14
 const GOLD := Color("#FFA53C")
 const PICTURES := "res://art/parking_levels/%02d.jpg"
 ## The picture fills the card (cropped, never stretched) with rounded corners and a shade at the
-## bottom for the number and stars; `locked` fades it to a quiet grey of the theme.
+## bottom for the number and stars. The same grade lifts shadows without changing the scene;
+## `locked` softens its colours rather than turning the whole grid grey.
 const PICTURE_SHADER := """
 shader_type canvas_item;
 uniform float locked = 0.0;
 uniform vec2 box = vec2(110.0, 76.0);
 uniform float radius = 14.0;
 uniform float image_aspect = 1.3333;
-uniform vec3 locked_tint = vec3(0.79, 0.81, 0.85);
 varying vec4 tint;
 void vertex() { tint = COLOR; }
 void fragment() {
@@ -39,8 +39,14 @@ void fragment() {
 	if (aspect > image_aspect) uv.y = (uv.y - 0.5) * image_aspect / aspect + 0.5;
 	else uv.x = (uv.x - 0.5) * aspect / image_aspect + 0.5;
 	vec4 c = texture(TEXTURE, uv);
+	// Open up shaded asphalt and facades while preserving the white road markings.
+	c.rgb = pow(max(c.rgb, vec3(0.0)), vec3(0.78));
 	float grey = dot(c.rgb, vec3(0.299, 0.587, 0.114));
-	c.rgb = mix(c.rgb, mix(vec3(grey), locked_tint, 0.62), locked);
+	float chroma = max(max(c.r, c.g), c.b) - min(min(c.r, c.g), c.b);
+	float vibrance = 1.16 - 0.12 * smoothstep(0.2, 0.65, chroma);
+	c.rgb = clamp(mix(vec3(grey), c.rgb, vibrance), vec3(0.0), vec3(1.0));
+	// The lock carries the state; its location remains a colourful preview to look forward to.
+	c.rgb = mix(c.rgb, mix(c.rgb, vec3(grey), 0.25) * 0.94, locked);
 	c.rgb *= 1.0 - 0.58 * smoothstep(0.5, 1.0, UV.y);
 	// Smooth clipping at the image edge, without a visible border.
 	vec2 q = abs((UV - 0.5) * box) - (box * 0.5 - radius);
@@ -137,16 +143,9 @@ func setup(value: ParkingProgress) -> void:
 
 ## Tiles as they were last shown (the stars in `_shown`).
 func _paint() -> void:
-	var current := _current(_shown)
 	for tile in _tiles:
 		var open := tile.index == 0 or _shown[tile.index - 1] > 0
-		tile.paint(_shown[tile.index], open, tile.index == current)
-
-
-static func _current(stars: Array[int]) -> int:
-	for i in stars.size():
-		if stars[i] == 0: return i
-	return -1
+		tile.paint(_shown[tile.index], open)
 
 
 func _set_total(value: int) -> void:
@@ -261,7 +260,6 @@ func _play_changes() -> void:
 	var before := _shown_total
 	_shown = progress.stars.duplicate()
 	_shown_total = progress.total()
-	var current := _current(_shown)
 	if _calm or not is_inside_tree():
 		_paint()
 		_set_total(_shown_total)
@@ -269,7 +267,6 @@ func _play_changes() -> void:
 	var delay := 0.12
 	for i in gained:
 		_tiles[i].earn(_shown[i], delay)
-		_tiles[i].set_current(false)
 		delay += 0.16 * _shown[i] + 0.1
 	if is_instance_valid(_count): _count.kill()
 	_count = create_tween()
@@ -278,10 +275,8 @@ func _play_changes() -> void:
 	for i in _tiles.size():
 		var open := i == 0 or _shown[i - 1] > 0
 		if open and not was_open[i]:
-			_tiles[i].unlock(delay, i == current)
+			_tiles[i].unlock(delay)
 			delay += 0.12
-		elif open and _shown[i] == 0 and i == current:
-			_tiles[i].set_current(true)
 
 
 func _on_tile(tile: Tile) -> void:
@@ -307,7 +302,6 @@ class Tile extends Control:
 	var _open := false
 	var _card: Panel
 	var _style: StyleBoxFlat
-	var _current_mark: Panel
 	var _picture: TextureRect
 	var _material: ShaderMaterial
 	var _number: Label
@@ -339,15 +333,8 @@ class Tile extends Control:
 		_material = ShaderMaterial.new()
 		_material.shader = _shader
 		_material.set_shader_parameter("radius", float(ParkingLevelMenu.RADIUS))
-		var tint := Color("#26292F") if Ui.dark else Color("#C9CED8")
-		_material.set_shader_parameter("locked_tint", Vector3(tint.r, tint.g, tint.b))
 		_picture.material = _material
 		add_child(_picture)
-		_current_mark = Panel.new()
-		_current_mark.mouse_filter = MOUSE_FILTER_IGNORE
-		_current_mark.add_theme_stylebox_override("panel", Ui.box(Ui.c("accent"), 2))
-		_current_mark.visible = false
-		add_child(_current_mark)
 		_number = Ui.label("", 17, 800, Color.WHITE)
 		_number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		_number.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.35))
@@ -399,8 +386,6 @@ class Tile extends Control:
 		var stars_left := extent.x - 10.0 - _marks.size() * pitch + 2.0
 		_number.size = Vector2(stars_left - 14.0, line)
 		_number.pivot_offset = Vector2(8.0, line * 0.5)
-		_current_mark.position = Vector2(10.0, extent.y - 8.0)
-		_current_mark.size = Vector2(maxf(14.0, _number.get_minimum_size().x), 3.0)
 		for i in _marks.size():
 			_marks[i].size = Vector2(mark, mark)
 			_marks[i].position = Vector2(stars_left + i * pitch, bottom - line * 0.5 - mark * 0.5)
@@ -411,7 +396,7 @@ class Tile extends Control:
 		_lock.position = (extent - _lock.size) * 0.5 - Vector2(0.0, 6.0)
 		_lock.pivot_offset = _lock.size * 0.5
 
-	func paint(stars: int, open: bool, current: bool) -> void:
+	func paint(stars: int, open: bool) -> void:
 		_stars = stars
 		_open = open
 		_material.set_shader_parameter("locked", 0.0 if open else 1.0)
@@ -425,11 +410,6 @@ class Tile extends Control:
 			_marks[i].scale = Vector2.ONE
 			_marks[i].lit = i < stars
 			_marks[i].glint = 0.0
-		set_current(current)
-
-	## The current level is marked at its number, keeping the picture free of decoration.
-	func set_current(on: bool) -> void:
-		_current_mark.visible = on
 
 	## First appearance of the menu: cards arrive one after another.
 	func enter(delay: float) -> void:
@@ -456,7 +436,7 @@ class Tile extends Control:
 			tween.parallel().tween_method(func(value: float): mark.glint = value, 0.0, 1.0, 0.45).set_delay(0.1)
 
 	## The lock lets go and the picture takes its colours.
-	func unlock(delay: float, current: bool) -> void:
+	func unlock(delay: float) -> void:
 		_open = true
 		for mark in _marks:
 			mark.visible = true
@@ -473,7 +453,6 @@ class Tile extends Control:
 		tween.tween_method(func(value: float): _material.set_shader_parameter("locked", value), 1.0, 0.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		tween.parallel().tween_property(self, "scale", Vector2.ONE, 0.4).from(Vector2.ONE * 1.05).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		for mark in _marks: tween.parallel().tween_property(mark, "modulate:a", 1.0, 0.25)
-		tween.tween_callback(set_current.bind(current))
 
 	## A locked level: the card shakes its head.
 	func refuse() -> void:
