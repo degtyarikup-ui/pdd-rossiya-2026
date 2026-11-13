@@ -1,7 +1,7 @@
 ## Level select of «Парковка»: every level as a card on the app's own background — a picture of
 ## the location (art/parking_levels, rendered by Parking's --thumbs) with its number and stars
 ## laid over a soft shade at the bottom. A bright, gently saturated grade reveals the real
-## scenery; locked levels hide the scenery behind a neutral grey surface and a white lock.
+## scenery; locked levels hide the scenery behind a flat grey surface and a muted lock.
 ## Three cards in a row on a phone, more on a wide screen; the list scrolls. Whatever changed since the menu was last on screen is played back when it opens:
 ## new stars pop in, the total counts up and the next lock opens. Sizes are dp (ParkingUi).
 class_name ParkingLevelMenu
@@ -19,18 +19,18 @@ const PAD := 14.0
 const TILE_WIDE := 150.0         # a row holds as many cards of about this width as fit, three at least
 const TILE_MAX := 190.0
 const PICTURE := 0.82            # height of a card to its width
-const RADIUS := 14
+const RADIUS := 16              # AppDimensions.cardRadius
 const GOLD := Color("#FFA53C")
 const PICTURES := "res://art/parking_levels/%02d.jpg"
 ## The picture fills the card (cropped, never stretched) with rounded corners and a shade at the
 ## bottom for the number and stars. The same grade lifts shadows without changing the scene;
-## `locked` replaces the picture with a subtle theme-aware grey surface.
+## `locked` replaces the picture with the app's solid `gray` surface.
 const PICTURE_SHADER := """
 shader_type canvas_item;
 uniform float locked = 0.0;
 uniform vec3 locked_surface = vec3(0.15, 0.16, 0.18);
 uniform vec2 box = vec2(110.0, 76.0);
-uniform float radius = 14.0;
+uniform float radius = 16.0;
 uniform float image_aspect = 1.3333;
 varying vec4 tint;
 void vertex() { tint = COLOR; }
@@ -47,9 +47,8 @@ void fragment() {
 	float vibrance = 1.16 - 0.12 * smoothstep(0.2, 0.65, chroma);
 	c.rgb = clamp(mix(vec3(grey), c.rgb, vibrance), vec3(0.0), vec3(1.0));
 	c.rgb *= 1.0 - 0.58 * smoothstep(0.5, 1.0, UV.y);
-	// Fully conceal the scene until unlocked; only a restrained tonal falloff remains.
-	vec3 surface = locked_surface * mix(1.02, 0.98, smoothstep(0.0, 1.0, UV.y));
-	c.rgb = mix(c.rgb, surface, locked);
+	// Fully conceal the scene with the exact app token: no gradient, tint or elevation.
+	c.rgb = mix(c.rgb, locked_surface, locked);
 	// Smooth clipping at the image edge, without a visible border.
 	vec2 q = abs((UV - 0.5) * box) - (box * 0.5 - radius);
 	float edge = length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - radius;
