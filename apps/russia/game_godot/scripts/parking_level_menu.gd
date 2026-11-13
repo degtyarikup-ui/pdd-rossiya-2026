@@ -1,7 +1,7 @@
 ## Level select of «Парковка»: every level as a card on the app's own background — a picture of
 ## the location (art/parking_levels, rendered by Parking's --thumbs) with its number and stars
 ## laid over a soft shade at the bottom. A bright, gently saturated grade reveals the real
-## scenery; locked levels keep a softer version of its colours behind a white lock.
+## scenery; locked levels hide the scenery behind a neutral grey surface and a white lock.
 ## Three cards in a row on a phone, more on a wide screen; the list scrolls. Whatever changed since the menu was last on screen is played back when it opens:
 ## new stars pop in, the total counts up and the next lock opens. Sizes are dp (ParkingUi).
 class_name ParkingLevelMenu
@@ -24,10 +24,11 @@ const GOLD := Color("#FFA53C")
 const PICTURES := "res://art/parking_levels/%02d.jpg"
 ## The picture fills the card (cropped, never stretched) with rounded corners and a shade at the
 ## bottom for the number and stars. The same grade lifts shadows without changing the scene;
-## `locked` softens its colours rather than turning the whole grid grey.
+## `locked` replaces the picture with a subtle theme-aware grey surface.
 const PICTURE_SHADER := """
 shader_type canvas_item;
 uniform float locked = 0.0;
+uniform vec3 locked_surface = vec3(0.15, 0.16, 0.18);
 uniform vec2 box = vec2(110.0, 76.0);
 uniform float radius = 14.0;
 uniform float image_aspect = 1.3333;
@@ -45,9 +46,10 @@ void fragment() {
 	float chroma = max(max(c.r, c.g), c.b) - min(min(c.r, c.g), c.b);
 	float vibrance = 1.16 - 0.12 * smoothstep(0.2, 0.65, chroma);
 	c.rgb = clamp(mix(vec3(grey), c.rgb, vibrance), vec3(0.0), vec3(1.0));
-	// The lock carries the state; its location remains a colourful preview to look forward to.
-	c.rgb = mix(c.rgb, mix(c.rgb, vec3(grey), 0.25) * 0.94, locked);
 	c.rgb *= 1.0 - 0.58 * smoothstep(0.5, 1.0, UV.y);
+	// Fully conceal the scene until unlocked; only a restrained tonal falloff remains.
+	vec3 surface = locked_surface * mix(1.08, 0.94, smoothstep(0.0, 1.0, UV.y));
+	c.rgb = mix(c.rgb, surface, locked);
 	// Smooth clipping at the image edge, without a visible border.
 	vec2 q = abs((UV - 0.5) * box) - (box * 0.5 - radius);
 	float edge = length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - radius;
@@ -333,6 +335,8 @@ class Tile extends Control:
 		_material = ShaderMaterial.new()
 		_material.shader = _shader
 		_material.set_shader_parameter("radius", float(ParkingLevelMenu.RADIUS))
+		var surface := Ui.c("gray") if Ui.dark else Color("#8A90A2")
+		_material.set_shader_parameter("locked_surface", Vector3(surface.r, surface.g, surface.b))
 		_picture.material = _material
 		add_child(_picture)
 		_number = Ui.label("", 17, 800, Color.WHITE)
