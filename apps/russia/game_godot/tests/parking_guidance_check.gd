@@ -285,8 +285,9 @@ func _check_level_screens(ui: ParkingUi) -> void:
 				in_row == 3 if viewport_size.x < 500 else in_row > 3)
 			_check("levels: cards are large enough to tap and stay on screen" + suffix, inside and menu._tiles[0].size.x >= 84.0 and menu._tiles[0].size.y >= 64.0)
 			_check("levels: every card has its picture" + suffix, menu._tiles.all(func(tile): return tile._picture.texture != null))
-			_check("levels: open levels show stars, the rest a lock" + suffix,
-				menu._tiles[2]._marks[0].visible and not menu._tiles[2]._lock.visible and menu._tiles[3]._marks[0].visible
+			_check("levels: only earned stars are shown, unplayed levels have none" + suffix,
+				menu._tiles[2]._marks[0].visible and not menu._tiles[2]._marks[1].visible
+				and not menu._tiles[2]._lock.visible and not menu._tiles[3]._marks[0].visible
 				and menu._tiles[4]._lock.visible and not menu._tiles[4]._marks[0].visible)
 			chosen.clear()
 			menu._on_tile(menu._tiles[10])

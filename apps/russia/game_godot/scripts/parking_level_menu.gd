@@ -410,7 +410,7 @@ class Tile extends Control:
 		_lock.modulate.a = 1.0
 		_lock.scale = Vector2.ONE
 		for i in _marks.size():
-			_marks[i].visible = open
+			_marks[i].visible = open and i < stars
 			_marks[i].modulate.a = 1.0
 			_marks[i].scale = Vector2.ONE
 			_marks[i].lit = i < stars
@@ -433,6 +433,7 @@ class Tile extends Control:
 			var tween := create_tween()
 			tween.tween_interval(delay + 0.16 * (i - from))
 			tween.tween_callback(func():
+				mark.visible = true
 				mark.lit = true
 				mark.scale = Vector2.ONE * 1.9
 				GameSound.buzz(8))
@@ -443,9 +444,9 @@ class Tile extends Control:
 	## The lock lets go and the picture takes its colours.
 	func unlock(delay: float) -> void:
 		_open = true
-		for mark in _marks:
-			mark.visible = true
-			mark.modulate.a = 0.0
+		for i in _marks.size():
+			_marks[i].visible = i < _stars
+			_marks[i].modulate.a = 0.0
 		var tween := create_tween()
 		tween.tween_interval(delay)
 		tween.tween_callback(func(): GameSound.buzz(14))
