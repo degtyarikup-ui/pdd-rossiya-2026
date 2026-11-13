@@ -302,6 +302,7 @@ class Tile extends Control:
 	var rest := Vector2.ZERO
 	var _stars := 0
 	var _open := false
+	var _locked_ink := Ui.c("secondary") if Ui.dark else Color(1, 1, 1, 0.55)
 	var _card: Panel
 	var _style: StyleBoxFlat
 	var _picture: TextureRect
@@ -353,7 +354,7 @@ class Tile extends Control:
 			_marks.append(mark)
 		_lock = Control.new()
 		_lock.mouse_filter = MOUSE_FILTER_IGNORE
-		var glyph := Ui.icon(ParkingLevelMenu.ICON_LOCK, 26, Color.WHITE)
+		var glyph := Ui.icon(ParkingLevelMenu.ICON_LOCK, 26, _locked_ink)
 		glyph.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.25))
 		glyph.add_theme_constant_override("shadow_offset_y", 1)
 		glyph.add_theme_constant_override("shadow_offset_x", 0)
@@ -404,7 +405,7 @@ class Tile extends Control:
 		_stars = stars
 		_open = open
 		_material.set_shader_parameter("locked", 0.0 if open else 1.0)
-		_number.add_theme_color_override("font_color", Color.WHITE if open else Color(1, 1, 1, 0.8))
+		_number.add_theme_color_override("font_color", Color.WHITE if open else _locked_ink)
 		_lock.visible = not open
 		_lock.modulate.a = 1.0
 		_lock.scale = Vector2.ONE
