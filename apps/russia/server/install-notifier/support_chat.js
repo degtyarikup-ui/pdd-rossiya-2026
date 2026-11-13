@@ -670,6 +670,15 @@ export async function handleSupportWebhookInfo(request, env) {
   return jsonResponse(data);
 }
 
+function sniffImageType(b) {
+  const at = (offset, ...sig) => sig.every((v, i) => b[offset + i] === v);
+  if (at(0, 0xff, 0xd8, 0xff)) return 'image/jpeg';
+  if (at(0, 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) return 'image/png';
+  if (at(0, 0x47, 0x49, 0x46, 0x38)) return 'image/gif';
+  if (at(0, 0x52, 0x49, 0x46, 0x46) && at(8, 0x57, 0x45, 0x42, 0x50)) return 'image/webp';
+  return null;
+}
+
 /**
  * GET /api/support/file?fileId=<id>
  * Проксирует загрузку изображений из Telegram Bot API без раскрытия токена клиентам.
@@ -711,8 +720,11 @@ export async function handleSupportGetFile(request, env) {
       return jsonResponse({ error: 'failed_to_fetch_file' }, imgRes.status);
     }
 
-    const contentType = imgRes.headers.get('content-type')?.split(';')[0] || 'image/jpeg';
-    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(contentType)) return jsonResponse({ error: 'unsupported image type' }, 415);
+    // Telegram отдаёт файлы как application/octet-stream, поэтому тип определяем
+    // по сигнатуре содержимого, а не по заголовку ответа.
+    const bytes = new Uint8Array(await imgRes.arrayBuffer());
+    const contentType = sniffImageType(bytes);
+    if (!contentType) return jsonResponse({ error: 'unsupported image type' }, 415);
     const responseHeaders = {
       'content-type': contentType,
       'cache-control': 'private, no-store',
@@ -720,7 +732,7 @@ export async function handleSupportGetFile(request, env) {
       ...CORS_HEADERS,
     };
 
-    const response = new Response(imgRes.body, {
+    const response = new Response(bytes, {
       status: 200,
       headers: responseHeaders,
     });

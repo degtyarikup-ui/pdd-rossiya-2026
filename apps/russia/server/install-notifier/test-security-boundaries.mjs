@@ -104,13 +104,15 @@ test('support files require the owning thread before Telegram and are never publ
   const auth = await session(e), calls = [];
   t.mock.method(globalThis, 'fetch', async url => {
     calls.push(url);
-    return String(url).includes('/getFile?') ? Response.json({ ok: true, result: { file_path: 'photos/fixture.jpg' } }) : new Response('image', { headers: { 'content-type': 'image/jpeg' } });
+    return String(url).includes('/getFile?') ? Response.json({ ok: true, result: { file_path: 'photos/fixture.jpg' } }) : new Response(calls.length > 2 ? 'not an image' : new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2]), { headers: { 'content-type': 'application/octet-stream' } });
   });
   assert.equal((await worker.fetch(req('/api/support/file?clientId=google_fixture&fileId=file-a'), e)).status, 401);
   assert.equal((await worker.fetch(req('/api/support/file?clientId=google_fixture&fileId=other', undefined, auth), e)).status, 404);
   assert.equal(calls.length, 0);
   const r = await worker.fetch(req('/api/support/file?clientId=google_fixture&fileId=file-a', undefined, auth), e);
   assert.equal(r.status, 200); assert.equal(r.headers.get('cache-control'), 'private, no-store');
+  assert.equal(r.headers.get('content-type'), 'image/jpeg'); assert.equal((await r.arrayBuffer()).byteLength, 6);
+  assert.equal((await worker.fetch(req('/api/support/file?clientId=google_fixture&fileId=file-a', undefined, auth), e)).status, 415);
 });
 test('account deletion purges support and prevents legacy seeding from resurrecting it', async () => {
   const e = env(); await seed(e, 'google_fixture');
