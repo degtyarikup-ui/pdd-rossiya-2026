@@ -1,0 +1,238 @@
+/* Load after style.css. Scene changes, flights and FLIP are coordinated in JS. */
+:root {
+  --motion-ease: cubic-bezier(.22, 1, .36, 1);
+  --motion-ease-in-out: cubic-bezier(.45, 0, .55, 1);
+  --motion-quick: 110ms;
+  --motion-control: 240ms;
+  --motion-object: 380ms;
+}
+/* The taller result must not move the whole layout when a scrollbar appears. */
+html { scrollbar-gutter: stable; }
+body { min-width: min(320px, 100%); }
+
+.scene-enter { animation: none; }
+
+.note-choice {
+  transition: transform var(--motion-quick) var(--motion-ease),
+    background-color var(--motion-control) var(--motion-ease);
+  transform-origin: 50% 60%;
+}
+.ingredient {
+  transition: transform var(--motion-object) var(--motion-ease),
+    opacity var(--motion-control) var(--motion-ease);
+  transform-origin: 50% 65%;
+}
+.add-note, .remove-note {
+  transition: opacity 180ms var(--motion-ease),
+    transform 260ms var(--motion-ease);
+}
+.slot-label, .result-note {
+  transition: color var(--motion-control) var(--motion-ease);
+}
+.filter {
+  transition: color 180ms var(--motion-ease),
+    background-color var(--motion-control) var(--motion-ease),
+    opacity 180ms var(--motion-ease),
+    transform var(--motion-quick) var(--motion-ease);
+}
+.paging-button {
+  transition: color var(--motion-control) var(--motion-ease),
+    background-color var(--motion-control) var(--motion-ease),
+    transform var(--motion-quick) var(--motion-ease);
+}
+
+/* Neutralize the original unqualified hover effects on touch screens. */
+.note-choice:hover { background: transparent; }
+.note-choice:hover .ingredient,
+.mix-slot.filled:hover .ingredient,
+.result-note:hover .ingredient { transform: none; }
+.note-choice:hover .add-note { opacity: 0; transform: scale(.76); }
+.mix-slot.filled:hover .slot-label { color: #f0f3ff; }
+.result-note:hover { color: #e0e7fa; }
+.filter:not(:disabled):hover { color: #b7c4e6; background: transparent; }
+.filter[aria-pressed=true]:hover { color: #ffe0b6; background: #2e3d75; }
+.paging-button:hover { color: inherit; }
+
+.note-choice:focus-visible .add-note {
+  opacity: 1;
+  transform: scale(1);
+}
+.mix-slot:focus-visible .remove-note,
+.result-note:focus-visible .remove-note {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.gold-button {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform var(--motion-control) var(--motion-ease);
+}
+.gold-button:hover { filter: none; transform: none; }
+.gold-button::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  inset: -40% -30%;
+  background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.6) 50%, transparent 65%);
+  opacity: 0;
+  transform: translateX(-110%) skewX(-15deg);
+}
+.gold-button:focus-visible::after {
+  animation: button-light-pass 700ms var(--motion-ease) both;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .note-choice:not(:disabled):hover { background: rgba(98,132,218,.08); }
+  .note-choice:not(:disabled):hover .ingredient {
+    transform: translateY(-5px) rotate(-1.6deg) scale(1.035);
+  }
+  .note-choice:not(:disabled):hover .add-note {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .mix-slot.filled:hover .ingredient,
+  .result-note:hover .ingredient {
+    transform: translateY(-4px) rotate(-1deg) scale(1.02);
+  }
+  .mix-slot.filled:hover .slot-label,
+  .result-note:hover { color: var(--gold); }
+  .mix-slot.filled:hover .remove-note,
+  .result-note:hover .remove-note {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .filter:not(:disabled):hover { color: #fff; background: #29396e; }
+  .filter[aria-pressed=true]:hover { color: #ffe0b6; background: #2e3d75; }
+  .paging-button:not(:disabled):hover { color: var(--gold); transform: translateY(-2px); }
+  .gold-button:not(:disabled):hover { transform: translateY(-2px); }
+  .gold-button:not(:disabled):hover::after {
+    animation: button-light-pass 700ms var(--motion-ease) both;
+  }
+}
+
+/* A press has immediate feedback; no delayed hover is required on touch. */
+.note-choice:not(:disabled):active {
+  transform: scale(.98);
+  transition-duration: var(--motion-quick);
+}
+.note-choice:not(:disabled):active .ingredient {
+  transform: translateY(-1px) scale(.975);
+  transition-duration: var(--motion-quick);
+}
+.mix-slot.filled:active .ingredient,
+.result-note:active .ingredient {
+  transform: scale(.965);
+  transition-duration: var(--motion-quick);
+}
+.mix-slot.filled:active .remove-note,
+.result-note:active .remove-note { transform: scale(.9); }
+.gold-button:not(:disabled):active {
+  transform: translateY(0) scale(.985);
+  transition-duration: var(--motion-quick);
+}
+.paging-button:not(:disabled):active,
+.filter:not(:disabled):active {
+  transform: scale(.97);
+  transition-duration: var(--motion-quick);
+}
+
+/* One slow change in the refracted light, then a still composition. */
+.product-art::before {
+  transform-origin: 50% 48%;
+  transform: translate(-.6%, .4%) scale(1.06);
+  animation: perfume-light-drift 12s var(--motion-ease-in-out) 1 both;
+}
+@keyframes perfume-light-drift {
+  from { transform: translate(-.6%, .4%) scale(1.06); }
+  to { transform: translate(.7%, -.5%) scale(1.1); }
+}
+@keyframes button-light-pass {
+  0% { opacity: 0; transform: translateX(-110%) skewX(-15deg); }
+  18% { opacity: .38; }
+  72% { opacity: .28; }
+  100% { opacity: 0; transform: translateX(110%) skewX(-15deg); }
+}
+
+/* The renderer supplies coordinates and dimensions. Do not inherit hover. */
+.note-flight {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  margin: 0;
+  transition: none !important;
+  transform-origin: 0 0;
+  will-change: transform, opacity;
+}
+.note-flight .ingredient {
+  margin: 0;
+  transform: none;
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Avoid hovering a different note when a selection reflows the grid. */
+.motion-no-hover .note-choice:hover,
+.motion-no-hover .note-choice:active { background: transparent; }
+.motion-no-hover .note-choice:hover .ingredient,
+.motion-no-hover .note-choice:active .ingredient {
+  transform: none;
+  transition: none;
+}
+.motion-no-hover .note-choice:hover .add-note,
+.motion-no-hover .note-choice:active .add-note {
+  opacity: 0;
+  transform: scale(.76);
+  transition: none;
+}
+
+/* Its geometry and motion are supplied by the filter FLIP animation. */
+.filter-scroll { position: relative; isolation: isolate; }
+.filter-scroll > .filter { position: relative; z-index: 1; }
+.filter-indicator {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  border-radius: 999px;
+  background: #2e3d75;
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+.has-filter-indicator .filter[aria-pressed=true],
+.has-filter-indicator .filter[aria-pressed=true]:hover { background: transparent; }
+
+:root.motion-paused *,
+:root.motion-paused *::before,
+:root.motion-paused *::after,
+.motion-paused,
+.motion-paused::before,
+.motion-paused::after,
+.motion-paused *,
+.motion-paused *::before,
+.motion-paused *::after { animation-play-state: paused !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .note-flight { display: none !important; }
+  .product-art::before { transform: none; }
+  .note-choice:not(:disabled):hover,
+  .note-choice:not(:disabled):active,
+  .gold-button:not(:disabled):hover,
+  .gold-button:not(:disabled):active,
+  .paging-button:not(:disabled):hover,
+  .paging-button:not(:disabled):active,
+  .filter:not(:disabled):active,
+  .remove-note,
+  .note-choice:hover .ingredient,
+  .note-choice:active .ingredient,
+  .mix-slot.filled:hover .ingredient,
+  .mix-slot.filled:active .ingredient,
+  .result-note:hover .ingredient,
+  .result-note:active .ingredient { transform: none !important; }
+}

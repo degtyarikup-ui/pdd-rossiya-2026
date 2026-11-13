@@ -1,0 +1,14 @@
+/* Exact local text styles from the site's Figma library, 2026. */
+:root {
+  --type-h2: 600 40px/1 Manrope, Arial, sans-serif;
+  --type-h3: 600 24px/1 Manrope, Arial, sans-serif;
+  --type-body: 400 16px/1.6 Montserrat, Arial, sans-serif;
+  --type-ui: 400 16px/1.3 Montserrat, Arial, sans-serif;
+  --type-ui-strong: 600 16px/1.3 Montserrat, Arial, sans-serif;
+  --type-small: 400 14px/1.3 Manrope, Arial, sans-serif;
+  --type-caption: 400 12px/1.2 Montserrat, Arial, sans-serif;
+  --type-heading: var(--type-h2);
+}
+@media (max-width: 700px) {
+  :root { --type-heading: 600 28px/34px Manrope, Arial, sans-serif; }
+}

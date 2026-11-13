@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d164b">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Подберите себе аромат по любимым нотам! Выберите близкие вам ноты и узнайте, какие ароматы сочетают их лучше всего.">
+  <title>Подберите себе аромат — Магнит Косметик</title>
+  <link rel="preload" as="image" href="./public/assets/ingredients.webp" fetchpriority="high">
+  <link rel="stylesheet" href="./fonts.css">
+  <link rel="stylesheet" href="./design-tokens.css">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./motion.css">
+</head>
+<body>
+  <main>
+    <section class="aroma-section" aria-labelledby="game-heading">
+      <div class="section-stars" aria-hidden="true">
+        <span class="section-star star-one"><img src="./public/assets/decorative-star.svg" alt=""></span>
+        <span class="section-star star-two"><img src="./public/assets/decorative-star.svg" alt=""></span>
+        <span class="section-star star-three"><img src="./public/assets/decorative-star.svg" alt=""></span>
+      </div>
+      <div class="section-heading">
+        <h1 id="game-heading">Подберите себе аромат<br>по любимым нотам!</h1>
+        <p>Выберите близкие вам ноты и узнайте, какие ароматы сочетают их лучше всего.</p>
+      </div>
+      <div class="audience-switch" role="group" aria-label="Категория ароматов" data-gender="women">
+        <button class="audience-option" data-gender="women" aria-pressed="true" aria-label="Женские ароматы" aria-controls="game" disabled>
+          <svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M7 20c1-3 0-6 0-10a7 7 0 0 1 14 0c0 4-1 7 0 10M10 10c2 0 4-1 5-3 0 2 1 3 3 4v2a4 4 0 0 1-8 0v-3ZM5 25c1-4 4-6 9-6s8 2 9 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Женские</span>
+        </button>
+        <button class="audience-option" data-gender="men" aria-pressed="false" aria-label="Мужские ароматы" aria-controls="game" disabled>
+          <svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M9 9a5 5 0 0 1 10 0v4a5 5 0 0 1-10 0V9ZM5 25c0-5 4-7 9-7s9 2 9 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Мужские</span>
+        </button>
+      </div>
+      <div id="game" class="game-shell" aria-busy="true">
+        <p class="loading">Открываем коллекцию нот…</p>
+      </div>
+      <p class="live-message sr-only" id="announcement" role="status" aria-live="polite" aria-atomic="true"></p>
+      <noscript><p>Для выбора нот включите JavaScript в браузере.</p></noscript>
+    </section>
+  </main>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>
