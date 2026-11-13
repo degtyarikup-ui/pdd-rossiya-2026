@@ -53,7 +53,8 @@ echo "Previous deployment (rollback): $PREVIOUS"
 # /app/ — копия веб-приложения (сборка с --base-href /app/), в исходниках её нет:
 # не даём --delete её стереть. Обновить: WEB_BASE_HREF=/app/ ./scripts/build.sh ru web,
 # затем APP_BUILD=build/web ./scripts/deploy_landing.sh ru
-rsync -rc --delete --exclude=.git --exclude=/app/ --exclude=source.json "$SRC/" "$WORKTREE/"
+# /preview/ contains independent, unlisted client demos deployed separately.
+rsync -rc --delete --exclude=.git --exclude=/app/ --exclude=/preview/ --exclude=source.json "$SRC/" "$WORKTREE/"
 python3 "$ROOT/tools/blog_admin/generator.py" clean-public "$WORKTREE"
 if [ -n "${APP_BUILD:-}" ]; then
   python3 tools/multi_app/check_artifact.py "$APP_BUILD" --country "$COUNTRY" --profile ru-web > /dev/null
