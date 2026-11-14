@@ -60,7 +60,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-audience{display:flex;justify-content:space-between;gap:16px;padding:0 2px 12px;flex-wrap:wrap;font-size:11px;color:var(--an-muted)}.an-audience b{color:var(--an-text);margin-left:6px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
 .an-activity-summary{display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:16px;align-items:end;margin:4px 0 24px}.an-activity-summary>span{display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--an-muted)}.an-activity-summary b{color:var(--an-text);font-size:21px;font-weight:550;line-height:1;letter-spacing:-.6px;font-variant-numeric:tabular-nums}.an-activity-summary>span:first-child b{font-size:40px;letter-spacing:-1.8px;color:var(--an-accent)}
 .an-act-label{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:6px;font-size:11px;color:var(--an-muted);line-height:1}.an-act-label svg{display:inline-block;vertical-align:middle;flex-shrink:0}
-.an-activity-card .an-head{margin-bottom:24px}.an-chart-card .an-head{margin-bottom:24px}.an-dynamics-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:4px 0 24px}.an-dynamics-summary span{display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--an-muted)}.an-dynamics-summary b{color:var(--an-text);font-size:40px;font-weight:550;line-height:1;letter-spacing:-1.8px;font-variant-numeric:tabular-nums}
+.an-activity-card .an-head{margin-bottom:24px}.an-chart-card .an-head{margin-bottom:24px}.an-dynamics-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:4px 0 24px}.an-dynamics-summary>span{display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--an-muted)}.an-dynamics-summary b{color:var(--an-text);font-size:40px;font-weight:550;line-height:1;letter-spacing:-1.8px;font-variant-numeric:tabular-nums}
 .an-day-details{margin-top:16px}.an-day-details>summary{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--an-text);cursor:pointer;list-style:none;padding-top:14px;border-top:1px solid #F2F3F5}.an-day-details>summary::-webkit-details-marker{display:none}.an-day-details>summary:after{content:'+';font-size:18px;color:var(--an-muted)}.an-day-details[open]>summary:after{content:'−'}.an-day-details .an-table-wrap{max-height:320px;margin-top:18px}
 .an-now{background:#fff;border-radius:20px;padding:20px 24px;margin-top:0;margin-bottom:18px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}.an-now span{display:flex;align-items:center;justify-content:space-between;gap:8px}.an-now b{font-size:18px;letter-spacing:-.3px;margin:0}
 .an-tip{position:fixed;z-index:9999;pointer-events:none;background:#17191E;color:white;border-radius:14px;padding:14px 16px;font-size:12px;line-height:1.8;display:none;min-width:140px}.an-tip-row{display:flex;justify-content:space-between;gap:24px}.an-tip .an-act-label{color:inherit}.an-tip-note{color:#b8c4d8}
@@ -76,7 +76,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 #analytics-view button:focus-visible,#analytics-view summary:focus-visible,#analytics-view input:focus-visible,#analytics-view select:focus-visible{outline:2px solid var(--an-accent);outline-offset:3px}
 @media(max-width:1120px){.an-charts-grid{grid-template-columns:1fr}.an-chart-card .an-legend{margin:0 0 8px}.an-grid{gap:12px}.an-kpi{padding:20px}.an-big{font-size:34px}}
 @media(max-width:900px){.an-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.an-now{grid-template-columns:repeat(2,minmax(0,1fr))}.an-now span{justify-content:flex-start}.an-now b{margin-left:auto}}
-@media(max-width:640px){.an-card{padding:20px;border-radius:18px}.an-grid{gap:10px}.an-kpi{padding:18px}.an-kpi-top{font-size:11px;min-height:28px;line-height:1.4}.an-big{font-size:32px;margin-top:10px}.an-head{gap:8px}.an-title{font-size:15px}.an-tabs button{padding:6px 10px;font-size:10px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-activity-summary{gap:14px 10px;grid-template-columns:1.1fr repeat(3,1fr)}.an-activity-summary b{font-size:18px}.an-activity-summary>span:first-child b{font-size:34px}.an-activity-summary>span{font-size:10px;line-height:1.4}.an-dynamics-summary b{font-size:34px}.an-dynamics-summary span{font-size:10px}.an-geo-footer{flex-wrap:wrap}.an-now{padding:18px 20px;gap:16px}.an-now span{flex-direction:column;align-items:flex-start;gap:8px}.an-now b{margin:0;font-size:20px}.an-chart-card .an-head{flex-wrap:wrap}.an-caption{font-size:10px}}
+@media(max-width:640px){.an-card{padding:20px;border-radius:18px}.an-grid{gap:10px}.an-kpi{padding:18px}.an-kpi-top{font-size:11px;min-height:28px;line-height:1.4}.an-big{font-size:32px;margin-top:10px}.an-head{gap:8px}.an-title{font-size:15px}.an-tabs button{padding:6px 10px;font-size:10px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-activity-summary{gap:14px 10px;grid-template-columns:1.1fr repeat(3,1fr)}.an-activity-summary b{font-size:18px}.an-activity-summary>span:first-child b{font-size:34px}.an-activity-summary>span{font-size:10px;line-height:1.4}.an-dynamics-summary b{font-size:34px}.an-dynamics-summary>span{font-size:10px}.an-geo-footer{flex-wrap:wrap}.an-now{padding:18px 20px;gap:16px}.an-now span{flex-direction:column;align-items:flex-start;gap:8px}.an-now b{margin:0;font-size:20px}.an-chart-card .an-head{flex-wrap:wrap}.an-caption{font-size:10px}}
 .an-scope{font-size:10px;font-weight:500;line-height:1.4;color:var(--an-muted);white-space:nowrap}.an-heading{display:flex;align-items:center;gap:8px;min-width:0}.an-subtitle{font-size:11px;color:var(--an-muted);margin-top:6px;line-height:1.5}
 .an-audience-grid,.an-acquisition-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px}.an-audience-grid>.an-card,.an-acquisition-grid>.an-card{margin:0}
 .an-acquisition-card .an-table{min-width:440px}.an-acquisition-card .an-table td:first-child{max-width:360px;overflow-wrap:anywhere}.an-acquisition-card .an-tabs{margin-bottom:18px}.an-acquisition-card .an-table-name{align-items:flex-start}.an-acquisition-card .an-logo{margin-top:1px}.an-acquisition-card .an-source-detail{display:block;font-size:10px;color:var(--an-muted);font-weight:450;margin-top:3px}.an-acquisition-card .an-subtitle{margin-bottom:16px}.an-acquisition-card details.an-day-details>summary{line-height:1.5}
@@ -101,7 +101,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 <div class="an-period" id="an-period"></div>
 <div class="an-charts-grid">
  <div class="an-card an-activity-card">
-  <div class="an-head"><div><div class="an-title">${cardToggle('activity', 'Активность по дням')}</div><div class="an-subtitle">Аккаунты · без гостей</div></div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Аккаунты, обращавшиеся к серверу за день, без гостей. Синий сегмент включает все Android-сборки, в том числе Google Play и RuStore. Аккаунт, активный на Android и iOS, входит в оба сегмента. В общем итоге он учитывается один раз. Среднее за день — по завершённым дням с данными в выбранном периоде. Сегодня — неполный день, в среднее не входит.</div></details></div>
+  <div class="an-head"><div><div class="an-title">${cardToggle('activity', 'Активность по дням')}</div><div class="an-subtitle">Аккаунты · без гостей</div></div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Аккаунты, обращавшиеся к серверу за день, без гостей. Синий сегмент включает все Android-сборки, в том числе Google Play и RuStore. Аккаунт, активный на Android и iOS, входит в оба сегмента. В общем итоге он учитывается один раз. Среднее — по завершённым дням с данными в выбранном периоде. Сегодня — неполный день, в среднее не входит.</div></details></div>
   <div id="an-body-activity">
   <div class="an-activity-summary" id="an-activity-summary"></div>
   <div class="an-chart" id="an-activity-chart"></div>
@@ -111,7 +111,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <div class="an-head"><div class="an-title">${cardToggle('growth', 'Рост аудитории')}</div><div class="an-tabs" id="an-chart-tabs"><button type="button" data-chart="app" class="active" aria-pressed="true">Приложение</button><button type="button" data-chart="site" aria-pressed="false">Сайт</button></div></div>
   <div id="an-body-growth">
   <div class="an-dynamics-summary" id="an-dynamics-summary"></div>
-  <div class="an-legend" id="an-chart-legend"></div><div class="an-chart" id="an-installs-chart"></div><div class="an-caption" id="an-installs-caption"></div>
+  <div class="an-chart" id="an-installs-chart"></div><div class="an-caption" id="an-installs-caption"></div>
   </div>
  </div>
 </div>
@@ -345,8 +345,7 @@ function anCell(v) { return '<td>'+anNum(v)+'</td>'; }
 function anPlot(data) {
  var tl=data.timeline||[], u=data.users||{}, site=anChartMode==='site';
  var first=site?'Просмотры':'Первые запуски', second=site?'Переходы':'Новые аккаунты';
- document.getElementById('an-dynamics-summary').innerHTML=[[first,anSum(tl,function(d){return site?d.views:d.installs;})],[second,site?anSum(tl,function(d){return d.clicks;}):u.registrations]].map(function(m){return '<span>'+m[0]+'<b>'+(m[1]==null?'—':anNum(m[1]))+'</b></span>';}).join('');
- document.getElementById('an-chart-legend').innerHTML='<span><i class="an-dot" style="background:#0574F8"></i>'+first+'</span><span><i class="an-dot" style="background:#22a875"></i>'+second+'</span>';
+ document.getElementById('an-dynamics-summary').innerHTML=[[first,anSum(tl,function(d){return site?d.views:d.installs;})],[second,site?anSum(tl,function(d){return d.clicks;}):u.registrations]].map(function(m,i){return '<span><span class="an-act-label"><i class="an-dot" aria-hidden="true" style="background:'+(i?'#22a875':'#0574F8')+'"></i>'+m[0]+'</span><b>'+(m[1]==null?'—':anNum(m[1]))+'</b></span>';}).join('');
  var buckets=anBuckets(tl), bars=[];
  buckets.forEach(function(bk){
   var a=anSum(bk.days,function(d){return site?d.views:d.installs;});
@@ -408,7 +407,7 @@ function anRenderActivity(data) {
  ].concat(AN_ACTIVITY_SERIES.map(function(series,i){
   var marker='<i class="an-dot" aria-hidden="true" style="background:'+series.color+'"></i>';
   return ['<span class="an-act-label">'+marker+labels[i]+'</span>',latest[series.key]];
- }),[['Среднее за день',average]])
+ }),[['Среднее',average]])
  .map(function(m){return '<span>'+m[0]+'<b>'+(m[1]==null?'—':anNum(m[1]))+'</b></span>';}).join(''):'';
  var bars=available.map(function(d){
   var tip='<b>'+anDayLabel(d.date,true)+'</b>' + [

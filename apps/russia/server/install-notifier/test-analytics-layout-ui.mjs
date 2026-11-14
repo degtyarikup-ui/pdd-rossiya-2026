@@ -231,7 +231,7 @@ if(process.argv.includes('--serve')) {
    {date:'2026-11-08',total:20,android:0,ios:20},
   ];
   await page.evaluate(days=>anRenderActivity({users:{activity:{days}}}),days);
-  assert.match(await activitySummary.innerText(),/Среднее за день\s*13/);
+  assert.match(await activitySummary.innerText(),/Среднее\s*13/);
   assert.deepEqual(await activityChart.locator('svg > text').allTextContents(),['0','30','6.11','7.11','8.11']);
   assert.equal(await activityChart.locator('rect[data-i]').count(),days.length);
   const segments=await activityChart.locator('svg > path').evaluateAll(paths=>paths.map(path=>{
@@ -252,12 +252,12 @@ if(process.argv.includes('--serve')) {
   await page.evaluate(days=>{
     anRenderActivity({users:{activity:{days,comparison:{minute:852,today:0,average:12,days:3}}}});
   },days);
-  assert.match(await activitySummary.innerText(),/Среднее за день\s*13/);
+  assert.match(await activitySummary.innerText(),/Среднее\s*13/);
   assert.doesNotMatch(await activitySummary.innerText(),/Среднее к/);
   await page.evaluate(days=>anRenderActivity({users:{activity:{days:days.slice(-1)}}}),days);
-  assert.match(await activitySummary.innerText(),/Среднее за день\s*—/);
+  assert.match(await activitySummary.innerText(),/Среднее\s*—/);
   await page.evaluate(days=>anRenderActivity({users:{activity:{days:[{date:'2026-11-05',total:null},...days]}}}),days);
-  assert.match(await activitySummary.innerText(),/Среднее за день\s*13/);
+  assert.match(await activitySummary.innerText(),/Среднее\s*13/);
   const periodDays=Array.from({length:90},(_,i)=>({
    date:new Date(Date.UTC(2026,7,17+i)).toISOString().slice(0,10),
    total:i<60?1000:i<83?300:i<89?400:166,
@@ -265,7 +265,7 @@ if(process.argv.includes('--serve')) {
   }));
   for(const [period,expected] of [[7,'400'],[30,'321'],[90,'779'],[1,'—']]){
    await page.evaluate(days=>anRenderActivity({users:{activity:{days}}}),periodDays.slice(-period));
-   assert.match(await activitySummary.innerText(),new RegExp('Среднее за день\\s*'+expected),'daily average follows the '+period+'-day period');
+   assert.match(await activitySummary.innerText(),new RegExp('Среднее\\s*'+expected),'daily average follows the '+period+'-day period');
    assert.match(await activitySummary.innerText(),/Сегодня\s*166/);
   }
   await page.evaluate(()=>anRenderActivity({users:{activity:{days:[]}}}));
