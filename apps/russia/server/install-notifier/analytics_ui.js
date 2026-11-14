@@ -101,7 +101,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 <div class="an-period" id="an-period"></div>
 <div class="an-charts-grid">
  <div class="an-card an-activity-card">
-  <div class="an-head"><div><div class="an-title">${cardToggle('activity', 'Активность по дням')}</div><div class="an-subtitle">Аккаунты · без гостей</div></div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Аккаунты, обращавшиеся к серверу за день, без гостей. Синий сегмент включает все Android-сборки, в том числе Google Play и RuStore. Аккаунт, активный на Android и iOS, входит в оба сегмента. В общем итоге он учитывается один раз. Сегодня — неполный день.</div></details></div>
+  <div class="an-head"><div><div class="an-title">${cardToggle('activity', 'Активность по дням')}</div><div class="an-subtitle">Аккаунты · без гостей</div></div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Аккаунты, обращавшиеся к серверу за день, без гостей. Синий сегмент включает все Android-сборки, в том числе Google Play и RuStore. Аккаунт, активный на Android и iOS, входит в оба сегмента. В общем итоге он учитывается один раз. Среднее за день — по завершённым дням с данными в выбранном периоде. Сегодня — неполный день, в среднее не входит.</div></details></div>
   <div id="an-body-activity">
   <div class="an-activity-summary" id="an-activity-summary"></div>
   <div class="an-chart" id="an-activity-chart"></div>
@@ -398,16 +398,17 @@ var AN_ACTIVITY_SERIES = [
 ];
 function anRenderActivity(data) {
  var activity=data.users&&data.users.activity, days=activity?activity.days:[], available=days.filter(function(d){return d.total!=null;});
- var latest=available[available.length-1], comparison=activity&&activity.comparison;
- var time=comparison?String(Math.floor(comparison.minute/60)).padStart(2,'0')+':'+String(comparison.minute%60).padStart(2,'0'):'';
- var comparable=comparison&&comparison.today!=null&&comparison.days>0;
+ var latest=available[available.length-1];
+ // The selected period ends today; only its completed days enter the mean.
+ var completed=available.filter(function(d){return d.date<days[days.length-1].date;});
+ var average=completed.length?Math.round(completed.reduce(function(sum,d){return sum+d.total;},0)/completed.length):null;
  var labels=AN_ACTIVITY_SERIES.map(function(series){return anSvgIcon(series.icon)+series.label;});
  document.getElementById('an-activity-summary').innerHTML=latest?[
  ['Сегодня',latest.total]
  ].concat(AN_ACTIVITY_SERIES.map(function(series,i){
   var marker='<i class="an-dot" aria-hidden="true" style="background:'+series.color+'"></i>';
   return ['<span class="an-act-label">'+marker+labels[i]+'</span>',latest[series.key]];
- }),[['Среднее'+(time?' к '+time:''),comparable?comparison.average:null]])
+ }),[['Среднее за день',average]])
  .map(function(m){return '<span>'+m[0]+'<b>'+(m[1]==null?'—':anNum(m[1]))+'</b></span>';}).join(''):'';
  var bars=available.map(function(d){
   var tip='<b>'+anDayLabel(d.date,true)+'</b>' + [

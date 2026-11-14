@@ -215,8 +215,8 @@ if(process.argv.includes('--serve')) {
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(app.url+'/admin#analytics');
   await page.waitForFunction(()=>document.querySelector('#an-now .an-big')?.textContent==='160');
-  // Previous-version cached data never substitutes full-day averages for
-  // missing intraday measurements. Render a measured zero and restore.
+  // Daily averages also work with cached data without intraday measurements.
+  // A zero-activity day counts; the current partial day does not.
   const activityCard=page.locator('.an-activity-card');
   const activityChart=activityCard.locator('#an-activity-chart');
   const activitySummary=activityCard.locator('#an-activity-summary');
@@ -231,7 +231,7 @@ if(process.argv.includes('--serve')) {
    {date:'2026-11-08',total:20,android:0,ios:20},
   ];
   await page.evaluate(days=>anRenderActivity({users:{activity:{days}}}),days);
-  assert.match(await activitySummary.innerText(),/Среднее\s*—/);
+  assert.match(await activitySummary.innerText(),/Среднее за день\s*13/);
   assert.deepEqual(await activityChart.locator('svg > text').allTextContents(),['0','30','6.11','7.11','8.11']);
   assert.equal(await activityChart.locator('rect[data-i]').count(),days.length);
   const segments=await activityChart.locator('svg > path').evaluateAll(paths=>paths.map(path=>{
@@ -252,7 +252,24 @@ if(process.argv.includes('--serve')) {
   await page.evaluate(days=>{
     anRenderActivity({users:{activity:{days,comparison:{minute:852,today:0,average:12,days:3}}}});
   },days);
-  assert.match(await activitySummary.innerText(),/Среднее к 14:12\s*12/);
+  assert.match(await activitySummary.innerText(),/Среднее за день\s*13/);
+  assert.doesNotMatch(await activitySummary.innerText(),/Среднее к/);
+  await page.evaluate(days=>anRenderActivity({users:{activity:{days:days.slice(-1)}}}),days);
+  assert.match(await activitySummary.innerText(),/Среднее за день\s*—/);
+  await page.evaluate(days=>anRenderActivity({users:{activity:{days:[{date:'2026-11-05',total:null},...days]}}}),days);
+  assert.match(await activitySummary.innerText(),/Среднее за день\s*13/);
+  const periodDays=Array.from({length:90},(_,i)=>({
+   date:new Date(Date.UTC(2026,7,17+i)).toISOString().slice(0,10),
+   total:i<60?1000:i<83?300:i<89?400:166,
+   android:0,ios:0,
+  }));
+  for(const [period,expected] of [[7,'400'],[30,'321'],[90,'779'],[1,'—']]){
+   await page.evaluate(days=>anRenderActivity({users:{activity:{days}}}),periodDays.slice(-period));
+   assert.match(await activitySummary.innerText(),new RegExp('Среднее за день\\s*'+expected),'daily average follows the '+period+'-day period');
+   assert.match(await activitySummary.innerText(),/Сегодня\s*166/);
+  }
+  await page.evaluate(()=>anRenderActivity({users:{activity:{days:[]}}}));
+  assert.equal(await activitySummary.innerText(),'');
   await page.evaluate(()=>anRenderActivity(window.__anData));
 
   assert.equal(await page.locator('#an-auth-table tbody tr').count(),4);
