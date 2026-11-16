@@ -17,7 +17,7 @@ export { NotificationsState } from './notifications.js';
 export { TelegramAuthState } from './telegram_auth.js';
 import { NOTIFICATIONS_NAV_HTML, NOTIFICATIONS_VIEW_HTML, NOTIFICATIONS_CLIENT_JS } from './notifications_ui.js';
 import { TASKS_NAV_HTML, TASKS_VIEW_HTML, TASKS_CLIENT_JS } from './tasks_ui.js';
-import { handleTasksAdmin } from './tasks_admin.js';
+import { handleTasksAdmin, maintainTaskLifecycle } from './tasks_admin.js';
 import { ECONOMY_NAV_HTML, ECONOMY_VIEW_HTML, ECONOMY_CLIENT_JS } from './economy_ui.js';
 import { getUsdRate } from './economy_fx.js';
 import { getCloudflareBilling } from './economy_cloudflare.js';
@@ -852,7 +852,7 @@ export function buildReportMessage(b, user = null) {
 // Крон автопостинга (см. wrangler.toml). Раз в пять минут, а не раз в час:
 // он же доводит до конца публикации, которые Cloudflare оборвал на полпути.
 const HOURLY_CRON = '*/5 * * * *';
-const CRON_TASKS = new Set(['game_week', 'provider_keys', 'reconcile', 'autopost', 'threads', 'notifications', 'daily_report', 'reviews', 'error_digest']);
+const CRON_TASKS = new Set(['task_lifecycle', 'game_week', 'provider_keys', 'reconcile', 'autopost', 'threads', 'notifications', 'daily_report', 'reviews', 'error_digest']);
 // Marks which scheduled task failed; the error itself is passed on unchanged.
 const cronTask = (task, work) => Promise.resolve(work).catch(error => {
   if (error && typeof error === 'object') { try { error.cronTask = task; } catch (_) {} }
@@ -4296,6 +4296,9 @@ const workerHandlers = {
   async scheduled(event, env, ctx) {
     if (!env.INSTALLS) return;
     if (new Date(event.scheduledTime || Date.now()).getUTCMinutes() === 0) {
+      if (event.cron === HOURLY_CRON) {
+        ctx.waitUntil(cronTask('task_lifecycle', maintainTaskLifecycle(env, event.scheduledTime || Date.now())));
+      }
       ctx.waitUntil(cronTask('cloudflare_billing', getCloudflareBilling(env)));
       ctx.waitUntil(cronTask('economy_fx', getUsdRate(env)));
     }

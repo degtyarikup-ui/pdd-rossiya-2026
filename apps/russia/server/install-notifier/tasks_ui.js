@@ -1,6 +1,4 @@
-// Раздел «Задачи» админки: современный интерфейс уровня Linear / Tasklify.
-// Канбан-доска, сводка метрик, компактный список, умная типографика карточек (заголовок + описание),
-// прикрепление картинок с красивым превью, фильтры по версиям и приоритету, Drag & Drop + 1-click кнопки.
+// Раздел «Задачи»: доска, исполнители, цветные приоритеты и вложения.
 
 import { TASK_AVATARS } from './tasks_avatars.js';
 
@@ -83,128 +81,18 @@ export const TASKS_VIEW_HTML = `
       font-weight: 500;
     }
 
-    /* 2. Тулбар: переключатели, поиск, фильтры */
-    .tasks-toolbar {
-      display: flex;
-      flex-wrap: wrap;
+    .top-bar.tasks-header {
+      flex-direction: row;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      background: var(--card-bg);
-      padding: 12px 16px;
-      border-radius: 16px;
-      border: 1px solid #EAECEF;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-    }
-    .tasks-toolbar-left {
-      display: flex;
       flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-      flex: 1 1 auto;
+      gap: 12px;
     }
-    .tasks-toolbar-right {
+    #tasks-header-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    .tasks-segmented {
-      display: inline-flex;
-      background: var(--surface-gray);
-      border-radius: 10px;
-      padding: 3px;
-      gap: 2px;
-    }
-    .tasks-segmented button {
-      border: none;
-      background: transparent;
-      border-radius: 8px;
-      padding: 7px 13px;
-      font: inherit;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-light);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.15s ease;
-    }
-    .tasks-segmented button.active {
-      background: #FFFFFF;
-      color: var(--text);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-      font-weight: 700;
-    }
-
-    .tasks-search-wrap {
-      position: relative;
-      min-width: 220px;
-      flex: 1 1 240px;
-      max-width: 340px;
-    }
-    .tasks-search-wrap input {
-      width: 100%;
-      box-sizing: border-box;
-      background: var(--surface-gray);
-      border: 1px solid transparent;
-      border-radius: 10px;
-      padding: 8px 32px 8px 34px;
-      font: inherit;
-      font-size: 13px;
-      color: var(--text);
-      outline: none;
-      transition: all 0.15s ease;
-    }
-    .tasks-search-wrap input:focus {
-      background: #FFFFFF;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--primary-subtle);
-    }
-    .tasks-search-wrap .search-icon {
-      position: absolute;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-muted);
-      pointer-events: none;
-    }
-    .tasks-search-wrap .search-clear {
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      border: none;
-      background: transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 13px;
-      display: none;
-      padding: 2px 6px;
-      border-radius: 50%;
-    }
-    .tasks-search-wrap input:not(:placeholder-shown) + .search-clear {
-      display: block;
-    }
-
-    .tasks-select-pill {
-      background: var(--surface-gray);
-      border: 1px solid transparent;
-      border-radius: 10px;
-      padding: 8px 12px;
-      font: inherit;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      outline: none;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .tasks-select-pill:focus {
-      border-color: var(--primary);
-      background: #FFFFFF;
+      gap: 8px;
+      margin-left: auto;
     }
 
     .tasks-archive-toggle {
@@ -276,6 +164,11 @@ export const TASKS_VIEW_HTML = `
       border-color: #60A5FA;
       box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25);
     }
+    .tasks-col-items {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
     /* Шапка колонки со статусной пилюлей (Status Pill) */
     .tasks-col-head {
@@ -306,34 +199,6 @@ export const TASKS_VIEW_HTML = `
       border-radius: 10px;
       margin-left: 2px;
       font-variant-numeric: tabular-nums;
-    }
-    .tasks-col-add-btn {
-      border: none;
-      background: transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      border-radius: 8px;
-      width: 26px;
-      height: 26px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      font-weight: 700;
-      transition: all 0.12s ease;
-    }
-    .tasks-col-add-btn:hover {
-      background: #FFFFFF;
-      color: var(--primary);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    }
-
-    .tasks-col-items {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-height: 140px;
-      flex: 1;
     }
     .tasks-col-empty {
       text-align: center;
@@ -400,36 +265,67 @@ export const TASKS_VIEW_HTML = `
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
     }
 
-    .task-badges {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 5px;
+    .task-priority-high { --task-priority-color: #D44C31; --task-priority-bg: #FCEDE8; }
+    .task-priority-normal { --task-priority-color: #A16A10; --task-priority-bg: #FFF4D9; }
+    .task-priority-low { --task-priority-color: #667C96; --task-priority-bg: #EDF2F8; }
+    .task-priority-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--task-priority-color);
+      flex-shrink: 0;
     }
-    .task-badge {
+    .task-priority-btn {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 2.5px 7.5px;
+      align-self: flex-start;
+      gap: 5px;
+      padding: 4px 7px;
+      border: 0;
       border-radius: 6px;
+      background: var(--task-priority-bg);
+      color: var(--task-priority-color);
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 550;
+      line-height: 1.3;
+      cursor: pointer;
+      transition: filter .12s ease;
+    }
+    .task-priority-btn:hover { filter: brightness(.96); }
+    .task-priority-btn:disabled { cursor: wait; }
+    .task-priority-field { margin: 0; padding: 0; border: 0; min-width: 0; }
+    .task-priority-field legend {
+      padding: 0;
+      margin-bottom: 6px;
       font-size: 11px;
-      font-weight: 700;
-      letter-spacing: -0.1px;
+      font-weight: 550;
+      color: var(--text-muted);
     }
-    .task-badge.version {
-      background: #EFF6FF;
-      color: #2563EB;
-      border: 1px solid #DBEAFE;
+    .task-priority-choices { display: flex; gap: 4px; }
+    .task-priority-choice {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      flex: 1;
+      min-width: 0;
+      min-height: 36px;
+      padding: 8px;
+      border: 0;
+      border-radius: 9px;
+      background: var(--surface-gray);
+      color: var(--text-light);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 550;
+      cursor: pointer;
     }
-    .task-badge.prio-high {
-      background: #FEF2F2;
-      color: #DC2626;
-      border: 1px solid #FEE2E2;
-    }
-    .task-badge.prio-low {
-      background: #F3F4F6;
-      color: #6B7280;
-      border: 1px solid #E5E7EB;
+    .task-priority-choice[aria-pressed="true"] {
+      background: var(--task-priority-bg);
+      color: var(--task-priority-color);
+      box-shadow: inset 0 0 0 1.5px var(--task-priority-color);
     }
 
     /* Умная типографика задачи: Заголовок + Описание */
@@ -540,7 +436,6 @@ export const TASKS_VIEW_HTML = `
       gap: 2px;
       flex-shrink: 0;
     }
-    .tasks-table .task-assignees { margin-top: 6px; }
     .task-assignee-btn {
       position: relative;
       display: inline-flex;
@@ -622,40 +517,6 @@ export const TASKS_VIEW_HTML = `
     .task-icon-action.danger:hover {
       background: #FEE2E2;
       color: #DC2626;
-    }
-
-    /* 5. Компактный список */
-    .tasks-list-wrap {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 6px 14px;
-      border: 1px solid #EAECEF;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-      overflow-x: auto;
-    }
-    .tasks-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    .tasks-table th, .tasks-table td {
-      padding: 12px 10px;
-      text-align: left;
-      border-bottom: 1px solid var(--surface-gray);
-      vertical-align: middle;
-    }
-    .tasks-table th {
-      color: var(--text-muted);
-      font-size: 11.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-    }
-    .tasks-table tr:last-child td {
-      border-bottom: none;
-    }
-    .tasks-table tr:hover td {
-      background: #F9FAFB;
     }
 
     /* 6. Модальное окно создания и редактирования */
@@ -740,11 +601,11 @@ export const TASKS_VIEW_HTML = `
     }
     .task-form-row {
       display: grid;
-      grid-template-columns: 1.2fr 1fr 1fr;
+      grid-template-columns: minmax(140px, .85fr) minmax(0, 1.5fr);
       gap: 12px;
       margin-bottom: 16px;
     }
-    .task-form-input, .task-form-select {
+    .task-form-select {
       width: 100%;
       box-sizing: border-box;
       border: 1px solid #D1D5DB;
@@ -757,7 +618,7 @@ export const TASKS_VIEW_HTML = `
       background: #FFFFFF;
       transition: all 0.15s;
     }
-    .task-form-input:focus, .task-form-select:focus {
+    .task-form-select:focus {
       border-color: var(--primary);
       box-shadow: 0 0 0 3px var(--primary-subtle);
     }
@@ -859,9 +720,19 @@ export const TASKS_VIEW_HTML = `
     }
     @media (max-width: 600px) {
       .tasks-kpi-grid { grid-template-columns: 1fr; }
-      .tasks-form-row { grid-template-columns: 1fr; }
+      .task-form-row { grid-template-columns: 1fr; }
     }
   </style>
+
+  <div id="tasks-header-actions" style="display:none">
+    <button class="tasks-archive-toggle" id="tasks-archive-btn" type="button" aria-pressed="false" title="Архив">
+      <span>Архив</span><span id="tasks-archive-count">(0)</span>
+    </button>
+    <button class="btn-create-task" id="tasks-add-task-btn" type="button">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Новая задача</span>
+    </button>
+  </div>
 
   <div class="tasks-wrap">
     <!-- 1. Карточки метрик (Task KPI Cards) -->
@@ -903,75 +774,11 @@ export const TASKS_VIEW_HTML = `
       </div>
     </div>
 
-    <!-- 2. Верхняя панель: поиск, фильтры, переключатель вида, кнопка добавления -->
-    <div class="tasks-toolbar">
-      <div class="tasks-toolbar-left">
-        <div class="tasks-segmented" id="tasks-view-toggle">
-          <button class="active" data-view="board" title="Канбан-доска">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="11" rx="1"/></svg>
-            <span>Доска</span>
-          </button>
-          <button data-view="list" title="Табличный список">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-            <span>Список</span>
-          </button>
-        </div>
-
-        <div class="tasks-search-wrap">
-          <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="search" id="tasks-search-input" placeholder="Поиск по задачам…" aria-label="Поиск по задачам">
-          <button class="search-clear" id="tasks-search-clear" type="button" title="Очистить поиск">✕</button>
-        </div>
-
-        <select class="tasks-select-pill" id="tasks-version-filter" title="Фильтр по версии игры">
-          <option value="all">Все версии</option>
-          <option value="none">Без версии</option>
-        </select>
-
-        <select class="tasks-select-pill" id="tasks-priority-filter" title="Фильтр по приоритету">
-          <option value="all">Все приоритеты</option>
-          <option value="high">Высокий</option>
-          <option value="normal">Обычный</option>
-          <option value="low">Низкий</option>
-        </select>
-      </div>
-
-      <div class="tasks-toolbar-right">
-        <button class="tasks-archive-toggle" id="tasks-archive-btn" title="Показать или скрыть архивные задачи">
-          <span>Архив</span>
-          <span id="tasks-archive-count" style="font-size:11.5px; opacity:.85; font-variant-numeric:tabular-nums;">(0)</span>
-        </button>
-        <button class="btn-create-task" id="tasks-add-task-btn">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span>Новая задача</span>
-        </button>
-      </div>
-    </div>
-
     <!-- 3. Канбан-доска -->
     <div class="tasks-board" id="tasks-board-container">
       <!-- Колонки генерируются динамически -->
     </div>
 
-    <!-- 4. Компактный список (по умолчанию скрыт) -->
-    <div class="tasks-list-wrap" id="tasks-list-container" style="display:none">
-      <table class="tasks-table">
-        <thead>
-          <tr>
-            <th style="width:140px">Статус</th>
-            <th>Задача</th>
-            <th style="width:110px">Версия</th>
-            <th style="width:110px">Приоритет</th>
-            <th style="width:90px">Файлы</th>
-            <th style="width:110px">Дата</th>
-            <th style="width:100px; text-align:right">Действия</th>
-          </tr>
-        </thead>
-        <tbody id="tasks-table-body">
-          <tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:30px;">Загрузка…</td></tr>
-        </tbody>
-      </table>
-    </div>
   </div>
 
   <!-- Модальное окно создания и редактирования задачи -->
@@ -1002,20 +809,14 @@ export const TASKS_VIEW_HTML = `
           </select>
         </div>
 
-        <div class="task-form-group" style="margin:0">
-          <label for="task-form-version">Версия приложения</label>
-          <input class="task-form-input" id="task-form-version" list="tasks-versions-datalist" placeholder="Например: v1.0.7">
-          <datalist id="tasks-versions-datalist"></datalist>
-        </div>
-
-        <div class="task-form-group" style="margin:0">
-          <label for="task-form-priority">Приоритет</label>
-          <select class="task-form-select" id="task-form-priority">
-            <option value="high">Высокий</option>
-            <option value="normal" selected>Обычный</option>
-            <option value="low">Низкий</option>
-          </select>
-        </div>
+        <fieldset class="task-priority-field" id="task-form-priority">
+          <legend>Приоритет</legend>
+          <div class="task-priority-choices">
+            <button type="button" class="task-priority-choice task-priority-low" data-form-priority="low" aria-pressed="false"><span class="task-priority-dot"></span>Низкий</button>
+            <button type="button" class="task-priority-choice task-priority-normal" data-form-priority="normal" aria-pressed="true"><span class="task-priority-dot"></span>Обычный</button>
+            <button type="button" class="task-priority-choice task-priority-high" data-form-priority="high" aria-pressed="false"><span class="task-priority-dot"></span>Высокий</button>
+          </div>
+        </fieldset>
       </div>
 
       <div class="task-form-group">
@@ -1065,29 +866,31 @@ VIEW_TITLES.tasks = 'Задачи';
   ];
 
   var allTasks = [];
-  var currentVersions = [];
   var showArchive = false;
-  var currentView = 'board';
-  var searchQuery = '';
-  var versionFilter = 'all';
-  var priorityFilter = 'all';
+  var archiveReturnScroll = 0;
   var statusFilter = 'all';
   var modalPendingAttachments = [];
   var draggedTaskId = null;
-  var isLoaded = false;
   var pendingAssignments = Object.create(null);
+  var pendingPriorities = Object.create(null);
+  var PRIORITIES = [
+    { id: 'low', name: 'Низкий' },
+    { id: 'normal', name: 'Обычный' },
+    { id: 'high', name: 'Высокий' }
+  ];
 
   var boardEl = document.getElementById('tasks-board-container');
-  var listWrapEl = document.getElementById('tasks-list-container');
-  var tableBodyEl = document.getElementById('tasks-table-body');
-  var searchInput = document.getElementById('tasks-search-input');
-  var searchClearBtn = document.getElementById('tasks-search-clear');
-  var versionSelect = document.getElementById('tasks-version-filter');
-  var prioritySelect = document.getElementById('tasks-priority-filter');
   var archiveBtn = document.getElementById('tasks-archive-btn');
   var archiveCountEl = document.getElementById('tasks-archive-count');
-  var viewToggle = document.getElementById('tasks-view-toggle');
   var addBtn = document.getElementById('tasks-add-task-btn');
+  var headerActions = document.getElementById('tasks-header-actions');
+  var pageHeader = document.getElementById('current-view-title').closest('header');
+  pageHeader.appendChild(headerActions);
+  function syncTaskHeader(isTasks) {
+    pageHeader.classList.toggle('tasks-header', isTasks);
+    headerActions.style.display = isTasks ? 'flex' : 'none';
+  }
+
 
   var kpiTotalEl = document.getElementById('tasks-kpi-total');
   var kpiProgressEl = document.getElementById('tasks-kpi-progress');
@@ -1100,8 +903,8 @@ VIEW_TITLES.tasks = 'Задачи';
   var formIdInput = document.getElementById('task-form-id');
   var formTextInput = document.getElementById('task-form-text');
   var formStatusSelect = document.getElementById('task-form-status');
-  var formVersionInput = document.getElementById('task-form-version');
-  var formPrioritySelect = document.getElementById('task-form-priority');
+  var formPriorityEl = document.getElementById('task-form-priority');
+  var modalPriority = 'normal';
   var formDeleteBtn = document.getElementById('task-form-delete-btn');
   var formCancelBtn = document.getElementById('task-form-cancel-btn');
   var modalCloseBtn = document.getElementById('tasks-modal-close-btn');
@@ -1119,17 +922,6 @@ VIEW_TITLES.tasks = 'Задачи';
 
   function esc(s) {
     return typeof adminEsc === 'function' ? adminEsc(s) : String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  function formatDate(ts) {
-    if (!ts) return '';
-    var d = new Date(ts);
-    var now = new Date();
-    var isToday = d.toDateString() === now.toDateString();
-    if (isToday) return 'Сегодня';
-    var yesterday = new Date(now.getTime() - 86400000);
-    if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
-    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
   }
 
   function splitTaskText(raw) {
@@ -1190,11 +982,8 @@ VIEW_TITLES.tasks = 'Задачи';
     function accept(res){
       if(id!==tasksLoadId)return;
       allTasks = (res.tasks || []).map(function(task) {
-        return pendingAssignments[task.id] ? Object.assign({}, task, { assignee: pendingAssignments[task.id] }) : task;
+        return Object.assign({}, task, pendingAssignments[task.id] ? { assignee: pendingAssignments[task.id] } : {}, pendingPriorities[task.id] ? { priority: pendingPriorities[task.id] } : {});
       });
-      currentVersions = res.versions || [];
-      isLoaded = true;
-      syncVersionsDropdown();
       render();
     }
     try {
@@ -1208,25 +997,6 @@ VIEW_TITLES.tasks = 'Задачи';
     }
   }
   window.loadTasks=loadTasks;
-
-  function syncVersionsDropdown() {
-    var cur = versionSelect.value;
-    var html = '<option value="all">Все версии</option><option value="none">Без версии</option>';
-    currentVersions.forEach(function(v) {
-      html += '<option value="' + esc(v) + '">' + esc(v) + '</option>';
-    });
-    versionSelect.innerHTML = html;
-    if (cur && (cur === 'all' || cur === 'none' || currentVersions.indexOf(cur) !== -1)) {
-      versionSelect.value = cur;
-    }
-
-    var datalist = document.getElementById('tasks-versions-datalist');
-    if (datalist) {
-      datalist.innerHTML = currentVersions.map(function(v) {
-        return '<option value="' + esc(v) + '">';
-      }).join('');
-    }
-  }
 
   function updateKpiCards() {
     var total = allTasks.filter(function(t) { return t.status !== 'archived'; }).length;
@@ -1244,35 +1014,12 @@ VIEW_TITLES.tasks = 'Задачи';
     });
   }
 
-  function getFilteredTasks() {
-    var q = searchQuery.trim().toLowerCase();
-    return allTasks.filter(function(t) {
-      if (q && (t.text || '').toLowerCase().indexOf(q) === -1 && (t.version || '').toLowerCase().indexOf(q) === -1) {
-        return false;
-      }
-      if (versionFilter === 'none' && t.version) return false;
-      if (versionFilter !== 'all' && versionFilter !== 'none' && t.version !== versionFilter) return false;
-      if (priorityFilter !== 'all' && (t.priority || 'normal') !== priorityFilter) return false;
-      if (statusFilter !== 'all' && t.status !== statusFilter) return false;
-      return true;
-    });
-  }
-
   function render() {
     updateKpiCards();
-    var filtered = getFilteredTasks();
-    var archivedCount = allTasks.filter(function(t) { return t.status === 'archived'; }).length;
+    var filtered = allTasks.filter(function(task) { return statusFilter === 'all' || task.status === statusFilter; });
+    var archivedCount = allTasks.filter(function(task) { return task.status === 'archived'; }).length;
     if (archiveCountEl) archiveCountEl.textContent = '(' + archivedCount + ')';
-
-    if (currentView === 'board') {
-      boardEl.style.display = 'grid';
-      listWrapEl.style.display = 'none';
-      renderBoard(filtered);
-    } else {
-      boardEl.style.display = 'none';
-      listWrapEl.style.display = 'block';
-      renderList(filtered);
-    }
+    renderBoard(filtered);
   }
 
   function renderBoard(filtered) {
@@ -1294,7 +1041,6 @@ VIEW_TITLES.tasks = 'Задачи';
             '<span>' + esc(colDef.name) + '</span>' +
             '<span class="col-count">' + colTasks.length + '</span>' +
           '</div>' +
-          '<button class="tasks-col-add-btn" data-add-to-status="' + colDef.id + '" title="Добавить задачу сюда">+</button>' +
         '</div>' +
         '<div class="tasks-col-items" data-col-status="' + colDef.id + '">' + itemsHtml + '</div>' +
         '<button class="tasks-col-quick-add" data-add-to-status="' + colDef.id + '">+ Добавить задачу</button>' +
@@ -1306,16 +1052,6 @@ VIEW_TITLES.tasks = 'Задачи';
   }
 
   function renderCard(t) {
-    var badgesHtml = '';
-    if (t.version) {
-      badgesHtml += '<span class="task-badge version" title="Версия">' + esc(t.version) + '</span>';
-    }
-    if (t.priority === 'high') {
-      badgesHtml += '<span class="task-badge prio-high">Срочно</span>';
-    } else if (t.priority === 'low') {
-      badgesHtml += '<span class="task-badge prio-low">Низкий</span>';
-    }
-
     var imagePreviewHtml = '';
     var otherAttsHtml = '';
     if (Array.isArray(t.attachments) && t.attachments.length) {
@@ -1345,7 +1081,7 @@ VIEW_TITLES.tasks = 'Задачи';
     var isLong = parts.body.length > 180 || (parts.body.match(/\\n/g) || []).length > 3;
 
     return '<div class="task-card" draggable="true" data-task-id="' + t.id + '">' +
-      (badgesHtml ? '<div class="task-badges">' + badgesHtml + '</div>' : '') +
+      renderPriority(t) +
       imagePreviewHtml +
       '<div class="task-card-content" data-edit-task="' + t.id + '">' +
         '<div class="task-card-title">' + esc(parts.title) + '</div>' +
@@ -1370,43 +1106,67 @@ VIEW_TITLES.tasks = 'Задачи';
     '</div>';
   }
 
-  function renderList(filtered) {
-    if (!filtered.length) {
-      tableBodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:30px;">Задачи не найдены</td></tr>';
-      return;
-    }
-
-    var html = filtered.map(function(t) {
-      var statusDef = STATUS_DEFS.find(function(s) { return s.id === (t.status || 'idea'); }) || STATUS_DEFS[0];
-      var prioLabel = t.priority === 'high' ? 'Высокий' : t.priority === 'low' ? 'Низкий' : 'Обычный';
-      var filesCount = Array.isArray(t.attachments) ? t.attachments.length : 0;
-      var parts = splitTaskText(t.text);
-
-      return '<tr data-task-id="' + t.id + '">' +
-        '<td><span class="tasks-col-pill" style="background:' + statusDef.bg + '; color:' + statusDef.color + '; font-size:11.5px; padding:3px 8px;">' + statusDef.emoji + ' ' + esc(statusDef.name) + '</span></td>' +
-        '<td>' +
-          '<div style="font-weight:700; color:#111827; cursor:pointer;" data-edit-task="' + t.id + '">' + esc(parts.title) + '</div>' +
-          (parts.body ? '<div style="font-size:12px; color:#6B7280; margin-top:2px; max-width:500px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + esc(parts.body) + '</div>' : '') +
-          renderAssignees(t) +
-        '</td>' +
-        '<td>' + (t.version ? '<span class="task-badge version">' + esc(t.version) + '</span>' : '—') + '</td>' +
-        '<td>' + prioLabel + '</td>' +
-        '<td>' + (filesCount ? '📎 ' + filesCount : '—') + '</td>' +
-        '<td><small style="color:#9CA3AF; font-weight:600;">' + formatDate(t.updatedAt || t.createdAt) + '</small></td>' +
-        '<td style="text-align:right">' +
-          '<button class="task-icon-action" data-edit-task="' + t.id + '" style="display:inline-flex;" title="Редактировать">' +
-            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
-          '</button>' +
-          '<button class="task-icon-action danger" data-delete-task="' + t.id + '" style="display:inline-flex; margin-left:4px;" title="Удалить">' +
-            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
-          '</button>' +
-        '</td>' +
-      '</tr>';
-    }).join('');
-
-    tableBodyEl.innerHTML = html;
-    bindCardEvents();
+  function priorityFor(task) {
+    return PRIORITIES.find(function(priority) { return priority.id === task.priority; }) || PRIORITIES[1];
   }
+
+  function renderPriority(task) {
+    var priority = priorityFor(task);
+    var next = PRIORITIES[(PRIORITIES.indexOf(priority) + 1) % PRIORITIES.length];
+    return '<button type="button" class="task-priority-btn task-priority-' + priority.id + '" data-priority-task="' + esc(task.id) + '" data-priority="' + priority.id + '" title="Приоритет: ' + priority.name + '" aria-label="Приоритет: ' + priority.name + '. Изменить на ' + next.name.toLowerCase() + '"' + (pendingPriorities[task.id] ? ' disabled' : '') + '>' +
+      '<span class="task-priority-dot" aria-hidden="true"></span><span class="task-priority-label">' + priority.name + '</span></button>';
+  }
+
+  function updatePriority(task) {
+    var priority = priorityFor(task);
+    var next = PRIORITIES[(PRIORITIES.indexOf(priority) + 1) % PRIORITIES.length];
+    container.querySelectorAll('.task-priority-btn').forEach(function(button) {
+      if (button.dataset.priorityTask !== task.id) return;
+      button.className = 'task-priority-btn task-priority-' + priority.id;
+      button.dataset.priority = priority.id;
+      button.title = 'Приоритет: ' + priority.name;
+      button.setAttribute('aria-label', button.title + '. Изменить на ' + next.name.toLowerCase());
+      button.querySelector('.task-priority-label').textContent = priority.name;
+      button.disabled = Boolean(pendingPriorities[task.id]);
+    });
+  }
+
+  async function cyclePriority(taskId) {
+    var task = allTasks.find(function(item) { return item.id === taskId; });
+    if (!task || pendingPriorities[taskId]) return;
+    var previous = priorityFor(task).id;
+    var next = PRIORITIES[(PRIORITIES.findIndex(function(priority) { return priority.id === previous; }) + 1) % PRIORITIES.length].id;
+    pendingPriorities[taskId] = next;
+    task.priority = next;
+    ++tasksLoadId;
+    updatePriority(task);
+    try {
+      var res = await api('/priority', 'POST', { id: taskId, priority: next });
+      task = allTasks.find(function(item) { return item.id === taskId; });
+      if (task) {
+        task.priority = res.task.priority;
+        task.updatedAt = res.task.updatedAt;
+      }
+    } catch (err) {
+      task = allTasks.find(function(item) { return item.id === taskId; });
+      if (task) task.priority = previous;
+      notify('Не удалось изменить приоритет: ' + err.message, true);
+    } finally {
+      delete pendingPriorities[taskId];
+      if (task) updatePriority(task);
+    }
+  }
+
+  function setFormPriority(priority) {
+    modalPriority = PRIORITIES.some(function(item) { return item.id === priority; }) ? priority : 'normal';
+    formPriorityEl.querySelectorAll('[data-form-priority]').forEach(function(button) {
+      button.setAttribute('aria-pressed', String(button.dataset.formPriority === modalPriority));
+    });
+  }
+  formPriorityEl.addEventListener('click', function(event) {
+    var button = event.target.closest('[data-form-priority]');
+    if (button) setFormPriority(button.dataset.formPriority);
+  });
 
   function renderAssignees(task) {
     return '<div class="task-assignees" data-task-id="' + esc(task.id) + '" data-assigned="' + Boolean(task.assignee) + '" role="group" aria-label="Исполнитель" aria-busy="' + Boolean(pendingAssignments[task.id]) + '">' +
@@ -1504,6 +1264,11 @@ VIEW_TITLES.tasks = 'Задачи';
   // Делегированные клики
   var container = document.getElementById('tasks-view');
   container.addEventListener('click', async function(e) {
+    var priorityBtn = e.target.closest('.task-priority-btn');
+    if (priorityBtn) {
+      await cyclePriority(priorityBtn.dataset.priorityTask);
+      return;
+    }
     var assigneeBtn = e.target.closest('.task-assignee-btn');
     if (assigneeBtn) {
       await assignTask(assigneeBtn.closest('.task-assignees').dataset.taskId, assigneeBtn.dataset.assignee);
@@ -1572,41 +1337,19 @@ VIEW_TITLES.tasks = 'Задачи';
 
   lightbox.addEventListener('click', function() { lightbox.close(); });
 
-  // Переключение вида (Доска / Список)
-  viewToggle.addEventListener('click', function(e) {
-    var btn = e.target.closest('button');
-    if (!btn || !btn.dataset.view) return;
-    viewToggle.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
-    currentView = btn.dataset.view;
-    render();
-  });
-
-  // Поиск и фильтры
-  searchInput.addEventListener('input', function() {
-    searchQuery = searchInput.value;
-    render();
-  });
-  if (searchClearBtn) {
-    searchClearBtn.addEventListener('click', function() {
-      searchInput.value = '';
-      searchQuery = '';
-      render();
-      searchInput.focus();
-    });
-  }
-  versionSelect.addEventListener('change', function() {
-    versionFilter = versionSelect.value;
-    render();
-  });
-  prioritySelect.addEventListener('change', function() {
-    priorityFilter = prioritySelect.value;
-    render();
-  });
   archiveBtn.addEventListener('click', function() {
+    if (!showArchive) archiveReturnScroll = boardEl.scrollLeft;
     showArchive = !showArchive;
     archiveBtn.classList.toggle('active', showArchive);
+    archiveBtn.setAttribute('aria-pressed', String(showArchive));
+    if (showArchive) statusFilter = 'all';
     render();
+    if (showArchive) {
+      var archivedColumn = boardEl.querySelector('.tasks-col[data-col-status="archived"]');
+      if (archivedColumn) boardEl.scrollLeft += archivedColumn.getBoundingClientRect().left - boardEl.getBoundingClientRect().left;
+    } else {
+      boardEl.scrollLeft = archiveReturnScroll;
+    }
   });
 
   // Кнопка добавления задачи
@@ -1621,8 +1364,7 @@ VIEW_TITLES.tasks = 'Задачи';
     formIdInput.value = task ? task.id : '';
     formTextInput.value = task ? (task.text || '') : '';
     formStatusSelect.value = task ? (task.status || 'idea') : (defaultStatus || 'idea');
-    formVersionInput.value = task ? (task.version || '') : (versionFilter !== 'all' && versionFilter !== 'none' ? versionFilter : '');
-    formPrioritySelect.value = task ? (task.priority || 'normal') : 'normal';
+    setFormPriority(task ? task.priority : 'normal');
     formDeleteBtn.style.display = task ? 'inline-block' : 'none';
 
     modalPendingAttachments = task && Array.isArray(task.attachments) ? task.attachments.slice() : [];
@@ -1679,8 +1421,7 @@ VIEW_TITLES.tasks = 'Задачи';
       id: formIdInput.value || undefined,
       text: text,
       status: formStatusSelect.value,
-      version: formVersionInput.value.trim(),
-      priority: formPrioritySelect.value,
+      priority: modalPriority,
       attachments: modalPendingAttachments
     };
 
@@ -1692,14 +1433,13 @@ VIEW_TITLES.tasks = 'Задачи';
       var res = await api('/save', 'POST', payload);
       var saved = res.task;
       if (pendingAssignments[saved.id]) saved.assignee = pendingAssignments[saved.id];
+      if (pendingPriorities[saved.id]) saved.priority = pendingPriorities[saved.id];
       var existingIdx = allTasks.findIndex(function(t) { return t.id === saved.id; });
       if (existingIdx !== -1) {
         allTasks[existingIdx] = saved;
       } else {
         allTasks.unshift(saved);
       }
-      currentVersions = res.versions || currentVersions;
-      syncVersionsDropdown();
       closeModal();
       render();
       notify('Задача сохранена');
@@ -1780,10 +1520,12 @@ VIEW_TITLES.tasks = 'Задачи';
       var isTasks = btn.dataset.feature === 'tasks';
       var view = document.getElementById('tasks-view');
       if (view) view.style.display = isTasks ? 'block' : 'none';
+      syncTaskHeader(isTasks);
       if (isTasks) loadTasks();
     });
   });
 
+  syncTaskHeader(currentFeature === 'tasks');
   if (location.hash === '#tasks' || localStorage.getItem('pdd-admin-feature') === 'tasks') {
     loadTasks();
   }

@@ -1,5 +1,5 @@
-// API раздела «Задачи» админки: Канбан-доска, список, статусы жизненного цикла,
-// версии игры/приложения, приоритеты и вложения (скриншоты/файлы).
+// API раздела «Задачи» админки: Канбан-доска, статусы жизненного цикла,
+// исполнители, приоритеты и вложения (скриншоты/файлы).
 // Хранилище: KV env.INSTALLS.
 
 export const TASK_STATUSES = ['idea', 'planned', 'in_progress', 'ready', 'released', 'archived'];
@@ -7,9 +7,12 @@ export const TASK_PRIORITIES = ['high', 'normal', 'low'];
 export const TASK_ASSIGNEES = ['', 'sergey', 'nikita'];
 export const MAX_TASK_TEXT_LENGTH = 10000;
 export const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024; // 10 МБ
+export const RELEASED_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+export const ARCHIVED_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 const KV_TASKS_KEY = 'tasks:items';
 const KV_ATTACHMENT_PREFIX = 'task_att:';
+const KV_ATTACHMENT_CLEANUP_KEY = 'tasks:attachment_cleanup';
 
 function reply(data, status = 200, extraHeaders = {}) {
   return Response.json(data, {
@@ -22,33 +25,126 @@ function reply(data, status = 200, extraHeaders = {}) {
   });
 }
 
-export async function getStoredTasks(env) {
-  if (!env || !env.INSTALLS) return [];
-  try {
-    const raw = await env.INSTALLS.get(KV_TASKS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
-    console.error('getStoredTasks error:', err);
-    return [];
+async function readTasksSnapshot(env) {
+  if (!env?.INSTALLS) throw new Error('Хранилище задач недоступно');
+  const raw = await env.INSTALLS.get(KV_TASKS_KEY);
+  if (raw === null || raw === undefined) return { raw, tasks: [] };
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed)) throw new Error('Некорректный список задач');
+  const ids = new Set();
+  for (const task of parsed) {
+    if (!task || typeof task !== 'object' || Array.isArray(task)
+      || typeof task.id !== 'string' || !task.id.trim() || ids.has(task.id)
+      || typeof task.text !== 'string' || !task.text.trim()
+      || !TASK_STATUSES.includes(task.status)
+      || (task.attachments !== undefined && (!Array.isArray(task.attachments)
+        || task.attachments.some(att => !att || typeof att !== 'object' || Array.isArray(att)
+          || typeof att.id !== 'string' || !att.id.trim())))) {
+      throw new Error('Некорректная запись задачи');
+    }
+    ids.add(task.id);
   }
+  return { raw, tasks: parsed };
+}
+
+export async function getStoredTasks(env) {
+  return (await readTasksSnapshot(env)).tasks;
 }
 
 export async function putStoredTasks(env, tasks) {
-  if (!env || !env.INSTALLS) return false;
+  if (!env?.INSTALLS) throw new Error('Хранилище задач недоступно');
   await env.INSTALLS.put(KV_TASKS_KEY, JSON.stringify(tasks));
   return true;
 }
 
-export function extractVersions(tasks) {
-  const versions = new Set();
-  for (const t of tasks) {
-    if (t.version && typeof t.version === 'string' && t.version.trim()) {
-      versions.add(t.version.trim());
+function validTimestamp(value) {
+  return Number.isFinite(value) && value > 0;
+}
+
+function taskStatusChangedAt(task, now) {
+  return [task.statusChangedAt, task.updatedAt, task.createdAt, now].find(validTimestamp);
+}
+
+function attachmentIds(tasks) {
+  return new Set(tasks.flatMap(task => (task.attachments || []).map(att => att.id)));
+}
+
+async function attachmentCleanupQueue(env) {
+  const raw = await env.INSTALLS.get(KV_ATTACHMENT_CLEANUP_KEY);
+  if (raw === null || raw === undefined) return [];
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed) || parsed.some(id => typeof id !== 'string' || !id.trim())) {
+    throw new Error('Некорректная очередь удаления вложений');
+  }
+  return [...new Set(parsed)];
+}
+
+// Persist cleanup intent before removing task rows; failed blob deletion is retried.
+async function storeTasksAndCleanAttachments(env, tasks, removedTasks, writeTasks, pendingCleanup, expectedSnapshot) {
+  const pending = pendingCleanup ?? await attachmentCleanupQueue(env);
+  const retainedIds = attachmentIds(tasks);
+  const candidates = [...new Set([...pending, ...attachmentIds(removedTasks)])]
+    .filter(id => !retainedIds.has(id));
+  const addedCandidates = candidates.some(id => !pending.includes(id));
+  if (writeTasks && expectedSnapshot && (await readTasksSnapshot(env)).raw !== expectedSnapshot.raw) return false;
+  if (addedCandidates) await env.INSTALLS.put(KV_ATTACHMENT_CLEANUP_KEY, JSON.stringify(candidates));
+  if (writeTasks) {
+    // KV has no compare-and-swap: skip an observed intervening edit and retry
+    // next hour. This narrows the pre-existing whole-array race best effort.
+    if (addedCandidates && expectedSnapshot && (await readTasksSnapshot(env)).raw !== expectedSnapshot.raw) return false;
+    await putStoredTasks(env, tasks);
+  }
+
+  const failed = [];
+  const latestAttachmentIds = candidates.length ? attachmentIds(await getStoredTasks(env)) : retainedIds;
+  for (const id of candidates) {
+    if (latestAttachmentIds.has(id)) continue;
+    try {
+      await env.INSTALLS.delete(KV_ATTACHMENT_PREFIX + id);
+    } catch (error) {
+      failed.push(id);
+      console.error('Failed to delete task attachment', id, error);
     }
   }
-  return Array.from(versions).sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }));
+  const storedCleanup = addedCandidates ? candidates : pending;
+  if (storedCleanup.length && JSON.stringify(failed) !== JSON.stringify(storedCleanup)) {
+    await env.INSTALLS.put(KV_ATTACHMENT_CLEANUP_KEY, JSON.stringify(failed));
+  }
+  if (failed.length) throw new Error('Не удалось удалить вложения задач');
+  return true;
+}
+
+export async function maintainTaskLifecycle(env, now = Date.now()) {
+  if (!validTimestamp(now)) throw new Error('Некорректное время обслуживания задач');
+  const snapshot = await readTasksSnapshot(env);
+  const tasks = snapshot.tasks;
+  const pendingCleanup = await attachmentCleanupQueue(env);
+  const retained = [];
+  const removed = [];
+  let changed = false;
+  let archived = 0;
+  for (const task of tasks) {
+    const statusChangedAt = taskStatusChangedAt(task, now);
+    let next = task;
+    if (task.statusChangedAt !== statusChangedAt) {
+      next = { ...next, statusChangedAt };
+      changed = true;
+    }
+    if (next.status === 'released' && now - next.statusChangedAt >= RELEASED_RETENTION_MS) {
+      next = { ...next, status: 'archived', statusChangedAt: next.statusChangedAt + RELEASED_RETENTION_MS, updatedAt: now };
+      changed = true;
+      archived++;
+    }
+    if (next.status === 'archived' && now - next.statusChangedAt >= ARCHIVED_RETENTION_MS) {
+      removed.push(next);
+      changed = true;
+    } else {
+      retained.push(next);
+    }
+  }
+  const stored = await storeTasksAndCleanAttachments(env, retained, removed, changed, pendingCleanup, snapshot);
+  if (!stored) return { ok: true, changed: false, archived: 0, deleted: 0, skipped: 'snapshot_changed' };
+  return { ok: true, changed, archived, deleted: removed.length };
 }
 
 export function validateTaskInput(input) {
@@ -67,7 +163,6 @@ export function validateTaskInput(input) {
 
   const status = TASK_STATUSES.includes(input?.status) ? input.status : 'idea';
   const priority = TASK_PRIORITIES.includes(input?.priority) ? input.priority : 'normal';
-  const version = typeof input?.version === 'string' ? input.version.trim().slice(0, 50) : '';
 
   const attachments = Array.isArray(input?.attachments)
     ? input.attachments.filter(a => a && typeof a.id === 'string' && a.id.trim()).map(a => ({
@@ -85,7 +180,6 @@ export function validateTaskInput(input) {
       text,
       status,
       priority,
-      version,
       attachments,
       ...(hasAssignee ? { assignee: input.assignee } : {}),
     },
@@ -93,14 +187,22 @@ export function validateTaskInput(input) {
 }
 
 export async function handleTasksAdmin(request, env, url) {
+  try {
+    return await dispatchTasksAdmin(request, env, url);
+  } catch (error) {
+    console.error('Tasks storage error:', error);
+    return reply({ error: 'Хранилище задач недоступно' }, 503);
+  }
+}
+
+async function dispatchTasksAdmin(request, env, url) {
   const path = url.pathname;
   const method = request.method;
 
   // 1. Получение списка всех задач
   if (path === '/api/admin/tasks' && method === 'GET') {
     const tasks = (await getStoredTasks(env)).map(task => ({ ...task, assignee: task.assignee ?? '' }));
-    const versions = extractVersions(tasks);
-    return reply({ ok: true, tasks, versions });
+    return reply({ ok: true, tasks });
   }
 
   // 2. Создание или обновление задачи
@@ -126,6 +228,7 @@ export async function handleTasksAdmin(request, env, url) {
         tasks[idx] = {
           ...tasks[idx],
           assignee: tasks[idx].assignee ?? '',
+          statusChangedAt: tasks[idx].status === check.data.status ? taskStatusChangedAt(tasks[idx], now) : now,
           ...check.data,
           updatedAt: now,
         };
@@ -140,14 +243,14 @@ export async function handleTasksAdmin(request, env, url) {
         ...check.data,
         createdAt: now,
         updatedAt: now,
+        statusChangedAt: now,
       };
       // Новые задачи добавляем в начало списка
       tasks.unshift(targetTask);
     }
 
     await putStoredTasks(env, tasks);
-    const versions = extractVersions(tasks);
-    return reply({ ok: true, task: targetTask, versions });
+    return reply({ ok: true, task: targetTask });
   }
 
   // 3. Быстрое изменение статуса (move)
@@ -167,8 +270,10 @@ export async function handleTasksAdmin(request, env, url) {
     const task = tasks.find(t => t.id === id);
     if (!task) return reply({ error: 'Задача не найдена' }, 404);
 
+    const now = Date.now();
+    task.statusChangedAt = task.status === status ? taskStatusChangedAt(task, now) : now;
     task.status = status;
-    task.updatedAt = Date.now();
+    task.updatedAt = now;
     await putStoredTasks(env, tasks);
 
     return reply({ ok: true, task });
@@ -191,10 +296,34 @@ export async function handleTasksAdmin(request, env, url) {
     const task = tasks.find(t => t.id === id.trim());
     if (!task) return reply({ error: 'Задача не найдена' }, 404);
 
+    const now = Date.now();
+    task.statusChangedAt = taskStatusChangedAt(task, now);
     task.assignee = assignee;
-    task.updatedAt = Date.now();
+    task.updatedAt = now;
     await putStoredTasks(env, tasks);
 
+    return reply({ ok: true, task });
+  }
+
+  if (path === '/api/admin/tasks/priority' && method === 'POST') {
+    let body;
+    try {
+      body = await request.json();
+    } catch (_) {
+      return reply({ error: 'Некорректный JSON' }, 400);
+    }
+    const { id, priority } = body || {};
+    if (typeof id !== 'string' || !id.trim()) return reply({ error: 'Не указан ID задачи' }, 400);
+    if (!TASK_PRIORITIES.includes(priority)) return reply({ error: 'Недопустимый приоритет' }, 400);
+
+    const tasks = await getStoredTasks(env);
+    const task = tasks.find(t => t.id === id.trim());
+    if (!task) return reply({ error: 'Задача не найдена' }, 404);
+    const now = Date.now();
+    task.statusChangedAt = taskStatusChangedAt(task, now);
+    task.priority = priority;
+    task.updatedAt = now;
+    await putStoredTasks(env, tasks);
     return reply({ ok: true, task });
   }
 
@@ -215,23 +344,8 @@ export async function handleTasksAdmin(request, env, url) {
     if (idx === -1) return reply({ error: 'Задача не найдена' }, 404);
 
     const [deletedTask] = tasks.splice(idx, 1);
-    await putStoredTasks(env, tasks);
-
-    // Удаляем вложения из KV при наличии
-    if (env && env.INSTALLS && Array.isArray(deletedTask.attachments)) {
-      for (const att of deletedTask.attachments) {
-        if (att && att.id) {
-          try {
-            await env.INSTALLS.delete(KV_ATTACHMENT_PREFIX + att.id);
-          } catch (e) {
-            console.error('Failed to delete attachment', att.id, e);
-          }
-        }
-      }
-    }
-
-    const versions = extractVersions(tasks);
-    return reply({ ok: true, id, versions });
+    await storeTasksAndCleanAttachments(env, tasks, [deletedTask], true);
+    return reply({ ok: true, id });
   }
 
   // 5. Загрузка вложения (картинка или файл)
