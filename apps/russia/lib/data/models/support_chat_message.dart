@@ -36,7 +36,29 @@ class SupportChatMessage {
   bool get isClosedNotice => kind == 'closed';
 
   /// Текст для показа: служебные сообщения — на языке приложения.
-  String get displayText => isClosedNotice ? appL10n.supportChatClosed : text;
+  String get displayText {
+    if (isClosedNotice) return appL10n.supportChatClosed;
+    if (!isSupport) return text;
+    final labels = {
+      'attachment_sticker': ('[Стикер]', appL10n.supportAttachmentSticker),
+      'attachment_voice': (
+        '[Голосовое сообщение]',
+        appL10n.supportAttachmentVoice,
+      ),
+      'attachment_document': ('[Документ]', appL10n.supportAttachmentDocument),
+      'attachment_attachment': ('[Вложение]', appL10n.supportAttachmentOther),
+    };
+    final label = labels[kind];
+    if (label != null && text.endsWith(label.$1)) {
+      return text.substring(0, text.length - label.$1.length) + label.$2;
+    }
+    if (kind == null) {
+      for (final legacy in labels.values) {
+        if (text == legacy.$1) return legacy.$2;
+      }
+    }
+    return text;
+  }
 
   bool get hasImage =>
       (imageUrl != null && imageUrl!.isNotEmpty) ||

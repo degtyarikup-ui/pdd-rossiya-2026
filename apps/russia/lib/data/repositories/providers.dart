@@ -5,6 +5,7 @@ import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/models/achievement.dart';
 import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
+import 'package:pdd_app/data/models/question.dart';
 import 'package:pdd_app/data/models/question_answer_source.dart';
 import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
@@ -208,10 +209,42 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
     };
   }
 
+  final strings = lookupAppLocalizations(Locale(lang));
+  final title = switch (saved['usageFeature']) {
+    'tickets' => strings.ticketNumber(
+      questions.first['ticketNumber'] as int? ?? 1,
+    ),
+    'mistakes' =>
+      questions.length == 1 ? strings.mistakeReview : strings.mistakesTitle,
+    'favorites' =>
+      questions.length == 1 ? strings.favoriteQuestion : strings.favorites,
+    _ => saved['title'] as String? ?? '',
+  };
+  var localizedTitle = title;
+  if (saved['usageFeature'] == 'topics') {
+    final topics = await ref
+        .read(questionsDataSourceProvider)
+        .loadTopics(category, lang);
+    final savedIds = ids.toSet();
+    localizedTitle = strings.topics;
+    for (final topic in topics) {
+      final topicQuestions = (topic['questions'] as List?) ?? const [];
+      final topicIds = topicQuestions
+          .whereType<Question>()
+          .map((q) => q.id)
+          .toSet();
+      if (topicIds.length == savedIds.length &&
+          topicIds.containsAll(savedIds)) {
+        localizedTitle = topic['name'] as String? ?? strings.topics;
+        break;
+      }
+    }
+  }
+
   return {
     'kind': 'training',
     'usageFeature': saved['usageFeature'],
-    'title': saved['title'] as String? ?? '',
+    'title': localizedTitle,
     'questions': questions,
     'index': index,
     'total': questions.length,

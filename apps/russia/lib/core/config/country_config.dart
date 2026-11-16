@@ -147,8 +147,30 @@ class CountryConfig {
 
   /// Русскоязычный маркер ссылки на пункт: «Пункт 13.11 ПДД», «пункты 8.1, 8.2»,
   /// «п. 6.2».
+  static const String _pddReferenceNumber =
+      r'\d{1,2}(?:\.\d{1,2}){1,3}(?:\(\d{1,2}\))?';
   static const String _pddPointMarkerRu =
-      r'(?:[Пп]ункт(?:ы|ов|а|е|ам|ами)?|[Пп]\.)\s*((?:\d{1,2}(?:\.\d{1,2}){1,3}(?:\s*(?:,|и)\s*)?)+)';
+      r'(?:[Пп]ункт(?:ы|ов|а|е|ам|ами)?|[Пп]\.)\s*((?:' +
+      _pddReferenceNumber +
+      r'(?:\s*(?:,|и)\s*)?)+)';
+
+  /// References use a prefix in Russian/English and a suffix in Kazakh.
+  /// Keep bare sign and road-marking numbers out of the matcher.
+  String? pddPointMarkerFor(String lang) => switch (lang) {
+    'en' =>
+      r'\b(?:clauses?|paragraphs?|points?|sections?|cl\.)\s*(' +
+          _pddReferenceNumber +
+          r'(?:\s*(?:,\s*(?:and\s+)?|and\s+)' +
+          _pddReferenceNumber +
+          r')*)',
+    'kk' =>
+      r'(?<![\d.])(' +
+          _pddReferenceNumber +
+          r'(?:\s*(?:,\s*(?:және\s+)?|және\s+)' +
+          _pddReferenceNumber +
+          r')*)\.?\s*[-–]?\s*(?:тарма[қғ]|бөлім)[а-яәғқңөұүһі]*',
+    _ => pddPointMarker,
+  };
 
   /// BCP-47 локаль для озвучки (TTS) с учётом текущего языка.
   String ttsLocaleFor([String? lang]) {

@@ -482,7 +482,7 @@ func _on_share() -> void:
 	var text := Ui.t("gameShareText", {
 		"result": result_line,
 		"details": details,
-		"title": "ПДД Россия 2026",
+		"title": Ui.t("appName"),
 		"url": "https://" + ShareCard.SITE
 	})
 	Host.share(text, game_title, await _share_picture(game_title))

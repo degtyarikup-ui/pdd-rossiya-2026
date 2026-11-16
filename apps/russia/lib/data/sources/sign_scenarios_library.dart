@@ -18,7 +18,12 @@ class SignScenario {
 /// Only reviewed, sign-specific scenarios. No category-wide rule guessing.
 /// See docs/game/mini-games-pdd-audit.md for sources and scope.
 class SignScenariosLibrary {
-  static final Map<String, List<SignScenario>> _scenarios = {
+  static final Map<String, Map<String, List<SignScenario>>> _byLocale = {};
+
+  static Map<String, List<SignScenario>> get _scenarios =>
+      _byLocale.putIfAbsent(appL10n.localeName, _buildScenarios);
+
+  static Map<String, List<SignScenario>> _buildScenarios() => {
     '1.1': [
       SignScenario(
         prompt: appL10n.gameSignScenario1_1_0Prompt,

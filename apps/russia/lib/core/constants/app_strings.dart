@@ -1,4 +1,3 @@
-import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 
 /// Тонкая обёртка над локализацией: строки берутся из ARB текущего языка
@@ -7,7 +6,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 class AppStrings {
   AppStrings._();
 
-  static String get appName => CountryConfig.current.appTitle;
+  static String get appName => appL10n.appName;
   static String get exam => appL10n.exam;
   static String get topics => appL10n.topics;
   static String get tickets => appL10n.tickets;

@@ -1,15 +1,21 @@
 import 'dart:math';
 import 'package:pdd_app/data/models/road_signs_model.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
 /// Сервис генерации вопросов викторины «Знаки» с защитой от коллизий дистракторов.
 class RoadSignsEngine {
   final List<SignItem> allSigns;
   final Map<String, List<SignItem>> signsByCategory;
   final Random _rnd;
+  final AppLocalizations l10n;
 
-  RoadSignsEngine({required this.allSigns, Random? random})
-    : _rnd = random ?? Random(),
-      signsByCategory = _groupSignsByCategory(allSigns);
+  RoadSignsEngine({
+    required this.allSigns,
+    Random? random,
+    AppLocalizations? l10n,
+  }) : _rnd = random ?? Random(),
+       l10n = l10n ?? appL10n,
+       signsByCategory = _groupSignsByCategory(allSigns);
 
   static Map<String, List<SignItem>> _groupSignsByCategory(
     List<SignItem> signs,
@@ -93,26 +99,32 @@ class RoadSignsEngine {
     final RoadSignQuizType type;
     final String prompt;
 
-    final hasFolk = target.folkName != null && target.folkName!.trim().isNotEmpty;
-    final coreDef = extractCoreDefinition(target.description, target: target);
+    final hasFolk =
+        target.folkName != null && target.folkName!.trim().isNotEmpty;
+    final coreDef = extractCoreDefinition(
+      target.description,
+      target: target,
+      l10n: l10n,
+    );
     final hasMeaning = coreDef.isNotEmpty;
 
     final roll = _rnd.nextDouble();
     if (hasFolk && roll < 0.30) {
       type = RoadSignQuizType.folkNameMatch;
-      prompt = 'Какой знак в народе называют «${target.folkName!.trim()}»?';
+      prompt = l10n.roadSignsFolkPrompt(target.folkName!.trim());
     } else if (hasMeaning && roll < 0.70) {
       type = RoadSignQuizType.meaningDefinition;
-      prompt = formatMeaningPrompt(coreDef);
+      prompt = formatMeaningPrompt(coreDef, l10n: l10n);
     } else {
       type = RoadSignQuizType.titleMatch;
-      prompt = 'Какой из этих знаков — «${target.title.trim()}»?';
+      prompt = l10n.roadSignsTitlePrompt(target.title.trim());
     }
 
     final officialQuote = extractOfficialQuote(
       target.description,
       target.title,
       signNumber: target.number,
+      lang: l10n.localeName,
     );
 
     final id =
@@ -133,7 +145,9 @@ class RoadSignsEngine {
   /// дублирующихся изображений и дублирующихся народных названий.
   List<SignItem> selectDistractors(SignItem target, {required int count}) {
     final targetTitle = _normalize(target.title);
-    final targetFolk = target.folkName != null ? _normalize(target.folkName!) : null;
+    final targetFolk = target.folkName != null
+        ? _normalize(target.folkName!)
+        : null;
 
     bool isCandidateValid(SignItem c, List<SignItem> selected) {
       // Исключаем сам целевой знак
@@ -141,7 +155,9 @@ class RoadSignsEngine {
 
       // Исключаем одинаковое изображение SVG
       if (c.image.isNotEmpty && c.image == target.image) return false;
-      if (c.image.isNotEmpty && selected.any((s) => s.image == c.image)) return false;
+      if (c.image.isNotEmpty && selected.any((s) => s.image == c.image)) {
+        return false;
+      }
 
       final cTitle = _normalize(c.title);
       // Исключаем совпадение названия с целевым знаком
@@ -161,7 +177,9 @@ class RoadSignsEngine {
       }
       if (c.folkName != null && c.folkName!.trim().isNotEmpty) {
         final cFolk = _normalize(c.folkName!);
-        if (selected.any((s) => s.folkName != null && _normalize(s.folkName!) == cFolk)) {
+        if (selected.any(
+          (s) => s.folkName != null && _normalize(s.folkName!) == cFolk,
+        )) {
           return false;
         }
       }
@@ -197,72 +215,66 @@ class RoadSignsEngine {
 
   /// Эталонные смысловые определения для ключевых дорожных знаков ПДД РФ.
   /// Формулировки выверены, кратки, однозначны и не содержат номеров знаков или подсказок.
-  static const Map<String, String> _curatedMeanings = {
-    // 2. Знаки приоритета
-    '2.1': 'Предоставляет право преимущественного проезда нерегулируемых перекрестков',
-    '2.2': 'Обозначает конец дороги с преимущественным правом проезда',
-    '2.4': 'Обязывает уступить дорогу ТС на пересекаемой дороге',
-    '2.5': 'Запрещает движение без обязательной остановки перед стоп-линией',
-    '2.6': 'Запрещает въезд на узкий участок дороги, если это затруднит встречное движение',
-    '2.7': 'Предоставляет преимущество по отношению к встречным ТС на узком участке дороги',
-
-    // 3. Запрещающие знаки
-    '3.1': 'Запрещает въезд всех транспортных средств в данном направлении',
-    '3.2': 'Запрещает движение всех транспортных средств в обоих направлениях',
-    '3.3': 'Запрещает движение любых механических транспортных средств',
-    '3.4': 'Запрещает движение грузовиков с разрешенной максимальной массой более 3,5 т',
-    '3.5': 'Запрещает движение мотоциклов любого типа',
-    '3.6': 'Запрещает движение любых тракторов и самоходных машин',
-    '3.7': 'Запрещает движение грузовиков и тракторов с любыми прицепами, а также буксировку',
-    '3.10': 'Запрещает перемещение пешеходов, а также лиц на СИМ',
-    '3.18.1': 'Запрещает поворот направо на ближайшем пересечении дорог',
-    '3.18.2': 'Запрещает поворот налево на ближайшем пересечении дорог',
-    '3.19': 'Запрещает только разворот (при этом поворот налево разрешен)',
-    '3.20': 'Запрещает обгон транспортных средств, кроме тихоходных и двухколесных',
-    '3.22': 'Запрещает грузовым авто с массой более 3,5 т обгон любых ТС',
-    '3.24': 'Запрещает движение со скоростью выше числа, указанного на знаке',
-    '3.27': 'Запрещает как остановку, так и стоянку любых транспортных средств',
-    '3.28': 'Запрещает исключительно стоянку ТС (кратковременная остановка разрешена)',
-
-    // 4. Предписывающие знаки
-    '4.1.1': 'Предписывает двигаться только прямо',
-    '4.1.2': 'Предписывает двигаться только направо',
-    '4.1.3': 'Предписывает двигаться только налево или на разворот',
-    '4.1.4': 'Предписывает двигаться только прямо или направо',
-    '4.1.5': 'Предписывает двигаться только прямо или налево (а также на разворот)',
-    '4.1.6': 'Предписывает двигаться только направо или налево (а также на разворот)',
-    '4.2.1': 'Разрешает объезд препятствия только с правой стороны',
-    '4.2.2': 'Разрешает объезд препятствия только с левой стороны',
-    '4.2.3': 'Разрешает объезд препятствия с любой удобной стороны',
-    '4.3': 'Предписывает движение по кругу в направлении стрелок',
-    '4.6': 'Запрещает движение со скоростью менее указанной на знаке',
-
-    // 5. Знаки особых предписаний
-    '5.1': 'Обозначает дорогу с высшим скоростным режимом для автомобилей',
-    '5.3': 'Обозначает дорогу только для автомобилей, автобусов и мотоциклов',
-    '5.5': 'Обозначает дорогу с движением по всей ширине в одну сторону',
-    '5.11.1': 'Обозначает дорогу с полосой для встречного маршрутного транспорта',
-    '5.14.1': 'Обозначает специальную выделенную полосу для маршрутного транспорта',
-    '5.19.1': 'Обозначает место организованного наземного перехода дороги',
-    '5.20': 'Обозначает точные границы искусственной неровности',
-    '5.21': 'Обозначает въезд на территорию с особым режимом для пешеходов',
-    '5.27': 'Обозначает начало участка с запретом стоянки',
-    '5.31': 'Обозначает начало участка с лимитом максимальной скорости',
-
-    // 6. Информационные знаки и 7. Знаки сервиса
-    '6.4': 'Обозначает площадку для стоянки (парковки) автомобилей',
-    '6.8.1': 'Обозначает дорогу, не имеющую сквозного проезда',
-    '6.16': 'Указывает место остановки перед светофором или регулировщиком',
-    '8.8': 'Указывает, что услуги предоставляются исключительно за плату',
+  static Map<String, String> _curatedMeanings(AppLocalizations l10n) => {
+    '2.1': l10n.roadSignsMeaning2_1,
+    '2.2': l10n.roadSignsMeaning2_2,
+    '2.4': l10n.roadSignsMeaning2_4,
+    '2.5': l10n.roadSignsMeaning2_5,
+    '2.6': l10n.roadSignsMeaning2_6,
+    '2.7': l10n.roadSignsMeaning2_7,
+    '3.1': l10n.roadSignsMeaning3_1,
+    '3.2': l10n.roadSignsMeaning3_2,
+    '3.3': l10n.roadSignsMeaning3_3,
+    '3.4': l10n.roadSignsMeaning3_4,
+    '3.5': l10n.roadSignsMeaning3_5,
+    '3.6': l10n.roadSignsMeaning3_6,
+    '3.7': l10n.roadSignsMeaning3_7,
+    '3.10': l10n.roadSignsMeaning3_10,
+    '3.18.1': l10n.roadSignsMeaning3_18_1,
+    '3.18.2': l10n.roadSignsMeaning3_18_2,
+    '3.19': l10n.roadSignsMeaning3_19,
+    '3.20': l10n.roadSignsMeaning3_20,
+    '3.22': l10n.roadSignsMeaning3_22,
+    '3.24': l10n.roadSignsMeaning3_24,
+    '3.27': l10n.roadSignsMeaning3_27,
+    '3.28': l10n.roadSignsMeaning3_28,
+    '4.1.1': l10n.roadSignsMeaning4_1_1,
+    '4.1.2': l10n.roadSignsMeaning4_1_2,
+    '4.1.3': l10n.roadSignsMeaning4_1_3,
+    '4.1.4': l10n.roadSignsMeaning4_1_4,
+    '4.1.5': l10n.roadSignsMeaning4_1_5,
+    '4.1.6': l10n.roadSignsMeaning4_1_6,
+    '4.2.1': l10n.roadSignsMeaning4_2_1,
+    '4.2.2': l10n.roadSignsMeaning4_2_2,
+    '4.2.3': l10n.roadSignsMeaning4_2_3,
+    '4.3': l10n.roadSignsMeaning4_3,
+    '4.6': l10n.roadSignsMeaning4_6,
+    '5.1': l10n.roadSignsMeaning5_1,
+    '5.3': l10n.roadSignsMeaning5_3,
+    '5.5': l10n.roadSignsMeaning5_5,
+    '5.11.1': l10n.roadSignsMeaning5_11_1,
+    '5.14.1': l10n.roadSignsMeaning5_14_1,
+    '5.19.1': l10n.roadSignsMeaning5_19_1,
+    '5.20': l10n.roadSignsMeaning5_20,
+    '5.21': l10n.roadSignsMeaning5_21,
+    '5.27': l10n.roadSignsMeaning5_27,
+    '5.31': l10n.roadSignsMeaning5_31,
+    '6.4': l10n.roadSignsMeaning6_4,
+    '6.8.1': l10n.roadSignsMeaning6_8_1,
+    '6.16': l10n.roadSignsMeaning6_16,
+    '8.8': l10n.roadSignsMeaning8_8,
   };
 
   /// Формирование текста вопроса по значению/определению.
-  static String formatMeaningPrompt(String coreDefinition) {
+  static String formatMeaningPrompt(
+    String coreDefinition, {
+    AppLocalizations? l10n,
+  }) {
     var def = coreDefinition.trim();
     if (def.endsWith('.')) {
       def = def.substring(0, def.length - 1).trim();
     }
-    return 'Какой из этих знаков означает: «$def»?';
+    return (l10n ?? appL10n).roadSignsMeaningPrompt(def);
   }
 
   /// Извлечение краткого смыслового определения знака.
@@ -270,10 +282,20 @@ class RoadSignsEngine {
   /// не раскрывает номер или название знака, не содержит регламентной шелухи ("устанавливается за 50 м")
   /// и не относится к группе знаков одновременно. При любых сомнениях возвращает пустую строку,
   /// что безопасно переводит вопрос в надежный режим `titleMatch`.
-  static String extractCoreDefinition(String rawDescription, {SignItem? target}) {
-    if (target != null && _curatedMeanings.containsKey(target.number)) {
-      return _curatedMeanings[target.number]!;
+  static String extractCoreDefinition(
+    String rawDescription, {
+    SignItem? target,
+    AppLocalizations? l10n,
+  }) {
+    final strings = l10n ?? appL10n;
+    final meanings = _curatedMeanings(strings);
+    if (target != null && meanings.containsKey(target.number)) {
+      return meanings[target.number]!;
     }
+
+    // Russian heuristics cannot safely infer a short definition from another
+    // language. Use reviewed meanings above or the localized sign title.
+    if (strings.localeName != 'ru') return '';
 
     if (rawDescription.isEmpty) return '';
 
@@ -283,10 +305,7 @@ class RoadSignsEngine {
         .trim();
 
     // 1. Отсекаем статьи КоАП и штрафы
-    final penaltyMarker = RegExp(
-      r'(?:Наказание за нарушение|Наказание:|КоАП РФ|КоАП|Штраф)',
-      caseSensitive: false,
-    );
+    final penaltyMarker = _penaltyMarker('ru');
     final pMatch = penaltyMarker.firstMatch(text);
     if (pMatch != null) {
       text = text.substring(0, pMatch.start).trim();
@@ -294,7 +313,9 @@ class RoadSignsEngine {
 
     // 2. Если в тексте упоминаются несколько номеров знаков с точками (например, 8.2.1-8.2.6),
     // это составное описание группы знаков — его категорически нельзя использовать для вопроса.
-    final numbersWithDots = RegExp(r'\b\d+\.\d+(?:\.\d+)?\b').allMatches(text).toList();
+    final numbersWithDots = RegExp(
+      r'\b\d+\.\d+(?:\.\d+)?\b',
+    ).allMatches(text).toList();
     if (numbersWithDots.length > 1) {
       return '';
     }
@@ -321,7 +342,9 @@ class RoadSignsEngine {
     if (sentences.isEmpty) return '';
 
     var candidate = sentences.first.trim();
-    while (candidate.endsWith('.') || candidate.endsWith('!') || candidate.endsWith('?')) {
+    while (candidate.endsWith('.') ||
+        candidate.endsWith('!') ||
+        candidate.endsWith('?')) {
       candidate = candidate.substring(0, candidate.length - 1).trim();
     }
 
@@ -345,11 +368,16 @@ class RoadSignsEngine {
     }
 
     // 9. Проверка на оборванные предложения
-    if (RegExp(r'\b(?:и\s+т|в\s+н|и\s+др)$', caseSensitive: false).hasMatch(candidate)) {
+    if (RegExp(
+      r'\b(?:и\s+т|в\s+н|и\s+др)$',
+      caseSensitive: false,
+    ).hasMatch(candidate)) {
       return '';
     }
 
-    return candidate.isNotEmpty ? '${candidate[0].toUpperCase()}${candidate.substring(1)}' : '';
+    return candidate.isNotEmpty
+        ? '${candidate[0].toUpperCase()}${candidate.substring(1)}'
+        : '';
   }
 
   /// Извлечение официальной цитаты правил ПДД РФ о назначении знака.
@@ -357,6 +385,7 @@ class RoadSignsEngine {
     String rawDescription,
     String title, {
     String? signNumber,
+    String lang = 'ru',
   }) {
     if (rawDescription.isEmpty) return title;
 
@@ -366,10 +395,7 @@ class RoadSignsEngine {
         .trim();
 
     // 1. Отрезаем блок штрафов и наказаний КоАП РФ
-    final penaltyMarker = RegExp(
-      r'(?:Наказание за нарушение|Наказание:|КоАП РФ|КоАП)',
-      caseSensitive: false,
-    );
+    final penaltyMarker = _penaltyMarker(lang);
     final match = penaltyMarker.firstMatch(text);
     if (match != null) {
       text = text.substring(0, match.start).trim();
@@ -414,6 +440,14 @@ class RoadSignsEngine {
     return text.isNotEmpty ? text : title;
   }
 
+  static RegExp _penaltyMarker(String lang) => RegExp(switch (lang) {
+    'en' =>
+      r'(?:Punishment for violat|Penalty for violat|Code of Administrative Offen[cs]es)',
+    'kk' =>
+      r'(?:Белгінің талаптарын бұзғаны үшін жаза|Белгі талаптарын бұзғаны үшін жаза|Ресей Федерациясының Әкімшілік құқық бұзушылық туралы кодексі)',
+    _ => r'(?:Наказание за нарушение|Наказание:|КоАП РФ|КоАП|Штраф)',
+  }, caseSensitive: false);
+
   /// Безопасное разделение текста на предложения с защитой десятичных точек в номерах знаков и сокращениях.
   static List<String> _splitSentences(String text) {
     if (text.isEmpty) return const [];
@@ -440,12 +474,20 @@ class RoadSignsEngine {
       'г.',
       'руб.',
       'м.',
+      'e.g.',
+      'i.e.',
+      'etc.',
+      'т.б.',
+      'т. б.',
+      'т.с.с.',
     ];
     for (final ab in abbrevs) {
       protected = protected.replaceAll(ab, ab.replaceAll('.', '§'));
     }
 
-    final rawSentences = RegExp(r'[^.!?]+[.!?]').allMatches(protected).map((m) => m.group(0)!.trim()).toList();
+    final rawSentences = RegExp(
+      r'[^.!?]+(?:[.!?]+|$)',
+    ).allMatches(protected).map((m) => m.group(0)!.trim()).toList();
 
     return rawSentences
         .map((s) => s.replaceAll('§', '.').trim())

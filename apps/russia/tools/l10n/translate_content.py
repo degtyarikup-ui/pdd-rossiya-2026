@@ -14,8 +14,8 @@ import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import translators as ts
-from deep_translator import MyMemoryTranslator
+from functools import lru_cache
+from fix_letter_markers import EXPLICIT_LETTER_ANSWERS, illustration_labels, validate_marker_overrides
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
@@ -26,8 +26,10 @@ CACHE_KK_PATH = os.path.join(HERE, "cache_kk.json")
 CYRILLIC_PATTERN = re.compile(r'[а-яА-ЯёЁ]')
 CYRILLIC_WORD = re.compile(r'[а-яА-ЯёЁ]{4,}')
 
-tr_kk_mymemory = MyMemoryTranslator(source='ru-RU', target='kk-KZ')
-tr_en_mymemory = MyMemoryTranslator(source='ru-RU', target='en-GB')
+@lru_cache(maxsize=2)
+def fallback_translator(target_lang):
+    from deep_translator import MyMemoryTranslator
+    return MyMemoryTranslator(source='ru-RU', target='kk-KZ' if target_lang == 'kk' else 'en-GB')
 
 def load_json(filepath):
     if not os.path.exists(filepath):
@@ -59,6 +61,7 @@ def translate_simple(text_stripped, target_lang, retries=5):
     for attempt in range(retries):
         # 1. Google via translators
         try:
+            import translators as ts
             res = ts.translate_text(
                 text_stripped,
                 from_language="ru",
@@ -81,7 +84,7 @@ def translate_simple(text_stripped, target_lang, retries=5):
         # 2. MyMemory fallback if short
         if len(text_stripped) <= 450:
             try:
-                tr = tr_kk_mymemory if target_lang == "kk" else tr_en_mymemory
+                tr = fallback_translator(target_lang)
                 m_res = tr.translate(text_stripped)
                 if m_res and m_res.strip():
                     if target_lang == "en" and not CYRILLIC_WORD.search(m_res):
@@ -131,7 +134,11 @@ def translate_single(text, target_lang, retries=5):
             translated_chunks.append(c)
             continue
         c_res = translate_simple(c.strip(), target_lang, retries=retries)
-        translated_chunks.append(c_res if c_res else c)
+        if not c_res:
+            # A partly translated rule section is not a successful translation.
+            # Keep the previous reviewed cache entry; do not publish a mixed text.
+            return None
+        translated_chunks.append(c_res)
 
     joined = '\n'.join(translated_chunks)
     return prefix + joined + suffix
@@ -205,6 +212,9 @@ def populate_translation_cache(strings_to_translate, target_lang, cache, cache_f
                 save_json(cache_file, cache)
 
     save_json(cache_file, cache)
+    missing = [s for s in strings_to_translate if s.strip() and not cache.get(s)]
+    if missing:
+        raise RuntimeError(f'{target_lang}: {len(missing)} translations missing; content files were not written')
     print(f"Finished {target_lang} cache. Total valid cached items: {len(cache)}")
     return cache
 
@@ -273,6 +283,15 @@ def collect_all_strings():
 
     return sorted(list(unique_strings))
 
+def validate_answer_labels(source, translated, group_key):
+    for source_group, target_group in zip(source[group_key], translated[group_key]):
+        for source_question, target_question in zip(source_group['questions'], target_group['questions']):
+            for source_answer, target_answer in zip(source_question['answers'], target_question['answers']):
+                expected = illustration_labels(source_answer['text'], russian=True)
+                if expected and illustration_labels(target_answer['text']) != expected:
+                    raise ValueError(f"Illustration labels changed in {source_question['id']}: {source_answer['text']!r}")
+
+
 def translate_questions_file(source_fname, target_fname, cache):
     src_data = load_json(os.path.join(QUESTIONS_DIR, source_fname))
     res = copy.deepcopy(src_data)
@@ -288,6 +307,7 @@ def translate_questions_file(source_fname, target_fname, cache):
             if q.get("topic"):
                 q["topic"] = [cache.get(t, t) for t in q["topic"]]
 
+    validate_answer_labels(src_data, res, 'tickets')
     save_json(os.path.join(QUESTIONS_DIR, target_fname), res)
     print(f"Generated {target_fname}")
 
@@ -308,6 +328,7 @@ def translate_topics_file(source_fname, target_fname, cache):
             if q.get("topic"):
                 q["topic"] = [cache.get(t, t) for t in q["topic"]]
 
+    validate_answer_labels(src_data, res, 'topics')
     save_json(os.path.join(QUESTIONS_DIR, target_fname), res)
     print(f"Generated {target_fname}")
 
@@ -376,13 +397,16 @@ def translate_pdd_sections_file(target_fname, cache):
             new_s["title"] = cache[s["title"]]
         if s.get("content") in cache:
             new_s["content"] = cache[s["content"]]
+        point_start = re.compile(r'^(\d{1,2}(?:\.\d{1,2}){1,3})\.', re.MULTILINE)
+        if point_start.findall(s['content']) != point_start.findall(new_s['content']):
+            raise ValueError(f"Rule point numbering changed in {target_fname}: {s['title']}")
         res.append(new_s)
 
     save_json(os.path.join(QUESTIONS_DIR, target_fname), res)
     print(f"Generated {target_fname}")
 
 def audit_file(filepath, lang):
-    """Verifies that the generated file contains zero untranslated/corrupted strings."""
+    """Limited leftover-text checks; Cyrillic illustration labels are intentional."""
     data = load_json(filepath)
     if not data:
         return [f"{filepath}: Failed to load file"]
@@ -414,13 +438,10 @@ def main():
     cache_kk = populate_translation_cache(strings, "kk", cache_kk, CACHE_KK_PATH)
 
     print("\n--- Applying Explicit Cyrillic Letter Marker Overrides ---")
-    try:
-        from fix_letter_markers import EXPLICIT_LETTER_ANSWERS
-        for ru_text, (en_val, kk_val) in EXPLICIT_LETTER_ANSWERS.items():
-            cache_en[ru_text] = en_val
-            cache_kk[ru_text] = kk_val
-    except ImportError:
-        pass
+    validate_marker_overrides()
+    for ru_text, (en_val, kk_val) in EXPLICIT_LETTER_ANSWERS.items():
+        cache_en[ru_text] = en_val
+        cache_kk[ru_text] = kk_val
 
     print("\n--- Generating Localized Content Files ---")
     for lang, cache in [("en", cache_en), ("kk", cache_kk)]:
@@ -448,7 +469,7 @@ def main():
             print("  -", iss)
         sys.exit(1)
     else:
-        print("AUDIT PASSED: All English and Kazakh content files are 100% translated with zero leftover Russian text!")
+        print("Basic checks passed. Semantic review and illustration-label tests are still required.")
 
 if __name__ == "__main__":
     main()

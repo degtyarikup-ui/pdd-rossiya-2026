@@ -1,4 +1,5 @@
 import 'package:pdd_app/data/sources/driver_tips_data.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
 enum FeedItemType { ticketQuestion, roadSign, driverTip }
 
@@ -41,7 +42,7 @@ class FeedItem {
       type: FeedItemType.driverTip,
       questionText: tip.title,
       explanation: tip.description,
-      badgeText: 'СОВЕТ',
+      badgeText: appL10n.feedTipLabel,
       driverTip: tip,
     );
   }

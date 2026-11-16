@@ -22,12 +22,15 @@ class PddPointRef {
 /// 8.2»). Голые числа брать нельзя: в разборах полно номеров знаков и
 /// разметки («знак 3.1», «разметка 1.1»), и они выглядят точно так же —
 /// линковать их на текст Правил значило бы уводить человека не туда.
-List<PddPointRef> findPddPointRefs(String text) {
-  final pattern = CountryConfig.current.pddPointMarker;
+List<PddPointRef> findPddPointRefs(String text, {String lang = 'ru'}) {
+  final pattern = CountryConfig.current.pddPointMarkerFor(lang);
   if (pattern == null || text.isEmpty) return const [];
+  // Numbering in the fault list / technical regulations overlaps the Rules.
+  // Without a separate index for those documents, leave such comments plain.
+  if (_otherDocument.hasMatch(text)) return const [];
 
   final refs = <PddPointRef>[];
-  for (final marker in RegExp(pattern).allMatches(text)) {
+  for (final marker in RegExp(pattern, caseSensitive: false).allMatches(text)) {
     // Группа с номерами идёт следом за словом-маркером; внутри может быть
     // перечисление через запятую или «и».
     final tail = marker.group(1);
@@ -36,7 +39,9 @@ List<PddPointRef> findPddPointRefs(String text) {
     for (final n in _number.allMatches(tail)) {
       refs.add(
         PddPointRef(
-          point: n.group(0)!,
+          point: n
+              .group(0)!
+              .replaceAllMapped(RegExp(r'\((\d{1,2})\)$'), (m) => '.${m[1]}'),
           start: tailStart + n.start,
           end: tailStart + n.end,
         ),
@@ -46,4 +51,8 @@ List<PddPointRef> findPddPointRefs(String text) {
   return refs;
 }
 
-final RegExp _number = RegExp(r'\d{1,2}(?:\.\d{1,2}){1,3}');
+final RegExp _number = RegExp(r'\d{1,2}(?:\.\d{1,2}){1,3}(?:\(\d{1,2}\))?');
+final RegExp _otherDocument = RegExp(
+  r'(?:переч(?:е)?н[ьяею]\s+неисправност|техническ[а-я]+\s+регламент|list of (?:malfunctions|faults|defects)|technical regulations?|ақаулықтар(?:дың)?\s+тізім|техникалық\s+регламент)',
+  caseSensitive: false,
+);

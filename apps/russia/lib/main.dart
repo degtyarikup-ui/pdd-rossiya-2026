@@ -10,7 +10,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/layout/app_max_width_frame.dart';
 import 'package:pdd_app/core/navigation/route_observer.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
@@ -410,7 +409,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
 
     return MaterialApp(
       navigatorKey: _navigatorKey,
-      title: CountryConfig.current.appTitle,
+      title: appL10n.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

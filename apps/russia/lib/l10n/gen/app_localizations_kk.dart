@@ -92,11 +92,11 @@ class AppLocalizationsKk extends AppLocalizations {
   String get nextQuestion => 'Келесі сұрақ';
 
   @override
-  String get resetStats => 'Статистиканы нөлдеу';
+  String get resetStats => 'Статистиканы тазарту';
 
   @override
   String get resetStatsConfirm =>
-      'Барлық статистиканы қалпына келтіргіңіз келетініне сенімдісіз бе?';
+      'Барлық статистиканы өшіргіңіз келетініне сенімдісіз бе?';
 
   @override
   String get yes => 'Иә';
@@ -241,7 +241,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String progressRecord(int count) {
-    return 'Жазба $count';
+    return 'Рекорд $count';
   }
 
   @override
@@ -258,7 +258,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String examQuestionsBadge(int count) {
-    return '$count сұрақтар';
+    return '$count сұрақ';
   }
 
   @override
@@ -296,7 +296,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get streakBarrierLabel => 'Сериялар';
 
   @override
-  String get personalRecord => 'Жеке ең жақсы';
+  String get personalRecord => 'Жеке рекорд';
 
   @override
   String get streakTitle => 'Күндер сериясы';
@@ -409,10 +409,10 @@ class AppLocalizationsKk extends AppLocalizations {
       'Сұрақ барысы, емтихан нәтижелері және таңдаулы сұрақтар жойылады.';
 
   @override
-  String get reset => 'Қалпына келтіру';
+  String get reset => 'Тазарту';
 
   @override
-  String get statsReset => 'Статистиканы қалпына келтіру';
+  String get statsReset => 'Статистика тазартылды';
 
   @override
   String get searchByQuestionOrTopic => 'Сұрақ немесе тақырып бойынша іздеу';
@@ -553,7 +553,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get description => 'Сипаттама';
 
   @override
-  String get folkNameLabel => 'Танымал есім';
+  String get folkNameLabel => 'Халықтық атауы';
 
   @override
   String get examAdditionalTitle => 'Қосымша сұрақтар';
@@ -581,7 +581,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String examFailedByBlock(int count) {
-    return 'Билет әрқайсысы 5 сұрақтан тұратын 4 тақырыптық блоктан тұрады. Жол полициясы ережелеріне сәйкес, бір блоктағы $count қателері жалпы екі қатеден көп болмаса да, емтиханнан өтпегенін білдіреді.';
+    return 'Билет әрқайсысы 5 сұрақтан тұратын 4 тақырыптық блоктан тұрады. Ресейдің жол полициясы регламенті бойынша бір блоктағы $count қате емтиханнан өтпеуге әкеледі, тіпті жалпы қате саны екіден аспаса да.';
   }
 
   @override
@@ -655,7 +655,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get notifStreakBody1 => 'Жаттығу жасаңыз және жарқырауды сақтаңыз 🔥';
 
   @override
-  String get notifStreakTitle2 => 'Сіз бас тартуға тым жақынсыз';
+  String get notifStreakTitle2 => 'Мақсатқа жақын қалдыңыз, берілмеңіз';
 
   @override
   String get notifStreakBody2 => 'Әр күн сізді емтиханға жақындатады';
@@ -674,7 +674,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get notifStreakBody4 => 'Бүгін жаттығу болған жоқ';
 
   @override
-  String get notifStreakTitle5 => 'Сіздің жазбаңызға қауіп төніп тұр';
+  String get notifStreakTitle5 => 'Рекордыңызға қауіп төніп тұр';
 
   @override
   String get notifStreakBody5 => 'Оны бір әрекетте сақтаңыз';
@@ -732,7 +732,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameDistance => 'Қашықтық';
 
   @override
-  String get gameOver => 'Жарыс аяқталды';
+  String get gameOver => 'Жүріс аяқталды';
 
   @override
   String get gameRestart => 'Қайталап көріңіз';
@@ -878,7 +878,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gamePaintSilver => 'күміс';
 
   @override
-  String get gamePaintOrange => 'апельсин';
+  String get gamePaintOrange => 'қызғылт сары';
 
   @override
   String get gamePaintPurple => 'күлгін';
@@ -890,7 +890,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gamePaintYellow => 'сары';
 
   @override
-  String get gamePaintWine => 'бургундия';
+  String get gamePaintWine => 'қою қызыл';
 
   @override
   String get gamePaintGold => 'алтын';
@@ -1002,7 +1002,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameRevealTap => 'Қақпаны басыңыз';
 
   @override
-  String get gameRevealChoose => 'таңдаңыз';
+  String get gameRevealChoose => 'Таңдау';
 
   @override
   String get gameRevealClose => 'Жабу';
@@ -1021,7 +1021,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameSceneTitle => 'Ауа-райы және маусым';
 
   @override
-  String get gameSceneWeather => 'ауа райы';
+  String get gameSceneWeather => 'Ауа райы';
 
   @override
   String get gameSceneSeason => 'Жыл мезгілі';
@@ -1030,7 +1030,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameSceneAuto => 'Авто';
 
   @override
-  String get gameSceneClear => 'Таза';
+  String get gameSceneClear => 'Ашық';
 
   @override
   String get gameSceneOvercast => 'Бұлтты';
@@ -1042,7 +1042,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameSceneCalendar => 'Күнтізбе бойынша';
 
   @override
-  String get gameDebugUnlimitedFuel => 'Шексіз жарыстар';
+  String get gameDebugUnlimitedFuel => 'Шексіз жүрістер';
 
   @override
   String get gameDebugMenuTitle => 'Хабарландыруларды тексеру';
@@ -1102,7 +1102,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Секундына кадр, басу кідірісі, графика жүктемесі';
 
   @override
-  String get gameDebugUnlimitedFuelHint => 'Жазбалар жұмсалмайды';
+  String get gameDebugUnlimitedFuelHint => 'Жүріс мүмкіндіктері жұмсалмайды';
 
   @override
   String get gameSceneSummer => 'Жаз';
@@ -1117,7 +1117,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameCollision => 'Соқтығыс';
 
   @override
-  String get gameOffroad => 'Бордюр · жолға қарай бұрылу';
+  String get gameOffroad => 'Жиектас · жолға қарай бұрылыңыз';
 
   @override
   String get gamePriorityViolation => 'Сіз жол бермедіңіз';
@@ -1181,7 +1181,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String gameBestScore(int score) {
-    return 'Жазба $score';
+    return 'Рекорд $score';
   }
 
   @override
@@ -1191,20 +1191,20 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameWeeklyRating => 'Апта рейтингі';
 
   @override
-  String get gameLobbyStart => 'Жарысты бастаңыз';
+  String get gameLobbyStart => 'Жүрісті бастау';
 
   @override
-  String get gameLobbyContinue => 'Жүруді жалғастырыңыз';
+  String get gameLobbyContinue => 'Жүрісті жалғастыру';
 
   @override
-  String get gameLobbyNewRun => 'Жаңа сапар';
+  String get gameLobbyNewRun => 'Жаңа жүріс';
 
   @override
-  String get gameLobbyNewRunTitle => 'Жаңа сапарды бастау керек пе?';
+  String get gameLobbyNewRunTitle => 'Жаңа жүрісті бастау керек пе?';
 
   @override
   String get gameLobbyNewRunBody =>
-      'Ағымдағы сапар аяқталады, жаңасы бірінші сұрақтан басталады.';
+      'Ағымдағы жүріс аяқталып, жаңасы бірінші сұрақтан басталады.';
 
   @override
   String get gameLobbyNewRunConfirm => 'Қайта бастау';
@@ -1213,7 +1213,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameLobbyChangeCar => 'Өзгерту';
 
   @override
-  String get gameLobbyRecord => 'Жазба';
+  String get gameLobbyRecord => 'Рекорд';
 
   @override
   String get gameLobbyColour => 'Түс';
@@ -1281,21 +1281,21 @@ class AppLocalizationsKk extends AppLocalizations {
       'Тірі қала, жолдағы жол полициясының билеттері және аптаның рейтингі. Жүйеге кіріңіз, кеттік.';
 
   @override
-  String get gameFuel => 'Жарыстар';
+  String get gameFuel => 'Жүрістер';
 
   @override
-  String get gameFuelUnlimited => 'Шексіз жарыстар';
+  String get gameFuelUnlimited => 'Шексіз жүрістер';
 
   @override
-  String get gameFuelEmptyTitle => 'Жарыстар аяқталды';
+  String get gameFuelEmptyTitle => 'Жүріс мүмкіндіктері таусылды';
 
   @override
   String gameFuelRefillIn(String time) {
-    return '$time арқылы жаңа келу';
+    return '$time кейін жаңа жүріс';
   }
 
   @override
-  String get gameFuelPremiumPitch => 'Жарыстар жазылумен аяқталмайды';
+  String get gameFuelPremiumPitch => 'Жазылыммен жүрістер шектелмейді';
 
   @override
   String get gameFuelBuyPremium => 'Премиумды қосыңыз';
@@ -1308,7 +1308,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameOverDescription =>
-      'Жарыстағы барлық сұрақтар аяқталды. Қате жауаптар «Қателерде» бар - оларды талдап, әрекетті қайталаңыз.';
+      'Осы жүрістегі барлық сұрақ аяқталды. Қате жауаптар «Қателер» бөлімінде — оларды талдап, қайта көріңіз.';
 
   @override
   String get gameYou => 'Сіз';
@@ -1330,7 +1330,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameLoadError =>
-      'Жарысты жалғастыру мүмкін болмады. Құрылғыны қайта іске қосыңыз немесе мәзірге оралыңыз.';
+      'Жүрісті жалғастыру мүмкін болмады. Тренажерді қайта іске қосыңыз немесе мәзірге оралыңыз.';
 
   @override
   String get authSuccess => 'Жүйеге кіру сәтті';
@@ -1510,11 +1510,11 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameTipGas =>
-      'Газ педальын ұстаңыз - машина қозғалады. Жіберіңіз - ол біркелкі тоқтайды';
+      'Газ педалін басып тұрыңыз — көлік жүреді. Жіберсеңіз, біртіндеп тоқтайды';
 
   @override
   String get gameTipSteer =>
-      'Көрсеткіні ұстаңыз - машина айналады. Егер сіз жіберсеңіз, ол жолақпен тураланады';
+      'Бұрылу үшін көрсеткіні басып тұрыңыз. Жіберсеңіз, көлік өз жолағында түзеледі';
 
   @override
   String get gameTipTurn =>
@@ -1524,7 +1524,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameTipNext => 'Келесі';
 
   @override
-  String get gameTipDone => 'кеттік';
+  String get gameTipDone => 'Кеттік';
 
   @override
   String get gamePause => 'Кідірту';
@@ -1568,8 +1568,8 @@ class AppLocalizationsKk extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Жарыста $count қате',
-      one: 'Жарыста $count қате',
+      other: 'Жүрісте $count қате',
+      one: 'Жүрісте $count қате',
     );
     return '$_temp0';
   }
@@ -1578,7 +1578,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameReviewMistakes => 'Қателерді талдау';
 
   @override
-  String get notifGameRunTitle => 'Жаңа жарыс дайын';
+  String get notifGameRunTitle => 'Жаңа жүріс дайын';
 
   @override
   String get notifGameRunBody =>
@@ -1588,7 +1588,8 @@ class AppLocalizationsKk extends AppLocalizations {
   String get notifGameChannelName => 'Ойын';
 
   @override
-  String get notifGameChannelDesc => 'Ойында жарыс қалпына келгенде';
+  String get notifGameChannelDesc =>
+      'Ойындағы жүріс мүмкіндіктері қалпына келгенде';
 
   @override
   String gameRunMistakesButton(int count) {
@@ -1600,30 +1601,30 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String gameRunsPill(int runs, int max) {
-    return '$runs / $max жарыс';
+    return 'Жүрістер: $runs / $max';
   }
 
   @override
-  String get gameRunsUnlimitedPill => 'Жарыстар ∞';
+  String get gameRunsUnlimitedPill => 'Жүрістер ∞';
 
   @override
-  String get gameRunsTitle => 'Жарыстар';
+  String get gameRunsTitle => 'Жүрістер';
 
   @override
   String gameRunsExplain(int questions, int max, int minutes) {
-    return 'Жарыс — бұл жолда $questions сұрақ. Қорда $max жарысқа дейін болады. Алғашқы жарыс жұмсалғаннан кейін $minutes минуттан соң бүкіл қор қалпына келеді.';
+    return 'Бір жүріс — жолдағы $questions сұрақ. Қорда ең көбі $max жүріс болады. Алғашқы жүріс жұмсалғаннан кейін $minutes минуттан соң барлық жүріс қалпына келеді.';
   }
 
   @override
   String gameRunsNextIn(String time) {
-    return '$time арқылы келесі келу';
+    return '$time кейін келесі жүріс';
   }
 
   @override
   String get gameRunsFull => 'Қор толы - сіз бара аласыз';
 
   @override
-  String get gameRunsPremium => 'Премиум сапарларымен шектеусіз';
+  String get gameRunsPremium => 'Премиуммен жүрістер шектеусіз';
 
   @override
   String get gameRunsGetPremium => 'Премиум арқылы шектеусіз';
@@ -1651,7 +1652,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameRunsReady => 'Дайын';
 
   @override
-  String get gameRunsUntil => 'келгенге дейін';
+  String get gameRunsUntil => 'келесі жүріске дейін';
 
   @override
   String get gameUturn => 'Кері бұрылу';
@@ -1667,10 +1668,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get noticeImageBanner => 'Ақпараттық баннер';
 
   @override
-  String get noticeAcknowledge => 'Мен көремін';
+  String get noticeAcknowledge => 'Түсінікті';
 
   @override
-  String get noticeOpen => 'Ашық';
+  String get noticeOpen => 'Ашу';
 
   @override
   String get pushMessagesSetting => 'Қолданба жаңалықтары';
@@ -1697,7 +1698,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get webWeek => '1 апта';
 
   @override
-  String get webPayButton => 'SBP арқылы төлеңіз';
+  String get webPayButton => 'СБП арқылы төлеу';
 
   @override
   String get webPayInfo =>
@@ -1744,7 +1745,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get webPayLiveBody =>
-      'Тексеру үшін электрондық пошта мекенжайыңызды көрсетіңіз. Содан кейін төлем QR кодын пайдалану арқылы немесе банктің қосымшасында СБП арқылы ашылады. Премиум төлемнен кейін бірден іске қосылады.';
+      'Чек алу үшін электрондық поштаңызды көрсетіңіз. Содан кейін СБП арқылы QR-кодпен немесе банк қолданбасында төлем жасау беті ашылады. Премиум төлемнен кейін бірден қосылады.';
 
   @override
   String get webPayProceed => 'Төлемді жалғастырыңыз';
@@ -1761,7 +1762,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String webPaySaved(String email) {
-    return 'Рахмет! Төлем жұмыс істей бастағанда біз $email нөміріне жазамыз';
+    return 'Рахмет! Төлем жасау мүмкіндігі іске қосылғанда, $email мекенжайына хабарлаймыз';
   }
 
   @override
@@ -1857,7 +1858,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get achievementTitleAttempts => 'Шаршамайтын';
 
   @override
-  String get achievementTitleExams => 'Емтихан';
+  String get achievementTitleExams => 'Емтихан алушы';
 
   @override
   String get achievementTitleFlawless => 'Бір қатесіз';
@@ -1965,7 +1966,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get paywallFeatureVoice => 'Орыс тіліндегі студиялық дыбыстау';
 
   @override
-  String get paywallFeatureGame => 'Ойында шектеусіз жарыстар';
+  String get paywallFeatureGame => 'Ойындағы шексіз жүрістер';
 
   @override
   String get paywallPlanQuarter => '3 ай';
@@ -2006,10 +2007,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get navGames => 'Ойындар';
 
   @override
-  String get gameTrafficControllerTitle => 'Жол диспетчері';
+  String get gameTrafficControllerTitle => 'Реттеуші';
 
   @override
-  String get gameBestScoreLabel => 'Жазба';
+  String get gameBestScoreLabel => 'Рекорд';
 
   @override
   String get gameComboLabel => 'Макс. комбо';
@@ -2036,7 +2037,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameActionUTurn => 'Кері бұрылу';
 
   @override
-  String get gameActionStand => 'тұру';
+  String get gameActionStand => 'Тоқтау';
 
   @override
   String get gameVehicleCar => 'Автокөлік';
@@ -2064,7 +2065,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameWhistleNote =>
-      'Инспектордың ысқырығы: осы бағытта қозғалыс диспетчерінің сигналымен тыйым салынады.';
+      'Инспектордың ысқырығы: реттеушінің сигналы бұл бағытта жүруге тыйым салады.';
 
   @override
   String get gameSignSwiperTitle => 'Белгі-свайпер';
@@ -2245,16 +2246,16 @@ class AppLocalizationsKk extends AppLocalizations {
       'Ресей Федерациясының жол қозғалысы ережелеріне сәйкес жағдайды талдау';
 
   @override
-  String get gameCrossroadsCompleteTitle => 'Қиылыс тазартылды!';
+  String get gameCrossroadsCompleteTitle => 'Қиылыс тапсырмасы орындалды!';
 
   @override
   String get gameGestureRightArm => 'Қол алға';
 
   @override
-  String get gameGestureHandsSides => 'Қолдар жағына';
+  String get gameGestureHandsSides => 'Қолдар екі жаққа созылған';
 
   @override
-  String get gameGestureArmUp => 'Қол көтеріңіз';
+  String get gameGestureArmUp => 'Қол жоғары көтерілген';
 
   @override
   String get gameApproachLeft => 'Сол жағы';
@@ -2266,7 +2267,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameApproachRight => 'Оң жақ';
 
   @override
-  String get gameApproachBack => 'артқа';
+  String get gameApproachBack => 'Арқа';
 
   @override
   String gameSecondsLeft(int seconds) {
@@ -2289,13 +2290,13 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameSignNo => 'ЖОҚ';
 
   @override
-  String get gameSignCan => 'МҮМКІН';
+  String get gameSignCan => 'БОЛАДЫ';
 
   @override
-  String get gameSignCannot => 'МҮМКІН ЕМЕС';
+  String get gameSignCannot => 'БОЛМАЙДЫ';
 
   @override
-  String get gameUnderstood => 'Мен көремін';
+  String get gameUnderstood => 'Түсінікті';
 
   @override
   String get gamePddOfficialText =>
@@ -2349,7 +2350,7 @@ class AppLocalizationsKk extends AppLocalizations {
       '«Тұрақ» ойынында 5, 20, 50 және 100 рет көлік қойыңыз.';
 
   @override
-  String get achievementTitleCrossroads => 'Реттеуші';
+  String get achievementTitleCrossroads => 'Қиылыс шебері';
 
   @override
   String get achievementDescCrossroads =>
@@ -2418,7 +2419,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameTrafficHintScope =>
-      'Жолақты, белгілерді және белгілерді қарастырыңыз.';
+      'Өз жолағыңызды, жол белгілері мен таңбаларын ескеріңіз.';
 
   @override
   String get gameTrafficHintArmUp =>
@@ -2430,11 +2431,11 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameTrafficHintForwardRight =>
-      'Егер таяқ оң жаққа қараса, сіз мінуге құқығыңыз жоқ.';
+      'Таяқша оңға бағытталса — жүруге болмайды.';
 
   @override
   String get gameTrafficHintForwardLeft =>
-      'Егер таяқ солға қараса, патшайым сияқты мініңіз.';
+      'Таяқша солға бағытталса — жүруге болады.';
 
   @override
   String get gameTrafficHintBack => 'Артқы жағы қабырға.';
@@ -3501,13 +3502,15 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameParkingFindSpot => 'Тұруға болатын орынды табыңыз';
 
   @override
-  String get gameParkingBusStop => 'Аялдамаға 15 м-ден жақын болмайды';
+  String get gameParkingBusStop =>
+      'Аялдамадан 15 м-ден жақын жерде тоқтауға болмайды';
 
   @override
   String get gameParkingNoStopping => '3.27 белгісі: тоқтауға тыйым салынған';
 
   @override
-  String get gameParkingJunction => 'Қиылысқа 5 м-ден жақын болмайды';
+  String get gameParkingJunction =>
+      'Қиылыстан 5 м-ден жақын жерде тоқтауға болмайды';
 
   @override
   String gameParkingLevel(int number) {
@@ -3547,15 +3550,15 @@ class AppLocalizationsKk extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       max,
       locale: localeName,
-      other: '$count/$max жарыс',
-      one: '$count/$max жарыс',
+      other: '$count/$max жүріс',
+      one: '$count/$max жүріс',
     );
     return '$_temp0';
   }
 
   @override
   String gamesRefillIn(String time) {
-    return 'Жарыстардың қалпына келуіне: $time';
+    return 'Жүрістердің қалпына келуіне: $time';
   }
 
   @override
@@ -3573,7 +3576,7 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String get gamesResumeRide => 'Жарысты жалғастыру';
+  String get gamesResumeRide => 'Жүрісті жалғастыру';
 
   @override
   String get gamesBeta => 'Бета';
@@ -3586,8 +3589,8 @@ class AppLocalizationsKk extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count жарыс қолжетімді',
-      one: '$count жарыс қолжетімді',
+      other: '$count жүріс қолжетімді',
+      one: '$count жүріс қолжетімді',
     );
     return '$_temp0';
   }
@@ -3599,7 +3602,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get avatarOwnPhoto => 'Менің фотом';
 
   @override
-  String get avatarCone => 'қозғалыс конусы';
+  String get avatarCone => 'Жол конусы';
 
   @override
   String get gasStationName => 'GasLukPuk';
@@ -3678,7 +3681,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get premiumBannerSubtitleUnlimited =>
-      'Шексіз лента, жарыстар және көбірек ЖИ';
+      'Шексіз лента, жүрістер және көбірек ЖИ';
 
   @override
   String premiumBannerValidUntil(String date) {
@@ -4149,7 +4152,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameResultRanking => 'Рейтинг';
 
   @override
-  String get gameResultNoRuns => 'Жарыстар аяқталды';
+  String get gameResultNoRuns => 'Жүріс мүмкіндіктері таусылды';
 
   @override
   String get gameRatingLoading => 'Рейтинг жүктелуде…';
@@ -4200,7 +4203,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get subscriptionPerkGameDescription =>
-      '«Жанды қалада» жарыстардың қалпына келуін күтпей ойнау';
+      '«Жанды қалада» жүрістердің қалпына келуін күтпей ойнау';
 
   @override
   String get purchaseLegacyOwnerRequired =>
@@ -4591,17 +4594,17 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameParkingMissionHotel => 'Қонақүй кіреберісіне келу';
 
   @override
-  String get gameParkingMissionBayForward => 'Орынға алдымен кіру';
+  String get gameParkingMissionBayForward => 'Боксқа алға жүріп кіру';
 
   @override
-  String get gameParkingMissionAngle => 'Бұрышпен тұрақ, алдымен кіру';
+  String get gameParkingMissionAngle => 'Қиғаш тұраққа алға жүріп кіру';
 
   @override
   String get gameParkingMissionFuel =>
       'Бак қақпағы оң жақта: колонка оң жақта болуы керек';
 
   @override
-  String get gameParkingMissionWash => 'Жуу бөлмесіне алдымен кіру';
+  String get gameParkingMissionWash => 'Көлік жуу боксына алға жүріп кіру';
 
   @override
   String get gameParkingMissionBayReverse => 'Орынға артпен кіру';
@@ -4634,7 +4637,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameParkingMissionTwoStep =>
-      'Тар өткел: алдымен екі тәсілмен кіру';
+      'Тар өткел: алға жүріп екі әрекетпен кіру';
 
   @override
   String get gameParkingMissionColumns => 'Бағаналар арасына артпен кіру';
@@ -4690,7 +4693,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameParkingSignStation => 'ВОКЗАЛ';
 
   @override
-  String get gameParkingSignCafe => 'КАФЕ';
+  String get gameParkingSignCafe => 'ДӘМХАНА';
 
   @override
   String get gameParkingSignExam => 'АВТОДРОМ';
@@ -4976,4 +4979,218 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get promoAlreadyApplied =>
       'Бұл код бұрын белсендірілген. Қосымша күндер қайта есептелмейді.';
+
+  @override
+  String get appName => 'Ресей ЖҚЕ 2026';
+
+  @override
+  String roadSignsFolkPrompt(String name) {
+    return 'Қай белгіні халық арасында «$name» деп атайды?';
+  }
+
+  @override
+  String roadSignsTitlePrompt(String title) {
+    return 'Осы белгілердің қайсысы — «$title»?';
+  }
+
+  @override
+  String roadSignsMeaningPrompt(String meaning) {
+    return 'Қай белгі «$meaning» дегенді білдіреді?';
+  }
+
+  @override
+  String get roadSignsMeaning2_1 =>
+      'Реттелмейтін қиылыстардан басымдықпен өту құқығын береді';
+
+  @override
+  String get roadSignsMeaning2_2 =>
+      'Басымдық берілген жолдың аяқталғанын білдіреді';
+
+  @override
+  String get roadSignsMeaning2_4 =>
+      'Қиылысатын жолдағы көлік құралдарына жол беруді міндеттейді';
+
+  @override
+  String get roadSignsMeaning2_5 =>
+      'Тоқтау сызығының алдында толық тоқтауды міндеттейді';
+
+  @override
+  String get roadSignsMeaning2_6 =>
+      'Қарсы қозғалысқа кедергі келтіретін болса, жолдың тар бөлігіне кіруге тыйым салады';
+
+  @override
+  String get roadSignsMeaning2_7 =>
+      'Жолдың тар бөлігінде қарсы келе жатқан көліктерге қатысты басымдық береді';
+
+  @override
+  String get roadSignsMeaning3_1 =>
+      'Барлық көлік құралдарының осы бағытта кіруіне тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_2 =>
+      'Барлық көлік құралдарының екі бағытта да жүруіне тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_3 =>
+      'Барлық механикалық көлік құралдарының жүруіне тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_4 =>
+      'Рұқсат етілген ең жоғары массасы 3,5 т-дан асатын жүк көліктерінің жүруіне тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_5 =>
+      'Кез келген түрдегі мотоциклдердің жүруіне тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_6 =>
+      'Барлық тракторлар мен өздігінен жүретін машиналардың жүруіне тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_7 =>
+      'Тіркемесі бар жүк көліктері мен тракторлардың жүруіне, сондай-ақ сүйретуге тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_10 =>
+      'Жаяу жүргіншілер мен жеке мобильділік құралдарын пайдаланушылардың жүруіне тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_18_1 =>
+      'Жолдардың ең жақын қиылысында оңға бұрылуға тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_18_2 =>
+      'Жолдардың ең жақын қиылысында солға бұрылуға тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_19 =>
+      'Тек кері бұрылуға тыйым салады, солға бұрылуға рұқсат етіледі';
+
+  @override
+  String get roadSignsMeaning3_20 =>
+      'Баяу жүретін және екі дөңгелекті көліктерден басқа көліктерді басып озуға тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_22 =>
+      'Массасы 3,5 т-дан асатын жүк көліктерінің кез келген көлікті басып озуына тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_24 =>
+      'Белгіде көрсетілген жылдамдықтан асыруға тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_27 =>
+      'Тоқтауға да, тұраққа қоюға да тыйым салады';
+
+  @override
+  String get roadSignsMeaning3_28 =>
+      'Тұраққа қоюға тыйым салады, қысқа уақытқа тоқтауға рұқсат етіледі';
+
+  @override
+  String get roadSignsMeaning4_1_1 => 'Тек тура жүруді міндеттейді';
+
+  @override
+  String get roadSignsMeaning4_1_2 => 'Тек оңға бұрылуды міндеттейді';
+
+  @override
+  String get roadSignsMeaning4_1_3 =>
+      'Тек солға немесе кері бұрылуды міндеттейді';
+
+  @override
+  String get roadSignsMeaning4_1_4 => 'Тек тура немесе оңға жүруді міндеттейді';
+
+  @override
+  String get roadSignsMeaning4_1_5 =>
+      'Тек тура жүруді, солға немесе кері бұрылуды міндеттейді';
+
+  @override
+  String get roadSignsMeaning4_1_6 =>
+      'Тек оңға, солға немесе кері бұрылуды міндеттейді';
+
+  @override
+  String get roadSignsMeaning4_2_1 =>
+      'Кедергіні тек оң жағынан айналып өтуге рұқсат береді';
+
+  @override
+  String get roadSignsMeaning4_2_2 =>
+      'Кедергіні тек сол жағынан айналып өтуге рұқсат береді';
+
+  @override
+  String get roadSignsMeaning4_2_3 =>
+      'Кедергіні кез келген жағынан айналып өтуге рұқсат береді';
+
+  @override
+  String get roadSignsMeaning4_3 =>
+      'Шеңбер бойымен көрсеткілер бағытында жүруді міндеттейді';
+
+  @override
+  String get roadSignsMeaning4_6 =>
+      'Белгіде көрсетілген жылдамдықтан төмен жүруге тыйым салады';
+
+  @override
+  String get roadSignsMeaning5_1 =>
+      'Жеңіл көліктерге ең жоғары жылдамдық режимі белгіленген жолды білдіреді';
+
+  @override
+  String get roadSignsMeaning5_3 =>
+      'Тек автомобильдерге, автобустарға және мотоциклдерге арналған жолды білдіреді';
+
+  @override
+  String get roadSignsMeaning5_5 =>
+      'Бүкіл ені бойынша қозғалыс бір бағытта жүретін жолды білдіреді';
+
+  @override
+  String get roadSignsMeaning5_11_1 =>
+      'Маршруттық көліктерге арналған қарсы бағыттағы жолағы бар жолды білдіреді';
+
+  @override
+  String get roadSignsMeaning5_14_1 =>
+      'Маршруттық көліктерге арналған арнайы жолақты білдіреді';
+
+  @override
+  String get roadSignsMeaning5_19_1 =>
+      'Жаяу жүргіншілердің жолды кесіп өтуіне арналған жерүсті өткелін білдіреді';
+
+  @override
+  String get roadSignsMeaning5_20 =>
+      'Жасанды кедір-бұдырдың нақты шекараларын білдіреді';
+
+  @override
+  String get roadSignsMeaning5_21 =>
+      'Жаяу жүргіншілерге қатысты ерекше тәртібі бар аумаққа кіруді білдіреді';
+
+  @override
+  String get roadSignsMeaning5_27 =>
+      'Тұраққа қоюға тыйым салынған аймақтың басталуын білдіреді';
+
+  @override
+  String get roadSignsMeaning5_31 =>
+      'Ең жоғары жылдамдық шектелген аймақтың басталуын білдіреді';
+
+  @override
+  String get roadSignsMeaning6_4 =>
+      'Көліктерді тұраққа қоюға арналған алаңды білдіреді';
+
+  @override
+  String get roadSignsMeaning6_8_1 => 'Өтпелі жолы жоқ жолды білдіреді';
+
+  @override
+  String get roadSignsMeaning6_16 =>
+      'Бағдаршам немесе реттеуші алдында тоқтайтын орынды көрсетеді';
+
+  @override
+  String get roadSignsMeaning8_8 =>
+      'Қызметтердің тек ақылы түрде көрсетілетінін білдіреді';
+
+  @override
+  String get supportAttachmentSticker => '[Стикер]';
+
+  @override
+  String get supportAttachmentVoice => '[Дауыстық хабарлама]';
+
+  @override
+  String get supportAttachmentDocument => '[Құжат]';
+
+  @override
+  String get supportAttachmentOther => '[Тіркеме]';
 }

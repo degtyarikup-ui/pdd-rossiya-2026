@@ -9,6 +9,7 @@ import { pushConfigured, sendFcmMessage } from './notifications.js';
 import { privatePushTopic } from './notification_identity.js';
 import { durableRequest } from './durable_request.js';
 import { errorCode } from './diagnostics.js';
+import { supportLocale, supportPushCopy } from './support_l10n.js';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -252,11 +253,9 @@ export async function sendSupportReplyPush(env, clientId, msg, fetcher = fetch) 
   try {
     const client = await env.INSTALLS.get('support:client:' + clientId, { type: 'json' });
     if (!client?.replyPush) return false;
-    const preview = msg.text && msg.text !== '[Вложение]' ? msg.text : (msg.imageUrl ? '📷 Фото' : 'Новое сообщение');
-    const body = preview.length > 150 ? preview.slice(0, 147) + '…' : preview;
     await sendFcmMessage(env, {
       topic: await privatePushTopic(env, clientId),
-      notification: { title: '💬 Ответ поддержки', body },
+      notification: supportPushCopy(msg, client.language),
       data: { kind: 'support_reply', action: 'support', actionUrl: '' },
       android: { ttl: '86400s', notification: { tag: 'support_reply', channel_id: 'admin_messages', icon: 'ic_notification' } },
       apns: { headers: { 'apns-collapse-id': 'support_reply' }, payload: { aps: { sound: 'default' } } },
@@ -288,6 +287,7 @@ export async function processTelegramMessageUpdate(msg, env) {
 
   let text = msg.caption ? msg.caption.trim() : (msg.text ? msg.text.trim() : '');
   let imageUrl = null;
+  let kind = null;
 
   if (!msg.caption && CLOSE_COMMAND.test(text)) {
     await closeSupportTicket(env, clientId, msg.message_id, threadId);
@@ -302,14 +302,18 @@ export async function processTelegramMessageUpdate(msg, env) {
   } else if (msg.document && msg.document.mime_type?.startsWith('image/') && msg.document.file_id) {
     imageUrl = `/api/support/file?fileId=${encodeURIComponent(msg.document.file_id)}`;
   } else if (msg.sticker) {
+    kind = 'attachment_sticker';
     text = (text ? text + ' ' : '') + '[Стикер]';
   } else if (msg.voice) {
+    kind = 'attachment_voice';
     text = (text ? text + ' ' : '') + '[Голосовое сообщение]';
   } else if (msg.document) {
+    kind = 'attachment_document';
     text = (text ? text + ' ' : '') + '[Документ]';
   }
 
   if (!text && !imageUrl) {
+    kind = 'attachment_attachment';
     text = '[Вложение]';
   }
 
@@ -317,6 +321,7 @@ export async function processTelegramMessageUpdate(msg, env) {
     id: 'tg_' + msg.message_id,
     sender: 'support',
     text,
+    ...(kind ? { kind } : {}),
     ...(imageUrl ? { imageUrl } : {}),
     // Время прихода на сервер, а не время Telegram: оно в секундах и может быть раньше
     // сообщения пользователя, которое мы уже сохранили; приложение показывает только ts > since.
@@ -458,6 +463,7 @@ export async function handleSupportSendMessage(request, env) {
 
   const clientKey = 'support:client:' + clientId;
   let client = env.INSTALLS ? await env.INSTALLS.get(clientKey, { type: 'json' }) : null;
+  const language = supportLocale(body.language ?? client?.language);
   let threadId = client?.threadId || null;
   let introduction = null;
   // Ответ пушем — только если переписка точно этого аккаунта (сессия входа),
@@ -503,6 +509,7 @@ export async function handleSupportSendMessage(request, env) {
         createdAt: Date.now(),
         lastMsgAt: Date.now(),
         replyPush,
+        language,
       };
       if (env.INSTALLS) {
         await env.INSTALLS.put(clientKey, JSON.stringify(client), { expirationTtl: 90 * 86400 });
@@ -575,6 +582,7 @@ export async function handleSupportSendMessage(request, env) {
   if (env.INSTALLS && client) {
     client.lastMsgAt = Date.now();
     client.replyPush = replyPush;
+    client.language = language;
     // The message is already delivered and stored. Failure of auxiliary
     // metadata must not invite the user to resend it.
     try { await env.INSTALLS.put(clientKey, JSON.stringify(client), { expirationTtl: 90 * 86400 }); }

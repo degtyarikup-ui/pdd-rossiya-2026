@@ -977,7 +977,7 @@ class IapService extends ChangeNotifier {
             await _clearFailedPurchaseOwner(purchaseDetails);
           }
           debugPrint('IapService: purchase error: ${purchaseDetails.error}');
-          _lastErrorMessage = purchaseDetails.error?.message ?? 'Ошибка оплаты';
+          _lastErrorMessage = purchaseDetails.error?.message ?? appL10n.payErrorGeneric;
           _lastFailure = PurchaseFailure.storeRefused;
           _safeCompletePurchase(PurchaseResult.error);
           _safeCompleteRestore(false);

@@ -44,7 +44,7 @@ EXPLICIT_LETTER_ANSWERS = {
 
     # Direction phrases
     'В направлениях А и Б': ('In directions А and Б', 'А және Б бағыттары бойынша'),
-    'В направлениях А и В': ('In directions А and В', 'А және Б бағыттары бойынша'),
+    'В направлениях А и В': ('In directions А and В', 'А және В бағыттары бойынша'),
     'В направлениях А или Б': ('In directions А or Б', 'А немесе Б бағыттарында'),
     'В направлениях Б и В': ('In directions Б and В', 'Б және В бағыттары бойынша'),
     'В направлениях Б и Г': ('In directions Б and Г', 'Б және Г бағыттары бойынша'),
@@ -87,7 +87,7 @@ EXPLICIT_LETTER_ANSWERS = {
     # Vehicles and drivers
     'Автобусов А и Б': ('Buses А and Б', 'А және Б автобустары'),
     'Автомобилей А и Б': ('Cars А and Б', 'А және Б автомобильдері'),
-    'Автомобилей А и В': ('Cars А and В', 'А және Б автомобильдері'),
+    'Автомобилей А и В': ('Cars А and В', 'А және В автомобильдері'),
     'Автомобилей Б и В': ('Cars Б and В', 'Б және В автомобильдері'),
     'Водители автомобилей А и Б': ('Drivers of cars А and Б', 'А және Б автокөліктерінің жүргізушілері'),
     'Водители автомобилей А и В': ('Drivers of cars А and В', 'А және В автокөліктерінің жүргізушілері'),
@@ -122,6 +122,19 @@ EXPLICIT_LETTER_ANSWERS = {
     'Уступить дорогу только трамваю Б': ('Give way only to tram Б', 'Тек Б трамвайына жол беріңіз'),
 }
 
+def illustration_labels(text, russian=False):
+    """Only isolated Cyrillic labels; a leading Russian В may be a preposition."""
+    if russian and text.startswith('В ') and not text.startswith(('В и ', 'В или ')):
+        text = text[2:]
+    return set(re.findall(r'(?<![\w])([АБВГ])(?![\w])', text))
+
+def validate_marker_overrides():
+    for source, translations in EXPLICIT_LETTER_ANSWERS.items():
+        expected = illustration_labels(source, russian=True)
+        for translated in translations:
+            if illustration_labels(translated) != expected:
+                raise ValueError(f'Illustration labels changed: {source!r} -> {translated!r}')
+
 def load_json(path):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -133,6 +146,7 @@ def save_json(path, data):
     os.replace(tmp, path)
 
 def apply_fixes():
+    validate_marker_overrides()
     # 1. Update caches
     cache_en = load_json(CACHE_EN)
     cache_kk = load_json(CACHE_KK)
@@ -164,7 +178,7 @@ def apply_fixes():
                 for q_idx, ru_q in enumerate(ru_ticket['questions']):
                     target_q = target_ticket['questions'][q_idx]
                     ru_q_text = ru_q['question']
-                    if ru_q_text in cache:
+                    if ru_q_text.startswith('Разметкой в виде буквы «А»') and ru_q_text in cache:
                         target_q['question'] = cache[ru_q_text]
                     for a_idx, ru_a in enumerate(ru_q['answers']):
                         ru_ans_text = ru_a['text']
@@ -192,7 +206,7 @@ def apply_fixes():
                 for q_idx, ru_q in enumerate(ru_top['questions']):
                     target_q = target_top['questions'][q_idx]
                     ru_q_text = ru_q['question']
-                    if ru_q_text in cache:
+                    if ru_q_text.startswith('Разметкой в виде буквы «А»') and ru_q_text in cache:
                         target_q['question'] = cache[ru_q_text]
                     for a_idx, ru_a in enumerate(ru_q['answers']):
                         ru_ans_text = ru_a['text']

@@ -1447,7 +1447,7 @@ class GodotGame {
               final text = appL10n.gameShareText(
                 resultLine,
                 details,
-                config.appTitle,
+                appL10n.appName,
                 config.shareUrl,
               );
               try {
@@ -1492,7 +1492,7 @@ class GodotGame {
     );
   }
 
-  static List<Question>? _abQuestions;
+  static final Map<String, List<Question>> _abQuestions = {};
 
   /// The run's mistakes as ticket questions to work through (the same screen
   /// as the WebView game's «Разобрать ошибки»).
@@ -1533,10 +1533,10 @@ class GodotGame {
     WidgetRef ref,
     GameSituation situation,
   ) async {
-    _abQuestions ??= await ref
+    final lang = ref.read(appSettingsProvider).effectiveLanguageCode;
+    final questions = _abQuestions[lang] ??= await ref
         .read(questionsDataSourceProvider)
-        .loadTickets(TicketCategory.ab);
-    final questions = _abQuestions!;
+        .loadTickets(TicketCategory.ab, lang);
     final id = situation.sourceQuestionId;
     if (id != null && id.isNotEmpty) {
       for (final q in questions) {

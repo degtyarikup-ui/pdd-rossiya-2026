@@ -467,7 +467,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
               const SizedBox(width: 10),
               Flexible(
                 child: Text(
-                  CountryConfig.current.appTitle,
+                  appL10n.appName,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,

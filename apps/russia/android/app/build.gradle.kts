@@ -69,7 +69,7 @@ android {
         create("ru") {
             dimension = "country"
             applicationId = "ru.pdd.pdd_app"
-            resValue("string", "app_name", if (devSuffix.isNotEmpty()) "ПДД Россия · Тест" else "ПДД Россия 2026")
+            resValue("string", "app_name", if (devSuffix.isNotEmpty()) "@string/app_name_dev" else "@string/app_name_release")
             resValue("string", "git_commit", if (devSuffix.isNotEmpty()) gitCommit else "")
         }
     }

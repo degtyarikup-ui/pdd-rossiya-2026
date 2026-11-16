@@ -4,6 +4,7 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/pdd_point_refs.dart';
 import 'package:pdd_app/data/services/pdd_point_index.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/pdd/pdd_screen.dart';
 
 /// Текст разбора вопроса, в котором номера пунктов Правил кликабельны.
@@ -28,16 +29,25 @@ class _PddCommentTextState extends State<PddCommentText> {
   final List<TapGestureRecognizer> _recognizers = [];
 
   PddPointIndex? _index;
+  String? _lang;
 
   @override
-  void initState() {
-    super.initState();
-    _index = PddPointIndex.cached;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final lang =
+        Localizations.of<AppLocalizations>(
+          context,
+          AppLocalizations,
+        )?.localeName ??
+        appL10n.localeName;
+    if (_lang == lang) return;
+    _lang = lang;
+    _index = PddPointIndex.cachedFor(lang);
     if (_index == null) {
       // Указатель строится один раз за запуск. Пока он не готов, показываем
       // обычный текст — это доли секунды и только при первом открытии разбора.
-      PddPointIndex.load().then((value) {
-        if (!mounted) return;
+      PddPointIndex.load(lang).then((value) {
+        if (!mounted || _lang != lang) return;
         setState(() {
           _index = value;
         });
@@ -82,7 +92,10 @@ class _PddCommentTextState extends State<PddCommentText> {
     // документ, вести туда некуда, и подчёркивать такое нельзя.
     final refs = index == null
         ? const <PddPointRef>[]
-        : findPddPointRefs(text).where((r) => index.contains(r.point)).toList();
+        : findPddPointRefs(
+            text,
+            lang: _lang ?? 'ru',
+          ).where((r) => index.contains(r.point)).toList();
 
     if (refs.isEmpty) {
       return null;

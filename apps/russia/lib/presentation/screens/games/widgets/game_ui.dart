@@ -530,7 +530,7 @@ class _GameResultOverlayState extends State<GameResultOverlay> {
     final text = appL10n.gameShareText(
       appL10n.gameShareScore(widget.gameTitle, widget.score),
       details,
-      config.appTitle,
+      appL10n.appName,
       config.shareUrl,
     );
     final emblem = await captureEmblem(_emblemKey);

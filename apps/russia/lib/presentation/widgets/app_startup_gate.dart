@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
@@ -54,7 +53,7 @@ class _AppStartupGateState extends State<AppStartupGate> {
   Widget build(BuildContext context) {
     if (_application != null) return _application!;
     return MaterialApp(
-      title: CountryConfig.current.appTitle,
+      title: appL10n.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

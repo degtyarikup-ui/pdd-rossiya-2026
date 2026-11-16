@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync } from 'node:crypto';
 import { sendSupportReplyPush, handleSupportSendMessage } from './support_chat.js';
+import { supportLocale, supportPushCopy } from './support_l10n.js';
 
 const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
 const FCM_SERVICE_ACCOUNT = JSON.stringify({ project_id: 'test-project', client_email: 'sender@test.invalid',
@@ -30,6 +31,32 @@ test('operator reply goes as a push to the account topic when the app asked for 
   assert.equal(message.data.kind, 'support_reply');
   assert.equal(message.data.action, 'support');
   assert.equal(message.notification.body, 'Здравствуйте! Проверили оплату.');
+});
+
+test('push uses the correspondence language and preserves operator text', async () => {
+  for (const [language, title, photo] of [
+    ['en', '💬 Support reply', '📷 Photo'],
+    ['kk', '💬 Қолдау қызметінің жауабы', '📷 Сурет'],
+  ]) {
+    const env = { FCM_SERVICE_ACCOUNT, SESSION_SECRET: 's', INSTALLS: fakeKv({
+      'support:client:google_1': JSON.stringify({ threadId: 7, replyPush: true, language }) }) };
+    const calls = [];
+    await sendSupportReplyPush(env, 'google_1', { imageUrl: '/photo' }, fcm(calls));
+    assert.deepEqual(JSON.parse(calls.at(-1).opts.body).message.notification, { title, body: photo });
+    const reply = 'Здравствуйте! Проверили оплату.';
+    assert.equal(supportPushCopy({ text: reply }, language).body, reply);
+  }
+});
+
+test('only generated attachment suffixes are localized', () => {
+  assert.equal(supportLocale('en-US'), 'en');
+  assert.equal(supportLocale('kk_KZ'), 'kk');
+  assert.equal(supportLocale('__proto__'), 'ru');
+  assert.equal(supportLocale({}), 'ru');
+  assert.equal(supportPushCopy({ text: '[Документ]' }, 'en').body, '[Document]');
+  assert.equal(supportPushCopy({ text: 'Текст оператора [Документ]', kind: 'attachment_document' }, 'kk').body,
+    'Текст оператора [Құжат]');
+  assert.equal(supportPushCopy({ text: 'Текст оператора [Документ]' }, 'kk').body, 'Текст оператора [Документ]');
 });
 
 test('no push for guests, old apps or when push is not configured', async () => {

@@ -1,6 +1,6 @@
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/layout/app_content_frame.dart';
 
@@ -111,7 +111,7 @@ class AppNavigationShell extends StatelessWidget {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
-                                        CountryConfig.current.appTitle,
+                                        appL10n.appName,
                                         maxLines: 2,
                                         style: TextStyle(
                                           fontSize: 15,

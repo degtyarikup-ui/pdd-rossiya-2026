@@ -29,7 +29,7 @@ Future<void> shareStudyResult(
     title,
     correct,
     total,
-    config.appTitle,
+    appL10n.appName,
     config.shareUrl,
   );
   // Готовность — тот же показатель, что на главной: доля верно решённых

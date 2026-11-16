@@ -32,7 +32,7 @@ const Map<String, String> _kSignCategoryIcons = {
   'Басымдық белгілері': 'priority.svg',
   'Тыйым салу белгілері': 'prohibitory.svg',
   'Міндетті белгілер': 'mandatory.svg',
-  'Арнайы нормативтік актілердің белгілері': 'special_prescriptions.svg',
+  'Ерекше нұсқама белгілері': 'special_prescriptions.svg',
   'Ақпараттық белгілер': 'information.svg',
   'Қызмет көрсету белгілері': 'service.svg',
   'Қосымша ақпарат белгілері (тақталар)': 'additional_info.svg',

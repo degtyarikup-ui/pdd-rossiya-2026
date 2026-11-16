@@ -653,7 +653,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifStreakBody1 => 'Practice and keep the light burning 🔥';
 
   @override
-  String get notifStreakTitle2 => 'You\'re too close to throw';
+  String get notifStreakTitle2 => 'You\'re too close to give up';
 
   @override
   String get notifStreakBody2 => 'Every day brings you closer to the exam';
@@ -730,7 +730,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameDistance => 'Distance';
 
   @override
-  String get gameOver => 'Race completed';
+  String get gameOver => 'Run completed';
 
   @override
   String get gameRestart => 'Try again';
@@ -769,7 +769,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameContinue => 'Continue driving';
 
   @override
-  String get gameFinishRide => 'Finish ride';
+  String get gameFinishRide => 'Finish run';
 
   @override
   String get gameResolving => 'Gas - drive · arrows - steer';
@@ -1039,7 +1039,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameSceneCalendar => 'By calendar';
 
   @override
-  String get gameDebugUnlimitedFuel => 'Endless races';
+  String get gameDebugUnlimitedFuel => 'Unlimited runs';
 
   @override
   String get gameDebugMenuTitle => 'Test notifications';
@@ -1099,7 +1099,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Frames per second, input delay, graphics load';
 
   @override
-  String get gameDebugUnlimitedFuelHint => 'Races are not spent';
+  String get gameDebugUnlimitedFuelHint => 'Runs are not used up';
 
   @override
   String get gameSceneSummer => 'Summer';
@@ -1189,10 +1189,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameWeeklyRating => 'Rating of the week';
 
   @override
-  String get gameLobbyStart => 'Start race';
+  String get gameLobbyStart => 'Start run';
 
   @override
-  String get gameLobbyContinue => 'Continue race';
+  String get gameLobbyContinue => 'Continue run';
 
   @override
   String get gameLobbyNewRun => 'New run';
@@ -1279,21 +1279,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'Lively city, traffic police tickets right on the road and rating of the week. Sign in and let\'s go.';
 
   @override
-  String get gameFuel => 'Races';
+  String get gameFuel => 'Runs';
 
   @override
-  String get gameFuelUnlimited => 'Unlimited races';
+  String get gameFuelUnlimited => 'Unlimited runs';
 
   @override
-  String get gameFuelEmptyTitle => 'Races have ended';
+  String get gameFuelEmptyTitle => 'No runs left';
 
   @override
   String gameFuelRefillIn(String time) {
-    return 'New race in $time';
+    return 'New run in $time';
   }
 
   @override
-  String get gameFuelPremiumPitch => 'With a subscription, races do not end';
+  String get gameFuelPremiumPitch => 'Get unlimited runs with a subscription';
 
   @override
   String get gameFuelBuyPremium => 'Connect Premium';
@@ -1306,7 +1306,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameOverDescription =>
-      'All questions of the race are done. Incorrect answers are already in “Errors” - go through them and try again.';
+      'You have completed all questions in this run. Your incorrect answers are in “Mistakes” — review them and try again.';
 
   @override
   String get gameYou => 'You';
@@ -1328,7 +1328,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameLoadError =>
-      'Failed to continue the race. Restart the simulator or return to the menu.';
+      'Could not continue the run. Restart the simulator or return to the menu.';
 
   @override
   String get authSuccess => 'Login successful';
@@ -1507,11 +1507,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Arrows turn the steering wheel while you hold them';
 
   @override
-  String get gameTipGas => 'Hold the gas pedal - the car drives. Let go -';
+  String get gameTipGas =>
+      'Hold the accelerator to drive. Release it to stop smoothly';
 
   @override
   String get gameTipSteer =>
-      'will stop smoothly. Hold the arrow - the car turns. If you let go, it will align itself in the lane';
+      'Hold an arrow to turn. Release it to let the car straighten up in its lane';
 
   @override
   String get gameTipTurn =>
@@ -1575,7 +1576,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameReviewMistakes => 'Troubleshoot errors';
 
   @override
-  String get notifGameRunTitle => 'New race is ready';
+  String get notifGameRunTitle => 'A new run is ready';
 
   @override
   String get notifGameRunBody =>
@@ -1585,8 +1586,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifGameChannelName => 'Game';
 
   @override
-  String get notifGameChannelDesc =>
-      'When will the race be restored in the game';
+  String get notifGameChannelDesc => 'Notifications when game runs refill';
 
   @override
   String gameRunMistakesButton(int count) {
@@ -1598,30 +1598,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String gameRunsPill(int runs, int max) {
-    return 'Races $runs of $max';
+    return 'Runs: $runs of $max';
   }
 
   @override
-  String get gameRunsUnlimitedPill => 'Races ∞';
+  String get gameRunsUnlimitedPill => 'Runs ∞';
 
   @override
-  String get gameRunsTitle => 'Races';
+  String get gameRunsTitle => 'Runs';
 
   @override
   String gameRunsExplain(int questions, int max, int minutes) {
-    return 'A race is $questions questions on the road. You have up to $max races. The full stock returns $minutes minutes after the first race is used.';
+    return 'A run consists of $questions questions on the road. You can hold up to $max runs. All runs refill $minutes minutes after you use the first one.';
   }
 
   @override
   String gameRunsNextIn(String time) {
-    return 'Next race in $time';
+    return 'Next run in $time';
   }
 
   @override
   String get gameRunsFull => 'The stock is full - you can go';
 
   @override
-  String get gameRunsPremium => 'With Premium races without restrictions';
+  String get gameRunsPremium => 'Unlimited runs with Premium';
 
   @override
   String get gameRunsGetPremium => 'Unlimited with Premium';
@@ -1649,7 +1649,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameRunsReady => 'Ready';
 
   @override
-  String get gameRunsUntil => 'until the next race';
+  String get gameRunsUntil => 'until the next run';
 
   @override
   String get gameUturn => 'U-turn';
@@ -1665,7 +1665,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noticeImageBanner => 'Information banner';
 
   @override
-  String get noticeAcknowledge => 'Clear';
+  String get noticeAcknowledge => 'Got it';
 
   @override
   String get noticeOpen => 'Open';
@@ -1759,7 +1759,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String webPaySaved(String email) {
-    return 'Thank you! We will write to $email as soon as payment is received';
+    return 'Thank you! We\'ll email $email when payments become available';
   }
 
   @override
@@ -1961,7 +1961,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallFeatureVoice => 'Russian studio narration';
 
   @override
-  String get paywallFeatureGame => 'Unlimited races in the game';
+  String get paywallFeatureGame => 'Unlimited game runs';
 
   @override
   String get paywallPlanQuarter => '3 months';
@@ -2137,7 +2137,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String gameCrossroadsPromptWhoGoesNext(int step) {
-    return 'Who will pass next?';
+    return 'Who goes next? (Step $step)';
   }
 
   @override
@@ -2242,8 +2242,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Analysis of the situation according to the Russian Federation traffic rules';
 
   @override
-  String get gameCrossroadsCompleteTitle =>
-      'The intersection has been cleared!';
+  String get gameCrossroadsCompleteTitle => 'Intersection solved!';
 
   @override
   String get gameGestureRightArm => 'Arm forward';
@@ -2293,7 +2292,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameSignCannot => 'NOT ALLOWED';
 
   @override
-  String get gameUnderstood => 'I understand';
+  String get gameUnderstood => 'Got it';
 
   @override
   String get gamePddOfficialText => 'Russian Traffic Regulations:';
@@ -4996,4 +4995,214 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get promoAlreadyApplied =>
       'This code has already been activated. No additional days were added.';
+
+  @override
+  String get appName => 'Russian Traffic Rules 2026';
+
+  @override
+  String roadSignsFolkPrompt(String name) {
+    return 'Which sign is commonly called “$name”?';
+  }
+
+  @override
+  String roadSignsTitlePrompt(String title) {
+    return 'Which of these signs is “$title”?';
+  }
+
+  @override
+  String roadSignsMeaningPrompt(String meaning) {
+    return 'Which sign means “$meaning”?';
+  }
+
+  @override
+  String get roadSignsMeaning2_1 =>
+      'Gives priority at uncontrolled intersections';
+
+  @override
+  String get roadSignsMeaning2_2 => 'Marks the end of a priority road';
+
+  @override
+  String get roadSignsMeaning2_4 =>
+      'Requires you to give way to vehicles on the intersecting road';
+
+  @override
+  String get roadSignsMeaning2_5 =>
+      'Requires a complete stop before the stop line';
+
+  @override
+  String get roadSignsMeaning2_6 =>
+      'Prohibits entering a narrow road section if this would impede oncoming traffic';
+
+  @override
+  String get roadSignsMeaning2_7 =>
+      'Gives priority over oncoming vehicles on a narrow road section';
+
+  @override
+  String get roadSignsMeaning3_1 =>
+      'Prohibits entry by all vehicles in this direction';
+
+  @override
+  String get roadSignsMeaning3_2 =>
+      'Prohibits traffic by all vehicles in both directions';
+
+  @override
+  String get roadSignsMeaning3_3 => 'Prohibits traffic by all motor vehicles';
+
+  @override
+  String get roadSignsMeaning3_4 =>
+      'Prohibits trucks with a maximum authorised mass over 3.5 tonnes';
+
+  @override
+  String get roadSignsMeaning3_5 =>
+      'Prohibits traffic by motorcycles of any type';
+
+  @override
+  String get roadSignsMeaning3_6 =>
+      'Prohibits traffic by all tractors and self-propelled machines';
+
+  @override
+  String get roadSignsMeaning3_7 =>
+      'Prohibits trucks and tractors with trailers, as well as towing';
+
+  @override
+  String get roadSignsMeaning3_10 =>
+      'Prohibits pedestrians and users of personal mobility devices';
+
+  @override
+  String get roadSignsMeaning3_18_1 =>
+      'Prohibits turning right at the nearest road intersection';
+
+  @override
+  String get roadSignsMeaning3_18_2 =>
+      'Prohibits turning left at the nearest road intersection';
+
+  @override
+  String get roadSignsMeaning3_19 =>
+      'Prohibits U-turns only; turning left is allowed';
+
+  @override
+  String get roadSignsMeaning3_20 =>
+      'Prohibits overtaking, except for slow-moving and two-wheeled vehicles';
+
+  @override
+  String get roadSignsMeaning3_22 =>
+      'Prohibits trucks over 3.5 tonnes from overtaking any vehicle';
+
+  @override
+  String get roadSignsMeaning3_24 =>
+      'Prohibits driving faster than the speed shown on the sign';
+
+  @override
+  String get roadSignsMeaning3_27 => 'Prohibits both stopping and parking';
+
+  @override
+  String get roadSignsMeaning3_28 =>
+      'Prohibits parking; brief stops are allowed';
+
+  @override
+  String get roadSignsMeaning4_1_1 => 'Requires you to go straight ahead only';
+
+  @override
+  String get roadSignsMeaning4_1_2 => 'Requires you to turn right only';
+
+  @override
+  String get roadSignsMeaning4_1_3 =>
+      'Requires you to turn left or make a U-turn';
+
+  @override
+  String get roadSignsMeaning4_1_4 =>
+      'Requires you to go straight ahead or turn right';
+
+  @override
+  String get roadSignsMeaning4_1_5 =>
+      'Requires you to go straight ahead, turn left or make a U-turn';
+
+  @override
+  String get roadSignsMeaning4_1_6 =>
+      'Requires you to turn right, turn left or make a U-turn';
+
+  @override
+  String get roadSignsMeaning4_2_1 =>
+      'Allows you to pass an obstruction on the right only';
+
+  @override
+  String get roadSignsMeaning4_2_2 =>
+      'Allows you to pass an obstruction on the left only';
+
+  @override
+  String get roadSignsMeaning4_2_3 =>
+      'Allows you to pass an obstruction on either side';
+
+  @override
+  String get roadSignsMeaning4_3 =>
+      'Requires you to follow the arrows around a roundabout';
+
+  @override
+  String get roadSignsMeaning4_6 =>
+      'Prohibits driving slower than the speed shown on the sign';
+
+  @override
+  String get roadSignsMeaning5_1 =>
+      'Marks a road with the highest speed limit for cars';
+
+  @override
+  String get roadSignsMeaning5_3 =>
+      'Marks a road for cars, buses and motorcycles only';
+
+  @override
+  String get roadSignsMeaning5_5 =>
+      'Marks a road where traffic uses the full width in one direction';
+
+  @override
+  String get roadSignsMeaning5_11_1 =>
+      'Marks a road with a contraflow lane for route vehicles';
+
+  @override
+  String get roadSignsMeaning5_14_1 =>
+      'Marks a dedicated lane for route vehicles';
+
+  @override
+  String get roadSignsMeaning5_19_1 =>
+      'Marks a designated pedestrian crossing at road level';
+
+  @override
+  String get roadSignsMeaning5_20 =>
+      'Marks the exact location of an artificial road hump';
+
+  @override
+  String get roadSignsMeaning5_21 =>
+      'Marks entry to an area with special rules for pedestrians';
+
+  @override
+  String get roadSignsMeaning5_27 => 'Marks the start of a no-parking zone';
+
+  @override
+  String get roadSignsMeaning5_31 =>
+      'Marks the start of a zone with a maximum speed limit';
+
+  @override
+  String get roadSignsMeaning6_4 => 'Marks an area for parking vehicles';
+
+  @override
+  String get roadSignsMeaning6_8_1 => 'Marks a road with no through route';
+
+  @override
+  String get roadSignsMeaning6_16 =>
+      'Shows where to stop for a traffic light or traffic controller';
+
+  @override
+  String get roadSignsMeaning8_8 =>
+      'Indicates that services are provided for a fee only';
+
+  @override
+  String get supportAttachmentSticker => '[Sticker]';
+
+  @override
+  String get supportAttachmentVoice => '[Voice message]';
+
+  @override
+  String get supportAttachmentDocument => '[Document]';
+
+  @override
+  String get supportAttachmentOther => '[Attachment]';
 }

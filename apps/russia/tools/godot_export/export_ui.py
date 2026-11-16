@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 KEYS = [
+    "appName",
     'violatorClassificationTitle', 'violatorRedLight', 'violatorPedestrianYield', 'violatorSolidLine', 'violatorWrongLaneTurn', 'violatorPrioritySign', 'violatorArrowYield', 'violatorWaffleBlock', 'violatorEmergencyYield', 'violatorNoLights', 'violatorWeatherSpeed',
     "crossroadsNobodyMoves", "crossroadsReasonOfficer", "crossroadsArticleOfficer", "crossroadsReasonCanGo",
     "achievementAwardTitle", "achievementAwardPosition",

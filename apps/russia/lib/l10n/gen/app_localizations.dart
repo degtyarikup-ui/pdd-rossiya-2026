@@ -8373,6 +8373,336 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Этот код уже был активирован. Повторно дни не начисляются.'**
   String get promoAlreadyApplied;
+
+  /// No description provided for @appName.
+  ///
+  /// In ru, this message translates to:
+  /// **'ПДД Россия 2026'**
+  String get appName;
+
+  /// No description provided for @roadSignsFolkPrompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Какой знак в народе называют «{name}»?'**
+  String roadSignsFolkPrompt(String name);
+
+  /// No description provided for @roadSignsTitlePrompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Какой из этих знаков — «{title}»?'**
+  String roadSignsTitlePrompt(String title);
+
+  /// No description provided for @roadSignsMeaningPrompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Какой из этих знаков означает: «{meaning}»?'**
+  String roadSignsMeaningPrompt(String meaning);
+
+  /// No description provided for @roadSignsMeaning2_1.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предоставляет право преимущественного проезда нерегулируемых перекрестков'**
+  String get roadSignsMeaning2_1;
+
+  /// No description provided for @roadSignsMeaning2_2.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обозначает конец дороги с преимущественным правом проезда'**
+  String get roadSignsMeaning2_2;
+
+  /// No description provided for @roadSignsMeaning2_4.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обязывает уступить дорогу ТС на пересекаемой дороге'**
+  String get roadSignsMeaning2_4;
+
+  /// No description provided for @roadSignsMeaning2_5.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает движение без обязательной остановки перед стоп-линией'**
+  String get roadSignsMeaning2_5;
+
+  /// No description provided for @roadSignsMeaning2_6.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает въезд на узкий участок дороги, если это затруднит встречное движение'**
+  String get roadSignsMeaning2_6;
+
+  /// No description provided for @roadSignsMeaning2_7.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предоставляет преимущество по отношению к встречным ТС на узком участке дороги'**
+  String get roadSignsMeaning2_7;
+
+  /// No description provided for @roadSignsMeaning3_1.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает въезд всех транспортных средств в данном направлении'**
+  String get roadSignsMeaning3_1;
+
+  /// No description provided for @roadSignsMeaning3_2.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает движение всех транспортных средств в обоих направлениях'**
+  String get roadSignsMeaning3_2;
+
+  /// No description provided for @roadSignsMeaning3_3.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает движение любых механических транспортных средств'**
+  String get roadSignsMeaning3_3;
+
+  /// No description provided for @roadSignsMeaning3_4.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает движение грузовиков с разрешенной максимальной массой более 3,5 т'**
+  String get roadSignsMeaning3_4;
+
+  /// No description provided for @roadSignsMeaning3_5.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает движение мотоциклов любого типа'**
+  String get roadSignsMeaning3_5;
+
+  /// No description provided for @roadSignsMeaning3_6.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает движение любых тракторов и самоходных машин'**
+  String get roadSignsMeaning3_6;
+
+  /// No description provided for @roadSignsMeaning3_7.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает движение грузовиков и тракторов с любыми прицепами, а также буксировку'**
+  String get roadSignsMeaning3_7;
+
+  /// No description provided for @roadSignsMeaning3_10.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает перемещение пешеходов, а также лиц на СИМ'**
+  String get roadSignsMeaning3_10;
+
+  /// No description provided for @roadSignsMeaning3_18_1.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает поворот направо на ближайшем пересечении дорог'**
+  String get roadSignsMeaning3_18_1;
+
+  /// No description provided for @roadSignsMeaning3_18_2.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает поворот налево на ближайшем пересечении дорог'**
+  String get roadSignsMeaning3_18_2;
+
+  /// No description provided for @roadSignsMeaning3_19.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает только разворот (при этом поворот налево разрешен)'**
+  String get roadSignsMeaning3_19;
+
+  /// No description provided for @roadSignsMeaning3_20.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает обгон транспортных средств, кроме тихоходных и двухколесных'**
+  String get roadSignsMeaning3_20;
+
+  /// No description provided for @roadSignsMeaning3_22.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает грузовым авто с массой более 3,5 т обгон любых ТС'**
+  String get roadSignsMeaning3_22;
+
+  /// No description provided for @roadSignsMeaning3_24.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает движение со скоростью выше числа, указанного на знаке'**
+  String get roadSignsMeaning3_24;
+
+  /// No description provided for @roadSignsMeaning3_27.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает как остановку, так и стоянку любых транспортных средств'**
+  String get roadSignsMeaning3_27;
+
+  /// No description provided for @roadSignsMeaning3_28.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает исключительно стоянку ТС (кратковременная остановка разрешена)'**
+  String get roadSignsMeaning3_28;
+
+  /// No description provided for @roadSignsMeaning4_1_1.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предписывает двигаться только прямо'**
+  String get roadSignsMeaning4_1_1;
+
+  /// No description provided for @roadSignsMeaning4_1_2.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предписывает двигаться только направо'**
+  String get roadSignsMeaning4_1_2;
+
+  /// No description provided for @roadSignsMeaning4_1_3.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предписывает двигаться только налево или на разворот'**
+  String get roadSignsMeaning4_1_3;
+
+  /// No description provided for @roadSignsMeaning4_1_4.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предписывает двигаться только прямо или направо'**
+  String get roadSignsMeaning4_1_4;
+
+  /// No description provided for @roadSignsMeaning4_1_5.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предписывает двигаться только прямо или налево (а также на разворот)'**
+  String get roadSignsMeaning4_1_5;
+
+  /// No description provided for @roadSignsMeaning4_1_6.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предписывает двигаться только направо или налево (а также на разворот)'**
+  String get roadSignsMeaning4_1_6;
+
+  /// No description provided for @roadSignsMeaning4_2_1.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешает объезд препятствия только с правой стороны'**
+  String get roadSignsMeaning4_2_1;
+
+  /// No description provided for @roadSignsMeaning4_2_2.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешает объезд препятствия только с левой стороны'**
+  String get roadSignsMeaning4_2_2;
+
+  /// No description provided for @roadSignsMeaning4_2_3.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешает объезд препятствия с любой удобной стороны'**
+  String get roadSignsMeaning4_2_3;
+
+  /// No description provided for @roadSignsMeaning4_3.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предписывает движение по кругу в направлении стрелок'**
+  String get roadSignsMeaning4_3;
+
+  /// No description provided for @roadSignsMeaning4_6.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрещает движение со скоростью менее указанной на знаке'**
+  String get roadSignsMeaning4_6;
+
+  /// No description provided for @roadSignsMeaning5_1.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обозначает дорогу с высшим скоростным режимом для автомобилей'**
+  String get roadSignsMeaning5_1;
+
+  /// No description provided for @roadSignsMeaning5_3.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обозначает дорогу только для автомобилей, автобусов и мотоциклов'**
+  String get roadSignsMeaning5_3;
+
+  /// No description provided for @roadSignsMeaning5_5.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обозначает дорогу с движением по всей ширине в одну сторону'**
+  String get roadSignsMeaning5_5;
+
+  /// No description provided for @roadSignsMeaning5_11_1.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обозначает дорогу с полосой для встречного маршрутного транспорта'**
+  String get roadSignsMeaning5_11_1;
+
+  /// No description provided for @roadSignsMeaning5_14_1.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обозначает специальную выделенную полосу для маршрутного транспорта'**
+  String get roadSignsMeaning5_14_1;
+
+  /// No description provided for @roadSignsMeaning5_19_1.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обозначает место организованного наземного перехода дороги'**
+  String get roadSignsMeaning5_19_1;
+
+  /// No description provided for @roadSignsMeaning5_20.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обозначает точные границы искусственной неровности'**
+  String get roadSignsMeaning5_20;
+
+  /// No description provided for @roadSignsMeaning5_21.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обозначает въезд на территорию с особым режимом для пешеходов'**
+  String get roadSignsMeaning5_21;
+
+  /// No description provided for @roadSignsMeaning5_27.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обозначает начало участка с запретом стоянки'**
+  String get roadSignsMeaning5_27;
+
+  /// No description provided for @roadSignsMeaning5_31.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обозначает начало участка с лимитом максимальной скорости'**
+  String get roadSignsMeaning5_31;
+
+  /// No description provided for @roadSignsMeaning6_4.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обозначает площадку для стоянки (парковки) автомобилей'**
+  String get roadSignsMeaning6_4;
+
+  /// No description provided for @roadSignsMeaning6_8_1.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обозначает дорогу, не имеющую сквозного проезда'**
+  String get roadSignsMeaning6_8_1;
+
+  /// No description provided for @roadSignsMeaning6_16.
+  ///
+  /// In ru, this message translates to:
+  /// **'Указывает место остановки перед светофором или регулировщиком'**
+  String get roadSignsMeaning6_16;
+
+  /// No description provided for @roadSignsMeaning8_8.
+  ///
+  /// In ru, this message translates to:
+  /// **'Указывает, что услуги предоставляются исключительно за плату'**
+  String get roadSignsMeaning8_8;
+
+  /// No description provided for @supportAttachmentSticker.
+  ///
+  /// In ru, this message translates to:
+  /// **'[Стикер]'**
+  String get supportAttachmentSticker;
+
+  /// No description provided for @supportAttachmentVoice.
+  ///
+  /// In ru, this message translates to:
+  /// **'[Голосовое сообщение]'**
+  String get supportAttachmentVoice;
+
+  /// No description provided for @supportAttachmentDocument.
+  ///
+  /// In ru, this message translates to:
+  /// **'[Документ]'**
+  String get supportAttachmentDocument;
+
+  /// No description provided for @supportAttachmentOther.
+  ///
+  /// In ru, this message translates to:
+  /// **'[Вложение]'**
+  String get supportAttachmentOther;
 }
 
 class _AppLocalizationsDelegate

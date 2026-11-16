@@ -72,16 +72,8 @@ class SignCardQuestion {
     required this.type,
   });
 
-  /// Определяет, начинается ли вопрос с разрешения («Можно ли», «Разрешено ли»).
-  bool get isPermissionQuestion {
-    final lower = prompt.trim().toLowerCase();
-    return lower.startsWith('можно') ||
-        lower.startsWith('разрешено') ||
-        lower.startsWith('разрешена') ||
-        lower.startsWith('разрешен') ||
-        lower.startsWith('разрешён') ||
-        lower.startsWith('разрешается');
-  }
+  /// Семантика ответа не зависит от языка формулировки.
+  bool get isPermissionQuestion => type == SignQuestionType.actionPermission;
 
   /// Текст для правого свайпа / кнопки согласия («МОЖНО» или «ДА»).
   String get rightActionLabel =>

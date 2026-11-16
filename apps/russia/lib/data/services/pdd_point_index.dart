@@ -12,16 +12,19 @@ class PddPointIndex {
   final List<Map<String, String>> _sections;
   final Map<String, int> _pointToSection;
 
-  static Future<PddPointIndex>? _loading;
+  static final Map<String, Future<PddPointIndex>> _loading = {};
 
   /// Разобранный указатель, если он уже построен. Позволяет отрисовать
   /// ссылки сразу, без мигания обычным текстом на первом кадре.
-  static PddPointIndex? cached;
+  static final Map<String, PddPointIndex> _cached = {};
+  static PddPointIndex? get cached => cachedFor('ru');
+  static PddPointIndex? cachedFor(String lang) => _cached[lang];
 
-  static Future<PddPointIndex> load() => _loading ??= _build();
+  static Future<PddPointIndex> load([String lang = 'ru']) =>
+      _loading.putIfAbsent(lang, () => _build(lang));
 
-  static Future<PddPointIndex> _build() async {
-    final sections = await QuestionsDataSource().loadPddSections();
+  static Future<PddPointIndex> _build(String lang) async {
+    final sections = await QuestionsDataSource().loadPddSections(lang);
 
     final map = <String, int>{};
     for (var i = 0; i < sections.length; i++) {
@@ -33,7 +36,7 @@ class PddPointIndex {
       }
     }
 
-    return cached = PddPointIndex._(sections, map);
+    return _cached[lang] = PddPointIndex._(sections, map);
   }
 
   /// Начало пункта: номер в начале строки, 2–4 уровня («13.11», «13.11.1»).

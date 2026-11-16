@@ -15,6 +15,7 @@ import 'package:pdd_app/data/services/network_retry.dart';
 import 'package:pdd_app/data/services/notifier_api.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/support_inbox.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Сервис взаимодействия с чатом техподдержки приложения.
@@ -227,6 +228,7 @@ class SupportChatService {
       'appVersion': appVersion,
       'isPremium': isPremium,
       'text': trimmed,
+      'language': appL10n.localeName,
       // Ответ оператора можно прислать пушем: сервер проверит по сессии, что
       // переписка принадлежит этому аккаунту.
       'replyPush': SupportInbox.instance.pushActive(),

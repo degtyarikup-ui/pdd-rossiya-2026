@@ -5027,4 +5027,219 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get promoAlreadyApplied =>
       'Этот код уже был активирован. Повторно дни не начисляются.';
+
+  @override
+  String get appName => 'ПДД Россия 2026';
+
+  @override
+  String roadSignsFolkPrompt(String name) {
+    return 'Какой знак в народе называют «$name»?';
+  }
+
+  @override
+  String roadSignsTitlePrompt(String title) {
+    return 'Какой из этих знаков — «$title»?';
+  }
+
+  @override
+  String roadSignsMeaningPrompt(String meaning) {
+    return 'Какой из этих знаков означает: «$meaning»?';
+  }
+
+  @override
+  String get roadSignsMeaning2_1 =>
+      'Предоставляет право преимущественного проезда нерегулируемых перекрестков';
+
+  @override
+  String get roadSignsMeaning2_2 =>
+      'Обозначает конец дороги с преимущественным правом проезда';
+
+  @override
+  String get roadSignsMeaning2_4 =>
+      'Обязывает уступить дорогу ТС на пересекаемой дороге';
+
+  @override
+  String get roadSignsMeaning2_5 =>
+      'Запрещает движение без обязательной остановки перед стоп-линией';
+
+  @override
+  String get roadSignsMeaning2_6 =>
+      'Запрещает въезд на узкий участок дороги, если это затруднит встречное движение';
+
+  @override
+  String get roadSignsMeaning2_7 =>
+      'Предоставляет преимущество по отношению к встречным ТС на узком участке дороги';
+
+  @override
+  String get roadSignsMeaning3_1 =>
+      'Запрещает въезд всех транспортных средств в данном направлении';
+
+  @override
+  String get roadSignsMeaning3_2 =>
+      'Запрещает движение всех транспортных средств в обоих направлениях';
+
+  @override
+  String get roadSignsMeaning3_3 =>
+      'Запрещает движение любых механических транспортных средств';
+
+  @override
+  String get roadSignsMeaning3_4 =>
+      'Запрещает движение грузовиков с разрешенной максимальной массой более 3,5 т';
+
+  @override
+  String get roadSignsMeaning3_5 => 'Запрещает движение мотоциклов любого типа';
+
+  @override
+  String get roadSignsMeaning3_6 =>
+      'Запрещает движение любых тракторов и самоходных машин';
+
+  @override
+  String get roadSignsMeaning3_7 =>
+      'Запрещает движение грузовиков и тракторов с любыми прицепами, а также буксировку';
+
+  @override
+  String get roadSignsMeaning3_10 =>
+      'Запрещает перемещение пешеходов, а также лиц на СИМ';
+
+  @override
+  String get roadSignsMeaning3_18_1 =>
+      'Запрещает поворот направо на ближайшем пересечении дорог';
+
+  @override
+  String get roadSignsMeaning3_18_2 =>
+      'Запрещает поворот налево на ближайшем пересечении дорог';
+
+  @override
+  String get roadSignsMeaning3_19 =>
+      'Запрещает только разворот (при этом поворот налево разрешен)';
+
+  @override
+  String get roadSignsMeaning3_20 =>
+      'Запрещает обгон транспортных средств, кроме тихоходных и двухколесных';
+
+  @override
+  String get roadSignsMeaning3_22 =>
+      'Запрещает грузовым авто с массой более 3,5 т обгон любых ТС';
+
+  @override
+  String get roadSignsMeaning3_24 =>
+      'Запрещает движение со скоростью выше числа, указанного на знаке';
+
+  @override
+  String get roadSignsMeaning3_27 =>
+      'Запрещает как остановку, так и стоянку любых транспортных средств';
+
+  @override
+  String get roadSignsMeaning3_28 =>
+      'Запрещает исключительно стоянку ТС (кратковременная остановка разрешена)';
+
+  @override
+  String get roadSignsMeaning4_1_1 => 'Предписывает двигаться только прямо';
+
+  @override
+  String get roadSignsMeaning4_1_2 => 'Предписывает двигаться только направо';
+
+  @override
+  String get roadSignsMeaning4_1_3 =>
+      'Предписывает двигаться только налево или на разворот';
+
+  @override
+  String get roadSignsMeaning4_1_4 =>
+      'Предписывает двигаться только прямо или направо';
+
+  @override
+  String get roadSignsMeaning4_1_5 =>
+      'Предписывает двигаться только прямо или налево (а также на разворот)';
+
+  @override
+  String get roadSignsMeaning4_1_6 =>
+      'Предписывает двигаться только направо или налево (а также на разворот)';
+
+  @override
+  String get roadSignsMeaning4_2_1 =>
+      'Разрешает объезд препятствия только с правой стороны';
+
+  @override
+  String get roadSignsMeaning4_2_2 =>
+      'Разрешает объезд препятствия только с левой стороны';
+
+  @override
+  String get roadSignsMeaning4_2_3 =>
+      'Разрешает объезд препятствия с любой удобной стороны';
+
+  @override
+  String get roadSignsMeaning4_3 =>
+      'Предписывает движение по кругу в направлении стрелок';
+
+  @override
+  String get roadSignsMeaning4_6 =>
+      'Запрещает движение со скоростью менее указанной на знаке';
+
+  @override
+  String get roadSignsMeaning5_1 =>
+      'Обозначает дорогу с высшим скоростным режимом для автомобилей';
+
+  @override
+  String get roadSignsMeaning5_3 =>
+      'Обозначает дорогу только для автомобилей, автобусов и мотоциклов';
+
+  @override
+  String get roadSignsMeaning5_5 =>
+      'Обозначает дорогу с движением по всей ширине в одну сторону';
+
+  @override
+  String get roadSignsMeaning5_11_1 =>
+      'Обозначает дорогу с полосой для встречного маршрутного транспорта';
+
+  @override
+  String get roadSignsMeaning5_14_1 =>
+      'Обозначает специальную выделенную полосу для маршрутного транспорта';
+
+  @override
+  String get roadSignsMeaning5_19_1 =>
+      'Обозначает место организованного наземного перехода дороги';
+
+  @override
+  String get roadSignsMeaning5_20 =>
+      'Обозначает точные границы искусственной неровности';
+
+  @override
+  String get roadSignsMeaning5_21 =>
+      'Обозначает въезд на территорию с особым режимом для пешеходов';
+
+  @override
+  String get roadSignsMeaning5_27 =>
+      'Обозначает начало участка с запретом стоянки';
+
+  @override
+  String get roadSignsMeaning5_31 =>
+      'Обозначает начало участка с лимитом максимальной скорости';
+
+  @override
+  String get roadSignsMeaning6_4 =>
+      'Обозначает площадку для стоянки (парковки) автомобилей';
+
+  @override
+  String get roadSignsMeaning6_8_1 =>
+      'Обозначает дорогу, не имеющую сквозного проезда';
+
+  @override
+  String get roadSignsMeaning6_16 =>
+      'Указывает место остановки перед светофором или регулировщиком';
+
+  @override
+  String get roadSignsMeaning8_8 =>
+      'Указывает, что услуги предоставляются исключительно за плату';
+
+  @override
+  String get supportAttachmentSticker => '[Стикер]';
+
+  @override
+  String get supportAttachmentVoice => '[Голосовое сообщение]';
+
+  @override
+  String get supportAttachmentDocument => '[Документ]';
+
+  @override
+  String get supportAttachmentOther => '[Вложение]';
 }
