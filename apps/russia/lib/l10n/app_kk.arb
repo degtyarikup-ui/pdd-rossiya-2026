@@ -1798,5 +1798,12 @@
   "supportAttachmentSticker": "[Стикер]",
   "supportAttachmentVoice": "[Дауыстық хабарлама]",
   "supportAttachmentDocument": "[Құжат]",
-  "supportAttachmentOther": "[Тіркеме]"
+  "supportAttachmentOther": "[Тіркеме]",
+  "homeWidgetName": "Оқу сериясы",
+  "homeWidgetDescription": "Басты экранда қазіргі серия мен жеке рекордыңызды көріңіз.",
+  "homeWidgetCurrent": "Қатарынан күн",
+  "homeWidgetBest": "Рекорд күн",
+  "homeWidgetDone": "Бүгін орындалды",
+  "homeWidgetContinue": "Бүгін серияны жалғастыр",
+  "homeWidgetStart": "Жаңа серияны баста"
 }

@@ -21,7 +21,10 @@
 		FAC072BE307C9A0EA624062A /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00799F67F1FB45F09674F87C /* Pods_RunnerTests.framework */; };
 		5A1C0E0100000000A1B2C301 /* PddGodotGame.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5A1C0E0100000000A1B2C302 /* PddGodotGame.mm */; };
 		6E5A0E0100000000A1B2C401 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E5A0E0100000000A1B2C405 /* NotificationService.swift */; };
+		7F5A0E0100000000A1B2C401 /* StreakWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5A0E0100000000A1B2C405 /* StreakWidget.swift */; };
 		6E5A0E0100000000A1B2C402 /* NotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6E5A0E0100000000A1B2C407 /* NotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7F5A0E0100000000A1B2C402 /* StreakWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7F5A0E0100000000A1B2C407 /* StreakWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7F5A0E0100000000A1B2C420 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7F5A0E0100000000A1B2C421 /* Localizable.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -38,6 +41,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 6E5A0E0100000000A1B2C40A;
 			remoteInfo = NotificationService;
+		};
+		7F5A0E0100000000A1B2C403 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7F5A0E0100000000A1B2C40A;
+			remoteInfo = StreakWidget;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -59,6 +69,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				6E5A0E0100000000A1B2C402 /* NotificationService.appex in Embed Foundation Extensions */,
+				7F5A0E0100000000A1B2C402 /* StreakWidget.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -97,8 +108,14 @@
 		C542274AE62FEB96C5BF6AD7 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		DEF2E62BCDAE352DC1F4F816 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		6E5A0E0100000000A1B2C405 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		7F5A0E0100000000A1B2C405 /* StreakWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakWidget.swift; sourceTree = "<group>"; };
 		6E5A0E0100000000A1B2C406 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7F5A0E0100000000A1B2C406 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		6E5A0E0100000000A1B2C407 /* NotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F5A0E0100000000A1B2C407 /* StreakWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = StreakWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F5A0E0100000000A1B2C422 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
+		7F5A0E0100000000A1B2C423 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		7F5A0E0100000000A1B2C424 /* kk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = kk; path = kk.lproj/Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,6 +137,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		6E5A0E0100000000A1B2C408 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7F5A0E0100000000A1B2C408 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -155,6 +179,7 @@
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
 				6E5A0E0100000000A1B2C409 /* NotificationService */,
+				7F5A0E0100000000A1B2C409 /* StreakWidget */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				A5986C3288CBF5E9145BA775 /* Pods */,
@@ -168,6 +193,7 @@
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
 				6E5A0E0100000000A1B2C407 /* NotificationService.appex */,
+				7F5A0E0100000000A1B2C407 /* StreakWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -223,6 +249,16 @@
 			path = NotificationService;
 			sourceTree = "<group>";
 		};
+		7F5A0E0100000000A1B2C409 /* StreakWidget */ = {
+			isa = PBXGroup;
+			children = (
+				7F5A0E0100000000A1B2C405 /* StreakWidget.swift */,
+				7F5A0E0100000000A1B2C421 /* Localizable.strings */,
+				7F5A0E0100000000A1B2C406 /* Info.plist */,
+			);
+			path = StreakWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -264,6 +300,7 @@
 			);
 			dependencies = (
 				6E5A0E0100000000A1B2C40E /* PBXTargetDependency */,
+				7F5A0E0100000000A1B2C40E /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -290,6 +327,23 @@
 			productReference = 6E5A0E0100000000A1B2C407 /* NotificationService.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		7F5A0E0100000000A1B2C40A /* StreakWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7F5A0E0100000000A1B2C40B /* Build configuration list for PBXNativeTarget "StreakWidget" */;
+			buildPhases = (
+				7F5A0E0100000000A1B2C40C /* Sources */,
+				7F5A0E0100000000A1B2C408 /* Frameworks */,
+				7F5A0E0100000000A1B2C40D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = StreakWidget;
+			productName = StreakWidget;
+			productReference = 7F5A0E0100000000A1B2C407 /* StreakWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -300,6 +354,14 @@
 				LastUpgradeCheck = 1510;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
+					7F5A0E0100000000A1B2C40A = {
+						CreatedOnToolsVersion = 16.0;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
+					};
 					6E5A0E0100000000A1B2C40A = {
 						CreatedOnToolsVersion = 16.0;
 					};
@@ -311,6 +373,9 @@
 						CreatedOnToolsVersion = 7.3.1;
 						LastSwiftMigration = 1100;
 						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
 							com.apple.Push = {
 								enabled = 1;
 							};
@@ -342,6 +407,7 @@
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
 				6E5A0E0100000000A1B2C40A /* NotificationService */,
+				7F5A0E0100000000A1B2C40A /* StreakWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -370,6 +436,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7F5A0E0100000000A1B2C40D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7F5A0E0100000000A1B2C420 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -518,6 +592,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7F5A0E0100000000A1B2C40C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7F5A0E0100000000A1B2C401 /* StreakWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -530,6 +612,11 @@
 			isa = PBXTargetDependency;
 			target = 6E5A0E0100000000A1B2C40A /* NotificationService */;
 			targetProxy = 6E5A0E0100000000A1B2C403 /* PBXContainerItemProxy */;
+		};
+		7F5A0E0100000000A1B2C40E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7F5A0E0100000000A1B2C40A /* StreakWidget */;
+			targetProxy = 7F5A0E0100000000A1B2C403 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -558,6 +645,16 @@
 				97C147001CF9000F007C117D /* Base */,
 			);
 			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+		7F5A0E0100000000A1B2C421 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				7F5A0E0100000000A1B2C422 /* ru */,
+				7F5A0E0100000000A1B2C423 /* en */,
+				7F5A0E0100000000A1B2C424 /* kk */,
+			);
+			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
@@ -874,6 +971,35 @@
 			};
 			name = Debug;
 		};
+		7F5A0E0100000000A1B2C40F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = StreakWidget/StreakWidget.entitlements;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 6T66V45XC7;
+				INFOPLIST_FILE = StreakWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = ru.pdd.pddApp.StreakWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
 		6E5A0E0100000000A1B2C410 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
@@ -900,6 +1026,33 @@
 			};
 			name = Release;
 		};
+		7F5A0E0100000000A1B2C410 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = StreakWidget/StreakWidget.entitlements;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 6T66V45XC7;
+				INFOPLIST_FILE = StreakWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = ru.pdd.pddApp.StreakWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
 		6E5A0E0100000000A1B2C411 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
@@ -918,6 +1071,33 @@
 				);
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
 				PRODUCT_BUNDLE_IDENTIFIER = ru.pdd.pddApp.NotificationService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Profile;
+		};
+		7F5A0E0100000000A1B2C411 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = StreakWidget/StreakWidget.entitlements;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 6T66V45XC7;
+				INFOPLIST_FILE = StreakWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = ru.pdd.pddApp.StreakWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
@@ -965,6 +1145,16 @@
 				6E5A0E0100000000A1B2C40F /* Debug */,
 				6E5A0E0100000000A1B2C410 /* Release */,
 				6E5A0E0100000000A1B2C411 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7F5A0E0100000000A1B2C40B /* Build configuration list for PBXNativeTarget "StreakWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7F5A0E0100000000A1B2C40F /* Debug */,
+				7F5A0E0100000000A1B2C410 /* Release */,
+				7F5A0E0100000000A1B2C411 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

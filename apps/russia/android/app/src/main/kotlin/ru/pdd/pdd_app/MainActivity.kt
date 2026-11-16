@@ -21,6 +21,7 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        StreakWidgetProvider.register(this, flutterEngine.dartExecutor.binaryMessenger)
         appUpdates?.close()
         appUpdates = AppUpdatesBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         godotGame = GodotGameBridge(this, flutterEngine.dartExecutor.binaryMessenger)

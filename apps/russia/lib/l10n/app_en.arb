@@ -1798,5 +1798,12 @@
   "supportAttachmentSticker": "[Sticker]",
   "supportAttachmentVoice": "[Voice message]",
   "supportAttachmentDocument": "[Document]",
-  "supportAttachmentOther": "[Attachment]"
+  "supportAttachmentOther": "[Attachment]",
+  "homeWidgetName": "Study streak",
+  "homeWidgetDescription": "Your current streak and personal best on your home screen.",
+  "homeWidgetCurrent": "Day streak",
+  "homeWidgetBest": "Best streak",
+  "homeWidgetDone": "Done for today",
+  "homeWidgetContinue": "Keep your streak today",
+  "homeWidgetStart": "Start a new streak"
 }

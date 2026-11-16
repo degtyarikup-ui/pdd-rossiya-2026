@@ -8733,6 +8733,48 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'[Вложение]'**
   String get supportAttachmentOther;
+
+  /// No description provided for @homeWidgetName.
+  ///
+  /// In ru, this message translates to:
+  /// **'Серия занятий'**
+  String get homeWidgetName;
+
+  /// No description provided for @homeWidgetDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Текущая серия и личный рекорд на главном экране.'**
+  String get homeWidgetDescription;
+
+  /// No description provided for @homeWidgetCurrent.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дней подряд'**
+  String get homeWidgetCurrent;
+
+  /// No description provided for @homeWidgetBest.
+  ///
+  /// In ru, this message translates to:
+  /// **'Рекорд дней'**
+  String get homeWidgetBest;
+
+  /// No description provided for @homeWidgetDone.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сегодня засчитано'**
+  String get homeWidgetDone;
+
+  /// No description provided for @homeWidgetContinue.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохрани серию сегодня'**
+  String get homeWidgetContinue;
+
+  /// No description provided for @homeWidgetStart.
+  ///
+  /// In ru, this message translates to:
+  /// **'Начни новую серию'**
+  String get homeWidgetStart;
 }
 
 class _AppLocalizationsDelegate

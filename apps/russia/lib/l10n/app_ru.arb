@@ -2510,5 +2510,12 @@
   "supportAttachmentSticker": "[Стикер]",
   "supportAttachmentVoice": "[Голосовое сообщение]",
   "supportAttachmentDocument": "[Документ]",
-  "supportAttachmentOther": "[Вложение]"
+  "supportAttachmentOther": "[Вложение]",
+  "homeWidgetName": "Серия занятий",
+  "homeWidgetDescription": "Текущая серия и личный рекорд на главном экране.",
+  "homeWidgetCurrent": "Дней подряд",
+  "homeWidgetBest": "Рекорд дней",
+  "homeWidgetDone": "Сегодня засчитано",
+  "homeWidgetContinue": "Сохрани серию сегодня",
+  "homeWidgetStart": "Начни новую серию"
 }

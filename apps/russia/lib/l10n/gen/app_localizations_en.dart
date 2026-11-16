@@ -5228,4 +5228,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get supportAttachmentOther => '[Attachment]';
+
+  @override
+  String get homeWidgetName => 'Study streak';
+
+  @override
+  String get homeWidgetDescription =>
+      'Your current streak and personal best on your home screen.';
+
+  @override
+  String get homeWidgetCurrent => 'Day streak';
+
+  @override
+  String get homeWidgetBest => 'Best streak';
+
+  @override
+  String get homeWidgetDone => 'Done for today';
+
+  @override
+  String get homeWidgetContinue => 'Keep your streak today';
+
+  @override
+  String get homeWidgetStart => 'Start a new streak';
 }

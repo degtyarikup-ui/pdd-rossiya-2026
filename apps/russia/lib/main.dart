@@ -5,6 +5,7 @@ import 'package:pdd_app/data/services/referral_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 
 import 'dart:async';
+import 'package:pdd_app/data/services/streak_widget_service.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -112,7 +113,9 @@ Future<Widget> _initializeApplication(
   // after the install/update classification snapshot and off the startup path.
   unawaited(AcquisitionService.fields());
 
-  final progressDataSource = ProgressDataSource();
+  final progressDataSource = ProgressDataSource(
+    homeWidgetUpdater: StreakWidgetService.update,
+  );
   try {
     await progressDataSource.init().timeout(const Duration(seconds: 4));
   } catch (e) {
@@ -345,6 +348,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
   Future<void> _refreshStreakReminder() async {
     try {
       final ds = ref.read(progressDataSourceProvider);
+      await ds.refreshHomeWidget();
       await StreakNotifier.instance.setUserStreakEnabled(
         (await ds.loadAppSettings()).notificationsEnabled,
       );
@@ -362,6 +366,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     final settings = ref.read(appSettingsProvider);
     if (settings.languageCode == 'system') {
       updateAppLocale(Locale(settings.effectiveLanguageCode));
+      unawaited(ref.read(progressDataSourceProvider).refreshHomeWidget());
       setState(() {});
     }
   }

@@ -5267,4 +5267,26 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get supportAttachmentOther => '[Вложение]';
+
+  @override
+  String get homeWidgetName => 'Серия занятий';
+
+  @override
+  String get homeWidgetDescription =>
+      'Текущая серия и личный рекорд на главном экране.';
+
+  @override
+  String get homeWidgetCurrent => 'Дней подряд';
+
+  @override
+  String get homeWidgetBest => 'Рекорд дней';
+
+  @override
+  String get homeWidgetDone => 'Сегодня засчитано';
+
+  @override
+  String get homeWidgetContinue => 'Сохрани серию сегодня';
+
+  @override
+  String get homeWidgetStart => 'Начни новую серию';
 }

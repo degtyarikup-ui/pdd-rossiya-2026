@@ -12,6 +12,10 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.ru.pdd.pddApp.streak</string>
+	</array>
 	<key>keychain-access-groups</key>
 	<array/>
 </dict>

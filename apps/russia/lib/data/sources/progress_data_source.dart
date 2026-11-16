@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
+import 'package:flutter/widgets.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/data/models/achievement_stats.dart';
 import 'package:pdd_app/data/models/marathon_progress.dart';
 import 'package:pdd_app/data/models/progress_snapshot.dart';
@@ -20,6 +22,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Локальный кэш прогресса в [SharedPreferences].
 class ProgressDataSource {
+  ProgressDataSource({
+    Future<void> Function(Streak, AppLocalizations)? homeWidgetUpdater,
+  }) : _homeWidgetUpdater = homeWidgetUpdater;
+
+  final Future<void> Function(Streak, AppLocalizations)? _homeWidgetUpdater;
+
   static const String _keyTrafficController = 'traffic_controller_progress';
   static const String _keySignSwiper = 'sign_swiper_progress';
   static const String _keyCrossroadsPriority = 'crossroads_priority_progress';
@@ -85,6 +93,22 @@ class ProgressDataSource {
     _migrateLegacyIfNeeded();
     _migrateQuestionIdentities();
     _purgeObsoleteCloudKeys();
+    unawaited(refreshHomeWidget());
+  }
+
+  Future<void> _widgetUpdates = Future<void>.value();
+
+  /// Serialize reads so an older publication cannot overwrite a reset/import.
+  Future<void> refreshHomeWidget() {
+    if (_homeWidgetUpdater == null) return Future<void>.value();
+    _widgetUpdates = _widgetUpdates.then((_) async {
+      final settings = await loadAppSettings();
+      final l10n = lookupAppLocalizations(
+        Locale(settings.effectiveLanguageCode),
+      );
+      await _homeWidgetUpdater(await loadStreak(), l10n);
+    });
+    return _widgetUpdates;
   }
 
   void _migrateLegacyIfNeeded() {
@@ -350,6 +374,7 @@ class ProgressDataSource {
 
   Future<void> saveAppSettings(AppSettings settings) async {
     _saveMap(_keySettings, settings.toJson());
+    unawaited(refreshHomeWidget());
     ProgressSyncService.instance.scheduleSync();
   }
 
@@ -396,6 +421,7 @@ class ProgressDataSource {
     await _prefs.remove(_keyAchievementStats);
     ProgressSyncService.instance.scheduleSync();
     _imports.add(++_importRevision);
+    unawaited(refreshHomeWidget());
   }
 
   // --- Стрик: служебные методы ---
@@ -468,6 +494,7 @@ class ProgressDataSource {
       _prefs.setStringList(_keyStreakActiveDays, activeSorted),
       _prefs.setBool(_keyStreakCelebrationPending, true),
     ]);
+    unawaited(refreshHomeWidget());
     ProgressSyncService.instance.scheduleSync();
   }
 
@@ -1330,5 +1357,6 @@ class ProgressDataSource {
     }
     _migrateQuestionIdentities();
     _imports.add(++_importRevision);
+    unawaited(refreshHomeWidget());
   }
 }

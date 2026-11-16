@@ -1,0 +1,7 @@
+<resources>
+    <color name="streak_widget_background">#FFF8F0</color>
+    <color name="streak_widget_text">#25221F</color>
+    <color name="streak_widget_secondary">#776B60</color>
+    <color name="streak_widget_accent">#D85117</color>
+    <color name="streak_widget_border">#F5DEC7</color>
+</resources>

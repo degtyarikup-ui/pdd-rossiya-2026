@@ -5216,4 +5216,26 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get supportAttachmentOther => '[Тіркеме]';
+
+  @override
+  String get homeWidgetName => 'Оқу сериясы';
+
+  @override
+  String get homeWidgetDescription =>
+      'Басты экранда қазіргі серия мен жеке рекордыңызды көріңіз.';
+
+  @override
+  String get homeWidgetCurrent => 'Қатарынан күн';
+
+  @override
+  String get homeWidgetBest => 'Рекорд күн';
+
+  @override
+  String get homeWidgetDone => 'Бүгін орындалды';
+
+  @override
+  String get homeWidgetContinue => 'Бүгін серияны жалғастыр';
+
+  @override
+  String get homeWidgetStart => 'Жаңа серияны баста';
 }

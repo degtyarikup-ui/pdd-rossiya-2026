@@ -1,12 +1,16 @@
 import AuthenticationServices
 import Flutter
 import UIKit
+import WidgetKit
 import YandexLoginSDK
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "PddStreakWidget") {
+      PddStreakWidget.register(with: registrar)
+    }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "PddYandexAuth") {
       PddYandexAuth.register(with: registrar)
     }
@@ -128,5 +132,34 @@ final class PddYandexAuth: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegat
     for activity in options.userActivities where YandexLoginSDK.shared.tryHandleUserActivity(activity) { return true }
     for context in options.urlContexts where YandexLoginSDK.shared.tryHandleOpenURL(context.url) { return true }
     return false
+  }
+}
+
+/// Share a tiny snapshot; no Flutter engine or network is needed by the widget.
+final class PddStreakWidget: NSObject, FlutterPlugin {
+  static func register(with registrar: FlutterPluginRegistrar) {
+    let channel = FlutterMethodChannel(name: "pdd/streak_widget", binaryMessenger: registrar.messenger())
+    registrar.addMethodCallDelegate(PddStreakWidget(), channel: channel)
+  }
+
+  func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    guard call.method == "update" else { result(FlutterMethodNotImplemented); return }
+    guard let snapshot = call.arguments as? [String: Any],
+          let directory = FileManager.default.containerURL(
+              forSecurityApplicationGroupIdentifier: "group.ru.pdd.pddApp.streak") else {
+      result(FlutterError(code: "widget_storage_unavailable", message: "App Group is unavailable", details: nil))
+      return
+    }
+    do {
+      let url = directory.appendingPathComponent("streak.json")
+      let data = try JSONSerialization.data(withJSONObject: snapshot, options: [.sortedKeys])
+      if (try? Data(contentsOf: url)) != data {
+        try data.write(to: url, options: .atomic)
+        WidgetCenter.shared.reloadTimelines(ofKind: "PddStudyStreak")
+      }
+      result(nil)
+    } catch {
+      result(FlutterError(code: "widget_write_failed", message: "Could not update widget", details: nil))
+    }
   }
 }

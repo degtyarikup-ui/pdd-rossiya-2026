@@ -21,6 +21,7 @@
 | Планшеты и горизонтальный режим | [Адаптивная вёрстка](adaptive-layout.md) |
 | Строки | `lib/l10n/app_{ru,en,kk}.arb` |
 | Ящик уведомлений (колокольчик в профиле) | `notification_inbox_service.dart`, `screens/notifications/`; описание — [уведомления](../ops/notifications-setup.md) |
+| Виджет серии на главном экране | [home-screen-widget.md](home-screen-widget.md), `streak_widget_service.dart`, `android/.../StreakWidgetProvider.kt`, `ios/StreakWidget/` |
 | Нативные интеграции | `android/`, `ios/`, `web/` |
 
 ## Связи и ограничения
