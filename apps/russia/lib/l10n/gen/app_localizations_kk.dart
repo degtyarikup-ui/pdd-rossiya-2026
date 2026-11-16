@@ -325,6 +325,29 @@ class AppLocalizationsKk extends AppLocalizations {
   String get streakGoalReached => 'Барлық мақсат орындалды — қарқынды сақтаңыз';
 
   @override
+  String streakCalendarMonthActiveDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count белсенді күн',
+      one: '$count белсенді күн',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakCalendarPrevMonth => 'Алдыңғы ай';
+
+  @override
+  String get streakCalendarNextMonth => 'Келесі ай';
+
+  @override
+  String get streakCalendarToday => 'Бүгін';
+
+  @override
+  String get streakCalendarStudied => 'Айналысқан күн';
+
+  @override
   String get weekdayMon => 'Дс';
 
   @override

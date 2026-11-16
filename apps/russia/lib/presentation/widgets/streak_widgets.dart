@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
+import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/weekday_labels.dart';
 import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/flame_icon.dart';
+import 'package:pdd_app/presentation/widgets/streak_calendar_sheet.dart';
 
 /// Тёплый градиент серии — тот же, что в шапке поздравления.
 const streakHeatGradient = LinearGradient(
@@ -129,15 +131,6 @@ int previousStreakMilestone(int current) {
 
 DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
 
-/// День входит в текущую серию: ряд из `current` дней, кончающийся
-/// последним активным. Лента и число не могут показывать разное.
-bool _inRun(Streak s, DateTime d) {
-  final last = s.lastActiveDate;
-  if (s.current <= 0 || last == null) return false;
-  final end = _day(last), day = _day(d);
-  return !day.isAfter(end) && end.difference(day).inDays < s.current;
-}
-
 /// Календарная неделя (Пн–Вс) с сегодняшним днём: так её читают все,
 /// в отличие от «недели серии» со сдвигающимся началом.
 List<DateTime> currentWeekDays(DateTime today) {
@@ -177,7 +170,7 @@ class StreakWeekStrip extends StatelessWidget {
         for (final d in days)
           _DayDot(
             label: labels[d.weekday - 1],
-            done: streak.isActiveOn(d) || _inRun(streak, d),
+            done: streak.hasActivityOn(d),
             isToday: d == todayDay,
             future: d.isAfter(todayDay),
             size: size,
@@ -329,86 +322,105 @@ class StreakGoalBar extends StatelessWidget {
 /// На главной от серии осталась только статистика: серия — про привычку,
 /// ей место рядом с достижениями, где человек смотрит на свой путь.
 class StreakCard extends StatelessWidget {
-  const StreakCard({super.key, required this.streak, this.today});
+  const StreakCard({super.key, required this.streak, this.today, this.onTap});
 
   final Streak streak;
 
   /// Для тестов; по умолчанию — сейчас.
   final DateTime? today;
 
+  /// Переопределение действия по нажатию; по умолчанию открывает календарь.
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final now = today ?? DateTime.now();
     final active = streak.current > 0;
-    final doneToday = streak.isActiveOn(now);
+    final doneToday = streak.hasActivityOn(now);
     final status = !active
         ? appL10n.streakStartHint
         : doneToday
         ? appL10n.streakToday
         : appL10n.streakTodayPending;
+    final handleTap =
+        onTap ??
+        () {
+          HapticFeedbackHelper.tap();
+          showStreakCalendarSheet(context, streak: streak, today: now);
+        };
 
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.spacingL),
-      decoration: BoxDecoration(
-        color: colors.cardBackground,
+    return Material(
+      color: colors.cardBackground,
+      borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+      child: InkWell(
+        onTap: handleTap,
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimensions.spacingL),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              StreakFlameBadge(active: active),
-              const SizedBox(width: AppDimensions.spacingM),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text.rich(
-                      TextSpan(
-                        children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  StreakFlameBadge(active: active),
+                  const SizedBox(width: AppDimensions.spacingM),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text.rich(
                           TextSpan(
-                            text: '${streak.current} ',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.6,
-                              color: colors.primaryText,
-                            ),
+                            children: [
+                              TextSpan(
+                                text: '${streak.current} ',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.6,
+                                  color: colors.primaryText,
+                                ),
+                              ),
+                              TextSpan(
+                                text: appL10n.streakDaysWord(streak.current),
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.primaryText,
+                                ),
+                              ),
+                            ],
                           ),
-                          TextSpan(
-                            text: appL10n.streakDaysWord(streak.current),
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: colors.primaryText,
-                            ),
+                          style: const TextStyle(height: 1.15),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          status,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            height: 1.3,
+                            color: doneToday && active
+                                ? colors.green
+                                : colors.secondaryText,
                           ),
-                        ],
-                      ),
-                      style: const TextStyle(height: 1.15),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      status,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        height: 1.3,
-                        color: doneToday && active
-                            ? colors.green
-                            : colors.secondaryText,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: AppDimensions.spacingS),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: colors.secondaryText,
+                    size: 20,
+                  ),
+                ],
               ),
+              const SizedBox(height: AppDimensions.spacingL),
+              StreakWeekStrip(streak: streak, today: now),
             ],
           ),
-          const SizedBox(height: AppDimensions.spacingL),
-          StreakWeekStrip(streak: streak, today: now),
-        ],
+        ),
       ),
     );
   }

@@ -46,6 +46,19 @@ class Streak {
     return activeDays.contains(d);
   }
 
+  /// Входит ли дата в текущий непрерывный ряд дней (дополняет усечённый
+  /// кэш `activeDays` при длинных сериях).
+  bool isInCurrentRun(DateTime date) {
+    final last = lastActiveDate;
+    if (current <= 0 || last == null) return false;
+    final dist = dayDistance(day(date), day(last));
+    return dist >= 0 && dist < current;
+  }
+
+  /// Была ли активность в указанный день (по списку дней или текущему ряду).
+  bool hasActivityOn(DateTime date) =>
+      isActiveOn(date) || isInCurrentRun(date);
+
   static DateTime day(DateTime date) =>
       DateTime(date.year, date.month, date.day);
   static DateTime shiftDay(DateTime date, int count) =>

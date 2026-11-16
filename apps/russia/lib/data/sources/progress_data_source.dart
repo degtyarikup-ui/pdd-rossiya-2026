@@ -61,8 +61,12 @@ class ProgressDataSource {
   static String _marathonKey(TicketCategory category) =>
       'marathon_v1_${category.name}';
 
-  /// Максимум хранимых дней активности в локальном кэше.
-  static const int _maxStoredActiveDays = 30;
+  /// Максимум хранимых дней активности в локальном кэше (год для календаря).
+  static const int _maxStoredActiveDays = 365;
+
+  /// Исторический размер окна кэша: если на устройстве сохранено не меньше
+  /// 30 непрерывных дней, серия длиннее кэша остаётся валидной.
+  static const int _minConsistencyWindowDays = 30;
 
   /// Ключи прежней облачной синхронизации — чистим один раз при апгрейде.
   static const List<String> _obsoleteCloudKeys = [
@@ -449,7 +453,7 @@ class ProgressDataSource {
       _prefs.setString(_keyStreakStartDate, _isoDate(today));
     }
 
-    // Поддерживаем компактный список активных дней (последние 30 уникальных).
+    // Поддерживаем компактный список активных дней (до года для календаря).
     final activeRaw = _prefs.getStringList(_keyStreakActiveDays) ?? <String>[];
     final activeSet = activeRaw.toSet()..add(_isoDate(today));
     final activeSorted = activeSet.toList()..sort();
@@ -554,8 +558,8 @@ class ProgressDataSource {
     // активности приходят ещё и с сервера (с другого устройства), и раньше
     // могли разойтись со списком дней: «11 дней подряд» при пустой пятнице.
     // Серия — это непрерывный ряд дней, кончающийся последним активным.
-    // Список хранит 30 дней: ряд длиннее упирается в его край, тогда верим
-    // сохранённому числу.
+    // Список хранит историю до года (в старых версиях — 30 дней): ряд длиннее
+    // упирается в его край, тогда верим сохранённому числу.
     if (actualCurrent > 0 && lastDay != null && activeDays.contains(lastDay)) {
       var run = 0;
       var d = lastDay;
@@ -566,7 +570,7 @@ class ProgressDataSource {
       final oldest = activeDays.reduce((a, b) => a.isBefore(b) ? a : b);
       final reachesWindowEdge =
           !d.isAfter(Streak.shiftDay(oldest, -1)) &&
-          activeDays.length >= _maxStoredActiveDays;
+          activeDays.length >= _minConsistencyWindowDays;
       if (!reachesWindowEdge && run != actualCurrent) {
         actualCurrent = run;
         effectiveStart = Streak.shiftDay(lastDay, 1 - run);
@@ -1317,6 +1321,9 @@ class ProgressDataSource {
         final existingActive =
             _prefs.getStringList(_keyStreakActiveDays) ?? <String>[];
         final union = {...existingActive, ...active}.toList()..sort();
+        if (union.length > _maxStoredActiveDays) {
+          union.removeRange(0, union.length - _maxStoredActiveDays);
+        }
         await _prefs.setStringList(_keyStreakActiveDays, union);
         if (!current()) return;
       }

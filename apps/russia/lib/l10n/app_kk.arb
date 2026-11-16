@@ -94,6 +94,18 @@
     }
   },
   "streakGoalReached": "Барлық мақсат орындалды — қарқынды сақтаңыз",
+  "streakCalendarMonthActiveDays": "{count, plural, one{{count} белсенді күн} other{{count} белсенді күн}}",
+  "@streakCalendarMonthActiveDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakCalendarPrevMonth": "Алдыңғы ай",
+  "streakCalendarNextMonth": "Келесі ай",
+  "streakCalendarToday": "Бүгін",
+  "streakCalendarStudied": "Айналысқан күн",
   "weekdayMon": "Дс",
   "weekdayTue": "Сс",
   "weekdayWed": "Ср",

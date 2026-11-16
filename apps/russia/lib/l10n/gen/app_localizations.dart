@@ -604,6 +604,36 @@ abstract class AppLocalizations {
   /// **'Все цели взяты — держите темп'**
   String get streakGoalReached;
 
+  /// No description provided for @streakCalendarMonthActiveDays.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{{count} день с занятиями} few{{count} дня с занятиями} many{{count} дней с занятиями} other{{count} дней с занятиями}}'**
+  String streakCalendarMonthActiveDays(int count);
+
+  /// No description provided for @streakCalendarPrevMonth.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предыдущий месяц'**
+  String get streakCalendarPrevMonth;
+
+  /// No description provided for @streakCalendarNextMonth.
+  ///
+  /// In ru, this message translates to:
+  /// **'Следующий месяц'**
+  String get streakCalendarNextMonth;
+
+  /// No description provided for @streakCalendarToday.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сегодня'**
+  String get streakCalendarToday;
+
+  /// No description provided for @streakCalendarStudied.
+  ///
+  /// In ru, this message translates to:
+  /// **'День с занятием'**
+  String get streakCalendarStudied;
+
   /// No description provided for @weekdayMon.
   ///
   /// In ru, this message translates to:

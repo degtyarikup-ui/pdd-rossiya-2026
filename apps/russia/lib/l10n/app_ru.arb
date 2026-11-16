@@ -170,6 +170,18 @@
     }
   },
   "streakGoalReached": "Все цели взяты — держите темп",
+  "streakCalendarMonthActiveDays": "{count, plural, one{{count} день с занятиями} few{{count} дня с занятиями} many{{count} дней с занятиями} other{{count} дней с занятиями}}",
+  "@streakCalendarMonthActiveDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakCalendarPrevMonth": "Предыдущий месяц",
+  "streakCalendarNextMonth": "Следующий месяц",
+  "streakCalendarToday": "Сегодня",
+  "streakCalendarStudied": "День с занятием",
   "weekdayMon": "Пн",
   "weekdayTue": "Вт",
   "weekdayWed": "Ср",

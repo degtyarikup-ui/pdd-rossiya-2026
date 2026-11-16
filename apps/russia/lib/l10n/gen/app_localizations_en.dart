@@ -325,6 +325,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get streakGoalReached => 'Every goal reached — keep the pace';
 
   @override
+  String streakCalendarMonthActiveDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count active days',
+      one: '$count active day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakCalendarPrevMonth => 'Previous month';
+
+  @override
+  String get streakCalendarNextMonth => 'Next month';
+
+  @override
+  String get streakCalendarToday => 'Today';
+
+  @override
+  String get streakCalendarStudied => 'Day studied';
+
+  @override
   String get weekdayMon => 'Mon';
 
   @override

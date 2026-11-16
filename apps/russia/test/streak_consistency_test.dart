@@ -53,6 +53,22 @@ void main() {
     });
     final ds = ProgressDataSource();
     await ds.init();
-    expect((await ds.loadStreak()).current, 45);
+    final streak = await ds.loadStreak();
+    expect(streak.current, 45);
+    expect(streak.hasActivityOn(ago(40)), isTrue);
+    expect(streak.hasActivityOn(ago(45)), isFalse);
+  });
+
+  test('календарь хранит историю активности больше 30 дней (до года)', () async {
+    SharedPreferences.setMockInitialValues({});
+    final ds = ProgressDataSource();
+    await ds.init();
+    final start = DateTime(2026, 1, 1);
+    for (var i = 0; i < 45; i++) {
+      await ds.recordActivity(date: start.add(Duration(days: i * 2)));
+    }
+    final streak = await ds.loadStreak(now: start.add(const Duration(days: 90)));
+    expect(streak.activeDays.length, 45);
+    expect(streak.hasActivityOn(start), isTrue);
   });
 }

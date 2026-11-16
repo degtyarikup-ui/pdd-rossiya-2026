@@ -94,6 +94,18 @@
     }
   },
   "streakGoalReached": "Every goal reached — keep the pace",
+  "streakCalendarMonthActiveDays": "{count, plural, one{{count} active day} other{{count} active days}}",
+  "@streakCalendarMonthActiveDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakCalendarPrevMonth": "Previous month",
+  "streakCalendarNextMonth": "Next month",
+  "streakCalendarToday": "Today",
+  "streakCalendarStudied": "Day studied",
   "weekdayMon": "Mon",
   "weekdayTue": "Tue",
   "weekdayWed": "Wed",

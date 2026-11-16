@@ -1,17 +1,25 @@
+import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/burning_flame.dart';
+import 'package:pdd_app/presentation/widgets/flame_icon.dart';
+import 'package:pdd_app/presentation/widgets/streak_calendar_sheet.dart';
 import 'package:pdd_app/presentation/widgets/streak_celebration_dialog.dart';
 import 'package:pdd_app/presentation/widgets/streak_widgets.dart';
 
-/// Серия дней: блок профиля и поздравление.
+/// Серия дней: блок профиля, календарь и поздравление.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(initAppDateFormatting);
   setUp(() => SoundEffectsService.instance.setEnabled(false));
-  tearDown(() => SoundEffectsService.instance.setEnabled(true));
+  tearDown(() {
+    SoundEffectsService.instance.setEnabled(true);
+    updateAppLocale(const Locale('ru'));
+  });
 
   // Четверг: неделя Пн–Вс вокруг него.
   final today = DateTime(2026, 10, 8);
@@ -122,5 +130,159 @@ void main() {
         .whereType<BoxDecoration>()
         .where((d) => d.border != null || (d.boxShadow?.isNotEmpty ?? false));
     expect(borders, isEmpty);
+  });
+
+  testWidgets(
+    'нажатие на плашку серии открывает календарь с огоньками на днях занятий',
+    (tester) async {
+      final streak = Streak(
+        current: 5,
+        longest: 11,
+        lastActiveDate: today,
+        startDate: DateTime(2026, 10, 4),
+        activeDays: {
+          DateTime(2026, 9, 15),
+          DateTime(2026, 9, 28),
+          DateTime(2026, 10, 1),
+          DateTime(2026, 10, 4),
+          DateTime(2026, 10, 5),
+          DateTime(2026, 10, 6),
+          DateTime(2026, 10, 7),
+          DateTime(2026, 10, 8),
+        },
+      );
+
+      await pump(tester, StreakCard(streak: streak, today: today));
+      await tester.tap(find.byType(StreakCard));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(StreakCalendarSheet), findsOneWidget);
+      expect(find.text('Октябрь 2026'), findsOneWidget);
+      expect(find.text('6 дней с занятиями'), findsOneWidget);
+      expect(find.text('Личный рекорд'), findsOneWidget);
+      expect(find.text('11 дней'), findsOneWidget);
+
+      // Занятия в октябре (1 и 4..8) отмечены огоньком.
+      for (final day in [1, 4, 5, 6, 7, 8]) {
+        final cell = find.byKey(
+          ValueKey('streak_calendar_day_2026-10-${day.toString().padLeft(2, '0')}'),
+        );
+        expect(
+          find.descendant(of: cell, matching: find.byType(FlameIcon)),
+          findsOneWidget,
+        );
+      }
+
+      // Пропущенные и будущие дни без огонька.
+      for (final day in [2, 3, 9, 15]) {
+        final cell = find.byKey(
+          ValueKey('streak_calendar_day_2026-10-${day.toString().padLeft(2, '0')}'),
+        );
+        expect(
+          find.descendant(of: cell, matching: find.byType(FlameIcon)),
+          findsNothing,
+        );
+      }
+
+      // На текущем месяце кнопка вперёд не перелистывает в будущее.
+      await tester.tap(find.byKey(const ValueKey('streak_calendar_next_month')));
+      await tester.pump();
+      expect(find.text('Октябрь 2026'), findsOneWidget);
+
+      // Листаем на предыдущий месяц — видим сентябрьские занятия.
+      await tester.tap(find.byKey(const ValueKey('streak_calendar_prev_month')));
+      await tester.pump();
+      expect(find.text('Сентябрь 2026'), findsOneWidget);
+      expect(find.text('2 дня с занятиями'), findsOneWidget);
+
+      final sep15 = find.byKey(
+        const ValueKey('streak_calendar_day_2026-09-15'),
+      );
+      expect(
+        find.descendant(of: sep15, matching: find.byType(FlameIcon)),
+        findsOneWidget,
+      );
+      final sep16 = find.byKey(
+        const ValueKey('streak_calendar_day_2026-09-16'),
+      );
+      expect(
+        find.descendant(of: sep16, matching: find.byType(FlameIcon)),
+        findsNothing,
+      );
+
+      // Возвращаемся в октябрь.
+      await tester.tap(find.byKey(const ValueKey('streak_calendar_next_month')));
+      await tester.pump();
+      expect(find.text('Октябрь 2026'), findsOneWidget);
+    },
+  );
+
+  testWidgets('календарь при незавершённом сегодня не ставит огонёк на сегодня', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      StreakCard(streak: streakOf(3, 3, today_: false), today: today),
+    );
+    await tester.tap(find.byType(StreakCard));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final todayCell = find.byKey(
+      const ValueKey('streak_calendar_day_2026-10-08'),
+    );
+    expect(
+      find.descendant(of: todayCell, matching: find.byType(FlameIcon)),
+      findsNothing,
+    );
+    final yesterdayCell = find.byKey(
+      const ValueKey('streak_calendar_day_2026-10-07'),
+    );
+    expect(
+      find.descendant(of: yesterdayCell, matching: find.byType(FlameIcon)),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('календарь: пустая серия, тёмная тема и крупный шрифт без overflow', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
+          child: Scaffold(
+            body: StreakCard(streak: Streak.empty(), today: today),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byType(StreakCard));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byType(StreakCalendarSheet), findsOneWidget);
+    expect(find.text('0 дней с занятиями'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  test('локализация календаря серии заполнена на ru, en и kk', () {
+    for (final lang in ['ru', 'en', 'kk']) {
+      final l10n = lookupAppLocalizations(Locale(lang));
+      expect(l10n.streakCalendarMonthActiveDays(0), isNotEmpty);
+      expect(l10n.streakCalendarMonthActiveDays(1), isNotEmpty);
+      expect(l10n.streakCalendarMonthActiveDays(5), isNotEmpty);
+      expect(l10n.streakCalendarPrevMonth, isNotEmpty);
+      expect(l10n.streakCalendarNextMonth, isNotEmpty);
+      expect(l10n.streakCalendarToday, isNotEmpty);
+      expect(l10n.streakCalendarStudied, isNotEmpty);
+    }
   });
 }
