@@ -27,6 +27,8 @@
     "test:attribution:ui": "node --test test-acquisition-ui.mjs",
     "test:admin:data": "node --test test-admin-data.mjs test-admin-auth-race.mjs test-admin-performance.mjs",
     "test:admin:ui": "node --test test-admin-loading-ui.mjs",
+    "test:tasks": "node --test test-tasks.mjs",
+    "test:tasks:ui": "node --test test-tasks-ui.mjs",
     "test:promocodes:ui": "node --test test-promocodes-ui.mjs"
   },
   "dependencies": {

@@ -2,6 +2,8 @@
 // Канбан-доска, сводка метрик, компактный список, умная типографика карточек (заголовок + описание),
 // прикрепление картинок с красивым превью, фильтры по версиям и приоритету, Drag & Drop + 1-click кнопки.
 
+import { TASK_AVATARS } from './tasks_avatars.js';
+
 export const TASKS_NAV_HTML = `<button class="nav-item" data-feature="tasks"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span>Задачи</span></button>`;
 
 export const TASKS_VIEW_HTML = `
@@ -532,6 +534,65 @@ export const TASKS_VIEW_HTML = `
       align-items: center;
       gap: 7px;
     }
+    .task-assignees {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .tasks-table .task-assignees { margin-top: 6px; }
+    .task-assignee-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      flex-shrink: 0;
+      padding: 4px;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .task-assignee-btn img {
+      display: block;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      object-fit: cover;
+      opacity: .8;
+      transition: opacity .12s ease;
+    }
+    .task-assignees[data-assigned="true"] .task-assignee-btn[aria-pressed="false"] img { opacity: .4; }
+    .task-assignee-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 2px solid transparent;
+      border-radius: 50%;
+    }
+    .task-assignee-btn[aria-pressed="true"]::before { border-color: var(--primary); }
+    .task-assignee-btn[aria-pressed="true"]::after {
+      content: '✓';
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      display: grid;
+      place-items: center;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      font: 700 9px/1 sans-serif;
+    }
+    .task-assignee-btn[aria-pressed="true"] img,
+    .task-assignees .task-assignee-btn:hover img,
+    .task-assignees .task-assignee-btn:focus-visible img { opacity: 1; }
+    .task-assignee-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+    .task-assignee-btn:disabled { cursor: wait; }
     .task-foot-actions {
       display: flex;
       align-items: center;
@@ -990,6 +1051,10 @@ export const TASKS_CLIENT_JS = `
 VIEW_TITLES.tasks = 'Задачи';
 
 (function() {
+  var ASSIGNEES = ${JSON.stringify([
+    { id: 'sergey', name: 'Сергей', avatar: TASK_AVATARS.sergey },
+    { id: 'nikita', name: 'Никита', avatar: TASK_AVATARS.nikita },
+  ])};
   var STATUS_DEFS = [
     { id: 'idea', name: 'Идея', emoji: '', bg: '#FEF3C7', color: '#B45309' },
     { id: 'planned', name: 'В планах', emoji: '', bg: '#E0F2FE', color: '#0369A1' },
@@ -1010,6 +1075,7 @@ VIEW_TITLES.tasks = 'Задачи';
   var modalPendingAttachments = [];
   var draggedTaskId = null;
   var isLoaded = false;
+  var pendingAssignments = Object.create(null);
 
   var boardEl = document.getElementById('tasks-board-container');
   var listWrapEl = document.getElementById('tasks-list-container');
@@ -1096,7 +1162,17 @@ VIEW_TITLES.tasks = 'Задачи';
     return { title: text, body: '' };
   }
 
-  async function api(path, method, body) {
+  var taskWrites = Promise.resolve();
+  function api(path, method, body) {
+    if (method === 'POST' && path !== '/upload') {
+      var write = taskWrites.then(function() { return requestTask(path, method, body); });
+      taskWrites = write.catch(function() {});
+      return write;
+    }
+    return requestTask(path, method, body);
+  }
+
+  async function requestTask(path, method, body) {
     var opts = { method: method || 'GET', headers: {} };
     if (body) {
       opts.headers['content-type'] = 'application/json';
@@ -1113,7 +1189,9 @@ VIEW_TITLES.tasks = 'Задачи';
     var id=++tasksLoadId;
     function accept(res){
       if(id!==tasksLoadId)return;
-      allTasks = res.tasks || [];
+      allTasks = (res.tasks || []).map(function(task) {
+        return pendingAssignments[task.id] ? Object.assign({}, task, { assignee: pendingAssignments[task.id] }) : task;
+      });
       currentVersions = res.versions || [];
       isLoaded = true;
       syncVersionsDropdown();
@@ -1121,7 +1199,10 @@ VIEW_TITLES.tasks = 'Задачи';
     }
     try {
       if(window.AdminData)await AdminData.load('/api/admin/tasks',{view:'tasks-view',force:force===true,onData:accept});
-      else accept(await api('', 'GET'));
+      else {
+        await taskWrites;
+        accept(await api('', 'GET'));
+      }
     } catch (err) {
       notify('Не удалось загрузить задачи: ' + err.message, true);
     }
@@ -1274,6 +1355,7 @@ VIEW_TITLES.tasks = 'Задачи';
       otherAttsHtml +
       '<div class="task-card-foot">' +
         '<div class="task-foot-left">' +
+          renderAssignees(t) +
           (Array.isArray(t.attachments) && t.attachments.length ? '<span style="font-size:11px; color:#9CA3AF;">📎 ' + t.attachments.length + '</span>' : '') +
         '</div>' +
         '<div class="task-foot-actions">' +
@@ -1305,6 +1387,7 @@ VIEW_TITLES.tasks = 'Задачи';
         '<td>' +
           '<div style="font-weight:700; color:#111827; cursor:pointer;" data-edit-task="' + t.id + '">' + esc(parts.title) + '</div>' +
           (parts.body ? '<div style="font-size:12px; color:#6B7280; margin-top:2px; max-width:500px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + esc(parts.body) + '</div>' : '') +
+          renderAssignees(t) +
         '</td>' +
         '<td>' + (t.version ? '<span class="task-badge version">' + esc(t.version) + '</span>' : '—') + '</td>' +
         '<td>' + prioLabel + '</td>' +
@@ -1323,6 +1406,52 @@ VIEW_TITLES.tasks = 'Задачи';
 
     tableBodyEl.innerHTML = html;
     bindCardEvents();
+  }
+
+  function renderAssignees(task) {
+    return '<div class="task-assignees" data-task-id="' + esc(task.id) + '" data-assigned="' + Boolean(task.assignee) + '" role="group" aria-label="Исполнитель" aria-busy="' + Boolean(pendingAssignments[task.id]) + '">' +
+      ASSIGNEES.map(function(person) {
+        return '<button type="button" class="task-assignee-btn" data-assignee="' + person.id + '" aria-label="' + person.name + '" title="' + person.name + '" aria-pressed="' + (task.assignee === person.id) + '" draggable="false"' + (pendingAssignments[task.id] ? ' disabled' : '') + '>' +
+          '<img src="' + person.avatar + '" alt="" width="26" height="26" draggable="false">' +
+        '</button>';
+      }).join('') + '</div>';
+  }
+
+  function updateAssignees(task) {
+    container.querySelectorAll('.task-assignees').forEach(function(picker) {
+      if (picker.dataset.taskId !== task.id) return;
+      picker.dataset.assigned = Boolean(task.assignee);
+      picker.setAttribute('aria-busy', String(Boolean(pendingAssignments[task.id])));
+      picker.querySelectorAll('.task-assignee-btn').forEach(function(button) {
+        button.setAttribute('aria-pressed', String(button.dataset.assignee === task.assignee));
+        button.disabled = Boolean(pendingAssignments[task.id]);
+      });
+    });
+  }
+
+  async function assignTask(taskId, assignee) {
+    var task = allTasks.find(function(item) { return item.id === taskId; });
+    if (!task || pendingAssignments[taskId] || task.assignee === assignee) return;
+    var previous = task.assignee || '';
+    pendingAssignments[taskId] = assignee;
+    task.assignee = assignee;
+    ++tasksLoadId;
+    updateAssignees(task);
+    try {
+      var res = await api('/assign', 'POST', { id: taskId, assignee: assignee });
+      task = allTasks.find(function(item) { return item.id === taskId; });
+      if (task) {
+        task.assignee = res.task.assignee;
+        task.updatedAt = res.task.updatedAt;
+      }
+    } catch (err) {
+      task = allTasks.find(function(item) { return item.id === taskId; });
+      if (task) task.assignee = previous;
+      notify('Не удалось назначить исполнителя: ' + err.message, true);
+    } finally {
+      delete pendingAssignments[taskId];
+      if (task) updateAssignees(task);
+    }
   }
 
   function bindCardEvents() {
@@ -1375,6 +1504,12 @@ VIEW_TITLES.tasks = 'Задачи';
   // Делегированные клики
   var container = document.getElementById('tasks-view');
   container.addEventListener('click', async function(e) {
+    var assigneeBtn = e.target.closest('.task-assignee-btn');
+    if (assigneeBtn) {
+      await assignTask(assigneeBtn.closest('.task-assignees').dataset.taskId, assigneeBtn.dataset.assignee);
+      return;
+    }
+
     // KPI карточки
     var kpiCard = e.target.closest('[data-kpi-status]');
     if (kpiCard) {
@@ -1556,6 +1691,7 @@ VIEW_TITLES.tasks = 'Задачи';
     try {
       var res = await api('/save', 'POST', payload);
       var saved = res.task;
+      if (pendingAssignments[saved.id]) saved.assignee = pendingAssignments[saved.id];
       var existingIdx = allTasks.findIndex(function(t) { return t.id === saved.id; });
       if (existingIdx !== -1) {
         allTasks[existingIdx] = saved;

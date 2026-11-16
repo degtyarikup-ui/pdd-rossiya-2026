@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   TASK_STATUSES,
   TASK_PRIORITIES,
+  TASK_ASSIGNEES,
   validateTaskInput,
   extractVersions,
   handleTasksAdmin,
@@ -58,6 +59,93 @@ test('extractVersions extracts unique non-empty sorted versions', () => {
   ];
   const versions = extractVersions(tasks);
   assert.deepEqual(versions, ['v1.1.0', 'v1.0.7']);
+});
+
+test('assignee validation accepts only the two people or an explicit clear', () => {
+  assert.deepEqual(TASK_ASSIGNEES, ['', 'sergey', 'nikita']);
+  for (const assignee of TASK_ASSIGNEES) {
+    const result = validateTaskInput({ text: 'Задача', assignee });
+    assert.equal(result.valid, true);
+    assert.equal(result.data.assignee, assignee);
+  }
+  for (const assignee of ['other', 'Сергей', 'SERGEY', null, 1, {}, undefined]) {
+    assert.equal(validateTaskInput({ text: 'Задача', assignee }).error, 'Недопустимый исполнитель');
+  }
+  assert.equal(Object.hasOwn(validateTaskInput({ text: 'Задача' }).data, 'assignee'), false);
+});
+
+async function taskRequest(env, path, body) {
+  const request = new Request(`https://test/api/admin/tasks${path}`, body === undefined ? {} : {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const response = await handleTasksAdmin(request, env, new URL(request.url));
+  return { status: response.status, data: await response.json() };
+}
+
+test('assigning legacy tasks persists both people and clear without changing task content', async () => {
+  const env = createMockEnv();
+  const original = {
+    id: 'existing-task', text: 'Текст задачи', status: 'planned', priority: 'high',
+    version: 'v2.2.15', attachments: [{ id: 'screen', name: 'screen.png' }],
+    createdAt: 123, updatedAt: 456, customField: 'preserved',
+  };
+  const otherTask = { ...original, id: 'other-task' };
+  env._store.set('tasks:items', JSON.stringify([original, otherTask]));
+  const before = await taskRequest(env, '');
+  assert.equal(before.data.tasks[0].assignee, '');
+
+  for (const assignee of ['sergey', 'nikita', '']) {
+    const assigned = await taskRequest(env, '/assign', { id: original.id, assignee });
+    assert.equal(assigned.status, 200);
+    assert.equal(assigned.data.ok, true);
+    assert.ok(assigned.data.task.updatedAt > original.updatedAt);
+    assert.deepEqual(assigned.data.task, { ...original, assignee, updatedAt: assigned.data.task.updatedAt });
+
+    const stored = JSON.parse(env._store.get('tasks:items'));
+    assert.equal(stored[0].assignee, assignee);
+    assert.deepEqual(stored[1], otherTask);
+    const refreshed = await taskRequest(env, '');
+    assert.equal(refreshed.data.tasks[0].assignee, assignee);
+  }
+});
+
+test('task save keeps an omitted assignee and supports explicit reassignment and clear', async () => {
+  const env = createMockEnv();
+  const blank = await taskRequest(env, '/save', { text: 'Без исполнителя' });
+  assert.equal(blank.data.task.assignee, '');
+  const created = await taskRequest(env, '/save', { text: 'Новая задача', assignee: 'sergey' });
+  assert.equal(created.data.task.assignee, 'sergey');
+  const id = created.data.task.id;
+
+  const edited = await taskRequest(env, '/save', { id, text: 'Исправленный текст' });
+  assert.equal(edited.data.task.assignee, 'sergey');
+  const reassigned = await taskRequest(env, '/save', { id, text: 'Исправленный текст', assignee: 'nikita' });
+  assert.equal(reassigned.data.task.assignee, 'nikita');
+  const moved = await taskRequest(env, '/move', { id, status: 'ready' });
+  assert.equal(moved.data.task.assignee, 'nikita');
+  const cleared = await taskRequest(env, '/save', { id, text: 'Исправленный текст', assignee: '' });
+  assert.equal(cleared.data.task.assignee, '');
+});
+
+test('invalid assignments do not change stored tasks', async () => {
+  const env = createMockEnv();
+  await taskRequest(env, '/save', { text: 'Задача', assignee: 'sergey' });
+  const original = env._store.get('tasks:items');
+  const id = JSON.parse(original)[0].id;
+  for (const body of [
+    { assignee: 'nikita' }, { id: '', assignee: 'nikita' }, { id: '  ', assignee: 'nikita' },
+    { id }, { id, assignee: null }, { id, assignee: 'other' },
+  ]) {
+    assert.equal((await taskRequest(env, '/assign', body)).status, 400);
+    assert.equal(env._store.get('tasks:items'), original);
+  }
+  assert.equal((await taskRequest(env, '/assign', { id: 'missing', assignee: 'nikita' })).status, 404);
+  assert.equal((await taskRequest(env, '/save', { id, text: 'Изменение', assignee: 'other' })).status, 400);
+  const request = new Request('https://test/api/admin/tasks/assign', { method: 'POST', body: '{' });
+  assert.equal((await handleTasksAdmin(request, env, new URL(request.url))).status, 400);
+  assert.equal(env._store.get('tasks:items'), original);
 });
 
 test('CRUD operations and status moves in handleTasksAdmin', async () => {
@@ -177,6 +265,12 @@ test('worker rejects unauthorized /api/admin/tasks requests', async () => {
     INSTALLS: { get: async () => null },
   });
   assert.equal(r.status, 401);
+  const assignment = await worker.fetch(new Request('https://test/api/admin/tasks/assign', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ id: 'existing-task', assignee: 'nikita' }),
+  }), { INSTALLS: { get: async () => null } });
+  assert.equal(assignment.status, 401);
 });
 
 test('admin page embeds tasks view, nav item under analytics, and complete client compiles', async () => {

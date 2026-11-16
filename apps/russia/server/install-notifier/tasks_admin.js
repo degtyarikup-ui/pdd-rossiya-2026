@@ -4,6 +4,7 @@
 
 export const TASK_STATUSES = ['idea', 'planned', 'in_progress', 'ready', 'released', 'archived'];
 export const TASK_PRIORITIES = ['high', 'normal', 'low'];
+export const TASK_ASSIGNEES = ['', 'sergey', 'nikita'];
 export const MAX_TASK_TEXT_LENGTH = 10000;
 export const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024; // 10 МБ
 
@@ -59,6 +60,11 @@ export function validateTaskInput(input) {
     return { error: `Текст задачи слишком длинный (максимум ${MAX_TASK_TEXT_LENGTH} символов)` };
   }
 
+  const hasAssignee = Object.prototype.hasOwnProperty.call(input, 'assignee');
+  if (hasAssignee && !TASK_ASSIGNEES.includes(input.assignee)) {
+    return { error: 'Недопустимый исполнитель' };
+  }
+
   const status = TASK_STATUSES.includes(input?.status) ? input.status : 'idea';
   const priority = TASK_PRIORITIES.includes(input?.priority) ? input.priority : 'normal';
   const version = typeof input?.version === 'string' ? input.version.trim().slice(0, 50) : '';
@@ -81,6 +87,7 @@ export function validateTaskInput(input) {
       priority,
       version,
       attachments,
+      ...(hasAssignee ? { assignee: input.assignee } : {}),
     },
   };
 }
@@ -91,7 +98,7 @@ export async function handleTasksAdmin(request, env, url) {
 
   // 1. Получение списка всех задач
   if (path === '/api/admin/tasks' && method === 'GET') {
-    const tasks = await getStoredTasks(env);
+    const tasks = (await getStoredTasks(env)).map(task => ({ ...task, assignee: task.assignee ?? '' }));
     const versions = extractVersions(tasks);
     return reply({ ok: true, tasks, versions });
   }
@@ -118,6 +125,7 @@ export async function handleTasksAdmin(request, env, url) {
       if (idx !== -1) {
         tasks[idx] = {
           ...tasks[idx],
+          assignee: tasks[idx].assignee ?? '',
           ...check.data,
           updatedAt: now,
         };
@@ -128,6 +136,7 @@ export async function handleTasksAdmin(request, env, url) {
     if (!targetTask) {
       targetTask = {
         id: crypto.randomUUID(),
+        assignee: '',
         ...check.data,
         createdAt: now,
         updatedAt: now,
@@ -159,6 +168,30 @@ export async function handleTasksAdmin(request, env, url) {
     if (!task) return reply({ error: 'Задача не найдена' }, 404);
 
     task.status = status;
+    task.updatedAt = Date.now();
+    await putStoredTasks(env, tasks);
+
+    return reply({ ok: true, task });
+  }
+
+  // Быстрое назначение исполнителя без перезаписи содержимого карточки.
+  if (path === '/api/admin/tasks/assign' && method === 'POST') {
+    let body;
+    try {
+      body = await request.json();
+    } catch (_) {
+      return reply({ error: 'Некорректный JSON' }, 400);
+    }
+
+    const { id, assignee } = body || {};
+    if (typeof id !== 'string' || !id.trim()) return reply({ error: 'Не указан ID задачи' }, 400);
+    if (!TASK_ASSIGNEES.includes(assignee)) return reply({ error: 'Недопустимый исполнитель' }, 400);
+
+    const tasks = await getStoredTasks(env);
+    const task = tasks.find(t => t.id === id.trim());
+    if (!task) return reply({ error: 'Задача не найдена' }, 404);
+
+    task.assignee = assignee;
     task.updatedAt = Date.now();
     await putStoredTasks(env, tasks);
 
