@@ -347,7 +347,7 @@ class StreakCard extends StatelessWidget {
         onTap ??
         () {
           HapticFeedbackHelper.tap();
-          showStreakCalendarSheet(context, streak: streak, today: now);
+          showStreakCalendarSheet(context, streak: streak, today: today);
         };
 
     return Material(

@@ -73,6 +73,12 @@ class _StreakCalendarSheetState extends State<StreakCalendarSheet> {
       final m = DateTime(start.year, start.month);
       if (m.isBefore(minMonth)) minMonth = m;
     }
+    final last = widget.streak.lastActiveDate;
+    if (widget.streak.current > 0 && last != null) {
+      final runStart = Streak.shiftDay(last, 1 - widget.streak.current);
+      final m = DateTime(runStart.year, runStart.month);
+      if (m.isBefore(minMonth)) minMonth = m;
+    }
     return minMonth;
   }
 
@@ -309,28 +315,29 @@ class _StreakCalendarSheetState extends State<StreakCalendarSheet> {
                   label: appL10n.streakCalendarStudied,
                   colors: colors,
                 ),
-                _LegendItem(
-                  icon: Container(
-                    width: 20,
-                    height: 20,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: colors.goldLightSurface,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '${_today.day}',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
-                        color: colors.gold,
+                if (_displayedMonth == _currentMonth && !doneToday)
+                  _LegendItem(
+                    icon: Container(
+                      width: 20,
+                      height: 20,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: colors.goldLightSurface,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${_today.day}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          height: 1,
+                          color: colors.gold,
+                        ),
                       ),
                     ),
+                    label: appL10n.streakCalendarToday,
+                    colors: colors,
                   ),
-                  label: appL10n.streakCalendarToday,
-                  colors: colors,
-                ),
               ],
             ),
           ],

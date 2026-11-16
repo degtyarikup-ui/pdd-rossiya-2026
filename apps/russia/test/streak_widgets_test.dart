@@ -1,10 +1,14 @@
-import 'package:pdd_app/core/theme/app_theme.dart';
-import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
+import 'package:pdd_app/core/theme/app_theme.dart';
+import 'package:pdd_app/data/models/achievement.dart';
+import 'package:pdd_app/data/models/streak.dart';
+import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/screens/profile/profile_screen.dart';
 import 'package:pdd_app/presentation/widgets/burning_flame.dart';
 import 'package:pdd_app/presentation/widgets/flame_icon.dart';
 import 'package:pdd_app/presentation/widgets/streak_calendar_sheet.dart';
@@ -162,6 +166,9 @@ void main() {
       expect(find.text('6 дней с занятиями'), findsOneWidget);
       expect(find.text('Личный рекорд'), findsOneWidget);
       expect(find.text('11 дней'), findsOneWidget);
+      // Когда сегодня уже засчитано, легенда не показывает кремовый значок «Сегодня».
+      expect(find.text('День с занятием'), findsOneWidget);
+      expect(find.text('Сегодня'), findsNothing);
 
       // Занятия в октябре (1 и 4..8) отмечены огоньком.
       for (final day in [1, 4, 5, 6, 7, 8]) {
@@ -229,6 +236,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
+    expect(find.text('Сегодня'), findsOneWidget);
     final todayCell = find.byKey(
       const ValueKey('streak_calendar_day_2026-10-08'),
     );
@@ -241,6 +249,92 @@ void main() {
     );
     expect(
       find.descendant(of: yesterdayCell, matching: find.byType(FlameIcon)),
+      findsOneWidget,
+    );
+
+    // На прошлом месяце легенда «Сегодня» скрыта.
+    await tester.tap(find.byKey(const ValueKey('streak_calendar_prev_month')));
+    await tester.pump();
+    expect(find.text('Сегодня'), findsNothing);
+  });
+
+  testWidgets('длинная серия без startDate позволяет листать дальше 12 месяцев', (
+    tester,
+  ) async {
+    final streak = Streak(
+      current: 400,
+      longest: 400,
+      lastActiveDate: today,
+      startDate: null,
+      activeDays: {today},
+    );
+    await pump(tester, StreakCard(streak: streak, today: today));
+    await tester.tap(find.byType(StreakCard));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Листаем назад на 13 месяцев (до сентября 2025).
+    for (var i = 0; i < 13; i++) {
+      await tester.tap(find.byKey(const ValueKey('streak_calendar_prev_month')));
+      await tester.pump();
+    }
+    expect(find.text('Сентябрь 2025'), findsOneWidget);
+    final sep4 = find.byKey(const ValueKey('streak_calendar_day_2025-09-04'));
+    expect(
+      find.descendant(of: sep4, matching: find.byType(FlameIcon)),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('экран профиля: нажатие на StreakCard открывает календарь', (
+    tester,
+  ) async {
+    final realToday = Streak.day(DateTime.now());
+    final isoToday =
+        '${realToday.year}-${realToday.month.toString().padLeft(2, '0')}-${realToday.day.toString().padLeft(2, '0')}';
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentUserProvider.overrideWithValue(null),
+          isPremiumProvider.overrideWithValue(false),
+          achievementsProvider.overrideWith(
+            (ref) async => const <AchievementProgress>[],
+          ),
+          streakProvider.overrideWith(
+            (ref) async => Streak(
+              current: 3,
+              longest: 5,
+              lastActiveDate: realToday,
+              startDate: Streak.shiftDay(realToday, -2),
+              activeDays: {
+                for (var i = 0; i < 3; i++) Streak.shiftDay(realToday, -i),
+              },
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const ProfileScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byType(StreakCard), findsOneWidget);
+    await tester.ensureVisible(find.byType(StreakCard));
+    await tester.pump();
+    await tester.tap(find.byType(StreakCard));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byType(StreakCalendarSheet), findsOneWidget);
+    final todayCell = find.byKey(ValueKey('streak_calendar_day_$isoToday'));
+    expect(
+      find.descendant(of: todayCell, matching: find.byType(FlameIcon)),
       findsOneWidget,
     );
   });
@@ -273,9 +367,13 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  test('локализация календаря серии заполнена на ru, en и kk', () {
+  testWidgets('локализация календаря серии работает на ru, en и kk', (
+    tester,
+  ) async {
     for (final lang in ['ru', 'en', 'kk']) {
-      final l10n = lookupAppLocalizations(Locale(lang));
+      final locale = Locale(lang);
+      updateAppLocale(locale);
+      final l10n = lookupAppLocalizations(locale);
       expect(l10n.streakCalendarMonthActiveDays(0), isNotEmpty);
       expect(l10n.streakCalendarMonthActiveDays(1), isNotEmpty);
       expect(l10n.streakCalendarMonthActiveDays(5), isNotEmpty);
@@ -283,6 +381,21 @@ void main() {
       expect(l10n.streakCalendarNextMonth, isNotEmpty);
       expect(l10n.streakCalendarToday, isNotEmpty);
       expect(l10n.streakCalendarStudied, isNotEmpty);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: StreakCalendarSheet(streak: streakOf(2, 2), today: today),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull, reason: 'locale=$lang');
+      expect(find.textContaining('2026'), findsOneWidget);
+      expect(find.text(l10n.streakCalendarStudied), findsOneWidget);
     }
   });
 }
