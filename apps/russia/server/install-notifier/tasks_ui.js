@@ -451,6 +451,7 @@ export const TASKS_VIEW_HTML = `
       cursor: pointer;
       touch-action: manipulation;
     }
+    .task-assignee-btn[hidden] { display: none; }
     .task-assignee-btn img {
       display: block;
       width: 26px;
@@ -460,7 +461,6 @@ export const TASKS_VIEW_HTML = `
       opacity: .8;
       transition: opacity .12s ease;
     }
-    .task-assignees[data-assigned="true"] .task-assignee-btn[aria-pressed="false"] img { opacity: .4; }
     .task-assignee-btn::before {
       content: '';
       position: absolute;
@@ -872,6 +872,7 @@ VIEW_TITLES.tasks = 'Задачи';
   var modalPendingAttachments = [];
   var draggedTaskId = null;
   var pendingAssignments = Object.create(null);
+  var expandedAssigneeTaskId = null;
   var pendingPriorities = Object.create(null);
   var PRIORITIES = [
     { id: 'low', name: 'Низкий' },
@@ -1169,30 +1170,53 @@ VIEW_TITLES.tasks = 'Задачи';
   });
 
   function renderAssignees(task) {
-    return '<div class="task-assignees" data-task-id="' + esc(task.id) + '" data-assigned="' + Boolean(task.assignee) + '" role="group" aria-label="Исполнитель" aria-busy="' + Boolean(pendingAssignments[task.id]) + '">' +
+    var assigned = ASSIGNEES.some(function(person) { return person.id === task.assignee; });
+    var expanded = assigned && expandedAssigneeTaskId === task.id && !pendingAssignments[task.id];
+    return '<div class="task-assignees" data-task-id="' + esc(task.id) + '" data-assigned="' + assigned + '" data-expanded="' + expanded + '" role="group" aria-label="Исполнитель" aria-busy="' + Boolean(pendingAssignments[task.id]) + '">' +
       ASSIGNEES.map(function(person) {
-        return '<button type="button" class="task-assignee-btn" data-assignee="' + person.id + '" aria-label="' + person.name + '" title="' + person.name + '" aria-pressed="' + (task.assignee === person.id) + '" draggable="false"' + (pendingAssignments[task.id] ? ' disabled' : '') + '>' +
+        var selected = task.assignee === person.id;
+        return '<button type="button" class="task-assignee-btn" data-assignee="' + person.id + '" aria-label="' + person.name + '" title="' + person.name + '" aria-pressed="' + selected + '"' + (selected ? ' aria-expanded="' + expanded + '"' : '') + ' draggable="false"' + (pendingAssignments[task.id] ? ' disabled' : '') + (assigned && !selected && !expanded ? ' hidden' : '') + '>' +
           '<img src="' + person.avatar + '" alt="" width="26" height="26" draggable="false">' +
         '</button>';
       }).join('') + '</div>';
   }
 
   function updateAssignees(task) {
+    var assigned = ASSIGNEES.some(function(person) { return person.id === task.assignee; });
+    var expanded = assigned && expandedAssigneeTaskId === task.id && !pendingAssignments[task.id];
     container.querySelectorAll('.task-assignees').forEach(function(picker) {
       if (picker.dataset.taskId !== task.id) return;
-      picker.dataset.assigned = Boolean(task.assignee);
+      picker.dataset.assigned = assigned;
+      picker.dataset.expanded = expanded;
       picker.setAttribute('aria-busy', String(Boolean(pendingAssignments[task.id])));
       picker.querySelectorAll('.task-assignee-btn').forEach(function(button) {
-        button.setAttribute('aria-pressed', String(button.dataset.assignee === task.assignee));
+        var selected = button.dataset.assignee === task.assignee;
+        button.setAttribute('aria-pressed', String(selected));
+        if (selected) button.setAttribute('aria-expanded', String(expanded));
+        else button.removeAttribute('aria-expanded');
+        button.hidden = assigned && !selected && !expanded;
         button.disabled = Boolean(pendingAssignments[task.id]);
       });
     });
+  }
+
+  function expandAssignees(taskId) {
+    var previous = allTasks.find(function(task) { return task.id === expandedAssigneeTaskId; });
+    expandedAssigneeTaskId = taskId || null;
+    if (previous) updateAssignees(previous);
+    var current = allTasks.find(function(task) { return task.id === expandedAssigneeTaskId; });
+    if (current && current !== previous) updateAssignees(current);
   }
 
   async function assignTask(taskId, assignee) {
     var task = allTasks.find(function(item) { return item.id === taskId; });
     if (!task || pendingAssignments[taskId] || task.assignee === assignee) return;
     var previous = task.assignee || '';
+    var failed = false;
+    var focused = document.activeElement;
+    var focusedPicker = focused && focused.closest('.task-assignees');
+    var restoreFocus = focusedPicker && focusedPicker.dataset.taskId === taskId;
+    expandAssignees(null);
     pendingAssignments[taskId] = assignee;
     task.assignee = assignee;
     ++tasksLoadId;
@@ -1205,13 +1229,26 @@ VIEW_TITLES.tasks = 'Задачи';
         task.updatedAt = res.task.updatedAt;
       }
     } catch (err) {
+      failed = true;
       task = allTasks.find(function(item) { return item.id === taskId; });
       if (task) task.assignee = previous;
       notify('Не удалось назначить исполнителя: ' + err.message, true);
     } finally {
       delete pendingAssignments[taskId];
+      if (failed && task && task.assignee && !expandedAssigneeTaskId) expandedAssigneeTaskId = taskId;
       if (task) updateAssignees(task);
+      if (restoreFocus && (!document.activeElement || document.activeElement === document.body)) {
+        focusAssignee(taskId);
+      }
     }
+  }
+
+  function focusAssignee(taskId) {
+    container.querySelectorAll('.task-assignees').forEach(function(picker) {
+      if (picker.dataset.taskId !== taskId) return;
+      var button = picker.querySelector('[aria-pressed="true"]') || picker.querySelector('button:not([hidden])');
+      if (button && button.getClientRects().length) button.focus({ preventScroll: true });
+    });
   }
 
   function bindCardEvents() {
@@ -1271,7 +1308,14 @@ VIEW_TITLES.tasks = 'Задачи';
     }
     var assigneeBtn = e.target.closest('.task-assignee-btn');
     if (assigneeBtn) {
-      await assignTask(assigneeBtn.closest('.task-assignees').dataset.taskId, assigneeBtn.dataset.assignee);
+      var assigneeTaskId = assigneeBtn.closest('.task-assignees').dataset.taskId;
+      if (pendingAssignments[assigneeTaskId]) return;
+      var assigneeTask = allTasks.find(function(task) { return task.id === assigneeTaskId; });
+      if (assigneeTask && assigneeTask.assignee === assigneeBtn.dataset.assignee) {
+        expandAssignees(expandedAssigneeTaskId === assigneeTaskId ? null : assigneeTaskId);
+      } else {
+        await assignTask(assigneeTaskId, assigneeBtn.dataset.assignee);
+      }
       return;
     }
 
@@ -1333,6 +1377,16 @@ VIEW_TITLES.tasks = 'Задачи';
       lightbox.showModal();
       return;
     }
+  });
+
+  document.addEventListener('click', function(event) {
+    if (!event.target.closest('.task-assignees')) expandAssignees(null);
+  });
+  document.addEventListener('keydown', function(event) {
+    if (event.key !== 'Escape' || !expandedAssigneeTaskId) return;
+    var taskId = expandedAssigneeTaskId;
+    expandAssignees(null);
+    focusAssignee(taskId);
   });
 
   lightbox.addEventListener('click', function() { lightbox.close(); });
