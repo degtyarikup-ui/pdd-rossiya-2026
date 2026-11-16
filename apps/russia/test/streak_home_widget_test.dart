@@ -145,4 +145,27 @@ void main() {
       lookupAppLocalizations(const Locale('ru')),
     );
   });
+  test(
+    'an unexpected updater failure does not poison the serialized queue',
+    () async {
+      var fail = true;
+      final published = <Streak>[];
+      final ds = ProgressDataSource(
+        homeWidgetUpdater: (streak, _) async {
+          if (fail) throw StateError('host temporarily unavailable');
+          published.add(streak);
+        },
+      );
+      await ds.init();
+      await ds.refreshHomeWidget();
+      fail = false;
+      await ds.recordActivity();
+      await ds.refreshHomeWidget();
+      expect(published.last.current, 1);
+      await ds.resetAllProgress();
+      await ds.refreshHomeWidget();
+      expect(published.last.current, 0);
+      expect(published.last.longest, 0);
+    },
+  );
 }

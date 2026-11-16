@@ -102,11 +102,16 @@ class ProgressDataSource {
   Future<void> refreshHomeWidget() {
     if (_homeWidgetUpdater == null) return Future<void>.value();
     _widgetUpdates = _widgetUpdates.then((_) async {
-      final settings = await loadAppSettings();
-      final l10n = lookupAppLocalizations(
-        Locale(settings.effectiveLanguageCode),
-      );
-      await _homeWidgetUpdater(await loadStreak(), l10n);
+      try {
+        final settings = await loadAppSettings();
+        final l10n = lookupAppLocalizations(
+          Locale(settings.effectiveLanguageCode),
+        );
+        await _homeWidgetUpdater(await loadStreak(), l10n);
+      } catch (error) {
+        // An optional widget failure must not poison all later publications.
+        debugPrint('Home widget refresh failed: ${error.runtimeType}');
+      }
     });
     return _widgetUpdates;
   }

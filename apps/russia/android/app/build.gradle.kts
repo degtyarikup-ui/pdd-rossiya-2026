@@ -18,6 +18,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "ru.pdd.pdd_app"
     compileSdk = flutter.compileSdkVersion
+    sourceSets.getByName("androidTest").java.srcDir("../../tools/widgets")
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -57,6 +58,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         applicationIdSuffix = devSuffix
+        testInstrumentationRunner = "ru.pdd.pdd_app.WidgetSmokeInstrumentation"
         // Allow adb benchmark launches only in the separate -Pdev test app.
         // Store builds keep the game activity private to the Flutter bridge.
         manifestPlaceholders["godotGameExported"] = project.hasProperty("dev").toString()

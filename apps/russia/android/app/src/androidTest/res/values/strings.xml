@@ -1,0 +1,4 @@
+<resources>
+    <!-- The dev resValue is also inherited by the instrumentation APK. -->
+    <item name="app_name_dev" type="string">@android:string/untitled</item>
+</resources>
