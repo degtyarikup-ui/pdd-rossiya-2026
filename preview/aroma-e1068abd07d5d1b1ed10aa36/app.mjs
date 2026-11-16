@@ -1,5 +1,5 @@
 import { getMatches, getAvailableNotes, getPerfumesForGender, removeNoteAt, isCompleteSelection } from './game-model.mjs';
-import { noteArtwork } from './note-art.mjs?v=20261116-framing';
+import { noteArtwork } from './note-art.mjs?v=20261116-framing2';
 import { createGameMotion } from './motion.mjs';
 
 const root = document.querySelector('#game');

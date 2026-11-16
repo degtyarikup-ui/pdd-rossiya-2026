@@ -139,7 +139,9 @@ a { color: inherit; }
 }
 @media (max-width: 960px) {
   .aroma-section { margin-left: 28px; margin-right: 28px; padding-top: 40px; }
-  .section-heading { gap: 22px; }
+  .star-three { right: -20px; }
+  .section-heading { display: block; }
+  .section-heading > p { max-width: none; margin-top: 14px; text-align: left; }
   .section-heading h1 { }
   .game-body { grid-template-columns: 1.45fr 1fr; }
   .palette { padding: 26px 20px 0 26px; }
@@ -244,3 +246,4 @@ a { color: inherit; }
 /* The inner span frames one atlas tile; hover/flight transforms stay on the outer. */
 .ingredient-image { position: absolute; display: block; background-repeat: no-repeat; pointer-events: none; }
 .note-choice .ingredient { max-width: 100%; height: auto; aspect-ratio: 1; }
+.filter-scroll { mask-image: linear-gradient(90deg, transparent, #000 var(--filter-fade-start, 0px), #000 calc(100% - var(--filter-fade-end, 0px)), transparent); }

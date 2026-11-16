@@ -1,4 +1,4 @@
-import {noteFraming} from './note-framing.mjs?v=20261116-framing';
+import {noteFraming} from './note-framing.mjs?v=20261116-framing2';
 // Every available note has an image. Coordinates are column / row in each atlas.
 const atlas = (file, rows, names) => Object.fromEntries(names.map((name, index) => [name, {
   file: `./public/assets/${file}`, columns: 3, rows, column: index % 3, row: Math.floor(index / 3)
