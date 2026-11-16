@@ -1,95 +1,55 @@
-// Actual scene panels: implemented scenes are separate from the new exam-question backlog.
+// Shared visible filters exercise the real question module and scene-panel handlers.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const path = require('node:path');
 const vm = require('node:vm');
-const source = fs.readFileSync(path.resolve(__dirname, '../editor/panels.js'), 'utf8');
-const scenes = [
-  { id: 'ticket_10_14', playable: true, reviewGroup: 'unmarked-2026-10-15', questionText: 'Поворот налево', errors: 0 },
-  { id: 'ticket_11_2', playable: false, reviewGroup: 'unmarked-2026-10-15', questionText: 'Знак', errors: 2 },
-  { id: 'ticket_12_5', playable: false, questionText: 'Разворот', errors: 0 },
-  { id: 'ticket_1_5', playable: false, questionText: 'Поворот', errors: 0, assistantReview: { author: 'codex', status: 'pending' } },
-  { id: 'ticket_2_5', playable: true, questionText: 'Полосы', errors: 0, assistantReview: { author: 'codex', status: 'approved' } },
-  { id: 'mini_regulator', playable: false, questionText: '', errors: 0 },
+const read = name => fs.readFileSync(require.resolve('../editor/' + name), 'utf8');
+const records = [
+  {id:'ticket_10_14',ticket:10,number:14,status:'game',hasScene:true,question:'Поворот налево'},
+  {id:'ticket_11_2',ticket:11,number:2,status:'plan',hasScene:true,question:'Знак'},
+  {id:'ticket_12_5',ticket:12,number:5,status:'plan',hasScene:false,decision:'yes',question:'Разворот'},
+  {id:'ticket_1_5',ticket:1,number:5,status:'ai',hasScene:true,question:'Поворот'},
+  {id:'ticket_2_5',ticket:2,number:5,status:'game',hasScene:true,question:'Полосы'},
+  {id:'ticket_3_5',ticket:3,number:5,status:'game',hasScene:false,question:'Дорожный вопрос'},
+  {id:'ticket_3_6',ticket:3,number:6,status:'plan',hasScene:false,question:'Не выбран'},
+  {id:'ticket_3_7',ticket:3,number:7,status:'game',hasScene:true,decision:'no',question:'Удалён'},
 ];
-const questions = [{ id: 'ticket_1_1' }, { id: 'ticket_cd_1_2' }];
 const storage = new Map();
-function mount(search = '') {
-  const listeners = {};
-  const element = () => ({ innerHTML: '', hidden: true, addEventListener() {}, querySelector() { return null; }, querySelectorAll() { return []; }, focus() {}, setSelectionRange() {}, value: '' });
-  const elements = Object.fromEntries(['#left-body', '#home-screen', '#home-q'].map(id => [id, element()]));
-  const document = { querySelector: selector => elements[selector], querySelectorAll: () => [], addEventListener(type, callback) { (listeners[type] ??= []).push(callback); } };
-  const opened = [], reviewed = [];
-  const QuestionPlan = { open: async id => reviewed.push(id || 'first-pending'), close() {}, setQuery() {},
-    sidebarHtml: () => questions.map(question => `<button data-plan-question="${question.id}">question photo</button>`).join(''),
-    homeHtml: () => '<div>question cards</div>', visibleCount: () => questions.length };
-  const App = { state: { scenes: structuredClone(scenes), questions, section: 'city' }, esc: value => String(value ?? ''), ic: () => '', thumbRev: {},
-    sceneTitle: id => id.replace(/^ticket_/, '').replace('_', ' '), openScene: async id => opened.push(id) };
-  vm.runInNewContext(source, { App, QuestionPlan, document, URLSearchParams, location: { search }, Thumbs: { fillAll() {} }, Tools: { renderBar() {} },
-    localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) } });
-  const dispatch = (type, target) => listeners[type].forEach(callback => callback({ target }));
-  const click = (attribute, value) => dispatch('click', { closest: selector => selector === `[${attribute}]` ? { dataset: { [attribute.replace('data-', '').replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())]: value } } : null });
-  const rows = html => Array.from(html.matchAll(/data-scene="([^"]+)"/g), match => match[1]);
-  return { App, elements, opened, reviewed, click, dispatch, rows,
-    left: () => { App.renderPanels(); return elements['#left-body'].innerHTML; },
-    home: () => { App.renderHome(); return elements['#home-screen'].innerHTML; } };
+function mount(search='') {
+  const listeners={}, opened=[];
+  const element=()=>({innerHTML:'',hidden:true,querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}});
+  const elements=Object.fromEntries(['#left-body','#home-screen'].map(key=>[key,element()]));
+  const document={querySelector:key=>elements[key],querySelectorAll:()=>[],addEventListener(type,callback){(listeners[type]??=[]).push(callback);}};
+  const App={state:{scenes:[{id:'mini_regulator'}],section:'city',questions:structuredClone(records)},esc:String,ic:()=>'',thumbRev:{},sceneTitle:id=>id,openScene:async id=>{opened.push(id);App.state.id=id;}};
+  const context=vm.createContext({App,document,URLSearchParams,location:{search},window:{history:{replaceState(){}}},localStorage:{getItem:key=>storage.get(key),setItem:(key,value)=>storage.set(key,value)},Thumbs:{fillAll(){}},Tools:{renderBar(){}}});
+  vm.runInContext(read('question_plan.js')+'\nglobalThis.QuestionPlan=QuestionPlan;',context);
+  vm.runInContext(read('panels.js'),context);
+  App.state.questionsLoaded=true;
+  const left=()=>{App.renderPanels({only:['left']});return elements['#left-body'].innerHTML;};
+  const home=()=>{App.renderHome();return elements['#home-screen'].innerHTML;};
+  const ids=html=>Array.from(html.matchAll(/data-plan-question="([^"]+)"/g),m=>m[1]);
+  const dispatch=(type,target)=>listeners[type].forEach(fn=>fn({target}));
+  const click=value=>dispatch('click',{closest:selector=>selector==='[data-scene-filter]'?{dataset:{sceneFilter:value}}:null});
+  return {App,plan:context.QuestionPlan,opened,ids,left,home,dispatch,click};
 }
-let ui = mount();
-const ordinary = ['ticket_2_5', 'ticket_10_14', 'ticket_11_2', 'ticket_12_5'];
-assert.deepEqual(ui.rows(ui.left()), ordinary);
-assert.match(ui.left(), /Все созданные сцены/);
-assert.doesNotMatch(ui.left(), /На просмотр|на просмотр/);
-assert.doesNotMatch(ui.home(), /На просмотр|на просмотр/);
-assert.deepEqual(Array.from(ui.left().matchAll(/data-scene-section="([^"]+)"/g), match => match[1]), ['scenes', 'assistant', 'questions']);
-assert.doesNotMatch(ui.left(), /data-filter=|class="chips"/, 'primary sections never mix with old flat filter chips');
-ui.dispatch('change', { matches: selector => selector === '[data-scene-status]', value: 'game' });
-assert.deepEqual(ui.rows(ui.left()), ['ticket_2_5', 'ticket_10_14']);
-ui.dispatch('change', { matches: selector => selector === '[data-scene-status]', value: 'err' });
-assert.deepEqual(ui.rows(ui.left()), ['ticket_11_2']);
-ui.click('data-scene', 'ticket_11_2');
-assert.deepEqual(ui.opened, ['ticket_11_2']);
-ui.click('data-scene-section', 'assistant');
-assert.equal(ui.App.approvalFilter(), 'pending');
-assert.deepEqual(ui.rows(ui.left()), ['ticket_1_5'], 'review queue initially shows pending scenes only');
-assert.match(ui.left(), /На одобрение<\/span><em>1/);
-assert.match(ui.left(), /Статус одобрения/);
-assert.match(ui.home(), /Сцены Codex/);
-ui.dispatch('change', { matches: selector => selector === '[data-scene-status]', value: 'approved' });
-assert.deepEqual(ui.rows(ui.left()), ['ticket_2_5'], 'approved scenes remain in their original Codex section');
-ui.dispatch('change', { matches: selector => selector === '[data-scene-status]', value: 'all' });
-assert.deepEqual(ui.rows(ui.left()), ['ticket_1_5', 'ticket_2_5']);
-ui.click('data-scene-section', 'scenes');
-assert.equal(ui.App.sceneFilter(), 'err', 'switching section remembers the last game-scene subfilter');
-ui.click('data-scene-section', 'questions');
-assert.deepEqual(ui.rows(ui.left()), [], 'candidate drafts cannot appear as implemented scenes');
-assert.match(ui.left(), /data-plan-question="ticket_1_1"/);
-assert.match(ui.left(), /План вопросов<\/span><em>2/);
-assert.match(ui.home(), /question cards/);
-assert.deepEqual(ui.reviewed, ['first-pending']);
-ui = mount();
-assert.equal(ui.App.sceneFilter(), 'questions', 'new questions tab preference survives reopening');
-ui.App.showQuestions('ticket_cd_1_2');
-assert.deepEqual(ui.reviewed, ['ticket_cd_1_2']);
-ui = mount('?filter=review');
-assert.equal(ui.App.sceneFilter(), 'all', 'obsolete review deep links fall back to all scenes');
-assert.deepEqual(ui.rows(ui.left()), ordinary);
-ui.dispatch('input', { id: 'scene-q', value: '10 14' });
-assert.deepEqual(ui.rows(ui.left()), ['ticket_10_14']);
-ui.dispatch('input', { id: 'scene-q', value: 'Билет №10 вопрос 14' });
-assert.deepEqual(ui.rows(ui.left()), ['ticket_10_14']);
-ui.dispatch('input', { id: 'scene-q', value: 'Билет 1' });
-assert.deepEqual(ui.rows(ui.left()), [], 'ticket 1 must not accidentally match tickets 10–19');
-ui.App.state.section = 'regulator';
-assert.deepEqual(ui.rows(ui.left()), ['mini_regulator'], 'city filters leave separate mini-game reachable');
-ui = mount();
-ui.App.state.scenes = ['ticket_19_1', 'ticket_23_5', 'ticket_2_12', 'ticket_2_1', 'ticket_3_1'].map(id => ({ id, errors: 0 }));
-const sourceOrder = ui.App.state.scenes.map(scene => scene.id);
-ui.App.setSceneFilter('all');
-const numericOrder = ['ticket_2_1', 'ticket_2_12', 'ticket_3_1', 'ticket_19_1', 'ticket_23_5'];
-assert.deepEqual(ui.rows(ui.left()), numericOrder, 'sort ticket and question numbers numerically');
-assert.deepEqual(ui.rows(ui.home()), numericOrder);
-assert.deepEqual(ui.App.state.scenes.map(scene => scene.id), sourceOrder, 'sorting never changes the source scene list');
-ui.App.state.scenes.forEach(scene => { scene.assistantReview = { author: 'codex', status: 'pending' }; });
-ui.App.setSceneFilter('assistant');
-assert.deepEqual(ui.rows(ui.left()), numericOrder, 'approval queue uses the same numeric order');
-console.log('Scene panels: three explicit sections, contextual filters, pending/approved Codex, search and restart PASS');
+let ui=mount();
+const all=['ticket_10_14','ticket_11_2','ticket_12_5','ticket_1_5','ticket_2_5','ticket_3_5'];
+assert.deepEqual(ui.ids(ui.left()),all);
+assert.deepEqual(Array.from(ui.left().matchAll(/data-scene-filter="([^"]+)"/g),m=>m[1]),['all','game','assistant','plan']);
+assert.doesNotMatch(ui.left()+ui.home(),/<select|data-toggle-scene-filters|data-scene-section|План вопросов|Игровые сцены/);
+assert.equal(ui.plan.count('all'),6);assert.equal(ui.plan.count('game'),3);assert.equal(ui.plan.count('ai'),1);assert.equal(ui.plan.count('plan'),2);
+ui.click('assistant');assert.deepEqual(ui.ids(ui.left()),['ticket_1_5']);assert.match(ui.left(),/На одобрении/);
+ui.click('game');assert.deepEqual(ui.ids(ui.left()),['ticket_10_14','ticket_2_5','ticket_3_5']);
+assert.match(ui.left(),/data-plan-question="ticket_3_5"[^>]*disabled/,'procedural road questions cannot create duplicate scenes');
+ui.click('plan');assert.deepEqual(ui.ids(ui.left()),['ticket_11_2','ticket_12_5']);
+ui.click('all');
+ui.dispatch('input',{id:'scene-q',value:'Билет №10 вопрос 14'});assert.deepEqual(ui.ids(ui.left()),['ticket_10_14']);
+ui.dispatch('input',{id:'scene-q',value:'Билет 1'});assert.deepEqual(ui.ids(ui.left()),['ticket_1_5']);
+ui.dispatch('input',{id:'scene-q',value:'разворот'});assert.deepEqual(ui.ids(ui.home()),['ticket_12_5']);
+ui=mount('?filter=assistant');assert.equal(ui.App.sceneFilter(),'assistant');
+ui=mount('?filter=questions');assert.equal(ui.App.sceneFilter(),'plan');
+ui=mount('?filter=review');assert.equal(ui.App.sceneFilter(),'all');
+ui.App.setSceneFilter('assistant');ui.App.state.questions.find(q=>q.id==='ticket_1_5').status='game';
+assert.deepEqual(ui.ids(ui.left()),[],'approved scenes leave the pending queue');
+ui.click('game');assert(ui.ids(ui.left()).includes('ticket_1_5'));
+ui.App.state.section='regulator';assert.match(ui.left(),/data-scene="mini_regulator"/);assert.doesNotMatch(ui.left(),/scene-tabs/);
+console.log('Scene filters: unified four visible tabs, counts, pending-only approval, search, old links, road protection and regulator PASS');

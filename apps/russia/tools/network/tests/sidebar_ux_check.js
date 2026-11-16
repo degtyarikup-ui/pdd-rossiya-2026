@@ -19,7 +19,7 @@ function mount(fullSigns = false) {
     pickable: ref => !state.hidden.has(layerOf(ref)) && !state.locked.has(layerOf(ref)), nameOf: ref => ref.id,
     isGeneratedSurface: item => !!item.auto,
     select(refs, { add = false } = {}) { state.sel = add ? [...state.sel, ...refs] : refs; }, toast() {} };
-  const QuestionPlan = { close() {}, sidebarHtml: (_query, options) => `<div id="question-filter-options" ${options.filtersCollapsed ? 'hidden' : ''}>Subfilters</div>`, filterSummary: () => ({ label: 'Реализуем', count: 1 }), visibleCount: () => 1 };
+  const QuestionPlan = { close() {}, setFilter() {}, count: () => 1, sidebarHtml: () => '<div>Unified questions</div>', filterSummary: () => ({ label: 'Все', count: 1 }), visibleCount: () => 1 };
   const context = vm.createContext({ App, document, QuestionPlan, URLSearchParams, location: { search: '' }, localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
     Thumbs: { fillAll() {}, img: (kind, id) => `<img class="thumb" data-thumb="${kind}|${id}" alt="">` }, Tools: { renderBar() {}, current: () => 'select', opts: {} }, Layout: { nodeKind: () => 'junction' } });
   vm.runInContext(source('catalog.js') + '\nglobalThis.Catalog = Catalog;', context);
@@ -39,21 +39,14 @@ function mount(fullSigns = false) {
     html: () => { App.renderPanels({ only: ['left'] }); return elements['#left-body'].innerHTML; }, input: (id, value) => listeners.input.forEach(callback => callback({ target: { id, value } })) };
 }
 let ui = mount();
-assert.equal(ui.App.sceneFiltersCollapsed(), false);
-assert.match(ui.html(), /aria-expanded="true" aria-controls="scene-filters"/);
-ui.click('data-toggle-scene-filters', '');
-assert.equal(ui.App.sceneFiltersCollapsed(), true);
-assert.match(ui.html(), /id="scene-filters" hidden/);
-assert.match(ui.html(), /aria-expanded="false"/);
-ui.App.setSceneFilter('questions');
-assert.match(ui.html(), /План вопросов/);
-assert.match(ui.html(), /Реализуем/);
-assert.match(ui.html(), /id="question-filter-options" hidden/);
-assert.match(ui.html(), /data-scene-section="questions"/, 'hiding status filters never hides the section navigation');
+assert.deepEqual(Array.from(ui.html().matchAll(/data-scene-filter="([^"]+)"/g), match => match[1]), ['all', 'game', 'assistant', 'plan']);
+assert.doesNotMatch(ui.html(), /data-toggle-scene-filters|data-scene-status|data-question-status|<select/);
+ui.click('data-scene-filter', 'assistant');
+assert.equal(ui.App.sceneFilter(), 'assistant');
 ui = mount();
-assert.equal(ui.App.sceneFiltersCollapsed(), true, 'collapsed preference survives reload');
-ui.App.setSceneFiltersCollapsed(false);
-assert.doesNotMatch(ui.html(), /id="scene-filters" hidden/);
+assert.equal(ui.App.sceneFilter(), 'assistant', 'the visible filter survives reload');
+ui.App.setSceneFilter('questions');
+assert.equal(ui.App.sceneFilter(), 'plan', 'legacy question links map to the unready filter');
 ui.App.setLibraryCategory('signs');
 assert.equal(ui.state.ltab, 'library');
 assert.match(ui.html(), /data-library-category="signs" aria-pressed="true"/);

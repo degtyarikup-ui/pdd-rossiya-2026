@@ -1,0 +1,99 @@
+{
+ "id": "ticket_7_12",
+ "procedural": true,
+ "geometry": null,
+ "type": "road_question",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 10.5,
+ "exitWidths": {
+  "straight": 10.5
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 7 · Вопрос 12",
+   "title": "В каком из указанных мест Вам можно поставить на стоянку легковой автомобиль?",
+   "options": [
+    "Только А",
+    "Только В",
+    "А или В",
+    "В любом"
+   ],
+   "explanation": "Действие происходит в населённом пункте на участке дороги, обозначенном знаком 5.5 «Дорога с односторонним движением». На такой дороге разрешается остановка и стоянка с левой стороны дороги по ходу движения (в месте «А»). Место «Б» находится в зоне действия знака 3.28 «Стоянка запрещена». Поэтому по своему усмотрению можете поставить автомобиль на стоянку в месте «А» или «В».(«Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 7 · Question 12",
+   "title": "In which of the following places can you park your car?",
+   "options": [
+    "Only А",
+    "Only В",
+    "А or В",
+    "In any"
+   ],
+   "explanation": "The action takes place in a populated area on a section of road marked with sign 5.5 “One-way road.” On such a road, stopping and parking is allowed on the left side of the road in the direction of travel (at place “А”). Place “Б” is located within the coverage area of sign 3.28 “Parking prohibited.” Therefore, at your discretion, you can park the car in place “А” or “В”. (“Road signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "7-билет · 12-сұрақ",
+   "title": "Төмендегі орындардың қайсысына көлігіңізді қоюға болады?",
+   "options": [
+    "Тек А",
+    "Тек В",
+    "А немесе В",
+    "Кез келгенінде"
+   ],
+   "explanation": "Бұл жағдай 5.5 «Бір жақты жол» белгісімен белгіленген жол учаскесінде елді мекенде орын алады. Мұндай жолда қозғалыс бағыты бойынша жолдың сол жағында («А» орнында) тоқтап тұруға рұқсат етіледі. «Б» орны 3.28 «Автотұрақ жоқ» белгісінің қамту аймағында орналасқан. Сондықтан, сіз өз қалауыңыз бойынша автокөлікті «А» немесе «В» орнына қоя аласыз. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 107,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "1ab15bf82bbc2702abb009e21ac27be3",
+ "sourceCategory": "ab",
+ "sourceImage": "be2c5fa721a2a4283b9f9fbe4f6471eb",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-three-scenes",
+  "status": "pending"
+ }
+}

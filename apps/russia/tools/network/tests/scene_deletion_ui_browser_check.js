@@ -25,6 +25,7 @@ const base = (process.env.EDITOR_URL || 'http://127.0.0.1:8950').replace(/\/$/,'
         {id:'ticket_1_2',playable:false,errors:0,questionText:'Черновик'},
         {id:'mini_regulator',playable:false,errors:0,regulator:true},
       ];
+      App.state.questionsLoaded=true;App.state.questions=App.state.scenes.filter(s=>s.id!=='mini_regulator').map(s=>{const[,ticket,number]=s.id.split('_');return {id:s.id,ticket:Number(ticket),number:Number(number),hasScene:true,status:s.playable?'game':'plan',question:s.questionText};});
       App.state.section='city';App.setSceneFilter('all');App.showHome(true);
     });
     const deleteIn=scope=>page.locator(`${scope} [data-delete-scene="ticket_1_1"]`);
@@ -38,7 +39,7 @@ const base = (process.env.EDITOR_URL || 'http://127.0.0.1:8950').replace(/\/$/,'
     await deleteIn('#left-body').focus();await page.keyboard.press('Enter');
     assert.deepEqual(await page.evaluate(()=>window.__deletions),['ticket_1_1','ticket_1_1']);
     assert.deepEqual(await page.evaluate(()=>window.__opens),[],'keyboard deletion in sidebar does not navigate');
-    await page.locator('#left-body [data-scene="ticket_1_2"]').click();
+    await page.locator('#left-body [data-plan-question="ticket_1_2"]').click();
     assert.deepEqual(await page.evaluate(()=>window.__opens),['ticket_1_2'],'ordinary scene navigation still works');
 
     await page.evaluate(()=>{

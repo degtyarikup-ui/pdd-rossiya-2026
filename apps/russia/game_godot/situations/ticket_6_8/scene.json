@@ -1,0 +1,660 @@
+{
+ "id": "ticket_6_8",
+ "procedural": true,
+ "geometry": null,
+ "type": "road_question",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -20,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.75,
+     -20
+    ],
+    [
+     -1.75,
+     -18.119
+    ],
+    [
+     -1.75,
+     -16.237
+    ],
+    [
+     -1.75,
+     -14.356
+    ],
+    [
+     -1.75,
+     -12.475
+    ],
+    [
+     -1.75,
+     -10.593
+    ],
+    [
+     -1.75,
+     -8.712
+    ],
+    [
+     -1.75,
+     -6.831
+    ],
+    [
+     -1.75,
+     -4.949
+    ],
+    [
+     -1.75,
+     -3.068
+    ],
+    [
+     -1.75,
+     -1.186
+    ],
+    [
+     -1.75,
+     0.695
+    ],
+    [
+     -1.75,
+     2.576
+    ],
+    [
+     -1.75,
+     4.458
+    ],
+    [
+     -1.75,
+     6.339
+    ],
+    [
+     -1.75,
+     8.22
+    ],
+    [
+     -1.75,
+     10.102
+    ],
+    [
+     -1.75,
+     11.983
+    ],
+    [
+     -1.75,
+     13.864
+    ],
+    [
+     -1.75,
+     15.746
+    ],
+    [
+     -1.75,
+     17.627
+    ],
+    [
+     -1.75,
+     19.508
+    ],
+    [
+     -1.75,
+     21.39
+    ],
+    [
+     -1.75,
+     23.271
+    ],
+    [
+     -1.75,
+     25.153
+    ],
+    [
+     -1.75,
+     27.034
+    ],
+    [
+     -1.75,
+     28.915
+    ],
+    [
+     -1.75,
+     30.797
+    ],
+    [
+     -1.75,
+     32.678
+    ],
+    [
+     -1.75,
+     34.559
+    ],
+    [
+     -1.75,
+     36.441
+    ],
+    [
+     -1.75,
+     38.322
+    ],
+    [
+     -1.75,
+     40.203
+    ],
+    [
+     -1.75,
+     42.085
+    ],
+    [
+     -1.75,
+     43.966
+    ],
+    [
+     -1.75,
+     45.847
+    ],
+    [
+     -1.75,
+     47.729
+    ],
+    [
+     -1.75,
+     49.61
+    ],
+    [
+     -1.75,
+     51.492
+    ],
+    [
+     -1.75,
+     53.373
+    ],
+    [
+     -1.75,
+     55.254
+    ],
+    [
+     -1.75,
+     57.136
+    ],
+    [
+     -1.75,
+     59.017
+    ],
+    [
+     -1.75,
+     60.898
+    ],
+    [
+     -1.75,
+     62.78
+    ],
+    [
+     -1.75,
+     64.661
+    ],
+    [
+     -1.75,
+     66.542
+    ],
+    [
+     -1.75,
+     68.424
+    ],
+    [
+     -1.75,
+     70.305
+    ],
+    [
+     -1.75,
+     72.186
+    ],
+    [
+     -1.75,
+     74.068
+    ],
+    [
+     -1.75,
+     75.949
+    ],
+    [
+     -1.75,
+     77.831
+    ],
+    [
+     -1.75,
+     79.712
+    ],
+    [
+     -1.75,
+     81.593
+    ],
+    [
+     -1.75,
+     83.475
+    ],
+    [
+     -1.75,
+     85.356
+    ],
+    [
+     -1.75,
+     87.237
+    ],
+    [
+     -1.75,
+     89.119
+    ],
+    [
+     -1.75,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [],
+ "actors": [
+  {
+   "id": "truck",
+   "type": "truck",
+   "name": "Грузовик",
+   "config": {
+    "id": "truck",
+    "type": "truck",
+    "name": "Грузовик",
+    "side": "cross_right",
+    "targetAction": "straight",
+    "color": "#FFA53C",
+    "position": [
+     -1.75,
+     0.0,
+     -7
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -1.75,
+      -7
+     ],
+     [
+      -1.75,
+      -2
+     ],
+     [
+      -2.1,
+      2
+     ],
+     [
+      -3.4,
+      6
+     ],
+     [
+      -4.8,
+      10
+     ],
+     [
+      -5.25,
+      14
+     ],
+     [
+      -5.25,
+      75
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 3.4294117647058826,
+   "halfWidth": 1.2305882352941178,
+   "badge": {
+    "text": {
+     "ru": "Грузовик",
+     "en": "Truck",
+     "kk": "Жүк көлігі"
+    },
+    "color": "#FFA53C",
+    "height": 3.4
+   },
+   "pos": [
+    -1.75,
+    0.0,
+    -7
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -1.75,
+     0.0,
+     -7
+    ],
+    [
+     -1.75,
+     0.0,
+     -2
+    ],
+    [
+     -2.1,
+     0.0,
+     2
+    ],
+    [
+     -3.4,
+     0.0,
+     6
+    ],
+    [
+     -4.8,
+     0.0,
+     10
+    ],
+    [
+     -5.25,
+     0.0,
+     14
+    ],
+    [
+     -5.25,
+     0.0,
+     75
+    ]
+   ],
+   "length": 82.484,
+   "clearDistance": 18.929411764705883,
+   "maxSpeed": 5,
+   "signalPlan": null,
+   "stopAtDistance": 1,
+   "stopFor": 3,
+   "holdFor": null,
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#F2F3F5",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "right",
+   "hazards": false
+  },
+  {
+   "id": "car",
+   "type": "car",
+   "name": "Авто",
+   "config": {
+    "id": "car",
+    "type": "car",
+    "name": "Авто",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     -5.25,
+     0.0,
+     -9
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -5.25,
+      -9
+     ],
+     [
+      -5.25,
+      -4
+     ],
+     [
+      -4.8,
+      0
+     ],
+     [
+      -3.4,
+      4
+     ],
+     [
+      -2.1,
+      8
+     ],
+     [
+      -1.75,
+      12
+     ],
+     [
+      -1.75,
+      75
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    -5.25,
+    0.0,
+    -9
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -5.25,
+     0.0,
+     -9
+    ],
+    [
+     -5.25,
+     0.0,
+     -4
+    ],
+    [
+     -4.8,
+     0.0,
+     0
+    ],
+    [
+     -3.4,
+     0.0,
+     4
+    ],
+    [
+     -2.1,
+     0.0,
+     8
+    ],
+    [
+     -1.75,
+     0.0,
+     12
+    ],
+    [
+     -1.75,
+     0.0,
+     75
+    ]
+   ],
+   "length": 84.484,
+   "clearDistance": 24.151,
+   "maxSpeed": 5,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": 0,
+   "stopFor": 0,
+   "holdFor": null,
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#317ED4",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "left",
+   "hazards": false
+  }
+ ],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 6 · Вопрос 8",
+   "title": "Кто должен уступить дорогу при взаимном перестроении?",
+   "options": [
+    "Водитель легкового автомобиля",
+    "Водитель грузового автомобиля",
+    "Водителям следует действовать по взаимной договоренности"
+   ],
+   "explanation": "При одновременном перестроении водители руководствуются «правилом правой руки». Помеха справа у водителя грузовика. Он уступает дорогу.(Пункт 8.4 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 6 · Question 8",
+   "title": "Who must give way when changing lanes?",
+   "options": [
+    "Car driver",
+    "Truck driver",
+    "Drivers should act by mutual agreement"
+   ],
+   "explanation": "When changing lanes at the same time, drivers are guided by the “right-hand rule.” The truck driver has an obstacle on his right. He gives way. (Clause 8.4 of traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "6-билет · 8-сұрақ",
+   "title": "Жолақты ауыстырған кезде кім жол беруі керек?",
+   "options": [
+    "Жеңіл автомобиль жүргізушісі",
+    "Жүк көлігінің жүргізушісі",
+    "Жүргізушілер өзара келісім бойынша әрекет етуі керек"
+   ],
+   "explanation": "Жолақтарды бір уақытта ауыстырған кезде жүргізушілер «оң қол ережесін» басшылыққа алады. Жүк көлігі жүргізушісінің оң жағында кедергі бар. Ол жол береді. (Жол қозғалысы ережелерінің 8.4 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 167,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "17a1d1a9b907bab9cd4c3549e3b51fb3",
+ "sourceCategory": "ab",
+ "sourceImage": "a450a0e7eb0e4235fa9bec6c20dfa1ff",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-three-scenes",
+  "status": "pending"
+ },
+ "playerPlacement": "free",
+ "annotations": [
+  {
+   "points": [
+    [
+     -1.75,
+     -2
+    ],
+    [
+     -2.1,
+     2
+    ],
+    [
+     -3.4,
+     6
+    ],
+    [
+     -4.8,
+     10
+    ]
+   ],
+   "style": "arrow",
+   "colour": "#F2F3F5",
+   "width": 0.18,
+   "text": "",
+   "textSize": 1,
+   "textAngle": 0
+  },
+  {
+   "points": [
+    [
+     -5.25,
+     -4
+    ],
+    [
+     -4.8,
+     0
+    ],
+    [
+     -3.4,
+     4
+    ],
+    [
+     -2.1,
+     8
+    ]
+   ],
+   "style": "arrow",
+   "colour": "#F2F3F5",
+   "width": 0.18,
+   "text": "",
+   "textSize": 1,
+   "textAngle": 0
+  }
+ ],
+ "questionView": {
+  "centre": [
+   -3.5,
+   -4
+  ],
+  "height": 27,
+  "yaw": 0,
+  "pitch": 0.72,
+  "elevation": 0
+ }
+}

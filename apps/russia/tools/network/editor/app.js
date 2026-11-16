@@ -544,7 +544,7 @@ const App = (() => {
           sel:[], undo:[], redo:[], findings:[], savedJson:"", dirty:false, virtual:false, playable:false});
         App.selectionChanged?.();
         showHome(true, true);
-        history.replaceState(null, "", App.sceneFilter?.() === "questions" ? "?filter=questions" : "/");
+        history.replaceState(null, "", `?filter=${App.sceneFilter?.() || "all"}`);
       }
       renderTop(); App.renderPanels?.(); App.renderHome?.();
       toast("Вопрос удалён", "good");
@@ -988,7 +988,8 @@ const App = (() => {
     const chip = $("#status");
     chip.hidden = !s;
     chip.className = "chip " + (err ? "bad" : state.playable ? "good" : "");
-    chip.innerHTML = !s ? "" : err ? `${ic("error")}${err} ${plural(err, ["ошибка", "ошибки", "ошибок"])}` : state.playable ? `${ic("check-circle")}в игре` : "не в игре";
+    const pendingApproval = s?.assistantReview?.author === "codex" && (s.assistantReview.status !== "approved" || !state.playable);
+    chip.innerHTML = !s ? "" : err ? `${ic("error")}${err} ${plural(err, ["ошибка", "ошибки", "ошибок"])}` : pendingApproval ? "на одобрении" : state.playable ? `${ic("check-circle")}в игре` : "не в игре";
     if (state.id === "mini_regulator" && !err) chip.textContent = "мини-игра";
     chip.dataset.tip = err ? "Открыть проверку" : "";
     $("#save").disabled = !!state.deleting?.includes(state.id) || (!state.dirty && !state.virtual && !App.hasPendingInspectorField?.());

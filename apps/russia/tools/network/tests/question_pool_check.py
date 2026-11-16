@@ -159,7 +159,7 @@ with tempfile.TemporaryDirectory(prefix="question-pool-check-", dir=scratch) as 
 
     def request(path, body=None, raw=False):
         req = Request(base_url + path, data=json.dumps(body).encode() if body is not None else None,
-                      headers={"Content-Type": "application/json"})
+                      headers={"Content-Type": "application/json", **({"X-Local-Token": local_token} if body is not None else {})})
         try:
             with urlopen(req, timeout=30) as response:
                 content = response.read()
@@ -167,6 +167,8 @@ with tempfile.TemporaryDirectory(prefix="question-pool-check-", dir=scratch) as 
         except HTTPError as error:
             return error.code, json.loads(error.read())
 
+    # Follow the browser's real local-session flow before mutating the fixture.
+    local_token = request("/api/local-session")[1]["token"]
     try:
         assert request("/api/questions")[1]["counts"]["total"] == 8
         assert request("/api/questions/ticket_1_1/decision", {"decision": "bad"})[0] == 400

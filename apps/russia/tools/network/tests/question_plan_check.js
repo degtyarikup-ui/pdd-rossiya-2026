@@ -48,13 +48,15 @@ function mount() {
   assert.equal(JSON.stringify(ui.App.state.S), JSON.stringify({ unsaved: 'author draft' }));
   assert.equal(ui.App.state.dirty, true);
   assert.equal(ui.App.state.id, JSON.parse(draft).id);
-  assert.deepEqual(Array.from(ui.plan.list(), q => q.id), ['ticket_1_1', 'ticket_1_7'], 'approved questions and started drafts remain');
+  assert.equal(ui.plan.list().length, 5, 'all selected, in-game, pending and started questions share one library');
+  ui.plan.setFilter('plan');
+  assert.deepEqual(Array.from(ui.plan.list(), q => q.id), ['ticket_1_1', 'ticket_1_7']);
   assert.equal(ui.plan.visibleCount(), 5);
   assert.equal(ui.plan.count('game'), 2);
   assert.equal(ui.plan.count('ai'), 1);
   assert.doesNotMatch(ui.plan.sidebarHtml()+ui.plan.homeHtml(), /data-plan-question="ticket_1_[89]"/, 'deleted questions stay hidden even when archived scenes remain');
   assert.match(ui.plan.sidebarHtml(), /data-plan-question="ticket_1_1"/);
-  assert.match(ui.plan.sidebarHtml('', { filtersCollapsed: true }), /id="question-filter-options" hidden/);
+  assert.doesNotMatch(ui.plan.sidebarHtml() + ui.plan.homeHtml(), /select|question-filter-options|data-question-status/, 'one shared visible filter bar replaces nested dropdowns');
   assert.doesNotMatch(ui.plan.sidebarHtml() + ui.plan.homeHtml(), /data-qr|Не просмотрен|для отбора|Да —|Нет —|Отменить решение/);
   assert.equal(ui.listeners.keydown, undefined, 'the plan has no decision shortcuts');
   ui.plan.setQuery('40 20');

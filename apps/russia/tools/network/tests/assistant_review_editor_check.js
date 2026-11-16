@@ -59,6 +59,7 @@ async function click(action) {
 (async () => {
   await App.openScene(stored.id);
   assert.match(html(), /Подготовлено Codex/);
+  assert.match(elements.get('#status').innerHTML, /на одобрении/, 'the scene header distinguishes pending approval from ordinary drafts');
   assert.match(html(), /Ожидает вашего одобрения/);
   assert.match(html(), /data-act="approve-scene"/);
   assert.doesNotMatch(html(), /data-toggle="playable"/, 'assistant approval is a deliberate button, never the ordinary toggle');

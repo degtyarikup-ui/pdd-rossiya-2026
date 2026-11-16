@@ -1,0 +1,96 @@
+{
+ "id": "ticket_8_2",
+ "procedural": true,
+ "geometry": null,
+ "type": "road_question",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 8 · Вопрос 2",
+   "title": "В чем особенность скоростного режима на этом участке дороги?",
+   "options": [
+    "Рекомендуемая скорость движения – 40 км/ч",
+    "Минимальная допустимая скорость движения – 40 км/ч",
+    "Минимальная допустимая скорость движения по левой полосе – 40 км/ч"
+   ],
+   "explanation": "Табличка 8.14 «Полоса движения» указывает, что действие знака 4.6 «Ограничение минимальной скорости» распространяется только на ту полосу движения, над которой находится знак. Так как действие происходит в населённом пункте, на данном участке по правой полосе можно двигаться со скоростью, не превышающей 60 км/ч, на левой полосе скорость должна быть не менее 40 км/ч и не более 60 км/ч. Правильный ответ – минимальная допустимая скорость движения по левой полосе – 40 км/ч.(«Дорожные знаки»).",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 8 · Question 2",
+   "title": "What is the peculiarity of the speed limit on this section of the road?",
+   "options": [
+    "Recommended driving speed – 40 km/h",
+    "Minimum permissible speed – 40 km/h",
+    "The minimum permissible speed in the left lane is 40 km/h"
+   ],
+   "explanation": "Table 8.14 “Traffic lane” indicates that the effect of sign 4.6 “Minimum speed limit” applies only to the lane above which the sign is located. Since the action takes place in a populated area, in this section you can drive in the right lane at a speed not exceeding 60 km/h; in the left lane the speed should be at least 40 km/h and no more than 60 km/h. The correct answer is the minimum permissible speed in the left lane is 40 km/h (“Road signs”).",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "8-билет · 2-сұрақ",
+   "title": "Жолдың осы бөлігіндегі жылдамдықты шектеудің ерекшелігі неде?",
+   "options": [
+    "Ұсынылатын қозғалыс жылдамдығы – 40 км/сағ",
+    "Ең аз рұқсат етілген жылдамдық – 40 км/сағ",
+    "Сол жақ жолақта ең аз рұқсат етілген жылдамдық 40 км/сағ"
+   ],
+   "explanation": "8.14 «Жолақ» тақтайшасы 4.6 «Ең төмен жылдамдық шегі» белгісінің әсері тек белгі үстінде тұрған жолаққа қолданылатынын көрсетеді. Бұл жағдай елді мекенде орын алғандықтан, осы учаскеде оң жақ жолақпен 60 км/сағ аспайтын жылдамдықпен жүруге болады; сол жақ жолақта жылдамдық кемінде 40 км/сағ және 60 км/сағ аспауы керек. Дұрыс жауап – сол жақ жолақтағы ең төмен рұқсат етілген жылдамдық 40 км/сағ. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 217,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "df85bfa11498b2d45823faeb4a7504ab",
+ "sourceCategory": "ab",
+ "sourceImage": "23aec8182761364dca90c69366d65f96",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-three-scenes",
+  "status": "pending"
+ }
+}

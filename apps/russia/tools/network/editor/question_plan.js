@@ -3,8 +3,8 @@
 const QuestionPlan = (() => {
   const { state, esc, ic } = App;
   const STORE = 'network-editor-question-review';
-  const FILTERS = [['game', 'В игре'], ['plan', 'Не в игре'], ['ai', 'Реализовано ИИ']];
-  let filter = 'plan', query = '', loading = null, opening = false, error = '';
+  const FILTERS = [['all', 'Все'], ['game', 'В игре'], ['ai', 'Одобрение'], ['plan', 'Не в игре']];
+  let filter = 'all', query = '', loading = null, opening = false, error = '';
   state.questions = state.questions || [];
   state.questionsLoaded = false;
   try {
@@ -21,18 +21,18 @@ const QuestionPlan = (() => {
   function matches(question, text) {
     const needle = normalized(text);
     if (!needle) return true;
-    const ticket = needle.match(/^(?:билет )?(\d+)(?: (?:вопрос )?(\d+))?$/);
+    const ticket = needle.match(/^(?:билет (?:№ )?)?(\d+)(?: (?:вопрос (?:№ )?)?(\d+))?$/);
     if (ticket) return [question, ...(question.occurrences || [])].some(ref =>
       ref.ticket === Number(ticket[1]) && (!ticket[2] || ref.number === Number(ticket[2])));
     const references = (question.occurrences || []).map(item => `${item.id} Билет ${item.ticket} вопрос ${item.number}`).join(' ');
     const haystack = normalized([question.id, title(question), category(question), question.question, references].join(' '));
     return needle.split(' ').every(word => haystack.includes(word));
   }
-  const list = (text = query) => kept().filter(question => matches(question, text) && question.status === filter);
-  const count = key => kept().filter(question => question.status === key).length;
+  const list = (text = query) => kept().filter(question => matches(question, text) && (filter === 'all' || question.status === filter));
+  const count = key => kept().filter(question => key === 'all' || question.status === key).length;
   function badge(question) {
     if (question.status === 'game') return `<i class="badge good">${question.hasScene ? 'В игре' : 'В игре · без отдельной сцены'}</i>`;
-    if (question.status === 'ai') return '<i class="badge ai">Реализовано ИИ</i>';
+    if (question.status === 'ai') return '<i class="badge ai">На одобрении</i>';
     return `<i class="badge">${question.hasScene ? 'Черновик' : 'Запланирован'}</i>`;
   }
   function photo(question) {
@@ -40,20 +40,16 @@ const QuestionPlan = (() => {
   }
   // Road questions already handled by the game have no editable ticket scene.
   const editable = question => question.hasScene || question.status !== 'game';
-  function filterHtml() {
-    return `<label class="scene-status-filter question-filters">Показать вопросы<select data-question-status aria-label="Показать вопросы">${FILTERS.map(([key, label]) => `<option value="${key}" ${filter === key ? 'selected' : ''}>${label} · ${count(key)}</option>`).join('')}</select></label>`;
-  }
   function loadingHtml() {
     return `<div class="question-pane-tools"><p class="muted" role="status">${error ? esc(error) : 'Загружаем вопросы из билетов…'}</p>${error ? '<button class="btn wide" data-question-retry>Повторить загрузку</button>' : ''}</div>`;
   }
-  function sidebarHtml(text = query, { filtersCollapsed = false } = {}) {
+  function sidebarHtml(text = query) {
     if (!state.questionsLoaded) return loadingHtml();
-    return `<div class="question-pane-tools"><div id="question-filter-options" ${filtersCollapsed ? 'hidden' : ''}>${filterHtml()}</div></div>
-      <div class="scene-list question-list">${list(text).map(question => `<div class="scene-row-item"><button class="scene-row ${question.id === state.id ? 'on' : ''}" data-plan-question="${esc(question.id)}" aria-label="${esc(title(question))}" ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="scene-pic question-pic">${photo(question)}</span><span class="scene-text"><b>${esc(title(question))}</b><span class="badges">${badge(question)}</span></span></button>${App.sceneDeleteButton(question.id)}</div>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
+    return `<div class="scene-list question-list">${list(text).map(question => `<div class="scene-row-item"><button class="scene-row ${question.id === state.id ? 'on' : ''}" data-plan-question="${esc(question.id)}" aria-label="${esc(title(question))}" ${question.id === state.id ? 'aria-current="true"' : ''} ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="scene-pic question-pic">${photo(question)}</span><span class="scene-text"><b>${esc(title(question))}</b><span class="badges">${badge(question)}</span></span></button>${App.sceneDeleteButton(question.id)}</div>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
   }
   function homeHtml(text = query) {
     if (!state.questionsLoaded) return loadingHtml();
-    return `<div class="question-home-tools">${filterHtml()}</div><div class="scene-list question-list question-home-list">${list(text).map(question => `<div class="scene-row-item"><button class="scene-row" data-plan-question="${esc(question.id)}" ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="scene-text"><b>${esc(title(question))} · ${esc(category(question))}</b><span class="question-row-text">${esc(question.question)}</span><span class="badges">${badge(question)}</span></span></button>${App.sceneDeleteButton(question.id)}</div>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
+    return `<div class="scene-list question-list question-home-list">${list(text).map(question => `<div class="scene-row-item"><button class="scene-row" data-plan-question="${esc(question.id)}" ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="scene-text"><b>${esc(title(question))} · ${esc(category(question))}</b><span class="question-row-text">${esc(question.question)}</span><span class="badges">${badge(question)}</span></span></button>${App.sceneDeleteButton(question.id)}</div>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
   }
   function remember() {
     try { localStorage.setItem(STORE, JSON.stringify({ filter })); } catch (_) { /* Optional view preference. */ }
@@ -93,21 +89,25 @@ const QuestionPlan = (() => {
         window.history.replaceState(null, '', '?filter=questions');
         return;
       }
-      const question = pool().find(item => item.id === id);
+      const question = kept().find(item => item.id === id);
       if (!question || question.decision === 'no' || !editable(question)) { App.showHome(true); return; }
       await App.openScene(id);
-      if (state.id === id) { filter = question.status; remember(); refresh(); }
+      if (state.id === id) {
+        if (filter !== 'all' && filter !== question.status) setFilter(question.status);
+        else refresh();
+      }
     } catch (reason) {
       if (!state.S) App.showHome(true);
       App.toast(reason.message, 'bad');
     }
     finally { opening = false; }
   }
-  function setFilter(value) {
+  function setFilter(value, { sync = true } = {}) {
     if (!FILTERS.some(([key]) => key === value)) return;
     filter = value;
     remember();
-    refresh();
+    if (sync && App.setSceneFilter) App.setSceneFilter(value === 'ai' ? 'assistant' : value);
+    else if (sync) refresh();
   }
   document.addEventListener('change', event => {
     if (event.target.matches?.('[data-question-status]')) setFilter(event.target.value);

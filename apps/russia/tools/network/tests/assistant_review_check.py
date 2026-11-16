@@ -56,13 +56,16 @@ with tempfile.TemporaryDirectory(prefix="assistant-review-", dir=check.ROOT / "s
         def request(path, body=None):
             req = Request(f"http://127.0.0.1:{http.server_port}" + path,
                           data=json.dumps(body).encode() if body is not None else None,
-                          headers={"Content-Type": "application/json"})
+                          headers={"Content-Type": "application/json", **({"X-Local-Token": local_token} if body is not None else {})})
             try:
                 with urlopen(req, timeout=30) as response:
                     return response.status, json.loads(response.read())
             except HTTPError as error:
                 return error.code, json.loads(error.read())
 
+        # Use the same loopback session bootstrap as the browser; do not bypass
+        # LocalOnlyHandler or import its process-private token into the test.
+        local_token = request("/api/local-session")[1]["token"]
         try:
             listed = request("/api/scenes")[1]
             assert len(listed) == 1 and listed[0]["assistantReview"] == review
