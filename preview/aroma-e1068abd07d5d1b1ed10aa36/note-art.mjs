@@ -1,3 +1,4 @@
+import {noteFraming} from './note-framing.mjs?v=20261116-framing';
 // Every available note has an image. Coordinates are column / row in each atlas.
 const atlas = (file, rows, names) => Object.fromEntries(names.map((name, index) => [name, {
   file: `./public/assets/${file}`, columns: 3, rows, column: index % 3, row: Math.floor(index / 3)
@@ -11,7 +12,8 @@ export const noteArtwork = {
   ...Object.fromEntries(Object.entries({
     'Розовый перец': 'pink-pepper-v2.webp',
     'Мускус': 'musk-accord-v2.webp',
-    'Амбра': 'amber-accord-v2.webp',
+    'Амбра': 'amber-accord-v3.webp',
+    'Ваниль': 'vanilla-v3.webp',
     'Лабданум': 'labdanum-v2.webp'
   }).map(([name, file]) => [name, {file: `./public/assets/${file}`, columns: 1, rows: 1, column: 0, row: 0}])),
   'Сандал': {file: './public/assets/sandalwood-v2.webp', columns: 1, rows: 1, column: 0, row: 0}
@@ -20,3 +22,5 @@ export const noteArtwork = {
 // Unused original atlas cells are not exposed as extra notes.
 delete noteArtwork['Мандарин'];
 delete noteArtwork['Роза'];
+
+for (const [name, art] of Object.entries(noteArtwork)) art.frame = noteFraming[name];

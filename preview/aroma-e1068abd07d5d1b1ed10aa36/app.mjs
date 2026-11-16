@@ -1,5 +1,5 @@
 import { getMatches, getAvailableNotes, getPerfumesForGender, removeNoteAt, isCompleteSelection } from './game-model.mjs';
-import { noteArtwork } from './note-art.mjs?v=20261116-art2';
+import { noteArtwork } from './note-art.mjs?v=20261116-framing';
 import { createGameMotion } from './motion.mjs';
 
 const root = document.querySelector('#game');
@@ -38,7 +38,8 @@ function ingredient(name) {
   if (!art) throw new Error(`Missing note artwork: ${name}`);
   const x = art.columns === 1 ? 50 : art.column / (art.columns - 1) * 100;
   const y = art.rows === 1 ? 50 : art.row / (art.rows - 1) * 100;
-  return `<span class="ingredient" data-art="${escape(name)}" style="background-image:url('${art.file}');background-size:${art.columns*100}% ${art.rows*100}%;background-position:${x}% ${y}%" aria-hidden="true"></span>`;
+  const frame = art.frame;
+  return `<span class="ingredient" data-art="${escape(name)}" aria-hidden="true"><span class="ingredient-image" style="width:${frame.scale*100}%;height:${frame.scale*100}%;left:${frame.x*100}%;top:${frame.y*100}%;background-image:url('${art.file}');background-size:${art.columns*100}% ${art.rows*100}%;background-position:${x}% ${y}%"></span></span>`;
 }
 function resetPalette() {family='all';}
 function activePerfumes() {return getPerfumesForGender(catalog.perfumes, gender);}
