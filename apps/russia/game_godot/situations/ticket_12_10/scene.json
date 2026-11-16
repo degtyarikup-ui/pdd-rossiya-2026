@@ -17,7 +17,9 @@
  "kerbX": 7,
  "approachW": 14,
  "exitWidths": {
-  "straight": 14
+  "straight": 14,
+  "right": 7,
+  "uturn": 14
  },
  "segmentLength": 0,
  "roadMask": {
@@ -442,6 +444,52 @@
     ]
    ],
    "exitYaw": 0
+  },
+  "right": {
+   "points": [
+    [
+     -5.25,
+     -18
+    ],
+    [
+     -5.804,
+     -1.37
+    ],
+    [
+     -5.967,
+     3.522
+    ],
+    [
+     -6,
+     4.5
+    ],
+    [
+     -6.977,
+     4.489
+    ],
+    [
+     -10.886,
+     4.443
+    ],
+    [
+     -27.5,
+     4.25
+    ]
+   ],
+   "exitYaw": -1.571
+  },
+  "uturn": {
+   "points": [
+    [
+     -5.25,
+     -18
+    ],
+    [
+     1.75,
+     -38
+    ]
+   ],
+   "exitYaw": 3.142
   }
  },
  "props": [],
@@ -507,12 +555,12 @@
  "annotations": [],
  "questionView": {
   "centre": [
-   -3.5,
-   -1
+   -1.5,
+   2
   ],
-  "height": 30,
+  "height": 40,
   "yaw": 0,
-  "pitch": 0.42,
+  "pitch": 0.75,
   "elevation": 0
  }
 }

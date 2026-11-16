@@ -1,0 +1,1234 @@
+{
+ "schema": 1,
+ "date": "2026-11-16",
+ "scope": "All 58 scenes from the three recent authoring batches, including the owners current edits. Original game scenes outside these batches were not rewritten.",
+ "reviewed": 58,
+ "changed": 27,
+ "limitations": 3,
+ "records": [
+  {
+   "id": "ticket_4_3",
+   "sourceImage": "e5f9205eb605705dadf6de4bb0632810",
+   "observed": "Три независимых знака 50, у А табличка 8.14; порядок А/Б/В. Дорожной схемы на оригинале нет.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "73664dfee7b3de115a65b05f32844466ceaf167ac7ce01bd198d0bca245c46bf",
+   "afterSha256": "73664dfee7b3de115a65b05f32844466ceaf167ac7ce01bd198d0bca245c46bf",
+   "view": {
+    "centre": [
+     0,
+     0
+    ],
+    "height": 20,
+    "yaw": 0,
+    "pitch": 0.07,
+    "elevation": 2.7
+   }
+  },
+  {
+   "id": "ticket_6_3",
+   "sourceImage": "2d4752b12702549f18b106d303f9d550",
+   "observed": "Три щита 3.2 / 3.1 / 3.3, порядок А/Б/В; без придуманного перекрёстка.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "b0bb8bb15f14f7d25c568561388341992a1c0cbb40af73832f35f2e727c6faba",
+   "afterSha256": "b0bb8bb15f14f7d25c568561388341992a1c0cbb40af73832f35f2e727c6faba",
+   "view": {
+    "centre": [
+     0,
+     0
+    ],
+    "height": 20,
+    "yaw": 0,
+    "pitch": 0.07,
+    "elevation": 2.7
+   }
+  },
+  {
+   "id": "ticket_6_4",
+   "sourceImage": "51c764b043333b277cef40fa8d1e62fa",
+   "observed": "Один комплект 6.4 + 8.21.2; без добавленной парковочной ситуации.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "135ac1d35c8fd04162827b19da881582d808f30edc56f339e967cf18ea634dd3",
+   "afterSha256": "135ac1d35c8fd04162827b19da881582d808f30edc56f339e967cf18ea634dd3",
+   "view": {
+    "centre": [
+     0,
+     0
+    ],
+    "height": 10,
+    "yaw": 0,
+    "pitch": 0.07,
+    "elevation": 2.7
+   }
+  },
+  {
+   "id": "ticket_6_8",
+   "sourceImage": "a450a0e7eb0e4235fa9bec6c20dfa1ff",
+   "observed": "Прямая 2+2, двойная осевая; грузовик слева и легковая справа, взаимное перестроение и противоположные указатели.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "91e1a425645a6b6cda65c79d29bef21f782256c182454b1bfc952758f2147d69",
+   "afterSha256": "91e1a425645a6b6cda65c79d29bef21f782256c182454b1bfc952758f2147d69",
+   "view": {
+    "centre": [
+     -3.5,
+     -4
+    ],
+    "height": 27,
+    "yaw": 0,
+    "pitch": 0.72,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_6_9",
+   "sourceImage": "9dd03825285f67f4f1fb4962d35c32e3",
+   "observed": "Примыкание слева к 2+2, разрыв осевой напротив него и 1.11 прерывистой стороной к игроку.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "1e2d3cdfe169b5d89dcb349c26049c33adb55e247dcc2d003f1d9465811af961",
+   "afterSha256": "1e2d3cdfe169b5d89dcb349c26049c33adb55e247dcc2d003f1d9465811af961",
+   "view": {
+    "centre": [
+     1,
+     -2
+    ],
+    "height": 35,
+    "yaw": 0,
+    "pitch": 0.78,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_7_3",
+   "sourceImage": "505bf5de2658d2b9a8e5bb4b5fa345e0",
+   "observed": "Прямая 2+2, 3.27 справа и жёлтая непрерывная у бордюра; место остановки в её пределах.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "5f9e11e482ade0f0795c26e675e724f04a73b01c0af7e9b1cee7a8b2c4d7fc43",
+   "afterSha256": "5f9e11e482ade0f0795c26e675e724f04a73b01c0af7e9b1cee7a8b2c4d7fc43",
+   "view": {
+    "centre": [
+     -4,
+     -4
+    ],
+    "height": 28,
+    "yaw": 0,
+    "pitch": 0.48,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_7_8",
+   "sourceImage": "ac77f80c11456ca7928c6c4277516cac",
+   "observed": "Две видимые попутные полосы, грузовик слева с правым указателем, синяя легковая справа без перестроения.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "18d69333827498a3c068963875f1956296a90c198bc91308d7646d1af4f8ceb0",
+   "afterSha256": "18d69333827498a3c068963875f1956296a90c198bc91308d7646d1af4f8ceb0",
+   "view": {
+    "centre": [
+     0,
+     1
+    ],
+    "height": 30,
+    "yaw": 0,
+    "pitch": 0.6,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_7_12",
+   "sourceImage": "be2c5fa721a2a4283b9f9fbe4f6471eb",
+   "observed": "Три полосы одного направления, 5.5, правосторонний запрет стоянки 3.28; А слева, Б после запрета, В до него.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "e7890daa99fc6f28b11cb78fda433e867d052d85a1716092f2656e9d7048141a",
+   "afterSha256": "e7890daa99fc6f28b11cb78fda433e867d052d85a1716092f2656e9d7048141a",
+   "view": {
+    "centre": [
+     -1.97,
+     -1.408
+    ],
+    "height": 24.108,
+    "yaw": 0,
+    "pitch": 0.559,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_8_2",
+   "sourceImage": "23aec8182761364dca90c69366d65f96",
+   "observed": "2+2, 40 с 8.14 над левой попутной; красная машина впереди и встречные машины. На оригинале продольный спуск/подъём.",
+   "issueAndCorrection": "Отсутствовали видимые в исходнике автомобили; добавлены с сохранением читаемости числа 40. Камера владельца сохранена.",
+   "changed": true,
+   "unresolved": [
+    "Дорожная схема и участники сверены. Подъём и спуск исходной дороги не воспроизведены: текущие поверхности редактора плоские. Нужна ручная оценка допустимости этого ограничения."
+   ],
+   "status": "limited",
+   "beforeSha256": "dce10204b3e8c8d9256cd4d72ed818d17fd76ba75c0805252fc0fba1570cd95b",
+   "afterSha256": "2ed4b5ce0d407cf10168b480f91fbdb9c0fb0296ad85e49dd8ba2a1daec56a37",
+   "view": {
+    "centre": [
+     -1.078,
+     15.583
+    ],
+    "height": 27,
+    "yaw": 0,
+    "pitch": 0.3,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_8_7",
+   "sourceImage": "701cfc285d4031d48072f8b0a1b9de52",
+   "observed": "Синяя легковая уже начинает пересекать прерывистую влево за грузовиком; белая схема намерения и левый указатель.",
+   "issueAndCorrection": "Машина была ещё по центру правой полосы, хотя на фото уже смещается; исправлены поза, маршрут и видимая схема.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "dd1b3f6b597d7dbfdff7d59f4244b5885c9af8434d38c8ef4a5070439564613c",
+   "afterSha256": "5a308452dea289db40885deed7aa4e543fd54cd509e09805bce09954bfa5947b",
+   "view": {
+    "centre": [
+     -2.8,
+     1
+    ],
+    "height": 36,
+    "yaw": 0,
+    "pitch": 0.65,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_8_11",
+   "sourceImage": "8c603ea35edc08128ebdf41cec0da360",
+   "observed": "Прямая 2+2 с двойной осевой; два грузовика по правой полосе, игрок в левой и встречная машина.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "932fc48151f64611f78e913c1562bfde23ac094d7f37d7cd983062569da1e4c1",
+   "afterSha256": "932fc48151f64611f78e913c1562bfde23ac094d7f37d7cd983062569da1e4c1",
+   "view": {
+    "centre": [
+     -2.2,
+     5
+    ],
+    "height": 49,
+    "yaw": 0,
+    "pitch": 0.7,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_8_12",
+   "sourceImage": "4bfb3a80e06d09db2710d0fb03606cd7",
+   "observed": "1+1 со сплошной, ровно 3 м от её края до бордюра; фургон целиком на тротуаре, встречная красная легковая.",
+   "issueAndCorrection": "Не было встречной красной легковой; добавлена, камера расширена, чтобы не обрезать её. Фургон и размер 3 м сохранены.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "81e36f5ba98fc8d78d27921bd953cd62a42ec392bca53bb1596ba37174fe0d2d",
+   "afterSha256": "92b16c85b3f8d86124d2c5774603201a393d4117f27353f342305aeacc9b5be5",
+   "view": {
+    "centre": [
+     -1.5,
+     1
+    ],
+    "height": 30,
+    "yaw": 0,
+    "pitch": 0.85,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_9_2",
+   "sourceImage": "ccfaa71247b7717e204220f439c65a8a",
+   "observed": "Городская дорога без осевой перед выраженным поворотом направо; справа 1.22 + 150 м.",
+   "issueAndCorrection": "Слабая дальняя дуга заменила выраженный поворот, была добавлена лишняя осевая. Построен правый поворот и убрана осевая.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "22c94027a1bd346b753fc619ac20f1c07668cfbe44f4b51113af9602603b1c0e",
+   "afterSha256": "2d26cc3619b32e3f5d067da5b0d2cb08ffaa79f0eb54d87a7e24b29fef7b2aa7",
+   "view": {
+    "centre": [
+     -5,
+     0
+    ],
+    "height": 36,
+    "yaw": 0,
+    "pitch": 0.75,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_9_12",
+   "sourceImage": "3deaa01681059af7d4c70fc791f9dd1f",
+   "observed": "Дорога изгибается влево; сплошная осевая, 4 м до правого бордюра, намерение остановиться справа.",
+   "issueAndCorrection": "Дорога ошибочно оставалась прямой. Восстановлен левый изгиб, размер сохранён на ближнем участке.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "2cab013be8244b16a5ecf6b686d0bf3422de8ac80856efc32d6bf8126bcb4a45",
+   "afterSha256": "ed82a75572d2eecb571fa6c748d220c5a6d6949384193bb5df7ddad43bcd337f",
+   "view": {
+    "centre": [
+     1,
+     3
+    ],
+    "height": 33,
+    "yaw": 0,
+    "pitch": 0.68,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_10_3",
+   "sourceImage": "dcf57f26ee7985780863c789cee91c66",
+   "observed": "Прямая улица 1+1 с прерывистой; справа 3.28 + 8.2.2, 50 м; стоянка предполагается за знаком.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "4826d6fbfa77b9df3562c16f5400d136a6d6dc0bc31bd4cdeee9a04cd35cd068",
+   "afterSha256": "4826d6fbfa77b9df3562c16f5400d136a6d6dc0bc31bd4cdeee9a04cd35cd068",
+   "view": {
+    "centre": [
+     -1.5,
+     -4
+    ],
+    "height": 28,
+    "yaw": 0,
+    "pitch": 0.4,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_12_8",
+   "sourceImage": "2adaa246a624f1f6759b6b1cff797dbd",
+   "observed": "Три полосы, боковой выезд справа, далее переход со знаками и легковая; автомобиль и мотоцикл меняются полосами.",
+   "issueAndCorrection": "Пропущены боковой выезд, небольшой изгиб и дальнейший переход. Восстановлены вместе со знаками и машиной за переходом.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "9a0c049243f3f215a6d5c2f34762462dbbab715746a0a3336f4fc70faff200bd",
+   "afterSha256": "54dbd0e5efc942cef5557f592c6fe518647cbf0124178e053071e99f6563b456",
+   "view": {
+    "centre": [
+     -1,
+     9
+    ],
+    "height": 47,
+    "yaw": 0,
+    "pitch": 0.78,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_12_10",
+   "sourceImage": "1e705619216f7727620196fe657675dd",
+   "observed": "2+2 с правым примыканием; 40 + 8.14 над левой попутной, игрок в правой.",
+   "issueAndCorrection": "Пропущено правое примыкание; восстановлено, ограничение остаётся над нужной полосой.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "e8192ade5aa176faddb728763d161aee65fed768c2b4f61f76cf8f56b7c8f5ac",
+   "afterSha256": "642987c37686d37a64e50fe2ed5e11d9af8463fc365b43f338eb670c9afd027e",
+   "view": {
+    "centre": [
+     -1.5,
+     2
+    ],
+    "height": 40,
+    "yaw": 0,
+    "pitch": 0.75,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_13_1",
+   "sourceImage": "810552ccbc71b52860201ad9d0d83e64",
+   "observed": "Прямая без осевой, видимые бордюры; синяя легковая движется по геометрической середине.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "430931cc310a533a12e896b2636bfac5dbb2e989979ec54dad2860727dce8685",
+   "afterSha256": "430931cc310a533a12e896b2636bfac5dbb2e989979ec54dad2860727dce8685",
+   "view": {
+    "centre": [
+     0,
+     -1
+    ],
+    "height": 25,
+    "yaw": 0,
+    "pitch": 0.6,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_13_4",
+   "sourceImage": "2cc7b58517335189e53c29926cbd29a5",
+   "observed": "Самостоятельная табличка с обычной легковой машиной, без электрической вилки и без дополнительного основного знака.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "7a833803b95051d9a1714641c117164cba91a2526d746aa3e6ea400bbc296c55",
+   "afterSha256": "7a833803b95051d9a1714641c117164cba91a2526d746aa3e6ea400bbc296c55",
+   "view": {
+    "centre": [
+     0,
+     0
+    ],
+    "height": 10,
+    "yaw": 0,
+    "pitch": 0.07,
+    "elevation": 2.7
+   }
+  },
+  {
+   "id": "ticket_13_5",
+   "sourceImage": "16692cb12e0383f106396319f3c3a51b",
+   "observed": "2+2 с двойной осевой и поперечной бело-жёлтой зеброй; никакие светофоры на фото не показаны.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "4695c51ed464869d2baf66afa190a5acbcf0f9c0629ce45db94e0fc91125408b",
+   "afterSha256": "4695c51ed464869d2baf66afa190a5acbcf0f9c0629ce45db94e0fc91125408b",
+   "view": {
+    "centre": [
+     0,
+     -1
+    ],
+    "height": 30,
+    "yaw": 0,
+    "pitch": 0.85,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_16_4",
+   "sourceImage": "fba2d0f7ea26784dd789e2bc028155f9",
+   "observed": "Прямая загородная 1+1, обочины, краевые и прерывистая осевая; 6.2=40 + 8.16.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "85006bdd6c2148572e6c4f9a24dec311eca066b71cca31b73c8b8186b2ed1819",
+   "afterSha256": "85006bdd6c2148572e6c4f9a24dec311eca066b71cca31b73c8b8186b2ed1819",
+   "view": {
+    "centre": [
+     -2.8,
+     -2
+    ],
+    "height": 23,
+    "yaw": 0,
+    "pitch": 0.33,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_16_5",
+   "sourceImage": "87dd59ca65649fe2e529146193452ff3",
+   "observed": "Прямая улица, жёлтая сплошная у правого бордюра; осевой разметки на данном оригинале нет.",
+   "issueAndCorrection": "Шаблон добавил отсутствующую осевую. Лишняя разметка удалена.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "4fbc87a661cb6de30fca49fd27715824a26d1599c3a1d0779422432eb09bf63e",
+   "afterSha256": "dd29c76c5e7f993a49f599c298b50d1dbc43e1a370ba48597937321aacbb595a",
+   "view": {
+    "centre": [
+     -2,
+     -3
+    ],
+    "height": 25,
+    "yaw": 0,
+    "pitch": 0.65,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_16_16",
+   "sourceImage": "f9dcfb20a041a7701ee06f6a2ce994e5",
+   "observed": "Разделённая автомагистраль, две попутные полосы, асфальтированная обочина за краевой 1.2 и 5.1.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "33eb980d5b92bfb5e68cacfb9a8dd6b61bab33e5d760e87a946be105dd482e83",
+   "afterSha256": "33eb980d5b92bfb5e68cacfb9a8dd6b61bab33e5d760e87a946be105dd482e83",
+   "view": {
+    "centre": [
+     -6,
+     -3
+    ],
+    "height": 37,
+    "yaw": 0,
+    "pitch": 0.65,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_18_3",
+   "sourceImage": "414d75d3838abf8463898b052c56b8cb",
+   "observed": "Прямая двухполосная улица; справа 3.30, слева 3.29; место стоянки до правого знака.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "3a64642d962ea1fbd7619acca40923d5d564299a86ddfa4c45de1faa63c6ea94",
+   "afterSha256": "3a64642d962ea1fbd7619acca40923d5d564299a86ddfa4c45de1faa63c6ea94",
+   "view": {
+    "centre": [
+     -0.5,
+     -4
+    ],
+    "height": 29,
+    "yaw": 0,
+    "pitch": 0.46,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_18_7",
+   "sourceImage": "5076bba07f9a120d06525208a45f48da",
+   "observed": "Односторонняя улица в три полосы, боковой выезд справа; два последовательных этапа смещения к левому тротуару.",
+   "issueAndCorrection": "Пропущен правый боковой выезд; восстановлен.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "11cb6bd8d191a206123e7d76ce27e014b9ba80a72f45074e8185dc5a0d1855d6",
+   "afterSha256": "2d3bc969d5b97ec5d3c788d532e2ecdf8081d94bbd923183dc309bb989900579",
+   "view": {
+    "centre": [
+     -1.5,
+     4
+    ],
+    "height": 38,
+    "yaw": 0,
+    "pitch": 0.75,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_19_3",
+   "sourceImage": "ccd31d35180c583ce32eefa65134cfd3",
+   "observed": "Узкая дорога без осевой, правый изгиб и подъём; справа 3.28.",
+   "issueAndCorrection": "Улица была слишком широкой и прямой; сужена и восстановлен правый изгиб.",
+   "changed": true,
+   "unresolved": [
+    "Уточнены ширина и правый изгиб. Продольный подъём на исходной фотографии не воспроизведён плоскими поверхностями редактора. Нужна ручная оценка."
+   ],
+   "status": "limited",
+   "beforeSha256": "f8a2b8d176fce6817b264d7356e56252f0630b2961ac91fdf0efc8f937dca969",
+   "afterSha256": "fd5b22455b5fd0fb5f35856d5d5d2bea1477ea9752b6ae411f5db6f4f82d55d5",
+   "view": {
+    "centre": [
+     -2,
+     1
+    ],
+    "height": 30,
+    "yaw": 0,
+    "pitch": 0.65,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_19_10",
+   "sourceImage": "c98167548f6dad5417b3e5aa77e6db07",
+   "observed": "2+2, примыкание справа; 40 + 8.14 над левой попутной, игрок в левой полосе.",
+   "issueAndCorrection": "Пропущено правое примыкание; восстановлено.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "b0aad0e35d2b94459ab78312d48970eaeb04c4c6a83b61f0716cf2da20c2f3fa",
+   "afterSha256": "e6311ced3791dcffa6e6527ebf826dd8a7d8ecf98b6eada7f3b9611a52ed71bd",
+   "view": {
+    "centre": [
+     -1.5,
+     6
+    ],
+    "height": 40,
+    "yaw": 0,
+    "pitch": 0.75,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_19_11",
+   "sourceImage": "e4f45f7c5c43044accbeda568927b59c",
+   "observed": "Дорога уходит влево, между направлениями начинается островок с заострённым носом; две полосы в каждую сторону и боковой выезд справа.",
+   "issueAndCorrection": "Пропущены левый изгиб, островок и боковой выезд; неверно переданы полосы и встречные машины. Дорожная схема перестроена.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "f774d0e21842b20d7b6be0e4899508aa99854736d2f03c515e8805b9f375c68d",
+   "afterSha256": "8afcfe3b72c2f0673e585cc1111045992acfefe1bfdbc5fd983199945d5db4eb",
+   "view": {
+    "centre": [
+     0,
+     6
+    ],
+    "height": 44,
+    "yaw": 0,
+    "pitch": 0.72,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_20_3",
+   "sourceImage": "caba243f0898a9ed727e68868e95441e",
+   "observed": "Прямая улица, 3.27 + 8.2.4; пассажир на правом тротуаре подаёт знак рукой, остановка предполагается за знаком.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "4da86754eaa8501eab0025dd2a3f8cb26b97e6b7e799015dd632e8d504d05556",
+   "afterSha256": "4da86754eaa8501eab0025dd2a3f8cb26b97e6b7e799015dd632e8d504d05556",
+   "view": {
+    "centre": [
+     -3.2,
+     -1
+    ],
+    "height": 30,
+    "yaw": 0,
+    "pitch": 0.48,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_20_12",
+   "sourceImage": "d5026d02d7f19eb9e5ffb5034c748542",
+   "observed": "Прямая 2+2, комплект 6.4 + 8.6.3 справа; не добавлены припаркованные исключения, подсказывающие ответ.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "c38dcda022983da7cd4c33e1f884e634d5ac1a9e0ac26ea4c2d13297ec5da1f8",
+   "afterSha256": "c38dcda022983da7cd4c33e1f884e634d5ac1a9e0ac26ea4c2d13297ec5da1f8",
+   "view": {
+    "centre": [
+     -2.8,
+     -2
+    ],
+    "height": 23,
+    "yaw": 0,
+    "pitch": 0.33,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_21_2",
+   "sourceImage": "7e9c82a8f35f2de7bf11f6dd3a22a926",
+   "observed": "Правый поворот за углом, 1.6 перед ним; предупреждаемое равнозначное пересечение находится дальше за поворотом.",
+   "issueAndCorrection": "Слабый изгиб и геометрически наложенная несвязанная дорога не передавали ситуацию. Построен поворот и связанный перекрёсток за ним.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "67b76c3c31220e8af001052c9cff699a6be70ce068373dc76490c33d8fd4f854",
+   "afterSha256": "c817908f4aa7b9d30671a4dc37562e9a28ccf23814c904cccd400444f67d147d",
+   "view": {
+    "centre": [
+     -17,
+     6
+    ],
+    "height": 65,
+    "yaw": 0,
+    "pitch": 0.8,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_21_19",
+   "sourceImage": "13ec3f53b512d18199b2abd748af58b7",
+   "observed": "Прямая 1+1 с обочинами и краевыми, 1.29; выход из лесистого коридора на открытое место.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "c2fe857990ba21381cafab28dcd75a346337693e9885841abc0cc0f8227749e2",
+   "afterSha256": "c2fe857990ba21381cafab28dcd75a346337693e9885841abc0cc0f8227749e2",
+   "view": {
+    "centre": [
+     -2.8,
+     -2
+    ],
+    "height": 23,
+    "yaw": 0,
+    "pitch": 0.33,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_22_4",
+   "sourceImage": "48011958d07fe959ef4e72d9ee9ac4ac",
+   "observed": "Улица плавно уходит влево; справа 6.4 + 8.5.1 с красной звёздочкой.",
+   "issueAndCorrection": "Пропущен левый изгиб; восстановлен.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "21c76a4daf9f7fd165819878c1f6f11d96a354f546e8b6425d690bff9f397095",
+   "afterSha256": "12dc95ca21af87a8af850ff1601dab06ac0efd06490b23c630267d2f33f33856",
+   "view": {
+    "centre": [
+     1,
+     3
+    ],
+    "height": 33,
+    "yaw": 0,
+    "pitch": 0.68,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_22_5",
+   "sourceImage": null,
+   "observed": "Иллюстрации нет: показаны краевая 1.2 и пригодная обочина без введения дополнительных запретов.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "227a2b7dcffafe66478d431454fdf508528619e6973921ddeac491620d8c7428",
+   "afterSha256": "227a2b7dcffafe66478d431454fdf508528619e6973921ddeac491620d8c7428",
+   "view": {
+    "centre": [
+     -2.4,
+     -3
+    ],
+    "height": 25,
+    "yaw": 0,
+    "pitch": 0.68,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_22_10",
+   "sourceImage": null,
+   "observed": "Иллюстрации нет: две продольные колеи, встречный трамвай и намерение выехать именно на встречную колею.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "12c0724868605c119bdee98e91769a9ecfbf6f6c35cfe6e788a1599577a5d5a6",
+   "afterSha256": "12c0724868605c119bdee98e91769a9ecfbf6f6c35cfe6e788a1599577a5d5a6",
+   "view": {
+    "centre": [
+     0,
+     3
+    ],
+    "height": 43,
+    "yaw": 0,
+    "pitch": 0.75,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_23_2",
+   "sourceImage": "5c9712e0ce29dcfa5a66f316de8382b0",
+   "observed": "Выраженный поворот направо, одиночная сплошная по его оси, 1.5 справа до поворота.",
+   "issueAndCorrection": "Слишком слабый изгиб и неверный вид осевой. Построен правый поворот со сплошной.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "4f4576e5ec5646e5ef1db6e422be5744655a0b7d97c913bc877bd6f63ab3d261",
+   "afterSha256": "8a83c2b2be0a6b1dcd97e3b65df4fe8c1d7b50708fa70da62b15baa9fa688d01",
+   "view": {
+    "centre": [
+     -5,
+     0
+    ],
+    "height": 36,
+    "yaw": 0,
+    "pitch": 0.75,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_23_3",
+   "sourceImage": "08ce3d58f673e7f662a6d9c06de7a9c9",
+   "observed": "Один комплект: 3.16=70 м над 8.2.1=100 м; табличка зоны, а не расстояния до объекта.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "64a854c42dfebda004522261bf6179b57aa567ff586732c45fa65b524e5679e4",
+   "afterSha256": "64a854c42dfebda004522261bf6179b57aa567ff586732c45fa65b524e5679e4",
+   "view": {
+    "centre": [
+     0,
+     0
+    ],
+    "height": 10,
+    "yaw": 0,
+    "pitch": 0.07,
+    "elevation": 2.7
+   }
+  },
+  {
+   "id": "ticket_23_9",
+   "sourceImage": "b897850c898749bf9318888c7a2f84f8",
+   "observed": "Прямая загородная 1+1, 1.11 прерывистой стороной к игроку, обочины; лишних краевых нет.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "db145816bbaa3484e085f5215da66eb934c7e0847941b1e8e13fb4307ea4eca5",
+   "afterSha256": "db145816bbaa3484e085f5215da66eb934c7e0847941b1e8e13fb4307ea4eca5",
+   "view": {
+    "centre": [
+     0,
+     -5
+    ],
+    "height": 28,
+    "yaw": 0,
+    "pitch": 0.75,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_23_12",
+   "sourceImage": "011c87847a6e97caf914b64e369dcc10",
+   "observed": "Улица без осевой; автобус и 5.16 справа, две выносные линии и размер без напечатанного числа.",
+   "issueAndCorrection": "Добавлена отсутствующая на фото осевая. Удалена; размер остаётся без числовой подсказки.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "c9ad5839a88497cb8d572b098cb8cae9980194b8000cec36db92e634ca814327",
+   "afterSha256": "d49f391575574edb20d62c2c40a5255bba3bf25579e1e27e691f167c96b644d0",
+   "view": {
+    "centre": [
+     -1.8,
+     0
+    ],
+    "height": 35,
+    "yaw": 0,
+    "pitch": 0.7,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_24_5",
+   "sourceImage": "3b49531f6a161048641538ecf6469485",
+   "observed": "1.25 перед правым поворотом; видна также вторая поперечная граница неровности. Сам объёмный профиль не реализован.",
+   "issueAndCorrection": "Не передан выраженный поворот; отсутствовала дальняя граница неровности. Исправлены дорожная схема и разметка.",
+   "changed": true,
+   "unresolved": [
+    "Восстановлены правый поворот и разметка обеих границ неровности. Объёмный профиль искусственной неровности не воспроизведён текущими средствами."
+   ],
+   "status": "limited",
+   "beforeSha256": "78ae6fc12d42cfd4c4efb13a19bc0d6f3397690358c89b7e9e312d1b7154f20a",
+   "afterSha256": "15cd46bcad3ec32587a63457dc2d5920e14660c587d1769460f6ab39ef1d6e0c",
+   "view": {
+    "centre": [
+     -2.5,
+     7
+    ],
+    "height": 24,
+    "yaw": 0,
+    "pitch": 0.75,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_25_4",
+   "sourceImage": "43c8ce4013a2dbe0886a3eef837278c5",
+   "observed": "Четырёхсторонний перекрёсток; поперечная дорога с центральной реверсивной полосой и двумя 1.9 по её сторонам.",
+   "issueAndCorrection": "Дороги не имели общего узла, одна пара 1.9 шла по внешней границе вместо границы средней полосы. Связность и положение линий исправлены.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "4a6e3bc6134e6206654ea19e6ea5cd09ac99c4715a69b6d244a19d07e6bc5f6d",
+   "afterSha256": "12044d5110ba2e36aba485cad9c8565c56160dc22ffa30a3245ffe07a8eaefb5",
+   "view": {
+    "centre": [
+     0,
+     -2
+    ],
+    "height": 40,
+    "yaw": 0,
+    "pitch": 0.8,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_26_3",
+   "sourceImage": "87685eb695b03213dd555ad6b3ccdbbc",
+   "observed": "Узкая загородная дорога без разметки и широких тротуаров, 3.26 справа.",
+   "issueAndCorrection": "Дорога была неоправданно широкой. Полотно сужено, игрок и знак согласованы с шириной.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "fd3915f3eb95632a8963a1e8e0c2a3ac90ef3633d60242afa7bdab8797cd5a03",
+   "afterSha256": "97c471acc51fdc3425b15e51b0578cd2111922f2d427ebfe164a4982e06e9141",
+   "view": {
+    "centre": [
+     -1.3,
+     -1
+    ],
+    "height": 24,
+    "yaw": 0,
+    "pitch": 0.58,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_26_16",
+   "sourceImage": null,
+   "observed": "Иллюстрации нет: очередь непосредственно после перехода; передний бампер игрока непосредственно до перехода.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "a7d2e5695306c7c4e82b0934127f5a54c7c24988858222865f98ab4036b45334",
+   "afterSha256": "a7d2e5695306c7c4e82b0934127f5a54c7c24988858222865f98ab4036b45334",
+   "view": {
+    "centre": [
+     -0.4,
+     2
+    ],
+    "height": 34,
+    "yaw": 0,
+    "pitch": 0.85,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_27_3",
+   "sourceImage": "92c47bbf0ca878640288b11f11a663ad",
+   "observed": "Прямая двухполосная улица, 3.27 справа и человек с вытянутой рукой; нет придуманной автобусной остановки.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "5f1944c38697dd3127e7be50b893d523ffed8334070a6339aa66c26063ea9966",
+   "afterSha256": "5f1944c38697dd3127e7be50b893d523ffed8334070a6339aa66c26063ea9966",
+   "view": {
+    "centre": [
+     -3.2,
+     -1
+    ],
+    "height": 30,
+    "yaw": 0,
+    "pitch": 0.48,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_30_3",
+   "sourceImage": "763206c7477819a1d3a755f0fa9114f9",
+   "observed": "Улица изгибается влево; справа 3.29, слева 3.30; предполагаемая стоянка после правого знака.",
+   "issueAndCorrection": "Пропущен левый изгиб; восстановлен.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "99c197919a8b7c4b742f5a6c207552f2f22ac61750ad50d579c724e2d4e3b7a1",
+   "afterSha256": "d19c6b3c7656e0e37a6c1af99b653a4f029439bfcf91cfe589d6375a8adc7a2f",
+   "view": {
+    "centre": [
+     1,
+     3
+    ],
+    "height": 33,
+    "yaw": 0,
+    "pitch": 0.68,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_30_12",
+   "sourceImage": "8578f56da82a57ddacac6b70d2062801",
+   "observed": "Прямая разделённая 3+3, красная машина задом к бордюру под углом, нос выступает на дорогу.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "e848eb79c92c022beaa743175fa82adc86b4836895c5b3c5c5a8151356d05d1b",
+   "afterSha256": "e848eb79c92c022beaa743175fa82adc86b4836895c5b3c5c5a8151356d05d1b",
+   "view": {
+    "centre": [
+     -7,
+     0
+    ],
+    "height": 42,
+    "yaw": 0,
+    "pitch": 0.7,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_31_3",
+   "sourceImage": "8bb633b83b0df8001cd12573334b26b6",
+   "observed": "Перекрёсток без осевой перед игроком, 3.2 + 8.5.2 над дальней улицей за пересечением.",
+   "issueAndCorrection": "Полностью отсутствовал перекрёсток, знак ошибочно стоял до него. Построен перекрёсток, комплект перенесён на дальний въезд, лишняя осевая убрана.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "dee3edd631c0913bb02bd845a19e8ffc1bf875813ce4f8846b46658f9da12d91",
+   "afterSha256": "2aff5e8c677bc615736a61c25b2daa47494ab28eb50b5dac53cc6197818eb7dd",
+   "view": {
+    "centre": [
+     0,
+     -1
+    ],
+    "height": 38,
+    "yaw": 0,
+    "pitch": 0.67,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_31_7",
+   "sourceImage": "c82b6f0b69a786204d6e3bc86d40ddcf",
+   "observed": "Загородная дорога со сплошной изгибается влево; серебристая машина стоит справа на обочине, рука вытянута влево.",
+   "issueAndCorrection": "Пропущен левый изгиб; восстановлен и согласованы осевая, обочины, маршруты и камера.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "210f720283c9bdbd2be53994ef02d77f3db458133d23a40923564924063203be",
+   "afterSha256": "5faae86f227e386087acfc2398114774bf18addaef963d7ea334c90ff11cdd94",
+   "view": {
+    "centre": [
+     1,
+     6
+    ],
+    "height": 29,
+    "yaw": 0.22,
+    "pitch": 0.52,
+    "elevation": 0.4
+   }
+  },
+  {
+   "id": "ticket_32_11",
+   "sourceImage": null,
+   "observed": "Иллюстрации нет: переход на обычной 1+1; показывается запрещённое намерение обгона через переход.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "7f8f9dafe7008a584106c78d0f98938776aa5241e8e42de299eec884a62fb6a5",
+   "afterSha256": "7f8f9dafe7008a584106c78d0f98938776aa5241e8e42de299eec884a62fb6a5",
+   "view": {
+    "centre": [
+     0,
+     0
+    ],
+    "height": 37,
+    "yaw": 0,
+    "pitch": 0.75,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_33_1",
+   "sourceImage": "3f5409a7fb0ddf9cd9799f225027672d",
+   "observed": "2+2, двойная осевая; тёмная легковая за грузовиком, левый сигнал и путь опережения по попутной полосе; встречная красная за осевой.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "715fe2c06b43f996db2b4a9160d976e9722e368a1ea7334ff2f4f51bee35c9fb",
+   "afterSha256": "715fe2c06b43f996db2b4a9160d976e9722e368a1ea7334ff2f4f51bee35c9fb",
+   "view": {
+    "centre": [
+     -2.8,
+     1
+    ],
+    "height": 36,
+    "yaw": 0,
+    "pitch": 0.65,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_33_5",
+   "sourceImage": "128842239b8b3b6dac957d988248a327",
+   "observed": "Улица уходит влево; длинный жёлтый зигзаг вдоль правого края, без отсутствующей на оригинале осевой.",
+   "issueAndCorrection": "Пропущен изгиб и добавлена лишняя осевая. Изгиб восстановлен, осевая удалена, зигзаг следует краю.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "788d4b6fada7a156d39f9bbb738e247024fe8c66c76e73b443d2a379ad8d7b55",
+   "afterSha256": "5356ab63af5d2ab2b18409ba0db5602f352b70ea7f73802cb3b86b96999abf12",
+   "view": {
+    "centre": [
+     1,
+     3
+    ],
+    "height": 33,
+    "yaw": 0,
+    "pitch": 0.68,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_34_2",
+   "sourceImage": "d3f85921878a51db1c7197d22f5b8962",
+   "observed": "Поворот направо за углом, прерывистая по оси, 1.15 справа до поворота.",
+   "issueAndCorrection": "Слабый дальний изгиб не повторял поворот. Дорога перестроена с сохранением вида осевой.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "3ad2bb416bb6e0e6ac56075a85cb05e07e1fb09960ac1771f91948ee09b9adc3",
+   "afterSha256": "523614599b5394a3061bde134d3b6c09edd8e127a4406da0c37b212a9a796059",
+   "view": {
+    "centre": [
+     -5,
+     0
+    ],
+    "height": 36,
+    "yaw": 0,
+    "pitch": 0.75,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_34_3",
+   "sourceImage": "40e68617cce95ec2ae0e7c7e1bf6b529",
+   "observed": "Боковое примыкание слева, справа 3.27 + 8.18; основная дорога 1+1 с прерывистой.",
+   "issueAndCorrection": "Пропущено левое примыкание; восстановлено.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "852d5b9cb686408fca9cef974b3f0bff91a373869b3b107a4dfa50fb3f6438b5",
+   "afterSha256": "68498934ff1459e323b219b28aec095f328c0909fe1149c6bd2b8292f66004a5",
+   "view": {
+    "centre": [
+     -1.5,
+     2
+    ],
+    "height": 40,
+    "yaw": 0,
+    "pitch": 0.75,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_34_8",
+   "sourceImage": "fa8e614c162efa9963c34741f225ae70",
+   "observed": "Прямая 2+2 с двойной осевой; неподвижная легковая справа с левым сигналом, грузовик попутно левее.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "6bab8d9dfb425ab9c26f9244a3cef63214a76e6a7f6d0f2f4569a23fc1da6eb7",
+   "afterSha256": "6bab8d9dfb425ab9c26f9244a3cef63214a76e6a7f6d0f2f4569a23fc1da6eb7",
+   "view": {
+    "centre": [
+     -3,
+     -2
+    ],
+    "height": 32,
+    "yaw": 0,
+    "pitch": 0.6,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_34_11",
+   "sourceImage": "1d8973c9b7892a5df603b8c4a57e0765",
+   "observed": "Прямая ровно в три полосы с общей средней, обе границы прерывистые; справа попутная и слева встречная машины.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "fa0c969d2bc75a840381ae9f95a3028a873803891079fc50a28340baf855f9cf",
+   "afterSha256": "fa0c969d2bc75a840381ae9f95a3028a873803891079fc50a28340baf855f9cf",
+   "view": {
+    "centre": [
+     -1.7,
+     -1
+    ],
+    "height": 29,
+    "yaw": 0,
+    "pitch": 0.6,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_36_7",
+   "sourceImage": "d0efc35b84dd44ebda7b22168924ab36",
+   "observed": "Четырёхсторонний перекрёсток сразу перед легковой с согнутой рукой; мотоцикл напротив в своей полосе.",
+   "issueAndCorrection": "Пропущен перекрёсток, необходимый для всей ситуации. Восстановлен; рука и встречный мотоцикл остались в кадре.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "852a40b8b839d955d924f099f276f0714157f6797d37ccd8efe692fdd021175b",
+   "afterSha256": "a5dd465d1e741cb25a1a3ab075cf519d680e53721aab68db58f32f12d3125179",
+   "view": {
+    "centre": [
+     -0.6,
+     2.5
+    ],
+    "height": 28,
+    "yaw": 0.2,
+    "pitch": 0.55,
+    "elevation": 0.3
+   }
+  },
+  {
+   "id": "ticket_39_8",
+   "sourceImage": "5ece9b9e7d648f3ce4c78e4569a0f68f",
+   "observed": "Две попутные полосы перед перекрёстком; красная слева чуть позади синей справа, включён правый указатель.",
+   "issueAndCorrection": "Пропущен перекрёсток перед автомобилями. Восстановлен; взаимные позиции и сигнал сохранены.",
+   "changed": true,
+   "unresolved": [],
+   "status": "corrected",
+   "beforeSha256": "d7cf66d324a6d8e0f0979c070f89420ef0aead0393817a5baea5cbc49cbe940a",
+   "afterSha256": "6f0be78d4bfdedaa469fb23ad88fadabf477d4105b7d36ef216c6c8611aba819",
+   "view": {
+    "centre": [
+     0,
+     3
+    ],
+    "height": 35,
+    "yaw": 0,
+    "pitch": 0.75,
+    "elevation": 0
+   }
+  },
+  {
+   "id": "ticket_40_4",
+   "sourceImage": "d45d8113cd910c59a0150fe80b274dfc",
+   "observed": "Комплект 6.4 + 8.6.3, без придуманной дорожной ситуации и припаркованного автомобиля, подсказывающего ответ.",
+   "issueAndCorrection": null,
+   "changed": false,
+   "unresolved": [],
+   "status": "checked",
+   "beforeSha256": "7ff826a6c7a0ce4e357db205d2fa5b701bfaf61358cf947a2ac02a2b05518667",
+   "afterSha256": "7ff826a6c7a0ce4e357db205d2fa5b701bfaf61358cf947a2ac02a2b05518667",
+   "view": {
+    "centre": [
+     0,
+     0
+    ],
+    "height": 10,
+    "yaw": 0,
+    "pitch": 0.07,
+    "elevation": 2.7
+   }
+  }
+ ]
+}

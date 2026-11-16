@@ -1428,5 +1428,8 @@
    ],
    "actors": []
   }
- ]
+ ],
+ "historicalSnapshot": true,
+ "supersededBy": "scene-critical-audit-2026-11-16.json",
+ "verificationNote": "Authoring snapshot before the critical source comparison. Current road geometry and unresolved limitations are recorded by the superseding audit."
 }

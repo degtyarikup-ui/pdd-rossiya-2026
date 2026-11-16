@@ -1000,22 +1000,6 @@
  ],
  "markings": [
   {
-   "id": "axis",
-   "type": "dashed",
-   "colour": "white",
-   "points": [
-    [
-     0,
-     -91
-    ],
-    [
-     0,
-     91
-    ]
-   ],
-   "width": 0.13
-  },
-  {
    "id": "yellow_edge",
    "type": "solid",
    "colour": "yellow",
