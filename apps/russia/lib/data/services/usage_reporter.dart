@@ -10,6 +10,7 @@ import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum UsageFeature {
+  appOpen('app_open'),
   tickets,
   topics,
   exam,

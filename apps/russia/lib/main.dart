@@ -205,7 +205,7 @@ Future<Widget> _initializeApplication(
 
   // Уведомление о новой установке в Telegram (fire-and-forget, не блокирует старт).
   unawaited(InstallReporter.reportIfNeeded());
-  unawaited(UsageReporter.instance.flush());
+  UsageReporter.track(UsageFeature.appOpen);
   unawaited(ErrorReporter.instance.flush());
 
   // Инициализация сервиса звуковых эффектов (правильный/неправильный ответ)
@@ -329,7 +329,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
       TtsService.instance.setAppActive(true).ignore();
       unawaited(PremiumService.instance.refreshDailyLimits());
       unawaited(NotificationInboxService.instance.refresh());
-      unawaited(UsageReporter.instance.flush());
+      UsageReporter.track(UsageFeature.appOpen);
       unawaited(ErrorReporter.instance.flush());
       SupportInbox.instance.start();
     } else if (state == AppLifecycleState.paused) {

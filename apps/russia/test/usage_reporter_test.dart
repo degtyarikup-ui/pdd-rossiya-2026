@@ -18,6 +18,27 @@ void main() {
   tearDown(() => debugDefaultTargetPlatformOverride = null);
 
   test(
+    'app opens use the durable usage outbox without requiring an account',
+    () async {
+      final requests = <Map<String, dynamic>>[];
+      final reporter = UsageReporter(
+        endpoint: 'https://test',
+        secret: 'test',
+        client: MockClient((request) async {
+          expect(request.headers.containsKey('authorization'), isFalse);
+          requests.add(jsonDecode(request.body) as Map<String, dynamic>);
+          return http.Response('{}', 200);
+        }),
+      );
+      await reporter.record(UsageFeature.appOpen);
+      await reporter.record(UsageFeature.tickets);
+      expect(requests.first['events'].single['feature'], 'app_open');
+      expect(requests.first['installId'], requests.last['installId']);
+      expect(requests.last['events'].single['feature'], 'tickets');
+    },
+  );
+
+  test(
     'offline events retry with original IDs and times; concurrent starts survive',
     () async {
       var online = false;

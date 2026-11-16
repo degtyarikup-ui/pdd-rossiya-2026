@@ -226,12 +226,12 @@ if(process.argv.includes('--serve')) {
   },null,{timeout:3000});
   assert.equal(await activityCard.locator('.an-caption,.an-day-details,.an-legend').count(),0);
   const days=[
-   {date:'2026-11-06',total:25,android:10,ios:20},
+   {date:'2026-11-06',total:30,android:10,ios:20},
    {date:'2026-11-07',total:0,android:0,ios:0},
    {date:'2026-11-08',total:20,android:0,ios:20},
   ];
-  await page.evaluate(days=>anRenderActivity({users:{activity:{days}}}),days);
-  assert.match(await activitySummary.innerText(),/Среднее\s*13/);
+  await page.evaluate(days=>anRenderActivity({usage:{activity:{days}}}),days);
+  assert.match(await activitySummary.innerText(),/Среднее\s*15/);
   assert.deepEqual(await activityChart.locator('svg > text').allTextContents(),['0','30','6.11','7.11','8.11']);
   assert.equal(await activityChart.locator('rect[data-i]').count(),days.length);
   const segments=await activityChart.locator('svg > path').evaluateAll(paths=>paths.map(path=>{
@@ -241,7 +241,10 @@ if(process.argv.includes('--serve')) {
   const [android,ios,iosOnly]=segments;
   assert.deepEqual(segments.map(segment=>segment.color),['#0574F8','#89919F','#89919F']);
   const markers=await activitySummary.locator('.an-dot').evaluateAll(dots=>dots.map(dot=>getComputedStyle(dot).backgroundColor));
-  assert.deepEqual(markers,['rgb(5, 116, 248)','rgb(137, 145, 159)']);
+  assert.deepEqual(markers,[]);
+  assert.equal(await activitySummary.locator(':scope > span').count(),2);
+  assert.doesNotMatch(await activitySummary.innerText(),/Google|iOS/);
+  assert.doesNotMatch(await activityCard.innerText(),/Аккаунты · без гостей/);
   assert.equal(android.x,ios.x);
   assert.equal(android.width,ios.width);
   assert.ok(Math.abs(android.y-ios.y-ios.height)<0.001,'the segments touch');
@@ -250,25 +253,25 @@ if(process.argv.includes('--serve')) {
   await activityChart.locator('rect[data-i="0"]').hover();
   assert.match(await page.locator('#an-tip').innerText(),/Google Play \/ Android\s*10[\s\S]*iOS\s*20/);
   await page.evaluate(days=>{
-    anRenderActivity({users:{activity:{days,comparison:{minute:852,today:0,average:12,days:3}}}});
+    anRenderActivity({usage:{activity:{days,comparison:{minute:852,today:0,average:12,days:3}}}});
   },days);
-  assert.match(await activitySummary.innerText(),/Среднее\s*13/);
+  assert.match(await activitySummary.innerText(),/Среднее\s*15/);
   assert.doesNotMatch(await activitySummary.innerText(),/Среднее к/);
-  await page.evaluate(days=>anRenderActivity({users:{activity:{days:days.slice(-1)}}}),days);
+  await page.evaluate(days=>anRenderActivity({usage:{activity:{days:days.slice(-1)}}}),days);
   assert.match(await activitySummary.innerText(),/Среднее\s*—/);
-  await page.evaluate(days=>anRenderActivity({users:{activity:{days:[{date:'2026-11-05',total:null},...days]}}}),days);
-  assert.match(await activitySummary.innerText(),/Среднее\s*13/);
+  await page.evaluate(days=>anRenderActivity({usage:{activity:{days:[{date:'2026-11-05',total:null},...days]}}}),days);
+  assert.match(await activitySummary.innerText(),/Среднее\s*15/);
   const periodDays=Array.from({length:90},(_,i)=>({
    date:new Date(Date.UTC(2026,7,17+i)).toISOString().slice(0,10),
    total:i<60?1000:i<83?300:i<89?400:166,
    android:0,ios:0,
   }));
   for(const [period,expected] of [[7,'400'],[30,'321'],[90,'779'],[1,'—']]){
-   await page.evaluate(days=>anRenderActivity({users:{activity:{days}}}),periodDays.slice(-period));
+   await page.evaluate(days=>anRenderActivity({usage:{activity:{days}}}),periodDays.slice(-period));
    assert.match(await activitySummary.innerText(),new RegExp('Среднее\\s*'+expected),'daily average follows the '+period+'-day period');
    assert.match(await activitySummary.innerText(),/Сегодня\s*166/);
   }
-  await page.evaluate(()=>anRenderActivity({users:{activity:{days:[]}}}));
+  await page.evaluate(()=>anRenderActivity({usage:{activity:{days:[]}}}));
   assert.equal(await activitySummary.innerText(),'');
   await page.evaluate(()=>anRenderActivity(window.__anData));
 
@@ -281,7 +284,7 @@ if(process.argv.includes('--serve')) {
   assert.equal(await page.locator('#an-now .an-big:visible').count(),4);
   assert.equal(await page.locator('#an-now button').count(),0);
   const cards=page.locator('#analytics-view .an-card:not(.an-kpi)');
-  assert.equal(await cards.count(),11);
+  assert.equal(await cards.count(),13);
   for(const card of await cards.all()){
    const toggle=card.locator('.an-fold'), body=page.locator('#'+await toggle.getAttribute('aria-controls'));
    await toggle.click();
@@ -306,9 +309,27 @@ if(process.argv.includes('--serve')) {
   const geo=await page.locator('.an-geo-card').boundingBox();
   assert.ok(geo.width>desktop.width*1.9,'geography uses full content width');
   const auth=await page.locator('#an-auth-table').innerText();
-  await page.locator('[data-chart="site"]').click();
-  assert.match(await page.locator('#an-dynamics-summary').innerText(),/Просмотры/);
-  await page.locator('[data-chart="app"]').click();
+  assert.equal(await page.locator('[data-chart]').count(),0);
+  assert.match(await page.locator('#an-site-summary').innerText(),/Просмотры/);
+  const activityBox=await activityCard.boundingBox();
+  const launchesBox=await page.locator('#an-launches').boundingBox();
+  const accountsBox=await page.locator('#an-registrations').boundingBox();
+  assert.equal(activityBox.y,launchesBox.y);
+  assert.equal(launchesBox.y,accountsBox.y);
+  assert.ok(launchesBox.x<accountsBox.x);
+  assert.ok(launchesBox.height<=activityBox.height+2,'growth cards stay compact');
+  const siteBox=await page.locator('#an-site-activity').boundingBox();
+  assert.ok(siteBox.y>geo.y+geo.height,'site activity is a separate lower card');
+  const expectedGrowth=await page.evaluate(()=>({
+   launches:anNum(anSum(window.__anData.timeline,d=>d.installs)),
+   registrations:anNum(window.__anData.users.registrations)
+  }));
+  assert.equal(await page.locator('#an-launches-total').innerText(),expectedGrowth.launches);
+  assert.equal(await page.locator('#an-registrations-total').innerText(),expectedGrowth.registrations);
+  for(const id of ['an-installs-chart','an-registrations-chart']){
+   await page.locator('#'+id+' rect[data-i="0"]').hover();
+   assert.match(await page.locator('#an-tip').innerText(),id==='an-installs-chart'?/Первые запуски/:/Новые аккаунты/);
+  }
   await page.locator('[data-usage="exam"]').click();
   assert.equal(await page.locator('#an-usage-details').evaluate(el=>el.open),true);
   await page.locator('#an-usage-details>summary').click();

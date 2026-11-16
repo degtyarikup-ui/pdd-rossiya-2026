@@ -63,6 +63,41 @@ test('current Flutter iOS payload is accepted and stored with canonical platform
   assert.equal(writes.length, 0);
 });
 
+test('anonymous app opens and mode starts share one daily installation, without inflating mode usage', async () => {
+  const { post, body, buffer, kv } = setup();
+  body.events = ['app_open', 'tickets', 'app_open', 'exam'].map((feature, i) => ({
+    id: i.toString(16).padStart(32, '0'), feature, ts: Date.now(),
+  }));
+  assert.equal((await post(body)).status, 200);
+  assert.equal((await post(body)).status, 200);
+  assert.equal((await post({ ...body, installId: 'c'.repeat(32), platform: 'iOS', events: [body.events[0]] })).status, 200);
+  await buffer.flush();
+  const days = [...kv].filter(([key]) => key.startsWith('day:')).map(([key, value]) => ({date: key.slice(4), data: JSON.parse(value)}));
+  assert.equal(days.length, 1);
+  const snapshot = usageSnapshot(days, 'ru');
+  assert.deepEqual(snapshot.activity.days, [{date: days[0].date, total: 2, android: 1, ios: 1, web: 0, unknown: 0}]);
+  assert.equal(Object.values(snapshot.features).reduce((n, feature) => n + feature.starts, 0), 2);
+  assert.equal(snapshot.features.app_open, undefined);
+  assert.ok(!JSON.stringify(snapshot).includes(body.installId));
+  assert.equal(usageSnapshot(days, 'by').activity.days[0].total, 0);
+});
+
+test('activity history unions legacy feature IDs and preserves unknown platforms instead of guessing', () => {
+  const id = 'a'.repeat(32), other = 'b'.repeat(32);
+  const days = [
+    {date: '2026-10-07', data: null},
+    {date: '2026-10-08', data: {usage: {tickets: {installations: {[id]: true}}, exam: {installations: {[id]: true, [other]: true}}}}},
+    {date: '2026-10-09', data: {usage: {tickets: {installations: {[id]: true}}}, activity: {[id]: 'android'}}},
+    {date: '2026-10-10', data: null},
+  ];
+  assert.deepEqual(usageSnapshot(days).activity.days, [
+    {date: '2026-10-07', total: null},
+    {date: '2026-10-08', total: 2, android: 0, ios: 0, web: 0, unknown: 2},
+    {date: '2026-10-09', total: 1, android: 1, ios: 0, web: 0, unknown: 0},
+    {date: '2026-10-10', total: 0, android: 0, ios: 0, web: 0, unknown: 0},
+  ]);
+});
+
 test('platform compatibility does not accept unknown names or write rejected batches', async () => {
   const { post, body, state, writes } = setup();
   for (const platform of ['IOS', 'macOS', 'Android', 'unknown', '', null]) {
@@ -103,6 +138,8 @@ test('usage uniques are a period union, Moscow midnight is respected, raw IDs st
   const snapshot = usageSnapshot(days);
   assert.deepEqual(snapshot.features.game, { starts: 3, installations: 2 });
   assert.deepEqual(snapshot.timeline.map(d => d.features.game.installations), [null, 1, 2]);
+  assert.deepEqual(snapshot.activity.days.map(d => d.total), [null, 1, 2]);
+  assert.deepEqual(snapshot.activity.days.slice(1).map(d => d.android), [1, 2]);
   assert.ok(ids.every(id => !JSON.stringify(snapshot).includes(id)));
   assert.equal(usageSnapshot(days, 'by').features.game.starts, 0);
   const response = await worker.fetch(new Request('https://w.test/api/admin/stats?days=1', { headers: { authorization: 'Bearer pw' } }), env);

@@ -58,7 +58,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-pagination{display:flex;align-items:center;gap:8px;white-space:nowrap}.an-pagination button{border:0;background:#F4F5F7;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;color:var(--an-text)}.an-pagination button:disabled{opacity:.3;cursor:default}
 .an-help{position:static;font-size:12px;line-height:1.65;text-align:left;color:var(--an-muted);flex-shrink:0}.an-help summary{list-style:none;cursor:pointer;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:0;background:#F4F5F7;border-radius:50%;font-size:11px;color:var(--an-muted);font-weight:500}.an-help summary::-webkit-details-marker{display:none}.an-help[open] summary{color:white;background:var(--an-text)}.an-help>div{position:absolute;right:20px;top:58px;width:280px;max-width:calc(100% - 40px);z-index:30;padding:16px 18px;background:var(--an-text);color:white;border:0;border-radius:16px;box-shadow:0 12px 40px #17191e25}
 .an-audience{display:flex;justify-content:space-between;gap:16px;padding:0 2px 12px;flex-wrap:wrap;font-size:11px;color:var(--an-muted)}.an-audience b{color:var(--an-text);margin-left:6px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
-.an-activity-summary{display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:16px;align-items:end;margin:4px 0 24px}.an-activity-summary>span{display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--an-muted)}.an-activity-summary b{color:var(--an-text);font-size:21px;font-weight:550;line-height:1;letter-spacing:-.6px;font-variant-numeric:tabular-nums}.an-activity-summary>span:first-child b{font-size:40px;letter-spacing:-1.8px;color:var(--an-accent)}
+.an-activity-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:end;margin:4px 0 24px}.an-activity-summary>span{display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--an-muted)}.an-activity-summary b{color:var(--an-text);font-size:21px;font-weight:550;line-height:1;letter-spacing:-.6px;font-variant-numeric:tabular-nums}.an-activity-summary>span:first-child b{font-size:40px;letter-spacing:-1.8px;color:var(--an-accent)}
 .an-act-label{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:6px;font-size:11px;color:var(--an-muted);line-height:1}.an-act-label svg{display:inline-block;vertical-align:middle;flex-shrink:0}
 .an-activity-card .an-head{margin-bottom:24px}.an-chart-card .an-head{margin-bottom:24px}.an-dynamics-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:4px 0 24px}.an-dynamics-summary>span{display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--an-muted)}.an-dynamics-summary b{color:var(--an-text);font-size:40px;font-weight:550;line-height:1;letter-spacing:-1.8px;font-variant-numeric:tabular-nums}
 .an-day-details{margin-top:16px}.an-day-details>summary{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--an-text);cursor:pointer;list-style:none;padding-top:14px;border-top:1px solid #F2F3F5}.an-day-details>summary::-webkit-details-marker{display:none}.an-day-details>summary:after{content:'+';font-size:18px;color:var(--an-muted)}.an-day-details[open]>summary:after{content:'−'}.an-day-details .an-table-wrap{max-height:320px;margin-top:18px}
@@ -94,6 +94,8 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 #analytics-view .an-folded .an-head{margin-bottom:0}
 .an-folded .an-head :is(.an-tabs,.an-help,.an-scope,.an-subtitle,.an-usage-total){display:none}
 #analytics-view [id^="an-body-"][hidden]{display:none}
+.an-growth-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;min-width:0}.an-growth-grid>.an-card{margin:0}.an-growth-grid .an-title{font-size:14px}.an-growth-grid .an-head{min-height:28px}.an-growth-total{font-size:40px;line-height:1;letter-spacing:-1.8px;font-weight:550;font-variant-numeric:tabular-nums;margin:4px 0 24px}.an-growth-period{font-size:11px;line-height:1.4;color:var(--an-muted);margin-bottom:10px}.an-growth-grid .an-chart{min-height:190px}
+@media(max-width:640px){.an-activity-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.an-growth-grid{gap:10px}.an-growth-grid .an-card{padding:16px 12px}.an-growth-grid .an-title{font-size:12px;letter-spacing:-.2px}.an-growth-grid .an-fold{gap:4px}.an-growth-total{font-size:32px}.an-growth-grid .an-chart{min-height:150px}}
 </style>
 <div class="an-grid" id="an-now" aria-label="Текущее состояние аккаунтов">
  ${kpis.map(([key, label, help]) => `<div class="an-card an-kpi${key === 'active1' ? ' is-primary' : ''}" title="${help}"><div class="an-kpi-top">${label}</div><div class="an-big" data-kpi="${key}">—</div></div>`).join('')}
@@ -101,17 +103,20 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 <div class="an-period" id="an-period"></div>
 <div class="an-charts-grid">
  <div class="an-card an-activity-card">
-  <div class="an-head"><div><div class="an-title">${cardToggle('activity', 'Активность по дням')}</div><div class="an-subtitle">Аккаунты · без гостей</div></div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Аккаунты, обращавшиеся к серверу за день, без гостей. Синий сегмент включает все Android-сборки, в том числе Google Play и RuStore. Аккаунт, активный на Android и iOS, входит в оба сегмента. В общем итоге он учитывается один раз. Среднее — по завершённым дням с данными в выбранном периоде. Сегодня — неполный день, в среднее не входит.</div></details></div>
+  <div class="an-head"><div class="an-title">${cardToggle('activity', 'Активность по дням')}</div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Уникальные установки приложения за день, включая пользователей без входа. Повторные открытия и запуски разных режимов считаются один раз. До обновления приложения учитываются запуски режимов; новые версии также отправляют открытия приложения. У старой истории платформа может быть неизвестна. Синий сегмент — Android, включая Google Play и RuStore. Среднее — по завершённым дням с данными в выбранном периоде. Сегодня в среднее не входит.</div></details></div>
   <div id="an-body-activity">
   <div class="an-activity-summary" id="an-activity-summary"></div>
   <div class="an-chart" id="an-activity-chart"></div>
   </div>
  </div>
- <div class="an-card an-chart-card">
-  <div class="an-head"><div class="an-title">${cardToggle('growth', 'Рост аудитории')}</div><div class="an-tabs" id="an-chart-tabs"><button type="button" data-chart="app" class="active" aria-pressed="true">Приложение</button><button type="button" data-chart="site" aria-pressed="false">Сайт</button></div></div>
-  <div id="an-body-growth">
-  <div class="an-dynamics-summary" id="an-dynamics-summary"></div>
-  <div class="an-chart" id="an-installs-chart"></div><div class="an-caption" id="an-installs-caption"></div>
+ <div class="an-growth-grid">
+  <div class="an-card an-chart-card" id="an-launches">
+   <div class="an-head"><div class="an-title">${cardToggle('launches', 'Первые запуски')}</div></div>
+   <div id="an-body-launches"><div class="an-growth-period">За период</div><div class="an-growth-total" id="an-launches-total"></div><div class="an-chart" id="an-installs-chart"></div><div class="an-caption" id="an-installs-caption"></div></div>
+  </div>
+  <div class="an-card an-chart-card" id="an-registrations">
+   <div class="an-head"><div class="an-title">${cardToggle('registrations', 'Новые аккаунты')}</div></div>
+   <div id="an-body-registrations"><div class="an-growth-period">За период</div><div class="an-growth-total" id="an-registrations-total"></div><div class="an-chart" id="an-registrations-chart"></div></div>
   </div>
  </div>
 </div>
@@ -166,6 +171,10 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <details class="an-day-details" id="an-details-articles"><summary>Статьи, с которых пришли аккаунты</summary><div class="an-table-wrap" id="an-acquisition-articles"></div></details>
   <div class="an-caption">Источник аккаунта определяется по метке ссылки или переходу с сайта. Для органики Google Play приложение получает общую метку без разбивки на поиск и рекомендации.</div>
   </div>
+</div>
+<div class="an-card an-chart-card" id="an-site-activity">
+ <div class="an-head"><div class="an-title">${cardToggle('site', 'Активность сайта')}</div></div>
+ <div id="an-body-site"><div class="an-dynamics-summary" id="an-site-summary"></div><div class="an-chart" id="an-site-chart"></div></div>
 </div>
 <div class="an-acquisition-grid">
   <div class="an-card"><div class="an-head"><div class="an-title">${cardToggle('sources', 'Источники сайта')}</div><details class="an-help"><summary aria-label="Об источниках сайта">i</summary><div>Просмотры страниц и нажатия на ссылки магазинов или веб-приложения. Это события, а не уникальные люди. Метка сайта не подтверждает источник установки.</div></details></div><div id="an-body-sources"><div class="an-table-wrap" id="an-sources"></div></div></div>
@@ -267,7 +276,7 @@ var anBarCharts = new WeakMap();
 var anBarResize = new ResizeObserver(function (entries) {
   entries.forEach(function (entry) {
     var el = entry.target, width = el.clientWidth, svg = el.firstElementChild;
-    if (!width || !svg || svg.tagName !== 'svg' || Number(svg.getAttribute('width')) === Math.max(240, width)) return;
+    if (!width || !svg || svg.tagName !== 'svg' || Number(svg.getAttribute('width')) === Math.max(120, width)) return;
     var chart = anBarCharts.get(el);
     anBars(el, chart.bars, chart.height, chart.stacked);
   });
@@ -275,7 +284,7 @@ var anBarResize = new ResizeObserver(function (entries) {
 function anBars(el, bars, height, stacked) {
   if (!anBarCharts.has(el)) anBarResize.observe(el);
   anBarCharts.set(el, {bars:bars, height:height, stacked:stacked});
-  var W = Math.max(240, el.clientWidth), H = height, padL = 54, padB = 28, padT = 12;
+  var W = Math.max(120, el.clientWidth), H = height, padL = el.clientWidth < 260 ? 36 : 54, padB = 28, padT = 12;
   var plotW = W - padL, plotH = H - padB - padT, n = bars.length;
   var segments = bars.map(function (b) {
     return (stacked ? b.segments : [b]).filter(function (segment) { return segment.value > 0; });
@@ -329,7 +338,7 @@ function anBuckets(tl) {
 }
 function anSum(days, fn) { return days.reduce(function (a, d) { return a + (fn(d) || 0); }, 0); }
 
-var anChartMode = 'app', anGeoMode = 'countries', anGeoPage = 0, anGeoSort = 'accounts', anGeoDescending = true;
+var anGeoMode = 'countries', anGeoPage = 0, anGeoSort = 'accounts', anGeoDescending = true;
 var AN_GEO_LABELS = {"regions": {"ru|moscow": "Москва", "ru|moscow oblast": "Московская область", "ru|st.-petersburg": "Санкт-Петербург", "ru|saint petersburg": "Санкт-Петербург", "ru|krasnodar krai": "Краснодарский край", "ru|sverdlovsk oblast": "Свердловская область", "ru|bashkortostan republic": "Башкортостан", "ru|rostov": "Ростовская область", "ru|rostov oblast": "Ростовская область", "ru|mariy-el republic": "Марий Эл", "ru|novosibirsk oblast": "Новосибирская область", "ru|leningradskaya oblast'": "Ленинградская область", "ru|leningrad oblast": "Ленинградская область", "ru|voronezh oblast": "Воронежская область", "ru|stavropol kray": "Ставропольский край", "ru|kaliningrad oblast": "Калининградская область", "ru|belgorod oblast": "Белгородская область", "ru|udmurtiya republic": "Удмуртия", "ru|kostroma oblast": "Костромская область", "ru|penza oblast": "Пензенская область", "ru|orenburg oblast": "Оренбургская область", "ru|ulyanovsk": "Ульяновская область", "ru|samara oblast": "Самарская область", "ru|perm krai": "Пермский край", "ru|tver oblast": "Тверская область", "ru|kursk oblast": "Курская область", "ru|chelyabinsk": "Челябинская область", "ru|vologda oblast": "Вологодская область"}, "cities": {"ru|moscow": "Москва", "ru|saint petersburg": "Санкт-Петербург", "ru|st petersburg": "Санкт-Петербург", "ru|khimki": "Химки", "ru|krasnodar": "Краснодар", "ru|yekaterinburg": "Екатеринбург", "ru|novosibirsk": "Новосибирск", "ru|rostov-on-don": "Ростов-на-Дону", "ru|ufa": "Уфа", "ru|kazan": "Казань", "ru|samara": "Самара", "ru|perm": "Пермь", "ru|chelyabinsk": "Челябинск", "ru|voronezh": "Воронеж", "ru|kaliningrad": "Калининград", "ru|belgorod": "Белгород", "ru|penza": "Пенза", "ru|orenburg": "Оренбург", "ru|ulyanovsk": "Ульяновск", "ru|vologda": "Вологда"}};
 function anGeoName(row) { return (AN_GEO_LABELS[anGeoMode]||{})[(row.country+'|'+row.name).toLowerCase()] || row.name; }
 function anCountryFlag(raw) {
@@ -343,22 +352,29 @@ function anTable(headers, rows) {
 }
 function anCell(v) { return '<td>'+anNum(v)+'</td>'; }
 function anPlot(data) {
- var tl=data.timeline||[], u=data.users||{}, site=anChartMode==='site';
- var first=site?'Просмотры':'Первые запуски', second=site?'Переходы':'Новые аккаунты';
- document.getElementById('an-dynamics-summary').innerHTML=[[first,anSum(tl,function(d){return site?d.views:d.installs;})],[second,site?anSum(tl,function(d){return d.clicks;}):u.registrations]].map(function(m,i){return '<span><span class="an-act-label"><i class="an-dot" aria-hidden="true" style="background:'+(i?'#22a875':'#0574F8')+'"></i>'+m[0]+'</span><b>'+(m[1]==null?'—':anNum(m[1]))+'</b></span>';}).join('');
- var buckets=anBuckets(tl), bars=[];
+ var tl=data.timeline||[], u=data.users;
+ document.getElementById('an-launches-total').textContent=anNum(anSum(tl,function(d){return d.installs;}));
+ document.getElementById('an-registrations-total').textContent=u?anNum(u.registrations):'—';
+ document.getElementById('an-site-summary').innerHTML=[['Просмотры',anSum(tl,function(d){return d.views;})],['Переходы',anSum(tl,function(d){return d.clicks;})]].map(function(m,i){return '<span><span class="an-act-label"><i class="an-dot" aria-hidden="true" style="background:'+(i?'#22a875':'#0574F8')+'"></i>'+m[0]+'</span><b>'+anNum(m[1])+'</b></span>';}).join('');
+ var buckets=anBuckets(tl), bars=[], launches=[], registrations=[];
  buckets.forEach(function(bk){
-  var a=anSum(bk.days,function(d){return site?d.views:d.installs;});
-  var b=anSum(bk.days,function(d){return site?d.clicks:(u.registrationsByDay||{})[d.date];});
+  var a=anSum(bk.days,function(d){return d.views;});
+  var b=anSum(bk.days,function(d){return d.clicks;});
   var head=anDayLabel(bk.from,true)+(bk.to!==bk.from?' — '+anDayLabel(bk.to):'');
-  var tip='<b>'+head+'</b><div class="an-tip-row"><span>'+first+'</span><b>'+anNum(a)+'</b></div><div class="an-tip-row"><span>'+second+'</span><b>'+(site||u?anNum(b):'—')+'</b></div>';
-  bars.push({value:a,color:'#0574F8',label:anDayLabel(bk.to),tip:tip});
-  bars.push({value:b,color:'#22a875',label:'',tip:tip});
+  var tip='<b>'+head+'</b><div class="an-tip-row"><span>Просмотры</span><b>'+anNum(a)+'</b></div><div class="an-tip-row"><span>Переходы</span><b>'+anNum(b)+'</b></div>';
+  bars.push({value:a,color:AN_C.accent,label:anDayLabel(bk.to),tip:tip});
+  bars.push({value:b,color:AN_C.green,label:'',tip:tip});
+  [['Первые запуски',launches,anSum(bk.days,function(d){return d.installs;}),AN_C.accent],['Новые аккаунты',registrations,anSum(bk.days,function(d){return u&&(u.registrationsByDay||{})[d.date];}),AN_C.green]].forEach(function(m){
+   m[1].push({segments:[{value:m[2],color:m[3]}],label:anDayLabel(bk.to),tip:'<b>'+head+'</b><div class="an-tip-row"><span>'+m[0]+'</span><b>'+anNum(m[2])+'</b></div>'});
+  });
  });
- var el=document.getElementById('an-installs-chart');
- if(tl.length) anBars(el,bars,205); else el.innerHTML='<div class="an-empty">Нет данных за период</div>';
+ [['an-installs-chart',launches,true],['an-registrations-chart',registrations,!!u]].forEach(function(m){
+  var el=document.getElementById(m[0]);
+  if(tl.length&&m[2])anBars(el,m[1],205,true);else el.innerHTML='<div class="an-empty">Нет данных за период</div>';
+ });
+ var el=document.getElementById('an-site-chart');
+ if(tl.length)anBars(el,bars,205);else el.innerHTML='<div class="an-empty">Нет данных за период</div>';
  document.getElementById('an-installs-caption').textContent=tl.some(function(d){return d.date<AN_RELIABLE_FROM;})?'До 25.09 данные о первых запусках неполные.':'';
- document.querySelectorAll('[data-chart]').forEach(function(b){b.classList.toggle('active',b.dataset.chart===anChartMode);b.setAttribute('aria-pressed',String(b.dataset.chart===anChartMode));});
 }
 function anPercent(value,total) { var pct=total?value/total*100:0;return pct>0&&pct<1?'&lt;1%':Math.round(pct)+'%'; }
 function anShare(value,total) {
@@ -393,31 +409,24 @@ function anRenderGeo() {
 }
 var AN_ACTIVITY_SERIES = [
  {key:'android', label:'Google Play / Android', icon:'gplay', color:AN_C.accent},
- {key:'ios', label:'iOS', icon:'apple', color:'#89919F'}
+ {key:'ios', label:'iOS', icon:'apple', color:'#89919F'},
+ {key:'web', label:'Веб', icon:'web', color:AN_C.green},
+ {key:'unknown', label:'Платформа неизвестна', icon:null, color:'#CDD2DA'}
 ];
 function anRenderActivity(data) {
- var activity=data.users&&data.users.activity, days=activity?activity.days:[], available=days.filter(function(d){return d.total!=null;});
+ var activity=data.usage&&data.usage.activity, days=activity?activity.days:[], available=days.filter(function(d){return d.total!=null;});
  var latest=available[available.length-1];
  // The selected period ends today; only its completed days enter the mean.
  var completed=available.filter(function(d){return d.date<days[days.length-1].date;});
  var average=completed.length?Math.round(completed.reduce(function(sum,d){return sum+d.total;},0)/completed.length):null;
- var labels=AN_ACTIVITY_SERIES.map(function(series){return anSvgIcon(series.icon)+series.label;});
+ var labels=AN_ACTIVITY_SERIES.map(function(series){return (series.icon?anSvgIcon(series.icon):'')+series.label;});
  document.getElementById('an-activity-summary').innerHTML=latest?[
- ['Сегодня',latest.total]
- ].concat(AN_ACTIVITY_SERIES.map(function(series,i){
-  var marker='<i class="an-dot" aria-hidden="true" style="background:'+series.color+'"></i>';
-  return ['<span class="an-act-label">'+marker+labels[i]+'</span>',latest[series.key]];
- }),[['Среднее',average]])
- .map(function(m){return '<span>'+m[0]+'<b>'+(m[1]==null?'—':anNum(m[1]))+'</b></span>';}).join(''):'';
+ ['Сегодня',latest.total],['Среднее',average]
+ ].map(function(m){return '<span>'+m[0]+'<b>'+(m[1]==null?'—':anNum(m[1]))+'</b></span>';}).join(''):'';
  var bars=available.map(function(d){
-  var tip='<b>'+anDayLabel(d.date,true)+'</b>' + [
-    ['Активные аккаунты за день',d.total]
-  ].concat(AN_ACTIVITY_SERIES.map(function(series,i){
+  var tip='<b>'+anDayLabel(d.date,true)+'</b>' + [['Активные установки за день',d.total]].concat(AN_ACTIVITY_SERIES.map(function(series,i){
     return ['<span class="an-act-label">'+labels[i]+'</span>',d[series.key]];
-  }),[
-    ['<span class="an-act-label">'+anSvgIcon('web')+'Веб</span>',d.web],
-    ['Неизвестно',d.unknown]
-  ]).map(function(m){return '<div class="an-tip-row"><span>'+m[0]+'</span><b>'+anNum(m[1])+'</b></div>';}).join('');
+  })).map(function(m){return '<div class="an-tip-row"><span>'+m[0]+'</span><b>'+anNum(m[1])+'</b></div>';}).join('');
   var segments=AN_ACTIVITY_SERIES.map(function(series){return {value:d[series.key],color:series.color};});
   return {segments:segments,label:anDayLabel(d.date),tip:tip};
  });
@@ -615,12 +624,11 @@ document.getElementById('analytics-view').addEventListener('click',function(even
  anSetCardOpen(toggle,body,expanding);
  anSaveOpen(body.id,expanding);
  if(expanding && window.__anData){
-   if(body.id==='an-body-growth')anPlot(window.__anData);
+   if(['an-body-launches','an-body-registrations','an-body-site'].indexOf(body.id)!==-1)anPlot(window.__anData);
    if(body.id==='an-body-activity')anRenderActivity(window.__anData);
    if(body.id==='an-body-usage' && document.getElementById('an-usage-details').open)anRenderUsageDetails(window.__anData);
  }
 });
-document.getElementById('an-chart-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-chart]');if(b){anChartMode=b.dataset.chart;if(window.__anData)anPlot(window.__anData);}});
 document.getElementById('an-acquisition-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-acquisition]');if(b){anAcquisitionScope=b.dataset.acquisition;if(window.__anData)anRenderAcquisition(window.__anData);}});
 document.getElementById('an-geo-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-geo]');if(b){anGeoMode=b.dataset.geo;anGeoPage=0;anRenderGeo();}});
 document.getElementById('an-geo-search').addEventListener('input',function(){anGeoPage=0;anRenderGeo();});

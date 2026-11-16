@@ -6,6 +6,7 @@ export const USAGE_COLLECTION_FROM = {
 };
 // Keep the retired roundabout key so old clients and historical totals survive.
 export const USAGE_FEATURES = ['tickets', 'topics', 'exam', 'marathon', 'mistakes', 'favorites', 'feed', 'game', 'sign_swiper', 'traffic_controller', 'roundabout', 'crossroads', 'road_signs', 'parking', 'violator'];
+const USAGE_EVENTS = [...USAGE_FEATURES, 'app_open'];
 const DAY = 86400000;
 
 export async function acceptUsage(request, env, { jsonResponse, trackStatsBatch }, now = Date.now()) {
@@ -17,7 +18,7 @@ export async function acceptUsage(request, env, { jsonResponse, trackStatsBatch 
   if (!/^[a-f0-9]{32}$/.test(body?.installId || '') || !Array.isArray(body?.events)
     || !body.events.length || body.events.length > 50
     || !['android', 'ios', 'web'].includes(platform)) return jsonResponse({ error: 'bad usage batch' }, 400);
-  if (body.events.some(e => !e || !/^[a-f0-9]{32}$/.test(e.id || '') || !USAGE_FEATURES.includes(e.feature)
+  if (body.events.some(e => !e || !/^[a-f0-9]{32}$/.test(e.id || '') || !USAGE_EVENTS.includes(e.feature)
     || !Number.isSafeInteger(e.ts) || e.ts < now - 90 * DAY || e.ts > now + 5 * 60000
     || new Date(e.ts + 3 * 3600000).toISOString().slice(0, 10) < USAGE_FROM)) {
     return jsonResponse({ error: 'bad usage event' }, 400);
@@ -33,7 +34,12 @@ export async function acceptUsage(request, env, { jsonResponse, trackStatsBatch 
 }
 
 export function applyUsage(day, item) {
-  if (!USAGE_FEATURES.includes(item.feature) || !/^[a-f0-9]{32}$/.test(item.installation || '')) return;
+  if (!USAGE_EVENTS.includes(item.feature) || !/^[a-f0-9]{32}$/.test(item.installation || '')) return;
+  // One installation per Moscow day, whether signed in or anonymous.
+  // App opens use the same durable outbox and batched KV write as mode starts.
+  const activity = day.activity ||= {};
+  activity[item.installation] = ['android', 'ios', 'web'].includes(item.platform) ? item.platform : 'unknown';
+  if (item.feature === 'app_open') return;
   const features = day.usage ||= {};
   const feature = features[item.feature] ||= { starts: 0, installations: {} };
   feature.starts++;
@@ -56,7 +62,22 @@ export function usageSnapshot(days, app = 'all') {
     }
     return { date, features };
   });
-  return { from: USAGE_FROM, collectionFrom: Object.fromEntries(USAGE_FEATURES.map(key => [key, USAGE_COLLECTION_FROM[key] || USAGE_FROM])), timeline, features: Object.fromEntries(USAGE_FEATURES.map(key => [key, {
+  const activity = { from: USAGE_FROM, days: days.map(({ date, data }) => {
+    if (date < USAGE_FROM) return { date, total: null };
+    const installations = new Map();
+    if (['all', 'ru'].includes(app)) {
+      // Historical mode starts already include guests. Union the IDs instead
+      // of adding feature totals or account activity (both would double count).
+      for (const feature of USAGE_FEATURES) {
+        for (const id of Object.keys(data?.usage?.[feature]?.installations || {})) installations.set(id, 'unknown');
+      }
+      for (const [id, platform] of Object.entries(data?.activity || {})) installations.set(id, platform);
+    }
+    const row = { date, total: installations.size, android: 0, ios: 0, web: 0, unknown: 0 };
+    for (const platform of installations.values()) row[['android', 'ios', 'web'].includes(platform) ? platform : 'unknown']++;
+    return row;
+  }) };
+  return { from: USAGE_FROM, activity, collectionFrom: Object.fromEntries(USAGE_FEATURES.map(key => [key, USAGE_COLLECTION_FROM[key] || USAGE_FROM])), timeline, features: Object.fromEntries(USAGE_FEATURES.map(key => [key, {
     starts: totals[key].starts, installations: totals[key].ids.size,
   }])) };
 }
