@@ -461,28 +461,16 @@ export const TASKS_VIEW_HTML = `
       opacity: .8;
       transition: opacity .12s ease;
     }
-    .task-assignee-btn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border: 2px solid transparent;
-      border-radius: 50%;
-    }
-    .task-assignee-btn[aria-pressed="true"]::before { border-color: var(--primary); }
-    .task-assignee-btn[aria-pressed="true"]::after {
-      content: '✓';
+    .task-assignee-check {
       position: absolute;
       right: 0;
       bottom: 0;
-      display: grid;
-      place-items: center;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: var(--primary);
-      color: #fff;
-      font: 700 9px/1 sans-serif;
+      display: none;
+      width: 14px;
+      height: 14px;
+      pointer-events: none;
     }
+    .task-assignee-btn[aria-pressed="true"] .task-assignee-check { display: block; }
     .task-assignee-btn[aria-pressed="true"] img,
     .task-assignees .task-assignee-btn:hover img,
     .task-assignees .task-assignee-btn:focus-visible img { opacity: 1; }
@@ -1177,6 +1165,7 @@ VIEW_TITLES.tasks = 'Задачи';
         var selected = task.assignee === person.id;
         return '<button type="button" class="task-assignee-btn" data-assignee="' + person.id + '" aria-label="' + person.name + '" title="' + person.name + '" aria-pressed="' + selected + '"' + (selected ? ' aria-expanded="' + expanded + '"' : '') + ' draggable="false"' + (pendingAssignments[task.id] ? ' disabled' : '') + (assigned && !selected && !expanded ? ' hidden' : '') + '>' +
           '<img src="' + person.avatar + '" alt="" width="26" height="26" draggable="false">' +
+          '<svg class="task-assignee-check" viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="7" fill="var(--primary)" stroke="#fff" stroke-width="1.5"/><path d="M4.8 8.1 7 10.3 11.2 5.9" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
         '</button>';
       }).join('') + '</div>';
   }
