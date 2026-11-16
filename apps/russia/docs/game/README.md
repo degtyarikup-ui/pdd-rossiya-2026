@@ -779,6 +779,12 @@ tools/network/engine_sync.py ► game_godot/situations/<id>/scene.json (то, ч
 
 Редактор сцен (конструктор дорог, тест, текстуры) — `docs/game/editor.md`.
 
+Смысловая постановка новых билетных сцен без фонового декора —
+[правила сборки](scene-authoring-rules.md). [Отбор от 16 ноября 2026](scene-feasibility-2026-11-16.md)
+содержит 178 кандидатов из 265 выбранных вопросов, схемы постановки и причины
+исключений; [JSON-реестр](scene-feasibility-2026-11-16.json) сохраняет все решения.
+Это анализ возможностей, новые сцены в рамках отбора не создавались.
+
 После правки сети (редактор: `./scripts/network_editor.sh` → http://127.0.0.1:8950/, он
 сам вызывает сборку при сохранении) закоммитьте и `network/*.json`, и `network/build/`,
 и `situations/*/scene.json`. Проверка сети: `tools/network/.venv/bin/python tools/network/check.py`
