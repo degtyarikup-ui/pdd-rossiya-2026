@@ -12,6 +12,13 @@ KEYS = {
     'homeWidgetDone': 'doneLabel',
     'homeWidgetContinue': 'continueLabel',
     'homeWidgetStart': 'startLabel',
+    'homeWidgetFlameName': 'streak_widget_flame_name',
+    'homeWidgetFlameDescription': 'streak_widget_flame_description',
+    'homeWidgetMinimalName': 'streak_widget_minimal_name',
+    'homeWidgetMinimalDescription': 'streak_widget_minimal_description',
+    'homeWidgetRecordName': 'streak_widget_record_name',
+    'homeWidgetRecordDescription': 'streak_widget_record_description',
+
 }
 for language in ('ru', 'en', 'kk'):
     data = json.loads((ROOT / f'lib/l10n/app_{language}.arb').read_text())

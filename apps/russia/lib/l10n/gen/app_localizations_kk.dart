@@ -5238,4 +5238,25 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get homeWidgetStart => 'Жаңа серияны баста';
+
+  @override
+  String get homeWidgetFlameName => 'Серия · Жалын';
+
+  @override
+  String get homeWidgetFlameDescription =>
+      'Оқу сериясы мен жеке рекорд көрсетілген жылы түсті карточка.';
+
+  @override
+  String get homeWidgetMinimalName => 'Серия · Минимал';
+
+  @override
+  String get homeWidgetMinimalDescription =>
+      'Ықшам көріністегі үлкен серия санағышы мен жеке рекорд.';
+
+  @override
+  String get homeWidgetRecordName => 'Серия · Рекорд';
+
+  @override
+  String get homeWidgetRecordDescription =>
+      'Прогресс жолағы бар серия мен жеке рекорд.';
 }

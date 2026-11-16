@@ -1805,5 +1805,11 @@
   "homeWidgetBest": "Рекорд күн",
   "homeWidgetDone": "Бүгін орындалды",
   "homeWidgetContinue": "Бүгін серияны жалғастыр",
-  "homeWidgetStart": "Жаңа серияны баста"
+  "homeWidgetStart": "Жаңа серияны баста",
+  "homeWidgetFlameName": "Серия · Жалын",
+  "homeWidgetFlameDescription": "Оқу сериясы мен жеке рекорд көрсетілген жылы түсті карточка.",
+  "homeWidgetMinimalName": "Серия · Минимал",
+  "homeWidgetMinimalDescription": "Ықшам көріністегі үлкен серия санағышы мен жеке рекорд.",
+  "homeWidgetRecordName": "Серия · Рекорд",
+  "homeWidgetRecordDescription": "Прогресс жолағы бар серия мен жеке рекорд."
 }

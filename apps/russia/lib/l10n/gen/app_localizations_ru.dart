@@ -5289,4 +5289,25 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get homeWidgetStart => 'Начни новую серию';
+
+  @override
+  String get homeWidgetFlameName => 'Серия · Огонёк';
+
+  @override
+  String get homeWidgetFlameDescription =>
+      'Тёплая карточка с огоньком, серией занятий и рекордом.';
+
+  @override
+  String get homeWidgetMinimalName => 'Серия · Минимал';
+
+  @override
+  String get homeWidgetMinimalDescription =>
+      'Крупный счётчик серии и рекорд в лаконичном оформлении.';
+
+  @override
+  String get homeWidgetRecordName => 'Серия · Рекорд';
+
+  @override
+  String get homeWidgetRecordDescription =>
+      'Серия и личный рекорд с полосой прогресса.';
 }

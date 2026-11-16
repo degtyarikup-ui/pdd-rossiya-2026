@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/streak_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:padding="16dp"
+    android:background="@drawable/streak_widget_record_background">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:id="@+id/streak_flame"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🔥"
+                    android:textSize="26sp"
+                    android:textColor="@color/streak_record_text"
+                    android:maxLines="2"
+                    android:importantForAccessibility="no" />
+                <TextView
+                    android:id="@+id/streak_current"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="36sp"
+                    android:textColor="@color/streak_record_text"
+                    android:textStyle="bold"
+                    android:layout_marginStart="8dp"
+                    android:maxLines="1"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="16sp"
+                    android:autoSizeMaxTextSize="36sp"
+                    android:autoSizeStepGranularity="1sp" />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/streak_label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/currentLabel"
+                android:textSize="12sp"
+                android:textColor="@color/streak_record_secondary"
+                android:maxLines="2" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="16dp">
+            <TextView
+                android:id="@+id/streak_best"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🏆 0"
+                android:textSize="18sp"
+                android:textColor="@color/streak_record_text"
+                android:maxLines="2"
+                android:textStyle="bold"
+                android:autoSizeTextType="uniform"
+                android:autoSizeMinTextSize="12sp"
+                android:autoSizeMaxTextSize="18sp" />
+            <TextView
+                android:id="@+id/streak_best_label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/bestLabel"
+                android:textSize="12sp"
+                android:textColor="@color/streak_record_secondary"
+                android:maxLines="2" />
+            <ProgressBar
+                android:id="@+id/streak_progress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="6dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="6dp"
+                android:indeterminate="false"
+                android:max="100"
+                android:progress="0"
+                android:progressTint="@color/streak_record_accent"
+                android:progressBackgroundTint="@color/streak_record_track" />
+        </LinearLayout>
+    </LinearLayout>
+    <TextView
+        android:id="@+id/streak_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/startLabel"
+        android:textSize="12sp"
+        android:textColor="@color/streak_record_accent"
+        android:maxLines="2"
+        android:layout_marginTop="8dp"
+        android:visibility="gone" />
+</LinearLayout>

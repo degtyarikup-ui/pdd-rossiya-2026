@@ -4,4 +4,10 @@
     <color name="streak_widget_secondary">#776B60</color>
     <color name="streak_widget_accent">#D85117</color>
     <color name="streak_widget_border">#F5DEC7</color>
+    <color name="streak_minimal_background">#FFFFFF</color>
+    <color name="streak_record_background">#182A46</color>
+    <color name="streak_record_text">#F8FAFF</color>
+    <color name="streak_record_secondary">#BCCBE1</color>
+    <color name="streak_record_accent">#FFBA6B</color>
+    <color name="streak_record_track">#354964</color>
 </resources>

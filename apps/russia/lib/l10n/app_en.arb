@@ -1805,5 +1805,11 @@
   "homeWidgetBest": "Best streak",
   "homeWidgetDone": "Done for today",
   "homeWidgetContinue": "Keep your streak today",
-  "homeWidgetStart": "Start a new streak"
+  "homeWidgetStart": "Start a new streak",
+  "homeWidgetFlameName": "Streak · Flame",
+  "homeWidgetFlameDescription": "A warm card with your study streak and personal best.",
+  "homeWidgetMinimalName": "Streak · Minimal",
+  "homeWidgetMinimalDescription": "A large streak counter and personal best in a clean layout.",
+  "homeWidgetRecordName": "Streak · Record",
+  "homeWidgetRecordDescription": "Your streak and personal best with a progress bar."
 }

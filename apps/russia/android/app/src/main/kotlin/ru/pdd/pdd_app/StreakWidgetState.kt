@@ -6,6 +6,9 @@ import java.util.Locale
 
 /** Calendar days rather than 24-hour durations, including DST and travel. */
 internal data class StreakWidgetState(val current: Int, val best: Int, val done: Boolean) {
+    val progressPercent: Int
+        get() = if (best > 0) ((current.toDouble() / best) * 100).toInt().coerceIn(0, 100) else 0
+
     companion object {
         fun from(storedCurrent: Int, storedBest: Int, lastActive: String?, now: Calendar = Calendar.getInstance()): StreakWidgetState {
             val format = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).apply {

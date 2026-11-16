@@ -155,7 +155,9 @@ final class PddStreakWidget: NSObject, FlutterPlugin {
       let data = try JSONSerialization.data(withJSONObject: snapshot, options: [.sortedKeys])
       if (try? Data(contentsOf: url)) != data {
         try data.write(to: url, options: .atomic)
-        WidgetCenter.shared.reloadTimelines(ofKind: "PddStudyStreak")
+        for kind in ["PddStudyStreak", "PddStudyStreakMinimal", "PddStudyStreakRecord"] {
+          WidgetCenter.shared.reloadTimelines(ofKind: kind)
+        }
       }
       result(nil)
     } catch {

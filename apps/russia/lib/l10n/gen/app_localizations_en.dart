@@ -5250,4 +5250,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeWidgetStart => 'Start a new streak';
+
+  @override
+  String get homeWidgetFlameName => 'Streak · Flame';
+
+  @override
+  String get homeWidgetFlameDescription =>
+      'A warm card with your study streak and personal best.';
+
+  @override
+  String get homeWidgetMinimalName => 'Streak · Minimal';
+
+  @override
+  String get homeWidgetMinimalDescription =>
+      'A large streak counter and personal best in a clean layout.';
+
+  @override
+  String get homeWidgetRecordName => 'Streak · Record';
+
+  @override
+  String get homeWidgetRecordDescription =>
+      'Your streak and personal best with a progress bar.';
 }

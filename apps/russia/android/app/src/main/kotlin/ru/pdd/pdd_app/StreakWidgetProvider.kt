@@ -17,14 +17,18 @@ import io.flutter.plugin.common.MethodChannel
 import org.json.JSONObject
 import java.util.Calendar
 
-class StreakWidgetProvider : AppWidgetProvider() {
+// Keep the original provider identity so already placed widgets survive updates.
+open class StreakWidgetProvider : AppWidgetProvider() {
+    private val style: StreakWidgetStyle
+        get() = StreakWidgetStyle.entries.first { it.providerClass == javaClass }
+
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
-        ids.forEach { update(context, manager, it) }
+        ids.forEach { update(context, manager, it, style) }
         scheduleMidnight(context)
     }
 
     override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) {
-        update(context, manager, id)
+        update(context, manager, id, style)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -36,7 +40,11 @@ class StreakWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onDisabled(context: Context) {
-        (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(midnightIntent(context))
+        val manager = AppWidgetManager.getInstance(context)
+        // Removing one design must not stop midnight updates for the others.
+        if (StreakWidgetStyle.entries.none { ids(context, manager, it).isNotEmpty() }) {
+            (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(midnightIntent(context))
+        }
     }
 
     companion object {
@@ -67,14 +75,21 @@ class StreakWidgetProvider : AppWidgetProvider() {
             }
         }
 
+        private fun ids(context: Context, manager: AppWidgetManager, style: StreakWidgetStyle) =
+            manager.getAppWidgetIds(ComponentName(context, style.providerClass))
+
         private fun refreshAll(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
-            val ids = manager.getAppWidgetIds(ComponentName(context, StreakWidgetProvider::class.java))
-            ids.forEach { update(context, manager, it) }
-            if (ids.isNotEmpty()) scheduleMidnight(context)
+            var hasWidgets = false
+            StreakWidgetStyle.entries.forEach { style ->
+                val installed = ids(context, manager, style)
+                hasWidgets = hasWidgets || installed.isNotEmpty()
+                installed.forEach { update(context, manager, it, style) }
+            }
+            if (hasWidgets) scheduleMidnight(context)
         }
 
-        private fun update(context: Context, manager: AppWidgetManager, id: Int) {
+        private fun update(context: Context, manager: AppWidgetManager, id: Int, style: StreakWidgetStyle) {
             val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("snapshot", null)
             val data = try { JSONObject(raw ?: "{}") } catch (_: Exception) { JSONObject() }
             val state = StreakWidgetState.from(data.optInt("current"), data.optInt("longest"),
@@ -85,7 +100,7 @@ class StreakWidgetProvider : AppWidgetProvider() {
             val wide = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) >= 250
             val tall = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT) >= 190
             fun render(wide: Boolean, tall: Boolean): RemoteViews {
-                val views = RemoteViews(context.packageName, if (wide) R.layout.streak_widget_wide else R.layout.streak_widget)
+                val views = RemoteViews(context.packageName, style.layout(wide))
                 views.setTextViewText(R.id.streak_current, current.toString())
                 views.setTextViewText(R.id.streak_best, "🏆 $best")
                 views.setTextViewText(R.id.streak_label, label("currentLabel", R.string.currentLabel))
@@ -97,6 +112,11 @@ class StreakWidgetProvider : AppWidgetProvider() {
                 })
                 views.setViewVisibility(R.id.streak_status, if (wide || tall) View.VISIBLE else View.GONE)
                 views.setFloat(R.id.streak_flame, "setAlpha", if (current > 0) 1f else 0.4f)
+                if (style == StreakWidgetStyle.RECORD) {
+                    views.setProgressBar(R.id.streak_progress, 100, state.progressPercent, false)
+                    views.setContentDescription(R.id.streak_progress,
+                        "${label("currentLabel", R.string.currentLabel)}: $current; ${label("bestLabel", R.string.bestLabel)}: $best")
+                }
                 val launch = Intent(context, MainActivity::class.java).apply {
                     action = Intent.ACTION_MAIN
                     addCategory(Intent.CATEGORY_LAUNCHER)
@@ -131,5 +151,20 @@ class StreakWidgetProvider : AppWidgetProvider() {
             (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager)
                 .set(AlarmManager.RTC, next.timeInMillis, midnightIntent(context))
         }
+    }
+}
+
+class MinimalStreakWidgetProvider : StreakWidgetProvider()
+class RecordStreakWidgetProvider : StreakWidgetProvider()
+
+internal enum class StreakWidgetStyle(val providerClass: Class<out AppWidgetProvider>) {
+    FLAME(StreakWidgetProvider::class.java),
+    MINIMAL(MinimalStreakWidgetProvider::class.java),
+    RECORD(RecordStreakWidgetProvider::class.java);
+
+    fun layout(wide: Boolean): Int = when (this) {
+        FLAME -> if (wide) R.layout.streak_widget_wide else R.layout.streak_widget
+        MINIMAL -> if (wide) R.layout.streak_widget_minimal_wide else R.layout.streak_widget_minimal
+        RECORD -> if (wide) R.layout.streak_widget_record_wide else R.layout.streak_widget_record
     }
 }

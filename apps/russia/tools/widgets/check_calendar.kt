@@ -23,5 +23,10 @@ fun main() {
     check(state("bad-date", day(2026, 11, 16)).current == 0)
     check(StreakWidgetState.from(0, 0, null, day(2026, 11, 16)) == StreakWidgetState(0, 0, false))
     check(StreakWidgetState.from(7, 2, "2026-11-16", day(2026, 11, 16)).best == 7)
-    println("13 native calendar checks passed (grace day, expiry, DST, leap day, year boundary, empty/reset).")
+    check(StreakWidgetState(0, 0, false).progressPercent == 0)
+    check(StreakWidgetState(7, 14, true).progressPercent == 50)
+    check(StreakWidgetState(14, 14, true).progressPercent == 100)
+    check(StreakWidgetState(0, 14, false).progressPercent == 0)
+    check(StreakWidgetState(Int.MAX_VALUE, Int.MAX_VALUE, true).progressPercent == 100)
+    println("18 native calendar and progress checks passed (grace day, expiry, DST, leap day, year boundary, empty/reset).")
 }

@@ -2,7 +2,37 @@ import SwiftUI
 import WidgetKit
 
 private let widgetGroup = "group.ru.pdd.pddApp.streak"
-private let widgetKind = "PddStudyStreak"
+enum StreakWidgetStyle: String {
+    // Preserve the original kind for already placed widgets.
+    case flame = "PddStudyStreak"
+    case minimal = "PddStudyStreakMinimal"
+    case record = "PddStudyStreakRecord"
+
+    var resourceName: String {
+        switch self {
+        case .flame: return "flame"
+        case .minimal: return "minimal"
+        case .record: return "record"
+        }
+    }
+    var ink: Color { self == .record ? .white : .primary }
+    var secondaryInk: Color { self == .record ? .white.opacity(0.72) : .secondary }
+    var accent: Color { self == .record ? Color(red: 1, green: 0.73, blue: 0.42) : .orange }
+
+    @ViewBuilder var background: some View {
+        switch self {
+        case .flame:
+            ZStack {
+                Color(uiColor: .secondarySystemBackground)
+                Color.orange.opacity(0.06)
+            }
+        case .minimal:
+            Color(uiColor: .systemBackground)
+        case .record:
+            Color(red: 0.08, green: 0.14, blue: 0.24)
+        }
+    }
+}
 
 struct StreakEntry: TimelineEntry {
     let date: Date
@@ -24,6 +54,7 @@ struct StreakEntry: TimelineEntry {
                   to: Calendar.current.startOfDay(for: date)), last >= yesterday else { return 0 }
         return max(0, snapshot["current"] as? Int ?? 0)
     }
+    var progress: Double { best > 0 ? min(1, max(0, Double(current) / Double(best))) : 0 }
     var best: Int { max(current, snapshot["longest"] as? Int ?? 0) }
     var done: Bool { lastActive.map { Calendar.current.isDate($0, inSameDayAs: date) } ?? false }
     func label(_ key: String) -> String {
@@ -68,86 +99,168 @@ struct StreakProvider: TimelineProvider {
 struct StreakWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: StreakEntry
-    private let orange = Color.orange
+    let style: StreakWidgetStyle
+    private var small: Bool { family == .systemSmall }
+    private var large: Bool { family == .systemLarge }
 
     private var count: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text("🔥").font(.system(size: family == .systemLarge ? 54 : 34))
+            Text("🔥").font(.system(size: large ? 48 : style == .minimal ? 26 : 32))
                 .opacity(entry.current > 0 ? 1 : 0.4).accessibilityHidden(true)
             Text(entry.current, format: .number)
-                .font(.system(size: family == .systemLarge ? 72 : 44, weight: .bold, design: .rounded))
+                .font(.system(size: large ? 64 : 40, weight: .bold, design: .rounded))
                 .minimumScaleFactor(0.4).lineLimit(1)
         }
     }
 
-    private var record: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("🏆 \(entry.best)")
-                .font(.system(size: family == .systemSmall ? 19 : 30, weight: .semibold, design: .rounded))
-                .lineLimit(1).minimumScaleFactor(0.4)
-            Text(entry.label("bestLabel")).font(.caption).foregroundStyle(.secondary)
+    private var metric: some View {
+        VStack(alignment: style == .minimal ? .center : .leading, spacing: 4) {
+            count
+            Text(entry.label("currentLabel")).font(.caption).foregroundStyle(style.secondaryInk)
                 .lineLimit(2).minimumScaleFactor(0.7)
         }.accessibilityElement(children: .combine)
     }
 
-    var body: some View {
-        Group {
-            if family == .systemSmall {
-                VStack(alignment: .leading, spacing: 4) {
-                    count
-                    Text(entry.label("currentLabel")).font(.caption).foregroundStyle(.secondary)
-                        .lineLimit(2).minimumScaleFactor(0.7)
-                    Spacer(minLength: 4)
-                    record
+    private var record: some View {
+        VStack(alignment: style == .minimal ? .center : .leading, spacing: 4) {
+            Text("🏆 \(entry.best)")
+                .font(.system(size: small ? 19 : 30, weight: .semibold, design: .rounded))
+                .lineLimit(1).minimumScaleFactor(0.4)
+            Text(entry.label("bestLabel")).font(.caption).foregroundStyle(style.secondaryInk)
+                .lineLimit(2).minimumScaleFactor(0.7)
+        }.accessibilityElement(children: .combine)
+    }
+
+    private var status: some View {
+        Label(entry.status, systemImage: entry.done ? "checkmark.circle.fill" : "sparkles")
+            .font(.caption).foregroundStyle(style.accent).lineLimit(2).minimumScaleFactor(0.7)
+    }
+
+    private var heading: some View {
+        Text(entry.label("nameLabel")).font(.headline).foregroundStyle(style.secondaryInk)
+            .lineLimit(2).minimumScaleFactor(0.7)
+    }
+
+    private var progress: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.white.opacity(0.15))
+                Capsule().fill(style.accent).frame(width: geometry.size.width * entry.progress)
+            }
+        }.frame(height: large ? 8 : 5)
+            .accessibilityElement()
+            .accessibilityLabel(Text(entry.label("bestLabel")))
+            .accessibilityValue(Text(entry.progress, format: .percent.precision(.fractionLength(0))))
+    }
+
+    @ViewBuilder private var flameLayout: some View {
+        if small {
+            VStack(alignment: .leading, spacing: 4) {
+                metric
+                Spacer(minLength: 4)
+                record
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 12) {
+                if large { heading; Spacer(minLength: 0) }
+                HStack(spacing: 20) {
+                    metric.frame(maxWidth: .infinity, alignment: .leading)
+                    record.frame(maxWidth: .infinity, alignment: .leading)
                 }
-            } else {
-                VStack(alignment: .leading, spacing: 12) {
-                    if family == .systemLarge {
-                        Text(entry.label("nameLabel"))
-                            .font(.headline).foregroundStyle(.secondary)
-                        Spacer(minLength: 0)
-                    }
-                    HStack(spacing: 20) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            count
-                            Text(entry.label("currentLabel")).font(.caption).foregroundStyle(.secondary)
-                                .lineLimit(2).minimumScaleFactor(0.7)
-                        }.frame(maxWidth: .infinity, alignment: .leading)
-                        record.frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    if family == .systemLarge { Spacer(minLength: 0) }
-                    Label(entry.status, systemImage: entry.done ? "checkmark.circle.fill" : "sparkles")
-                        .font(.caption).foregroundStyle(orange).lineLimit(2).minimumScaleFactor(0.7)
-                }
+                if large { Spacer(minLength: 0) }
+                status
             }
         }
+    }
+
+    @ViewBuilder private var minimalLayout: some View {
+        VStack(spacing: small ? 6 : 12) {
+            if large { heading }
+            Spacer(minLength: 0)
+            if small {
+                metric
+                Divider()
+                record
+            } else {
+                HStack(spacing: 20) {
+                    metric.frame(maxWidth: .infinity)
+                    Divider().frame(height: 56)
+                    record.frame(maxWidth: .infinity)
+                }
+            }
+            Spacer(minLength: 0)
+            if !small { status }
+        }
+    }
+
+    @ViewBuilder private var recordLayout: some View {
+        VStack(alignment: .leading, spacing: small ? 6 : 12) {
+            if large { heading; Spacer(minLength: 0) }
+            if small {
+                metric
+                Spacer(minLength: 0)
+                progress
+                HStack(spacing: 8) {
+                    Text("🏆 \(entry.best)").font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .lineLimit(1).minimumScaleFactor(0.4)
+                    Text(entry.label("bestLabel")).font(.caption).foregroundStyle(style.secondaryInk)
+                        .lineLimit(2).minimumScaleFactor(0.7)
+                }.accessibilityElement(children: .combine)
+            } else {
+                HStack(spacing: 20) {
+                    metric.frame(maxWidth: .infinity, alignment: .leading)
+                    record.frame(maxWidth: .infinity, alignment: .leading)
+                }
+                progress
+                if large { Spacer(minLength: 0) }
+                status
+            }
+        }
+    }
+
+    var body: some View {
+        Group {
+            switch style {
+            case .flame: flameLayout
+            case .minimal: minimalLayout
+            case .record: recordLayout
+            }
+        }
+        .foregroundStyle(style.ink)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(2)
-        .streakBackground()
+        .streakBackground(style: style)
     }
 }
 
 private extension View {
-    @ViewBuilder func streakBackground() -> some View {
+    @ViewBuilder func streakBackground(style: StreakWidgetStyle) -> some View {
         if #available(iOS 17.0, *) {
-            self.containerBackground(for: .widget) {
-                Color(uiColor: .secondarySystemBackground)
-                Color.orange.opacity(0.06)
-            }
+            self.containerBackground(for: .widget) { style.background }
         } else {
-            self.padding(14).background(Color(uiColor: .secondarySystemBackground))
+            self.padding(14).background { style.background }
         }
     }
 }
 
-@main
 struct StudyStreakWidget: Widget {
+    let style: StreakWidgetStyle
+
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: widgetKind, provider: StreakProvider()) { entry in
-            StreakWidgetView(entry: entry)
+        StaticConfiguration(kind: style.rawValue, provider: StreakProvider()) { entry in
+            StreakWidgetView(entry: entry, style: style)
         }
-        .configurationDisplayName(NSLocalizedString("streak_widget_name", comment: "Widget name"))
-        .description(NSLocalizedString("streak_widget_description", comment: "Widget description"))
+        .configurationDisplayName(NSLocalizedString("streak_widget_\(style.resourceName)_name", comment: "Widget name"))
+        .description(NSLocalizedString("streak_widget_\(style.resourceName)_description", comment: "Widget description"))
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+    }
+}
+
+@main
+struct StudyStreakWidgets: WidgetBundle {
+    var body: some Widget {
+        StudyStreakWidget(style: .flame)
+        StudyStreakWidget(style: .minimal)
+        StudyStreakWidget(style: .record)
     }
 }

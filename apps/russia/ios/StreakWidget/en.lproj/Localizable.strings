@@ -6,3 +6,9 @@
 "doneLabel" = "Done for today";
 "continueLabel" = "Keep your streak today";
 "startLabel" = "Start a new streak";
+"streak_widget_flame_name" = "Streak · Flame";
+"streak_widget_flame_description" = "A warm card with your study streak and personal best.";
+"streak_widget_minimal_name" = "Streak · Minimal";
+"streak_widget_minimal_description" = "A large streak counter and personal best in a clean layout.";
+"streak_widget_record_name" = "Streak · Record";
+"streak_widget_record_description" = "Your streak and personal best with a progress bar.";

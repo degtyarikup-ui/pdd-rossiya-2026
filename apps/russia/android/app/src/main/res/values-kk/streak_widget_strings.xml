@@ -7,4 +7,10 @@
     <string name="doneLabel">Бүгін орындалды</string>
     <string name="continueLabel">Бүгін серияны жалғастыр</string>
     <string name="startLabel">Жаңа серияны баста</string>
+    <string name="streak_widget_flame_name">Серия · Жалын</string>
+    <string name="streak_widget_flame_description">Оқу сериясы мен жеке рекорд көрсетілген жылы түсті карточка.</string>
+    <string name="streak_widget_minimal_name">Серия · Минимал</string>
+    <string name="streak_widget_minimal_description">Ықшам көріністегі үлкен серия санағышы мен жеке рекорд.</string>
+    <string name="streak_widget_record_name">Серия · Рекорд</string>
+    <string name="streak_widget_record_description">Прогресс жолағы бар серия мен жеке рекорд.</string>
 </resources>

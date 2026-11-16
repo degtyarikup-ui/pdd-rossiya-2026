@@ -79,7 +79,7 @@
         <!-- Bound only while the separate Godot Activity is visible. Main process. -->
         <service android:name=".GameHostService" android:exported="false" />
         <receiver android:name=".StreakWidgetProvider" android:exported="false"
-            android:label="@string/streak_widget_name">
+            android:label="@string/streak_widget_flame_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="android.intent.action.DATE_CHANGED" />
@@ -88,6 +88,20 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/streak_widget_info" />
+        </receiver>
+        <receiver android:name=".MinimalStreakWidgetProvider" android:exported="false"
+            android:label="@string/streak_widget_minimal_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/streak_widget_minimal_info" />
+        </receiver>
+        <receiver android:name=".RecordStreakWidgetProvider" android:exported="false"
+            android:label="@string/streak_widget_record_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/streak_widget_record_info" />
         </receiver>
     </application>
     <!-- Required to query activities that can process text, see:

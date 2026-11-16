@@ -6,3 +6,9 @@
 "doneLabel" = "Бүгін орындалды";
 "continueLabel" = "Бүгін серияны жалғастыр";
 "startLabel" = "Жаңа серияны баста";
+"streak_widget_flame_name" = "Серия · Жалын";
+"streak_widget_flame_description" = "Оқу сериясы мен жеке рекорд көрсетілген жылы түсті карточка.";
+"streak_widget_minimal_name" = "Серия · Минимал";
+"streak_widget_minimal_description" = "Ықшам көріністегі үлкен серия санағышы мен жеке рекорд.";
+"streak_widget_record_name" = "Серия · Рекорд";
+"streak_widget_record_description" = "Прогресс жолағы бар серия мен жеке рекорд.";

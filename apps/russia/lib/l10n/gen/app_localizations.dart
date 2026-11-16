@@ -8775,6 +8775,42 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Начни новую серию'**
   String get homeWidgetStart;
+
+  /// No description provided for @homeWidgetFlameName.
+  ///
+  /// In ru, this message translates to:
+  /// **'Серия · Огонёк'**
+  String get homeWidgetFlameName;
+
+  /// No description provided for @homeWidgetFlameDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тёплая карточка с огоньком, серией занятий и рекордом.'**
+  String get homeWidgetFlameDescription;
+
+  /// No description provided for @homeWidgetMinimalName.
+  ///
+  /// In ru, this message translates to:
+  /// **'Серия · Минимал'**
+  String get homeWidgetMinimalName;
+
+  /// No description provided for @homeWidgetMinimalDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Крупный счётчик серии и рекорд в лаконичном оформлении.'**
+  String get homeWidgetMinimalDescription;
+
+  /// No description provided for @homeWidgetRecordName.
+  ///
+  /// In ru, this message translates to:
+  /// **'Серия · Рекорд'**
+  String get homeWidgetRecordName;
+
+  /// No description provided for @homeWidgetRecordDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Серия и личный рекорд с полосой прогресса.'**
+  String get homeWidgetRecordDescription;
 }
 
 class _AppLocalizationsDelegate

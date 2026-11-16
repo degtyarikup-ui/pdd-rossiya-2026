@@ -2517,5 +2517,11 @@
   "homeWidgetBest": "Рекорд дней",
   "homeWidgetDone": "Сегодня засчитано",
   "homeWidgetContinue": "Сохрани серию сегодня",
-  "homeWidgetStart": "Начни новую серию"
+  "homeWidgetStart": "Начни новую серию",
+  "homeWidgetFlameName": "Серия · Огонёк",
+  "homeWidgetFlameDescription": "Тёплая карточка с огоньком, серией занятий и рекордом.",
+  "homeWidgetMinimalName": "Серия · Минимал",
+  "homeWidgetMinimalDescription": "Крупный счётчик серии и рекорд в лаконичном оформлении.",
+  "homeWidgetRecordName": "Серия · Рекорд",
+  "homeWidgetRecordDescription": "Серия и личный рекорд с полосой прогресса."
 }
