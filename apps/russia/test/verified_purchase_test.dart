@@ -94,6 +94,32 @@ void main() {
     expect(premium.isPremium, isFalse);
   });
   test(
+    'an App Store request without a transaction ID still requires server verification',
+    () async {
+      final result = await http.runWithClient(
+        () => premium.recordPurchase(
+          tier: PremiumTier.weekly,
+          price: 'test',
+          store: 'appstore',
+          productId: 'u.pdd.pddApp.premium.week',
+          purchaseToken: 'unused-receipt',
+        ),
+        () => MockClient((request) async {
+          final body = jsonDecode(request.body) as Map;
+          expect(body.containsKey('purchaseToken'), isFalse);
+          expect(body.containsKey('transactionId'), isFalse);
+          return http.Response('{"error":"invalid transaction"}', 400);
+        }),
+      );
+      expect(result, isFalse);
+      expect(
+        premium.purchaseVerificationFailure,
+        PurchaseVerificationFailure.rejected,
+      );
+      expect(premium.isPremium, isFalse);
+    },
+  );
+  test(
     'legacy Apple ownership rejection requires support and cannot become retryable',
     () async {
       expect(
@@ -193,6 +219,42 @@ void main() {
       expect(premium.isPremium, isTrue);
     }
   });
+  test(
+    'App Store purchase and restore omit the large unused receipt and preserve the transaction',
+    () async {
+      final receipt = 'synthetic-receipt-${'x' * (256 * 1024)}';
+      var requests = 0;
+      for (var i = 0; i < 2; i++) {
+        expect(
+          await http.runWithClient(
+            () => premium.recordPurchase(
+              tier: PremiumTier.weekly,
+              price: 'test',
+              store: 'appstore',
+              productId: 'u.pdd.pddApp.premium.week',
+              transactionId: '2000000000000001',
+              purchaseToken: receipt,
+            ),
+            () => MockClient((request) async {
+              requests++;
+              expect(request.url.path, '/api/user/purchase');
+              expect(request.headers['authorization'], 'Bearer test-session');
+              final body = jsonDecode(request.body) as Map;
+              expect(body['store'], 'appstore');
+              expect(body['transactionId'], '2000000000000001');
+              expect(body['productId'], 'u.pdd.pddApp.premium.week');
+              expect(body.containsKey('purchaseToken'), isFalse);
+              expect(request.bodyBytes.length, lessThan(1024));
+              return granted();
+            }),
+          ),
+          isTrue,
+        );
+        expect(premium.expiresAt, expiry);
+      }
+      expect(requests, 2);
+    },
+  );
   test('late pre-purchase sync cannot revoke delivered access', () async {
     final arrived = Completer<void>(), reply = Completer<http.Response>();
     await http.runWithClient(

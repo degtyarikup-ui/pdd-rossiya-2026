@@ -175,8 +175,11 @@ test('повторная проверка покупки при уже акти�
   const active = { category: 'purchase', operation: 'premium.verify', code: 'network:tls', receivedAt, premiumActiveUntil: '2027-02-01T17:04:48.000Z' };
   const calm = guide(active);
   assert.equal(calm.level, 'low');
-  assert.match(calm.what, /уже активен до 01\.02\.2027/);
-  assert.match(calm.steps[0], /Выдавать Premium не нужно/);
+  assert.match(calm.what, /серверном профиле Premium активен до 01\.02\.2027/);
+  assert.match(calm.what, /состояние доступа на устройстве нужно проверить/);
+  assert.match(calm.steps[0], /Сверьте эту транзакцию/);
+  assert.doesNotMatch(calm.steps[0], /нестабильная связь|Выдавать Premium не нужно/);
+  assert.match(calm.meaning, /текущая покупка требует проверки/);
   assert.equal(diagnosticNotificationPolicy(active).windowMs, 3600000);
   assert.equal(guide({ ...active, premiumActiveUntil: '2026-11-01T00:00:00.000Z' }).level, 'critical');
   assert.equal(guide({ ...active, premiumActiveUntil: null }).level, 'critical');

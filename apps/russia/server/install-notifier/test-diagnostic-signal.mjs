@@ -107,6 +107,19 @@ test('a narration playback failure is a quiet, non-urgent alert rather than an u
   assert.match(text, /Opus/);
 });
 
+test('legacy catalog ambiguity and active Premium never hide an unconfirmed purchase', () => {
+  const now = Date.UTC(2026, 10, 16, 10);
+  for (const appVersion of ['2.2.3+59', '2.2.4+65']) {
+    assert.equal(diagnosticSignal(client('iap.products', 'sdk_error', { ts: now, appVersion }), now), null);
+  }
+  for (const operation of ['premium.verify', 'iap.process', 'iap.complete']) {
+    for (const code of ['timeout', 'network']) {
+      assert.equal(diagnosticSignal(client(operation, code, { ts: now,
+        premiumActiveUntil: '2099-01-01T00:00:00Z' }), now), null);
+    }
+  }
+});
+
 test('late and emulator reports are background regardless of code, real devices are not mistaken for emulators', () => {
   const now = Date.UTC(2026, 10, 10, 9);
   assert.deepEqual(diagnosticSignal(client('iap.products', 'sdk_error', { ts: now - SIGNAL_STALE_MS - 1 }), now), { kind: 'stale' });

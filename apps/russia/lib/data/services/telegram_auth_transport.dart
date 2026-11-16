@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
+import 'package:pdd_app/data/services/network_errors_stub.dart'
+    if (dart.library.io) 'package:pdd_app/data/services/network_errors_io.dart';
 
 class TelegramAuthHttpException implements Exception {
   const TelegramAuthHttpException(this.statusCode);
@@ -25,8 +27,9 @@ class TelegramAuthChallenge {
   final String? botUrl, tgUrl, verifier;
 }
 
-/// Select a reachable route with side-effect-free GETs before the only POST.
-/// Challenge creation is never replayed. Only v2 checks have a durable result
+/// Select a reachable route with side-effect-free GETs before delivering a POST.
+/// A proven connection failure can try the other route. An uncertain challenge
+/// creation is never replayed. Only v2 checks have a durable result
 /// bound to a private verifier and can safely recover a lost response.
 class TelegramAuthTransport {
   TelegramAuthTransport({
@@ -97,12 +100,27 @@ class TelegramAuthTransport {
       throw http.ClientException('Telegram route unavailable');
     }
     _wanted(stillWanted);
-    final selected = stats.host!;
-    final response = await _post(
-      selected,
-      '/api/auth/telegram/request',
-      body: jsonEncode({'protocolVersion': 2}),
-    ).timeout(requestTimeout);
+    var selected = stats.host!;
+    final start = hosts.indexOf(selected);
+    late http.Response response;
+    for (var route = 0; ; route++) {
+      _wanted(stillWanted);
+      selected = hosts[(start + route) % hosts.length];
+      try {
+        response = await _post(
+          selected,
+          '/api/auth/telegram/request',
+          body: jsonEncode({'protocolVersion': 2}),
+        ).timeout(requestTimeout);
+        break;
+      } catch (error) {
+        _wanted(stillWanted);
+        // A healthy probe does not guarantee the next connection will open.
+        // Reuse the same strict boundary as other one-shot API requests:
+        // DNS/refused route/TLS handshake only, never timeouts or resets.
+        if (route + 1 >= hosts.length || !requestNeverSent(error)) rethrow;
+      }
+    }
     _wanted(stillWanted);
     if (response.statusCode != 200) {
       throw TelegramAuthHttpException(response.statusCode);

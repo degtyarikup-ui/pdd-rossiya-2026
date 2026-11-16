@@ -540,7 +540,10 @@ class PremiumService extends ChangeNotifier {
           'price': price,
           'store': store,
           'productId': productId,
-          'purchaseToken': purchaseToken,
+          // Apple is verified through App Store Server API by transactionId.
+          // Its receipt/JWS is unused by the server and can be very large.
+          // Google Play still requires its opaque purchase token.
+          if (store != 'appstore') 'purchaseToken': purchaseToken,
           'transactionId': ?transactionId,
           'country': CountryConfig.current.code,
         }),

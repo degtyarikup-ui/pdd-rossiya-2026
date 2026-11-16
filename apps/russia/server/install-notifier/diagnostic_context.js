@@ -27,9 +27,9 @@ export function diagnosticOs(value) {
   return typeof value === 'string' && /^(?:Android|iOS) [\d.]{1,16}(?: \(SDK \d{1,3}\))?$/.test(value) ? value : null;
 }
 
-// Store purchase checks that failed while the account already had Premium:
-// StoreKit replays an owned subscription and a flaky network fails the check
-// again, but nobody is left without paid access.
+// The saved server profile has a future Premium expiry. This can lower urgency,
+// but does not prove a background replay, delivery of this transaction, or the
+// device's current access. Keep these incidents visible.
 const STORE_CHECKS = new Set(['premium.verify', 'iap.process', 'iap.complete']);
 export function storeRecheckWithPremium(event) {
   const at = Number.isFinite(event.receivedAt) ? event.receivedAt : event.ts;

@@ -279,6 +279,12 @@ Telegram показывает место начала, тариф, аккаун�
 Premium появился сразу. Регрессии — `verified_purchase_test.dart`,
 `iap_recovery_test.dart`, `test-apple-purchases.mjs`.
 
+С 16.11.2026 клиент не включает receipt/JWS в `purchaseToken` для App Store:
+эта ветка сервера проверяет покупку по `transactionId` через Apple Server API.
+Для Google Play токен обязателен и передаётся как прежде. Проверка владельца,
+правила завершения транзакции и срок Premium не меняются. Регрессии размера
+запроса и отсутствующего ID — `verified_purchase_test.dart`.
+
 Если Google Play на российском устройстве (СБП есть среди способов по
 `currentAndroidPaymentModes`) отказал в оплате или не отдал тарифы, лист
 тарифов сам переключается на СБП с подсказкой `payErrorSwitchedToSbp`

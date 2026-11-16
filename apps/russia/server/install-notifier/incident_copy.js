@@ -310,8 +310,8 @@ export function incidentGuide(event) {
   const what = [];
   if (level === 'low' && storeRecheckWithPremium(event)) {
     const until = new Date(event.premiumActiveUntil).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' });
-    what.push('Premium у аккаунта уже активен до ' + until + ': доступ есть, не прошла повторная проверка покупки.');
-    steps.push('Выдавать Premium не нужно. Если сбой повторяется часто — у человека нестабильная связь с сервером.');
+    what.push('В сохранённом серверном профиле Premium активен до ' + until + '. Завершение текущей операции и состояние доступа на устройстве нужно проверить.');
+    steps.push('Повторно платить не нужно. Сверьте эту транзакцию, срок подписки и аккаунт; при отсутствии доступа помогите восстановить покупку.');
   }
   if (baseCode === 'credential_rejected' && detail) {
     const hit = CREDENTIAL_DETAILS.find(([re]) => re.test(detail));
@@ -343,7 +343,10 @@ export function incidentGuide(event) {
     if (CRITICAL_OPERATIONS.has(operation)) steps.push(GIVE_PREMIUM);
   }
   const [emoji, label, meaning] = LEVELS[level];
-  return { level, emoji, label, meaning, what: what[0] || null, steps: steps.slice(0, 3) };
+  return { level, emoji, label,
+    meaning: storeRecheckWithPremium(event) && level === 'low'
+      ? 'в серверном профиле есть Premium; текущая покупка требует проверки' : meaning,
+    what: what[0] || null, steps: steps.slice(0, 3) };
 }
 const PROVIDERS = { google: 'Google', apple: 'Apple ID', yandex: 'Яндекс', telegram: 'Telegram', appstore: 'App Store', googleplay: 'Google Play', platega: 'СБП · Platega', firebase: 'Firebase' };
 const PLATFORMS = { android: 'Android', ios: 'iOS', web: 'Веб', macos: 'macOS', windows: 'Windows', linux: 'Linux' };

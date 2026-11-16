@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -86,6 +87,126 @@ void main() {
       expect(probes, 1);
       expect(writes, 1);
       transport.close();
+    },
+  );
+
+  test(
+    'challenge creation changes route only when its connection was never established',
+    () async {
+      for (final (error, expectedRoutes) in <(Object, int)>[
+        (const SocketException('Failed host lookup: blocked'), 2),
+        (const HandshakeException('Connection terminated during handshake'), 2),
+        (
+          const SocketException(
+            'Connection refused',
+            osError: OSError('Connection refused', 111),
+          ),
+          2,
+        ),
+        (TimeoutException('response lost'), 1),
+        (
+          const SocketException(
+            'Connection reset',
+            osError: OSError('Connection reset', 104),
+          ),
+          1,
+        ),
+        (const HttpException('Connection closed before full header'), 1),
+      ]) {
+        NotifierRoute.reset();
+        final writes = <http.Request>[];
+        final transport = TelegramAuthTransport(
+          hosts: hosts,
+          client: MockClient((request) async {
+            if (request.method == 'GET') return http.Response(healthBody, 200);
+            writes.add(request);
+            if (request.url.host == 'primary.invalid') throw error;
+            return challenge();
+          }),
+        );
+        if (expectedRoutes == 2) {
+          final result = await transport.createChallenge(
+            stillWanted: () => true,
+          );
+          expect(result.host, hosts.last);
+          expect(NotifierRoute.preferredIndex(hosts), 1);
+        } else {
+          await expectLater(
+            transport.createChallenge(stillWanted: () => true),
+            throwsA(same(error)),
+          );
+        }
+        expect(writes.length, expectedRoutes, reason: '$error');
+        expect(writes.every((r) => !r.followRedirects), isTrue);
+        expect(
+          writes.every((r) => jsonDecode(r.body)['protocolVersion'] == 2),
+          isTrue,
+        );
+        transport.close();
+      }
+    },
+  );
+
+  test(
+    'closing or cancelling a failed connection prevents a fallback challenge',
+    () async {
+      for (final close in [false, true]) {
+        var wanted = true, writes = 0;
+        late TelegramAuthTransport transport;
+        transport = TelegramAuthTransport(
+          hosts: hosts,
+          client: MockClient((request) async {
+            if (request.method == 'GET') return http.Response(healthBody, 200);
+            writes++;
+            if (close) {
+              transport.close();
+            } else {
+              wanted = false;
+            }
+            throw const HandshakeException(
+              'Connection terminated during handshake',
+            );
+          }),
+        );
+        await expectLater(
+          transport.createChallenge(stillWanted: () => wanted),
+          throwsA(isA<TelegramAuthCancelled>()),
+        );
+        expect(writes, 1);
+        transport.close();
+      }
+    },
+  );
+
+  test(
+    'challenge fallback is bounded and never retries an HTTP response',
+    () async {
+      for (final status in [null, 403, 429, 503]) {
+        var writes = 0;
+        final transport = TelegramAuthTransport(
+          hosts: hosts,
+          client: MockClient((request) async {
+            if (request.method == 'GET') return http.Response(healthBody, 200);
+            writes++;
+            if (status == null) {
+              throw const HandshakeException(
+                'Connection terminated during handshake',
+              );
+            }
+            return http.Response('{}', status);
+          }),
+        );
+        await expectLater(
+          transport.createChallenge(stillWanted: () => true),
+          throwsA(
+            status == null
+                ? isA<HandshakeException>()
+                : isA<TelegramAuthHttpException>(),
+          ),
+        );
+        expect(writes, status == null ? 2 : 1);
+        transport.close();
+      }
     },
   );
 
