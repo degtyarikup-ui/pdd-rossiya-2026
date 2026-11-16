@@ -1,0 +1,96 @@
+{
+ "id": "ticket_7_3",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -5.25,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 7 · Вопрос 3",
+   "title": "Разрешено ли Вам остановиться в указанном месте?",
+   "options": [
+    "Запрещено",
+    "Разрешено только для посадки и высадки пассажиров",
+    "Разрешено"
+   ],
+   "explanation": "Сплошная линия разметки 1.4 жёлтого цвета обозначает места, где запрещена остановка. С 1 марта 2023 года данная разметка может применяться самостоятельно. Из определения зоны действия знака 3.27 «Остановка запрещена», она исключена. В данной ситуации является функционально недействующей. Останавливаться в указанном месте – ЗАПРЕЩЕНО.(«Дорожные знаки», «Горизонтальная разметка»).",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 7 · Question 3",
+   "title": "Are you allowed to stop at the indicated place?",
+   "options": [
+    "Forbidden",
+    "Allowed only for boarding and disembarking passengers",
+    "Allowed"
+   ],
+   "explanation": "The solid yellow marking line 1.4 indicates places where stopping is prohibited. From March 1, 2023, this marking can be used independently. It is excluded from the definition of the coverage area of sign 3.27 “Stopping is prohibited”. In this situation it is functionally ineffective. Stopping in the indicated place is PROHIBITED. (“Road signs”, “Horizontal markings”).",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "7-билет · 3-сұрақ",
+   "title": "Сізге көрсетілген жерде тұруға рұқсат етіледі ме?",
+   "options": [
+    "Тыйым салынған",
+    "Жолаушыларды отырғызу және түсіру үшін ғана рұқсат етіледі",
+    "Рұқсат етілген"
+   ],
+   "explanation": "Тұтас сары таңбалау сызығы 1.4 тоқтауға тыйым салынған жерлерді көрсетеді. 2023 жылдың 1 наурызынан бастап бұл таңбалауды өз бетінше қолдануға болады. 3.27 «Тоқтауға тыйым салынады» белгісінің қамту аймағының анықтамасынан алынып тасталды. Бұл жағдайда ол функционалдық тұрғыдан тиімсіз. Көрсетілген жерде тоқтауға тыйым салынады. («Жол белгілері», «Көлденең таңбалар»).",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 115,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": true,
+ "sourceQuestionId": "bf06bbf89a29a444bbc395a8adafde98",
+ "sourceCategory": "ab",
+ "sourceImage": "505bf5de2658d2b9a8e5bb4b5fa345e0",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-next-five",
+  "status": "pending"
+ }
+}

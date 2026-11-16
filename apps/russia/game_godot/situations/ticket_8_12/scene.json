@@ -1,0 +1,498 @@
+{
+ "id": "ticket_8_12",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.5325,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 6.13,
+ "exitWidths": {
+  "straight": 6.13
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.532,
+     -18
+    ],
+    [
+     -1.532,
+     -16.323
+    ],
+    [
+     -1.532,
+     -14.646
+    ],
+    [
+     -1.532,
+     -12.969
+    ],
+    [
+     -1.532,
+     -11.292
+    ],
+    [
+     -1.532,
+     -9.615
+    ],
+    [
+     -1.532,
+     -7.938
+    ],
+    [
+     -1.532,
+     -6.261
+    ],
+    [
+     -1.532,
+     -4.585
+    ],
+    [
+     -1.532,
+     -2.908
+    ],
+    [
+     -1.532,
+     -1.231
+    ],
+    [
+     -1.532,
+     0.446
+    ],
+    [
+     -1.532,
+     2.123
+    ],
+    [
+     -1.532,
+     3.8
+    ],
+    [
+     -1.532,
+     5.477
+    ],
+    [
+     -1.532,
+     7.154
+    ],
+    [
+     -1.532,
+     8.831
+    ],
+    [
+     -1.532,
+     10.508
+    ],
+    [
+     -1.532,
+     12.185
+    ],
+    [
+     -1.532,
+     13.862
+    ],
+    [
+     -1.532,
+     15.539
+    ],
+    [
+     -1.532,
+     17.215
+    ],
+    [
+     -1.532,
+     18.892
+    ],
+    [
+     -1.532,
+     20.569
+    ],
+    [
+     -1.532,
+     22.246
+    ],
+    [
+     -1.532,
+     23.923
+    ],
+    [
+     -1.532,
+     25.6
+    ],
+    [
+     -1.532,
+     27.277
+    ],
+    [
+     -1.532,
+     28.954
+    ],
+    [
+     -1.532,
+     30.631
+    ],
+    [
+     -1.532,
+     32.308
+    ],
+    [
+     -1.532,
+     33.985
+    ],
+    [
+     -1.532,
+     35.662
+    ],
+    [
+     -1.532,
+     37.339
+    ],
+    [
+     -1.532,
+     39.015
+    ],
+    [
+     -1.532,
+     40.692
+    ],
+    [
+     -1.532,
+     42.369
+    ],
+    [
+     -1.532,
+     44.046
+    ],
+    [
+     -1.532,
+     45.723
+    ],
+    [
+     -1.532,
+     47.4
+    ],
+    [
+     -1.532,
+     49.077
+    ],
+    [
+     -1.532,
+     50.754
+    ],
+    [
+     -1.532,
+     52.431
+    ],
+    [
+     -1.532,
+     54.108
+    ],
+    [
+     -1.532,
+     55.785
+    ],
+    [
+     -1.532,
+     57.462
+    ],
+    [
+     -1.532,
+     59.139
+    ],
+    [
+     -1.532,
+     60.815
+    ],
+    [
+     -1.532,
+     62.492
+    ],
+    [
+     -1.532,
+     64.169
+    ],
+    [
+     -1.532,
+     65.846
+    ],
+    [
+     -1.532,
+     67.523
+    ],
+    [
+     -1.532,
+     69.2
+    ],
+    [
+     -1.532,
+     70.877
+    ],
+    [
+     -1.532,
+     72.554
+    ],
+    [
+     -1.532,
+     74.231
+    ],
+    [
+     -1.532,
+     75.908
+    ],
+    [
+     -1.532,
+     77.585
+    ],
+    [
+     -1.532,
+     79.262
+    ],
+    [
+     -1.532,
+     80.939
+    ],
+    [
+     -1.532,
+     82.615
+    ],
+    [
+     -1.532,
+     84.292
+    ],
+    [
+     -1.532,
+     85.969
+    ],
+    [
+     -1.532,
+     87.646
+    ],
+    [
+     -1.532,
+     89.323
+    ],
+    [
+     -1.532,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [],
+ "actors": [
+  {
+   "id": "parked_van",
+   "type": "van",
+   "name": "Грузовой фургон",
+   "config": {
+    "id": "parked_van",
+    "type": "van",
+    "name": "Грузовой фургон",
+    "side": "ring",
+    "ringRadius": 10.3,
+    "ringAngle": -1.7,
+    "color": "#9DA4AB",
+    "concurrentWith": [
+     "ring_moto"
+    ],
+    "position": [
+     -4.35,
+     0.18,
+     -1
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -4.35,
+      -1
+     ],
+     [
+      -4.35,
+      -1
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.454,
+   "halfWidth": 1.09,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#9DA4AB",
+    "height": 3
+   },
+   "pos": [
+    -4.35,
+    0.18,
+    -1
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -4.35,
+     0.18,
+     -1
+    ],
+    [
+     -4.35,
+     0.18,
+     -1
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 47.265,
+   "maxSpeed": 0,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "paint": "#8D9AA8",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "off",
+   "hazards": false
+  }
+ ],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 8 · Вопрос 12",
+   "title": "Нарушил ли водитель грузового автомобиля правила стоянки?",
+   "options": [
+    "Нарушил",
+    "Нарушил, если разрешенная максимальная масса автомобиля более 2,5 т",
+    "Не нарушил"
+   ],
+   "explanation": "Ставить автомобиль на стоянку на проезжей части нельзя, так как расстояние между автомобилем и сплошной линией разметки будет менее 3 м, что недопустимо. Грузовым автомобилям любого типа не допускается стоянка и с частичным, и с полным заездом на тротуар. Это допускается делать только водителям легковых автомобилей и мотоциклов, и только в местах, обозначенных соответствующими знаками. Водитель данного автомобиля нарушил правила стоянки.(«Дорожные знаки» 6.4, 8.6.2, 8.6.3, 8.6.6-8.6.9; пункты 12.2, 12.4 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 8 · Question 12",
+   "title": "Did the truck driver violate the parking rules?",
+   "options": [
+    "Violated",
+    "Violated if the permissible maximum weight of the vehicle is more than 2.5 tons",
+    "Didn't violate"
+   ],
+   "explanation": "You cannot park your car on the roadway, since the distance between the car and the solid marking line will be less than 3 m, which is unacceptable. Trucks of any type are not permitted to park either partially or fully on the sidewalk. This is only allowed for drivers of cars and motorcycles, and only in places marked with appropriate signs. The driver of this car violated the parking rules. (“Road signs” 6.4, 8.6.2, 8.6.3, 8.6.6-8.6.9; paragraphs 12.2, 12.4 of the traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "8-билет · 12-сұрақ",
+   "title": "Жүк көлігінің жүргізушісі тұрақ ережесін бұзды ма?",
+   "options": [
+    "Бұзылған",
+    "Көлік құралының рұқсат етілген ең жоғары салмағы 2,5 тоннадан асатын болса бұзылады",
+    "Бұзған жоқ"
+   ],
+   "explanation": "Сіз көлікті жолға қоюға болмайды, өйткені көлік пен үздіксіз таңба сызығы арасындағы қашықтық 3 м-ден аз болады, бұл рұқсат етілмейді. Кез келген типтегі жүк көліктеріне тротуарға жартылай немесе толық тұруға рұқсат етілмейді. Бұл тек автокөліктер мен мотоциклдердің жүргізушілеріне және тиісті белгілермен белгіленген жерлерде ғана рұқсат етіледі. Бұл көліктің жүргізушісі тұрақ ережесін бұзған. («Жол белгілері» 6.4, 8.6.2, 8.6.3, 8.6.6-8.6.9; Жол қозғалысы ережелерінің 12.2, 12.4-тармақтары)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 141,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "6b52488e69c53f56b2e8e06283c470a2",
+ "sourceCategory": "ab",
+ "sourceImage": "4bfb3a80e06d09db2710d0fb03606cd7",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-next-five",
+  "status": "pending"
+ },
+ "playerPlacement": "free",
+ "annotations": [
+  {
+   "points": [
+    [
+     -0.065,
+     -8
+    ],
+    [
+     -3.065,
+     -8
+    ]
+   ],
+   "style": "both",
+   "colour": "#F2F3F5",
+   "width": 0.12,
+   "text": "",
+   "textSize": 1,
+   "textAngle": 0
+  },
+  {
+   "points": [
+    [
+     -2.1454999999999997,
+     -7
+    ],
+    [
+     -0.9195,
+     -7
+    ]
+   ],
+   "style": "text",
+   "colour": "#F2F3F5",
+   "width": 0.12,
+   "text": "3 м",
+   "textSize": 1,
+   "textAngle": 0
+  }
+ ],
+ "questionView": {
+  "centre": [
+   -2.5,
+   -3
+  ],
+  "height": 24,
+  "yaw": 0,
+  "pitch": 0.85,
+  "elevation": 0
+ }
+}
