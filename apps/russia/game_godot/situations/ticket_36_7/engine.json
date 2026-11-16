@@ -1,0 +1,96 @@
+{
+ "id": "ticket_36_7",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 36 · Вопрос 7",
+   "title": "Согнутая в локте рука водителя автомобиля является сигналом, информирующим Вас о его намерении:",
+   "options": [
+    "Повернуть направо",
+    "Продолжить движение прямо",
+    "Остановиться, чтобы уступить дорогу мотоциклу"
+   ],
+   "explanation": "Сигналу правого поворота соответствует вытянутая в сторону правая рука либо левая, вытянутая в сторону и согнутая в локте под прямым углом вверх (как в данной ситуации).(Пункт 8.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 36 · Question 7",
+   "title": "The driver's arm bent at the elbow is a signal informing you of his intention:",
+   "options": [
+    "Turn in Right Out",
+    "Continue straight ahead",
+    "Stop to give way to a motorcycle"
+   ],
+   "explanation": "The signal for a right turn corresponds to the right hand extended to the side or the left hand extended to the side and bent at the elbow at a right angle upward (as in this situation). (Clause 8.1 of the traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "36-билет · 7-сұрақ",
+   "title": "Жүргізушінің шынтағынан бүгілген қолы оның ниеті туралы хабарлайды:",
+   "options": [
+    "Оңға бұрылыңыз",
+    "Тура алға қарай жүріңіз",
+    "Мотоциклге жол беруді тоқтатыңыз"
+   ],
+   "explanation": "Оңға бұрылу сигналы бүйірге созылған оң қолға немесе бүйірге созылған және шынтақтан жоғары қарай оң жақ бұрышта бүгілген сол қолға сәйкес келеді (осы жағдайдағыдай). (Жол қозғалысы ережесінің 8.1 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 182,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "361aa35ffcd00ed75c270eb18b2e1307",
+ "sourceCategory": "ab",
+ "sourceImage": "d0efc35b84dd44ebda7b22168924ab36",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

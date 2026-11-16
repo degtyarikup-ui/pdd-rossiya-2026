@@ -1,0 +1,96 @@
+{
+ "id": "ticket_8_7",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -5.25,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 8 · Вопрос 7",
+   "title": "Водитель легкового автомобиля должен выключить указатели левого поворота:",
+   "options": [
+    "После перестроения на левую полосу",
+    "После опережения грузового автомобиля",
+    "После возвращения на правую полосу"
+   ],
+   "explanation": "Показанная траектория состоит из трёх фаз. Первая фаза - перестроение в параллельный ряд. Как только Вы его закончили, выключите левый сигнал указателя поворота. Вторая фаза – двигаетесь в параллельном ряду – включать сигналы не следует. Третья фаза – перестроение, возвращение на ранее занимаемую полосу. Перед перестроением включаете правый сигнал поворота. Закончив перестроение, выключаете его.(«Техника управления автомобилем», пункт 8.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 8 · Question 7",
+   "title": "The driver of a passenger car must turn off the left turn indicators:",
+   "options": [
+    "After rearranging to the left lane",
+    "After being ahead of the truck",
+    "After returning to the right lane"
+   ],
+   "explanation": "The trajectory shown consists of three phases. The first phase is the rearrangement into a parallel row. Once you have finished it, turn off the left turn signal. The second phase – you move in a parallel row – you should not turn on the signals. The third phase is rebuilding, returning to the previously occupied lane. Turn on the right turn signal before rebuilding. When you have finished rebuilding, turn it off.(\"Vehicle Control Technique\", clause 8.1 of traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "8-билет · 7-сұрақ",
+   "title": "Жеңіл автомобиль жүргізушісі солға бұрылу көрсеткіштерін өшіруі керек:",
+   "options": [
+    "Жолақты сол жақ жолаққа ауыстырғаннан кейін",
+    "Жүк көлігінің алдынан өткеннен кейін",
+    "Оң жақ жолаққа оралғаннан кейін"
+   ],
+   "explanation": "Көрсетілген траектория үш фазадан тұрады. Бірінші кезең параллель қатарға ауысады. Оны аяқтағаннан кейін солға бұрылу сигналын өшіріңіз. Екінші кезең - сіз параллель қатарда қозғаласыз - сигналдарды қоспау керек. Үшінші кезең - жолақтарды ауыстыру, бұрын иеленген жолаққа қайта оралу. Жолақтарды ауыстырар алдында оңға бұрылу сигналын қосыңыз. Жолақтарды өзгертуді аяқтағаннан кейін оны өшіріңіз. («Жүргізу техникасы», Жол қозғалысы ережелерінің 8.1 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 178,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "ddba5acfc28e009636cce621e0b785e4",
+ "sourceCategory": "ab",
+ "sourceImage": "701cfc285d4031d48072f8b0a1b9de52",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

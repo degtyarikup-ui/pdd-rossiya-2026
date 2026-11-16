@@ -1,0 +1,96 @@
+{
+ "id": "ticket_25_4",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 25 · Вопрос 4",
+   "title": "Этот знак указывает, что:",
+   "options": [
+    "Вы должны повернуть направо или налево",
+    "На пересекаемой дороге организовано реверсивное движение",
+    "Вправо и влево от перекрестка организовано одностороннее движение"
+   ],
+   "explanation": "Перед Вами перекрёсток, по пересекаемой дороге которого организовано реверсивное движение, о чём информирует знак 5.10 «Выезд на дорогу с реверсивным движением».(«Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 25 · Question 4",
+   "title": "This sign indicates that:",
+   "options": [
+    "You must turn right or left",
+    "Reversible traffic is organized on the road being crossed",
+    "There is one-way traffic to the right and left of the intersection"
+   ],
+   "explanation": "In front of you is an intersection, along the intersecting road of which reverse traffic is organized, as indicated by sign 5.10 “Entering a road with reverse traffic.” (“Road Signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "25-билет · 4-сұрақ",
+   "title": "Бұл белгі мынаны көрсетеді:",
+   "options": [
+    "Оңға немесе солға бұрылу керек",
+    "Қиып өтетін жолда кері қозғалыс ұйымдастырылған",
+    "Қиылыстың оң және сол жағында бір жақты қозғалыс бар"
+   ],
+   "explanation": "Сіздің алдыңызда 5.10 «Кері қозғалыстағы жолға кіру» белгісімен көрсетілген қиылысатын жолдың бойымен кері қозғалыс ұйымдастырылатын қиылыс орналасқан. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 184,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "3bf37620f061d6e9d1578b4939bdbb20",
+ "sourceCategory": "ab",
+ "sourceImage": "43c8ce4013a2dbe0886a3eef837278c5",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

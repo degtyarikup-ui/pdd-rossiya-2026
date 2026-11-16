@@ -1,0 +1,96 @@
+{
+ "id": "ticket_22_4",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 22 · Вопрос 4",
+   "title": "Что означают эти дорожные знаки?",
+   "options": [
+    "Стоянка разрешена транспортным средствам оперативных служб",
+    "Стоянка разрешена только с включенными габаритными огнями",
+    "Стоянка разрешена в субботние, воскресные и праздничные дни"
+   ],
+   "explanation": "Табличка 8.5.1 «Субботние, воскресные и праздничные дни» указывает, что знак, с которым она применяется, действует только в вышеперечисленные дни.(«Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 22 · Question 4",
+   "title": "What do these road signs mean?",
+   "options": [
+    "Parking is permitted for emergency services vehicles",
+    "Parking is only permitted with the side lights on.",
+    "Parking is permitted on Saturdays, Sundays and holidays"
+   ],
+   "explanation": "Table 8.5.1 “Saturdays, Sundays and holidays” indicates that the sign with which it is used is valid only on the above days. (“Road signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "22-билет · 4-сұрақ",
+   "title": "Бұл жол белгілері нені білдіреді?",
+   "options": [
+    "Төтенше жағдайлар қызметінің көліктері үшін тұраққа рұқсат етіледі",
+    "Тұраққа бүйірлік шамдар қосулы болғанда ғана рұқсат етіледі.",
+    "Сенбі, жексенбі және мереке күндері тұраққа рұқсат етіледі"
+   ],
+   "explanation": "«Сенбі, жексенбі және мереке күндері» 8.5.1 тақтайшасында ол қолданылатын белгі тек жоғарыда көрсетілген күндерде ғана жарамды екендігі көрсетілген. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 206,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "0fa4712a556e14c6e633a42bc5caced7",
+ "sourceCategory": "ab",
+ "sourceImage": "48011958d07fe959ef4e72d9ee9ac4ac",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

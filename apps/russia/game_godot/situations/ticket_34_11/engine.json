@@ -1,0 +1,96 @@
+{
+ "id": "ticket_34_11",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 10.5,
+ "exitWidths": {
+  "straight": 10.5
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 34 · Вопрос 11",
+   "title": "Можно ли Вам продолжить движение по средней полосе после опережения автомобиля, движущегося по правой полосе?",
+   "options": [
+    "Можно",
+    "Можно только при отсутствии встречного транспорта",
+    "Нельзя"
+   ],
+   "explanation": "Средняя полоса в данной ситуации используется для движения в обоих направлениях. Она предназначена только для обгона, объезда, поворота налево или разворота. Закончив обгон, необходимо перестроиться на крайнюю правую полосу. (Пункт 9.3 ПДД). Дальнейшее движение Вы осуществляете согласно пункту 9.4 ПДД. «Вне населённых пунктов водители транспортных средств должны вести их по возможности ближе к правому краю проезжей части». У Вас такая возможность есть.",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 34 · Question 11",
+   "title": "Is it possible for you to continue driving in the middle lane after passing a car moving in the right lane?",
+   "options": [
+    "Can",
+    "Only possible if there is no oncoming traffic",
+    "It is forbidden"
+   ],
+   "explanation": "The middle lane in this situation is used for traffic in both directions. It is only intended for overtaking, passing, turning left or making a U-turn. Having finished overtaking, you need to change lanes to the far right lane. (Clause 9.3 of the Traffic Regulations). You carry out further movement in accordance with clause 9.4 of the traffic rules. “Outside populated areas, vehicle drivers should drive them as close as possible to the right edge of the roadway.” You have such an opportunity.",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "34-билет · 11-сұрақ",
+   "title": "Оң жақ жолақпен келе жатқан көлікті өткеннен кейін ортаңғы жолақпен жүруді жалғастыра аласыз ба?",
+   "options": [
+    "Иә",
+    "Тек қарсы қозғалыс болмаған жағдайда ғана, рұқсат етіледі.",
+    "Ол тыйым салынған"
+   ],
+   "explanation": "Бұл жағдайда орта жолақ екі бағыттағы қозғалыс үшін пайдаланылады. Ол тек басып озуға, өтуге, солға бұрылуға немесе кері бұрылуға арналған. Басып озуды аяқтағаннан кейін жолақты ең оң жақ жолаққа ауыстыру керек. (Жол қозғалысы ережесінің 9.3 тармағы). Сіз одан әрі қозғалысты жол қозғалысы ережелерінің 9.4 тармағына сәйкес жүзеге асырасыз. «Елді мекендерден тыс жерде көлік жүргізушілері оларды жолдың оң жақ шетіне мүмкіндігінше жақын жүргізуі керек». Сізде мұндай мүмкіндік бар.",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 169,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "f5405e4ab81d2c0b7c27cd460818e86b",
+ "sourceCategory": "ab",
+ "sourceImage": "1d8973c9b7892a5df603b8c4a57e0765",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

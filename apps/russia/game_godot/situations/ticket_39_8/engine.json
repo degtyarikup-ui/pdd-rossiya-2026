@@ -1,0 +1,96 @@
+{
+ "id": "ticket_39_8",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": 1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 39 · Вопрос 8",
+   "title": "Водитель автомобиля, выполняющий перестроение на правую полосу, в данной ситуации:",
+   "options": [
+    "Не должен создавать помехи двигающемуся по правой полосе автомобилю",
+    "Имеет преимущество, поскольку завершает обгон",
+    "Имеет преимущество, так как на автомобиле включены указатели правого поворота"
+   ],
+   "explanation": "При единоличном перестроении водитель должен уступить дорогу «хозяину полосы» – транспортным средствам, движущимся попутно без изменения направления движения.(Пункт 8.4 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 39 · Question 8",
+   "title": "The driver of a car changing lane to the right lane in this situation:",
+   "options": [
+    "Must not interfere with a car moving in the right lane",
+    "Has an advantage because it completes overtaking",
+    "Has an advantage since the car has right turn indicators included"
+   ],
+   "explanation": "When changing lanes alone, the driver must give way to the “owner of the lane” - vehicles moving in the same direction without changing direction. (Clause 8.4 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "39-билет · 8-сұрақ",
+   "title": "Бұл жағдайда жолақты оң жақ жолаққа ауыстырған көлік жүргізушісі:",
+   "options": [
+    "Оң жақ жолақпен қозғалатын көлікке кедергі жасамауы керек",
+    "Артықшылығы бар, себебі ол басып озуды аяқтайды",
+    "Артықшылығы бар, өйткені автомобильде оңға бұрылу көрсеткіштері бар"
+   ],
+   "explanation": "Жолақтарды жалғыз ауыстырған кезде жүргізуші «жолақ иесіне» - бағытын өзгертпей бір бағытта қозғалатын көлік құралдарына жол беруі керек. (Жол қозғалысы ережесінің 8.4 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 271,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "37418b099a680ea57a4e3891fd349d25",
+ "sourceCategory": "ab",
+ "sourceImage": "5ece9b9e7d648f3ce4c78e4569a0f68f",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,1432 @@
+{
+ "schema": 1,
+ "batch": "2026-11-16-fifty-scenes",
+ "count": 50,
+ "status": "pending",
+ "gameIndexChanged": false,
+ "runtimeChecks": 519,
+ "existingJsonFilesUnchanged": 1813,
+ "scenes": [
+  {
+   "id": "ticket_4_3",
+   "sourceQuestionId": "d5ab4a89d3dd4ae5a17c49b10fcccd22",
+   "sourceImage": "assets/countries/ru/images/questions_ab/e5f9205eb605705dadf6de4bb0632810.webp",
+   "sourceImageSha256": "5bad6f48bb5093a0a7c4e09bc92855bfdaafa69921aa5ffdf35951060f848a3b",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "3.24",
+     "pos": [
+      4.4,
+      0
+     ],
+     "yaw": 3.141592653589793,
+     "secondSign": {
+      "code": "8.14"
+     },
+     "number": 50
+    },
+    {
+     "id": "sign_1",
+     "code": "4.6",
+     "pos": [
+      0.0,
+      0
+     ],
+     "yaw": 3.141592653589793,
+     "number": 50
+    },
+    {
+     "id": "sign_2",
+     "code": "6.2",
+     "pos": [
+      -4.4,
+      0
+     ],
+     "yaw": 3.141592653589793,
+     "number": 50
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_6_3",
+   "sourceQuestionId": "6a4ad28934938be20ae26980b213ef0f",
+   "sourceImage": "assets/countries/ru/images/questions_ab/2d4752b12702549f18b106d303f9d550.webp",
+   "sourceImageSha256": "b5f74203478fa2371d98a05f7bd8ee46c0d4611fc8ff7cf4d0cb504a642fab8b",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "3.2",
+     "pos": [
+      4.4,
+      0
+     ],
+     "yaw": 3.141592653589793
+    },
+    {
+     "id": "sign_1",
+     "code": "3.1",
+     "pos": [
+      0.0,
+      0
+     ],
+     "yaw": 3.141592653589793
+    },
+    {
+     "id": "sign_2",
+     "code": "3.3",
+     "pos": [
+      -4.4,
+      0
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_6_4",
+   "sourceQuestionId": "14bac0907c2773e8618b1772d131c6f3",
+   "sourceImage": "assets/countries/ru/images/questions_ab/51c764b043333b277cef40fa8d1e62fa.webp",
+   "sourceImageSha256": "e7f781002e3d4b5f3c9ea31a5cf7a66561a5094466e1ff7f1c5c2e8b58334068",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "6.4",
+     "pos": [
+      0.0,
+      0
+     ],
+     "yaw": 3.141592653589793,
+     "secondSign": {
+      "code": "8.21.2"
+     }
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_7_8",
+   "sourceQuestionId": "744b56480eff4d06f68d4d9a77e5c658",
+   "sourceImage": "assets/countries/ru/images/questions_ab/ac77f80c11456ca7928c6c4277516cac.webp",
+   "sourceImageSha256": "725c8599deffd489f70670cf2a979d7cb9fe05500221a399b2baa20b67b3cdd4",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "truck",
+     "type": "truck",
+     "pos": [
+      1.75,
+      1
+     ],
+     "yaw": 0,
+     "turnSignal": "right",
+     "driverSignal": null
+    },
+    {
+     "id": "blue_car",
+     "type": "car",
+     "pos": [
+      -1.75,
+      -2
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_8_7",
+   "sourceQuestionId": "ddba5acfc28e009636cce621e0b785e4",
+   "sourceImage": "assets/countries/ru/images/questions_ab/701cfc285d4031d48072f8b0a1b9de52.webp",
+   "sourceImageSha256": "c5ec0c8807b0d1702da66acf7beb7156f611da9bc89d754c3718e357106c8b4f",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "truck",
+     "type": "truck",
+     "pos": [
+      -5.25,
+      5
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    },
+    {
+     "id": "changing_car",
+     "type": "car",
+     "pos": [
+      -5.25,
+      -6
+     ],
+     "yaw": 0,
+     "turnSignal": "left",
+     "driverSignal": null
+    },
+    {
+     "id": "oncoming",
+     "type": "car",
+     "pos": [
+      1.75,
+      24
+     ],
+     "yaw": 3.141592653589793,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_8_11",
+   "sourceQuestionId": "d81b730e232ceee0cde358cc15fc3b72",
+   "sourceImage": "assets/countries/ru/images/questions_ab/8c603ea35edc08128ebdf41cec0da360.webp",
+   "sourceImageSha256": "f063b813b0e7c37aa0166e432f193283cddc3925af385b0ff9de11631c24dfa2",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "near_truck",
+     "type": "truck",
+     "pos": [
+      -5.25,
+      -10
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    },
+    {
+     "id": "far_truck",
+     "type": "truck",
+     "pos": [
+      -5.25,
+      18
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    },
+    {
+     "id": "oncoming",
+     "type": "car",
+     "pos": [
+      1.75,
+      25
+     ],
+     "yaw": 3.141592653589793,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_9_2",
+   "sourceQuestionId": "b19ba2cc652a455dca7a9a44381932be",
+   "sourceImage": "assets/countries/ru/images/questions_ab/ccfaa71247b7717e204220f439c65a8a.webp",
+   "sourceImageSha256": "73b045e95d823ee6a92641b0669a86b79d8d361cbc76d563b0b20b7ec2d1c872",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "1.22",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793,
+     "secondSign": {
+      "code": "8.1.1",
+      "number": 150
+     }
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_12_8",
+   "sourceQuestionId": "1c039b62c895602472e8441ffe43ad14",
+   "sourceImage": "assets/countries/ru/images/questions_ab/2adaa246a624f1f6759b6b1cff797dbd.webp",
+   "sourceImageSha256": "f48880aabb7a456bc3d3e7cc2484400f57cd3d2cccb560c3f5be0ce3c031fe66",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "changing_car",
+     "type": "car",
+     "pos": [
+      -1.75,
+      -2
+     ],
+     "yaw": 0,
+     "turnSignal": "right",
+     "driverSignal": null
+    },
+    {
+     "id": "changing_motorcycle",
+     "type": "motorcycle",
+     "pos": [
+      -5.25,
+      -2
+     ],
+     "yaw": 0,
+     "turnSignal": "left",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_12_10",
+   "sourceQuestionId": "433127439544633941d7e20012cc1963",
+   "sourceImage": "assets/countries/ru/images/questions_ab/1e705619216f7727620196fe657675dd.webp",
+   "sourceImageSha256": "38ce2b63ff42825f2d1dfacc47c64b1c8b043c5bc54e23cc9b6b84a682d9e714",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "4.6",
+     "pos": [
+      -8.2,
+      -4
+     ],
+     "yaw": 3.141592653589793,
+     "number": 40,
+     "mount": "cantilever",
+     "reach": 6.45,
+     "armSide": "left",
+     "clearance": 5.5,
+     "secondSign": {
+      "code": "8.14"
+     }
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_13_1",
+   "sourceQuestionId": "69b51e1c875cd1fd3060e79842c3e831",
+   "sourceImage": "assets/countries/ru/images/questions_ab/810552ccbc71b52860201ad9d0d83e64.webp",
+   "sourceImageSha256": "1843cd9006b22ce5f7ef1d1375b4cf013ff0e5979528581083ea519eaa6b16e2",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "middle_car",
+     "type": "car",
+     "pos": [
+      0,
+      -1
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_13_4",
+   "sourceQuestionId": "c728711456f888ff4ec548bdb2cc7c6f",
+   "sourceImage": "assets/countries/ru/images/questions_ab/2cc7b58517335189e53c29926cbd29a5.webp",
+   "sourceImageSha256": "a6d669010274f994533bb62ac085465f2b6ab3193770f0fd8483ecc848f3287a",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "8.4.3.2",
+     "pos": [
+      0.0,
+      0
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_13_5",
+   "sourceQuestionId": "43f8d52a473cb46ec566a2827586929d",
+   "sourceImage": "assets/countries/ru/images/questions_ab/16692cb12e0383f106396319f3c3a51b.webp",
+   "sourceImageSha256": "67e497ffc6cf2cc513249d4f140ad824d928e325204d326e6c297b010c384c04",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": []
+  },
+  {
+   "id": "ticket_16_4",
+   "sourceQuestionId": "8ee8cc73d6a66a5ac437c8de19107a3f",
+   "sourceImage": "assets/countries/ru/images/questions_ab/fba2d0f7ea26784dd789e2bc028155f9.webp",
+   "sourceImageSha256": "7d381e2804bba2e19449724bd3eec56186bf7b56274e5049349c50f9786e6e20",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "6.2",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793,
+     "secondSign": {
+      "code": "8.16"
+     },
+     "number": 40
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_16_5",
+   "sourceQuestionId": "83c795f2d0d72c3c226062d6ce700cc3",
+   "sourceImage": "assets/countries/ru/images/questions_ab/87dd59ca65649fe2e529146193452ff3.webp",
+   "sourceImageSha256": "9724377a66c702f2544def18a458b8c10bac74dabf3b525c136362c7a9a0d088",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": []
+  },
+  {
+   "id": "ticket_16_16",
+   "sourceQuestionId": "81c1d2c12026c9fd189eee415c6568cb",
+   "sourceImage": "assets/countries/ru/images/questions_ab/f9dcfb20a041a7701ee06f6a2ce994e5.webp",
+   "sourceImageSha256": "23bc6e84eb71550afba7e2bdde33d0f5d1258850df270e27beae6eff271bd484",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "5.1",
+     "pos": [
+      -11,
+      -5
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_18_3",
+   "sourceQuestionId": "4530d0d832ebcf014616981f6b6ec104",
+   "sourceImage": "assets/countries/ru/images/questions_ab/414d75d3838abf8463898b052c56b8cb.webp",
+   "sourceImageSha256": "261de11d7c762e4200a0819850edf0297ca6a246b2666ab58088a2fb270e4be3",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "3.30",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793
+    },
+    {
+     "id": "sign_1",
+     "code": "3.29",
+     "pos": [
+      4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_18_7",
+   "sourceQuestionId": "5bb243aef7431cd418b53fa1998f5e26",
+   "sourceImage": "assets/countries/ru/images/questions_ab/5076bba07f9a120d06525208a45f48da.webp",
+   "sourceImageSha256": "7b023df911ef5b1a481a30bab7370f7ce79e7b9a022e81747b95bd5d4098019a",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "5.5",
+     "pos": [
+      -8.2,
+      -6
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_19_3",
+   "sourceQuestionId": "04b1a8d935ab3e0efb7dec84e3bdf141",
+   "sourceImage": "assets/countries/ru/images/questions_ab/ccd31d35180c583ce32eefa65134cfd3.webp",
+   "sourceImageSha256": "b07e553c6b6adec1cb7b4d99fe9466911e8ced1a85b5cf2379eb92d67d41f026",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "3.28",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_19_10",
+   "sourceQuestionId": "dd0383ec40c74757c842c3059403a79e",
+   "sourceImage": "assets/countries/ru/images/questions_ab/c98167548f6dad5417b3e5aa77e6db07.webp",
+   "sourceImageSha256": "045361c74f821413617dd0897086cc4ea7ccad640acc438ecf2954c9ba34ba9e",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "4.6",
+     "pos": [
+      -8.2,
+      -4
+     ],
+     "yaw": 3.141592653589793,
+     "number": 40,
+     "mount": "cantilever",
+     "reach": 6.45,
+     "armSide": "left",
+     "clearance": 5.5,
+     "secondSign": {
+      "code": "8.14"
+     }
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_19_11",
+   "sourceQuestionId": "6fcf9e9e13a2602cfb9273eb8fcf070c",
+   "sourceImage": "assets/countries/ru/images/questions_ab/e4f45f7c5c43044accbeda568927b59c.webp",
+   "sourceImageSha256": "67dc72a6c4f72c4cadfce6d6ece3b1565cec21ec7004d76f37b4c8652e13ec14",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "truck",
+     "type": "truck",
+     "pos": [
+      -5.25,
+      -5
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    },
+    {
+     "id": "oncoming",
+     "type": "van",
+     "pos": [
+      1.75,
+      9
+     ],
+     "yaw": 3.141592653589793,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_20_3",
+   "sourceQuestionId": "96c5f0f9f2898962f9b6a3d02e65a644",
+   "sourceImage": "assets/countries/ru/images/questions_ab/caba243f0898a9ed727e68868e95441e.webp",
+   "sourceImageSha256": "004a4c096d3e6630c12cfb8857fe2f0e1eeb8e218f917321845e9538e3b24af5",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "3.27",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793,
+     "secondSign": {
+      "code": "8.2.4"
+     }
+    }
+   ],
+   "actors": [
+    {
+     "id": "passenger",
+     "type": "pedestrian",
+     "pos": [
+      -6.1,
+      6
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_20_12",
+   "sourceQuestionId": "530be726bc320d2cbdb970ab6ee5b6f9",
+   "sourceImage": "assets/countries/ru/images/questions_ab/d5026d02d7f19eb9e5ffb5034c748542.webp",
+   "sourceImageSha256": "b849872ecd7bf384dcc54519ac13bf4491a9928c3fdd2f60fe5e6ecb069fa40d",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "6.4",
+     "pos": [
+      -8.2,
+      -5
+     ],
+     "yaw": 3.141592653589793,
+     "secondSign": {
+      "code": "8.6.3"
+     }
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_21_2",
+   "sourceQuestionId": "60fea4fbd01056060bb56caf7bf51a7a",
+   "sourceImage": "assets/countries/ru/images/questions_ab/7e9c82a8f35f2de7bf11f6dd3a22a926.webp",
+   "sourceImageSha256": "0fc96175bef2db149e8b9ad2c92845a8b73a53ec987afdc9837117b62bf33956",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "1.6",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_21_19",
+   "sourceQuestionId": "d1da8cceb97eece49feaf2998f8235fa",
+   "sourceImage": "assets/countries/ru/images/questions_ab/13ec3f53b512d18199b2abd748af58b7.webp",
+   "sourceImageSha256": "8bd6993a8df75b463f44e81594b84055cb7bbd2bb67506cae3e31a646219d9f4",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "1.29",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_22_4",
+   "sourceQuestionId": "0fa4712a556e14c6e633a42bc5caced7",
+   "sourceImage": "assets/countries/ru/images/questions_ab/48011958d07fe959ef4e72d9ee9ac4ac.webp",
+   "sourceImageSha256": "617b933c186399a23d1f2c207d0fca25f91fb3faa08f6d9b5f76b4f185598a92",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "6.4",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793,
+     "secondSign": {
+      "code": "8.5.1"
+     }
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_22_5",
+   "sourceQuestionId": "8ad989184830ea856e0f486bb7291cb2",
+   "sourceImage": null,
+   "sourceImageSha256": null,
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": []
+  },
+  {
+   "id": "ticket_22_10",
+   "sourceQuestionId": "87ce63659dc2b758dd508f34c98adc0a",
+   "sourceImage": null,
+   "sourceImageSha256": null,
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "oncoming_tram",
+     "type": "tram",
+     "pos": [
+      1.75,
+      20
+     ],
+     "yaw": 3.141592653589793,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_23_2",
+   "sourceQuestionId": "a31a93feaf20cb7b8e22d9517bfc8691",
+   "sourceImage": "assets/countries/ru/images/questions_ab/5c9712e0ce29dcfa5a66f316de8382b0.webp",
+   "sourceImageSha256": "92ce762c03898ee13929a0cf3bdd0d22cb87fe762347a696ffab0f84eb5b4856",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "1.5",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_23_3",
+   "sourceQuestionId": "53f2f59003f956e111d79ee5f848761a",
+   "sourceImage": "assets/countries/ru/images/questions_ab/08ce3d58f673e7f662a6d9c06de7a9c9.webp",
+   "sourceImageSha256": "2596574e5d9690ae37e4201e6ca9b6b563e2ab589cd915846f4ad9f30fe87c2d",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "3.16",
+     "pos": [
+      0.0,
+      0
+     ],
+     "yaw": 3.141592653589793,
+     "secondSign": {
+      "code": "8.2.1",
+      "number": 100
+     },
+     "number": 70
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_23_9",
+   "sourceQuestionId": "98e663d9e71d48aea7658d3add0b8c6d",
+   "sourceImage": "assets/countries/ru/images/questions_ab/b897850c898749bf9318888c7a2f84f8.webp",
+   "sourceImageSha256": "ee9f2047ca95c812d972b76bb9a999dfbc6b87a110c9d58f66dc046cf5e0c8d9",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": []
+  },
+  {
+   "id": "ticket_23_12",
+   "sourceQuestionId": "3bd5fde76ae3cc923aa131a822a04c36",
+   "sourceImage": "assets/countries/ru/images/questions_ab/011c87847a6e97caf914b64e369dcc10.webp",
+   "sourceImageSha256": "09c58a03b0f6b34c6677f8fdb3dfb55a533d0a17aad411b4ac54df18411bb098",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "5.16",
+     "pos": [
+      -4.7,
+      7.2
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": [
+    {
+     "id": "stop_bus",
+     "type": "bus",
+     "pos": [
+      -2.35,
+      6.8
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_24_5",
+   "sourceQuestionId": "b660d2850691b730ef4c2875542f76d2",
+   "sourceImage": "assets/countries/ru/images/questions_ab/3b49531f6a161048641538ecf6469485.webp",
+   "sourceImageSha256": "96afe8e2d4396ad772d327763f17c49b5392e6814ccaca124cec7d559668533f",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": []
+  },
+  {
+   "id": "ticket_25_4",
+   "sourceQuestionId": "3bf37620f061d6e9d1578b4939bdbb20",
+   "sourceImage": "assets/countries/ru/images/questions_ab/43c8ce4013a2dbe0886a3eef837278c5.webp",
+   "sourceImageSha256": "37d40943b3337ab066097f6f0e02d80afc1f336807c36e8a3cec4430ff90a151",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "5.10",
+     "pos": [
+      -4.7,
+      -9
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_26_3",
+   "sourceQuestionId": "ec4b9b048b8dc024aaf4ccf3cae26474",
+   "sourceImage": "assets/countries/ru/images/questions_ab/87685eb695b03213dd555ad6b3ccdbbc.webp",
+   "sourceImageSha256": "123765fd6af72218fd73d6fbc4288e30d9ba59365a7e65a1cc7d48f9229d8b56",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "3.26",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_26_16",
+   "sourceQuestionId": "999727ea0a93d5f3e7c17e86c951a790",
+   "sourceImage": null,
+   "sourceImageSha256": null,
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "5.19.1",
+     "pos": [
+      -4.5,
+      -2
+     ],
+     "yaw": 3.141592653589793
+    },
+    {
+     "id": "sign_1",
+     "code": "5.19.2",
+     "pos": [
+      4.5,
+      2
+     ],
+     "yaw": 0
+    }
+   ],
+   "actors": [
+    {
+     "id": "queue0",
+     "type": "car",
+     "pos": [
+      -1.75,
+      4.6
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    },
+    {
+     "id": "queue1",
+     "type": "car",
+     "pos": [
+      -1.75,
+      9.3
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    },
+    {
+     "id": "queue2",
+     "type": "car",
+     "pos": [
+      -1.75,
+      14.0
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_27_3",
+   "sourceQuestionId": "afb406746889ac8af09848826be02580",
+   "sourceImage": "assets/countries/ru/images/questions_ab/92c47bbf0ca878640288b11f11a663ad.webp",
+   "sourceImageSha256": "553328a8fb73875128589fed448048eebdca91d507fceb37551313817fca2bad",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "3.27",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": [
+    {
+     "id": "passenger",
+     "type": "pedestrian",
+     "pos": [
+      -6.1,
+      6
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_30_3",
+   "sourceQuestionId": "52292cc09fbd42d2e14f16404561f73a",
+   "sourceImage": "assets/countries/ru/images/questions_ab/763206c7477819a1d3a755f0fa9114f9.webp",
+   "sourceImageSha256": "ad4ea20b511dd1b62cbf668c08c6182e7220a874ff28337b37cd4ebe153f8b9e",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "3.29",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793
+    },
+    {
+     "id": "sign_1",
+     "code": "3.30",
+     "pos": [
+      4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_30_12",
+   "sourceQuestionId": "ca2f8de35f579bc67164e04ef7382e2e",
+   "sourceImage": "assets/countries/ru/images/questions_ab/8578f56da82a57ddacac6b70d2062801.webp",
+   "sourceImageSha256": "0892173ac940b3ae6963537bc15e1ec6214a8d110dde2baad8f23e40c516ffbf",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "angled_car",
+     "type": "car",
+     "pos": [
+      -9.65,
+      -1
+     ],
+     "yaw": -1.0471975511965976,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_31_3",
+   "sourceQuestionId": "504054d30f41e17df1ee10f5a365a470",
+   "sourceImage": "assets/countries/ru/images/questions_ab/8bb633b83b0df8001cd12573334b26b6.webp",
+   "sourceImageSha256": "39be26e1716cbf4b5b354188ee41c8fdf293ac8b3800a91e0294171f83370e98",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "3.2",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793,
+     "secondSign": {
+      "code": "8.5.2"
+     }
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_31_7",
+   "sourceQuestionId": "ec0ccb04da9d8a70e08017f0a39061b0",
+   "sourceImage": "assets/countries/ru/images/questions_ab/c82b6f0b69a786204d6e3bc86d40ddcf.webp",
+   "sourceImageSha256": "11ba30c985b28d92f22961760450b3420954276d352e57ad013057d7b58bc53b",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "hand_signal_car",
+     "type": "car",
+     "pos": [
+      -4.5,
+      -2
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": "extended"
+    }
+   ]
+  },
+  {
+   "id": "ticket_32_11",
+   "sourceQuestionId": "e6bf2168cfb953461fa8d1f5ac6716c6",
+   "sourceImage": null,
+   "sourceImageSha256": null,
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "5.19.1",
+     "pos": [
+      -4.5,
+      -2
+     ],
+     "yaw": 3.141592653589793
+    },
+    {
+     "id": "sign_1",
+     "code": "5.19.2",
+     "pos": [
+      4.5,
+      2
+     ],
+     "yaw": 0
+    }
+   ],
+   "actors": [
+    {
+     "id": "lead_car",
+     "type": "car",
+     "pos": [
+      -1.75,
+      -7
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_33_1",
+   "sourceQuestionId": "06a9069a8b757dbc4c1d5af3b8360d5a",
+   "sourceImage": "assets/countries/ru/images/questions_ab/3f5409a7fb0ddf9cd9799f225027672d.webp",
+   "sourceImageSha256": "45103908b78ca2673fee75dc3c0c4b6f91c821b2e88b5d4addda069954d9acce",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "truck",
+     "type": "truck",
+     "pos": [
+      -5.25,
+      5
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    },
+    {
+     "id": "changing_car",
+     "type": "car",
+     "pos": [
+      -5.25,
+      -6
+     ],
+     "yaw": 0,
+     "turnSignal": "left",
+     "driverSignal": null
+    },
+    {
+     "id": "oncoming",
+     "type": "car",
+     "pos": [
+      1.75,
+      24
+     ],
+     "yaw": 3.141592653589793,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_33_5",
+   "sourceQuestionId": "65def953062516904333eb3b3ac0cd61",
+   "sourceImage": "assets/countries/ru/images/questions_ab/128842239b8b3b6dac957d988248a327.webp",
+   "sourceImageSha256": "0a0d5f8bb9d2381b92f04dc00b30be030017752bd3532a2077fa273fd07001b9",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": []
+  },
+  {
+   "id": "ticket_34_2",
+   "sourceQuestionId": "407900ffd680aecd7c3eb05441687823",
+   "sourceImage": "assets/countries/ru/images/questions_ab/d3f85921878a51db1c7197d22f5b8962.webp",
+   "sourceImageSha256": "54be4514db3cf54bb05ca2113a524ed58c5652d8918a934bf742b4b596d7ea6c",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "1.15",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_34_3",
+   "sourceQuestionId": "6913ae1f5836793bb47fe343cf6896f0",
+   "sourceImage": "assets/countries/ru/images/questions_ab/40e68617cce95ec2ae0e7c7e1bf6b529.webp",
+   "sourceImageSha256": "f720eaa11444c9fdc028ed496beb46e44c4d565bded966d0187c25bfffff54cb",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "3.27",
+     "pos": [
+      -4.7,
+      -5
+     ],
+     "yaw": 3.141592653589793,
+     "secondSign": {
+      "code": "8.18"
+     }
+    }
+   ],
+   "actors": []
+  },
+  {
+   "id": "ticket_34_8",
+   "sourceQuestionId": "3cfb7001cda943a18b2b1cb5980926de",
+   "sourceImage": "assets/countries/ru/images/questions_ab/fa8e614c162efa9963c34741f225ae70.webp",
+   "sourceImageSha256": "a5a9b8141c99e981fcab344b3174ca14befd7d906b86c6f664bf5b55ea44bc91",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "starting_car",
+     "type": "car",
+     "pos": [
+      -6,
+      -2
+     ],
+     "yaw": 0,
+     "turnSignal": "left",
+     "driverSignal": null
+    },
+    {
+     "id": "truck",
+     "type": "truck",
+     "pos": [
+      -1.75,
+      -9
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_34_11",
+   "sourceQuestionId": "f5405e4ab81d2c0b7c27cd460818e86b",
+   "sourceImage": "assets/countries/ru/images/questions_ab/1d8973c9b7892a5df603b8c4a57e0765.webp",
+   "sourceImageSha256": "f233c0aae74d461e3dd557e69b1b4a03e47f13da414c669d03645e63d8eaa709",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "right_car",
+     "type": "car",
+     "pos": [
+      -5.25,
+      2
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    },
+    {
+     "id": "oncoming",
+     "type": "car",
+     "pos": [
+      1.75,
+      3
+     ],
+     "yaw": 3.141592653589793,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_36_7",
+   "sourceQuestionId": "361aa35ffcd00ed75c270eb18b2e1307",
+   "sourceImage": "assets/countries/ru/images/questions_ab/d0efc35b84dd44ebda7b22168924ab36.webp",
+   "sourceImageSha256": "e1b2214696a4eeef43eaba45da3130accd582ea737043a404b6567c067b5ec82",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "hand_signal_car",
+     "type": "car",
+     "pos": [
+      -2.5,
+      -2
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": "raised"
+    },
+    {
+     "id": "oncoming_motorcycle",
+     "type": "motorcycle",
+     "pos": [
+      1.75,
+      7
+     ],
+     "yaw": 3.141592653589793,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_39_8",
+   "sourceQuestionId": "37418b099a680ea57a4e3891fd349d25",
+   "sourceImage": "assets/countries/ru/images/questions_ab/5ece9b9e7d648f3ce4c78e4569a0f68f.webp",
+   "sourceImageSha256": "e20bf3cf8f8e4221cc51fac1a156917dff0b91fbaf4a7e558b12ae0b988ed9ba",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [],
+   "actors": [
+    {
+     "id": "changing_car",
+     "type": "car",
+     "pos": [
+      1.75,
+      -3
+     ],
+     "yaw": 0,
+     "turnSignal": "right",
+     "driverSignal": null
+    },
+    {
+     "id": "blue_car",
+     "type": "car",
+     "pos": [
+      -1.75,
+      0
+     ],
+     "yaw": 0,
+     "turnSignal": "off",
+     "driverSignal": null
+    }
+   ]
+  },
+  {
+   "id": "ticket_40_4",
+   "sourceQuestionId": "b8d1716fa37db5d9a7cef3d5ca070175",
+   "sourceImage": "assets/countries/ru/images/questions_ab/d45d8113cd910c59a0150fe80b274dfc.webp",
+   "sourceImageSha256": "a1409a0ef4515686742d5598a8ea3139bf6ee48baa0cd6c3648040f641bfde86",
+   "sourceReviewed": true,
+   "phoneCaptureReviewed": true,
+   "desktopCaptureReviewed": true,
+   "editorOpened": true,
+   "signs": [
+    {
+     "id": "sign_0",
+     "code": "6.4",
+     "pos": [
+      0.0,
+      0
+     ],
+     "yaw": 3.141592653589793,
+     "secondSign": {
+      "code": "8.6.3"
+     }
+    }
+   ],
+   "actors": []
+  }
+ ]
+}

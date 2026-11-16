@@ -1,0 +1,96 @@
+{
+ "id": "ticket_26_3",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 26 · Вопрос 3",
+   "title": "В зоне действия этого знака разрешается использовать звуковой сигнал:",
+   "options": [
+    "Только для предупреждения об обгоне",
+    "Только для предотвращения дорожно-транспортного происшествия",
+    "В обоих перечисленных случаях"
+   ],
+   "explanation": "В зоне действия знака 3.26 «Подача звукового сигнала запрещена» подача звукового сигнала недопустима, кроме случаев предупреждения дорожно-транспортного происшествия.(«Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 26 · Question 3",
+   "title": "In the area covered by this sign, it is permitted to use a sound signal:",
+   "options": [
+    "For overtaking warning only",
+    "Only to prevent a traffic accident",
+    "In both of the above cases"
+   ],
+   "explanation": "In the area covered by sign 3.26 “Sound Signal Prohibited,” sound signaling is prohibited, except in cases of warning of a traffic accident. (“Road Signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "26-билет · 3-сұрақ",
+   "title": "Осы белгімен қамтылған аумақта дыбыстық сигналды пайдалануға рұқсат етіледі:",
+   "options": [
+    "Тек басып озу туралы ескерту үшін",
+    "Тек жол-көлік оқиғасының алдын алу үшін",
+    "Жоғарыда аталған екі жағдайда да"
+   ],
+   "explanation": "3.26 «Дыбыстық сигналға тыйым салынады» белгісінің әрекет ету аймағында жол-көлік оқиғасы туралы ескерту жағдайларын қоспағанда, дыбыстық сигнал беруге тыйым салынады. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 193,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "ec4b9b048b8dc024aaf4ccf3cae26474",
+ "sourceCategory": "ab",
+ "sourceImage": "87685eb695b03213dd555ad6b3ccdbbc",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

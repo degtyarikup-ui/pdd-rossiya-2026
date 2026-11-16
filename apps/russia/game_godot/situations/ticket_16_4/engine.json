@@ -1,0 +1,96 @@
+{
+ "id": "ticket_16_4",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 16 · Вопрос 4",
+   "title": "О чём информируют эти знаки?",
+   "options": [
+    "Разрешенная скорость не более 40 км/ч при влажном покрытии",
+    "Рекомендуемая скорость 40 км/ч при влажном покрытии",
+    "Рекомендуемая скорость не более 40 км/ч только во время дождя"
+   ],
+   "explanation": "Табличка 8.16 «Влажное покрытие» указывает, что действие знака 6.2 «Рекомендуемая скорость» распространяется на период времени, когда покрытие проезжей части влажное. В данном случае действие распространяется до ближайшего перекрёстка.(«Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 16 · Question 4",
+   "title": "What do these signs inform?",
+   "options": [
+    "Permitted speed no more than 40 km/h on wet surfaces",
+    "Recommended speed 40 km/h in wet conditions",
+    "Recommended speed no more than 40 km/h only during rain"
+   ],
+   "explanation": "Plate 8.16 “Wet Surface” indicates that sign 6.2 “Recommended Speed” applies to the period of time when the roadway surface is wet. In this case, the action extends to the nearest intersection. (“Road signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "16-билет · 4-сұрақ",
+   "title": "Бұл белгілер нені білдіреді?",
+   "options": [
+    "Ылғал беттерде рұқсат етілген жылдамдық 40 км/сағ аспайды",
+    "Ылғалды жағдайда ұсынылатын жылдамдық 40 км/сағ",
+    "Ұсынылған жылдамдық тек жаңбыр кезінде 40 км/сағ аспайды"
+   ],
+   "explanation": "8.16 «Ылғалды жабын» тақтасы 6.2 «Ұсынылған жылдамдық» белгісі жолдың беткі қабаты ылғалды болған уақыт кезеңіне қолданылатынын көрсетеді. Бұл жағдайда әрекет ең жақын қиылысқа дейін таралады. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 198,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "8ee8cc73d6a66a5ac437c8de19107a3f",
+ "sourceCategory": "ab",
+ "sourceImage": "fba2d0f7ea26784dd789e2bc028155f9",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

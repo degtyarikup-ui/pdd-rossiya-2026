@@ -1,0 +1,96 @@
+{
+ "id": "ticket_13_1",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 13 · Вопрос 1",
+   "title": "Соответствуют ли действия водителя Правилам, если он движется посередине дороги?",
+   "options": [
+    "Соответствуют",
+    "Соответствуют, если отсутствуют встречные транспортные средства",
+    "Не соответствуют"
+   ],
+   "explanation": "Водитель должен занимать сторону дороги, предназначенную для движения в данном направлении. Так как у нас правостороннее движение, он должен занять правую сторону дороги. Движение посередине дороги является нарушением.(Пункты 1.4, 9.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 13 · Question 1",
+   "title": "Do the driver's actions comply with the Rules if he is driving in the middle of the road?",
+   "options": [
+    "Compliant",
+    "Compliant if there are no oncoming vehicles",
+    "Do not match"
+   ],
+   "explanation": "The driver must occupy the side of the road intended for traffic in a given direction. Since we drive on the right, he must take the right side of the road. Driving in the middle of the road is a violation. (Clause 1.4, 9.1 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "13-билет · 1-сұрақ",
+   "title": "Жүргізуші жолдың ортасында келе жатса, оның әрекеті Ережеге сәйкес келе ме?",
+   "options": [
+    "Сәйкес",
+    "Қарсы келе жатқан көліктер болмаса, сәйкес келеді",
+    "Сәйкес келмейді"
+   ],
+   "explanation": "Жүргізуші жолдың белгілі бір бағытта қозғалысқа арналған бөлігін алуы керек. Біз оң жақта жүргендіктен, ол жолдың оң жағымен жүруі керек. Жолдың ортасында жүру - тәртіп бұзу. (Жол қозғалысы ережесінің 1.4, 9.1 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 172,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "69b51e1c875cd1fd3060e79842c3e831",
+ "sourceCategory": "ab",
+ "sourceImage": "810552ccbc71b52860201ad9d0d83e64",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

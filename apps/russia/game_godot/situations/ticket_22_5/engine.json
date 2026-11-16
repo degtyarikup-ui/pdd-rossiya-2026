@@ -1,0 +1,96 @@
+{
+ "id": "ticket_22_5",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 22 · Вопрос 5",
+   "title": "Допускается ли пересекать сплошную линию разметки, обозначающую край проезжей части?",
+   "options": [
+    "Допускается для остановки на обочине и при выезде с нее",
+    "Допускается для остановки на обочине и при выезде с нее только в местах, где разрешена остановка или стоянка",
+    "Запрещается"
+   ],
+   "explanation": "Линию разметки 1.2 допускается пересекать для остановки транспортного средства на обочине и при выезде с нее в местах, где разрешена остановка или стоянка. («Горизонтальная разметка»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 22 · Question 5",
+   "title": "Is it allowed to cross a solid marking line marking the edge of the roadway?",
+   "options": [
+    "Allowed for stopping on the side of the road and when leaving it",
+    "Allowed for stopping on the side of the road and when leaving it only in places where stopping or parking is permitted",
+    "Prohibited"
+   ],
+   "explanation": "Marking line 1.2 is allowed to be crossed to stop a vehicle on the side of the road and when leaving it in places where stopping or parking is permitted. (“Horizontal marking”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "22-билет · 5-сұрақ",
+   "title": "Жолдың жиегін белгілейтін тұтас таңбалау сызығын кесіп өтуге рұқсат етіледі ме?",
+   "options": [
+    "Жолдың жиегінде және одан шыққан кезде тоқтауға рұқсат етіледі",
+    "Жолдың жиегінде тоқтауға және оны қалдыру кезінде тоқтауға немесе тұраққа рұқсат етілген жерлерде ғана рұқсат етіледі.",
+    "Тыйым салынған"
+   ],
+   "explanation": "1.2 таңбалау сызығын көлік құралын жол жиегінде тоқтату үшін және оны тоқтауға немесе тұраққа рұқсат етілген жерлерде қалдырған кезде кесіп өтуге рұқсат етіледі. («Көлденең таңбалау»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 258,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "8ad989184830ea856e0f486bb7291cb2",
+ "sourceCategory": "ab",
+ "sourceImage": null,
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

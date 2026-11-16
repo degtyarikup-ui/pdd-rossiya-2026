@@ -1,0 +1,96 @@
+{
+ "id": "ticket_34_3",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 34 · Вопрос 3",
+   "title": "Остановка в зоне действия этого знака разрешена:",
+   "options": [
+    "Только такси с включенным таксометром",
+    "Только автомобилям, на которых установлен опознавательный знак «Инвалид»",
+    "Всем перечисленным транспортным средствам"
+   ],
+   "explanation": "В случае применения знака 3.27 «Остановка запрещена» с табличкой 8.18 «Кроме инвалидов» в его зоне действия могут останавливаться мотоколяски и автомобили, обозначенные знаком «Инвалид», в соответствии с Федеральным законом.",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 34 · Question 3",
+   "title": "Stopping in the area covered by this sign is permitted:",
+   "options": [
+    "Only taxis with the taximeter on",
+    "Only for vehicles with the “Disabled” identification badge installed.",
+    "All listed vehicles"
+   ],
+   "explanation": "If sign 3.27 “Stopping is prohibited” with sign 8.18 “Except for disabled people” is used, motorized strollers and cars marked with the “Disabled” sign can stop in its coverage area in accordance with the Federal Law.",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "34-билет · 3-сұрақ",
+   "title": "Осы белгі аймағында тоқтауға рұқсат етіледі:",
+   "options": [
+    "Тек таксометр қосулы таксилер",
+    "Тек «Мүгедек» сәйкестендіру белгісі орнатылған көліктерге арналған.",
+    "Барлық тізімделген көліктер"
+   ],
+   "explanation": "Егер 8.18 «Мүгедектерді қоспағанда» белгісі бар 3.27 «Тоқтауға тыйым салынады» белгісі қолданылса, «Мүгедек» белгісі бар моторлы арбалар мен автомобильдер Федералдық заңға сәйкес оның қамту аймағында тоқтай алады.",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 198,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "6913ae1f5836793bb47fe343cf6896f0",
+ "sourceCategory": "ab",
+ "sourceImage": "40e68617cce95ec2ae0e7c7e1bf6b529",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

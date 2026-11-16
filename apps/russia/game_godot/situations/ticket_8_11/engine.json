@@ -1,0 +1,96 @@
+{
+ "id": "ticket_8_11",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 8 · Вопрос 11",
+   "title": "Разрешено ли Вам после опережения первого автомобиля продолжить движение по левой полосе вне населенных пунктов?",
+   "options": [
+    "Разрешено",
+    "Разрешено, если Вы намерены опередить второй автомобиль",
+    "Запрещено"
+   ],
+   "explanation": "Вне населённого пункта именно в такой ситуации при наличии двух полос в данном направлении разрешается оставаться на левой полосе, чтобы не осуществлять лишние маневры во время опережения. При этом Вы не должны создавать помехи транспортным средствам, движущимся за Вами с более высокой скоростью.(Пункт 9.4 ПДД).",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 8 · Question 11",
+   "title": "Are you allowed to continue driving in the left lane outside populated areas after getting ahead of the first car?",
+   "options": [
+    "Allowed",
+    "Allowed if you intend to get ahead of the second car",
+    "Forbidden"
+   ],
+   "explanation": "Outside a populated area, in just such a situation, if there are two lanes in a given direction, you are allowed to stay in the left lane so as not to make unnecessary maneuvers while ahead. At the same time, you must not interfere with vehicles moving behind you at a higher speed (Clause 9.4 of the Traffic Regulations).",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "8-билет · 11-сұрақ",
+   "title": "Бірінші көліктен озып шыққаннан кейін елді мекендерден тыс сол жақ жолақпен жүруді жалғастыруға рұқсат етіледі ме?",
+   "options": [
+    "Рұқсат етілген",
+    "Егер сіз екінші көліктен озып кеткіңіз келсе, рұқсат етіледі",
+    "Тыйым салынған"
+   ],
+   "explanation": "Елді мекеннен тыс жерде, дәл осындай жағдайда, егер берілген бағытта екі жолақ болса, алдына шығу кезінде қажетсіз маневрлер жасамау үшін сол жақ жолақта қалуға рұқсат етіледі. Бұл ретте артыңыздан жоғары жылдамдықпен келе жатқан көліктерге кедергі жасамау керек (Жол қозғалысы ережесінің 9.4 тармағы).",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 185,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "d81b730e232ceee0cde358cc15fc3b72",
+ "sourceCategory": "ab",
+ "sourceImage": "8c603ea35edc08128ebdf41cec0da360",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

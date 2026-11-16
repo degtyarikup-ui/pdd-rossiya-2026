@@ -1,0 +1,96 @@
+{
+ "id": "ticket_19_3",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 19 · Вопрос 3",
+   "title": "Разрешено ли осуществлять посадку (высадку) пассажиров либо загрузку (разгрузку) транспортного средства в зоне действия этого знака?",
+   "options": [
+    "Разрешено",
+    "Разрешено, если это займет не более 5 минут",
+    "Запрещено"
+   ],
+   "explanation": "В зоне действия знака 3.28 «Стоянка запрещена» разрешается «остановка», включающая все действия, определяемые данным термином.(Пункт 1.2 термин «Остановка», «Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 19 · Question 3",
+   "title": "Is it permitted to board (disembark) passengers or load (unload) a vehicle within the coverage area of this sign?",
+   "options": [
+    "Allowed",
+    "Allowed if it takes no more than 5 minutes",
+    "Forbidden"
+   ],
+   "explanation": "In the coverage area of sign 3.28 “Parking prohibited”, “stopping” is permitted, including all actions defined by this term. (Clause 1.2 term “Stopping”, “Road signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "19-билет · 3-сұрақ",
+   "title": "Осы белгінің қамту аймағында жолаушыларды отырғызуға (түсіруге) немесе көлік құралын тиеуге (түсіруге) рұқсат етіледі ме?",
+   "options": [
+    "Рұқсат етілген",
+    "5 минуттан аспайтын болса рұқсат етіледі",
+    "Тыйым салынған"
+   ],
+   "explanation": "3.28 «Автотұрақ жоқ», «тоқтату» белгісінің қамту аймағында осы терминмен анықталған барлық әрекеттерді қоса алғанда, рұқсат етіледі. («Аялдама», «Жол белгілері» 1.2-тармақ)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 193,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "04b1a8d935ab3e0efb7dec84e3bdf141",
+ "sourceCategory": "ab",
+ "sourceImage": "ccd31d35180c583ce32eefa65134cfd3",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

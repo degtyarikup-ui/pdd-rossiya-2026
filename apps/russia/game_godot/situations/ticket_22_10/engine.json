@@ -1,0 +1,99 @@
+{
+ "id": "ticket_22_10",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -5.25,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 22 · Вопрос 10",
+   "title": "Разрешается ли использовать для движения трамвайные пути встречного направления?",
+   "options": [
+    "Разрешается",
+    "Разрешается, если при этом не будут созданы помехи встречным транспортным средствам",
+    "Разрешается только при объезде трамвая попутного направления",
+    "Запрещается"
+   ],
+   "explanation": "Выезд на трамвайные пути встречного движения при любых обстоятельствах запрещён.(Пункт 9.6 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 22 · Question 10",
+   "title": "Is it allowed to use tram tracks in the opposite direction for traffic?",
+   "options": [
+    "Allowed",
+    "It is allowed if it does not interfere with oncoming vehicles.",
+    "Permitted only when passing a tram in the same direction",
+    "Prohibited"
+   ],
+   "explanation": "Driving onto the tram tracks of oncoming traffic is prohibited under any circumstances. (Clause 9.6 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "22-билет · 10-сұрақ",
+   "title": "Қозғалыс үшін қарама-қарсы бағытта трамвай жолдарын пайдалануға рұқсат етіледі ме?",
+   "options": [
+    "Рұқсат етілген",
+    "Қарсы келе жатқан көліктерге кедергі жасамаса рұқсат етіледі.",
+    "Бір бағытта трамвайдан өткенде ғана рұқсат етіледі",
+    "Тыйым салынған"
+   ],
+   "explanation": "Кез келген жағдайда қарсы келе жатқан трамвай жолымен жүруге тыйым салынады. (Жол қозғалысы ережесінің 9.6 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 245,
+ "correctAnswerIndex": 3,
+ "showPlayerGuide": true,
+ "sourceQuestionId": "87ce63659dc2b758dd508f34c98adc0a",
+ "sourceCategory": "ab",
+ "sourceImage": null,
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

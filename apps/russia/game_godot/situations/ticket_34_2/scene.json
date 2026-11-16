@@ -1,0 +1,162 @@
+{
+ "id": "ticket_34_2",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.75,
+     -18
+    ],
+    [
+     -1.5,
+     4.5
+    ],
+    [
+     -1.5,
+     40.5
+    ],
+    [
+     -1.5,
+     49.5
+    ],
+    [
+     -1.5,
+     52.5
+    ],
+    [
+     -1.74,
+     53.46
+    ],
+    [
+     -2.94,
+     58.26
+    ],
+    [
+     -5.82,
+     69.78
+    ],
+    [
+     -7.26,
+     75.54
+    ],
+    [
+     -7.5,
+     76.5
+    ],
+    [
+     -8.361,
+     78.274
+    ],
+    [
+     -12.236,
+     86.258
+    ]
+   ],
+   "exitYaw": -0.433
+  }
+ },
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 34 · Вопрос 2",
+   "title": "На каком расстоянии до скользкого участка дороги устанавливается данный знак в населённом пункте?",
+   "options": [
+    "150 - 300 м",
+    "50 - 100 м",
+    "Непосредственно перед началом скользкого участка"
+   ],
+   "explanation": "В населённом пункте большинство предупреждающих знаков устанавливается на расстоянии 50-100 м до опасного участка. На таком расстоянии устанавливается и знак 1.15 «Скользкая дорога».(«Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 34 · Question 2",
+   "title": "At what distance to a slippery section of the road is this sign installed in a populated area?",
+   "options": [
+    "150 - 300 m",
+    "50 - 100 m",
+    "Just before the start of the slippery section"
+   ],
+   "explanation": "In populated areas, most warning signs are installed at a distance of 50-100 m from the dangerous area. At this distance, sign 1.15 “Slippery road” is also installed. (“Road signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "34-билет · 2-сұрақ",
+   "title": "Елді мекенде бұл белгі жолдың тайғақ бөлігіне дейін қандай қашықтықта орнатылған?",
+   "options": [
+    "150 - 300 м",
+    "50 - 100 м",
+    "Тайғақ бөлімнің басталуына дейін"
+   ],
+   "explanation": "Елді мекендерде ескерту белгілерінің көпшілігі қауіпті аймақтан 50-100 м қашықтықта орнатылады. Бұл қашықтықта 1.15 «Тайғақ жол» белгісі де орнатылған. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 166,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "407900ffd680aecd7c3eb05441687823",
+ "sourceCategory": "ab",
+ "sourceImage": "d3f85921878a51db1c7197d22f5b8962",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ },
+ "playerPlacement": "free",
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   -2.8,
+   -2
+  ],
+  "height": 23,
+  "yaw": 0,
+  "pitch": 0.33,
+  "elevation": 0
+ }
+}

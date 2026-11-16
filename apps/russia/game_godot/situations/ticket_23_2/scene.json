@@ -1,0 +1,162 @@
+{
+ "id": "ticket_23_2",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.75,
+     -18
+    ],
+    [
+     -1.5,
+     4.5
+    ],
+    [
+     -1.5,
+     40.5
+    ],
+    [
+     -1.5,
+     49.5
+    ],
+    [
+     -1.5,
+     52.5
+    ],
+    [
+     -1.74,
+     53.46
+    ],
+    [
+     -2.94,
+     58.26
+    ],
+    [
+     -5.82,
+     69.78
+    ],
+    [
+     -7.26,
+     75.54
+    ],
+    [
+     -7.5,
+     76.5
+    ],
+    [
+     -8.361,
+     78.274
+    ],
+    [
+     -12.236,
+     86.258
+    ]
+   ],
+   "exitYaw": -0.433
+  }
+ },
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 23 · Вопрос 2",
+   "title": "Данный дорожный знак:",
+   "options": [
+    "Предупреждает Вас о приближении к месту пересечения с трамвайной линией",
+    "Предупреждает Вас о приближении к трамвайной остановке",
+    "Обязывает Вас остановиться непосредственно перед пересечением с трамвайной линией"
+   ],
+   "explanation": "Знак 1.5 «Пересечение с трамвайной линией» в населённом пункте устанавливается за 50 - 100 м до пересечения с трамвайной линией. Имейте ввиду, что вне перекрестка, где трамвайные пути пересекают проезжую часть, трамвай имеет преимущество перед безрельсовыми ТС, кроме случаев выезда из депо.(«Дорожные знаки». Пункт 18.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 23 · Question 2",
+   "title": "This road sign:",
+   "options": [
+    "Warns you about approaching the intersection with the tram line",
+    "Warns you of approaching a tram stop",
+    "Obliges you to stop immediately before the intersection with the tram line"
+   ],
+   "explanation": "Sign 1.5 “Intersection with a tram line” in a populated area is installed 50 - 100 m before the intersection with a tram line. Keep in mind that outside the intersection where tram tracks cross the roadway, the tram has priority over trackless vehicles, except when leaving the depot. (“Road signs.” Clause 18.1 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "23-билет · 2-сұрақ",
+   "title": "Бұл жол белгісі:",
+   "options": [
+    "Трамвай желісінің қиылысына жақындағанда ескертеді",
+    "Трамвай аялдамасына жақындағанда ескертеді",
+    "Трамвай желісінен өтпес бұрын тоқтауды талап етеді"
+   ],
+   "explanation": "Елді мекендегі 1.5 «Трамвай желісімен қиылысу» белгісі трамвай желісімен қиылысудан 50 - 100 м бұрын орнатылады. Трамвай жолдары жолды кесіп өтетін қиылыстан тыс жерде, деподан шыққан кезді қоспағанда, трамвай рельссіз көліктерге қарағанда артықшылыққа ие екенін есте сақтаңыз. («Жол белгілері.» Жол қозғалысы ережесінің 18.1 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 227,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "a31a93feaf20cb7b8e22d9517bfc8691",
+ "sourceCategory": "ab",
+ "sourceImage": "5c9712e0ce29dcfa5a66f316de8382b0",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ },
+ "playerPlacement": "free",
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   -2.8,
+   -2
+  ],
+  "height": 23,
+  "yaw": 0,
+  "pitch": 0.33,
+  "elevation": 0
+ }
+}

@@ -1,0 +1,96 @@
+{
+ "id": "ticket_31_7",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 31 · Вопрос 7",
+   "title": "Такой сигнал рукой, подаваемый водителем легкового автомобиля, информирует Вас:",
+   "options": [
+    "О его намерении начать движение",
+    "О его просьбе оказать помощь",
+    "Об имеющейся опасности за поворотом"
+   ],
+   "explanation": "Вытянутая в сторону левая рука является сигналом левого поворота, который водитель обязан подать перед началом движения.(Пункт 8.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 31 · Question 7",
+   "title": "Such a hand signal given by the driver of a passenger car informs you:",
+   "options": [
+    "About his intention to start a movement",
+    "About his request for help",
+    "About the danger around the corner"
+   ],
+   "explanation": "The left hand extended to the side is a left turn signal, which the driver must give before starting to move. (Clause 8.1 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "31-билет · 7-сұрақ",
+   "title": "Жеңіл автомобильдің жүргізушісі берген мұндай қол сигналы сізге хабарлайды:",
+   "options": [
+    "Оның қозғалысты бастау ниеті туралы",
+    "Оның көмек сұрауы туралы",
+    "Бұрыштағы қауіп туралы"
+   ],
+   "explanation": "Бүйірге созылған сол қол солға бұрылу сигналы болып табылады, оны жүргізуші қозғалысты бастамас бұрын беруі керек. (Жол қозғалысы ережесінің 8.1 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 173,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "ec0ccb04da9d8a70e08017f0a39061b0",
+ "sourceCategory": "ab",
+ "sourceImage": "c82b6f0b69a786204d6e3bc86d40ddcf",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

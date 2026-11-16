@@ -1,0 +1,96 @@
+{
+ "id": "ticket_19_10",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 19 · Вопрос 10",
+   "title": "С какой скоростью Вы имеете право продолжить движение в населённом пункте по левой полосе?",
+   "options": [
+    "Не более 40 км/ч",
+    "Не более 60 км/ч",
+    "Не менее 40 км/ч и не более 60 км/ч"
+   ],
+   "explanation": "Разрешённая скорость движения в населённом пункте не более 60 км/ч. Вы выезжаете на полосу, над которой установлен знак 4.6 «Ограничение минимальной скорости» с табличкой 8.14 «Полоса движения», которая указывает полосу, на которую распространяется действие данного знака. Поэтому движение по данной полосе разрешается со скоростью не менее 40 км/ч, но и не превышающей 60 км/ч.(Пункт 10.2 ПДД, «Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 19 · Question 10",
+   "title": "At what speed do you have the right to continue driving in a populated area in the left lane?",
+   "options": [
+    "No more than 40 km/h",
+    "No more than 60 km/h",
+    "Not less than 40 km/h and not more than 60 km/h"
+   ],
+   "explanation": "The permitted speed in a populated area is no more than 60 km/h. You enter a lane above which there is a sign 4.6 “Minimum speed limit” with a sign 8.14 “Traffic lane”, which indicates the lane covered by this sign. Therefore, driving along this lane is permitted at a speed of at least 40 km/h, but not exceeding 60 km/h (Clause 10.2 of the Traffic Regulations, “Road Signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "19-билет · 10-сұрақ",
+   "title": "Сол жолақтағы елді мекенде қандай жылдамдықпен жүруді жалғастыруға құқығыңыз бар?",
+   "options": [
+    "40 км/сағ аспайды",
+    "60 км/сағ аспайды",
+    "40 км/сағ кем емес және 60 км/сағ артық емес"
+   ],
+   "explanation": "Елді мекенде рұқсат етілген жылдамдық 60 км/сағ аспайды. Сіз жоғарыда 4.6 «Ең төмен жылдамдық шегі» белгісі бар, 8.14 «Жолақ» белгісі бар жолаққа кіресіз, ол осы белгімен қамтылған жолақты көрсетеді. Сондықтан осы жолақпен жүруге кемінде 40 км/сағ, бірақ 60 км/сағ-тан аспайтын жылдамдықпен жүруге рұқсат етіледі (Жол қозғалысы ережесінің 10.2-тармағы, «Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 157,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "dd0383ec40c74757c842c3059403a79e",
+ "sourceCategory": "ab",
+ "sourceImage": "c98167548f6dad5417b3e5aa77e6db07",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

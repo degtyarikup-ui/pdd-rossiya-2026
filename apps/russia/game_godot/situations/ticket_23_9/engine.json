@@ -1,0 +1,99 @@
+{
+ "id": "ticket_23_9",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 23 · Вопрос 9",
+   "title": "На этом участке дороги Вам запрещается:",
+   "options": [
+    "Только разворот",
+    "Только обгон или объезд",
+    "Только перестроение на левую полосу с последующей остановкой на обочине",
+    "Любой маневр из перечисленных"
+   ],
+   "explanation": "Вы двигаетесь со стороны прерывистой линии 1.11 горизонтальной разметки. Ее можно пересечь с данной стороны для разворота, обгона или объезда препятствия.Остановка с левой стороны дороги вне населенных пунктов запрещена.Поэтому Вам запрещается из перечисленных ответов перестроение на левую полосу с последующей остановкой на обочине.(«Горизонтальная разметка» 1.11, пункт 8.11 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 23 · Question 9",
+   "title": "On this section of the road you are prohibited from:",
+   "options": [
+    "U-turn only",
+    "Overtaking or detour only",
+    "Only changing lanes to the left lane and then stopping on the side of the road",
+    "Any of the above maneuvers"
+   ],
+   "explanation": "You are moving from the side of the broken line 1.11 of the horizontal markings. You can cross it from this side to turn around, overtake or go around an obstacle. Stopping on the left side of the road outside populated areas is prohibited. Therefore, you are prohibited from the listed answers from changing to the left lane and then stopping on the side of the road. (“Horizontal markings” 1.11, clause 8.11 of the traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "23-билет · 9-сұрақ",
+   "title": "Жолдың осы бөлігінде сізге тыйым салынады:",
+   "options": [
+    "Тек кері бұрылу",
+    "Тек басып озу немесе айналып өту",
+    "Тек сол жақ жолаққа жолды ауыстырып, сосын жол жиегінде тоқтау",
+    "Жоғарыда аталған маневрлердің кез келгені"
+   ],
+   "explanation": "Сіз көлденең белгілердің 1.11 үзік сызығы жағынан қозғаласыз. Бұрылу, басып озу немесе кедергіні айналып өту үшін оны осы жағынан кесіп өтуге болады. Елді мекендерден тыс жерде жолдың сол жағында тоқтауға тыйым салынады. Сондықтан, аталған жауаптардан сол жақ жолаққа ауысып, одан кейін жол жиегіне тоқтауға тыйым салынады. («Көлденең таңбалар» 1.11, Жол қозғалысы ережелерінің 8.11 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 177,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "98e663d9e71d48aea7658d3add0b8c6d",
+ "sourceCategory": "ab",
+ "sourceImage": "b897850c898749bf9318888c7a2f84f8",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

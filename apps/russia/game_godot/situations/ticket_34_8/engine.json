@@ -1,0 +1,96 @@
+{
+ "id": "ticket_34_8",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -5.25,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 34 · Вопрос 8",
+   "title": "Можно ли водителю легкового автомобиля в данной ситуации начать движение от тротуара?",
+   "options": [
+    "Можно",
+    "Можно, если при этом не будут созданы помехи грузовому автомобилю",
+    "Нельзя"
+   ],
+   "explanation": "Перед началом движения следует включить указатель поворота соответствующего направления. Движение можно начинать, только убедившись, что оно будет безопасным и не создаст помех другим участникам дорожного движения.(Пункт 8.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 34 · Question 8",
+   "title": "Is it possible for the driver of a car in this situation to start driving from the sidewalk?",
+   "options": [
+    "Can",
+    "It is possible, if it does not interfere with the truck",
+    "It is forbidden"
+   ],
+   "explanation": "Before driving, turn on the turn signal in the appropriate direction. You can start driving only after making sure that it will be safe and will not interfere with other road users. (Clause 8.1 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "34-билет · 8-сұрақ",
+   "title": "Мұндай жағдайда көлік жүргізушісі тротуардан қозғалысты бастауы мүмкін бе?",
+   "options": [
+    "Иә",
+    "Иә, егер ол жүк көлігіне кедергі жасамаса",
+    "Ол тыйым салынған"
+   ],
+   "explanation": "Көлік жүргізу алдында бұрылыс сигналын тиісті бағытта қосыңыз. Оның қауіпсіз болатынына және жол қозғалысының басқа қатысушыларына кедергі келтірмейтініне көз жеткізгеннен кейін ғана көлік жүргізуді бастауға болады. (Жол қозғалысы ережесінің 8.1 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 161,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "3cfb7001cda943a18b2b1cb5980926de",
+ "sourceCategory": "ab",
+ "sourceImage": "fa8e614c162efa9963c34741f225ae70",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

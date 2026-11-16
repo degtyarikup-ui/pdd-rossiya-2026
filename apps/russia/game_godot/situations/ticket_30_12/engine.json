@@ -1,0 +1,96 @@
+{
+ "id": "ticket_30_12",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -10.25,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 24,
+ "exitWidths": {
+  "straight": 24
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 30 · Вопрос 12",
+   "title": "Можно ли водителю поставить автомобиль на стоянку указанным способом?",
+   "options": [
+    "Можно",
+    "Можно, если при этом не будут созданы помехи для движения других транспортных средств",
+    "Нельзя"
+   ],
+   "explanation": "Стоянка под углом к краю проезжей части запрещается, за исключением тех мест, конфигурация которых допускает иное расположение (местное уширение проезжей части), обозначенных соответствующими знаками и разметкой.(Пункт 12.2 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 30 · Question 12",
+   "title": "Is it possible for the driver to park the car in this manner?",
+   "options": [
+    "Can",
+    "It is possible, if it does not interfere with the movement of other vehicles.",
+    "It is forbidden"
+   ],
+   "explanation": "Parking at an angle to the edge of the roadway is prohibited, with the exception of those places whose configuration allows for a different location (local widening of the roadway), indicated by appropriate signs and markings. (Clause 12.2 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "30-билет · 12-сұрақ",
+   "title": "Жүргізуші көлікті осылай қоя алады ма?",
+   "options": [
+    "Иә",
+    "Бұл басқа көліктердің қозғалысына кедергі келтірмейтін болса,, рұқсат етіледі.",
+    "Ол тыйым салынған"
+   ],
+   "explanation": "Конфигурациясы тиісті белгілермен және таңбалармен белгіленген басқа орынға (жолды жергілікті кеңейтуге) мүмкіндік беретін орындарды қоспағанда, жолдың шетіне бұрышта тұрақ қоюға тыйым салынады. (Жол қозғалысы ережесінің 12.2 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 165,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "ca2f8de35f579bc67164e04ef7382e2e",
+ "sourceCategory": "ab",
+ "sourceImage": "8578f56da82a57ddacac6b70d2062801",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

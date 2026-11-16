@@ -1,0 +1,96 @@
+{
+ "id": "ticket_33_1",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -5.25,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 33 · Вопрос 1",
+   "title": "Какой маневр намеревается выполнить водитель легкового автомобиля?",
+   "options": [
+    "Обгон",
+    "Перестроение с дальнейшим опережением",
+    "Объезд"
+   ],
+   "explanation": "Водитель легкового автомобиля осуществляет «перестроение» в параллельный ряд и дальнейшее «опережение» - движение транспортного средства со скоростью большей скорости попутного транспортного средства.(Пункт 1.2 ПДД термины «Перестроение», «Опережение»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 33 · Question 1",
+   "title": "What maneuver does the driver of a car intend to perform?",
+   "options": [
+    "Overtaking",
+    "Rebuild further ahead",
+    "Detour"
+   ],
+   "explanation": "The driver of a passenger car “changes lanes” into a parallel lane and further “advances” - the vehicle moves at a speed greater than the speed of the same-direction vehicle (Clause 1.2 of the Traffic Regulations, the terms “Lane change” and “Advancing”).",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "33-билет · 1-сұрақ",
+   "title": "Көлік жүргізушісі қандай маневр жасамақшы?",
+   "options": [
+    "Басып озу",
+    "Жолақты ауыстырып, одан әрі басып озу",
+    "Айналып өту"
+   ],
+   "explanation": "Жеңіл автомобиль жүргізушісі параллель жолаққа «жолақты ауыстырады» және одан әрі «басып озады» - бұл өтіп бара жатқан көлік құралының жылдамдығынан жоғары жылдамдықпен қозғалу. (Жол қозғалысы ережесінің 1.2-тармағы, «Перестроение», «Опережение» терминдері)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 114,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "06a9069a8b757dbc4c1d5af3b8360d5a",
+ "sourceCategory": "ab",
+ "sourceImage": "3f5409a7fb0ddf9cd9799f225027672d",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

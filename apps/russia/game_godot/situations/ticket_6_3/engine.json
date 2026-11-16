@@ -1,0 +1,99 @@
+{
+ "id": "ticket_6_3",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": 38.25,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 6 · Вопрос 3",
+   "title": "Какие из указанных знаков разрешают проезд на автомобиле к месту проживания или работы?",
+   "options": [
+    "Только А",
+    "Только В",
+    "А и В",
+    "Все"
+   ],
+   "explanation": "Разрешают проезд на автомобиле к месту проживания или работы знаки: «А» - 3.2 «Движение запрещено», «В» - 3.3 «Движение механических транспортных средств запрещено». Из запрещающих знаков 6 знаков предоставляют такую «льготу». В их число не входит знак «Б» - 3.1 «Въезд запрещён», который запрещает въезд под знак всех ТС, кроме маршрутных транспортных средств и ТС, в случае применения знака 3.1 с табличками 8.4.1 - 8.4.8; 8.5.1, 8.5.2, 8.5.3, 8.5.4, 8.5.5 - 8.5.7 и 8.4.9 - 8.4.16.(«Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 6 · Question 3",
+   "title": "Which of the following signs permit travel by car to your place of residence or work?",
+   "options": [
+    "Only А",
+    "Only В",
+    "А and В",
+    "All"
+   ],
+   "explanation": "The following signs allow travel by car to the place of residence or work: “А” - 3.2 “Movement prohibited”, “В” - 3.3 “Movement of motor vehicles is prohibited”. Of the prohibition signs, 6 signs provide such a “benefit”. These do not include sign “Б” - 3.1 “Entry prohibited”, which prohibits entry under the sign of all vehicles, except for route vehicles and vehicles, in the case of using sign 3.1 with plates 8.4.1 - 8.4.8; 8.5.1, 8.5.2, 8.5.3, 8.5.4, 8.5.5 - 8.5.7 and 8.4.9 - 8.4.16. (“Road signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "6-билет · 3-сұрақ",
+   "title": "Төмендегі белгілердің қайсысы сіздің тұрғылықты жеріңізге немесе жұмысыңызға көлікпен баруға мүмкіндік береді?",
+   "options": [
+    "Тек А",
+    "Тек В",
+    "А және В",
+    "Барлығы"
+   ],
+   "explanation": "Төмендегі белгілер автокөлікпен тұрғылықты жеріне немесе жұмыс орнына баруға мүмкіндік береді: «А» - 3.2 «Рұқсат жоқ», «В» - 3.3 «Автокөлік құралдарының қозғалысына тыйым салынады». Тыйым салу белгілерінің ішінде 6 белгі осындай жеңілдік береді. Олардың қатарына «Б» - 3.1 «Кіруге болмайды» белгісі кірмейді, ол 3.1 белгісі 8.4.1–8.4.8; 8.5.1, 8.5.2, 8.5.3, 8.5.4, 8.5.5–8.5.7 және 8.4.9–8.4.16 тақтайшаларымен қолданылған жағдайда, маршруттық көліктерден және көліктердің кейбір түрлерінен басқа барлық көлік құралдарына кіруге тыйым салады. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 111,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "6a4ad28934938be20ae26980b213ef0f",
+ "sourceCategory": "ab",
+ "sourceImage": "2d4752b12702549f18b106d303f9d550",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

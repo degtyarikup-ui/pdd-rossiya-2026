@@ -1,0 +1,96 @@
+{
+ "id": "ticket_18_7",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 10.5,
+ "exitWidths": {
+  "straight": 10.5
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 18 · Вопрос 7",
+   "title": "Вы намерены остановиться слева у тротуара. В каком случае Вы обязаны включить указатели поворота?",
+   "options": [
+    "Перед перестроением",
+    "Перед остановкой",
+    "В обоих перечисленных случаях"
+   ],
+   "explanation": "Для остановки с левой стороны дороги по ходу вашего движения необходимо совершить перестроение. Заблаговременное включение левого указателя поворота обязательно. Обязательное его включение и перед остановкой.Правильный ответ - в обоих перечисленных случаях.",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 18 · Question 7",
+   "title": "You intend to stop on the left side of the sidewalk. When are you required to turn on your turn signals?",
+   "options": [
+    "Before rebuilding",
+    "Before stopping",
+    "In both of the above cases"
+   ],
+   "explanation": "To stop on the left side of the road in the direction of your movement, you must change lanes. Turning on the left turn signal in advance is mandatory. It is mandatory to turn it on before stopping. The correct answer is in both of the above cases.",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "18-билет · 7-сұрақ",
+   "title": "Сіз тротуардың сол жағына тоқтамақсыз. Бұрылыс сигналдарын қашан қосу керек?",
+   "options": [
+    "Жолақты ауыстыру алдында",
+    "Тоқтамас бұрын",
+    "Жоғарыда аталған екі жағдайда да"
+   ],
+   "explanation": "Қозғалыс бағытында жолдың сол жағында тоқтау үшін жолақты ауыстыру керек. Солға бұрылу сигналын алдын ала қосу міндетті болып табылады. Тоқтамас бұрын оны міндетті түрде қосу керек. Дұрыс жауап жоғарыда аталған екі жағдайда да болады.",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 161,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "5bb243aef7431cd418b53fa1998f5e26",
+ "sourceCategory": "ab",
+ "sourceImage": "5076bba07f9a120d06525208a45f48da",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ }
+}

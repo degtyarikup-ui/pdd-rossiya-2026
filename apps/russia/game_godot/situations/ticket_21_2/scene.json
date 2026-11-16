@@ -1,0 +1,162 @@
+{
+ "id": "ticket_21_2",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.75,
+     -18
+    ],
+    [
+     -1.5,
+     4.5
+    ],
+    [
+     -1.5,
+     40.5
+    ],
+    [
+     -1.5,
+     49.5
+    ],
+    [
+     -1.5,
+     52.5
+    ],
+    [
+     -1.74,
+     53.46
+    ],
+    [
+     -2.94,
+     58.26
+    ],
+    [
+     -5.82,
+     69.78
+    ],
+    [
+     -7.26,
+     75.54
+    ],
+    [
+     -7.5,
+     76.5
+    ],
+    [
+     -8.361,
+     78.274
+    ],
+    [
+     -12.236,
+     86.258
+    ]
+   ],
+   "exitYaw": -0.433
+  }
+ },
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 21 · Вопрос 2",
+   "title": "Этот знак предупреждает о приближении к перекрёстку, на котором Вы:",
+   "options": [
+    "Имеете право преимущественного проезда",
+    "Должны уступить дорогу всем транспортным средствам, движущимся по пересекаемой дороге",
+    "Должны уступить дорогу только транспортным средствам, приближающимся справа"
+   ],
+   "explanation": "Данная ситуация на первый взгляд очень проста. Знак 1.6 «Пересечение равнозначных дорог» предупреждает, что через 50-100 м будет находиться равнозначный перекрёсток, при определении порядка проезда которого водители будут руководствоваться «правилом правой руки», т.е. у кого из них окажется помеха справа, тот обязательно уступит дорогу. («Дорожные знаки», пункт 13.11 ПДД). Но до этого перекрёстка видим: находится крутой поворот, дальнейшая видимость ограничена, что представляет для водителя первостепенную опасность, но о чём Вы преждевременно не проинформированы. К сожалению, в практике таких недостатков в организации дорожного движения очень много, что существенно влияет на нашу дорожную безопасность.",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 21 · Question 2",
+   "title": "This sign warns you when you are approaching an intersection where you:",
+   "options": [
+    "You have the right of way",
+    "Must give way to all vehicles moving on the road being crossed.",
+    "Must give way only to vehicles approaching from the right"
+   ],
+   "explanation": "At first glance, this situation is very simple. Sign 1.6 “Intersection of equivalent roads” warns that in 50-100 m there will be an equivalent intersection, when determining the order of passage of which drivers will be guided by the “right hand rule”, i.e. whichever of them has an obstacle on the right will definitely give way. (“Road signs”, clause 13.11 of the traffic rules). But before this intersection we see: there is a sharp turn, further visibility is limited, which poses a primary danger for the driver, but about which you are not prematurely informed. Unfortunately, in practice there are a lot of such shortcomings in traffic management, which significantly affects our road safety.",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "21-билет · 2-сұрақ",
+   "title": "Бұл белгі сіз қиылысқа жақындаған кезде ескертеді, мұнда:",
+   "options": [
+    "Сізде жол құқығы бар",
+    "Қиып өтетін жолда қозғалатын барлық көліктерге жол беруге міндетті.",
+    "Оң жақтан келе жатқан көліктерге ғана жол беруі керек"
+   ],
+   "explanation": "Бір қарағанда, бұл жағдай өте қарапайым. 1.6 «Эквивалентті жолдардың қиылысы» белгісі 50-100 м қашықтықта балама жол қиылысы болатынын, оның өту тәртібін анықтау кезінде жүргізушілер «оң қол ережесін» басшылыққа алатынын, яғни олардың қайсысында оң жақта кедергі болса, міндетті түрде жол беретінін ескертеді. («Жол белгілері», Жол қозғалысы ережелерінің 13.11 тармағы). Бірақ бұл қиылыстан бұрын біз көреміз: күрт бұрылыс бар, одан әрі көріну шектелген, бұл жүргізуші үшін негізгі қауіп төндіреді, бірақ ол туралы сізге мерзімінен бұрын хабарланбайды. Өкінішке орай, іс жүзінде жол қозғалысын ұйымдастыруда мұндай кемшіліктер көптеп кездеседі, бұл біздің жол қауіпсіздігімізге айтарлықтай әсер етеді.",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 265,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "60fea4fbd01056060bb56caf7bf51a7a",
+ "sourceCategory": "ab",
+ "sourceImage": "7e9c82a8f35f2de7bf11f6dd3a22a926",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ },
+ "playerPlacement": "free",
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   -2.8,
+   -2
+  ],
+  "height": 23,
+  "yaw": 0,
+  "pitch": 0.33,
+  "elevation": 0
+ }
+}
