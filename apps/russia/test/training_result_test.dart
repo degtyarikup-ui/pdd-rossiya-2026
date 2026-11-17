@@ -653,6 +653,58 @@ void main() {
     expect(tts.pendingStop.isCompleted, isFalse);
     expect(tester.takeException(), isNull);
   });
+
+  for (final review in [false, true]) {
+    testWidgets('старое чтение не снимает новую звезду (review=$review)', (
+      tester,
+    ) async {
+      final source = _DelayedFirstFavoriteReadSource();
+      await pumpTraining(
+        tester,
+        questions: 1,
+        source: source,
+        entry: review
+            ? ExamReviewScreen(
+                questions: buildQuestions(1),
+                savedAnswers: const [1],
+              )
+            : null,
+      );
+      if (!review) await answer(tester, correct: false);
+      await tester.tap(find.byType(QuestionFavoriteButton));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.star), findsOneWidget);
+      source.firstRead.complete(false);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(await source.isFavorite('q0', TicketCategory.ab), isTrue);
+    });
+
+    testWidgets(
+      'повторное нажатие избранного во время записи (review=$review)',
+      (tester) async {
+        final source = _DelayedToggleSource();
+        await pumpTraining(
+          tester,
+          questions: 1,
+          source: source,
+          entry: review
+              ? ExamReviewScreen(
+                  questions: buildQuestions(1),
+                  savedAnswers: const [1],
+                )
+              : null,
+        );
+        if (!review) await answer(tester, correct: false);
+        await tester.tap(find.byType(QuestionFavoriteButton));
+        await tester.tap(find.byType(QuestionFavoriteButton));
+        source.toggle.complete();
+        await tester.pumpAndSettle();
+        expect(await source.isFavorite('q0', TicketCategory.ab), isTrue);
+        expect(find.byIcon(Icons.star), findsOneWidget);
+      },
+    );
+  }
 }
 
 class _DelayedFavoriteSource extends ProgressDataSource {
@@ -668,5 +720,19 @@ class _DelayedToggleSource extends ProgressDataSource {
   Future<void> toggleFavorite(String id, TicketCategory category) async {
     await toggle.future;
     await super.toggleFavorite(id, category);
+  }
+}
+
+class _DelayedFirstFavoriteReadSource extends ProgressDataSource {
+  final firstRead = Completer<bool>();
+  bool _first = true;
+
+  @override
+  Future<bool> isFavorite(String id, TicketCategory category) {
+    if (_first) {
+      _first = false;
+      return firstRead.future;
+    }
+    return super.isFavorite(id, category);
   }
 }

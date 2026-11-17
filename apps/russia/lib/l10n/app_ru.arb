@@ -1963,6 +1963,10 @@
   "supportChatEmailTooltip": "Написать на почту",
   "supportChatTelegramTooltip": "Написать в Telegram",
   "supportChatEmailCopied": "Почта скопирована: {email}",
+  "supportChatEmailOpenFailed": "Не удалось открыть почту или скопировать адрес. Напишите нам: {email}",
+  "@supportChatEmailOpenFailed": {
+    "placeholders": {"email": {"type": "String"}}
+  },
   "@supportChatEmailCopied": {
     "placeholders": {
       "email": {

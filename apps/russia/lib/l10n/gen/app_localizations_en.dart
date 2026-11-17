@@ -3996,6 +3996,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String supportChatEmailOpenFailed(String email) {
+    return 'Could not open email or copy the address. Contact us at $email';
+  }
+
+  @override
   String appVersion(String version) {
     return 'Version $version';
   }

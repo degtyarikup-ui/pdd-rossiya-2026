@@ -37,6 +37,8 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
   late int _currentPos;
   late List<int> _order;
   bool _isFavorite = false;
+  bool _favoriteSaving = false;
+  int _favoriteReadGeneration = 0;
   final ScrollController _stripController = ScrollController();
   late final PageController _pageController;
 
@@ -85,6 +87,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
   }
 
   Future<void> _checkFavorite() async {
+    final generation = ++_favoriteReadGeneration;
     final pos = _currentPos;
     final questionId = _currentQuestionId;
     if (questionId.isEmpty) {
@@ -98,30 +101,40 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
     final category = _category;
     final favorite = await dataSource.isFavorite(questionId, category);
 
-    if (mounted && _currentPos == pos && _category == category) {
+    if (mounted &&
+        generation == _favoriteReadGeneration &&
+        _currentPos == pos &&
+        _category == category) {
       setState(() => _isFavorite = favorite);
     }
   }
 
   Future<void> _toggleFavorite() async {
+    if (_favoriteSaving) return;
     final questionId = _currentQuestionId;
     if (questionId.isEmpty) return;
 
     HapticFeedbackHelper.select();
-    final pos = _currentPos;
     final dataSource = ref.read(progressDataSourceProvider);
     final category = _category;
-    await dataSource.toggleFavorite(questionId, category);
-    if (!mounted) return;
-    ref.read(appDataRefreshProvider.notifier).state++;
-    if (_currentPos == pos && _category == category) {
+    setState(() => _favoriteSaving = true);
+    ++_favoriteReadGeneration;
+    try {
+      await dataSource.toggleFavorite(questionId, category);
+      if (!mounted) return;
+      ref.read(appDataRefreshProvider.notifier).state++;
       await _checkFavorite();
+    } finally {
+      if (mounted) setState(() => _favoriteSaving = false);
     }
   }
 
   void _onReviewPageChanged(int pos) {
     if (pos < 0 || pos >= _order.length) return;
-    setState(() => _currentPos = pos);
+    setState(() {
+      _currentPos = pos;
+      _isFavorite = false;
+    });
     _checkFavorite();
     scheduleScrollQuestionStripToCurrent(
       controller: _stripController,
@@ -320,7 +333,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                   );
                 },
           isFavorite: _isFavorite,
-          onToggleFavorite: _toggleFavorite,
+          onToggleFavorite: _favoriteSaving ? null : _toggleFavorite,
           showFavorite: _currentQuestionId.isNotEmpty,
         ),
       ),

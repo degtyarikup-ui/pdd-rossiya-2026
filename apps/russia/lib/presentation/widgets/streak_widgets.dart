@@ -168,14 +168,16 @@ class StreakWeekStrip extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         for (final d in days)
-          _DayDot(
-            label: labels[d.weekday - 1],
-            done: streak.hasActivityOn(d),
-            isToday: d == todayDay,
-            future: d.isAfter(todayDay),
-            size: size,
-            pop: highlightToday && d == todayDay,
-            colors: colors,
+          Flexible(
+            child: _DayDot(
+              label: labels[d.weekday - 1],
+              done: streak.hasActivityOn(d),
+              isToday: d == todayDay,
+              future: d.isAfter(todayDay),
+              size: size,
+              pop: highlightToday && d == todayDay,
+              colors: colors,
+            ),
           ),
       ],
     );
@@ -234,17 +236,21 @@ class _DayDot extends StatelessWidget {
       children: [
         dot,
         const SizedBox(height: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            height: 1,
-            fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-            color: isToday
-                ? colors.primaryText
-                : future
-                ? colors.secondaryText.withValues(alpha: 0.6)
-                : colors.secondaryText,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 11,
+              height: 1,
+              fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+              color: isToday
+                  ? colors.primaryText
+                  : future
+                  ? colors.secondaryText.withValues(alpha: 0.6)
+                  : colors.secondaryText,
+            ),
           ),
         ),
       ],

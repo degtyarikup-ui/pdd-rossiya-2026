@@ -4002,6 +4002,11 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String supportChatEmailOpenFailed(String email) {
+    return 'Поштаны ашу немесе мекенжайды көшіру мүмкін болмады. Бізге жазыңыз: $email';
+  }
+
+  @override
   String appVersion(String version) {
     return '$version нұсқасы';
   }

@@ -305,14 +305,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       return FileImage(File(msg.localImagePath!));
     }
     if (msg.fullImageUrl != null) {
-      final url = _service.authenticatedImageUrl(
-        msg.fullImageUrl!,
-      );
+      final url = _service.authenticatedImageUrl(msg.fullImageUrl!);
       if (url == null) return null;
-      return NetworkImage(
-        url,
-        headers: _service.requestHeaders,
-      );
+      return NetworkImage(url, headers: _service.requestHeaders);
     }
     return null;
   }
@@ -489,7 +484,16 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
 
     try {
       await Clipboard.setData(ClipboardData(text: email));
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) {
+        AppToast.show(
+          context,
+          appL10n.supportChatEmailOpenFailed(email),
+          type: AppToastType.error,
+        );
+      }
+      return;
+    }
     if (!mounted) return;
     AppToast.show(context, appL10n.supportChatEmailCopied(email));
   }
@@ -524,7 +528,13 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       child: Scaffold(
         backgroundColor: colors.background,
         appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
+          preferredSize: Size.fromHeight(
+            60 +
+                (MediaQuery.textScalerOf(context).scale(28) - 28).clamp(
+                  0,
+                  double.infinity,
+                ),
+          ),
           child: SafeArea(
             child: Container(
               padding: const EdgeInsets.symmetric(

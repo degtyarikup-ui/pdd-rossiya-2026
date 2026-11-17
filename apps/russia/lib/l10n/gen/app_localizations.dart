@@ -6670,6 +6670,12 @@ abstract class AppLocalizations {
   /// **'Почта скопирована: {email}'**
   String supportChatEmailCopied(String email);
 
+  /// No description provided for @supportChatEmailOpenFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось открыть почту или скопировать адрес. Напишите нам: {email}'**
+  String supportChatEmailOpenFailed(String email);
+
   /// No description provided for @appVersion.
   ///
   /// In ru, this message translates to:

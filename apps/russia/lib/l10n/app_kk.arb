@@ -1338,6 +1338,10 @@
   "supportChatEmailTooltip": "Поштаға жазу",
   "supportChatTelegramTooltip": "Telegram-ға жазу",
   "supportChatEmailCopied": "Пошта көшірілді: {email}",
+  "supportChatEmailOpenFailed": "Поштаны ашу немесе мекенжайды көшіру мүмкін болмады. Бізге жазыңыз: {email}",
+  "@supportChatEmailOpenFailed": {
+    "placeholders": {"email": {"type": "String"}}
+  },
   "@supportChatEmailCopied": {
     "placeholders": {
       "email": {

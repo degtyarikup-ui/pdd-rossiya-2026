@@ -452,10 +452,23 @@ class ProgressDataSource {
   ///   ставим флаг pendingCelebration, чтобы UI смог показать поздравление.
   void _markStreakActivityToday() => unawaited(recordActivity());
 
+  Future<void> _activityWrites = Future<void>.value();
+
   /// Any successfully started learning/game activity counts, even before an
   /// answer. The receipt is consumed only by a completed activity's queue.
-  Future<void> recordActivity({DateTime? date}) async {
+  Future<void> recordActivity({DateTime? date}) {
+    // Capture the lesson's day before queuing, including across midnight.
     final now = date ?? DateTime.now();
+    final write = _activityWrites.then((_) => _recordActivity(now));
+    // A failed write must not prevent the next lesson from being recorded.
+    _activityWrites = write.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return write;
+  }
+
+  Future<void> _recordActivity(DateTime now) async {
     final today = _dateOnly(now);
     final lastIso = _prefs.getString(_keyStreakLastActive);
     final last = lastIso != null ? DateTime.tryParse(lastIso) : null;

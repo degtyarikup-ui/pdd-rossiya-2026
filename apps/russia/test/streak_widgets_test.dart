@@ -398,4 +398,45 @@ void main() {
       expect(find.text(l10n.streakCalendarStudied), findsOneWidget);
     }
   });
+
+  for (final language in ['ru', 'en', 'kk']) {
+    testWidgets('календарь в модальном листе: 200% текста, $language', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      updateAppLocale(Locale(language));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          locale: Locale(language),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: StreakCard(streak: streakOf(5, 365), today: today),
+          ),
+        ),
+      );
+      await tester.tap(find.byType(StreakCard));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(StreakCalendarSheet), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      final prev = find.byKey(const ValueKey('streak_calendar_prev_month'));
+      await tester.ensureVisible(prev);
+      await tester.tap(prev);
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      final l10n = lookupAppLocalizations(Locale(language));
+      expect(find.text(l10n.streakCalendarToday), findsNothing);
+    });
+  }
 }

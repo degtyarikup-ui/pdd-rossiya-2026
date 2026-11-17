@@ -1338,6 +1338,10 @@
   "supportChatEmailTooltip": "Write via email",
   "supportChatTelegramTooltip": "Message on Telegram",
   "supportChatEmailCopied": "Email copied: {email}",
+  "supportChatEmailOpenFailed": "Could not open email or copy the address. Contact us at {email}",
+  "@supportChatEmailOpenFailed": {
+    "placeholders": {"email": {"type": "String"}}
+  },
   "@supportChatEmailCopied": {
     "placeholders": {
       "email": {

@@ -4013,6 +4013,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String supportChatEmailOpenFailed(String email) {
+    return 'Не удалось открыть почту или скопировать адрес. Напишите нам: $email';
+  }
+
+  @override
   String appVersion(String version) {
     return 'Версия $version';
   }

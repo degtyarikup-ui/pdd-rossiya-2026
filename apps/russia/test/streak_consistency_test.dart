@@ -59,16 +59,42 @@ void main() {
     expect(streak.hasActivityOn(ago(45)), isFalse);
   });
 
-  test('календарь хранит историю активности больше 30 дней (до года)', () async {
-    SharedPreferences.setMockInitialValues({});
+  test(
+    'календарь хранит историю активности больше 30 дней (до года)',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final ds = ProgressDataSource();
+      await ds.init();
+      final start = DateTime(2026, 1, 1);
+      for (var i = 0; i < 45; i++) {
+        await ds.recordActivity(date: start.add(Duration(days: i * 2)));
+      }
+      final streak = await ds.loadStreak(
+        now: start.add(const Duration(days: 90)),
+      );
+      expect(streak.activeDays.length, 45);
+      expect(streak.hasActivityOn(start), isTrue);
+    },
+  );
+
+  test('одновременные занятия продлевают серию только один раз', () async {
+    final date = DateTime(2026, 11, 17, 6);
+    SharedPreferences.setMockInitialValues({
+      'streak_current': 40,
+      'streak_longest': 40,
+      'streak_last_active': '2026-11-16',
+      'streak_start_date': '2026-10-08',
+      'streak_active_days': [
+        for (var i = 0; i < 30; i++) iso(DateTime(2026, 11, 16 - i)),
+      ],
+    });
     final ds = ProgressDataSource();
     await ds.init();
-    final start = DateTime(2026, 1, 1);
-    for (var i = 0; i < 45; i++) {
-      await ds.recordActivity(date: start.add(Duration(days: i * 2)));
-    }
-    final streak = await ds.loadStreak(now: start.add(const Duration(days: 90)));
-    expect(streak.activeDays.length, 45);
-    expect(streak.hasActivityOn(start), isTrue);
+    await Future.wait(List.generate(3, (_) => ds.recordActivity(date: date)));
+    final streak = await ds.loadStreak(now: date);
+    expect(streak.current, 41);
+    expect(streak.longest, 41);
+    expect(streak.activeDays.length, 31);
+    expect(ds.getAchievementStats().earlyDays, 1);
   });
 }

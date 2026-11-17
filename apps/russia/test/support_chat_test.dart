@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
 import 'package:pdd_app/data/models/support_chat_message.dart';
 import 'package:pdd_app/data/services/support_chat_service.dart';
@@ -270,7 +271,10 @@ void main() {
       expect(find.byIcon(Icons.add_photo_alternate_rounded), findsOneWidget);
       expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
       expect(find.byIcon(Icons.support_agent_rounded), findsWidgets);
-      expect(find.byKey(const ValueKey('support-email-button')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('support-email-button')),
+        findsOneWidget,
+      );
       expect(
         find.byKey(const ValueKey('support-telegram-button')),
         findsOneWidget,
@@ -329,9 +333,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: SupportChatScreen(onLaunchUrl: (_) async => false),
-        ),
+        MaterialApp(home: SupportChatScreen(onLaunchUrl: (_) async => false)),
       );
       await tester.pumpAndSettle();
 
@@ -343,5 +345,74 @@ void main() {
 
       await tester.pump(const Duration(seconds: 4));
     });
+
+    testWidgets('отказ буфера обмена не выдаётся за успешное копирование', (
+      tester,
+    ) async {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            throw PlatformException(code: 'clipboard_unavailable');
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: SupportChatScreen(onLaunchUrl: (_) async => false)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('support-email-button')));
+      await tester.pump();
+      expect(
+        find.text(appL10n.supportChatEmailCopied('degtyarik.up@gmail.com')),
+        findsNothing,
+      );
+      expect(find.textContaining('degtyarik.up@gmail.com'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 4));
+    });
+
+    for (final lang in ['ru', 'en', 'kk']) {
+      testWidgets('поддержка: узкий экран и 200% текста ($lang)', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(320, 568);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        updateAppLocale(Locale(lang));
+        addTearDown(() => updateAppLocale(const Locale('ru')));
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: Locale(lang),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(2)),
+              child: child!,
+            ),
+            home: const SupportChatScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(
+          find.byKey(const ValueKey('support-email-button')).hitTestable(),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('support-telegram-button')).hitTestable(),
+          findsOneWidget,
+        );
+      });
+    }
   });
 }

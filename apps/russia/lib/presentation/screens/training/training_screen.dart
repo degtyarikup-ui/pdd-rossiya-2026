@@ -64,6 +64,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   int _currentIndex = 0;
   bool get _isAnswerSubmitted => _savedChoices[_currentIndex] != null;
   bool _isFavorite = false;
+  bool _favoriteSaving = false;
+  int _favoriteReadGeneration = 0;
   final List<int> _correctIndices = [];
   final List<int> _wrongIndices = [];
   bool _showHint = false;
@@ -183,6 +185,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     setState(() {
       _currentIndex = i;
       _showHint = false;
+      _isFavorite = false;
     });
     _checkFavorite();
     _rememberPosition();
@@ -193,6 +196,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   }
 
   Future<void> _checkFavorite() async {
+    final generation = ++_favoriteReadGeneration;
     if (_currentIndex >= widget.questions.length) return;
 
     final index = _currentIndex;
@@ -208,7 +212,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     final TicketCategory category = _category;
     final favorite = await dataSource.isFavorite(questionId, category);
 
-    if (mounted && _currentIndex == index && _category == category) {
+    if (mounted &&
+        generation == _favoriteReadGeneration &&
+        _currentIndex == index &&
+        _category == category) {
       setState(() => _isFavorite = favorite);
     }
   }
@@ -353,20 +360,25 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   }
 
   Future<void> _toggleFavorite() async {
-    if (_currentIndex >= widget.questions.length) return;
-    final index = _currentIndex;
-    final question = widget.questions[index];
+    if (_favoriteSaving || _currentIndex >= widget.questions.length) return;
+    final question = widget.questions[_currentIndex];
     final questionId = question['id'] as String? ?? '';
     if (questionId.isEmpty) return;
 
     HapticFeedbackHelper.select();
     final dataSource = ref.read(progressDataSourceProvider);
     final category = _category;
-    await dataSource.toggleFavorite(questionId, category);
-    if (!mounted) return;
-    ref.read(appDataRefreshProvider.notifier).state++;
-    if (_currentIndex == index && _category == category) {
+    setState(() => _favoriteSaving = true);
+    ++_favoriteReadGeneration;
+    try {
+      await dataSource.toggleFavorite(questionId, category);
+      if (!mounted) return;
+      ref.read(appDataRefreshProvider.notifier).state++;
+      // The user can navigate while the write is pending: refresh the page
+      // that is visible now, including a return to the original question.
       await _checkFavorite();
+    } finally {
+      if (mounted) setState(() => _favoriteSaving = false);
     }
   }
 
@@ -998,7 +1010,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
               }
             : _nextQuestion,
         isFavorite: _isFavorite,
-        onToggleFavorite: _toggleFavorite,
+        onToggleFavorite: _favoriteSaving ? null : _toggleFavorite,
         showFavorite: questionId.isNotEmpty,
       );
     }
@@ -1044,7 +1056,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                 ),
                 if (questionId.isNotEmpty)
                   IconButton(
-                    onPressed: _toggleFavorite,
+                    onPressed: _favoriteSaving ? null : _toggleFavorite,
                     icon: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 200),
                       child: Icon(

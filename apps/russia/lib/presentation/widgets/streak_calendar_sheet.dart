@@ -86,7 +86,10 @@ class _StreakCalendarSheetState extends State<StreakCalendarSheet> {
   bool get _canGoNext => _displayedMonth.isBefore(_currentMonth);
 
   void _shiftMonth(int delta) {
-    final target = DateTime(_displayedMonth.year, _displayedMonth.month + delta);
+    final target = DateTime(
+      _displayedMonth.year,
+      _displayedMonth.month + delta,
+    );
     if (target.isBefore(_minMonth) || target.isAfter(_currentMonth)) return;
     HapticFeedbackHelper.select();
     setState(() => _displayedMonth = target);
@@ -399,7 +402,10 @@ class _MonthGrid extends StatelessWidget {
                 for (var col = 0; col < 7; col++) ...[
                   if (col > 0) const SizedBox(width: 4),
                   Expanded(
-                    child: _buildCell(row * 7 + col - leadingEmpty + 1, daysInMonth),
+                    child: _buildCell(
+                      row * 7 + col - leadingEmpty + 1,
+                      daysInMonth,
+                    ),
                   ),
                 ],
               ],
@@ -549,12 +555,14 @@ class _LegendItem extends StatelessWidget {
       children: [
         icon,
         const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: colors.secondaryText,
+        Flexible(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: colors.secondaryText,
+            ),
           ),
         ),
       ],
