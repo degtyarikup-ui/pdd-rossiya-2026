@@ -25,9 +25,10 @@ export const PREMIUM_REVENUE_CLIENT_JS = String.raw`
 var AN_PREMIUM_ORANGE='#FF7A00';
 var AN_PREMIUM_METHODS={web:{label:'СБП',icon:'sbp'},appstore:{label:'App Store',icon:'appstore'},googleplay:{label:'Google Play',icon:'gplay'},rustore:{label:'RuStore',icon:'rustore'},unknown:{label:'Неизвестно',icon:'other'}};
 function anPremiumMoney(value){
+ if(value>0&&value<1)return '< 0,01 $';
  return new Intl.NumberFormat('ru-RU',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(value/100);
 }
-function anPremiumValue(row){return !row||row.amountCents==null||(row.missingAmounts&&!row.pricedPurchases)?'—':anEsc(anPremiumMoney(row.amountCents));}
+function anPremiumValue(row){return row&&Number.isFinite(row.amountCents)?anEsc(anPremiumMoney(row.amountCents)):'—';}
 function anPremiumMethod(key){return AN_PREMIUM_METHODS[key]||AN_PREMIUM_METHODS.unknown;}
 var anPremiumCharts=new WeakMap();
 var anPremiumResize=new ResizeObserver(function(entries){entries.forEach(function(entry){
@@ -45,7 +46,7 @@ function anPremiumLine(el,points,height,label){
  var max=Math.max.apply(null,points.map(function(point){return point.value||0;}).concat([1]));
  var x=function(i){return points.length===1?padL+plotW/2:padL+i*plotW/(points.length-1);};
  var y=function(value){return padT+plotH-value/max*plotH;},bottom=y(0);
- var svg='<svg width="'+W+'" height="'+H+'" role="img" tabindex="0" aria-label="'+anEsc(label)+'"><title>'+anEsc(label)+'</title><desc>Стрелки влево и вправо выбирают день и точную сумму. Home — первый день, End — последний.</desc><defs><linearGradient id="an-premium-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+AN_PREMIUM_ORANGE+'" stop-opacity=".22"/><stop offset="100%" stop-color="'+AN_PREMIUM_ORANGE+'" stop-opacity=".015"/></linearGradient></defs>';
+ var svg='<svg width="'+W+'" height="'+H+'" role="img" tabindex="0" aria-label="'+anEsc(label)+'"><desc>Стрелки влево и вправо выбирают день и точную сумму. Home — первый день, End — последний.</desc><defs><linearGradient id="an-premium-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+AN_PREMIUM_ORANGE+'" stop-opacity=".22"/><stop offset="100%" stop-color="'+AN_PREMIUM_ORANGE+'" stop-opacity=".015"/></linearGradient></defs>';
  [0,max].forEach(function(value){svg+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+y(value)+'" y2="'+y(value)+'" stroke="#EFF0F4"/><text x="'+(padL-10)+'" y="'+(y(value)+4)+'" text-anchor="end" font-size="11" font-weight="500" fill="#747B88">'+anNum(value)+'</text>';});
  var runs=[],run=[];
  points.forEach(function(point,i){if(point.value==null){if(run.length)runs.push(run);run=[];}else run.push({x:x(i),y:y(point.value)});});if(run.length)runs.push(run);
@@ -66,7 +67,7 @@ function anPremiumLine(el,points,height,label){
  var show=function(index,event){
   active=index;el.dataset.activePoint=String(index);
   var point=points[index],marker=el.querySelector('[data-premium-marker]'),guide=el.querySelector('[data-premium-guide]');
-  root.setAttribute('aria-label',label+'. '+point.label+': '+(point.value==null?'нет суммы':anPremiumMoney(Math.round(point.value*100))));
+  root.setAttribute('aria-label',label+'. '+point.label+': '+(point.amountCents==null?'нет суммы':anPremiumMoney(point.amountCents)));
   marker.setAttribute('visibility','visible');guide.setAttribute('x1',x(index));guide.setAttribute('x2',x(index));
   ['halo','selected'].forEach(function(part){var dot=el.querySelector('[data-premium-'+part+']');dot.setAttribute('visibility',point.value==null?'hidden':'visible');dot.setAttribute('cx',x(index));dot.setAttribute('cy',point.value==null?bottom:y(point.value));});
   if(!event){var bounds=root.getBoundingClientRect();event={clientX:bounds.left+x(index),clientY:bounds.top+(point.value==null?bottom:y(point.value))};}
@@ -100,11 +101,11 @@ function anRenderPremium(data){
   chart.innerHTML='<div class="an-empty">'+(!available?'Данные о покупках недоступны':!finance?'Не удалось получить курс валют':!hasPurchases?(incomplete?'Нет подтверждённых сумм за период':'За этот период покупок нет'):!hasMoney?'Суммы покупок не сохранены':'Нет данных по дням')+'</div>';
  }else{
   var points=timeline.map(function(day){
-   var value=day.missingAmounts&&!day.pricedPurchases?null:day.amountCents/100;
+   var value=day.amountCents==null?null:day.amountCents/100;
    var tip='<b>'+anDayLabel(day.date,true)+'</b><div class="an-tip-row"><span>Выручка</span><b>'+anPremiumValue(day)+'</b></div><div class="an-tip-row"><span>Покупки</span><b>'+anNum(day.purchases)+'</b></div>';
    (day.methods||[]).filter(function(row){return row.purchases>0;}).forEach(function(row){tip+='<div class="an-tip-row"><span>'+anEsc(anPremiumMethod(row.key).label)+'</span><b>'+anPremiumValue(row)+'</b></div>';});
    if(day.missingAmounts)tip+='<div class="an-tip-note">Без суммы: '+anNum(day.missingAmounts)+'</div>';
-   return {label:anDayLabel(day.date),value:value,tip:tip};
+   return {label:anDayLabel(day.date),value:value,amountCents:day.amountCents,tip:tip};
   });
   anPremiumLine(chart,points,window.innerWidth<640?190:210,'Выручка, USD по дням');
  }

@@ -327,8 +327,23 @@ test('missing conversion rates never understate dollar totals, while native USD 
   assert.equal(missing.totals.amountCents, null);
   assert.equal(missing.totals.averageDailyCents, null);
   const direct = env();
-  await restore(direct, [await transaction('appstore', 'dollars')]);
+  await restore(direct, [await transaction('appstore', 'dollars', { money: { currency: 'USD', milliunits: 990 } })]);
   const originalGet = direct.INSTALLS.get.bind(direct.INSTALLS);
   direct.INSTALLS.get = key => { assert.notEqual(key, 'economy_fx_usd_v1'); return originalGet(key); };
-  assert.equal((await snapshot(direct)).usd.totals.amountCents, 199);
+  const { usd } = await snapshot(direct);
+  assert.equal(usd.timeline[1].purchases, 1);
+  assert.equal(usd.timeline[1].amountCents, 99, 'a day with only a native USD sale still has revenue');
+});
+
+test('purchase days distinguish a sub-cent charge, a missing amount and no sales', async () => {
+  const e = env();
+  await restore(e, [
+    await transaction('appstore', 'small-charge', { money: { currency: 'USD', milliunits: 4 } }),
+    await transaction('appstore', 'missing-price', { purchasedAt: '2026-11-17T10:00:00Z', money: undefined }),
+  ]);
+  const { usd } = await snapshot(e);
+  assert.deepEqual(usd.timeline.map(day => [day.purchases, day.amountCents]), [[0, 0], [1, 0.4], [1, null]]);
+  assert.equal(usd.methods[0].amountCents, 0.4);
+  assert.equal(usd.totals.averageCheckCents, 0.4);
+  assert.ok(usd.totals.averageDailyCents > 0);
 });

@@ -161,6 +161,16 @@ test('premium revenue combines currencies in USD with four metrics and logos acr
   await chart.locator('[data-premium-point="3"]').hover();
   assert.match(await page.locator('#an-tip').innerText(),/Выручка\s*—/);
 
+  const small=revenueFixture(7);
+  const smallMethod={key:'appstore',label:'App Store',...metrics(1,0,{USD:4},{USD:1})};
+  small.totals=metrics(1,0,{USD:4},{USD:1});
+  small.methods=[smallMethod];
+  Object.assign(small.timeline[6],small.totals,{methods:[smallMethod]});
+  await render(small);
+  await chart.locator('[data-premium-point="6"]').hover();
+  assert.match(compact(await page.locator('#an-tip').innerText()),/Выручка<0,01\$Покупки1AppStore<0,01\$/);
+  assert.match(await chart.locator('svg').getAttribute('aria-label'),/< 0,01 \$/);
+
   const missing=revenueFixture(7);
   missing.totals=metrics(1,1);missing.currencies=[];
   missing.methods=[{key:'appstore',label:'App Store',...metrics(1,1)}];

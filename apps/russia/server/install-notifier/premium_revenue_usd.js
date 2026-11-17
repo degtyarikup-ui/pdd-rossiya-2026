@@ -1,15 +1,18 @@
 import { getUsdRate } from './economy_fx.js';
 
-const cents = (milliunits, currency, fx) => {
-  if (currency === 'USD') return Math.round(milliunits / 10);
-  const rate = currency === 'RUB' ? 1 : fx?.rubPerUnit?.[currency];
-  return rate > 0 && fx?.rubPerUsd > 0 ? Math.round(milliunits * rate / fx.rubPerUsd / 10) : null;
-};
+// Keep a positive charge visible when cent rounding would erase it.
+const roundCents = value => value < 1 ? value : Math.round(value);
+
+function cents(milliunits, currency, fx) {
+  const rate = currency === 'USD' ? 1 : (currency === 'RUB' ? 1 : fx?.rubPerUnit?.[currency]) / fx?.rubPerUsd;
+  if (!Number.isFinite(rate) || rate <= 0) return null;
+  return roundCents(milliunits * rate / 10);
+}
 const metrics = row => ({ purchases: row.purchases, missingAmounts: row.missingAmounts,
   pricedPurchases: Object.values(row.pricedPurchases || {}).reduce((sum, value) => sum + value, 0), amountCents: 0 });
 
 // Like Economy: preserve native dollars and convert each receipt to cents at
-// the shared official rate. All totals are sums of the same rounded receipts.
+// the shared official rate. Days, methods and totals sum the same receipts.
 export function premiumRevenueInUsd(snapshot, fx, sales) {
   const timeline = snapshot.timeline.map(row => ({ date: row.date, ...metrics(row),
     methods: (row.methods || []).map(method => ({ key: method.key, label: method.label, ...metrics(method) })) }));
@@ -26,11 +29,11 @@ export function premiumRevenueInUsd(snapshot, fx, sales) {
     method.amountCents += value;
     totals.amountCents += value;
   }
-  if (!available) {
-    for (const row of [totals, ...methods, ...timeline, ...timeline.flatMap(day => day.methods)]) row.amountCents = null;
+  for (const row of [totals, ...methods, ...timeline, ...timeline.flatMap(day => day.methods)]) {
+    if (!available || (row.purchases > 0 && !row.pricedPurchases)) row.amountCents = null;
   }
-  totals.averageCheckCents = available && totals.pricedPurchases ? Math.round(totals.amountCents / totals.pricedPurchases) : null;
-  totals.averageDailyCents = available && timeline.length && (totals.pricedPurchases || !totals.purchases) ? Math.round(totals.amountCents / timeline.length) : null;
+  totals.averageCheckCents = totals.pricedPurchases && totals.amountCents !== null ? roundCents(totals.amountCents / totals.pricedPurchases) : null;
+  totals.averageDailyCents = timeline.length && totals.amountCents !== null ? roundCents(totals.amountCents / timeline.length) : null;
   return { available, currency: 'USD', totals, timeline, methods,
     fx: fx ? { source: fx.source, rubPerUsd: fx.rubPerUsd, effectiveDate: fx.effectiveDate, stale: fx.stale === true } : null };
 }
