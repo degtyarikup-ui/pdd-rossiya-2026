@@ -33,12 +33,19 @@ class WidgetThemeTest(unittest.TestCase):
         swift = (ROOT / 'ios/StreakWidget/StreakWidget.swift').read_text()
         ios_gold = re.search(r'static let activeBackground = Color\(widgetRGB: 0x([0-9A-Fa-f]{6})\)', swift).group(1)
         self.assertEqual(ios_gold.upper(), app_gold)
+        ios_highlight = re.search(r'static let activeHighlight = Color\(widgetRGB: 0x([0-9A-Fa-f]{6})\)', swift).group(1)
+        self.assertEqual(ios_highlight.upper(), colors()['streak_widget_active_highlight'].upper())
+        gradient = ET.parse(ROOT / 'android/app/src/main/res/drawable/streak_widget_active_background.xml').getroot().find('gradient')
+        ns = '{http://schemas.android.com/apk/res/android}'
+        self.assertEqual(gradient.attrib[ns + 'startColor'], '@color/streak_widget_active_background')
+        self.assertEqual(gradient.attrib[ns + 'endColor'], '@color/streak_widget_active_highlight')
 
     def test_small_text_has_readable_contrast_on_bright_background(self):
         palette = colors()
         for key in ('streak_widget_active_text', 'streak_widget_active_secondary'):
-            light, dark = sorted([luminance(palette[key]), luminance(palette['streak_widget_active_background'])], reverse=True)
-            self.assertGreaterEqual((light + .05) / (dark + .05), 4.5, key)
+            for background in ('streak_widget_active_background', 'streak_widget_active_highlight'):
+                light, dark = sorted([luminance(palette[key]), luminance(palette[background])], reverse=True)
+                self.assertGreaterEqual((light + .05) / (dark + .05), 4.5, (key, background))
 
     def test_native_widget_content_uses_icons_instead_of_emoji(self):
         paths = list((ROOT / 'android/app/src/main/res/layout').glob('streak_widget*.xml')) + [

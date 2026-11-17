@@ -10,4 +10,6 @@
     <color name="streak_record_secondary">#BCCBE1</color>
     <color name="streak_record_accent">#FFBA6B</color>
     <color name="streak_record_track">#354964</color>
+    <color name="streak_widget_record_surface">#14FFFFFF</color>
+    <color name="streak_widget_status_surface">#1AFFFFFF</color>
 </resources>

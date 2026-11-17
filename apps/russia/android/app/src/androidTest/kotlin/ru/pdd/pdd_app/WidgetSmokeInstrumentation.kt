@@ -41,6 +41,10 @@ class WidgetSmokeInstrumentation : Instrumentation() {
     private var failed = 0
     private val report = StringBuilder()
 
+    private fun progress(message: String) = sendStatus(0, Bundle().apply {
+        putString("stream", "\n$message\n")
+    })
+
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
         start()
@@ -55,13 +59,18 @@ class WidgetSmokeInstrumentation : Instrumentation() {
             failed++
             report.appendLine("FAIL $name: $error")
         }
+        if ((passed + failed) % 200 == 0) progress("Completed ${passed + failed} native cases; failures: $failed")
     }
 
     override fun onStart() {
         try {
+            progress("Checking calendar boundaries")
             case("calendar boundaries and record progress") { main() }
+            progress("Rendering all sizes, languages and themes")
             renderMatrix()
+            progress("Checking state transitions")
             transitionMatrix()
+            progress("Checking fallback labels and responsive hosts")
             fallbackCopy()
             responsiveHosts()
             midnightPalette()
@@ -113,7 +122,8 @@ class WidgetSmokeInstrumentation : Instrumentation() {
         check(view.findViewById<View>(R.id.streak_root).hasOnClickListeners()) { "widget tap listener missing" }
         val root = view.findViewById<View>(R.id.streak_root)
         val gold = root.context.getColor(R.color.streak_widget_active_background)
-        val fill = (root.background as GradientDrawable).color!!.defaultColor
+        val background = root.background as GradientDrawable
+        val fill = background.color?.defaultColor ?: background.colors!!.first()
         check((fill == gold) == state.done) { "background does not match today's activity" }
         if (state.done) {
             check(view.findViewById<TextView>(R.id.streak_current).currentTextColor ==
@@ -121,6 +131,18 @@ class WidgetSmokeInstrumentation : Instrumentation() {
         }
         for (id in listOf(R.id.streak_flame, R.id.streak_trophy)) {
             check(view.findViewById<ImageView>(id)?.drawable != null) { "missing vector icon" }
+        }
+        if (style == StreakWidgetStyle.FLAME) {
+            check(view.findViewById<ImageView>(R.id.streak_art).drawable != null)
+            check(view.findViewById<ImageView>(R.id.streak_art).alpha in 0.05f..0.2f)
+            check(view.findViewById<ImageView>(R.id.streak_status_icon).drawable != null)
+            for ((id, color) in listOf(
+                R.id.streak_record_badge to if (state.done) R.color.streak_widget_active_record_surface else R.color.streak_widget_record_surface,
+                R.id.streak_status_group to if (state.done) R.color.streak_widget_active_status_surface else R.color.streak_widget_status_surface,
+            )) {
+                val surface = view.findViewById<View>(id).background as GradientDrawable
+                check(surface.color!!.defaultColor == root.context.getColor(color)) { "stale card surface after update" }
+            }
         }
     }
 
@@ -141,8 +163,13 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                 "$name drops text"
             }
             for (line in 0 until textLayout.lineCount) {
-                check(textLayout.getLineWidth(line) <= view.width - view.compoundPaddingLeft - view.compoundPaddingRight + 1) {
-                    "$name clips horizontally (${textLayout.getLineWidth(line)} > ${view.width})"
+                // Layout.getLineWidth includes trailing spaces, which can hang
+                // beyond a line without clipping any visible letters.
+                val lineText = view.text.subSequence(textLayout.getLineStart(line), textLayout.getLineEnd(line)).toString()
+                val trailing = lineText.takeLastWhile { it.isWhitespace() }
+                val visibleWidth = textLayout.getLineWidth(line) - view.paint.measureText(trailing)
+                check(visibleWidth <= view.width - view.compoundPaddingLeft - view.compoundPaddingRight + 1) {
+                    "$name clips horizontally ($visibleWidth > ${view.width})"
                 }
             }
         }
@@ -232,6 +259,9 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                         } finally {
                             if (language == "ru" && height == 130 && scenario.name in listOf("yesterday, no lesson today", "lesson today")) {
                                 capture(root, "${style.name}-$width-dark$dark-font$font-active${state.done}")
+                            }
+                            if (language == "ru" && height == 130 && scenario.name == "first lesson") {
+                                capture(root, "${style.name}-$width-dark$dark-font$font-first-lesson")
                             }
                         }
                         // Reapply must clear old counts, progress, and today's state.

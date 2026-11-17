@@ -43,6 +43,17 @@ internal object StreakWidgetRenderer {
         views.setTextColor(R.id.streak_status, palette.accent)
         views.setInt(R.id.streak_flame, "setColorFilter", palette.icon)
         views.setInt(R.id.streak_trophy, "setColorFilter", palette.icon)
+        if (style == StreakWidgetStyle.FLAME) {
+            views.setInt(R.id.streak_art, "setColorFilter", palette.icon)
+            views.setFloat(R.id.streak_art, "setAlpha", if (done) 0.12f else 0.08f)
+            views.setInt(R.id.streak_record_badge, "setBackgroundResource",
+                if (done) R.drawable.streak_widget_active_record_surface else R.drawable.streak_widget_record_surface)
+            views.setInt(R.id.streak_status_group, "setBackgroundResource",
+                if (done) R.drawable.streak_widget_active_status_surface else R.drawable.streak_widget_status_surface)
+            views.setImageViewResource(R.id.streak_status_icon,
+                if (done) R.drawable.streak_widget_check else R.drawable.streak_widget_clock)
+            views.setInt(R.id.streak_status_icon, "setColorFilter", palette.accent)
+        }
         if (style == StreakWidgetStyle.MINIMAL && !wide) {
             views.setInt(R.id.streak_divider, "setBackgroundColor", palette.divider)
         }

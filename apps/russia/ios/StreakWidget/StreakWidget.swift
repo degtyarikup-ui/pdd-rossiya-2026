@@ -16,21 +16,31 @@ enum StreakWidgetStyle: String {
         }
     }
     @ViewBuilder func background(done: Bool) -> some View {
-        if done {
-            StreakWidgetPalette.activeBackground
-        } else {
-            switch self {
-            case .flame:
-                ZStack {
-                    Color(uiColor: .secondarySystemBackground)
-                    Color.orange.opacity(0.06)
+        ZStack(alignment: .topTrailing) {
+            if done {
+                LinearGradient(colors: [StreakWidgetPalette.activeBackground, StreakWidgetPalette.activeHighlight],
+                               startPoint: .bottomLeading, endPoint: .topTrailing)
+            } else {
+                switch self {
+                case .flame:
+                    ZStack {
+                        Color(uiColor: .secondarySystemBackground)
+                        Color.orange.opacity(0.06)
+                    }
+                case .minimal:
+                    Color(uiColor: .systemBackground)
+                case .record:
+                    Color(widgetRGB: 0x14243D)
                 }
-            case .minimal:
-                Color(uiColor: .systemBackground)
-            case .record:
-                Color(widgetRGB: 0x14243D)
             }
-        }
+            if self == .flame {
+                Image(systemName: "flame.fill").resizable().scaledToFit()
+                    .frame(width: 112, height: 146)
+                    .foregroundStyle(done ? Color.white : Color.orange)
+                    .opacity(done ? 0.12 : 0.08).offset(x: 18, y: -10)
+                    .accessibilityHidden(true)
+            }
+        }.clipped()
     }
 }
 
@@ -45,6 +55,7 @@ private extension Color {
 struct StreakWidgetPalette {
     // AppColors.gold, also used by the full-screen streak celebration.
     static let activeBackground = Color(widgetRGB: 0xFFA53C)
+    static let activeHighlight = Color(widgetRGB: 0xFFCC80)
     let ink: Color
     let secondaryInk: Color
     let accent: Color
@@ -217,24 +228,72 @@ struct StreakWidgetView: View {
             .accessibilityValue(Text(entry.progress, format: .percent.precision(.fractionLength(0))))
     }
 
-    @ViewBuilder private var flameLayout: some View {
-        if small {
-            VStack(alignment: .leading, spacing: 4) {
-                metric
-                Spacer(minLength: 0)
-                compactRecord
-                status
-            }
-        } else {
-            VStack(alignment: .leading, spacing: 12) {
-                if large { heading; Spacer(minLength: 0) }
-                HStack(spacing: 20) {
-                    metric.frame(maxWidth: .infinity, alignment: .leading)
-                    record.frame(maxWidth: .infinity, alignment: .leading)
+    private var flameMetric: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Image(systemName: "flame.fill").resizable().scaledToFit()
+                    .frame(width: small ? 18 : 22, height: 28).foregroundStyle(palette.icon)
+                    .opacity(entry.current > 0 ? 1 : 0.4).accessibilityHidden(true)
+                Text(entry.current, format: .number)
+                    .font(.system(size: large ? 72 : small ? 44 : 56, weight: .heavy, design: .rounded))
+                    .lineLimit(1).minimumScaleFactor(0.3).frame(maxWidth: .infinity, alignment: .leading)
+                if small {
+                    Text(entry.label("currentLabel")).font(.system(size: 10)).foregroundStyle(palette.secondaryInk)
+                        .lineLimit(2).minimumScaleFactor(0.5).frame(width: 46, alignment: .leading)
                 }
-                if large { Spacer(minLength: 0) }
-                status
+            }.frame(maxHeight: .infinity, alignment: .leading)
+            if !small {
+                Text(entry.label("currentLabel")).font(.caption2).foregroundStyle(palette.secondaryInk)
+                    .lineLimit(1).minimumScaleFactor(0.5)
             }
+        }.accessibilityElement(children: .combine)
+    }
+
+    private var flameRecord: some View {
+        Group {
+            if small {
+                HStack(spacing: 4) {
+                    Image(systemName: "trophy.fill").font(.system(size: 12)).foregroundStyle(palette.icon)
+                        .accessibilityHidden(true)
+                    Text(entry.best, format: .number)
+                        .font(.system(size: 14, weight: .bold, design: .rounded)).lineLimit(1).minimumScaleFactor(0.4)
+                    Text(entry.label("bestLabel")).font(.system(size: 9)).foregroundStyle(palette.secondaryInk)
+                        .lineLimit(1).minimumScaleFactor(0.5)
+                }.padding(.horizontal, 6).frame(maxWidth: .infinity, minHeight: 26, maxHeight: 26, alignment: .leading)
+            } else {
+                record.padding(10).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            }
+        }
+        .background(RoundedRectangle(cornerRadius: 10).fill(entry.done ? Color.white.opacity(0.25) : Color.primary.opacity(0.06)))
+        .accessibilityElement(children: .combine)
+    }
+
+    private var flameStatus: some View {
+        HStack(spacing: 5) {
+            Image(systemName: entry.done ? "checkmark.circle.fill" : "clock")
+                .font(.system(size: 12)).accessibilityHidden(true)
+            Text(entry.status).font(.system(size: small ? 10 : 12, weight: .medium))
+                .lineLimit(2).minimumScaleFactor(0.6).frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .foregroundStyle(palette.accent).padding(.horizontal, 7)
+        .frame(height: small ? 26 : 28)
+        .background(RoundedRectangle(cornerRadius: 13).fill(entry.done ? Color.white.opacity(0.7) : Color.primary.opacity(0.08)))
+        .layoutPriority(1)
+    }
+
+    private var flameLayout: some View {
+        VStack(alignment: .leading, spacing: small ? 6 : 10) {
+            if large { heading }
+            if small {
+                flameMetric
+                flameRecord
+            } else {
+                HStack(spacing: 12) {
+                    flameMetric.frame(maxWidth: .infinity, alignment: .leading)
+                    flameRecord.frame(maxWidth: .infinity, alignment: .leading)
+                }.frame(maxHeight: .infinity)
+            }
+            flameStatus
         }
     }
 

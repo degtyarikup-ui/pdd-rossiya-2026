@@ -16,4 +16,9 @@
     <color name="streak_widget_active_secondary">#573516</color>
     <color name="streak_widget_active_icon">#FFFFFF</color>
     <color name="streak_widget_active_divider">#4D573516</color>
+    <color name="streak_widget_active_highlight">#FFCC80</color>
+    <color name="streak_widget_record_surface">#14D85117</color>
+    <color name="streak_widget_status_surface">#1AD85117</color>
+    <color name="streak_widget_active_record_surface">#40FFFFFF</color>
+    <color name="streak_widget_active_status_surface">#B3FFFFFF</color>
 </resources>
