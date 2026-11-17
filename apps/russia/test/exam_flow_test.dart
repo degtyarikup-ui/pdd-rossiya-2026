@@ -561,11 +561,13 @@ void main() {
   });
 
   testWidgets(
-    'при досрочном провале «Мои ошибки» показывают только отвеченные вопросы',
+    'при досрочном провале «Мои ошибки» показывают только неверные ответы',
     (tester) async {
       await pumpExam(tester);
 
-      // Две ошибки в первом блоке валят экзамен на втором вопросе; вопросы 3..20 не отвечены.
+      // Первый вопрос отвечен верно, следующие два в том же блоке — неверно:
+      // экзамен сразу завершается провалом, вопросы 4..20 не отвечены.
+      await answerCurrent(tester, correct: true);
       await answerCurrent(tester, correct: false);
       await answerCurrent(tester, correct: false);
       expect(find.text('Экзамен не сдан'), findsOneWidget);
@@ -587,7 +589,19 @@ void main() {
     },
   );
 
-  testWidgets('разбор экзамена без ответов показывает пустое состояние', (
+  testWidgets('экзамен без ошибок не показывает кнопку «Мои ошибки»', (
+    tester,
+  ) async {
+    await pumpExam(tester);
+
+    for (var i = 0; i < 20; i++) {
+      await answerCurrent(tester, correct: true);
+    }
+    expect(find.text('Экзамен сдан!'), findsOneWidget);
+    expect(find.text('Мои ошибки'), findsNothing);
+  });
+
+  testWidgets('разбор экзамена без ошибок и ответов показывает пустое состояние', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -607,7 +621,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: ExamReviewScreen(
             questions: buildQuestions(3),
-            savedAnswers: const [null, null, null],
+            savedAnswers: const [0, null, null],
           ),
         ),
       ),

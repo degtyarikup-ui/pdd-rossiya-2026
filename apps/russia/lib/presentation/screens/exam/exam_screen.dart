@@ -993,23 +993,26 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
         closeTooltip: appL10n.close,
         onClose: close,
         actions: [
-          ResultButton(
-            label: appL10n.myMistakes,
-            icon: Icons.fact_check_outlined,
-            primary: false,
-            onPressed: () {
-              Navigator.push<void>(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (ctx) => ExamReviewScreen(
-                    questions: List<Map<String, dynamic>>.from(_examQuestions),
-                    savedAnswers: List<int?>.from(_savedAnswers),
-                    category: ref.read(appSettingsProvider).ticketCategory,
+          if (_wrongAnswers.isNotEmpty)
+            ResultButton(
+              label: appL10n.myMistakes,
+              icon: Icons.fact_check_outlined,
+              primary: false,
+              onPressed: () {
+                Navigator.push<void>(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (ctx) => ExamReviewScreen(
+                      questions: List<Map<String, dynamic>>.from(
+                        _examQuestions,
+                      ),
+                      savedAnswers: List<int?>.from(_savedAnswers),
+                      category: ref.read(appSettingsProvider).ticketCategory,
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
+                );
+              },
+            ),
           ResultButton(
             label: appL10n.backToTraining,
             primary: true,

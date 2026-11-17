@@ -15,7 +15,8 @@ import 'package:pdd_app/presentation/widgets/question_image.dart';
 import 'package:pdd_app/presentation/widgets/question_next_bottom_bar.dart';
 import 'package:pdd_app/presentation/widgets/pdd_comment_text.dart';
 
-/// Разбор после экзамена: отвеченные вопросы по порядку, верность ответов и комментарий.
+/// Разбор ошибок после экзамена: только вопросы с неверными ответами,
+/// по порядку, с выбранным неверным ответом, правильным вариантом и комментарием.
 class ExamReviewScreen extends ConsumerStatefulWidget {
   const ExamReviewScreen({
     super.key,
@@ -47,15 +48,23 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
     return widget.questions[_order[_currentPos]]['id'] as String? ?? '';
   }
 
+  bool _isWrongAnswer(int i) {
+    if (i >= widget.savedAnswers.length) return false;
+    final selected = widget.savedAnswers[i];
+    if (selected == null) return false;
+    final answers = widget.questions[i]['answers'] as List;
+    if (selected < 0 || selected >= answers.length) return false;
+    return answers[selected]['correct'] != true;
+  }
+
   @override
   void initState() {
     super.initState();
-    // Показываем только вопросы, на которые пользователь успел ответить:
-    // после досрочного провала оставшиеся вопросы не должны выглядеть как ошибки
-    // и раскрывать правильные ответы.
+    // В «Мои ошибки» попадают только вопросы с неверным ответом:
+    // ни верно отвеченные, ни оставшиеся без ответа после провала не показываем.
     _order = [
       for (var i = 0; i < widget.questions.length; i++)
-        if (i < widget.savedAnswers.length && widget.savedAnswers[i] != null) i,
+        if (_isWrongAnswer(i)) i,
     ];
     _currentPos = 0;
     _pageController = PageController();
@@ -186,7 +195,7 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            appL10n.examReview,
+                            appL10n.myMistakes,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,

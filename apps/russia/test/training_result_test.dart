@@ -546,7 +546,7 @@ void main() {
         questions: 2,
         entry: ExamReviewScreen(
           questions: questions,
-          savedAnswers: const [1, 0],
+          savedAnswers: const [1, 1],
           category: TicketCategory.cd,
         ),
       );
@@ -579,7 +579,7 @@ void main() {
         source: delayedFav,
         entry: ExamReviewScreen(
           questions: buildQuestions(2),
-          savedAnswers: const [1, 0],
+          savedAnswers: const [1, 1],
           category: TicketCategory.ab,
         ),
       );
