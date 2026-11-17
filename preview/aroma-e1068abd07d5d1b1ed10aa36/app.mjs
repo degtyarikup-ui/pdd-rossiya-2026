@@ -1,13 +1,13 @@
 import { getMatches, getAvailableNotes, getPerfumesForGender, removeNoteAt, isCompleteSelection } from './game-model.mjs';
-import { noteArtwork } from './note-art.mjs?v=20261116-framing2';
+import { noteArtwork } from './note-art.mjs?v=20261118-catalog1';
 import { createGameMotion } from './motion.mjs';
 
 const root = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
 const audienceSwitch = document.querySelector('.audience-switch');
 const motion = createGameMotion(root);
-const imageCache = [];
 const warmedImages = new Set();
+const selectedBottles = new Map();
 const icons = {
   arrow:'<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   back:'<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 12H5m6-6-6 6 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -23,6 +23,7 @@ const familyGroups = [
   { label:'Свежие', value:'fresh', families:['Фрукты и ягоды','Зелень и свежесть'] }
 ];
 let catalog;
+let noteFamilies;
 let gender = 'women';
 const drafts = new Map();
 let choices = [];
@@ -33,19 +34,26 @@ let lastPointerAction;
 const escape = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ordinal = ['Первая нота','Вторая нота','Третья нота'];
 
-function ingredient(name) {
+function ingredient(name, lazy = false) {
   const art = noteArtwork[name];
   if (!art) throw new Error(`Missing note artwork: ${name}`);
-  const x = art.columns === 1 ? 50 : art.column / (art.columns - 1) * 100;
-  const y = art.rows === 1 ? 50 : art.row / (art.rows - 1) * 100;
   const frame = art.frame;
-  return `<span class="ingredient" data-art="${escape(name)}" aria-hidden="true"><span class="ingredient-image" style="width:${frame.scale*100}%;height:${frame.scale*100}%;left:${frame.x*100}%;top:${frame.y*100}%;background-image:url('${art.file}');background-size:${art.columns*100}% ${art.rows*100}%;background-position:${x}% ${y}%"></span></span>`;
+  return `<span class="ingredient" data-art="${escape(name)}" aria-hidden="true"><img class="ingredient-image" src="${escape(art.file)}" alt="" width="320" height="320" decoding="async"${lazy?' loading="lazy"':''} draggable="false" style="width:${frame.scale*100}%;height:${frame.scale*100}%;left:${frame.x*100}%;top:${frame.y*100}%"></span>`;
 }
 function resetPalette() {family='all';}
 function activePerfumes() {return getPerfumesForGender(catalog.perfumes, gender);}
 function say(message) {announcement.textContent=message;}
+function activeBottle(perfume) {
+  return perfume.bottles.find(bottle => bottle.sku === selectedBottles.get(perfume.id)) || perfume.bottles[0];
+}
 function warmResults() {
-  const sources = [...getMatches(activePerfumes(), choices).map(perfume => perfume.image), './public/assets/perfume-light-backdrop.webp'];
+  if (choices.length < 2) return;
+  const matches = getMatches(activePerfumes(), choices);
+  const upcoming = choices.length === 3
+    ? [matches[resultIndex], matches[(resultIndex + 1) % matches.length]]
+    : matches.slice(0, 1);
+  const sources = [...upcoming.filter(Boolean).map(perfume => activeBottle(perfume).image),
+    './public/assets/perfume-light-backdrop.webp'];
   for (const source of sources) {
     if (warmedImages.has(source)) continue;
     warmedImages.add(source);
@@ -53,7 +61,6 @@ function warmResults() {
     image.fetchPriority = 'low';
     image.decoding = 'async';
     image.src = source;
-    imageCache.push(image);
     image.decode().catch(() => {});
   }
 }
@@ -80,7 +87,7 @@ function composition() {
 function noteOptions() {
   const available = getAvailableNotes(activePerfumes(), choices);
   const group = familyGroups.find(x=>x.value===family);
-  let filtered = available.filter(name=>(!group.families||group.families.includes(catalog.notes.find(n=>n.name===name)?.family)));
+  let filtered = available.filter(name=>(!group.families||group.families.includes(noteFamilies.get(name))));
   filtered.sort((a,b)=>{
     const ia=preferred.indexOf(a),ib=preferred.indexOf(b);
     return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b,'ru');
@@ -89,14 +96,54 @@ function noteOptions() {
 }
 function palette() {
   const {available,displayed}=noteOptions();
-  return `<div class="palette"><h2 class="sr-only" tabindex="-1">Выберите ноту · ${choices.length} из 3 выбрано</h2><div class="filters"><div class="filter-scroll" role="group" aria-label="Группы нот">${familyGroups.map(g=>`<button class="filter" data-family="${g.value}" aria-pressed="${family===g.value}" ${g.families&&!available.some(name=>g.families.includes(catalog.notes.find(n=>n.name===name)?.family))?'disabled':''}>${g.label}</button>`).join('')}</div></div><div class="note-grid" aria-label="Доступные ноты">${displayed.length?displayed.map(name=>`<button class="note-choice" data-note="${escape(name)}" aria-label="Выбрать ноту ${escape(name)}">${ingredient(name)}<span class="note-label">${escape(name)}</span><span class="add-note" aria-hidden="true">+</span></button>`).join(''):`<div class="empty-search">Нет подходящих нот<button data-action="clear-filter">Сбросить фильтр</button></div>`}</div></div>`;
+  return `<div class="palette"><h2 class="sr-only" tabindex="-1">Выберите ноту · ${choices.length} из 3 выбрано</h2><div class="filters"><div class="filter-scroll" role="group" aria-label="Группы нот">${familyGroups.map(g=>`<button class="filter" data-family="${g.value}" aria-pressed="${family===g.value}" ${g.families&&!available.some(name=>g.families.includes(noteFamilies.get(name)))?'disabled':''}>${g.label}</button>`).join('')}</div></div><div class="note-grid" aria-label="Доступные ноты">${displayed.length?displayed.map((name,index)=>`<button class="note-choice" data-note="${escape(name)}" aria-label="Выбрать ноту ${escape(name)}">${ingredient(name,index>=9)}<span class="note-label">${escape(name)}</span><span class="add-note" aria-hidden="true">+</span></button>`).join(''):`<div class="empty-search">Нет подходящих нот<button data-action="clear-filter">Сбросить фильтр</button></div>`}</div></div>`;
+}
+function bottleLabel(perfume, bottle) {
+  return `${perfume.brand} ${perfume.name}, ${bottle.ml} мл`;
+}
+function volumeOptions(perfume, current) {
+  if (perfume.bottles.length < 2) return '';
+  const bottles = [...perfume.bottles].reverse();
+  return `<div class="volume-options" role="group" aria-label="Объём флакона">${bottles.map(bottle =>
+    `<button class="filter volume-option" data-volume="${escape(bottle.sku)}" aria-pressed="${bottle===current}">${bottle.ml} мл</button>`
+  ).join('')}</div>`;
+}
+function changeBottle(sku) {
+  const perfume = getMatches(activePerfumes(), choices)[resultIndex];
+  const bottle = perfume?.bottles.find(option => option.sku === sku);
+  if (!bottle || bottle === activeBottle(perfume)) return;
+  selectedBottles.set(perfume.id, sku);
+  const image = root.querySelector('.product-bottle > img');
+  image.src = bottle.image;
+  image.alt = bottleLabel(perfume, bottle);
+  root.querySelector('.bottle-glint').style.setProperty('--bottle-mask', `url('${bottle.image}')`);
+  root.querySelector('.product-description').textContent = bottle.description;
+  root.querySelectorAll('[data-volume]').forEach(option =>
+    option.setAttribute('aria-pressed', String(option.dataset.volume === sku)));
+  say(`${perfume.name}, ${bottle.ml} мл`);
 }
 function result() {
   const matches = getMatches(activePerfumes(),choices);
   const perfume = matches[resultIndex];
   if(!perfume) {view='game';choices=[];resetPalette();render();return;}
+  const bottle = activeBottle(perfume);
   root.className='game-shell result-shell';
-  root.innerHTML=`<div class="result-content scene-enter"><div class="product-art" data-perfume="${escape(perfume.id)}"><span class="result-bloom" aria-hidden="true"></span><div class="product-bottle"><img src="${escape(perfume.image)}" alt="${escape(perfume.brand+' '+perfume.name)}"><span class="bottle-glint" style="--bottle-mask:url('${escape(perfume.image)}')" aria-hidden="true"><span class="bottle-glint-beam"></span></span></div></div><div class="result-copy"><p class="product-brand">${escape(perfume.brand)}</p><h2 tabindex="-1">${escape(perfume.name)}</h2><p class="product-description">${escape(perfume.description)}</p><div class="result-notes" aria-label="Ваши ноты">${choices.map((n,i)=>`<button class="result-note" data-remove="${i}" aria-label="Убрать ноту ${escape(n)}"><span class="result-note-art">${ingredient(n)}${removeMark()}</span><span>${escape(n)}</span></button>`).join('')}</div><div class="result-actions"><button class="gold-button" data-action="reset">${icons.reset}Собрать ещё</button>${matches.length>1?`<div class="result-paging" aria-label="Подходящие ароматы"><button class="paging-button" data-page="-1" aria-label="Предыдущий аромат">${icons.back}</button><span>${resultIndex+1} / ${matches.length}</span><button class="paging-button" data-page="1" aria-label="Следующий аромат">${icons.arrow}</button></div>`:''}</div></div></div>`;
+  root.innerHTML=`<div class="result-content scene-enter">
+    <div class="product-art" data-perfume="${escape(perfume.id)}">
+      <span class="result-bloom" aria-hidden="true"></span>
+      <div class="product-bottle"><img src="${escape(bottle.image)}" alt="${escape(bottleLabel(perfume,bottle))}">
+        <span class="bottle-glint" style="--bottle-mask:url('${escape(bottle.image)}')" aria-hidden="true"><span class="bottle-glint-beam"></span></span>
+      </div>
+    </div>
+    <div class="result-copy">
+      <p class="product-brand">${escape(perfume.brand)}</p>
+      <h2 tabindex="-1">${escape(perfume.name)}</h2>
+      ${volumeOptions(perfume,bottle)}
+      <p class="product-description">${escape(bottle.description)}</p>
+      <div class="result-notes" aria-label="Ваши ноты">${choices.map((n,i)=>`<button class="result-note" data-remove="${i}" aria-label="Убрать ноту ${escape(n)}"><span class="result-note-art">${ingredient(n)}${removeMark()}</span><span>${escape(n)}</span></button>`).join('')}</div>
+      <div class="result-actions"><button class="gold-button" data-action="reset">${icons.reset}Собрать ещё</button>${matches.length>1?`<div class="result-paging" aria-label="Подходящие ароматы"><button class="paging-button" data-page="-1" aria-label="Предыдущий аромат">${icons.back}</button><span>${resultIndex+1} / ${matches.length}</span><button class="paging-button" data-page="1" aria-label="Следующий аромат">${icons.arrow}</button></div>`:''}</div>
+    </div>
+  </div>`;
 }
 function render() {
   root.setAttribute('aria-busy','false');
@@ -145,9 +192,9 @@ root.addEventListener('click', event => {
     if(!getAvailableNotes(activePerfumes(),choices).includes(note))return;
     const before=motion.capture(button);
     choices.push(note);resetPalette();
-    warmResults();
     if(isCompleteSelection(choices)){view='result';resultIndex=0;}
     render();focusAfterChange(event);
+    warmResults();
     const needsScroll=view==='result'&&root.getBoundingClientRect().top<0;
     motion.play(before,{kind:'select',note,pointer:event.detail>0,skipTravel:needsScroll});
     if(needsScroll)root.scrollIntoView({block:'start',behavior:motion.reduced()?'instant':'smooth'});
@@ -169,7 +216,8 @@ root.addEventListener('click', event => {
     root.querySelector(`[data-family="${family}"]`)?.focus({preventScroll:true});
     motion.play(before,{kind:'filter',pointer:event.detail>0});return;
   }
-  if(button.dataset.page){const before=motion.capture();const matches=getMatches(activePerfumes(),choices);resultIndex=(resultIndex+Number(button.dataset.page)+matches.length)%matches.length;render();focusHeading();motion.play(before,{kind:'page'});say(matches[resultIndex].name);return;}
+  if(button.dataset.volume){changeBottle(button.dataset.volume);return;}
+  if(button.dataset.page){const before=motion.capture();const matches=getMatches(activePerfumes(),choices);resultIndex=(resultIndex+Number(button.dataset.page)+matches.length)%matches.length;render();focusHeading();warmResults();motion.play(before,{kind:'page'});say(matches[resultIndex].name);return;}
   const action=button.dataset.action;
   if(action==='reset'){const before=motion.capture();choices=[];view='game';resultIndex=0;resetPalette();render();focusAfterChange(event);motion.play(before,{kind:'reset',pointer:event.detail>0});say('Новая комбинация. Выберите первую ноту.');}
   if(action==='clear-filter'){const before=motion.capture();resetPalette();render();focusAfterChange(event);motion.play(before,{kind:'filter'});}
@@ -178,11 +226,12 @@ root.addEventListener('click', event => {
 async function load(){
   try{
     root.setAttribute('aria-busy','true');
-    const response=await fetch('./data/runtime-catalog.json');if(!response.ok)throw new Error('Catalog unavailable');
+    const response=await fetch('./data/runtime-catalog.json?v=20261118-catalog1');if(!response.ok)throw new Error('Catalog unavailable');
     catalog=await response.json();
+    noteFamilies=new Map(catalog.notes.map(note=>[note.name,note.family]));
     for (const value of ['women','men']) if (!getPerfumesForGender(catalog.perfumes,value).length) throw new Error(`Empty fragrance category: ${value}`);
     for(const note of catalog.notes)if(!noteArtwork[note.name])throw new Error(`Missing note artwork: ${note.name}`);
-    // Product images warm after the first choice so they do not compete with notes.
+    // Product images warm once the selection has narrowed down.
     render();motion.play(null);
     audienceSwitch.querySelectorAll('button').forEach(button => {button.disabled=false;});
   }catch(error){root.setAttribute('aria-busy','false');root.innerHTML='<div class="palette"><h2>Не удалось открыть коллекцию</h2><p>Попробуйте загрузить её ещё раз.</p><button class="gold-button" data-action="retry">Повторить</button></div>';console.error(error);}

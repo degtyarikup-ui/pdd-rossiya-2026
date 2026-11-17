@@ -114,6 +114,8 @@ a { color: inherit; }
 .result-copy h2 { font: var(--type-heading); letter-spacing: 0; margin: 0 0 21px; }
 .product-brand { font: var(--type-caption); letter-spacing: 0; margin: 0 0 14px; color: #aec0e8; text-transform: uppercase; }
 .product-description { font: var(--type-body); letter-spacing: 0; color: #c8d2f0; margin: 0; max-width: 490px; }
+.volume-options { display: flex; flex-wrap: wrap; gap: 4px; margin: -8px 0 12px; }
+.volume-options .volume-option { min-height: 44px; padding: 8px 14px; font: var(--type-small); }
 .result-notes { display: flex; gap: 8px; margin: 20px -9px 22px; }
 .result-note { font: var(--type-caption); letter-spacing: 0; width: 104px; background: transparent; display: flex; flex-direction: column; align-items: center; gap: 4px; border-radius: 14px; padding: 0 4px 7px; color: #e0e7fa; position: relative; }
 .result-note-art { display: block; position: relative; }
@@ -244,6 +246,6 @@ a { color: inherit; }
 .has-filter-indicator .filter[aria-pressed=true]::after { display: none; }
 
 /* The inner span frames one atlas tile; hover/flight transforms stay on the outer. */
-.ingredient-image { position: absolute; display: block; background-repeat: no-repeat; pointer-events: none; }
+.ingredient-image { position: absolute; display: block; pointer-events: none; }
 .note-choice .ingredient { max-width: 100%; height: auto; aspect-ratio: 1; }
 .filter-scroll { mask-image: linear-gradient(90deg, transparent, #000 var(--filter-fade-start, 0px), #000 calc(100% - var(--filter-fade-end, 0px)), transparent); }
