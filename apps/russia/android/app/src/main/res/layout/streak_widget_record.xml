@@ -57,7 +57,7 @@
             android:autoSizeMinTextSize="5sp"
             android:autoSizeMaxTextSize="12sp"
             android:autoSizeStepGranularity="1sp"
-            android:layout_weight="1" />
+            android:layout_weight="1.8" />
         <ProgressBar
             style="?android:attr/progressBarStyleHorizontal"
             android:id="@+id/streak_progress"
@@ -116,7 +116,7 @@
             android:autoSizeMinTextSize="5sp"
             android:autoSizeMaxTextSize="12sp"
             android:autoSizeStepGranularity="1sp"
-            android:layout_weight="1" />
+            android:layout_weight="1.8" />
     </LinearLayout>
     <TextView
         android:id="@+id/streak_status"
@@ -132,6 +132,5 @@
         android:autoSizeMinTextSize="5sp"
         android:autoSizeMaxTextSize="12sp"
         android:autoSizeStepGranularity="1sp"
-        android:layout_marginTop="4dp"
-        android:visibility="gone" />
+        android:layout_marginTop="4dp" />
 </LinearLayout>

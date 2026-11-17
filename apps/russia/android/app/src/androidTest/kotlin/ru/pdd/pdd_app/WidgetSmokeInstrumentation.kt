@@ -65,6 +65,7 @@ class WidgetSmokeInstrumentation : Instrumentation() {
             fallbackCopy()
             responsiveHosts()
             midnightPalette()
+            legacyHiddenStatus()
             sharedPublication()
         } catch (error: Throwable) {
             failed++
@@ -103,6 +104,7 @@ class WidgetSmokeInstrumentation : Instrumentation() {
     }
 
     private fun assertValues(view: View, state: StreakWidgetState, style: StreakWidgetStyle) {
+        check(view.findViewById<TextView>(R.id.streak_status).visibility == View.VISIBLE) { "today's status is hidden" }
         check(view.findViewById<TextView>(R.id.streak_current)?.text?.toString() == state.current.toString()) { "current count missing or stale" }
         check(view.findViewById<TextView>(R.id.streak_best)?.text?.toString() == state.best.toString()) { "best count missing or stale" }
         if (style == StreakWidgetStyle.RECORD) {
@@ -343,9 +345,8 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                     layout(host, context, width, height)
                     check(!host.error) { "host fell back to its error view" }
                     assertValues(host, state, style)
-                    check(host.findViewById<View>(R.id.streak_status).visibility ==
-                        if (width >= 250 || height >= 190) View.VISIBLE else View.GONE) {
-                        "status visibility did not adapt at ${width}x$height: ${host.findViewById<View>(R.id.streak_status).visibility}"
+                    check(host.findViewById<View>(R.id.streak_status).visibility == View.VISIBLE) {
+                        "status disappeared at ${width}x$height"
                     }
                 }
             }
@@ -369,6 +370,25 @@ class WidgetSmokeInstrumentation : Instrumentation() {
             StreakWidgetRenderer.render(context, style, tomorrow, data, false, false).reapply(context, root)
             layout(root, context, 130, 130)
             assertValues(root, tomorrow, style)
+        }
+    }
+
+    private fun legacyHiddenStatus() {
+        for (style in StreakWidgetStyle.entries) case("old compact host reveals today's status $style") {
+            val context = configured("ru", true, 2f)
+            val scenario = scenarios.first()
+            val data = copy(context, scenario)
+            val remote = StreakWidgetRenderer.render(context, style, state(scenario), data, false, false)
+            val root = remote.apply(context, FrameLayout(context)) as ViewGroup
+            layout(root, context, 130, 130)
+            // A launcher may retain a view whose visibility came from the old APK.
+            root.findViewById<TextView>(R.id.streak_status).visibility = View.GONE
+            remote.reapply(context, root)
+            layout(root, context, 130, 130)
+            assertValues(root, scenario.expected, style)
+            assertCopy(root, context, scenario, data)
+            assertTextFits(root)
+            capture(root, "${style.name}-compact-status-visible")
         }
     }
 

@@ -33,7 +33,8 @@ internal object StreakWidgetRenderer {
             current > 0 -> label("continueLabel", R.string.continueLabel)
             else -> label("startLabel", R.string.startLabel)
         })
-        views.setViewVisibility(R.id.streak_status, if (wide || tall) View.VISIBLE else View.GONE)
+        // Also reset visibility when the launcher reapplies an older compact view.
+        views.setViewVisibility(R.id.streak_status, View.VISIBLE)
         views.setFloat(R.id.streak_flame, "setAlpha", if (current > 0) 1f else 0.4f)
         val palette = StreakWidgetPalette.from(context, style, done)
         views.setInt(R.id.streak_root, "setBackgroundResource", palette.background)

@@ -19,6 +19,13 @@ def luminance(rgb):
 
 
 class WidgetThemeTest(unittest.TestCase):
+    def test_gallery_preview_always_shows_today_status(self):
+        android_ns = '{http://schemas.android.com/apk/res/android}'
+        for path in (ROOT / 'android/app/src/main/res/layout').glob('streak_widget*.xml'):
+            status = next(e for e in ET.parse(path).getroot().iter()
+                          if e.attrib.get(android_ns + 'id') == '@+id/streak_status')
+            self.assertEqual(status.attrib.get(android_ns + 'visibility', 'visible'), 'visible', str(path))
+
     def test_gold_matches_the_app_celebration_on_both_platforms(self):
         source = (ROOT.parents[1] / 'packages/pdd_ui/lib/src/app_colors.dart').read_text()
         app_gold = re.search(r'static const Color gold = Color\(0xFF([0-9A-Fa-f]{6})\)', source).group(1).upper()

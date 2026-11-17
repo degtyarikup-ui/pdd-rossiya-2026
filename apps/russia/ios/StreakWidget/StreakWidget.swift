@@ -151,7 +151,7 @@ struct StreakWidgetView: View {
                 .foregroundStyle(palette.icon)
                 .opacity(entry.current > 0 ? 1 : 0.4).accessibilityHidden(true)
             Text(entry.current, format: .number)
-                .font(.system(size: large ? 64 : 40, weight: .bold, design: .rounded))
+                .font(.system(size: large ? 64 : small ? 30 : 40, weight: .bold, design: .rounded))
                 .minimumScaleFactor(0.4).lineLimit(1)
         }
     }
@@ -184,8 +184,20 @@ struct StreakWidgetView: View {
     }
 
     private var status: some View {
-        Label(entry.status, systemImage: entry.done ? "checkmark.circle.fill" : "sparkles")
-            .font(.caption).foregroundStyle(palette.accent).lineLimit(2).minimumScaleFactor(0.7)
+        Group {
+            if small { Text(entry.status) }
+            else { Label(entry.status, systemImage: entry.done ? "checkmark.circle.fill" : "sparkles") }
+        }
+        .font(small ? .caption2 : .caption).foregroundStyle(palette.accent)
+        .lineLimit(2).minimumScaleFactor(0.7).layoutPriority(1)
+    }
+
+    private var compactRecord: some View {
+        HStack(spacing: 6) {
+            bestCount
+            Text(entry.label("bestLabel")).font(.caption2).foregroundStyle(palette.secondaryInk)
+                .lineLimit(2).minimumScaleFactor(0.7)
+        }.accessibilityElement(children: .combine)
     }
 
     private var heading: some View {
@@ -209,8 +221,9 @@ struct StreakWidgetView: View {
         if small {
             VStack(alignment: .leading, spacing: 4) {
                 metric
-                Spacer(minLength: 4)
-                record
+                Spacer(minLength: 0)
+                compactRecord
+                status
             }
         } else {
             VStack(alignment: .leading, spacing: 12) {
@@ -226,13 +239,13 @@ struct StreakWidgetView: View {
     }
 
     @ViewBuilder private var minimalLayout: some View {
-        VStack(spacing: small ? 6 : 12) {
+        VStack(spacing: small ? 3 : 12) {
             if large { heading }
             Spacer(minLength: 0)
             if small {
                 metric
                 Divider().overlay(palette.separator)
-                record
+                compactRecord
             } else {
                 HStack(spacing: 20) {
                     metric.frame(maxWidth: .infinity)
@@ -241,22 +254,19 @@ struct StreakWidgetView: View {
                 }
             }
             Spacer(minLength: 0)
-            if !small { status }
+            status
         }
     }
 
     @ViewBuilder private var recordLayout: some View {
-        VStack(alignment: .leading, spacing: small ? 6 : 12) {
+        VStack(alignment: .leading, spacing: small ? 2 : 12) {
             if large { heading; Spacer(minLength: 0) }
             if small {
                 metric
                 Spacer(minLength: 0)
                 progress
-                HStack(spacing: 8) {
-                    bestCount
-                    Text(entry.label("bestLabel")).font(.caption).foregroundStyle(palette.secondaryInk)
-                        .lineLimit(2).minimumScaleFactor(0.7)
-                }.accessibilityElement(children: .combine)
+                compactRecord
+                status
             } else {
                 HStack(spacing: 20) {
                     metric.frame(maxWidth: .infinity, alignment: .leading)
