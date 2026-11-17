@@ -132,12 +132,20 @@ test('restoring an App Store receipt logs only a current paid period and uses Ap
     const profile = JSON.parse(records.get('user:' + id));
     const isPaidProduction = data.environment === 'Production' && data.price > 0 && !data.revocationDate;
     assert.equal(profile.purchasedAt, isPaidProduction ? new Date(purchaseDate).toISOString() : undefined);
-    assert.deepEqual(effects.map(effect => effect.kind), shouldLog ? ['telegram', 'stats'] : []);
+    const purchaseEffects = effects.filter(effect => effect.kind !== 'stats' || effect.item.kind !== 'premium-revenue');
+    assert.deepEqual(purchaseEffects.map(effect => effect.kind), shouldLog ? ['telegram', 'stats'] : []);
+    const revenueEffects = effects.filter(effect => effect.kind === 'stats' && effect.item.kind === 'premium-revenue');
+    assert.equal(revenueEffects.length, data.environment === 'Production' ? 2 : 0, 'both restores retain only analytics observations of the exact transaction');
+    for (const effect of revenueEffects) {
+      assert.equal(effect.item.revenue.purchasedAt, new Date(purchaseDate).toISOString());
+      assert.equal(effect.item.revenue.refunded, Boolean(data.revocationDate));
+      assert.equal(effect.item.revenue.money?.milliunits || 0, data.price);
+    }
     if (shouldLog) {
-      assert.match(effects[0].text, /<b>Автопродление Premium<\/b>/);
-      assert.match(effects[0].text, /0,99\s*\$/);
-      assert.doesNotMatch(effects[0].text, /99 ₽/);
-      assert.ok(effects[0].text.includes('Дата транзакции:</b> ' + premiumDate(purchaseDate)));
+      assert.match(purchaseEffects[0].text, /<b>Автопродление Premium<\/b>/);
+      assert.match(purchaseEffects[0].text, /0,99\s*\$/);
+      assert.doesNotMatch(purchaseEffects[0].text, /99 ₽/);
+      assert.ok(purchaseEffects[0].text.includes('Дата транзакции:</b> ' + premiumDate(purchaseDate)));
     }
   }
 });
@@ -194,9 +202,9 @@ test('status refresh keeps the saved entitlement when Apple is slower than its d
   assert.equal(user.isPremium, true); assert.equal(user.premiumExpiresAt, '2030-01-01'); assert.equal(writes, 0);
 });
 test('status polling refreshes renewed subscription without restarting the app', async () => {
-  const records = new Map();
-  const old = transaction({ expiresDate: Date.now() - 1000 }), renewed = transaction({ transactionId: '124' });
-  const e = { ...env, SHARED_SECRET: 'test-secret', SESSION_SECRET: 'test-session', INSTALLS: { get: async k => records.get(k) ?? null, put: async (k, v) => records.set(k, v) } };
+  const records = new Map(), effects = [];
+  const old = transaction({ expiresDate: Date.now() - 1000 }), renewed = transaction({ transactionId: '124', purchaseDate: Date.now() - 120000, price: 1990, currency: 'USD' });
+  const e = { ...env, __DURABLE_EFFECTS: effects, SHARED_SECRET: crypto.randomUUID(), SESSION_SECRET: crypto.randomUUID(), INSTALLS: { get: async k => records.get(k) ?? null, put: async (k, v) => records.set(k, v) } };
   records.set('user:apple_test', JSON.stringify({ id: 'apple_test', isPremium: true, premiumSource: 'appstore', premiumExpiresAt: new Date(old.expiresDate).toISOString(), verifiedPurchase: body }));
   const token = await signSession(e, { user: { id: 'apple_test', email: 'test@example.com' }, expiresAt: Date.now() + 60000, generation: '' });
   await withApple(async url => new URL(url).pathname.includes('/subscriptions/') ? statusResponse(renewed) : Response.json({ signedTransactionInfo: await signed(old) }), async () => {
@@ -205,6 +213,10 @@ test('status polling refreshes renewed subscription without restarting the app',
     const data = await response.json();
     assert.equal(data.isPremium, true); assert.equal(data.premiumExpiresAt, new Date(renewed.expiresDate).toISOString());
     assert.equal(JSON.parse(records.get('user:apple_test')).verifiedPurchase.transactionId, '124');
+    assert.equal(effects.length, 1, 'a renewal found by status refresh is accounted without sending Telegram');
+    assert.equal(effects[0].item.kind, 'premium-revenue');
+    assert.equal(effects[0].item.revenue.money.milliunits, 1990);
+    assert.equal(effects[0].item.revenue.purchasedAt, new Date(renewed.purchaseDate).toISOString());
   });
 });
 
@@ -219,4 +231,26 @@ test('Apple renewal status is read even outside grace period', async () => {
       assert.equal(result.active, true);
     });
   }
+});
+
+test('a refund of an earlier Apple period updates its revenue while latest renewal still grants access', async () => {
+  const id = 'apple_test', effects = [], records = new Map([['user:' + id, JSON.stringify({ id, app: 'ru' })]]);
+  const old = transaction({ price: 990, currency: 'USD', purchaseDate: Date.now() - 8 * 86400000, revocationDate: Date.now(), expiresDate: Date.now() - 86400000 });
+  const latest = transaction({ transactionId: '124', price: 1990, currency: 'USD', purchaseDate: Date.now() - 86400000 });
+  const e = { ...env, __ACCOUNT_ID: id, __DURABLE_EFFECTS: effects,
+    INSTALLS: { get: async key => records.get(key), put: async (key, value) => records.set(key, value) },
+    PURCHASE_CLAIMS: { idFromName: key => key, get: () => ({ fetch: async () => Response.json({ userId: id }) }) } };
+  await withApple(async url => new URL(url).pathname.includes('/subscriptions/') ? statusResponse(latest)
+    : Response.json({ signedTransactionInfo: await signed(old) }), async () => {
+    const response = await handleAccountMaintenance('/_account/iap-event', new Request('https://internal/_account/iap-event', {
+      method: 'POST', body: JSON.stringify({ reference: body, key: 'appstore:100', renewalEvent: false }) }), e);
+    assert.equal(response.status, 200);
+  });
+  assert.equal(JSON.parse(records.get('user:' + id)).isPremium, true);
+  const observations = effects.map(effect => effect.item?.revenue).filter(Boolean);
+  assert.equal(observations.length, 2);
+  assert.equal(observations[0].refunded, true);
+  assert.equal(observations[1].refunded, false);
+  assert.notEqual(observations[0].id, observations[1].id);
+  assert.equal(effects.some(effect => effect.kind === 'telegram'), false);
 });

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { premiumRevenueSnapshot, recordPremiumDailyPurchase } from './premium_revenue_analytics.js';
-import { flushBufferedStats } from './worker.js';
+import { premiumRevenueSnapshot, recordPremiumDailyPurchase, recordPremiumTransaction, premiumTransactionId, PREMIUM_HISTORY_KEY } from './premium_revenue_analytics.js';
+import worker, { flushBufferedStats, executeAccountEffect } from './worker.js';
+import { generateKeyPair, exportPKCS8 } from 'jose';
 
 const NOW = Date.parse('2026-11-17T15:00:00Z');
 class MemoryKV {
@@ -17,7 +18,10 @@ class MemoryKV {
 const env = () => ({ INSTALLS: new MemoryKV() });
 const days = (data = {}) => ['2026-11-15', '2026-11-16', '2026-11-17'].map(date => ({ date, data: data[date] ?? null }));
 const order = async (e, id, values = {}) => e.INSTALLS.put('pay_order:' + id, JSON.stringify({ orderId: id, txId: id, app: 'ru', status: 'confirmed', amount: 99, currency: 'RUB', confirmedAt: '2026-11-17T12:00:00Z', ...values }));
-const snapshot = (e, data = days(), app = 'all') => premiumRevenueSnapshot(e, data, app, NOW);
+const snapshot = async (e, data = days(), app = 'all') => {
+  if (e.INSTALLS?.data) for (const day of data) if (day.data) e.INSTALLS.data.set('day:' + day.date, JSON.stringify(day.data));
+  return premiumRevenueSnapshot(e, data, app, NOW);
+};
 function record(day, source, money, values = {}) {
   day.purchases = (day.purchases || 0) + 1;
   recordPremiumDailyPurchase(day, { type: 'purchase', purchaseSource: source, premiumMoney: money, premiumPaid: true, ...values });
@@ -173,4 +177,121 @@ test('real stats flush persists prices in the same Moscow day write and preserve
   const result = await snapshot(e, days({ '2026-11-17': day }));
   assert.equal(result.totals.amounts.USD, 1990);
   assert.equal(result.coverage.unverifiedPurchases, 0);
+});
+
+const transaction = async (method, id, patch = {}) => ({ id: await premiumTransactionId(method, id), method, app: 'ru',
+  purchasedAt: '2026-11-15T21:00:00Z', checkedAt: '2026-11-17T12:00:00Z', paid: true, isTest: false, refunded: false,
+  money: { currency: 'USD', milliunits: 1990 }, ...patch });
+const restore = (e, transactions, values = {}) => e.INSTALLS.put(PREMIUM_HISTORY_KEY, JSON.stringify({ version: 1,
+  importedAt: '2026-11-17T12:00:00Z', replaceLegacyBefore: { appstore: '2026-11-17T12:00:00Z', googleplay: '2026-11-17T12:00:00Z' },
+  transactions, ...values }));
+
+test('restored exact transactions replace old anonymous store sums and use purchase Moscow day', async () => {
+  const e = env(), legacy = {};
+  record(legacy, 'appstore', { currency: 'USD', milliunits: 1990 });
+  const a = await transaction('appstore', 'private-apple-order'), b = await transaction('googleplay', 'private-google-order', { money: { currency: 'EUR', milliunits: 2490 } });
+  await restore(e, [a, a, b, await transaction('appstore', 'sandbox', { isTest: true }), await transaction('appstore', 'refund', { refunded: true }), await transaction('googleplay', 'pending', { paid: false })]);
+  const result = await snapshot(e, days({ '2026-11-17': legacy }));
+  assert.equal(result.totals.purchases, 2);
+  assert.deepEqual(result.totals.amounts, { USD: 1990, EUR: 2490 });
+  assert.equal(result.timeline[1].purchases, 2);
+  assert.equal(result.timeline[2].purchases, 0, 'restoring does not move old purchases onto today');
+  assert.doesNotMatch(JSON.stringify(result), /private-apple-order|private-google-order/);
+});
+
+test('live/imported transaction deduplication uses latest verified state including later refunds', async () => {
+  const e = env(), day = {}, imported = await transaction('appstore', 'same');
+  await restore(e, [imported]);
+  recordPremiumTransaction(day, { ...imported, checkedAt: '2026-11-17T14:00:00Z' });
+  let result = await snapshot(e, days({ '2026-11-16': day }));
+  assert.equal(result.totals.purchases, 1);
+  recordPremiumTransaction(day, { ...imported, refunded: true, checkedAt: '2026-11-17T14:30:00Z' });
+  result = await snapshot(e, days({ '2026-11-16': day }));
+  assert.equal(result.totals.purchases, 0);
+  recordPremiumTransaction(day, { ...imported, checkedAt: '2026-11-17T13:00:00Z' });
+  result = await snapshot(e, days({ '2026-11-16': day }));
+  assert.equal(result.totals.purchases, 0, 'a late stale restore cannot resurrect a known refund');
+});
+
+test('new revenue observations persist at actual purchase date and leave event counters on confirmation day', async () => {
+  const e = env(), sale = await transaction('appstore', 'new-sale');
+  await flushBufferedStats(e, [
+    { kind: 'premium-revenue', ts: NOW, revenue: sale },
+    { kind: 'analytics', ts: NOW, event: { type: 'purchase', app: 'ru', purchaseSource: 'appstore', premiumLedgerTracked: true, premiumMoney: sale.money } },
+  ]);
+  const purchased = JSON.parse(await e.INSTALLS.get('day:2026-11-16')), confirmed = JSON.parse(await e.INSTALLS.get('day:2026-11-17'));
+  assert.equal(purchased.premiumRevenue.apps.ru.transactions[sale.id].money.milliunits, 1990);
+  assert.equal(confirmed.purchases, 1);
+  assert.equal(confirmed.premiumRevenue.apps.ru.methods.appstore, undefined);
+  const result = await premiumRevenueSnapshot(e, days(), 'all', NOW);
+  assert.equal(result.totals.purchases, 1);
+  assert.equal(result.timeline[1].purchases, 1);
+  assert.equal(result.coverage.unverifiedPurchases, 0);
+});
+
+test('accounting ignores stale activity-day snapshots and surfaces corrupt history rather than zero', async () => {
+  const e = env(), sale = await transaction('appstore', 'fresh'), day = {};
+  recordPremiumTransaction(day, sale);
+  await e.INSTALLS.put('day:2026-11-16', JSON.stringify(day));
+  const stale = days({ '2026-11-16': structuredClone(day) });
+  assert.equal((await premiumRevenueSnapshot(e, stale, 'all', NOW)).totals.purchases, 1);
+  recordPremiumTransaction(day, { ...sale, refunded: true, checkedAt: '2026-11-17T14:00:00Z' });
+  await e.INSTALLS.put('day:2026-11-16', JSON.stringify(day));
+  assert.equal((await premiumRevenueSnapshot(e, stale, 'all', NOW)).totals.purchases, 0);
+  for (const corrupt of ['null', '42', '[]', '{bad']) {
+    await e.INSTALLS.put(PREMIUM_HISTORY_KEY, corrupt);
+    await assert.rejects(premiumRevenueSnapshot(e, stale, 'all', NOW));
+  }
+  e.INSTALLS.data.delete(PREMIUM_HISTORY_KEY);
+  for (const corrupt of ['null', '42', '[]']) {
+    await e.INSTALLS.put('day:2026-11-16', corrupt);
+    await assert.rejects(premiumRevenueSnapshot(e, stale, 'all', NOW));
+  }
+});
+
+test('historical completeness never conceals newly unverified events on the import day', async () => {
+  const e = env(), day = {};
+  record(day, 'googleplay', null, { premiumPaid: false });
+  await restore(e, [], { coverage: { complete: true, from: '2026-11-15', through: '2026-11-17' } });
+  const result = await snapshot(e, days({ '2026-11-17': day }));
+  assert.equal(result.coverage.unverifiedPurchases, 1);
+});
+
+test('Google durable revenue effects retry missing metadata and fingerprint the final order state', async () => {
+  const e = env(), accepted = [], originalFetch = globalThis.fetch;
+  const { privateKey } = await generateKeyPair('RS256', { extractable: true });
+  e.GOOGLE_PLAY_SERVICE_ACCOUNT = JSON.stringify({ client_email: 'revenue-test@example.invalid', private_key: await exportPKCS8(privateKey) });
+  e.STATS = { idFromName: value => value, get: () => ({ fetch: async (_url, options) => { accepted.push(JSON.parse(options.body)); return new Response('ok'); } }) };
+  const sale = await transaction('googleplay', 'GPA.1234-5678-9012-34567');
+  const effect = { kind: 'stats', item: { kind: 'premium-revenue', id: 'same-before-enrichment', ts: NOW, revenue: { ...sale, purchasedAt: null, money: undefined },
+    googleRevenueOrder: { id: 'GPA.1234-5678-9012-34567', country: 'ru' } } };
+  let response = null;
+  globalThis.fetch = async url => String(url).includes('oauth2.googleapis.com') ? Response.json({ access_token: crypto.randomUUID() })
+    : response ? Response.json(response) : new Response('', { status: 503 });
+  try {
+    await assert.rejects(executeAccountEffect(effect, e), /metadata unavailable/);
+    assert.equal(accepted.length, 0, 'failed metadata remains retryable, never permanently accepted without its price');
+    response = { state: 'PROCESSED', total: { currencyCode: 'USD', units: '1', nanos: 990000000 }, createTime: '2026-11-15T20:50:00Z', orderHistory: { processedEvent: { eventTime: '2026-11-15T21:00:00Z' } } };
+    await executeAccountEffect(effect, e);
+    assert.equal(accepted[0].revenue.money.milliunits, 1990);
+    assert.equal(accepted[0].revenue.purchasedAt, '2026-11-15T21:00:00.000Z');
+    response.state = 'REFUNDED';
+    await executeAccountEffect(effect, e);
+    assert.equal(accepted[1].revenue.refunded, true);
+    assert.notEqual(accepted[0].id, accepted[1].id, 'same subscription reference can observe a later order refund');
+    response.state = 'PARTIALLY_REFUNDED';
+    response.orderHistory.partialRefundEvents = [{ state: 'PROCESSED_SUCCESSFULLY', refundDetails: { total: { currencyCode: 'USD', units: '0', nanos: 500000000 } } }];
+    await executeAccountEffect(effect, e);
+    assert.equal(accepted[2].revenue.money.milliunits, 1490);
+    assert.notEqual(accepted[0].id, accepted[2].id);
+    assert.equal(accepted[2].googleRevenueOrder, undefined, 'raw order lookup hints never enter the stored ledger');
+    response.orderHistory.partialRefundEvents[0].refundDetails.total.nanos = 990000000;
+    response.orderHistory.partialRefundEvents[0].refundDetails.total.units = '1';
+    await executeAccountEffect(effect, e);
+    assert.equal(accepted[3].revenue.refunded, true, 'a full remainder refund retracts without retrying forever');
+    assert.equal(accepted[3].revenue.money, undefined);
+    response = { state: 'REFUNDED', createTime: '2026-11-15T21:00:00Z' };
+    await executeAccountEffect(effect, e);
+    assert.equal(accepted[4].revenue.refunded, true, 'known refunded status does not require a positive amount');
+  } finally { globalThis.fetch = originalFetch; }
 });

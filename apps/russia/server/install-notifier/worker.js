@@ -47,7 +47,7 @@ import { trafficRequest } from './traffic_state.js';
 import { closeFinishedGameWeeks, bestGameRank, deleteGameBest } from './game_weeks.js';
 export { PurchaseClaims } from './purchase_claims.js';
 export { SupportThread } from './support_thread.js';
-import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, googleOrderMoney, StoreError, withStoreDeadline, PURCHASE_VERIFY_DEADLINE_MS } from './store_verification.js';
+import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, googleOrderMoney, googleOrderDetails, StoreError, withStoreDeadline, PURCHASE_VERIFY_DEADLINE_MS } from './store_verification.js';
 import { setEntitlement, extendEntitlement } from './entitlements.js';
 import { accountTokenForUserId } from './store_account.js';
 import { deleteAccountDocuments, executeAppleRevocation } from './apple_account.js';
@@ -68,7 +68,7 @@ import { handleClientIncident, deferIncident, errorCode, isIncidentReported } fr
 import { APPLE_WEB_CALLBACK_PATH, handleAppleWebCallback } from './apple_web_callback.js';
 import { premiumEventSource, isPaidPremiumEvent, premiumPurchaseEvent, recordPremiumPurchase, buildPremiumDailyMessage,
   premiumChartPoint, premiumChartSlots, premiumHistoryMissing, premiumNeedsFx, validPremiumMoney } from './premium_analytics.js';
-import { recordPremiumDailyPurchase, premiumRevenueSnapshot } from './premium_revenue_analytics.js';
+import { recordPremiumDailyPurchase, recordPremiumTransaction, premiumRevenueSnapshot, premiumTransactionId, sanitizePremiumTransaction } from './premium_revenue_analytics.js';
 import { handleSocialAdmin, handleVideoStream, handleVideoThumb, runAutoPost } from './social.js';
 import { SOCIAL_VIEW_HTML, SOCIAL_CLIENT_JS } from './social_ui.js';
 import { handleThreadsAdmin, runThreadsSchedule } from './threads.js';
@@ -750,7 +750,39 @@ export function buildPremiumPurchaseMessage(p) {
   return lines.join('\n');
 }
 
+async function trackStoreRevenue(env, user, verified) {
+  if (verified.accountingTransactions) {
+    let tracked = false;
+    for (const transaction of verified.accountingTransactions) {
+      if (await trackStoreRevenue(env, user, transaction)) tracked = true;
+    }
+    return tracked;
+  }
+  const reference = verified.reference;
+  if (!verified.orderId || !['appstore', 'googleplay'].includes(reference?.store) || reference.isTest) return;
+  const id = await premiumTransactionId(reference.store, verified.orderId);
+  const checkedAt = new Date().toISOString();
+  const purchasedAt = Number.isFinite(verified.purchaseDate) ? new Date(verified.purchaseDate).toISOString() : null;
+  if (reference.store === 'appstore' && !purchasedAt) return false;
+  const revenue = { id, method: reference.store, app: user.app || 'ru', purchasedAt, checkedAt,
+    confirmedAt: checkedAt, paid: reference.paid === true, isTest: false, refunded: reference.refunded === true,
+    ...(validPremiumMoney(verified.money) ? { money: verified.money } : {}),
+  };
+  // A changed status/price is a new observation of the same transaction, not
+  // a second sale. Unchanged status refreshes deduplicate permanently in STATS.
+  const state = [revenue.paid, revenue.refunded, revenue.money?.currency || '', revenue.money?.milliunits || ''].join(':');
+  await trackStats(env, null, { kind: 'premium-revenue', id: 'premium-ledger:' + id + ':' + state, ts: Date.now(), revenue,
+    ...(reference.store === 'googleplay' ? { googleRevenueOrder: { id: verified.orderId, country: reference.country } } : {}),
+  });
+  return true;
+}
+
+async function refreshUserStoreEntitlement(env, user) {
+  return refreshStoreEntitlement(env, user, { onVerified: verified => trackStoreRevenue(env, user, verified) });
+}
+
 async function logStorePurchase(env, user, verified, details = {}) {
+  const revenueTracked = details.revenueTracked || await trackStoreRevenue(env, user, verified);
   const { store, productId, isTest, paid, refunded } = verified.reference;
   if (!verified.active || isTest || paid === false || refunded) return;
   // Restores also reach this path. Grace can preserve access after the paid period ends.
@@ -776,6 +808,7 @@ async function logStorePurchase(env, user, verified, details = {}) {
   const ts = Date.now();
   const event = await premiumPurchaseEvent(env, user, store, platform, ts, verified.reference);
   event.premiumPaid = verified.reference.paid === true;
+  event.premiumLedgerTracked = revenueTracked === true;
   if (productId.endsWith('.3months')) event.premiumPlan = 'threeMonths';
   else if (productId.endsWith('.week')) event.premiumPlan = 'weekly';
   if (verified.money) event.premiumMoney = verified.money;
@@ -2170,6 +2203,7 @@ export function sanitizeAnalyticsEvent(event) {
   if (e.type === 'purchase') {
     out.purchaseSource = premiumEventSource(e);
     if (typeof e.premiumPaid === 'boolean') out.premiumPaid = e.premiumPaid;
+    if (e.premiumLedgerTracked === true) out.premiumLedgerTracked = true;
     if (e.premiumReportExcluded === true) out.premiumReportExcluded = true;
     if (typeof e.premiumBuyer === 'string' && /^[a-f0-9]{64}$/.test(e.premiumBuyer)) out.premiumBuyer = e.premiumBuyer;
     if (validPremiumMoney(e.premiumMoney)) {
@@ -2188,12 +2222,30 @@ async function trackStats(env, ctx, item) {
     return;
   }
   if (!env.INSTALLS) return;
+  if (item.googleRevenueOrder) {
+    const { googleRevenueOrder, ...stats } = item;
+    const details = await googleOrderDetails(env, googleRevenueOrder.country, googleRevenueOrder.id);
+    if (!details || typeof details.paid !== 'boolean' || (details.paid && !details.refunded && !validPremiumMoney(details.money)) || !Number.isFinite(Date.parse(details.purchasedAt || ''))) {
+      // AccountState retains this effect and retries it; a temporary Orders API
+      // failure must not permanently lose the renewal's actual price/date.
+      throw new Error('store revenue metadata unavailable');
+    }
+    item = { ...stats, revenue: { ...stats.revenue, ...details, checkedAt: new Date().toISOString() } };
+  }
   if (item.googleOrder) {
     const { googleOrder, ...stats } = item;
     const premiumMoney = await googleOrderMoney(env, googleOrder.country, googleOrder.id).catch(() => null);
     item = { ...stats, event: { ...stats.event, premiumMoney } };
   }
   if (item && item.kind === 'analytics') item.event = sanitizeAnalyticsEvent(item.event);
+  if (item?.kind === 'premium-revenue') {
+    item.revenue = sanitizePremiumTransaction(item.revenue);
+    if (!item.revenue) throw new Error('invalid store revenue metadata');
+    const revenue = item.revenue;
+    // Fingerprint the enriched Orders response, so a later refund or corrected
+    // amount is accepted even if the subscription reference itself is unchanged.
+    item.id = 'premium-ledger:' + revenue.id + ':' + [revenue.paid, revenue.refunded, revenue.money?.currency || '', revenue.money?.milliunits || '', revenue.purchasedAt].join(':');
+  }
   item.ts = item.ts || Date.now();
   if (env.STATS) {
     const stub = env.STATS.get(env.STATS.idFromName('main'));
@@ -2414,7 +2466,9 @@ export async function flushBufferedStats(env, items, persistBatch = null) {
 
   for (const item of items) {
     const now = new Date(item.ts || Date.now());
-    if (item.kind === 'analytics' && item.event) {
+    if (item.kind === 'premium-revenue') {
+      recordPremiumTransaction(await dayOf(new Date(item.revenue.purchasedAt)), item.revenue);
+    } else if (item.kind === 'analytics' && item.event) {
       const event = item.event;
       if (event.type === 'purchase' && !isPaidPremiumEvent(event)) continue;
       applyEventToDay(await dayOf(now), event);
@@ -2915,7 +2969,7 @@ async function saveUserProfile(env, user) {
 
   const deletion = JSON.parse(await env.INSTALLS.get('account_deleted:' + user.id) || 'null');
   if (deletion && Date.parse(user.createdAt || '') <= deletion.at) throw new Error('account deleted');
-  existing = await refreshStoreEntitlement(env, existing);
+  existing = await refreshUserStoreEntitlement(env, existing);
   // SECURITY: Subscriptions are strictly server-authoritative!
   let isPremium = existing ? (existing.isPremium || false) : false;
   let premiumExpiresAt = existing ? (existing.premiumExpiresAt || null) : null;
@@ -3798,7 +3852,7 @@ const workerHandlers = {
       let raw = null;
       if (env.INSTALLS) raw = await env.INSTALLS.get('user:' + targetId);
       if (!raw) return jsonResponse({ ok: false, error: 'user not found', isPremium: false }, 404);
-      const user = await refreshStoreEntitlement(env, JSON.parse(raw));
+      const user = await refreshUserStoreEntitlement(env, JSON.parse(raw));
       return jsonResponse({
         ok: true,
         user: publicUser(user),
@@ -4403,13 +4457,14 @@ export async function handleAccountMaintenance(path, request, env) {
     user.storeVerifiedAtByStore = { ...(user.storeVerifiedAtByStore || {}), [reference.store]: Date.now() };
     user.verifiedPurchase = verified.reference; user.storeVerifiedAt = Date.now(); user.autoRenewEnabled = verified.autoRenewEnabled;
     await putUserRecord(env, user);
+    const revenueTracked = await trackStoreRevenue(env, user, verified);
     if (renewalEvent && verified.orderId &&
         (reference.store === 'googleplay' || (verified.renewal && reference.transactionId === verified.orderId))) {
-      await logStorePurchase(env, user, { ...verified, renewal: true });
+      await logStorePurchase(env, user, { ...verified, renewal: true }, { revenueTracked });
     }
   } else if (path === '/_account/refresh') {
     const raw = await env.INSTALLS.get('user:' + env.__ACCOUNT_ID);
-    if (raw) await refreshStoreEntitlement(env, JSON.parse(raw));
+    if (raw) await refreshUserStoreEntitlement(env, JSON.parse(raw));
   } else {
     const { orderId } = await request.json();
     const raw = await env.INSTALLS.get('pay_order:' + orderId);

@@ -155,17 +155,18 @@ test('analytics batches independent counters, recent events and store reports; c
     assert.equal(stats.totals.grandTotal, 10);
     assert.equal(stats.recent.length, 1);
     assert.deepEqual(stats.storeReports.googleplay.rows, [['search', 3]]);
-    assert.equal(kv.reads.filter(key => key.startsWith('day:')).length, 28);
-    assert.equal(kv.waves.length, 5, 'four bounded day rounds and one independent metadata round');
-    assert.equal(kv.waves.at(-1).length, 7, 'purchase directory joins the independent metadata reads');
+    assert.equal(kv.reads.filter(key => key.startsWith('day:')).length, 42, 'accounting rereads the selected fourteen days without the immutable activity cache');
+    assert.equal(kv.waves.length, 6, 'four activity rounds and two bounded fresh accounting rounds');
+    assert.equal(kv.waves.slice(4).flat().filter(key => !key.startsWith('day:')).length, 8, 'history and purchase directory join independent metadata reads');
     assert.ok(kv.waves.every(wave => wave.filter(key => key.startsWith('day:')).length <= 8));
     const before = kv.reads.length;
     await kv.finish(request(env, '/api/admin/stats?days=14&app=ru'));
-    assert.equal(kv.reads.length - before, 9, 'only today/yesterday and seven metadata reads repeat');
+    assert.equal(kv.reads.length - before, 24, 'two activity days, fourteen accounting days and eight metadata reads repeat');
     assert.equal(kv.count('list:pay_order:'), 2, 'financial orders are reread on every analytics refresh');
+    assert.equal(kv.count('premium:revenue_history:v1'), 2, 'restored transaction history stays fresh');
     assert.equal(kv.count('list:user:'), 1, 'existing analytics summary TTL is retained');
   }
-  t.diagnostic('14-day analytics: cold 5 delayed rounds instead of 9; warm refresh 9 storage operations including the purchase directory. Separate KV bindings never share historical days or user summaries.');
+  t.diagnostic('14-day analytics: cold 6 bounded rounds; accounting days and restored transactions remain fresh while immutable activity retains its cache. Separate KV bindings never share history or user summaries.');
 });
 
 test('simultaneous economy, users and analytics share one summary read without caching subsequent financial reads', async () => {

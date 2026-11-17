@@ -51,6 +51,12 @@ async function googleAccessToken(env) {
 }
 
 export async function googleOrderMoney(env, country, orderId) {
+  return (await googleOrderDetails(env, country, orderId))?.money || null;
+}
+
+// Accounting metadata is separate from entitlement verification. In particular,
+// subscription startTime is not the date of a later renewal order.
+export async function googleOrderDetails(env, country, orderId) {
   const packageName = packages[country];
   if (!packageName || !/^GPA\.[\d.-]+$/.test(orderId || '')) return null;
   const token = await googleAccessToken(env);
@@ -58,9 +64,27 @@ export async function googleOrderMoney(env, country, orderId) {
     headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(4000),
   });
   if (!response.ok) return null;
-  const { total } = await response.json();
-  if (!total) return null;
-  return { milliunits: Math.round(Number(total.units || 0) * 1000 + Number(total.nanos || 0) / 1e6), currency: total.currencyCode };
+  const data = await response.json(), { total } = data;
+  if (!total) return ['CANCELED', 'REFUNDED'].includes(data.state) ? { money: null,
+    purchasedAt: data.orderHistory?.processedEvent?.eventTime || data.createTime || null,
+    paid: false, refunded: data.state === 'REFUNDED' } : null;
+  const money = { milliunits: Math.round(Number(total.units || 0) * 1000 + Number(total.nanos || 0) / 1e6), currency: total.currencyCode };
+  if (data.state === 'PARTIALLY_REFUNDED') {
+    const refunds = (data.orderHistory?.partialRefundEvents || []).filter(event => event.state === 'PROCESSED_SUCCESSFULLY');
+    if (!refunds.length) return null;
+    for (const event of refunds) {
+      const total = event.refundDetails?.total;
+      const refund = Math.round(Number(total?.units || 0) * 1000 + Number(total?.nanos || 0) / 1e6);
+      if (!total || total.currencyCode !== money.currency || !Number.isSafeInteger(refund) || refund <= 0) return null;
+      money.milliunits -= refund;
+    }
+  }
+  return { money,
+    purchasedAt: data.orderHistory?.processedEvent?.eventTime || data.createTime || null,
+    refunded: data.state === 'REFUNDED' || (data.state === 'PARTIALLY_REFUNDED' && money.milliunits <= 0),
+    paid: ['PROCESSED', 'PARTIALLY_REFUNDED', 'PENDING_REFUND'].includes(data.state) ? money.milliunits > 0
+      : ['CANCELED', 'REFUNDED'].includes(data.state) ? false : null,
+  };
 }
 
 export function googleEntitlement(data, productId, now = Date.now()) {
@@ -100,6 +124,7 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
     return { ...googleEntitlement(data, productId), key: `googleplay:${country}:${await tokenHash(token)}`,
       reference: { store, country, productId, purchaseToken: token,
         evidenceVersion: 1, environment: isTest ? 'Sandbox' : 'Production', isTest, paid,
+        orderId: line?.latestSuccessfulOrderId || data.latestOrderId || null,
         // Expiry alone cannot distinguish a normal lapse from revocation.
         // Leave that evidence incomplete instead of claiming no refund.
         refunded: activeStates.has(data.subscriptionState) ? false : null } };
@@ -134,6 +159,9 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
       data.environment !== (sandbox ? 'Sandbox' : 'Production') || !Number.isFinite(data.expiresDate) ||
       typeof data.originalTransactionId !== 'string' || !/^\d{1,40}$/.test(data.originalTransactionId)) throw new StoreError('wrong transaction', 422);
   if (data.appAccountToken && data.appAccountToken.toLowerCase() !== await accountTokenForUserId(userId)) throw new StoreError('purchase belongs to another account', 403);
+  // A refund notification may name an older paid period while access comes
+  // from the latest renewal. Preserve both authenticated transaction facts.
+  const initialTransaction = data;
   let active = !data.revocationDate && data.expiresDate > Date.now();
   let expiresDate = data.expiresDate;
   let autoRenewEnabled = null;
@@ -175,6 +203,13 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
     purchaseDate: data.purchaseDate, billingPeriodEndsAt: data.expiresDate,
     renewal: data.transactionReason === 'RENEWAL', orderId: String(data.transactionId), key: `appstore:${data.originalTransactionId}`,
     money: { milliunits: data.price, currency: data.currency },
+    accountingTransactions: (initialTransaction.transactionId === data.transactionId ? [data] : [initialTransaction, data]).map(transaction => ({
+      orderId: String(transaction.transactionId), purchaseDate: transaction.purchaseDate,
+      money: { milliunits: transaction.price, currency: transaction.currency },
+      reference: { store, country, productId: transaction.productId, transactionId: String(transaction.transactionId),
+        isTest: transaction.environment !== 'Production', paid: transaction.price == null ? null : Number(transaction.price) > 0,
+        refunded: Boolean(transaction.revocationDate) },
+    })),
     reference: { store, country, productId: data.productId, transactionId: String(data.transactionId),
       evidenceVersion: 1, environment: data.environment, isTest: data.environment !== 'Production',
       paid: data.price == null ? null : Number(data.price) > 0, refunded: Boolean(data.revocationDate) } };
@@ -216,12 +251,13 @@ export function storeEntitlementExpiry(verified, now = Date.now()) {
 // повтор списания длится до 60 дней); новая покупка придёт через /purchase.
 const REFRESH_AFTER_EXPIRY_MS = 60 * 86400000;
 
-export async function refreshStoreEntitlement(env, user, { deadlineMs = REFRESH_VERIFY_DEADLINE_MS } = {}) {
+export async function refreshStoreEntitlement(env, user, { deadlineMs = REFRESH_VERIFY_DEADLINE_MS, onVerified } = {}) {
   if (!user) return user;
   const references = { ...(user.verifiedPurchases || {}) };
   if (user.verifiedPurchase?.store && !references[user.verifiedPurchase.store]) references[user.verifiedPurchase.store] = user.verifiedPurchase;
   const verifiedAt = { ...(user.storeVerifiedAtByStore || {}) };
   let changed = false;
+  const observations = [];
   for (const [store, reference] of Object.entries(references)) {
     if (Date.now() - (verifiedAt[store] || (user.verifiedPurchase?.store === store ? user.storeVerifiedAt : 0) || 0) < 300000) continue;
     const entry = entitlementsOf(user)[store];
@@ -236,6 +272,7 @@ export async function refreshStoreEntitlement(env, user, { deadlineMs = REFRESH_
       user.autoRenewEnabled = verified.autoRenewEnabled;
       user.storeVerifiedAt = verifiedAt[store];
       changed = true;
+      observations.push(verified);
     } catch (error) {
       if (error instanceof StoreError && error.status === 422) {
         setEntitlement(user, store, storeEntitlementExpiry({ active: false, expiresAt: entry.expiresAt || new Date().toISOString() }));
@@ -246,6 +283,11 @@ export async function refreshStoreEntitlement(env, user, { deadlineMs = REFRESH_
   if (changed) {
     user.verifiedPurchases = references; user.storeVerifiedAtByStore = verifiedAt;
     await putUserRecord(env, user);
+    // AccountState records analytics in its durable outbox. An accounting
+    // failure must never replace a successfully verified access status.
+    if (onVerified) for (const verified of observations) {
+      try { await onVerified(verified); } catch (_) { /* Access is already saved. */ }
+    }
   }
   return user;
 }
