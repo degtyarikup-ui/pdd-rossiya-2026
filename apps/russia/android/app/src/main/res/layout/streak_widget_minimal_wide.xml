@@ -32,7 +32,7 @@
                     android:importantForAccessibility="no" />
                 <TextView
                     android:id="@+id/streak_current"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:text="0"
                     android:textSize="36sp"
@@ -44,6 +44,7 @@
                     android:autoSizeMinTextSize="5sp"
                     android:autoSizeMaxTextSize="36sp"
                     android:autoSizeStepGranularity="1sp"
+                    android:layout_weight="1"
                     android:textStyle="bold"
                     android:layout_marginStart="4dp" />
             </LinearLayout>
@@ -84,18 +85,19 @@
                     android:importantForAccessibility="no" />
                 <TextView
                     android:id="@+id/streak_best"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:text="0"
                     android:textSize="20sp"
                     android:textColor="@color/streak_widget_text"
                     android:maxLines="1"
                     android:includeFontPadding="false"
-                    android:gravity="center"
+                    android:gravity="center_vertical"
                     android:autoSizeTextType="uniform"
                     android:autoSizeMinTextSize="5sp"
                     android:autoSizeMaxTextSize="20sp"
                     android:autoSizeStepGranularity="1sp"
+                    android:layout_weight="1"
                     android:textStyle="bold"
                     android:layout_marginStart="6dp" />
             </LinearLayout>

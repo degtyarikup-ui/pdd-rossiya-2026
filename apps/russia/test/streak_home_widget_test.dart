@@ -117,6 +117,76 @@ void main() {
     expect(calls.last['longest'], 12);
   });
 
+  for (final language in ['ru', 'en', 'kk']) {
+    for (final daysSinceLesson in [null, 0, 1, 2]) {
+      test(
+        '$language: opening and reopening preserve activity; lesson is counted once ($daysSinceLesson days ago)',
+        () async {
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          String iso(DateTime date) =>
+              '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          final last = daysSinceLesson == null
+              ? null
+              : DateTime(today.year, today.month, today.day - daysSinceLesson);
+          SharedPreferences.setMockInitialValues({
+            'streak_current': last == null ? 0 : 7,
+            'streak_longest': last == null ? 0 : 21,
+            if (last != null) 'streak_last_active': iso(last),
+            if (last != null)
+              'streak_active_days': [
+                for (var i = 0; i < 7; i++)
+                  iso(DateTime(last.year, last.month, last.day - i)),
+              ],
+          });
+          final ds = ProgressDataSource(
+            homeWidgetUpdater: StreakWidgetService.update,
+          );
+          await ds.init();
+          await ds.saveAppSettings(AppSettings(languageCode: language));
+          await ds.refreshHomeWidget();
+          final beforeLesson = Map<Object?, Object?>.from(calls.last);
+          expect(
+            beforeLesson['current'],
+            daysSinceLesson == 0 || daysSinceLesson == 1 ? 7 : 0,
+          );
+          expect(
+            beforeLesson['lastActiveDate'],
+            last == null ? null : iso(last),
+          );
+          final l10n = lookupAppLocalizations(Locale(language));
+          expect(beforeLesson['doneLabel'], l10n.homeWidgetDone);
+          expect(beforeLesson['continueLabel'], l10n.homeWidgetContinue);
+          expect(beforeLesson['startLabel'], l10n.homeWidgetStart);
+
+          // Resume/reopen only republishes; it must never mark today as studied.
+          await ds.refreshHomeWidget();
+          final reopened = ProgressDataSource(
+            homeWidgetUpdater: StreakWidgetService.update,
+          );
+          await reopened.init();
+          await reopened.refreshHomeWidget();
+          expect(calls.last, beforeLesson);
+
+          await reopened.recordActivity(date: today);
+          await reopened.refreshHomeWidget();
+          final afterLesson = Map<Object?, Object?>.from(calls.last);
+          final expectedCurrent = switch (daysSinceLesson) {
+            0 => 7,
+            1 => 8,
+            _ => 1,
+          };
+          expect(afterLesson['current'], expectedCurrent);
+          expect(afterLesson['longest'], last == null ? 1 : 21);
+          expect(afterLesson['lastActiveDate'], iso(today));
+          await reopened.recordActivity(date: today);
+          await reopened.refreshHomeWidget();
+          expect(calls.last, afterLesson);
+        },
+      );
+    }
+  }
+
   test('native failure does not block progress or later updates', () async {
     messenger.setMockMethodCallHandler(StreakWidgetService.channel, (_) async {
       throw PlatformException(code: 'widget_storage_unavailable');
