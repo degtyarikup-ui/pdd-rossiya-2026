@@ -26,6 +26,7 @@ import 'package:pdd_app/presentation/screens/training/training_result_screen.dar
 import 'package:pdd_app/presentation/widgets/result_stage.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/question_content_layout.dart';
+import 'package:pdd_app/presentation/widgets/question_next_bottom_bar.dart';
 import 'helpers/achievement_awards.dart';
 
 class _SilentTts implements TtsService {
@@ -448,6 +449,36 @@ void main() {
         expect(find.text('1.12').hitTestable(), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
+    }
+  }
+
+  for (final locale in ['ru', 'en', 'kk']) {
+    for (final size in [const Size(320, 568), const Size(390, 844)]) {
+      testWidgets(
+        'answered training bottom bar $locale $size with 200% text stays usable',
+        (tester) async {
+          viewport(tester, size);
+          await open(
+            tester,
+            TrainingScreen(questions: _questions(), title: 'Билет 1'),
+            locale: locale,
+            scale: 2,
+          );
+          final answer = find.text('Верный ответ').first;
+          await Scrollable.of(
+            tester.element(answer),
+          ).position.ensureVisible(tester.renderObject(answer), alignment: .5);
+          await tester.pumpAndSettle();
+          await tester.tap(answer);
+          await tester.pumpAndSettle();
+          expect(find.text(appL10n.nextQuestion).hitTestable(), findsOneWidget);
+          expect(
+            find.byType(QuestionFavoriteButton).hitTestable(),
+            findsOneWidget,
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
     }
   }
 

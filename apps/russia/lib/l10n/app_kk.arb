@@ -1811,5 +1811,7 @@
   "homeWidgetMinimalName": "Серия · Минимал",
   "homeWidgetMinimalDescription": "Ықшам серия мен рекорд. Сабақтан кейін фон өзгереді.",
   "homeWidgetRecordName": "Серия · Рекорд",
-  "homeWidgetRecordDescription": "Серия, рекорд және прогресс. Бүгін оқысаңыз, фон қызғылт сары болады."
+  "homeWidgetRecordDescription": "Серия, рекорд және прогресс. Бүгін оқысаңыз, фон қызғылт сары болады.",
+  "addToFavorites": "Таңдаулыларға қосу",
+  "removeFromFavorites": "Таңдаулылардан алып тастау"
 }

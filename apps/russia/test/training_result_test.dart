@@ -17,9 +17,11 @@ import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/data/services/review_prompt_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
+import 'package:pdd_app/presentation/screens/exam/exam_review_screen.dart';
 import 'package:pdd_app/presentation/screens/training/training_result_screen.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/continue_session_card.dart';
+import 'package:pdd_app/presentation/widgets/question_next_bottom_bar.dart';
 import 'package:pdd_app/presentation/widgets/result_stage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -481,6 +483,132 @@ void main() {
     expect(find.text('Нет вопросов'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'после неверного ответа вопрос можно добавить в избранное и убрать обратно',
+    (tester) async {
+      final data = await pumpTraining(tester, questions: 2);
+
+      await answer(tester, correct: false);
+      expect(find.text('Следующий вопрос'), findsOneWidget);
+      expect(find.byType(QuestionFavoriteButton), findsOneWidget);
+      expect(find.byTooltip('Добавить в избранное'), findsOneWidget);
+      expect(find.byIcon(Icons.star_border), findsOneWidget);
+
+      await tester.tap(find.byType(QuestionFavoriteButton));
+      await tester.pumpAndSettle();
+      expect(await data.isFavorite('q0', TicketCategory.ab), isTrue);
+      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(find.byTooltip('Убрать из избранного'), findsOneWidget);
+
+      await nextOrFinish(tester);
+      expect(find.byIcon(Icons.star_border), findsOneWidget);
+      expect(find.byIcon(Icons.star), findsNothing);
+
+      // Возврат к уже отвеченному вопросу сохраняет статус избранного и даёт его снять.
+      tester.widget<PageView>(find.byType(PageView)).controller!.jumpToPage(0);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.star), findsOneWidget);
+      await tester.tap(find.byType(QuestionFavoriteButton));
+      await tester.pumpAndSettle();
+      expect(await data.isFavorite('q0', TicketCategory.ab), isFalse);
+      expect(find.byIcon(Icons.star_border), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'на последнем вопросе избранное доступно рядом с кнопкой завершения',
+    (tester) async {
+      final data = await pumpTraining(tester, questions: 2);
+
+      await answer(tester, correct: true);
+      await nextOrFinish(tester);
+      await answer(tester, correct: false);
+
+      expect(find.text('Завершить'), findsOneWidget);
+      expect(find.byType(QuestionFavoriteButton), findsOneWidget);
+
+      await tester.tap(find.byType(QuestionFavoriteButton));
+      await tester.pumpAndSettle();
+      expect(await data.isFavorite('q1', TicketCategory.ab), isTrue);
+
+      await nextOrFinish(tester);
+      expect(find.byType(TrainingResultScreen), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'в разборе экзамена вопрос можно добавить в избранное по страницам',
+    (tester) async {
+      final questions = buildQuestions(2);
+      final data = await pumpTraining(
+        tester,
+        questions: 2,
+        entry: ExamReviewScreen(
+          questions: questions,
+          savedAnswers: const [1, 0],
+          category: TicketCategory.cd,
+        ),
+      );
+
+      expect(find.text('Следующий'), findsOneWidget);
+      expect(find.byType(QuestionFavoriteButton), findsOneWidget);
+      await tester.tap(find.byType(QuestionFavoriteButton));
+      await tester.pumpAndSettle();
+      expect(await data.isFavorite('q0', TicketCategory.cd), isTrue);
+      expect(await data.isFavorite('q0', TicketCategory.ab), isFalse);
+      expect(find.byIcon(Icons.star), findsOneWidget);
+
+      await tester.tap(find.text('Следующий'));
+      await tester.pumpAndSettle();
+      expect(find.text('Закрыть'), findsOneWidget);
+      expect(find.byIcon(Icons.star_border), findsOneWidget);
+      await tester.tap(find.byType(QuestionFavoriteButton));
+      await tester.pumpAndSettle();
+      expect(await data.isFavorite('q1', TicketCategory.cd), isTrue);
+    },
+  );
+
+  testWidgets(
+    'разбор экзамена игнорирует запоздавшее избранное и закрытие во время записи',
+    (tester) async {
+      final delayedFav = _DelayedFavoriteSource();
+      await pumpTraining(
+        tester,
+        questions: 2,
+        source: delayedFav,
+        entry: ExamReviewScreen(
+          questions: buildQuestions(2),
+          savedAnswers: const [1, 0],
+          category: TicketCategory.ab,
+        ),
+      );
+      tester.widget<PageView>(find.byType(PageView)).controller!.jumpToPage(1);
+      await tester.pumpAndSettle();
+      delayedFav.favorite.complete(true);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.star_border), findsOneWidget);
+      expect(find.byIcon(Icons.star), findsNothing);
+
+      final delayedToggle = _DelayedToggleSource();
+      await pumpTraining(
+        tester,
+        questions: 1,
+        source: delayedToggle,
+        entry: ExamReviewScreen(
+          questions: buildQuestions(1),
+          savedAnswers: const [1],
+          category: TicketCategory.ab,
+        ),
+      );
+      await tester.tap(find.byType(QuestionFavoriteButton));
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox());
+      delayedToggle.toggle.complete();
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('закрытие тренировки не ждёт зависший плагин озвучки', (
     tester,

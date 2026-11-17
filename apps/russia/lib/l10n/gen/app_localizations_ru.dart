@@ -5310,4 +5310,10 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get homeWidgetRecordDescription =>
       'Серия, рекорд и прогресс. Оранжевый фон за занятие сегодня.';
+
+  @override
+  String get addToFavorites => 'Добавить в избранное';
+
+  @override
+  String get removeFromFavorites => 'Убрать из избранного';
 }

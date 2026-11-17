@@ -5271,4 +5271,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get homeWidgetRecordDescription =>
       'Your streak, personal best and progress. Orange after studying today.';
+
+  @override
+  String get addToFavorites => 'Add to favorites';
+
+  @override
+  String get removeFromFavorites => 'Remove from favorites';
 }

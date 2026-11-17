@@ -5259,4 +5259,10 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get homeWidgetRecordDescription =>
       'Серия, рекорд және прогресс. Бүгін оқысаңыз, фон қызғылт сары болады.';
+
+  @override
+  String get addToFavorites => 'Таңдаулыларға қосу';
+
+  @override
+  String get removeFromFavorites => 'Таңдаулылардан алып тастау';
 }

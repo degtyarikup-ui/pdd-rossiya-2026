@@ -8811,6 +8811,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Серия, рекорд и прогресс. Оранжевый фон за занятие сегодня.'**
   String get homeWidgetRecordDescription;
+
+  /// No description provided for @addToFavorites.
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить в избранное'**
+  String get addToFavorites;
+
+  /// No description provided for @removeFromFavorites.
+  ///
+  /// In ru, this message translates to:
+  /// **'Убрать из избранного'**
+  String get removeFromFavorites;
 }
 
 class _AppLocalizationsDelegate

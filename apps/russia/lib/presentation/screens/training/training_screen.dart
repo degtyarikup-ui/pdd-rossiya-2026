@@ -26,6 +26,7 @@ import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
 import 'package:pdd_app/presentation/widgets/question_number_chip.dart';
+import 'package:pdd_app/presentation/widgets/question_next_bottom_bar.dart';
 import 'package:pdd_app/presentation/widgets/question_voice_toggle.dart';
 import 'package:pdd_app/presentation/widgets/ai_explanation_sheet.dart';
 import 'package:pdd_app/presentation/widgets/pdd_comment_text.dart';
@@ -196,12 +197,16 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
 
     final index = _currentIndex;
     final question = widget.questions[index];
+    final questionId = question['id'] as String? ?? '';
+    if (questionId.isEmpty) {
+      if (mounted && _currentIndex == index) {
+        setState(() => _isFavorite = false);
+      }
+      return;
+    }
     final dataSource = ref.read(progressDataSourceProvider);
     final TicketCategory category = _category;
-    final favorite = await dataSource.isFavorite(
-      question['id'] as String,
-      category,
-    );
+    final favorite = await dataSource.isFavorite(questionId, category);
 
     if (mounted && _currentIndex == index && _category == category) {
       setState(() => _isFavorite = favorite);
@@ -348,12 +353,16 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   }
 
   Future<void> _toggleFavorite() async {
-    HapticFeedbackHelper.select();
+    if (_currentIndex >= widget.questions.length) return;
     final index = _currentIndex;
     final question = widget.questions[index];
+    final questionId = question['id'] as String? ?? '';
+    if (questionId.isEmpty) return;
+
+    HapticFeedbackHelper.select();
     final dataSource = ref.read(progressDataSourceProvider);
     final category = _category;
-    await dataSource.toggleFavorite(question['id'] as String, category);
+    await dataSource.toggleFavorite(questionId, category);
     if (!mounted) return;
     ref.read(appDataRefreshProvider.notifier).state++;
     if (_currentIndex == index && _category == category) {
@@ -862,12 +871,14 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
             children: [
               Icon(icon, color: accentColor, size: 20),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: colors.primaryText,
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: colors.primaryText,
+                  ),
                 ),
               ),
             ],
@@ -971,95 +982,91 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     final colors = AppColors.of(context);
     final isAnswered = _isAnswerSubmitted;
     final isAllComplete = _isAllAnswered;
+    final questionId = _currentIndex < widget.questions.length
+        ? widget.questions[_currentIndex]['id'] as String? ?? ''
+        : '';
+
+    if (isAnswered) {
+      return QuestionNextBottomBar(
+        actionLabel: isAllComplete
+            ? appL10n.finishButton
+            : appL10n.nextQuestion,
+        onAction: isAllComplete
+            ? () {
+                HapticFeedbackHelper.tap();
+                _finishSession();
+              }
+            : _nextQuestion,
+        isFavorite: _isFavorite,
+        onToggleFavorite: _toggleFavorite,
+        showFavorite: questionId.isNotEmpty,
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.screenPadding),
       color: colors.cardBackground,
       child: SafeArea(
         top: false,
-        child: isAnswered
-            ? SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: isAllComplete
-                      ? () {
-                          HapticFeedbackHelper.tap();
-                          _finishSession();
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton.icon(
+                    onPressed: hasHint ? _toggleHint : null,
+                    style: ButtonStyle(
+                      foregroundColor: WidgetStateProperty.all(colors.gold),
+                      overlayColor: WidgetStateProperty.resolveWith((states) {
+                        if (states.contains(WidgetState.pressed) ||
+                            states.contains(WidgetState.hovered) ||
+                            states.contains(WidgetState.focused)) {
+                          return colors.goldLightSurface;
                         }
-                      : _nextQuestion,
-                  child: Text(
-                    isAllComplete ? appL10n.finishButton : appL10n.nextQuestion,
+                        return Colors.transparent;
+                      }),
+                      shape: WidgetStateProperty.all(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    icon: Icon(
+                      _showHint ? Icons.lightbulb : Icons.lightbulb_outline,
+                      color: colors.gold,
+                    ),
+                    label: Text(
+                      _showHint ? appL10n.hideHint : appL10n.showHint,
+                      style: TextStyle(color: colors.gold),
+                    ),
                   ),
                 ),
-              )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton.icon(
-                          onPressed: hasHint ? _toggleHint : null,
-                          style: ButtonStyle(
-                            foregroundColor: WidgetStateProperty.all(
-                              colors.gold,
-                            ),
-                            overlayColor: WidgetStateProperty.resolveWith((
-                              states,
-                            ) {
-                              if (states.contains(WidgetState.pressed) ||
-                                  states.contains(WidgetState.hovered) ||
-                                  states.contains(WidgetState.focused)) {
-                                return colors.goldLightSurface;
-                              }
-                              return Colors.transparent;
-                            }),
-                            shape: WidgetStateProperty.all(
-                              RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                            ),
-                          ),
-                          icon: Icon(
-                            _showHint
-                                ? Icons.lightbulb
-                                : Icons.lightbulb_outline,
-                            color: colors.gold,
-                          ),
-                          label: Text(
-                            _showHint ? appL10n.hideHint : appL10n.showHint,
-                            style: TextStyle(color: colors.gold),
-                          ),
-                        ),
+                if (questionId.isNotEmpty)
+                  IconButton(
+                    onPressed: _toggleFavorite,
+                    icon: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        _isFavorite ? Icons.star : Icons.star_border,
+                        key: ValueKey(_isFavorite),
+                        color: _isFavorite ? colors.gold : colors.secondaryText,
                       ),
-                      IconButton(
-                        onPressed: _toggleFavorite,
-                        icon: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          child: Icon(
-                            _isFavorite ? Icons.star : Icons.star_border,
-                            key: ValueKey(_isFavorite),
-                            color: _isFavorite
-                                ? colors.gold
-                                : colors.secondaryText,
-                          ),
-                        ),
-                        tooltip: appL10n.favorites,
-                      ),
-                      IconButton(
-                        onPressed: () =>
-                            _reportQuestion(widget.questions[_currentIndex]),
-                        icon: Icon(
-                          Icons.flag_outlined,
-                          color: colors.secondaryText,
-                        ),
-                        tooltip: appL10n.reportQuestionTooltip,
-                      ),
-                    ],
+                    ),
+                    tooltip: _isFavorite
+                        ? appL10n.removeFromFavorites
+                        : appL10n.addToFavorites,
                   ),
-                ],
-              ),
+                IconButton(
+                  onPressed: () =>
+                      _reportQuestion(widget.questions[_currentIndex]),
+                  icon: Icon(Icons.flag_outlined, color: colors.secondaryText),
+                  tooltip: appL10n.reportQuestionTooltip,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

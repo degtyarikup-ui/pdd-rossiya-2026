@@ -1811,5 +1811,7 @@
   "homeWidgetMinimalName": "Streak · Minimal",
   "homeWidgetMinimalDescription": "A clean streak counter and personal best. The background changes after studying.",
   "homeWidgetRecordName": "Streak · Record",
-  "homeWidgetRecordDescription": "Your streak, personal best and progress. Orange after studying today."
+  "homeWidgetRecordDescription": "Your streak, personal best and progress. Orange after studying today.",
+  "addToFavorites": "Add to favorites",
+  "removeFromFavorites": "Remove from favorites"
 }

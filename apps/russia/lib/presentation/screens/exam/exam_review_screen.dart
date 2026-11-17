@@ -7,10 +7,12 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/constants/question_swipe_motion.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/question_number_strip_scroll.dart';
+import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/ai_explanation_sheet.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
+import 'package:pdd_app/presentation/widgets/question_next_bottom_bar.dart';
 import 'package:pdd_app/presentation/widgets/pdd_comment_text.dart';
 
 /// Разбор после экзамена: все вопросы по порядку, верность ответов и комментарий.
@@ -19,10 +21,12 @@ class ExamReviewScreen extends ConsumerStatefulWidget {
     super.key,
     required this.questions,
     required this.savedAnswers,
+    this.category,
   });
 
   final List<Map<String, dynamic>> questions;
   final List<int?> savedAnswers;
+  final TicketCategory? category;
 
   @override
   ConsumerState<ExamReviewScreen> createState() => _ExamReviewScreenState();
@@ -31,8 +35,17 @@ class ExamReviewScreen extends ConsumerStatefulWidget {
 class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
   late int _currentPos;
   late List<int> _order;
+  bool _isFavorite = false;
   final ScrollController _stripController = ScrollController();
   late final PageController _pageController;
+
+  TicketCategory get _category =>
+      widget.category ?? ref.read(appSettingsProvider).ticketCategory;
+
+  String get _currentQuestionId {
+    if (_currentPos < 0 || _currentPos >= _order.length) return '';
+    return widget.questions[_order[_currentPos]]['id'] as String? ?? '';
+  }
 
   @override
   void initState() {
@@ -40,6 +53,9 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
     _order = List.generate(widget.questions.length, (i) => i);
     _currentPos = 0;
     _pageController = PageController();
+    if (widget.questions.isNotEmpty) {
+      _checkFavorite();
+    }
     scheduleScrollQuestionStripToCurrent(
       controller: _stripController,
       currentIndex: _currentPos,
@@ -53,9 +69,45 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
     super.dispose();
   }
 
+  Future<void> _checkFavorite() async {
+    final pos = _currentPos;
+    final questionId = _currentQuestionId;
+    if (questionId.isEmpty) {
+      if (mounted && _currentPos == pos) {
+        setState(() => _isFavorite = false);
+      }
+      return;
+    }
+
+    final dataSource = ref.read(progressDataSourceProvider);
+    final category = _category;
+    final favorite = await dataSource.isFavorite(questionId, category);
+
+    if (mounted && _currentPos == pos && _category == category) {
+      setState(() => _isFavorite = favorite);
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final questionId = _currentQuestionId;
+    if (questionId.isEmpty) return;
+
+    HapticFeedbackHelper.select();
+    final pos = _currentPos;
+    final dataSource = ref.read(progressDataSourceProvider);
+    final category = _category;
+    await dataSource.toggleFavorite(questionId, category);
+    if (!mounted) return;
+    ref.read(appDataRefreshProvider.notifier).state++;
+    if (_currentPos == pos && _category == category) {
+      await _checkFavorite();
+    }
+  }
+
   void _onReviewPageChanged(int pos) {
     if (pos < 0 || pos >= _order.length) return;
     setState(() => _currentPos = pos);
+    _checkFavorite();
     scheduleScrollQuestionStripToCurrent(
       controller: _stripController,
       currentIndex: _currentPos,
@@ -235,36 +287,26 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
             ],
           ),
         ),
-        bottomNavigationBar: Container(
-          padding: const EdgeInsets.all(AppDimensions.screenPadding),
-          color: colors.cardBackground,
-          child: SafeArea(
-            top: false,
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _currentPos >= _order.length - 1
-                    ? () {
-                        HapticFeedbackHelper.tap();
-                        Navigator.pop(context);
-                      }
-                    : () {
-                        HapticFeedbackHelper.tap();
-                        _pageController.animateToPage(
-                          _currentPos + 1,
-                          duration: QuestionSwipeMotion.duration,
-                          curve: QuestionSwipeMotion.curve,
-                        );
-                      },
-                child: Text(
-                  _currentPos >= _order.length - 1
-                      ? appL10n.close
-                      : appL10n.next,
-                ),
-              ),
-            ),
-          ),
+        bottomNavigationBar: QuestionNextBottomBar(
+          actionLabel: _currentPos >= _order.length - 1
+              ? appL10n.close
+              : appL10n.next,
+          onAction: _currentPos >= _order.length - 1
+              ? () {
+                  HapticFeedbackHelper.tap();
+                  Navigator.pop(context);
+                }
+              : () {
+                  HapticFeedbackHelper.tap();
+                  _pageController.animateToPage(
+                    _currentPos + 1,
+                    duration: QuestionSwipeMotion.duration,
+                    curve: QuestionSwipeMotion.curve,
+                  );
+                },
+          isFavorite: _isFavorite,
+          onToggleFavorite: _toggleFavorite,
+          showFavorite: _currentQuestionId.isNotEmpty,
         ),
       ),
     );
@@ -433,12 +475,14 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
             children: [
               Icon(Icons.lightbulb, color: colors.gold, size: 20),
               const SizedBox(width: 8),
-              Text(
-                appL10n.comment,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: colors.primaryText,
+              Expanded(
+                child: Text(
+                  appL10n.comment,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: colors.primaryText,
+                  ),
                 ),
               ),
             ],

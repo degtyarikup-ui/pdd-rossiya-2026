@@ -1004,6 +1004,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                   builder: (ctx) => ExamReviewScreen(
                     questions: List<Map<String, dynamic>>.from(_examQuestions),
                     savedAnswers: List<int?>.from(_savedAnswers),
+                    category: ref.read(appSettingsProvider).ticketCategory,
                   ),
                 ),
               );
