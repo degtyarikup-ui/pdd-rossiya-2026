@@ -284,7 +284,7 @@ if(process.argv.includes('--serve')) {
   assert.equal(await page.locator('#an-now .an-big:visible').count(),4);
   assert.equal(await page.locator('#an-now button').count(),0);
   const cards=page.locator('#analytics-view .an-card:not(.an-kpi)');
-  assert.equal(await cards.count(),13);
+  assert.equal(await cards.count(),14);
   for(const card of await cards.all()){
    const toggle=card.locator('.an-fold'), body=page.locator('#'+await toggle.getAttribute('aria-controls'));
    await toggle.click();

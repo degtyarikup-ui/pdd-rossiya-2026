@@ -15,7 +15,7 @@
     "test:social:ui": "node --test test-social-ui.mjs",
     "test:progress": "node --test test-progress.mjs test-progress-retry-after.mjs",
     "test:economy": "node --test test-economy.mjs test-economy-platega.mjs test-economy-cloudflare.mjs test-economy-usd.mjs",
-    "test:analytics:ui": "node --test test-analytics-auth-ui.mjs test-analytics-layout-ui.mjs",
+    "test:analytics:ui": "node --test test-analytics-auth-ui.mjs test-analytics-layout-ui.mjs test-premium-revenue-ui.mjs",
     "test:economy:ui": "node --test test-economy-ui.mjs",
     "test:notifications:ui": "node --test test-notifications-ui.mjs",
     "test:reports": "node --test test-question-reports.mjs",

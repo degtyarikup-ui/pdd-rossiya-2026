@@ -68,6 +68,7 @@ import { handleClientIncident, deferIncident, errorCode, isIncidentReported } fr
 import { APPLE_WEB_CALLBACK_PATH, handleAppleWebCallback } from './apple_web_callback.js';
 import { premiumEventSource, isPaidPremiumEvent, premiumPurchaseEvent, recordPremiumPurchase, buildPremiumDailyMessage,
   premiumChartPoint, premiumChartSlots, premiumHistoryMissing, premiumNeedsFx, validPremiumMoney } from './premium_analytics.js';
+import { recordPremiumDailyPurchase, premiumRevenueSnapshot } from './premium_revenue_analytics.js';
 import { handleSocialAdmin, handleVideoStream, handleVideoThumb, runAutoPost } from './social.js';
 import { SOCIAL_VIEW_HTML, SOCIAL_CLIENT_JS } from './social_ui.js';
 import { handleThreadsAdmin, runThreadsSchedule } from './threads.js';
@@ -774,6 +775,7 @@ async function logStorePurchase(env, user, verified, details = {}) {
   }
   const ts = Date.now();
   const event = await premiumPurchaseEvent(env, user, store, platform, ts, verified.reference);
+  event.premiumPaid = verified.reference.paid === true;
   if (productId.endsWith('.3months')) event.premiumPlan = 'threeMonths';
   else if (productId.endsWith('.week')) event.premiumPlan = 'weekly';
   if (verified.money) event.premiumMoney = verified.money;
@@ -2167,6 +2169,7 @@ export function sanitizeAnalyticsEvent(event) {
   };
   if (e.type === 'purchase') {
     out.purchaseSource = premiumEventSource(e);
+    if (typeof e.premiumPaid === 'boolean') out.premiumPaid = e.premiumPaid;
     if (e.premiumReportExcluded === true) out.premiumReportExcluded = true;
     if (typeof e.premiumBuyer === 'string' && /^[a-f0-9]{64}$/.test(e.premiumBuyer)) out.premiumBuyer = e.premiumBuyer;
     if (validPremiumMoney(e.premiumMoney)) {
@@ -2281,6 +2284,7 @@ function applyEventToDay(dayData, event) {
     if (event.type === 'purchase' && !isPaidPremiumEvent(event)) return;
     const key = event.type === 'purchase' ? 'purchases' : 'reports';
     dayData[key] = (dayData[key] || 0) + 1;
+    if (event.type === 'purchase') recordPremiumDailyPurchase(dayData, event);
     return;
   }
   if (event.type === 'registration') {
@@ -2671,12 +2675,13 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
       }
     }
 
-    const [grandTotalRu, grandTotalBy, grandTotalRs, rawEvents, storeReports] = await Promise.all([
+    const [grandTotalRu, grandTotalBy, grandTotalRs, rawEvents, storeReports, premiumPurchases] = await Promise.all([
       readCounter(env, 'counter'),
       readCounter(env, 'counter:by'),
       readCounter(env, 'counter:rs'),
       env.INSTALLS.get('recent_events').catch(() => null),
       storeReportSnapshot(env, dateKeys, appFilter),
+      premiumRevenueSnapshot(env, usageDays, appFilter, now.getTime()).catch(() => ({ available: false })),
     ]);
     const grandTotalAll = grandTotalRu + grandTotalBy + grandTotalRs;
     const grandTotal = appFilter === 'rs' ? grandTotalRs
@@ -2733,6 +2738,7 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
       timeline,
       usage: usageSnapshot(usageDays, appFilter),
       storeReports,
+      premiumPurchases,
       sources,
       targets,
       campaigns,

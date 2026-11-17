@@ -157,14 +157,15 @@ test('analytics batches independent counters, recent events and store reports; c
     assert.deepEqual(stats.storeReports.googleplay.rows, [['search', 3]]);
     assert.equal(kv.reads.filter(key => key.startsWith('day:')).length, 28);
     assert.equal(kv.waves.length, 5, 'four bounded day rounds and one independent metadata round');
-    assert.equal(kv.waves.at(-1).length, 6);
+    assert.equal(kv.waves.at(-1).length, 7, 'purchase directory joins the independent metadata reads');
     assert.ok(kv.waves.every(wave => wave.filter(key => key.startsWith('day:')).length <= 8));
     const before = kv.reads.length;
     await kv.finish(request(env, '/api/admin/stats?days=14&app=ru'));
-    assert.equal(kv.reads.length - before, 8, 'only today/yesterday and six metadata reads repeat');
+    assert.equal(kv.reads.length - before, 9, 'only today/yesterday and seven metadata reads repeat');
+    assert.equal(kv.count('list:pay_order:'), 2, 'financial orders are reread on every analytics refresh');
     assert.equal(kv.count('list:user:'), 1, 'existing analytics summary TTL is retained');
   }
-  t.diagnostic('14-day analytics: cold 5 delayed rounds instead of 9; warm refresh 8 get reads. Separate KV bindings never share historical days or user summaries.');
+  t.diagnostic('14-day analytics: cold 5 delayed rounds instead of 9; warm refresh 9 storage operations including the purchase directory. Separate KV bindings never share historical days or user summaries.');
 });
 
 test('simultaneous economy, users and analytics share one summary read without caching subsequent financial reads', async () => {

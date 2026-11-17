@@ -10,6 +10,7 @@
 import { BRAND_ICON_PATHS, BRAND_SVGS } from './brand_icons.js';
 import { siteSourceKey } from './attribution.js';
 import { selectGeoRows } from './analytics_geo.js';
+import { PREMIUM_REVENUE_CSS, PREMIUM_REVENUE_HTML, PREMIUM_REVENUE_CLIENT_JS } from './premium_revenue_ui.js';
 
 function cardToggle(id, title) {
   return `<button type="button" class="an-fold" aria-expanded="true" aria-controls="an-body-${id}">${title}</button>`;
@@ -96,6 +97,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 #analytics-view [id^="an-body-"][hidden]{display:none}
 .an-growth-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;min-width:0}.an-growth-grid>.an-card{margin:0}.an-growth-grid .an-title{font-size:14px}.an-growth-grid .an-head{min-height:28px}.an-growth-total{font-size:40px;line-height:1;letter-spacing:-1.8px;font-weight:550;font-variant-numeric:tabular-nums;margin:4px 0 24px}.an-growth-period{font-size:11px;line-height:1.4;color:var(--an-muted);margin-bottom:10px}.an-growth-grid .an-chart{min-height:190px}
 @media(max-width:640px){.an-activity-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.an-growth-grid{gap:10px}.an-growth-grid .an-card{padding:16px 12px}.an-growth-grid .an-title{font-size:12px;letter-spacing:-.2px}.an-growth-grid .an-fold{gap:4px}.an-growth-total{font-size:32px}.an-growth-grid .an-chart{min-height:150px}}
+${PREMIUM_REVENUE_CSS}
 </style>
 <div class="an-grid" id="an-now" aria-label="Текущее состояние аккаунтов">
  ${kpis.map(([key, label, help]) => `<div class="an-card an-kpi${key === 'active1' ? ' is-primary' : ''}" title="${help}"><div class="an-kpi-top">${label}</div><div class="an-big" data-kpi="${key}">—</div></div>`).join('')}
@@ -120,6 +122,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   </div>
  </div>
 </div>
+${PREMIUM_REVENUE_HTML}
 <div class="an-card an-usage" id="an-usage">
  <div class="an-head"><div class="an-usage-heading"><div class="an-title">${cardToggle('usage', 'Использование режимов')}</div><details class="an-help"><summary aria-label="Об использовании режимов">i</summary><div>Запуски за выбранный период, включая гостей. Установки — уникальные установки приложения, в которых запускали режим. Одна установка может быть в нескольких строках; складывать их нельзя. Доля всегда считается от всех запусков, даже при фильтрации.<span class="an-usage-method" id="an-usage-method"></span></div></details></div><div class="an-usage-total" id="an-usage-total"></div></div>
  <div id="an-body-usage">
@@ -570,6 +573,7 @@ function renderDashboard(data) {
  document.getElementById('an-period').title='Календарные дни. Сегодня — неполный день.';
  anPlot(data);
  anRenderActivity(data);
+ anRenderPremium(data);
  anRenderUsage(data);
  anRenderVersions(data);
  anRenderAuth(data);
@@ -626,6 +630,7 @@ document.getElementById('analytics-view').addEventListener('click',function(even
  if(expanding && window.__anData){
    if(['an-body-launches','an-body-registrations','an-body-site'].indexOf(body.id)!==-1)anPlot(window.__anData);
    if(body.id==='an-body-activity')anRenderActivity(window.__anData);
+   if(body.id==='an-body-premium')anRenderPremium(window.__anData);
    if(body.id==='an-body-usage' && document.getElementById('an-usage-details').open)anRenderUsageDetails(window.__anData);
  }
 });
@@ -645,4 +650,4 @@ window.addEventListener('resize', function () {
 });
 `;
 
-export const ANALYTICS_CLIENT_JS = 'var BRAND_SVGS = (typeof window !== "undefined" && window.BRAND_SVGS) || ' + JSON.stringify(BRAND_SVGS) + ';\n' + 'var anSourceKey = ' + siteSourceKey.toString() + ';\n' + 'var AN_SELECT_GEO = ' + selectGeoRows.toString() + ';\n' + 'var AN_BRAND_PATHS = ' + JSON.stringify(BRAND_ICON_PATHS) + ';\n' + CLIENT;
+export const ANALYTICS_CLIENT_JS = 'var BRAND_SVGS = (typeof window !== "undefined" && window.BRAND_SVGS) || ' + JSON.stringify(BRAND_SVGS) + ';\n' + 'var anSourceKey = ' + siteSourceKey.toString() + ';\n' + 'var AN_SELECT_GEO = ' + selectGeoRows.toString() + ';\n' + 'var AN_BRAND_PATHS = ' + JSON.stringify(BRAND_ICON_PATHS) + ';\n' + CLIENT + '\n' + PREMIUM_REVENUE_CLIENT_JS;

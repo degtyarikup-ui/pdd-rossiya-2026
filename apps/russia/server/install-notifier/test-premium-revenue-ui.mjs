@@ -1,0 +1,172 @@
+// Runs the assembled admin against isolated data; no working payments or accounts.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { createRequire } from 'node:module';
+import { mkdir, readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import worker from './worker.js';
+import { userSummary } from './user_store.js';
+
+class MemoryKV {
+ constructor(){this.store=new Map();this.metadata=new Map();}
+ async get(key,options){const value=this.store.get(key)??null;return options==='json'||options?.type==='json'?value===null?null:JSON.parse(value):value;}
+ async put(key,value,options){this.store.set(key,String(value));if(options?.metadata)this.metadata.set(key,options.metadata);else this.metadata.delete(key);}
+ async delete(key){this.store.delete(key);this.metadata.delete(key);}
+ async list({prefix='',limit=1000,cursor='0'}={}){const all=[...this.store.keys()].filter(key=>key.startsWith(prefix)).sort(),start=Number(cursor)||0;const keys=all.slice(start,start+limit).map(name=>({name,metadata:this.metadata.get(name)}));return{keys,list_complete:start+keys.length>=all.length,cursor:String(start+keys.length)};}
+}
+const metrics=(purchases=0,missingAmounts=0,amounts={},pricedPurchases={})=>({purchases,missingAmounts,amounts,pricedPurchases});
+function revenueFixture(days=7){
+ const end=Date.now()+3*3600000;
+ const timeline=Array.from({length:days},(_,i)=>({date:new Date(end-(days-1-i)*86400000).toISOString().slice(0,10),...metrics()}));
+ const methods=[
+  {key:'web',label:'СБП',...metrics(2,0,{RUB:389000},{RUB:2})},
+  {key:'appstore',label:'App Store',...metrics(1,0,{USD:4990},{USD:1})},
+  {key:'googleplay',label:'Google Play',...metrics(1,1)},
+ ];
+ Object.assign(timeline[timeline.length-1],metrics(4,1,{RUB:389000,USD:4990},{RUB:2,USD:1}),{methods});
+ return{available:true,timeZone:'Europe/Moscow',totals:metrics(4,1,{RUB:389000,USD:4990},{RUB:2,USD:1}),timeline,methods,currencies:['RUB','USD'],coverage:{historicalPurchases:false,from:timeline[0].date}};
+}
+// Richer isolated fixture for visual inspection; assertions use the small fixture.
+function screenshotFixture(){
+ const data=revenueFixture(7);
+ const amounts={web:[290000,99000,580000,389000,198000,870000,488000],appstore:[0,199000,0,499000,0,199000,0],googleplay:[99000,0,199000,0,99000,290000,199000]};
+ const count=(key,i)=>amounts[key][i]>0?key==='web'?Math.ceil(amounts[key][i]/290000):1:0;
+ const method=(key,i)=>({key,label:{web:'СБП',appstore:'App Store',googleplay:'Google Play'}[key],...metrics(count(key,i),0,amounts[key][i]?{RUB:amounts[key][i]}:{},amounts[key][i]?{RUB:count(key,i)}:{})});
+ const sum=rows=>metrics(rows.reduce((n,r)=>n+r.purchases,0),rows.reduce((n,r)=>n+r.missingAmounts,0),{RUB:rows.reduce((n,r)=>n+(r.amounts.RUB||0),0)},{RUB:rows.reduce((n,r)=>n+(r.pricedPurchases.RUB||0),0)});
+ data.timeline=data.timeline.map((day,i)=>{const methods=Object.keys(amounts).map(key=>method(key,i));return{date:day.date,...sum(methods),methods};});
+ data.methods=Object.keys(amounts).map(key=>({key,label:{web:'СБП',appstore:'App Store',googleplay:'Google Play'}[key],...sum(data.timeline.map(day=>day.methods.find(row=>row.key===key)))}));
+ data.totals=sum(data.timeline);data.currencies=['RUB'];
+ return data;
+}
+async function preview(){
+ const env={INSTALLS:new MemoryKV(),ADMIN_PASSWORD:crypto.randomUUID()};
+ const user={id:'premium_preview',provider:'google',app:'ru',createdAt:new Date().toISOString(),lastSeenAt:new Date().toISOString()};
+ await env.INSTALLS.put('user:'+user.id,JSON.stringify(user),{metadata:userSummary(user)});
+ const server=createServer(async(incoming,outgoing)=>{
+  try{
+   const url=new URL(incoming.url,`http://${incoming.headers.host}`),headers=new Headers(incoming.headers);
+   if(url.pathname.startsWith('/api/admin/'))headers.set('authorization',`Bearer ${env.ADMIN_PASSWORD}`);
+   const response=await worker.fetch(new Request(url,{headers}),env,{waitUntil(p){p.catch(()=>{});}});
+   if(url.pathname==='/api/admin/stats'&&response.ok){
+    const data=await response.json();data.premiumPurchases=revenueFixture(Number(url.searchParams.get('days'))||7);
+    outgoing.writeHead(200,{'content-type':'application/json'});outgoing.end(JSON.stringify(data));return;
+   }
+   outgoing.writeHead(response.status,Object.fromEntries(response.headers));outgoing.end(Buffer.from(await response.arrayBuffer()));
+  }catch(error){outgoing.writeHead(500);outgoing.end(String(error));}
+ });
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ return{url:`http://127.0.0.1:${server.address().port}`,async close(){server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}};
+}
+const compact=value=>value.replace(/\s/g,'');
+
+test('premium purchases retain daily, currency and incomplete-history meaning across controls and viewport sizes',{timeout:90000},async()=>{
+ const{chromium}=createRequire(import.meta.url)('playwright');
+ const app=await preview(),browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
+ try{
+  const context=await browser.newContext({viewport:{width:1600,height:1100},reducedMotion:'reduce'});
+  await context.route('**/*',async route=>{
+   const url=new URL(route.request().url());
+   if(url.origin===app.url)return route.continue();
+   if(url.hostname==='pdd-drive.ru'&&['/assets/icon-192.png','/assets/favicon.png'].includes(url.pathname))return route.fulfill({contentType:'image/png',body:await readFile(new URL('../../web_landing/ru'+url.pathname,import.meta.url))});
+   return route.abort();
+  });
+  const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.goto(app.url+'/admin#analytics');
+  await page.waitForFunction(()=>window.__anData?.premiumPurchases?.available);
+  const card=page.locator('#an-premium'),summary=page.locator('#an-premium-summary'),chart=page.locator('#an-premium-chart');
+  const render=data=>page.evaluate(premiumPurchases=>{window.__anData={...window.__anData,premiumPurchases};anRenderPremium(window.__anData);},data);
+  assert.equal(await card.locator('.an-fold').getAttribute('aria-expanded'),'true');
+  assert.equal(await summary.locator(':scope>span').count(),3,'only three headline metrics');
+  assert.match(compact(await summary.innerText()),/389₽/);
+  assert.match(compact(await summary.innerText()),/194,5₽/,'average check uses purchases priced in selected currency');
+  assert.match(await summary.innerText(),/Покупки\s*4/);
+  assert.match(await page.locator('#an-premium-coverage').innerText(),/Без суммы:\s*1/);
+  assert.equal(await card.locator('.an-card').count(),0,'no cards inside the card');
+  await page.locator('#an-premium-currencies').selectOption('USD');
+  assert.match(compact(await summary.innerText()),/4,99/);
+  assert.match(await summary.innerText(),/Покупки\s*4/,'currency selection never changes purchase count');
+  assert.doesNotMatch(compact(await summary.innerText()),/389/);
+  assert.match(compact(await page.locator('#an-premium-sources .an-premium-source').filter({hasText:'СБП'}).locator('b').innerText()),/^0/,'known purchases in a different currency show zero for selected currency');
+  await page.locator('#an-premium-currencies').selectOption('RUB');
+  const last=(await chart.locator('rect[data-i]').count())-1;
+  await chart.locator(`rect[data-i="${last}"]`).hover();
+  assert.match(compact(await page.locator('#an-tip').innerText()),/389₽/);
+  assert.match(await page.locator('#an-premium-sources').innerText(),/СБП/);
+  await page.locator('[data-premium-mode="purchases"]').click();
+  assert.equal(await page.locator('[data-premium-mode="purchases"]').getAttribute('aria-pressed'),'true');
+  await chart.locator(`rect[data-i="${last}"]`).hover();
+  assert.match(await page.locator('#an-premium-sources').innerText(),/Google Play\s*1/,'unknown amounts remain visible in purchase counts');
+  assert.match(await page.locator('#an-tip').innerText(),/Покупки\s*4/);
+  await page.locator('[data-premium-mode="revenue"]').click();
+  await page.locator('#an-details-premium-values>summary').click();
+  assert.equal(await page.locator('#an-premium-days tbody tr').count(),7);
+  await page.locator('#an-details-premium-values>summary').click();
+
+  for(const period of [1,7,30,90]){
+   await page.locator(`#period-buttons [data-days="${period}"]`).click();
+   await page.waitForFunction(days=>window.__anData?.premiumPurchases?.timeline?.length===days,period);
+   assert.equal(await chart.locator('rect[data-i]').count(),period,'all '+period+' days keep individual daily bars');
+   assert.match(await summary.innerText(),/Покупки\s*4/);
+  }
+  const toggle=card.locator('.an-fold');
+  await toggle.click();assert.equal(await page.locator('#an-body-premium').isVisible(),false);
+  await page.reload();await page.waitForFunction(()=>window.__anData?.premiumPurchases?.available);
+  assert.equal(await toggle.getAttribute('aria-expanded'),'false','fold persists after reload');
+  await toggle.press('Enter');assert.equal(await page.locator('#an-body-premium').isVisible(),true);
+  await page.locator('#period-buttons [data-days="7"]').click();
+  await page.waitForFunction(()=>window.__anData?.premiumPurchases?.timeline?.length===7);
+  for(const width of [1600,768,390,320]){
+   await page.setViewportSize({width,height:1100});await page.waitForTimeout(220);
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'page fits '+width);
+   assert.equal(await card.evaluate(el=>el.scrollWidth>el.clientWidth),false,'premium card fits '+width);
+   assert.equal(await summary.evaluate(el=>el.scrollWidth>el.clientWidth),false,'premium metrics fit '+width);
+   assert.equal(await page.locator('#an-premium-sources').evaluate(el=>el.scrollWidth>el.clientWidth),false,'methods fit '+width);
+   await chart.locator('rect[data-i="6"]').click();
+   const tip=await page.locator('#an-tip').boundingBox();
+   assert.ok(tip&&tip.x>=0&&tip.x+tip.width<=width+1,'touch tooltip fits '+width);
+   await page.keyboard.press('Escape');
+   if(process.env.PREMIUM_UI_SCREENSHOTS){
+    await render(screenshotFixture());
+    await mkdir(new URL('../../output/premium-revenue/',import.meta.url),{recursive:true});
+    await page.mouse.move(0,0);await page.evaluate(()=>document.activeElement?.blur());
+    await card.screenshot({path:fileURLToPath(new URL(`../../output/premium-revenue/${width}.png`,import.meta.url))});
+    await render(revenueFixture(7));
+   }
+  }
+
+  const incomplete=revenueFixture(7);incomplete.coverage.unverifiedPurchases=3;
+  await render(incomplete);
+  assert.match(await page.locator('#an-premium-coverage').innerText(),/Без суммы:\s*1.*Неполная история/);
+  assert.match(await page.locator('#an-premium-coverage').getAttribute('title'),/3/);
+  assert.match(await summary.innerText(),/Покупки\s*4/,'unverified history is not counted as paid purchases');
+
+  const missing=revenueFixture(7);
+  missing.totals=metrics(1,1);missing.currencies=[];
+  missing.methods=[{key:'appstore',label:'App Store',...metrics(1,1)}];
+  for(const day of missing.timeline)Object.assign(day,metrics(),{methods:[]});
+  Object.assign(missing.timeline[6],metrics(1,1),{methods:missing.methods});
+  await render(missing);
+  assert.match(await summary.innerText(),/Выручка за период\s*—/);
+  assert.match(await summary.innerText(),/Покупки\s*1/);
+  assert.match(await chart.innerText(),/Суммы покупок не сохранены/);
+  await page.locator('[data-premium-mode="purchases"]').click();
+  assert.equal(await chart.locator('rect[data-i]').count(),7);
+  await page.locator('[data-premium-mode="revenue"]').click();
+  const empty=revenueFixture(7);empty.totals=metrics();empty.methods=[];empty.currencies=[];
+  for(const day of empty.timeline)Object.assign(day,metrics(),{methods:[]});
+  await render(empty);
+  assert.match(compact(await summary.innerText()),/Выручказапериод0₽/,'observed no purchases is a real zero');
+  assert.match(await chart.innerText(),/нет покупок|Покупок.*нет/i);
+  empty.coverage={missingDates:2};
+  await render(empty);
+  assert.match(await page.locator('#an-premium-coverage').innerText(),/Неполная история/);
+  assert.match(await page.locator('#an-premium-coverage').getAttribute('title'),/Без даты подтверждения: 2/);
+  assert.match(await summary.innerText(),/Выручка за период\s*—/,'missing-date purchases cannot imply zero revenue');
+  assert.match(await chart.innerText(),/История покупок неполная/);
+  await render({available:false});
+  assert.match(await chart.innerText(),/недоступ/i,'unavailable is distinct from no purchases');
+  assert.doesNotMatch(compact(await summary.innerText()),/0₽/);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await app.close();}
+});
