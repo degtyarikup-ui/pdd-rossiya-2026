@@ -115,6 +115,7 @@ class CountryConfig {
   final String tariffsUrl;
 
   String get supportEmail => 'degtyarik.up@gmail.com';
+  String get supportTelegramHandle => 'sergei_degtyarik';
 
   /// Оплата премиума на сайте (веб-версия). Только веб: в приложениях из
   /// App Store / Google Play — покупки стора.

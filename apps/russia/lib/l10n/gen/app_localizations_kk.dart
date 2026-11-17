@@ -3991,6 +3991,17 @@ class AppLocalizationsKk extends AppLocalizations {
   String get supportChatImageTooLarge => 'Сурет тым үлкен (макс. 10 МБ)';
 
   @override
+  String get supportChatEmailTooltip => 'Поштаға жазу';
+
+  @override
+  String get supportChatTelegramTooltip => 'Telegram-ға жазу';
+
+  @override
+  String supportChatEmailCopied(String email) {
+    return 'Пошта көшірілді: $email';
+  }
+
+  @override
   String appVersion(String version) {
     return '$version нұсқасы';
   }

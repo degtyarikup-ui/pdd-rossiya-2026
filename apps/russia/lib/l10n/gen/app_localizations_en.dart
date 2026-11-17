@@ -3985,6 +3985,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supportChatImageTooLarge => 'Image is too large (max 10 MB)';
 
   @override
+  String get supportChatEmailTooltip => 'Write via email';
+
+  @override
+  String get supportChatTelegramTooltip => 'Message on Telegram';
+
+  @override
+  String supportChatEmailCopied(String email) {
+    return 'Email copied: $email';
+  }
+
+  @override
   String appVersion(String version) {
     return 'Version $version';
   }

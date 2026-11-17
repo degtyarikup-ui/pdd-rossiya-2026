@@ -1960,6 +1960,16 @@
   "supportChatImageLoadFailed": "Не удалось загрузить фото",
   "supportChatClosed": "Обращение завершено. Если появятся вопросы — просто напишите сюда.",
   "supportChatImageTooLarge": "Изображение слишком большое (макс. 10 МБ)",
+  "supportChatEmailTooltip": "Написать на почту",
+  "supportChatTelegramTooltip": "Написать в Telegram",
+  "supportChatEmailCopied": "Почта скопирована: {email}",
+  "@supportChatEmailCopied": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "appVersion": "Версия {version}",
   "@appVersion": {
     "placeholders": {

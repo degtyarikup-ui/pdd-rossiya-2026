@@ -1335,6 +1335,16 @@
   "supportChatImageLoadFailed": "Фотосуретті жүктеу мүмкін болмады",
   "supportChatClosed": "Өтініш аяқталды. Сұрақтарыңыз болса, осында жаза беріңіз.",
   "supportChatImageTooLarge": "Сурет тым үлкен (макс. 10 МБ)",
+  "supportChatEmailTooltip": "Поштаға жазу",
+  "supportChatTelegramTooltip": "Telegram-ға жазу",
+  "supportChatEmailCopied": "Пошта көшірілді: {email}",
+  "@supportChatEmailCopied": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "appVersion": "{version} нұсқасы",
   "@appVersion": {
     "placeholders": {

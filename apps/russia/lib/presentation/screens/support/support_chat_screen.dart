@@ -5,7 +5,9 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
@@ -16,14 +18,17 @@ import 'package:pdd_app/data/services/support_inbox.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
+import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/support_chat_image.dart';
 import 'package:pdd_app/presentation/widgets/support_chat_message_text.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Экран интерактивного чата техподдержки приложения.
 class SupportChatScreen extends StatefulWidget {
-  const SupportChatScreen({super.key, this.service});
+  const SupportChatScreen({super.key, this.service, this.onLaunchUrl});
 
   final SupportChatService? service;
+  final Future<bool> Function(Uri uri)? onLaunchUrl;
 
   @override
   State<SupportChatScreen> createState() => _SupportChatScreenState();
@@ -451,6 +456,65 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     await _service.saveCachedMessages(_messages);
   }
 
+  Future<bool> _tryLaunchExternal(Uri uri, {bool isDeepLink = false}) async {
+    try {
+      if (widget.onLaunchUrl != null) {
+        return await widget.onLaunchUrl!(uri);
+      }
+      if (isDeepLink) {
+        if (kIsWeb) return false;
+        // На iOS canLaunchUrl для tg:// не всегда надёжен — пробуем открыть сразу.
+        final canOpen =
+            defaultTargetPlatform == TargetPlatform.iOS ||
+            await canLaunchUrl(uri);
+        if (!canOpen) return false;
+        return await launchUrl(
+          uri,
+          mode: defaultTargetPlatform == TargetPlatform.iOS
+              ? LaunchMode.externalApplication
+              : LaunchMode.externalNonBrowserApplication,
+        );
+      }
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _openSupportEmail() async {
+    HapticFeedbackHelper.tap();
+    final email = CountryConfig.current.supportEmail;
+    final uri = Uri(scheme: 'mailto', path: email);
+    if (await _tryLaunchExternal(uri)) return;
+
+    try {
+      await Clipboard.setData(ClipboardData(text: email));
+    } catch (_) {}
+    if (!mounted) return;
+    AppToast.show(context, appL10n.supportChatEmailCopied(email));
+  }
+
+  Future<void> _openSupportTelegram() async {
+    HapticFeedbackHelper.tap();
+    final handle = CountryConfig.current.supportTelegramHandle;
+    final appUri = Uri(
+      scheme: 'tg',
+      host: 'resolve',
+      queryParameters: {'domain': handle},
+    );
+    if (await _tryLaunchExternal(appUri, isDeepLink: true)) return;
+
+    final webUri = Uri.https('t.me', '/$handle');
+    if (await _tryLaunchExternal(webUri)) return;
+
+    if (!mounted) return;
+    AppToast.show(
+      context,
+      appL10n.telegramOpenFailed,
+      type: AppToastType.error,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -525,6 +589,24 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(width: AppDimensions.spacingS),
+                  Tooltip(
+                    message: appL10n.supportChatEmailTooltip,
+                    child: AppChromeIconButton(
+                      key: const ValueKey('support-email-button'),
+                      icon: Icons.mail_outline_rounded,
+                      onTap: _openSupportEmail,
+                    ),
+                  ),
+                  const SizedBox(width: AppDimensions.spacingS),
+                  Tooltip(
+                    message: appL10n.supportChatTelegramTooltip,
+                    child: AppChromeIconButton(
+                      key: const ValueKey('support-telegram-button'),
+                      icon: Icons.telegram,
+                      onTap: _openSupportTelegram,
                     ),
                   ),
                 ],

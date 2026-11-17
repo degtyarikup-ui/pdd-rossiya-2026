@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -269,6 +270,78 @@ void main() {
       expect(find.byIcon(Icons.add_photo_alternate_rounded), findsOneWidget);
       expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
       expect(find.byIcon(Icons.support_agent_rounded), findsWidgets);
+      expect(find.byKey(const ValueKey('support-email-button')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('support-telegram-button')),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.mail_outline_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.telegram), findsOneWidget);
+    });
+
+    testWidgets('Кнопки почты и Telegram в navbar открывают нужные ссылки', (
+      tester,
+    ) async {
+      final launched = <Uri>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SupportChatScreen(
+            onLaunchUrl: (uri) async {
+              launched.add(uri);
+              return uri.scheme != 'tg';
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('support-email-button')));
+      await tester.pump();
+      expect(launched, [Uri(scheme: 'mailto', path: 'degtyarik.up@gmail.com')]);
+
+      launched.clear();
+      await tester.tap(find.byKey(const ValueKey('support-telegram-button')));
+      await tester.pump();
+      expect(launched, [
+        Uri.parse('tg://resolve?domain=sergei_degtyarik'),
+        Uri.parse('https://t.me/sergei_degtyarik'),
+      ]);
+    });
+
+    testWidgets('Если почтовый клиент недоступен, адрес копируется в буфер', (
+      tester,
+    ) async {
+      String? copiedText;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copiedText = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SupportChatScreen(onLaunchUrl: (_) async => false),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('support-email-button')));
+      await tester.pump();
+
+      expect(copiedText, 'degtyarik.up@gmail.com');
+      expect(find.textContaining('degtyarik.up@gmail.com'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 4));
     });
   });
 }

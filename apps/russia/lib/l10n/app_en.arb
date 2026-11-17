@@ -1335,6 +1335,16 @@
   "supportChatImageLoadFailed": "Could not load the photo",
   "supportChatClosed": "Your request is closed. If you have more questions, just write here.",
   "supportChatImageTooLarge": "Image is too large (max 10 MB)",
+  "supportChatEmailTooltip": "Write via email",
+  "supportChatTelegramTooltip": "Message on Telegram",
+  "supportChatEmailCopied": "Email copied: {email}",
+  "@supportChatEmailCopied": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "appVersion": "Version {version}",
   "@appVersion": {
     "placeholders": {

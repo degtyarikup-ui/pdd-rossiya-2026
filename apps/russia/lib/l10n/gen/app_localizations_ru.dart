@@ -4002,6 +4002,17 @@ class AppLocalizationsRu extends AppLocalizations {
       'Изображение слишком большое (макс. 10 МБ)';
 
   @override
+  String get supportChatEmailTooltip => 'Написать на почту';
+
+  @override
+  String get supportChatTelegramTooltip => 'Написать в Telegram';
+
+  @override
+  String supportChatEmailCopied(String email) {
+    return 'Почта скопирована: $email';
+  }
+
+  @override
   String appVersion(String version) {
     return 'Версия $version';
   }

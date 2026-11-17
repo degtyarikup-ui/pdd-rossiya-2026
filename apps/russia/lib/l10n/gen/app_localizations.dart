@@ -6652,6 +6652,24 @@ abstract class AppLocalizations {
   /// **'Изображение слишком большое (макс. 10 МБ)'**
   String get supportChatImageTooLarge;
 
+  /// No description provided for @supportChatEmailTooltip.
+  ///
+  /// In ru, this message translates to:
+  /// **'Написать на почту'**
+  String get supportChatEmailTooltip;
+
+  /// No description provided for @supportChatTelegramTooltip.
+  ///
+  /// In ru, this message translates to:
+  /// **'Написать в Telegram'**
+  String get supportChatTelegramTooltip;
+
+  /// No description provided for @supportChatEmailCopied.
+  ///
+  /// In ru, this message translates to:
+  /// **'Почта скопирована: {email}'**
+  String supportChatEmailCopied(String email);
+
   /// No description provided for @appVersion.
   ///
   /// In ru, this message translates to:
