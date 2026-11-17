@@ -1,6 +1,6 @@
 import { getMatches, getAvailableNotes, getPerfumesForGender, removeNoteAt, isCompleteSelection } from './game-model.mjs';
 import { noteArtwork } from './note-art.mjs?v=20261118-catalog1';
-import { createGameMotion } from './motion.mjs';
+import { createGameMotion } from './motion.mjs?v=20261118-rail1';
 
 const root = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -18,9 +18,12 @@ const preferred = ['Грейпфрут','Ирис','Ваниль','Чёрная 
 const familyGroups = [
   { label:'Все', value:'all' },
   { label:'Цитрусы', value:'citrus', families:['Цитрусовые'] },
+  { label:'Фрукты и ягоды', value:'fruit', families:['Фрукты и ягоды'] },
   { label:'Цветы', value:'floral', families:['Цветы'] },
-  { label:'Тёплые', value:'warm', families:['Тёплые аккорды','Дерево и смолы','Пряности'] },
-  { label:'Свежие', value:'fresh', families:['Фрукты и ягоды','Зелень и свежесть'] }
+  { label:'Свежие', value:'fresh', families:['Зелень и свежесть'] },
+  { label:'Древесные', value:'wood', families:['Дерево и смолы'] },
+  { label:'Пряные', value:'spice', families:['Пряности'] },
+  { label:'Тёплые', value:'warm', families:['Тёплые аккорды'] }
 ];
 let catalog;
 let noteFamilies;
@@ -96,7 +99,7 @@ function noteOptions() {
 }
 function palette() {
   const {available,displayed}=noteOptions();
-  return `<div class="palette"><h2 class="sr-only" tabindex="-1">Выберите ноту · ${choices.length} из 3 выбрано</h2><div class="filters"><div class="filter-scroll" role="group" aria-label="Группы нот">${familyGroups.map(g=>`<button class="filter" data-family="${g.value}" aria-pressed="${family===g.value}" ${g.families&&!available.some(name=>g.families.includes(noteFamilies.get(name)))?'disabled':''}>${g.label}</button>`).join('')}</div></div><div class="note-grid" aria-label="Доступные ноты">${displayed.length?displayed.map((name,index)=>`<button class="note-choice" data-note="${escape(name)}" aria-label="Выбрать ноту ${escape(name)}">${ingredient(name,index>=9)}<span class="note-label">${escape(name)}</span><span class="add-note" aria-hidden="true">+</span></button>`).join(''):`<div class="empty-search">Нет подходящих нот<button data-action="clear-filter">Сбросить фильтр</button></div>`}</div></div>`;
+  return `<div class="palette"><h2 class="sr-only" tabindex="-1">Выберите ноту · ${choices.length} из 3 выбрано</h2><div class="filters"><div id="note-families" class="filter-scroll" role="group" aria-label="Группы нот">${familyGroups.map(g=>`<button class="filter" data-family="${g.value}" aria-pressed="${family===g.value}" ${g.families&&!available.some(name=>g.families.includes(noteFamilies.get(name)))?'disabled':''}>${g.label}</button>`).join('')}</div><div class="rail-controls"><button type="button" data-rail="-1" aria-controls="note-families" aria-label="Прокрутить категории влево">${icons.back}</button><button type="button" data-rail="1" aria-controls="note-families" aria-label="Прокрутить категории вправо">${icons.arrow}</button></div></div><div class="note-grid" aria-label="Доступные ноты">${displayed.length?displayed.map((name,index)=>`<button class="note-choice" data-note="${escape(name)}" aria-label="Выбрать ноту ${escape(name)}">${ingredient(name,index>=9)}<span class="note-label">${escape(name)}</span><span class="add-note" aria-hidden="true">+</span></button>`).join(''):`<div class="empty-search">Нет подходящих нот<button data-action="clear-filter">Сбросить фильтр</button></div>`}</div></div>`;
 }
 function bottleLabel(perfume, bottle) {
   return `${perfume.brand} ${perfume.name}, ${bottle.ml} мл`;
@@ -186,6 +189,12 @@ root.addEventListener('click', event => {
     const now=performance.now();
     if(lastPointerAction && now-lastPointerAction.time<220 && Math.hypot(event.clientX-lastPointerAction.x,event.clientY-lastPointerAction.y)<14)return;
     lastPointerAction={time:now,x:event.clientX,y:event.clientY};
+  }
+  if (button.dataset.rail) {
+    const rail = root.querySelector('.filter-scroll');
+    const step = Math.max(1, rail.clientWidth - 56);
+    rail.scrollBy({left: Number(button.dataset.rail) * step, behavior: motion.reduced() ? 'instant' : 'smooth'});
+    return;
   }
   if(button.dataset.note){
     const note=button.dataset.note;

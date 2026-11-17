@@ -50,6 +50,14 @@ a { color: inherit; }
 .filter-scroll { display: flex; flex: 1; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 6px; padding: 4px; margin-left: -4px; }
 .filter { flex: 0 0 auto; font: var(--type-ui); letter-spacing: 0; min-height: 44px; padding: 10px 20px; border-radius: 24px; background: transparent; color: #b7c4e6; white-space: nowrap; transition: background .2s, color .2s; }
 .filter[aria-pressed=true] { color: #ffe0b6; background: #2e3d75; }
+.rail-controls { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .rail-overflow .rail-controls { display: flex; align-items: center; margin-left: 6px; }
+  .rail-controls button { display: grid; place-items: center; width: 36px; height: 44px; padding: 0; border-radius: 22px; background: transparent; color: #c7d2f1; }
+  .rail-controls svg { width: 19px; height: 19px; }
+  .rail-controls button:disabled { opacity: .25; }
+  .rail-controls button:enabled:hover { color: #ffe0b6; background: #29396e; }
+}
 .filter:disabled { opacity: .32; }
 .filter:not(:disabled):hover { color: white; background: #29396e; }
 .note-grid { --scroll-fade: 38px; --note-fade-alpha: 1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px 16px; min-height: 0; align-content: start; padding: 18px 4px 4px; margin: 0 -4px; scroll-padding-top: var(--scroll-fade); mask-image: linear-gradient(to bottom, rgb(0 0 0 / var(--note-fade-alpha)), #000 var(--scroll-fade)), linear-gradient(#000 0 0); mask-size: calc(100% - 12px) 100%, 12px 100%; mask-position: left top, right top; mask-repeat: no-repeat; }

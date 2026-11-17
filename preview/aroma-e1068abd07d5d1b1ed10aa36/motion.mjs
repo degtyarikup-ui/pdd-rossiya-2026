@@ -62,8 +62,17 @@ export function createGameMotion(root) {
     ], {...options, geometry: true, cleanup: () => {element.style.transformOrigin = origin;}});
   }
   function syncFilterEdges(container) {
-    container.style.setProperty('--filter-fade-start', container.scrollLeft > 2 ? '16px' : '0px');
-    container.style.setProperty('--filter-fade-end', container.scrollWidth - container.clientWidth - container.scrollLeft > 2 ? '20px' : '0px');
+    const filters = container.parentElement;
+    // Measure the full row so the controls never create their own overflow.
+    const contentWidth = container.scrollWidth;
+    const availableWidth = filters.clientWidth + Math.max(0, -parseFloat(getComputedStyle(container).marginLeft));
+    filters.classList.toggle('rail-overflow', contentWidth > availableWidth + 2);
+    const canGoBack = container.scrollLeft > 2;
+    const canGoForward = container.scrollWidth - container.clientWidth - container.scrollLeft > 2;
+    container.style.setProperty('--filter-fade-start', canGoBack ? '16px' : '0px');
+    container.style.setProperty('--filter-fade-end', canGoForward ? '28px' : '0px');
+    filters.querySelector('[data-rail="-1"]').disabled = !canGoBack;
+    filters.querySelector('[data-rail="1"]').disabled = !canGoForward;
   }
   function syncNoteFade(grid) {
     if (!grid) return;
@@ -76,6 +85,7 @@ export function createGameMotion(root) {
     if (!active) return;
     // The strip is recreated with each state change. Keep the user's position
     // when filtering, and bring a newly active category fully into view.
+    syncFilterEdges(container);
     if (scrollLeft !== undefined) container.scrollLeft = scrollLeft;
     if (revealActive && container.scrollWidth > container.clientWidth) {
       const item = rect(active), bounds = rect(container);
@@ -266,7 +276,14 @@ export function createGameMotion(root) {
     if (event.target.classList?.contains('filter-scroll')) syncFilterEdges(event.target);
     if (event.target.classList?.contains('note-grid')) syncNoteFade(event.target);
   }, {capture: true, passive: true});
-  addEventListener('resize', () => {settle(true); root.querySelector('.filter-indicator')?.remove(); placeIndicator(); syncNoteFade(root.querySelector('.note-grid'));}, {passive: true});
+  function refreshLayout() {
+    settle(true);
+    root.querySelector('.filter-indicator')?.remove();
+    placeIndicator();
+    syncNoteFade(root.querySelector('.note-grid'));
+  }
+  addEventListener('resize', refreshLayout, {passive: true});
+  document.fonts.addEventListener('loadingdone', refreshLayout);
   root.addEventListener('pointermove', () => root.classList.remove('motion-no-hover'), {passive: true});
   root.addEventListener('keydown', () => root.classList.remove('motion-no-hover'));
   return {capture, play, reduced: () => reduced.matches};
