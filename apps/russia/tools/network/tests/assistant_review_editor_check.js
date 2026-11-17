@@ -51,17 +51,15 @@ App.state.ltab = 'scenes';
 App.renderPanels = () => App.renderInspector();
 const inspector = elements.get('#inspector');
 const html = () => { App.renderInspector(); return inspector.innerHTML; };
-async function click(action) {
-  await Promise.all(inspector.listeners.click.map(callback => callback({ target: {
-    closest: selector => selector === '[data-act]' ? { dataset: { act: action } } : null,
-  } })));
+async function clickInclusion() {
+  await elements.get('#include-scene').onclick();
 }
 (async () => {
   await App.openScene(stored.id);
-  assert.match(html(), /Подготовлено Codex/);
+  assert.doesNotMatch(html(), /Подготовлено Codex|Ожидает вашего одобрения|Автопилот|Тест в игре/);
   assert.match(elements.get('#status').innerHTML, /на одобрении/, 'the scene header distinguishes pending approval from ordinary drafts');
-  assert.match(html(), /Ожидает вашего одобрения/);
-  assert.match(html(), /data-act="approve-scene"/);
+  assert.equal(elements.get('#include-scene').ariaPressed, 'false');
+  assert.equal(elements.get('#include-scene').hidden, false);
   assert.doesNotMatch(html(), /data-toggle="playable"/, 'assistant approval is a deliberate button, never the ordinary toggle');
   const approvalCalls = () => calls.filter(call => call.path.includes('/include/'));
   App.edit(scene => { scene.questionView = { centre: [2, 4], height: 31 }; }, { rebuild: false });
@@ -70,12 +68,12 @@ async function click(action) {
   assert.equal(stored.assistantReview.status, 'pending');
   assert.deepEqual(stored.questionView, { centre: [2, 4], height: 31 });
   assert.ok(calls.some(call => call.path.includes('/run/')));
-  await click('approve-scene');
+  await clickInclusion();
   assert.equal(approvalCalls().length, 1);
   assert.equal(App.state.S.assistantReview.status, 'approved');
   assert.equal(App.state.S.questionPool, undefined);
-  assert.match(html(), /Одобрено вами · сцена в игре/);
-  assert.match(html(), /data-act="withdraw-approval"/);
+  assert.equal(elements.get('#include-scene').ariaPressed, 'true');
+  assert.doesNotMatch(html(), /data-act="withdraw-approval"/);
   assert.equal(App.state.dirty, false);
   App.undo();
   assert.equal(App.state.S.assistantReview.status, 'approved', 'geometry undo never revokes an approval');
@@ -84,22 +82,22 @@ async function click(action) {
   assert.equal(App.state.S.questionView.height, 31);
   assert.equal(App.state.S.assistantReview.status, 'approved');
   App.edit(scene => { scene.questionView.height = 29; }, { rebuild: false });
-  await click('withdraw-approval');
+  await clickInclusion();
   assert.equal(stored.reviewed, false);
   assert.equal(App.state.S.assistantReview.status, 'pending');
   assert.equal(stored.questionView.height, 29, 'withdraw first saves manual edits and preserves them');
   assert.equal(stored.assistantReview.batch, '2026-10-16-first-12');
-  await click('approve-scene');
+  await clickInclusion();
   assert.equal(stored.reviewed, true);
   assert.equal(stored.questionView.height, 29);
-  await click('withdraw-approval');
+  await clickInclusion();
   const count = approvalCalls().length;
   App.edit(scene => { scene.questionView.height = 27; }, { rebuild: false });
   failSave = true;
-  await click('approve-scene');
+  await clickInclusion();
   assert.equal(approvalCalls().length, count, 'failed save cannot approve stale geometry');
   assert.equal(App.state.dirty, true);
   assert.equal(App.state.including, false, 'failed-save guard unlocks the button for retry');
-  assert.match(html(), /Ожидает вашего одобрения/);
+  assert.equal(elements.get('#include-scene').ariaPressed, 'false');
   console.log('Codex editor: pending manual edits/test, explicit approval/withdraw/reapproval and failed-save guard PASS');
 })().catch(error => { console.error(error); process.exitCode = 1; });

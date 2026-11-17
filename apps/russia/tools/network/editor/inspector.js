@@ -167,9 +167,8 @@
     p.innerHTML = `${head(`<span class="ibadge">${ic("person")}</span>`, "Регулировщик")}
       ${card("", propertyRow("Участники", `<div class="insp-actions">${button("regulator-officer", "Регулировщик", "person", "ghost")}${button("regulator-player", "Игрок", "car", "ghost")}</div>`))}
       ${card("Маршруты", regulatorRouteButtons(s))}
-      <section id="checks" class="card">${sceneChecks()}<div class="insp-actions">${button("regulator-run", "Тест в игре", "play", "ghost")}</div></section>`;
+      <section id="checks" class="card">${sceneChecks()}</section>`;
     bind({
-      "regulator-run": () => App.runInGame(false),
       finding: d => focusFinding(state.findings[Number(d.i)]),
       "regulator-officer": () => s.officers[0] && App.select({t:"officer", id:s.officers[0].id}),
       "regulator-player": () => App.select({t:"stop"}),
@@ -225,8 +224,6 @@
     const edges = state.edges || {};
     const edgeMismatch = Object.values(edges).some(e => e && !(e.connectable ?? e.street));
     const side = (k) => { const e = edges[k]; return e ? ((e.connectable ?? e.street) ? "ok" : "bad") : "none"; };
-    const assistant = s.assistantReview?.author === "codex";
-    const approved = assistant && s.assistantReview.status === "approved" && state.playable;
     const maneuver = chips("maneuver", ["left", "straight", "right", "uturn"].map(k => ({
       value:k, icon:Catalog.EXITS[k].icon, tip:Catalog.EXITS[k].title,
       disabled:k !== "straight" && !routes.includes(k) && !App.hasPlayerPlan(s),
@@ -235,8 +232,6 @@
     const waits = [{value:"", title:"Нет"}, ...[2,5].map(v => ({value:v, title:`${v} с`}))];
     p.innerHTML = `
       ${head(`<span class="ibadge">${ic("map")}</span>`, "Сцена")}
-      ${assistant ? card("Подготовлено Codex", `<p class="assistant-review-status">${approved ? "Одобрено вами · сцена в игре" : "Ожидает вашего одобрения"}</p>${button(approved ? "withdraw-approval" : "approve-scene", approved ? "Снять одобрение и убрать из игры" : "Одобрить и добавить в игру", approved ? "undo" : "check-circle", approved ? "ghost wide" : "primary wide")}`, {cls:"assistant-review-card"})
-        : card("", toggle("playable", "В игре", state.playable, "gamepad"))}
       ${card("", propertyRow("Формат", chips("scene-format", [
         {value:"standard", title:"180 × 180 м", icon:"junction", tip:"Обычная сцена · 180 × 180 м"},
         {value:"compact", title:"90 × 90 м", icon:"road", tip:"Прямая сцена · 90 × 90 м"},
@@ -253,20 +248,14 @@
         + propertyRow("Дороги", `<div class="insp-actions">${button("select-roads", "Все дороги", "road", "ghost") + button("templates", "Шаблоны", "junction", "ghost")}</div>`)
         + propertyRow("Выезды", `<div class="edges"><span class="edge-box" aria-hidden="true"><i class="e-n ${side("n")}"></i><i class="e-s ${side("s")}"></i><i class="e-e ${side("e")}"></i><i class="e-w ${side("w")}"></i>${ic("junction")}</span>
           <span class="${edgeMismatch ? "warn" : ""}">${edgeMismatch ? "Разная ширина" : Object.values(edges).filter(Boolean).length}</span></div>`), {cls:"property-fields"})}
-      <section class="card" id="checks">${sceneChecks()}
-        <div class="insp-actions">${button("run","Тест в игре","play","ghost")}${button("run-auto","Автопилот","car","ghost")}</div></section>`;
+      <section class="card" id="checks">${sceneChecks()}</section>`;
     Thumbs.fillAll(p);
     bind({
       ...selectionHandlers,
-      "toggle:playable": (on) => App.setPlayable(on),
-      "approve-scene": () => App.setPlayable(true),
-      "withdraw-approval": () => App.setPlayable(false),
       "chip:scene-format": value => {
         if ((value === "compact" ? 45 : 90) !== Number(state.S.crop || 90)) return Tools.applySceneFormat(value);
       },
       ...playerGuideHandlers,
-      run: () => App.runInGame(false),
-      "run-auto": () => App.runInGame(true),
       "chip:maneuver": (v) => App.edit((sc) => { sc.question.maneuver = v; sc.spec = { ...(sc.spec || {}), maneuver: v }; }),
       "chip:lane": (v) => App.edit((sc) => {
         const pl = Layout.playerPlan(sc);

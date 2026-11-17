@@ -158,7 +158,7 @@ const Framing = (() => {
     if (e.target.closest("[data-pin]")) { pin(true); $("#lightbox").hidden = true; return; }
     if (e.target.closest("[data-close]") || e.target.id === "lightbox") $("#lightbox").hidden = true;
   });
-  // A pinned photo floats over the view: drag it by its top, resize it by its corner.
+  // Drag the photo to move the panel; a click opens the full image.
   let pinned = false, showQuestion = false, showComment = false;
   function pin(on) {
     pinned = on;
@@ -169,39 +169,41 @@ const Framing = (() => {
     if (el.hidden) return;
     const source = state.source, q = state.S?.question || {}, ru = q.text?.ru || {};
     const answers = source ? source.answers.map(a => a.text) : ru.options || [];
-    el.innerHTML = `<div class="refpic-head"><span>Оригинал билета</span>${src ? `<button class="icon-btn" data-big aria-label="Увеличить оригинал">${ic("fit")}</button>` : ""}<button class="icon-btn" data-collapse aria-label="Закрыть оригинал">${ic("x")}</button></div>
-      ${src ? `<img data-photo src="${esc(src)}" alt="">` : ""}
+    el.innerHTML = `<div class="refpic-image">${src ? `<img data-photo src="${esc(src)}" alt="" draggable="false">` : ""}<button class="icon-btn refpic-close" data-collapse aria-label="Закрыть оригинал">${ic("x")}</button></div>
       <div class="ref-controls"><button class="btn ghost small" data-question aria-pressed="${showQuestion}">Вопрос и ответы</button><button class="btn ghost small" data-comment aria-pressed="${showComment}">Комментарий</button></div>
       <div class="refpic-body">${showQuestion ? `<p class="qtext">${esc(source ? source.question : ru.title || "")}</p><div class="answers">${answers.map((a, i) => `<button class="answer ${q.correct === i ? "on" : ""}" data-correct="${i}"><i>${i + 1}</i><span>${esc(a)}</span></button>`).join("")}</div>` : ""}${showComment ? `<p class="comment">${esc(source?.comment || "Комментарий отсутствует")}</p>` : ""}</div>`;
   }
   (() => {
     const el = $("#refpic");
-    let drag = null;
+    let drag = null, moved = false;
     el.addEventListener("error", (e) => {
       if (!e.target.matches("[data-photo]")) return;
       e.target.remove();
-      el.querySelector("[data-big]")?.remove();
     }, true);
     el.addEventListener("click", (e) => {
+      if (moved) { moved = false; return; }
       if (e.target.closest("[data-collapse]")) { pin(false); $("#reference-toggle").focus(); }
       else if (e.target.closest("[data-question]")) { showQuestion = !showQuestion; pin(pinned); }
       else if (e.target.closest("[data-comment]")) { showComment = !showComment; pin(pinned); }
-      else if (e.target.closest("[data-big], [data-photo]")) openPhoto();
+      else if (e.target.closest("[data-photo]")) openPhoto();
       else if (e.target.closest("[data-correct]")) App.edit(s => { s.question.correct = Number(e.target.closest("[data-correct]").dataset.correct); });
     });
     el.addEventListener("pointerdown", (e) => {
-      if (e.target.closest("button") || e.target.closest("[data-photo]")) return;
-      if (e.target.closest("[data-big]")) { openPhoto(); return; }
-      if (!e.target.closest(".refpic-head")) return;
-      drag = { x: e.clientX - el.offsetLeft, y: e.clientY - el.offsetTop };
-      el.setPointerCapture(e.pointerId);
+      if (e.button !== 0 || e.target.closest("button") || !e.target.closest(".refpic-image")) return;
+      moved = false;
+      drag = { x: e.clientX - el.offsetLeft, y: e.clientY - el.offsetTop, startX: e.clientX, startY: e.clientY };
     });
     el.addEventListener("pointermove", (e) => {
       if (!drag) return;
+      if (!moved && Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < 4) return;
+      moved = true;
+      el.setPointerCapture(e.pointerId);
       const stage = el.parentElement;
       el.style.left = Math.max(0, Math.min(stage.clientWidth - el.offsetWidth, e.clientX - drag.x)) + "px";
       el.style.top = Math.max(0, Math.min(stage.clientHeight - el.offsetHeight, e.clientY - drag.y)) + "px";
     });
+    el.addEventListener("pointerup", () => { drag = null; });
+    el.addEventListener("pointercancel", () => { drag = null; moved = false; });
     el.addEventListener("lostpointercapture", () => { drag = null; });
     const clampToStage = () => {
       if (el.hidden) return;

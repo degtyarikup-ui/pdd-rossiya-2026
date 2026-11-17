@@ -455,9 +455,9 @@ body.framing .left, body.framing .right, body.framing .top-actions { visibility:
 .lightbox-bar { display: flex; gap: 8px; }
 .refpic { position: absolute; left: 16px; top: 60px; width: 300px; min-width: 160px; z-index: 6; border-radius: 12px; background: #fff; box-shadow: var(--float); overflow: hidden; resize: horizontal; }
 .refpic img { display: block; width: 100%; }
-.refpic-head { display: flex; align-items: center; gap: 2px; padding: 2px 4px 2px 10px; cursor: grab; font-size: 12px; font-weight: 600; color: var(--ink-2); }
-.refpic-head span { flex: 1; }
-.refpic-head .icon-btn { width: 26px; height: 26px; }
+.refpic-image { position: relative; min-height: 38px; cursor: grab; touch-action: none; }
+.refpic-close { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; color: #fff; background: rgba(28, 37, 45, .8); }
+.refpic-close:hover { background: #1c252d; }
 .ticket-pic { cursor: zoom-in; }
 .lib-icon { display: grid; place-items: center; width: 64px; height: 56px; color: #1f2a44; }
 .lib-icon .i { width: 34px; height: 34px; }
@@ -481,10 +481,7 @@ body.framing .left, body.framing .right, body.framing .top-actions { visibility:
 
 .hint { display: none !important; }
 .refpic { top: 12px; max-width: calc(100% - 32px); max-height: calc(100% - 90px); overflow: auto; }
-.refpic-head { position: sticky; top: 0; background: white; z-index: 1; }
 .refpic-body { padding: 0 10px 10px; }
-.refpic.collapsed { resize: none; }
-.refpic.collapsed > :not(.refpic-head) { display: none; }
 .refpic .ref-controls { display: flex; gap: 6px; padding: 6px; }
 
 /* Question backlog and the first-pass Yes / No workspace. */
@@ -625,10 +622,6 @@ button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); 
 .home-scene-navigation { display: flex; align-items: flex-end; gap: 18px; margin: 0 0 18px; }
 .home-scene-navigation .scene-sections { display: flex; flex-wrap: wrap; }
 .home-scene-navigation .scene-status-filter { width: 220px; }
-.assistant-review-card { border-color: var(--accent); background: var(--accent-soft); }
-.assistant-review-status { font-weight: 600; color: var(--accent); margin: 0 0 8px; }
-.assistant-review-help { color: var(--ink-2); font-size: 12px; line-height: 1.5; margin: 0 0 12px; }
-.assistant-review-card .btn { height: auto; min-height: 36px; white-space: normal; padding: 8px 10px; text-align: center; }
 /* End Codex approval navigation. */
 
 /* One answer tool: a clear choice of object, then only its relevant settings. */

@@ -565,6 +565,7 @@ const App = (() => {
     if (!state.S || state.including || state.deleting?.includes(state.id)) return;
     const sid = state.id, request = openRequest;
     state.including = true;
+    renderTop();
     try {
       if (state.dirty || state.virtual || saving) { await save(); if (state.dirty || state.virtual) return; }
       if (state.id !== sid || openRequest !== request) return;
@@ -997,6 +998,14 @@ const App = (() => {
     $("#undo").disabled = !state.undo.length;
     $("#redo").disabled = !state.redo.length;
     $("#play").disabled = !s;
+    const include = $("#include-scene");
+    include.hidden = !s || state.id === "mini_regulator";
+    include.disabled = !s || !!state.including || !!state.deleting?.includes(state.id);
+    include.className = "btn " + (state.playable ? "on" : "primary");
+    include.ariaPressed = String(state.playable);
+    include.ariaLabel = state.playable ? "Убрать сцену из игры" : "В игру";
+    include.dataset.tip = state.playable ? "Убрать сцену из игры" : "Добавить сцену в игру";
+    include.onclick = () => setPlayable(!state.playable);
     App.updateWorkspaceStatus?.();
     document.title = s ? `${state.dirty ? "• " : ""}${sceneTitle(state.id)} — Редактор сцен` : "Редактор сцен";
   }
