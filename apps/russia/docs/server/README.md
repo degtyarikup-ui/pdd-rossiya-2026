@@ -28,6 +28,7 @@
 | Буфер статистики | `stats_buffer.js` |
 | Аналитика | `analytics_*.js`, `usage_analytics.js`, `premium_analytics.js`, `attribution.js` |
 | Обновления и уведомления | `app_updates.js`, `notifications.js`, `notification_identity.js` |
+| Отзывы сторов | `store_reviews.js`, `review_stores.js`: [подключение и ответы](store-reviews.md) |
 | Telegram и диагностика | `diagnostics.js`, `incident_copy.js`, `telegram_queue.js`, `telegram_topics.js`, `telegram_export.js` |
 | Публикации | `publications_data.js`, `social.js`, `social_guard.js` (`SocialPublisher`), `threads.js` |
 | Поддержка и задачи | `support_*.js`, `tasks_admin.js` |

@@ -1,3 +1,4 @@
+import { handleStoreReviewUpdate } from './store_reviews.js';
 import { diagnosticNotificationPolicy } from './diagnostic_context.js';
 import { diagnosticSignal, trackSignal, buildSpikeMessage, buildSignalDigest, SIGNAL_REASONS } from './diagnostic_signal.js';
 import { incidentGuide } from './incident_copy.js';
@@ -277,14 +278,15 @@ export class TelegramQueue {
       const offset = (await this.state.storage.get('tg:offset')) || 0;
       const response = await fetch(`https://api.telegram.org/bot${this.env.BOT_TOKEN}/getUpdates`, {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ offset, timeout: 0, limit: 50, allowed_updates: ['message'] }),
+        body: JSON.stringify({ offset, timeout: 0, limit: 50, allowed_updates: ['message', 'callback_query'] }),
         signal: AbortSignal.timeout(10000),
       });
       const result = await response.json().catch(() => null);
       if (!response.ok || !result?.ok || !Array.isArray(result.result)) return { ok: false, status: response.status };
       let handled = 0;
       for (const update of result.result) {
-        if (await this.handleExportUpdate(update)) handled++;
+        if (await handleStoreReviewUpdate(update, this.env)) handled++;
+        else if (await this.handleExportUpdate(update)) handled++;
         else await processTelegramMessageUpdate(update.message, this.env);
         // A failed export leaves the offset unchanged so the command can retry.
         await this.state.storage.put('tg:offset', update.update_id + 1);

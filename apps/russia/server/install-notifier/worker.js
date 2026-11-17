@@ -1,3 +1,5 @@
+import { pollStoreReviews, storeReviewsAdmin } from './store_reviews.js';
+export { StoreReviews } from './store_reviews.js';
 import { PROMOCODES_NAV_HTML, PROMOCODES_VIEW_HTML, PROMOCODES_CLIENT_JS } from './promocodes_ui.js';
 import { secureResponse } from './security_headers.js';
 import { rankedRequest } from './ranked_runs.js';
@@ -1014,6 +1016,7 @@ function buildReviewMessage(store, storeIcon, r) {
 
 /// Проверяет новые отзывы и шлёт их в чат. Дедуп — по ключу в KV.
 async function pollReviews(env) {
+  if (env.STORE_REVIEWS_ENABLED) return pollStoreReviews(env);
   if (!env.INSTALLS) return;
   let html;
   try {
@@ -3820,6 +3823,11 @@ const workerHandlers = {
       const queued = await sendDailyReport(env);
       return jsonResponse({ ok: queued.ok }, queued.ok ? 200 : 502);
     }
+    if (url.pathname.startsWith('/api/admin/reviews/') && ['GET', 'POST'].includes(request.method)) {
+      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
+      const action = url.pathname.split('/').pop();
+      if ((action === 'status' && request.method === 'GET') || (['setup', 'poll'].includes(action) && request.method === 'POST')) return storeReviewsAdmin(request, env, action);
+    }
     if (url.pathname === '/api/admin/reviews/check' && request.method === 'POST') {
       if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
       await pollReviews(env); return jsonResponse({ ok: true });
@@ -4313,6 +4321,7 @@ const workerHandlers = {
     // Триггер автопостинга: проверяет расписание и продолжает оборвавшиеся
     // публикации (у Instagram уходит несколько минут только на кодирование).
     if (event.cron === HOURLY_CRON) {
+      if (env.STORE_REVIEWS_ENABLED) ctx.waitUntil(cronTask('reviews', pollStoreReviews(env)));
       // Keep fresh public signing keys available across isolates before login.
       ctx.waitUntil(cronTask('provider_keys', refreshProviderKeyCaches(env).then(results => {
         for (const [provider, result] of Object.entries(results)) {

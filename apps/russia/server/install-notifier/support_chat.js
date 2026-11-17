@@ -1,3 +1,4 @@
+import { handleStoreReviewUpdate } from './store_reviews.js';
 import { supportIdentity, supportImageUrl } from './support_access.js';
 import { boundedJson, abuseBudget, HttpFailure } from './request_security.js';
 // Чат техподдержки: создание отдельной ветки (Forum Topic) в Telegram на каждого
@@ -397,7 +398,7 @@ async function checkPendingTelegramUpdates(env) {
     const resp = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/getUpdates`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ offset, timeout: 0, limit: 20, allowed_updates: ['message'] }),
+      body: JSON.stringify({ offset, timeout: 0, limit: 20, allowed_updates: ['message', 'callback_query'] }),
       signal: AbortSignal.timeout(5000),
     });
 
@@ -414,6 +415,7 @@ async function checkPendingTelegramUpdates(env) {
       let maxId = offset;
       for (const update of data.result) {
         if (update.update_id >= maxId) maxId = update.update_id + 1;
+        if (await handleStoreReviewUpdate(update, env)) continue;
         if (update.message) {
           await processTelegramMessageUpdate(update.message, env);
         }
@@ -631,6 +633,7 @@ export async function handleTelegramWebhook(request, env) {
     await env.INSTALLS.put('tg:webhook_active', '1', { expirationTtl: 86400 });
   }
 
+  if (await handleStoreReviewUpdate(update, env)) return jsonResponse({ ok: true });
   if (update?.message) {
     const verified = await telegramWebhookVerified(request, env);
     if (verified && await handleErrorExportUpdate(env, update)) return jsonResponse({ ok: true });
@@ -656,7 +659,7 @@ export async function handleSupportSetupWebhook(request, env) {
   const resp = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/setWebhook`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ url: webhookUrl, allowed_updates: ['message'], secret_token: await telegramWebhookSecret(env) || undefined }),
+    body: JSON.stringify({ url: webhookUrl, allowed_updates: ['message', 'callback_query'], secret_token: await telegramWebhookSecret(env) || undefined }),
     signal: AbortSignal.timeout(10000),
   });
 

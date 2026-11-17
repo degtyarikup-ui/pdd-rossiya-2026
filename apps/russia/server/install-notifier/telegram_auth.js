@@ -120,7 +120,7 @@ async function ensureWebhookSecret(request, env) {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       url: `https://${new URL(request.url).host}/api/telegram/webhook`,
-      allowed_updates: ['message'],
+      allowed_updates: ['message', 'callback_query'],
       secret_token: secret,
     }),
     signal: AbortSignal.timeout(8000),
