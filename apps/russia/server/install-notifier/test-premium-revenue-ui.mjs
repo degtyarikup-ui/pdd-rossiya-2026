@@ -7,6 +7,10 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import worker from './worker.js';
 import { userSummary } from './user_store.js';
+import { premiumRevenueInUsd } from './premium_revenue_usd.js';
+
+const FX={source:'CBR',rubPerUsd:80,rubPerUnit:{RUB:1,USD:80,EUR:100,KZT:0.2}};
+const withUsd=(data,fx=FX)=>data.available?{...data,usd:premiumRevenueInUsd(data,fx)}:data;
 
 class MemoryKV {
  constructor(){this.store=new Map();this.metadata=new Map();}
@@ -49,7 +53,7 @@ async function preview(){
    if(url.pathname.startsWith('/api/admin/'))headers.set('authorization',`Bearer ${env.ADMIN_PASSWORD}`);
    const response=await worker.fetch(new Request(url,{headers}),env,{waitUntil(p){p.catch(()=>{});}});
    if(url.pathname==='/api/admin/stats'&&response.ok){
-    const data=await response.json();data.premiumPurchases=revenueFixture(Number(url.searchParams.get('days'))||7);
+    const data=await response.json();data.premiumPurchases=withUsd(revenueFixture(Number(url.searchParams.get('days'))||7));
     outgoing.writeHead(200,{'content-type':'application/json'});outgoing.end(JSON.stringify(data));return;
    }
    outgoing.writeHead(response.status,Object.fromEntries(response.headers));outgoing.end(Buffer.from(await response.arrayBuffer()));
@@ -60,7 +64,7 @@ async function preview(){
 }
 const compact=value=>value.replace(/\s/g,'');
 
-test('premium purchases retain daily, currency and incomplete-history meaning across controls and viewport sizes',{timeout:90000},async()=>{
+test('premium revenue combines currencies in USD with four metrics and logos across periods and viewport sizes',{timeout:90000},async()=>{
  const{chromium}=createRequire(import.meta.url)('playwright');
  const app=await preview(),browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
  try{
@@ -75,41 +79,31 @@ test('premium purchases retain daily, currency and incomplete-history meaning ac
   await page.goto(app.url+'/admin#analytics');
   await page.waitForFunction(()=>window.__anData?.premiumPurchases?.available);
   const card=page.locator('#an-premium'),summary=page.locator('#an-premium-summary'),chart=page.locator('#an-premium-chart');
-  const render=data=>page.evaluate(premiumPurchases=>{window.__anData={...window.__anData,premiumPurchases};anRenderPremium(window.__anData);},data);
+  const render=(data,fx=FX)=>page.evaluate(premiumPurchases=>{window.__anData={...window.__anData,premiumPurchases};anRenderPremium(window.__anData);},withUsd(data,fx));
   assert.equal(await card.locator('.an-fold').getAttribute('aria-expanded'),'true');
-  assert.equal(await summary.locator(':scope>span').count(),3,'only three headline metrics');
-  assert.match(compact(await summary.innerText()),/389₽/);
-  assert.match(compact(await summary.innerText()),/194,5₽/,'average check uses purchases priced in selected currency');
+  assert.equal(await summary.locator(':scope>span').count(),4,'revenue, purchases, average check and daily average');
+  assert.match(compact(await summary.innerText()),/Выручказапериод9,85\$/);
+  assert.match(compact(await summary.innerText()),/Среднийчек3,28\$/,'average check combines all priced currencies');
+  assert.match(compact(await summary.innerText()),/Всреднемзадень1,41\$/,'daily average includes zero-purchase days');
   assert.match(await summary.innerText(),/Покупки\s*4/);
   assert.equal(await summary.locator('b').first().evaluate(el=>getComputedStyle(el).color),'rgb(255, 122, 0)','Premium headline is orange');
   assert.equal(await chart.locator('.an-premium-line').count(),1,'daily revenue is a single line');
   assert.equal(await chart.locator('.an-premium-line').getAttribute('stroke'),'#FF7A00');
   assert.equal(await chart.locator('.an-premium-area').count(),1,'line retains a soft area fill');
   assert.equal(await chart.locator('[data-premium-dot]').count(),7,'each recorded day has a point');
-  assert.match(await page.locator('#an-premium-coverage').innerText(),/Без суммы:\s*1/);
+  assert.equal(await card.locator('#an-premium-coverage,#an-details-premium-values,.an-help').count(),0,'no footer table, history caption or info badge');
   assert.equal(await card.locator('.an-card').count(),0,'no cards inside the card');
-  await page.locator('#an-premium-currencies').selectOption('USD');
-  assert.match(compact(await summary.innerText()),/4,99/);
-  assert.match(await summary.innerText(),/Покупки\s*4/,'currency selection never changes purchase count');
-  assert.doesNotMatch(compact(await summary.innerText()),/389/);
-  assert.match(compact(await page.locator('#an-premium-sources .an-premium-source').filter({hasText:'СБП'}).locator('b').innerText()),/^0/,'known purchases in a different currency show zero for selected currency');
-  await page.locator('#an-premium-currencies').selectOption('RUB');
+  assert.equal(await card.locator('select,[data-premium-mode],#an-premium-modes').count(),0,'no currency or chart-mode controls');
+  assert.equal(await page.locator('#an-premium-sources .an-logo svg').count(),3,'SBP, App Store and Google Play use shared brand logos');
+  assert.match(compact(await page.locator('#an-premium-sources .an-premium-source').filter({hasText:'СБП'}).locator('b').innerText()),/4,86\$/);
   const last=(await chart.locator('rect[data-i]').count())-1;
   await chart.locator(`rect[data-i="${last}"]`).hover();
-  assert.match(compact(await page.locator('#an-tip').innerText()),/389₽/);
+  assert.match(compact(await page.locator('#an-tip').innerText()),/9,85\$/);
   assert.equal(await chart.getAttribute('data-active-point'),String(last),'hover selects a daily point');
   assert.equal(await chart.locator('[data-premium-marker]').getAttribute('visibility'),'visible');
   assert.match(await page.locator('#an-tip').innerText(),/СБП/,'selected day includes its payment methods');
   assert.match(await page.locator('#an-premium-sources').innerText(),/СБП/);
-  await page.locator('[data-premium-mode="purchases"]').click();
-  assert.equal(await page.locator('[data-premium-mode="purchases"]').getAttribute('aria-pressed'),'true');
-  await chart.locator(`rect[data-i="${last}"]`).hover();
-  assert.match(await page.locator('#an-premium-sources').innerText(),/Google Play\s*1/,'unknown amounts remain visible in purchase counts');
   assert.match(await page.locator('#an-tip').innerText(),/Покупки\s*4/);
-  await page.locator('[data-premium-mode="revenue"]').click();
-  await page.locator('#an-details-premium-values>summary').click();
-  assert.equal(await page.locator('#an-premium-days tbody tr').count(),7);
-  await page.locator('#an-details-premium-values>summary').click();
 
   for(const period of [1,7,30,90]){
    await page.locator(`#period-buttons [data-days="${period}"]`).click();
@@ -117,6 +111,7 @@ test('premium purchases retain daily, currency and incomplete-history meaning ac
    assert.equal(await chart.locator('[data-premium-point]').count(),period,'all '+period+' days retain individual daily points');
    assert.equal(await chart.locator('[data-premium-dot]').count(),period);
    assert.match(await summary.innerText(),/Покупки\s*4/);
+   assert.equal(compact(await summary.locator('b').nth(3).innerText()),compact(new Intl.NumberFormat('ru-RU',{style:'currency',currency:'USD'}).format(Math.round(985/period)/100)));
   }
   await chart.locator('svg').focus();
   await page.keyboard.press('Home');
@@ -155,8 +150,7 @@ test('premium purchases retain daily, currency and incomplete-history meaning ac
 
   const incomplete=revenueFixture(7);incomplete.coverage.unverifiedPurchases=3;
   await render(incomplete);
-  assert.match(await page.locator('#an-premium-coverage').innerText(),/Без суммы:\s*1.*Неполная история/);
-  assert.match(await page.locator('#an-premium-coverage').getAttribute('title'),/3/);
+  assert.doesNotMatch(await card.innerText(),/Неполная история/);
   assert.match(await summary.innerText(),/Покупки\s*4/,'unverified history is not counted as paid purchases');
 
   const gap=screenshotFixture();
@@ -176,23 +170,23 @@ test('premium purchases retain daily, currency and incomplete-history meaning ac
   assert.match(await summary.innerText(),/Выручка за период\s*—/);
   assert.match(await summary.innerText(),/Покупки\s*1/);
   assert.match(await chart.innerText(),/Суммы покупок не сохранены/);
-  await page.locator('[data-premium-mode="purchases"]').click();
-  assert.equal(await chart.locator('rect[data-i]').count(),7);
-  await page.locator('[data-premium-mode="revenue"]').click();
+  assert.match(await summary.innerText(),/В среднем за день\s*—/,'unknown amounts cannot imply zero daily revenue');
   const empty=revenueFixture(7);empty.totals=metrics();empty.methods=[];empty.currencies=[];
   for(const day of empty.timeline)Object.assign(day,metrics(),{methods:[]});
   await render(empty);
-  assert.match(compact(await summary.innerText()),/Выручказапериод0₽/,'observed no purchases is a real zero');
+  assert.match(compact(await summary.innerText()),/Выручказапериод0,00\$/,'observed no purchases is a real zero');
   assert.match(await chart.innerText(),/нет покупок|Покупок.*нет/i);
   empty.coverage={missingDates:2};
   await render(empty);
-  assert.match(await page.locator('#an-premium-coverage').innerText(),/Неполная история/);
-  assert.match(await page.locator('#an-premium-coverage').getAttribute('title'),/Без даты подтверждения: 2/);
   assert.match(await summary.innerText(),/Выручка за период\s*—/,'missing-date purchases cannot imply zero revenue');
-  assert.match(await chart.innerText(),/История покупок неполная/);
+  assert.match(await chart.innerText(),/Нет подтверждённых сумм за период/);
+  await render(revenueFixture(7),null);
+  assert.match(await chart.innerText(),/курс валют/,'FX failure does not silently omit non-USD sales');
+  assert.match(await summary.innerText(),/Покупки\s*4/);
+  assert.match(await summary.innerText(),/Выручка за период\s*—/);
   await render({available:false});
   assert.match(await chart.innerText(),/недоступ/i,'unavailable is distinct from no purchases');
-  assert.doesNotMatch(compact(await summary.innerText()),/0₽/);
+  assert.doesNotMatch(compact(await summary.innerText()),/0,00\$/);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await app.close();}
 });

@@ -48,10 +48,7 @@ test('account acquisition renders cohorts, missing evidence, article/campaign de
         await mkdir(new URL('../../output/acquisition-ui/', import.meta.url), { recursive: true });
         await page.locator('#an-acquisition').screenshot({ path: fileURLToPath(new URL('../../output/acquisition-ui/' + width + '.png', import.meta.url)) });
       }
-      await page.locator('#an-acquisition .an-help > summary').click();
-      const help = await page.locator('#an-acquisition .an-help > div').boundingBox();
-      assert.ok(help.x >= 0 && help.x + help.width <= width, 'help fits ' + width);
-      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#an-acquisition .an-help').count(), 0, 'no info badge at ' + width);
     }
     await page.locator('#uv-search').fill('google');
     await page.waitForFunction(() => uvState.query === 'google');

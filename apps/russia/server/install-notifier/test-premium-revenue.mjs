@@ -15,7 +15,9 @@ class MemoryKV {
     return { keys: keys.slice(start, start + limit).map(name => ({ name })), list_complete: start + limit >= keys.length, cursor: String(start + limit) };
   }
 }
-const env = () => ({ INSTALLS: new MemoryKV() });
+const FX = { source: 'CBR', rubPerUsd: 80, rubPerUnit: { RUB: 1, USD: 80, EUR: 100, GBP: 120, KZT: 0.2 },
+  effectiveDate: '2026-11-17', requestedDay: '2026-11-17', checkedAt: new Date(NOW).toISOString() };
+const env = () => { const INSTALLS = new MemoryKV(); INSTALLS.data.set('economy_fx_usd_v1', JSON.stringify(FX)); return { INSTALLS }; };
 const days = (data = {}) => ['2026-11-15', '2026-11-16', '2026-11-17'].map(date => ({ date, data: data[date] ?? null }));
 const order = async (e, id, values = {}) => e.INSTALLS.put('pay_order:' + id, JSON.stringify({ orderId: id, txId: id, app: 'ru', status: 'confirmed', amount: 99, currency: 'RUB', confirmedAt: '2026-11-17T12:00:00Z', ...values }));
 const snapshot = async (e, data = days(), app = 'all') => {
@@ -294,4 +296,39 @@ test('Google durable revenue effects retry missing metadata and fingerprint the 
     await executeAccountEffect(effect, e);
     assert.equal(accepted[4].revenue.refunded, true, 'known refunded status does not require a positive amount');
   } finally { globalThis.fetch = originalFetch; }
+});
+
+test('USD view combines native dollars, rubles and other currencies at the Economy rate with reconciled cents', async () => {
+  const e = env();
+  await order(e, 'weekly', { amount: 99 });
+  await order(e, 'quarter', { amount: 290 });
+  await restore(e, [
+    await transaction('appstore', 'dollars', { money: { currency: 'USD', milliunits: 4990 } }),
+    await transaction('appstore', 'euros', { money: { currency: 'EUR', milliunits: 2990 } }),
+    await transaction('googleplay', 'tenge', { money: { currency: 'KZT', milliunits: 1790000 } }),
+  ]);
+  const { usd } = await snapshot(e);
+  assert.equal(usd.available, true);
+  assert.equal(usd.totals.amountCents, 124 + 363 + 499 + 374 + 448, 'each receipt rounds once to cents');
+  assert.equal(usd.methods.find(row => row.key === 'appstore').amountCents, 499 + 374, 'USD never round-trips through RUB');
+  assert.equal(usd.totals.purchases, 5);
+  assert.equal(usd.totals.averageCheckCents, Math.round(1808 / 5));
+  assert.equal(usd.totals.averageDailyCents, Math.round(1808 / 3), 'all selected calendar days count');
+  assert.equal(usd.timeline.reduce((sum, row) => sum + row.amountCents, 0), usd.totals.amountCents);
+  assert.equal(usd.methods.reduce((sum, row) => sum + row.amountCents, 0), usd.totals.amountCents);
+  assert.equal(usd.fx.rubPerUsd, 80);
+});
+
+test('missing conversion rates never understate dollar totals, while native USD needs no FX request', async () => {
+  const e = env();
+  await restore(e, [await transaction('appstore', 'unsupported', { money: { currency: 'XYZ', milliunits: 2990 } })]);
+  const missing = (await snapshot(e)).usd;
+  assert.equal(missing.available, false);
+  assert.equal(missing.totals.amountCents, null);
+  assert.equal(missing.totals.averageDailyCents, null);
+  const direct = env();
+  await restore(direct, [await transaction('appstore', 'dollars')]);
+  const originalGet = direct.INSTALLS.get.bind(direct.INSTALLS);
+  direct.INSTALLS.get = key => { assert.notEqual(key, 'economy_fx_usd_v1'); return originalGet(key); };
+  assert.equal((await snapshot(direct)).usd.totals.amountCents, 199);
 });

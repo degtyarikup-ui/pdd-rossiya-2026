@@ -1,6 +1,7 @@
 import { mapAdminReads } from './admin_reads.js';
 import { isTestOrder } from './economy_admin.js';
 import { isPaidPremiumEvent, premiumEventSource, validPremiumMoney } from './premium_analytics.js';
+import { premiumUsdSnapshot } from './premium_revenue_usd.js';
 
 const METHOD_LABELS = { web: 'СБП', appstore: 'App Store', googleplay: 'Google Play', rustore: 'RuStore', unknown: 'Способ не записан' };
 const moscowDay = timestamp => new Date(timestamp + 3 * 3600000).toISOString().slice(0, 10);
@@ -113,6 +114,7 @@ export async function premiumRevenueSnapshot(env, days, app = 'all', now = Date.
   const rows = new Map(days.map(({ date }) => [date, { date, ...metrics(), methods: new Map() }]));
   const totals = metrics();
   const methods = new Map();
+  const sales = [];
   const seen = new Set();
   const webHistory = new Map();
   const coverage = { unverifiedPurchases: 0, missingDates: 0 };
@@ -128,6 +130,7 @@ export async function premiumRevenueSnapshot(env, days, app = 'all', now = Date.
     for (const transaction of Object.values(aggregate.transactions || {})) ingestTransaction(transaction);
   }
   const addSale = (row, key, sale) => {
+    sales.push({ date: row.date, key, sale });
     const method = row.methods.get(key) || { key, label: METHOD_LABELS[key], ...metrics() };
     add(method, sale); row.methods.set(key, method); add(row, sale);
   };
@@ -204,7 +207,8 @@ export async function premiumRevenueSnapshot(env, days, app = 'all', now = Date.
   }
   const currencies = [...new Set([...Object.keys(totals.amounts), ...Object.keys(totals.pricedPurchases)])]
     .sort((a, b) => a === 'RUB' ? -1 : b === 'RUB' ? 1 : a.localeCompare(b));
-  return { available: true, timeZone: 'Europe/Moscow', totals, currencies: currencies.length ? currencies : ['RUB'],
+  const snapshot = { available: true, timeZone: 'Europe/Moscow', totals, currencies: currencies.length ? currencies : ['RUB'],
     timeline: [...rows.values()].map(row => ({ ...row, methods: [...row.methods.values()] })),
     methods: [...methods.values()], coverage };
+  return { ...snapshot, usd: await premiumUsdSnapshot(env, snapshot, sales, now) };
 }

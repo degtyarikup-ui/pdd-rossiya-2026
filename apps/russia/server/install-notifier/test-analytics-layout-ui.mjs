@@ -351,11 +351,7 @@ if(process.argv.includes('--serve')) {
     assert.equal(value.background,'rgba(0, 0, 0, 0)','KPI values have no image placeholder background at '+width);
     assert.equal(value.aspectRatio,'auto','KPI height follows its text at '+width);
    }
-   await page.locator('#an-auth .an-help>summary').click();
-   const help=await page.locator('#an-auth .an-help>div').boundingBox();
-   assert.ok(help.x>=0&&help.x+help.width<=width,'help stays on screen');
-   await page.keyboard.press('Escape');
-   assert.equal(await page.locator('#an-auth .an-help').evaluate(el=>el.open),false);
+   assert.equal(await page.locator('#analytics-view .an-help').count(),0,'analytics has no info badges');
    if(process.env.ANALYTICS_UI_SCREENSHOTS){
     await page.evaluate(()=>{document.activeElement?.blur();window.scrollTo(0,0);});
     await mkdir(new URL('../../output/analytics-layout/',import.meta.url),{recursive:true});
