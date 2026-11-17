@@ -473,10 +473,11 @@
       4.6
      ]
     ],
+    "car_model": "sedan",
     "hazard": false
    },
-   "halfLength": 2.19,
-   "halfWidth": 1.023,
+   "halfLength": 2.1,
+   "halfWidth": 0.9,
    "badge": {
     "text": {
      "ru": "Авто",
@@ -528,6 +529,7 @@
    "way": "straight",
    "driverSignal": "none",
    "turnSignal": "off",
+   "carModel": "sedan",
    "hazards": false
   },
   {
@@ -557,10 +559,11 @@
       9.3
      ]
     ],
+    "car_model": "hatch",
     "hazard": false
    },
-   "halfLength": 2.19,
-   "halfWidth": 1.023,
+   "halfLength": 1.75,
+   "halfWidth": 0.86,
    "badge": {
     "text": {
      "ru": "Авто",
@@ -612,6 +615,7 @@
    "way": "straight",
    "driverSignal": "none",
    "turnSignal": "off",
+   "carModel": "hatch",
    "hazards": false
   },
   {
@@ -641,10 +645,11 @@
       14.0
      ]
     ],
+    "car_model": "wagon",
     "hazard": false
    },
-   "halfLength": 2.19,
-   "halfWidth": 1.023,
+   "halfLength": 2.25,
+   "halfWidth": 0.9,
    "badge": {
     "text": {
      "ru": "Авто",
@@ -696,6 +701,7 @@
    "way": "straight",
    "driverSignal": "none",
    "turnSignal": "off",
+   "carModel": "wagon",
    "hazards": false
   }
  ],

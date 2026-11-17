@@ -1,0 +1,315 @@
+{
+ "schema": 1,
+ "date": "2026-11-17",
+ "scope": "Owner feedback on recent 58 scenes; preserves current edits and approval states.",
+ "checked": 58,
+ "changed": 27,
+ "movingActorsChecked": 34,
+ "correctAndWrongAnswerSequenceTests": 99,
+ "unrelatedJsonChanges": [],
+ "unchangedOwnerParking": "ticket_6_4",
+ "ownerRoadAndCameraPreserved": "ticket_9_2",
+ "changedScenes": [
+  "ticket_12_8",
+  "ticket_9_12",
+  "ticket_6_8",
+  "ticket_19_11",
+  "ticket_13_1",
+  "ticket_31_7",
+  "ticket_34_8",
+  "ticket_8_12",
+  "ticket_34_11",
+  "ticket_26_16",
+  "ticket_33_1",
+  "ticket_8_2",
+  "ticket_6_3",
+  "ticket_4_3",
+  "ticket_30_12",
+  "ticket_13_4",
+  "ticket_39_8",
+  "ticket_23_3",
+  "ticket_7_8",
+  "ticket_18_7",
+  "ticket_9_2",
+  "ticket_8_11",
+  "ticket_22_10",
+  "ticket_40_4",
+  "ticket_32_11",
+  "ticket_36_7",
+  "ticket_8_7"
+ ],
+ "movingActors": [
+  {
+   "scene": "ticket_12_8",
+   "actor": "changing_motorcycle",
+   "speedMps": 16,
+   "points": 16,
+   "model": null,
+   "paint": "#2B2F36"
+  },
+  {
+   "scene": "ticket_12_8",
+   "actor": "changing_car",
+   "speedMps": 14,
+   "points": 16,
+   "model": "wagon",
+   "paint": "#B9C0C7"
+  },
+  {
+   "scene": "ticket_6_8",
+   "actor": "car",
+   "speedMps": 16,
+   "points": 16,
+   "model": "sedan",
+   "paint": "#317ED4"
+  },
+  {
+   "scene": "ticket_6_8",
+   "actor": "truck",
+   "speedMps": 13,
+   "points": 16,
+   "model": null,
+   "paint": "#F2F3F5"
+  },
+  {
+   "scene": "ticket_19_11",
+   "actor": "truck",
+   "speedMps": 12,
+   "points": 17,
+   "model": null,
+   "paint": "#DCA335"
+  },
+  {
+   "scene": "ticket_19_11",
+   "actor": "oncoming",
+   "speedMps": 12,
+   "points": 14,
+   "model": null,
+   "paint": "#D9DFDF"
+  },
+  {
+   "scene": "ticket_19_11",
+   "actor": "audit_oncoming_car",
+   "speedMps": 14,
+   "points": 14,
+   "model": "sedan",
+   "paint": "#27496C"
+  },
+  {
+   "scene": "ticket_13_1",
+   "actor": "middle_car",
+   "speedMps": 14,
+   "points": 2,
+   "model": "hatch",
+   "paint": "#2558A0"
+  },
+  {
+   "scene": "ticket_31_7",
+   "actor": "hand_signal_car",
+   "speedMps": 14,
+   "points": 32,
+   "model": "sedan",
+   "paint": "#B3BCC2"
+  },
+  {
+   "scene": "ticket_34_8",
+   "actor": "truck",
+   "speedMps": 12,
+   "points": 2,
+   "model": null,
+   "paint": "#397DB6"
+  },
+  {
+   "scene": "ticket_34_8",
+   "actor": "starting_car",
+   "speedMps": 14,
+   "points": 11,
+   "model": "sedan",
+   "paint": "#3C474A"
+  },
+  {
+   "scene": "ticket_8_12",
+   "actor": "audit_oncoming_car",
+   "speedMps": 14,
+   "points": 2,
+   "model": "sedan",
+   "paint": "#A4473E"
+  },
+  {
+   "scene": "ticket_34_11",
+   "actor": "right_car",
+   "speedMps": 14,
+   "points": 2,
+   "model": "sedan",
+   "paint": "#BFC5C6"
+  },
+  {
+   "scene": "ticket_34_11",
+   "actor": "oncoming",
+   "speedMps": 14,
+   "points": 2,
+   "model": "hatch",
+   "paint": "#273A4C"
+  },
+  {
+   "scene": "ticket_33_1",
+   "actor": "truck",
+   "speedMps": 7,
+   "points": 2,
+   "model": null,
+   "paint": "#3978AE"
+  },
+  {
+   "scene": "ticket_33_1",
+   "actor": "changing_car",
+   "speedMps": 17,
+   "points": 18,
+   "model": "sedan",
+   "paint": "#37404A"
+  },
+  {
+   "scene": "ticket_33_1",
+   "actor": "oncoming",
+   "speedMps": 14,
+   "points": 2,
+   "model": "sedan",
+   "paint": "#9C3E36"
+  },
+  {
+   "scene": "ticket_8_2",
+   "actor": "audit_ahead_car",
+   "speedMps": 14,
+   "points": 2,
+   "model": "sedan",
+   "paint": "#C0392B"
+  },
+  {
+   "scene": "ticket_8_2",
+   "actor": "audit_oncoming_red",
+   "speedMps": 14,
+   "points": 2,
+   "model": "sedan",
+   "paint": "#A84346"
+  },
+  {
+   "scene": "ticket_8_2",
+   "actor": "audit_oncoming_blue",
+   "speedMps": 14,
+   "points": 2,
+   "model": "sedan",
+   "paint": "#315578"
+  },
+  {
+   "scene": "ticket_39_8",
+   "actor": "blue_car",
+   "speedMps": 14,
+   "points": 2,
+   "model": "suv",
+   "paint": "#3275A5"
+  },
+  {
+   "scene": "ticket_39_8",
+   "actor": "changing_car",
+   "speedMps": 14,
+   "points": 16,
+   "model": "sedan",
+   "paint": "#B55142"
+  },
+  {
+   "scene": "ticket_7_8",
+   "actor": "blue_car",
+   "speedMps": 16,
+   "points": 2,
+   "model": "sedan",
+   "paint": "#72A4B8"
+  },
+  {
+   "scene": "ticket_7_8",
+   "actor": "truck",
+   "speedMps": 13,
+   "points": 16,
+   "model": null,
+   "paint": "#E3AF32"
+  },
+  {
+   "scene": "ticket_8_11",
+   "actor": "far_truck",
+   "speedMps": 12,
+   "points": 2,
+   "model": null,
+   "paint": "#D5A833"
+  },
+  {
+   "scene": "ticket_8_11",
+   "actor": "near_truck",
+   "speedMps": 12,
+   "points": 2,
+   "model": null,
+   "paint": "#BC4439"
+  },
+  {
+   "scene": "ticket_8_11",
+   "actor": "oncoming",
+   "speedMps": 14,
+   "points": 2,
+   "model": "sedan",
+   "paint": "#576576"
+  },
+  {
+   "scene": "ticket_22_10",
+   "actor": "oncoming_tram",
+   "speedMps": 10,
+   "points": 2,
+   "model": null,
+   "paint": null
+  },
+  {
+   "scene": "ticket_32_11",
+   "actor": "lead_car",
+   "speedMps": 14,
+   "points": 2,
+   "model": "sedan",
+   "paint": "#607C9A"
+  },
+  {
+   "scene": "ticket_36_7",
+   "actor": "hand_signal_car",
+   "speedMps": 14,
+   "points": 7,
+   "model": "suv",
+   "paint": "#3C6492"
+  },
+  {
+   "scene": "ticket_36_7",
+   "actor": "oncoming_motorcycle",
+   "speedMps": 14,
+   "points": 2,
+   "model": null,
+   "paint": null
+  },
+  {
+   "scene": "ticket_8_7",
+   "actor": "truck",
+   "speedMps": 7,
+   "points": 2,
+   "model": null,
+   "paint": "#3978AE"
+  },
+  {
+   "scene": "ticket_8_7",
+   "actor": "changing_car",
+   "speedMps": 17,
+   "points": 19,
+   "model": "sedan",
+   "paint": "#2B55A2"
+  },
+  {
+   "scene": "ticket_8_7",
+   "actor": "oncoming",
+   "speedMps": 14,
+   "points": 2,
+   "model": "sedan",
+   "paint": "#9C3E36"
+  }
+ ]
+}

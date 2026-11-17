@@ -1,6 +1,9 @@
 // Shared walker UV2 tags identify arms without a skeleton. Pose only the chosen
 // arm; its walk tag is cleared so the gesture stays fixed while the legs move.
 const ActorAppearance = (() => {
+  const carModels=[['hatch','Хэтчбек'],['sedan','Седан'],['coupe','Купе'],['wagon','Универсал'],['suv','Внедорожник'],['pickup','Пикап'],['mini','Мини']];
+  const carSizes={hatch:[.86,1.75],sedan:[.9,2.1],coupe:[.9,2.15],wagon:[.9,2.25],suv:[.95,2.125],pickup:[.95,2.3],mini:[.81,1.65]};
+  const carBounds=(model,scale=[1,1,1])=>({halfWidth:carSizes[model][0]*Math.abs(scale[0]),halfLength:carSizes[model][1]*Math.abs(scale[2])});
   const poses=[['stand','Обычная'],['hail','Останавливает машину'],['forward','Рука вперёд'],['raised','Рука вверх']];
   const isArm=amp=>Math.abs(amp)>.1&&Math.abs(amp)<.21;
   function vertex(point,normal,amp,pivotY,pivotX,pose,arm='right') {
@@ -50,6 +53,6 @@ const ActorAppearance = (() => {
   }
   const sidecar=(actor,catalog)=>typeof actor.sidecar==='boolean'?actor.sidecar:!!(catalog?.actorAppearances?.[actor.asset]?.sidecar ?? catalog?.actorTypes?.motorcycle?.sidecar);
   const bounds=(hasSidecar,scale=[1,1,1])=>({halfWidth:(hasSidecar ? .957 : .34)*Math.abs(scale[0]),halfLength:1.075*Math.abs(scale[2])});
-  return {poses,isArm,vertex,pedestrian,paint,sidecar,bounds};
+  return {carModels,carBounds,poses,isArm,vertex,pedestrian,paint,sidecar,bounds};
 })();
 if(typeof module!=='undefined')module.exports=ActorAppearance;

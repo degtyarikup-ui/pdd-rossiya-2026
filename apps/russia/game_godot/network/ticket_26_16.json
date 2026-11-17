@@ -1783,7 +1783,8 @@
     "turnSignal": "off",
     "hazards": false
    },
-   "paint": "#A34A40"
+   "paint": "#A34A40",
+   "carModel": "sedan"
   },
   {
    "id": "queue1",
@@ -1809,7 +1810,8 @@
     "turnSignal": "off",
     "hazards": false
    },
-   "paint": "#526E91"
+   "paint": "#526E91",
+   "carModel": "hatch"
   },
   {
    "id": "queue2",
@@ -1835,7 +1837,8 @@
     "turnSignal": "off",
     "hazards": false
    },
-   "paint": "#929B9B"
+   "paint": "#929B9B",
+   "carModel": "wagon"
   }
  ],
  "lights": [],

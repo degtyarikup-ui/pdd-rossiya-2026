@@ -247,6 +247,14 @@ def sync(sid: str) -> dict:
             if k in (na.get("behaviour") or {}):
                 a[k] = na["behaviour"][k]
         cfg = a.get("config") or {}
+        if na.get("type") == "car" and na.get("carModel") in ("hatch", "sedan", "coupe", "wagon", "suv", "pickup", "mini"):
+            model = na["carModel"]
+            a["carModel"] = model
+            cfg["car_model"] = model
+            # Body dimensions follow the selected shared model, rather than the archived GLB.
+            dimensions = json.loads((ROOT / "game_godot" / "models" / "index.json").read_text())["vehicles/" + model]["meta"]
+            a["halfWidth"] = dimensions["halfWidth"] * abs(float(na["scale"][0]))
+            a["halfLength"] = dimensions["halfLength"] * abs(float(na["scale"][2]))
         behaviour = na.get("behaviour") or {}
         # Explicit editor settings override the archived actor template, even off.
         a["hazards"] = behaviour.get("hazards", (behaviour.get("config") or {}).get("hazard", False)) is True

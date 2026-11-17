@@ -547,7 +547,7 @@ const Scene3D = (() => {
   // same (only moved): dragging 200 trees about does not reload them.
   function anchorSig(t, o) {
     if (t === "decor") return `${o.prop}|${o.tint}`;
-    if (t === "actor") return `${o.asset}|${o.type}|${o.pedestrianPose || ''}|${o.poseArm || ''}|${o.pedestrianLook ?? ''}|${o.sidecar ?? ''}|${o.paint || ''}|${o.driverSignal || ''}`;
+    if (t === "actor") return `${o.asset}|${o.type}|${o.carModel || ''}|${o.pedestrianPose || ''}|${o.poseArm || ''}|${o.pedestrianLook ?? ''}|${o.sidecar ?? ''}|${o.paint || ''}|${o.driverSignal || ''}`;
     if (t === "light") return `${o.asset}|${o.state}|${o.arrow || ""}|${o.tram || ""}|${(o.mountedSigns || []).join(",")}|${(o.mountedMainRoad || []).join(",")}|${JSON.stringify(o.pedestrianSections || {})}|${o.reversible || ""}|${o.mount}|${o.reach}|${o.armSide}|${o.clearance}`;
     if (t === "officer") return `officer|${o.gesture}`;
     if (t === "sign") return `sign|${o.mount || "pole"}|${o.reach ?? 4.5}|${o.armSide || "left"}|${o.clearance ?? 5.5}|${JSON.stringify(SignMount.faces(o).map(SignMount.faceCopy))}`;
@@ -575,7 +575,15 @@ const Scene3D = (() => {
     } else if (t === "actor") {
       const ped = o.type === "pedestrian" || o.type === "cyclist";
       const fallback=fallbackBox(TYPE_COLOUR[o.type] || 0x888888,ped?[.6,1.7,.6]:[1.9,1.4,4.2]);
-      if(o.type==='pedestrian' && o.pedestrianPose) {
+      if(o.type==='car' && ActorAppearance.carModels.some(([id])=>id===o.carModel)) {
+        attach(`/asset/models/vehicles/${o.carModel}.glb`,fallback,null,root=>{
+          ActorAppearance.paint(root,o.paint || '#317ED4');
+          if(['raised','extended'].includes(o.driverSignal)) {
+            root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(root);
+            root.add(DriverSignal.make(o.driverSignal,Math.max(Math.abs(box.min.x),Math.abs(box.max.x)),box.max.y,DriverSignal.windowAnchor(root)));
+          }
+        });
+      } else if(o.type==='pedestrian' && o.pedestrianPose) {
         const colour=o.paint || App.state.catalog?.actorAppearances?.[o.asset]?.colour || '#5A7891';
         attach(`/asset/models/walkers/walker_${o.pedestrianLook ?? 0}.glb`,fallback,null,root=>{
           ActorAppearance.pedestrian(root,o.pedestrianPose,o.poseArm || 'right');ActorAppearance.paint(root,colour);

@@ -798,7 +798,7 @@
     const route = a.route && s.routes.find((r) => r.id === a.route);
     const types = Catalog.ACTOR_ORDER.filter((t) => state.catalog.actorTypes[t]);
     const moving = !(a.behaviour || {}).staysPut;
-    const picture=a.type==='motorcycle'&&typeof a.sidecar==='boolean'?Thumbs.img('motorcycle',a.sidecar?'sidecar':'solo','big'):Thumbs.img('actor',a.type,'big');
+    const picture=a.type==='car'&&a.carModel?Thumbs.img('carModel',a.carModel,'big'):a.type==='motorcycle'&&typeof a.sidecar==='boolean'?Thumbs.img('motorcycle',a.sidecar?'sidecar':'solo','big'):Thumbs.img('actor',a.type,'big');
     const movement = lane && !a.track
       ? chips("way", [{value:"stay",icon:"parked",tip:"Стоит"}, ...["left","straight","right","uturn"].map(k => ({value:k,icon:Catalog.EXITS[k].icon,tip:Catalog.EXITS[k].title,disabled:!ways.includes(k)}))], moving ? a.way || "straight" : "stay", {cls:"arrows"})
       : chips("move", [{value:"stay",title:"Стоит",icon:"parked"},{value:"go",title:"Едет",icon:"route"}], moving ? "go" : "stay");
@@ -821,12 +821,20 @@
         + propertyRow("Подпись", `<input class="name-input" type="text" data-text="name" value="${esc(a.name || "")}" aria-label="Подпись в игре" placeholder="Без подписи">`))}
       ${a.type === "pedestrian" ? card("Поза",chips("pedestrian-pose",ActorAppearance.poses.map(([value,title])=>({value,title})),a.pedestrianPose || "stand")
         + (a.pedestrianPose && a.pedestrianPose !== "stand" ? propertyRow("Рука",chips("pose-arm",[{value:"right",title:"Правая"},{value:"left",title:"Левая"}],a.poseArm || "right")) : "")) : ""}
+      ${a.type === "car" ? card("Кузов", `<select data-text="carModel" aria-label="Кузов автомобиля"><option value="">Исходная модель</option>${ActorAppearance.carModels.map(([value,label])=>`<option value="${value}" ${a.carModel===value ? "selected" : ""}>${label}</option>`).join("")}</select>`) : ""}
       ${a.type === "motorcycle" ? card("Коляска",chips("sidecar",[{value:"no",title:"Без коляски",html:Thumbs.img("motorcycle","solo")},{value:"yes",title:"С коляской",html:Thumbs.img("motorcycle","sidecar")}],ActorAppearance.sidecar(a,state.catalog)?"yes":"no",{cls:"tiles sidecar-options"})) : ""}
       ${a.type !== "pedestrian" && a.type !== "special" ? card("Цвет", `<div class="swatches">${PAINTS.map(c => `<button class="sw ${(a.paint || null) === c ? "on" : ""}" data-chip="paint" data-value="${c || ""}" aria-label="${c ? `Цвет ${c}` : "Цвет модели"}" aria-pressed="${(a.paint || null) === c}" style="--c:${c || "transparent"}">${c ? "" : ic("x")}</button>`).join("")}</div>`) : ""}
       ${card("Поворот",objectHeading(a.yaw))}
       ${card("",deleteRow())}`;
     bind({
       ...common,
+      "text:carModel": v => {
+        if(App.isLocked(ref)||v&&!ActorAppearance.carModels.some(([id])=>id===v))return;
+        App.edit(()=>{
+          if(v){a.carModel=v;Object.assign(a,ActorAppearance.carBounds(v,a.scale));}
+          else {delete a.carModel;const tpl=state.catalog.actorTypes.car;for(const k of ['halfWidth','halfLength'])if(tpl?.[k]!=null)a[k]=tpl[k];}
+        });
+      },
       "chip:paint": (v) => App.edit(() => { if (v) a.paint = v; else delete a.paint; }),
       'chip:driver-signal':value=>{if(!App.isLocked(ref)&&DriverSignal.poses.some(([key])=>key===value))App.edit(()=>{a.driverSignal=value;},{rebuild:false});},
       'chip:pedestrian-pose':value=>{
@@ -853,6 +861,7 @@
         a.type = v; a.asset = tpl.asset;
         if(v!=='pedestrian'){delete a.pedestrianPose;delete a.poseArm;delete a.pedestrianLook;}
         if(v!=='motorcycle')delete a.sidecar;
+        if(v!=='car')delete a.carModel;
         if(!DriverSignal.supports(v))delete a.driverSignal;
         if (!a.name || Object.values(Catalog.ACTORS).some((x) => x.name === a.name)) a.name = Catalog.ACTORS[v].name;
         a.halfLength = tpl.halfLength ?? a.halfLength; a.halfWidth = tpl.halfWidth ?? a.halfWidth;

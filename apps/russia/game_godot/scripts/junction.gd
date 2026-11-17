@@ -216,6 +216,9 @@ func _init(sit: Situation) -> void:
 	# The lamps show the scene's own state from the start (the model itself has a red one lit).
 	if situation.lights.size() and _light_state() != "":
 		set_lights(_light_state())
+	# Authored intentions belong to the posed traffic, including the approach.
+	# Keep movement gated on the answer, but do not gate its indicators on capture.
+	_update_signals()
 
 
 ## The lamps: colour (lit) and dark tone. Each lamp is drawn 1.8 times larger about its own centre and
@@ -611,7 +614,7 @@ func _hold_pending(a: Motion) -> bool:
 	return false
 
 
-## Participants announce their saved intentions together at question capture.
+## Query used by question capture; the participants already show their intentions on approach.
 func has_question_signals() -> bool:
 	var source: Dictionary = situation.network.data if situation.network else {}
 	return data.actors.any(func(a): return Fleet.actor_signal_side(a, 0.0, source) != "")
@@ -631,7 +634,7 @@ func _update_signals() -> void:
 			continue
 		Fleet.set_hazards(motion.node, Fleet.actor_has_hazards(data.actors[i]))
 		var signals := motion.node.get_node_or_null("vehicle_signals") as Fleet.Signals
-		if signals and question_signals_started:
+		if signals:
 			signals.set_side(Fleet.actor_signal_side(data.actors[i], motion.distance, situation.network.data if situation.network else {}))
 
 

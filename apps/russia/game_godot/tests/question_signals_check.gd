@@ -1,4 +1,4 @@
-## The ticket and its intended signals start together at arrival, without an artificial wait.
+## Participants signal on approach; question capture has no artificial signal wait.
 extends SceneTree
 
 var failures := 0
@@ -71,7 +71,7 @@ func run() -> void:
 	var car: Fleet.Signals = sit.actors[1].get_node("vehicle_signals")
 	tram.set_process(false)
 	car.set_process(false)
-	check(tram.side == "" and car.side == "", "Participants do not blink during distant approach")
+		check(tram.side == "R" and car.side == "R", "Participants show authored intentions during distant approach")
 	check(Fleet.actor_signal_side(sit.data.actors[0]) == "R", "Tram follows saved right signal")
 	check(Fleet.actor_signal_side(sit.data.actors[1]) == "R", "Oncoming car follows saved right signal")
 	# Empty background isolates question timing from ambient clearance.
@@ -139,6 +139,11 @@ func run() -> void:
 		var road := RoadEvent.make(entry, 0.0, 4.2)
 		world.add_child(road)
 		check(road.has_question_signals(), "Road participants also have intended signals: " + road.id)
+		for signal_data in road.question_signals:
+			var body: RoadBody = signal_data.body
+			var signals: Fleet.Signals = body.node.get_node("vehicle_signals")
+			check(signals.side == "L", "Road actor signals before question capture: " + road.id)
+			check(not road.question_signals_started, "Early road indicator does not capture the question: " + road.id)
 		if tested == 0:
 			world.road = road
 			world.road_phase = "approach"

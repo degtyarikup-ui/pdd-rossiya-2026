@@ -64,6 +64,13 @@ static func _actor_config(actor: Dictionary, source: Dictionary = {}) -> Diction
 	if paint is String and Color.html_is_valid(paint):
 		config["color"] = paint
 		config["cabColor"] = paint
+	var selected = actor.get("carModel")
+	for authored in source.get("actors", []):
+		if str(authored.id) == str(actor.id) and authored.has("carModel"):
+			selected = authored.carModel
+			break
+	if selected in ["hatch","sedan","coupe","wagon","suv","pickup","mini"]:
+		config["car_model"] = selected
 	return config
 
 

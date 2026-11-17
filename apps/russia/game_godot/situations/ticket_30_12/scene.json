@@ -473,10 +473,11 @@
       -1
      ]
     ],
+    "car_model": "sedan",
     "hazard": false
    },
-   "halfLength": 2.19,
-   "halfWidth": 1.023,
+   "halfLength": 2.1,
+   "halfWidth": 0.9,
    "badge": {
     "text": {
      "ru": "Авто",
@@ -528,6 +529,7 @@
    "way": "straight",
    "driverSignal": "none",
    "turnSignal": "off",
+   "carModel": "sedan",
    "hazards": false
   }
  ],

@@ -85,7 +85,20 @@ func run() -> void:
 	var junction := Junction.new(sit)
 	var signals: Fleet.Signals = sit.actors[0].get_node("vehicle_signals")
 	signals.set_process(false)
-	check(signals.side == "", "Loading prepares lamps without starting the question signal early")
+	check(signals.side == "R", "Loading starts the authored indicator before reaching the question")
+	signals.clock = 0
+	signals._process(0)
+	check(lenses(signals,false,true), "Approaching player sees the actual right lenses and glows")
+	signals._process(.4)
+	check(lenses(signals,false,false), "Indicator already pulses before question capture")
+	check(not junction.released and junction.motions[0].distance == 0,
+		"Early indicator does not release posed traffic")
+	var approaching_clock := signals.clock
+	junction.begin_question_signals()
+	check(signals.clock == approaching_clock and lenses(signals,false,false),
+		"Question capture preserves the existing blink phase instead of restarting the signal")
+	signals.clock = 0
+	signals._process(0)
 	junction.begin_question_signals()
 	check(signals.side == "R" and lenses(signals,false,true), "Actual question capture lights manual right instead of automatic left")
 	junction.release()

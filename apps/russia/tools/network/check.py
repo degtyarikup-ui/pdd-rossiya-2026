@@ -249,6 +249,8 @@ def check_scene(scene: dict) -> list:
         if not r.get("labelPosition"):
             finding(out, "warn", "label-missing", f"{r['id']}: на дороге нет буквы {r.get('label')}", {"type": "route", "id": r["id"]})
     for a in scene.get("actors", []):
+        if "carModel" in a and (a.get("type") != "car" or a["carModel"] not in ("hatch", "sedan", "coupe", "wagon", "suv", "pickup", "mini")):
+            finding(out, "error", "actor-appearance", f"{a['id']}: выберите существующий кузов легкового автомобиля", {"type":"actor","id":a['id']})
         if a.get("driverSignal", "none") not in ("none", "raised", "extended"):
             finding(out,"error","actor-appearance",f"{a['id']}: неизвестный сигнал рукой",{"type":"actor","id":a["id"]})
         if a.get("type") == "pedestrian" and (

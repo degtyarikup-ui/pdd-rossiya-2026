@@ -264,7 +264,7 @@ func _bus() -> void:
 
 
 func _prepare_body_signal(body: RoadBody, side: String, until: float) -> void:
-	Fleet.add_blinkers(body.node, "", body.hl, body.hw)
+	Fleet.add_blinkers(body.node, side, body.hl, body.hw)
 	question_signals.append({"body": body, "side": side, "until": until})
 
 
@@ -278,7 +278,6 @@ func begin_question_signals() -> void:
 
 
 func _update_question_signals() -> void:
-	if not question_signals_started: return
 	for signal_data in question_signals:
 		var body: RoadBody = signal_data.body
 		var signals := body.node.get_node("vehicle_signals") as Fleet.Signals

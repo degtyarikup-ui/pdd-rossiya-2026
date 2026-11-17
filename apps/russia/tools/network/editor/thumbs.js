@@ -13,6 +13,7 @@ const Thumbs = (() => {
   const loader = new THREE.GLTFLoader();
 
   function urlOf(kind, id) {
+    if(kind==='carModel' && ActorAppearance.carModels.some(([model])=>model===id))return `/asset/models/vehicles/${id}.glb`;
     if(kind==='motorcycle')return `/asset/models/road/motorcycle.glb?sidecar=${id==='sidecar'?1:0}`;
     if (kind === "prop") return id === "parked" ? "/asset/models/vehicles/sedan.glb" : `/asset/scenery/${id}.glb`;
     if (kind === "actor") {
