@@ -8,9 +8,9 @@
     <string name="continueLabel">Сохрани серию сегодня</string>
     <string name="startLabel">Начни новую серию</string>
     <string name="streak_widget_flame_name">Серия · Огонёк</string>
-    <string name="streak_widget_flame_description">Тёплая карточка с огоньком, серией занятий и рекордом.</string>
+    <string name="streak_widget_flame_description">Оранжевый фон после занятия сегодня, спокойный — до него.</string>
     <string name="streak_widget_minimal_name">Серия · Минимал</string>
-    <string name="streak_widget_minimal_description">Крупный счётчик серии и рекорд в лаконичном оформлении.</string>
+    <string name="streak_widget_minimal_description">Лаконичная серия и рекорд. Фон меняется после занятия.</string>
     <string name="streak_widget_record_name">Серия · Рекорд</string>
-    <string name="streak_widget_record_description">Серия и личный рекорд с полосой прогресса.</string>
+    <string name="streak_widget_record_description">Серия, рекорд и прогресс. Оранжевый фон за занятие сегодня.</string>
 </resources>

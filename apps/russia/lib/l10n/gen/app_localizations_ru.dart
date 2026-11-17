@@ -5295,19 +5295,19 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get homeWidgetFlameDescription =>
-      'Тёплая карточка с огоньком, серией занятий и рекордом.';
+      'Оранжевый фон после занятия сегодня, спокойный — до него.';
 
   @override
   String get homeWidgetMinimalName => 'Серия · Минимал';
 
   @override
   String get homeWidgetMinimalDescription =>
-      'Крупный счётчик серии и рекорд в лаконичном оформлении.';
+      'Лаконичная серия и рекорд. Фон меняется после занятия.';
 
   @override
   String get homeWidgetRecordName => 'Серия · Рекорд';
 
   @override
   String get homeWidgetRecordDescription =>
-      'Серия и личный рекорд с полосой прогресса.';
+      'Серия, рекорд и прогресс. Оранжевый фон за занятие сегодня.';
 }

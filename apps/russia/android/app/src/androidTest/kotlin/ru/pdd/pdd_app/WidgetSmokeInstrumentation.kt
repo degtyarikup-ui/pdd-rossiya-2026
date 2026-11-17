@@ -12,6 +12,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.drawable.GradientDrawable
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
@@ -21,6 +22,7 @@ import android.view.ContextThemeWrapper
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.RemoteViews
 import android.widget.TextView
@@ -28,6 +30,7 @@ import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.Executor
 
@@ -58,6 +61,7 @@ class WidgetSmokeInstrumentation : Instrumentation() {
             case("calendar boundaries and record progress") { main() }
             renderMatrix()
             responsiveHosts()
+            midnightPalette()
             sharedPublication()
         } catch (error: Throwable) {
             failed++
@@ -97,11 +101,22 @@ class WidgetSmokeInstrumentation : Instrumentation() {
 
     private fun assertValues(view: View, state: StreakWidgetState, style: StreakWidgetStyle) {
         check(view.findViewById<TextView>(R.id.streak_current)?.text?.toString() == state.current.toString()) { "current count missing or stale" }
-        check(view.findViewById<TextView>(R.id.streak_best)?.text?.contains(state.best.toString()) == true) { "best count missing or stale" }
+        check(view.findViewById<TextView>(R.id.streak_best)?.text?.toString() == state.best.toString()) { "best count missing or stale" }
         if (style == StreakWidgetStyle.RECORD) {
             check(view.findViewById<ProgressBar>(R.id.streak_progress).progress == state.progressPercent)
         }
         check(view.findViewById<View>(R.id.streak_root).hasOnClickListeners()) { "widget tap listener missing" }
+        val root = view.findViewById<View>(R.id.streak_root)
+        val gold = root.context.getColor(R.color.streak_widget_active_background)
+        val fill = (root.background as GradientDrawable).color!!.defaultColor
+        check((fill == gold) == state.done) { "background does not match today's activity" }
+        if (state.done) {
+            check(view.findViewById<TextView>(R.id.streak_current).currentTextColor ==
+                root.context.getColor(R.color.streak_widget_active_text))
+        }
+        for (id in listOf(R.id.streak_flame, R.id.streak_trophy)) {
+            check(view.findViewById<ImageView>(id)?.drawable != null) { "missing vector icon" }
+        }
     }
 
     private fun assertTextFits(root: ViewGroup, view: View = root) {
@@ -149,7 +164,7 @@ class WidgetSmokeInstrumentation : Instrumentation() {
 
     private fun renderMatrix() {
         val states = listOf(StreakWidgetState(0, 0, false), StreakWidgetState(7, 21, true),
-            StreakWidgetState(0, 21, false), StreakWidgetState(999, 999, false))
+            StreakWidgetState(7, 21, false), StreakWidgetState(0, 21, false), StreakWidgetState(999, 999, false))
         for (style in StreakWidgetStyle.entries) {
             for (language in listOf("ru", "en", "kk")) for (dark in listOf(false, true)) {
                 for (font in listOf(1f, 2f)) for ((width, height) in listOf(130 to 130, 130 to 190, 250 to 130, 250 to 190, 360 to 300)) {
@@ -168,7 +183,7 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                             assertTextFits(root)
                         } finally {
                             if (language == "ru" && state.current == 7 && height == 130) {
-                                capture(root, "${style.name}-$width-dark$dark-font$font")
+                                capture(root, "${style.name}-$width-dark$dark-font$font-active${state.done}")
                             }
                         }
                         // Reapply must clear old counts, progress, and today's state.
@@ -181,7 +196,7 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                 }
             }
         }
-        report.appendLine("Rendered/reapplied all designs, 5 sizes, ru/en/kk, light/dark, 100%/200% text and 4 states.")
+        report.appendLine("Rendered/reapplied all designs, 5 sizes, ru/en/kk, light/dark, 100%/200% text and 5 states (including active/idle backgrounds).")
     }
 
     private class HostView(context: Context) : AppWidgetHostView(context) {
@@ -233,6 +248,26 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                     }
                 }
             }
+        }
+    }
+
+    private fun midnightPalette() {
+        for (style in StreakWidgetStyle.entries) case("background changes at local midnight $style") {
+            val context = configured("ru", false, 1f)
+            fun day(date: Int) = Calendar.getInstance().apply {
+                clear(); set(2026, Calendar.NOVEMBER, date, 0, 1)
+            }
+            val data = JSONObject(snapshot(context))
+            val today = StreakWidgetState.from(7, 21, "2026-11-16", day(16))
+            val tomorrow = StreakWidgetState.from(7, 21, "2026-11-16", day(17))
+            check(today.done && !tomorrow.done && tomorrow.current == 7)
+            val root = StreakWidgetRenderer.render(context, style, today, data, false, false)
+                .apply(context, FrameLayout(context))
+            layout(root, context, 130, 130)
+            assertValues(root, today, style)
+            StreakWidgetRenderer.render(context, style, tomorrow, data, false, false).reapply(context, root)
+            layout(root, context, 130, 130)
+            assertValues(root, tomorrow, style)
         }
     }
 

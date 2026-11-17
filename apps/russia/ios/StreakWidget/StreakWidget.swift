@@ -15,21 +15,60 @@ enum StreakWidgetStyle: String {
         case .record: return "record"
         }
     }
-    var ink: Color { self == .record ? .white : .primary }
-    var secondaryInk: Color { self == .record ? .white.opacity(0.72) : .secondary }
-    var accent: Color { self == .record ? Color(red: 1, green: 0.73, blue: 0.42) : .orange }
-
-    @ViewBuilder var background: some View {
-        switch self {
-        case .flame:
-            ZStack {
-                Color(uiColor: .secondarySystemBackground)
-                Color.orange.opacity(0.06)
+    @ViewBuilder func background(done: Bool) -> some View {
+        if done {
+            StreakWidgetPalette.activeBackground
+        } else {
+            switch self {
+            case .flame:
+                ZStack {
+                    Color(uiColor: .secondarySystemBackground)
+                    Color.orange.opacity(0.06)
+                }
+            case .minimal:
+                Color(uiColor: .systemBackground)
+            case .record:
+                Color(widgetRGB: 0x14243D)
             }
-        case .minimal:
-            Color(uiColor: .systemBackground)
-        case .record:
-            Color(red: 0.08, green: 0.14, blue: 0.24)
+        }
+    }
+}
+
+private extension Color {
+    init(widgetRGB rgb: UInt32) {
+        self.init(red: Double((rgb >> 16) & 255) / 255,
+                  green: Double((rgb >> 8) & 255) / 255,
+                  blue: Double(rgb & 255) / 255)
+    }
+}
+
+struct StreakWidgetPalette {
+    // AppColors.gold, also used by the full-screen streak celebration.
+    static let activeBackground = Color(widgetRGB: 0xFFA53C)
+    let ink: Color
+    let secondaryInk: Color
+    let accent: Color
+    let icon: Color
+    let separator: Color
+    let track: Color
+
+    init(style: StreakWidgetStyle, done: Bool) {
+        if done {
+            let primary = Color(widgetRGB: 0x3E250D)
+            let secondary = Color(widgetRGB: 0x573516)
+            ink = primary
+            secondaryInk = secondary
+            accent = primary
+            icon = .white
+            separator = secondary.opacity(0.3)
+            track = secondary.opacity(0.3)
+        } else {
+            ink = style == .record ? .white : .primary
+            secondaryInk = style == .record ? .white.opacity(0.72) : .secondary
+            accent = style == .record ? Color(widgetRGB: 0xFFBA6B) : .orange
+            icon = accent
+            separator = style == .record ? .white.opacity(0.2) : Color.secondary.opacity(0.25)
+            track = style == .record ? .white.opacity(0.15) : Color.secondary.opacity(0.15)
         }
     }
 }
@@ -100,12 +139,16 @@ struct StreakWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: StreakEntry
     let style: StreakWidgetStyle
+    private var palette: StreakWidgetPalette { StreakWidgetPalette(style: style, done: entry.done) }
     private var small: Bool { family == .systemSmall }
     private var large: Bool { family == .systemLarge }
 
     private var count: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text("🔥").font(.system(size: large ? 48 : style == .minimal ? 26 : 32))
+            Image(systemName: "flame.fill")
+                .resizable().scaledToFit()
+                .frame(width: large ? 42 : 28, height: large ? 52 : 34)
+                .foregroundStyle(palette.icon)
                 .opacity(entry.current > 0 ? 1 : 0.4).accessibilityHidden(true)
             Text(entry.current, format: .number)
                 .font(.system(size: large ? 64 : 40, weight: .bold, design: .rounded))
@@ -116,36 +159,45 @@ struct StreakWidgetView: View {
     private var metric: some View {
         VStack(alignment: style == .minimal ? .center : .leading, spacing: 4) {
             count
-            Text(entry.label("currentLabel")).font(.caption).foregroundStyle(style.secondaryInk)
+            Text(entry.label("currentLabel")).font(.caption).foregroundStyle(palette.secondaryInk)
                 .lineLimit(2).minimumScaleFactor(0.7)
         }.accessibilityElement(children: .combine)
     }
 
-    private var record: some View {
-        VStack(alignment: style == .minimal ? .center : .leading, spacing: 4) {
-            Text("🏆 \(entry.best)")
+    private var bestCount: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Image(systemName: "trophy.fill")
+                .font(.system(size: small ? 17 : 24))
+                .foregroundStyle(palette.icon).accessibilityHidden(true)
+            Text(entry.best, format: .number)
                 .font(.system(size: small ? 19 : 30, weight: .semibold, design: .rounded))
                 .lineLimit(1).minimumScaleFactor(0.4)
-            Text(entry.label("bestLabel")).font(.caption).foregroundStyle(style.secondaryInk)
+        }
+    }
+
+    private var record: some View {
+        VStack(alignment: style == .minimal ? .center : .leading, spacing: 4) {
+            bestCount
+            Text(entry.label("bestLabel")).font(.caption).foregroundStyle(palette.secondaryInk)
                 .lineLimit(2).minimumScaleFactor(0.7)
         }.accessibilityElement(children: .combine)
     }
 
     private var status: some View {
         Label(entry.status, systemImage: entry.done ? "checkmark.circle.fill" : "sparkles")
-            .font(.caption).foregroundStyle(style.accent).lineLimit(2).minimumScaleFactor(0.7)
+            .font(.caption).foregroundStyle(palette.accent).lineLimit(2).minimumScaleFactor(0.7)
     }
 
     private var heading: some View {
-        Text(entry.label("nameLabel")).font(.headline).foregroundStyle(style.secondaryInk)
+        Text(entry.label("nameLabel")).font(.headline).foregroundStyle(palette.secondaryInk)
             .lineLimit(2).minimumScaleFactor(0.7)
     }
 
     private var progress: some View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.white.opacity(0.15))
-                Capsule().fill(style.accent).frame(width: geometry.size.width * entry.progress)
+                Capsule().fill(palette.track)
+                Capsule().fill(palette.accent).frame(width: geometry.size.width * entry.progress)
             }
         }.frame(height: large ? 8 : 5)
             .accessibilityElement()
@@ -179,12 +231,12 @@ struct StreakWidgetView: View {
             Spacer(minLength: 0)
             if small {
                 metric
-                Divider()
+                Divider().overlay(palette.separator)
                 record
             } else {
                 HStack(spacing: 20) {
                     metric.frame(maxWidth: .infinity)
-                    Divider().frame(height: 56)
+                    Divider().frame(height: 56).overlay(palette.separator)
                     record.frame(maxWidth: .infinity)
                 }
             }
@@ -201,9 +253,8 @@ struct StreakWidgetView: View {
                 Spacer(minLength: 0)
                 progress
                 HStack(spacing: 8) {
-                    Text("🏆 \(entry.best)").font(.system(size: 18, weight: .semibold, design: .rounded))
-                        .lineLimit(1).minimumScaleFactor(0.4)
-                    Text(entry.label("bestLabel")).font(.caption).foregroundStyle(style.secondaryInk)
+                    bestCount
+                    Text(entry.label("bestLabel")).font(.caption).foregroundStyle(palette.secondaryInk)
                         .lineLimit(2).minimumScaleFactor(0.7)
                 }.accessibilityElement(children: .combine)
             } else {
@@ -226,19 +277,19 @@ struct StreakWidgetView: View {
             case .record: recordLayout
             }
         }
-        .foregroundStyle(style.ink)
+        .foregroundStyle(palette.ink)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(2)
-        .streakBackground(style: style)
+        .streakBackground(style: style, done: entry.done)
     }
 }
 
 private extension View {
-    @ViewBuilder func streakBackground(style: StreakWidgetStyle) -> some View {
+    @ViewBuilder func streakBackground(style: StreakWidgetStyle, done: Bool) -> some View {
         if #available(iOS 17.0, *) {
-            self.containerBackground(for: .widget) { style.background }
+            self.containerBackground(for: .widget) { style.background(done: done) }
         } else {
-            self.padding(14).background { style.background }
+            self.padding(14).background { style.background(done: done) }
         }
     }
 }

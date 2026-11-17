@@ -5244,19 +5244,19 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get homeWidgetFlameDescription =>
-      'Оқу сериясы мен жеке рекорд көрсетілген жылы түсті карточка.';
+      'Бүгінгі сабақтан кейін қызғылт сары фон, оған дейін — тыныш реңк.';
 
   @override
   String get homeWidgetMinimalName => 'Серия · Минимал';
 
   @override
   String get homeWidgetMinimalDescription =>
-      'Ықшам көріністегі үлкен серия санағышы мен жеке рекорд.';
+      'Ықшам серия мен рекорд. Сабақтан кейін фон өзгереді.';
 
   @override
   String get homeWidgetRecordName => 'Серия · Рекорд';
 
   @override
   String get homeWidgetRecordDescription =>
-      'Прогресс жолағы бар серия мен жеке рекорд.';
+      'Серия, рекорд және прогресс. Бүгін оқысаңыз, фон қызғылт сары болады.';
 }

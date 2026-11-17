@@ -8,9 +8,9 @@
     <string name="continueLabel">Keep your streak today</string>
     <string name="startLabel">Start a new streak</string>
     <string name="streak_widget_flame_name">Streak · Flame</string>
-    <string name="streak_widget_flame_description">A warm card with your study streak and personal best.</string>
+    <string name="streak_widget_flame_description">A bright orange background after studying today, a calm background before.</string>
     <string name="streak_widget_minimal_name">Streak · Minimal</string>
-    <string name="streak_widget_minimal_description">A large streak counter and personal best in a clean layout.</string>
+    <string name="streak_widget_minimal_description">A clean streak counter and personal best. The background changes after studying.</string>
     <string name="streak_widget_record_name">Streak · Record</string>
-    <string name="streak_widget_record_description">Your streak and personal best with a progress bar.</string>
+    <string name="streak_widget_record_description">Your streak, personal best and progress. Orange after studying today.</string>
 </resources>

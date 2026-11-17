@@ -2519,9 +2519,9 @@
   "homeWidgetContinue": "Сохрани серию сегодня",
   "homeWidgetStart": "Начни новую серию",
   "homeWidgetFlameName": "Серия · Огонёк",
-  "homeWidgetFlameDescription": "Тёплая карточка с огоньком, серией занятий и рекордом.",
+  "homeWidgetFlameDescription": "Оранжевый фон после занятия сегодня, спокойный — до него.",
   "homeWidgetMinimalName": "Серия · Минимал",
-  "homeWidgetMinimalDescription": "Крупный счётчик серии и рекорд в лаконичном оформлении.",
+  "homeWidgetMinimalDescription": "Лаконичная серия и рекорд. Фон меняется после занятия.",
   "homeWidgetRecordName": "Серия · Рекорд",
-  "homeWidgetRecordDescription": "Серия и личный рекорд с полосой прогресса."
+  "homeWidgetRecordDescription": "Серия, рекорд и прогресс. Оранжевый фон за занятие сегодня."
 }

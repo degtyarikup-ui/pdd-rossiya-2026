@@ -4,6 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 source scripts/android_env.sh
+python3 -m unittest discover -s tools/widgets -p 'test_*.py'
 sdk_path=$(python3 tools/android_build/environment.py --sdk)
 adb_bin="$sdk_path/platform-tools/adb"
 widget_test_device=${1:-${ANDROID_SERIAL:-}}

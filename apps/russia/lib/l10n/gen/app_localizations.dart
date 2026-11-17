@@ -8785,7 +8785,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetFlameDescription.
   ///
   /// In ru, this message translates to:
-  /// **'Тёплая карточка с огоньком, серией занятий и рекордом.'**
+  /// **'Оранжевый фон после занятия сегодня, спокойный — до него.'**
   String get homeWidgetFlameDescription;
 
   /// No description provided for @homeWidgetMinimalName.
@@ -8797,7 +8797,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetMinimalDescription.
   ///
   /// In ru, this message translates to:
-  /// **'Крупный счётчик серии и рекорд в лаконичном оформлении.'**
+  /// **'Лаконичная серия и рекорд. Фон меняется после занятия.'**
   String get homeWidgetMinimalDescription;
 
   /// No description provided for @homeWidgetRecordName.
@@ -8809,7 +8809,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetRecordDescription.
   ///
   /// In ru, this message translates to:
-  /// **'Серия и личный рекорд с полосой прогресса.'**
+  /// **'Серия, рекорд и прогресс. Оранжевый фон за занятие сегодня.'**
   String get homeWidgetRecordDescription;
 }
 
