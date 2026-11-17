@@ -49,7 +49,6 @@ class _MistakesScreenState extends ConsumerState<MistakesScreen> {
     ref.watch(appSettingsProvider.select((s) => s.effectiveLanguageCode));
     final ticketsAsync = ref.watch(ticketsProvider);
     final progressAsync = ref.watch(trackedQuestionProgressProvider);
-    final wrongIdsAsync = ref.watch(wrongQuestionIdsProvider);
     final colors = AppColors.of(context);
 
     return AppContentFrame(
@@ -76,6 +75,8 @@ class _MistakesScreenState extends ConsumerState<MistakesScreen> {
                     Expanded(
                       child: Text(
                         appL10n.mistakesTitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
@@ -92,7 +93,6 @@ class _MistakesScreenState extends ConsumerState<MistakesScreen> {
                 context,
                 ticketsAsync: ticketsAsync,
                 progressAsync: progressAsync,
-                wrongIdsAsync: wrongIdsAsync,
               ),
             ),
           ],
@@ -105,19 +105,15 @@ class _MistakesScreenState extends ConsumerState<MistakesScreen> {
     BuildContext context, {
     required AsyncValue<List<Map<String, dynamic>>> ticketsAsync,
     required AsyncValue<Map<String, dynamic>> progressAsync,
-    required AsyncValue<List<String>> wrongIdsAsync,
   }) {
     final colors = AppColors.of(context);
 
     final tickets = ticketsAsync.valueOrNull;
-    final wrongIds = wrongIdsAsync.valueOrNull;
     final progress = progressAsync.valueOrNull;
 
-    final firstError = ticketsAsync.hasError && tickets == null
+    final firstError = ticketsAsync.hasError
         ? ticketsAsync.error
-        : wrongIdsAsync.hasError && wrongIds == null
-        ? wrongIdsAsync.error
-        : progressAsync.hasError && progress == null
+        : progressAsync.hasError
         ? progressAsync.error
         : null;
 
@@ -138,10 +134,15 @@ class _MistakesScreenState extends ConsumerState<MistakesScreen> {
       );
     }
 
-    if (tickets == null ||
-        wrongIds == null ||
-        (progress == null && progressAsync.isLoading)) {
-      return const Center(child: AppLoadingIndicator());
+    // AsyncValue retains old data during reloads. Do not launch a training
+    // from the previous category/language or mix it with refreshed progress.
+    if (ticketsAsync.isLoading ||
+        progressAsync.isLoading ||
+        tickets == null ||
+        progress == null) {
+      return const Center(
+        child: SingleChildScrollView(child: AppLoadingIndicator()),
+      );
     }
 
     final allQuestions = <Question>[
@@ -150,8 +151,7 @@ class _MistakesScreenState extends ConsumerState<MistakesScreen> {
     ];
     final analysis = MistakesAnalysis.build(
       allQuestions: allQuestions,
-      progress: progress ?? const <String, dynamic>{},
-      activeWrongIds: wrongIds,
+      progress: progress,
     );
 
     if (!analysis.hasAnyHistory) {
@@ -631,45 +631,54 @@ class _MistakesScreenState extends ConsumerState<MistakesScreen> {
 
   Widget _buildEmptyState(BuildContext context) {
     final colors = AppColors.of(context);
-    return Center(
-      child: Padding(
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
         padding: const EdgeInsets.all(AppDimensions.screenPadding),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: colors.greenLight,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(
-                Icons.check_circle_outline,
-                size: 36,
-                color: colors.green,
-              ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: math.max(
+              0,
+              constraints.maxHeight - AppDimensions.screenPadding * 2,
             ),
-            const SizedBox(height: AppDimensions.spacingL),
-            Text(
-              appL10n.noMistakesYet,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: colors.primaryText,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: colors.greenLight,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  Icons.check_circle_outline,
+                  size: 36,
+                  color: colors.green,
+                ),
               ),
-            ),
-            const SizedBox(height: AppDimensions.spacingS),
-            Text(
-              appL10n.mistakesEmptyHint,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.4,
-                color: colors.secondaryText,
+              const SizedBox(height: AppDimensions.spacingL),
+              Text(
+                appL10n.noMistakesYet,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: colors.primaryText,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: AppDimensions.spacingS),
+              Text(
+                appL10n.mistakesEmptyHint,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: colors.secondaryText,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

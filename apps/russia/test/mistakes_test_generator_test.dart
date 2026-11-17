@@ -26,6 +26,34 @@ Question _q(
 void main() {
   group('MistakesAnalysis', () {
     test(
+      'invalid imported counters cannot crash or create negative history',
+      () {
+        final analysis = MistakesAnalysis.build(
+          allQuestions: [_q('q1'), _q('q2'), _q('q3')],
+          progress: {
+            'q1': {
+              'isCorrect': false,
+              'wrongAttempts': '2',
+              'attemptsCount': '3',
+            },
+            'q2': {'isCorrect': true, 'wrongAttempts': -2, 'attemptsCount': -1},
+            'q3': {
+              'isCorrect': false,
+              'wrongAttempts': double.infinity,
+              'attemptsCount': double.nan,
+            },
+          },
+        );
+        expect(analysis.entriesById['q1']!.wrongAttempts, 1);
+        expect(analysis.entriesById['q1']!.attemptsCount, 1);
+        expect(analysis.entriesById['q2']!.wrongAttempts, 0);
+        expect(analysis.entriesById['q2']!.attemptsCount, 1);
+        expect(analysis.entriesById['q3']!.wrongAttempts, 1);
+        expect(analysis.weakTopics.single.mistakeAttempts, 2);
+      },
+    );
+
+    test(
       'deduplicates questions and tracks active, historical, and topic stats',
       () {
         final bank = [

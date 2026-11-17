@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -15,6 +16,7 @@ import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
 import 'package:pdd_app/l10n/gen/app_localizations.dart';
+import 'package:pdd_app/l10n/l10n.dart' show appL10n, updateAppLocale;
 import 'package:pdd_app/presentation/screens/mistakes/mistakes_screen.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -69,6 +71,16 @@ class _FakeQuestionsBank extends QuestionsDataSource {
   ]) async => questions;
 }
 
+class _SwitchingBank extends QuestionsDataSource {
+  final cd = Completer<List<Question>>();
+
+  @override
+  Future<List<Question>> loadTickets(TicketCategory category, [String? lang]) =>
+      category == TicketCategory.cd
+      ? cd.future
+      : Future.value([_makeQuestion('q1', 'Знаки', 1)]);
+}
+
 Question _makeQuestion(String id, String topic, int number) {
   return Question(
     id: id,
@@ -93,8 +105,11 @@ void main() {
     String language = 'ru',
     double textScale = 1,
     Size size = const Size(412, 915),
+    QuestionsDataSource? source,
   }) async {
+    updateAppLocale(Locale(language));
     SharedPreferences.setMockInitialValues({
+      'app_settings': jsonEncode({'languageCode': language}),
       if (progress.isNotEmpty) 'question_progress_ab': jsonEncode(progress),
     });
     final data = ProgressDataSource();
@@ -116,7 +131,7 @@ void main() {
           noAchievementAwards,
           progressDataSourceProvider.overrideWithValue(data),
           questionsDataSourceProvider.overrideWithValue(
-            _FakeQuestionsBank(bank),
+            source ?? _FakeQuestionsBank(bank),
           ),
           ttsServiceProvider.overrideWithValue(_SilentTts()),
         ],
@@ -160,6 +175,78 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets(
+    'category reload hides actions from the previous bank, including on failure',
+    (tester) async {
+      final bank = _SwitchingBank();
+      await pumpMistakes(
+        tester,
+        bank: [],
+        source: bank,
+        progress: {
+          'q1': {'isCorrect': false, 'wrongAttempts': 2},
+        },
+      );
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(MistakesScreen)),
+      );
+      await container
+          .read(appSettingsProvider.notifier)
+          .setTicketCategory(TicketCategory.cd);
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('mistakes-general-test-card')),
+        findsNothing,
+      );
+      expect(find.text(appL10n.repeatAllMistakes), findsNothing);
+      bank.cd.completeError(StateError('category failed'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('mistakes-general-test-card')),
+        findsNothing,
+      );
+      expect(find.text(appL10n.repeatAllMistakes), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'correcting the last mistake keeps history and removes repeat actions',
+    (tester) async {
+      await pumpMistakes(
+        tester,
+        bank: [_makeQuestion('q1', 'Знаки', 1)],
+        progress: {
+          'q1': {'isCorrect': false, 'wrongAttempts': 2, 'attemptsCount': 2},
+        },
+      );
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(MistakesScreen)),
+      );
+      await container
+          .read(progressDataSourceProvider)
+          .saveAnswer(
+            questionId: 'q1',
+            isCorrect: true,
+            selectedAnswerIndex: 0,
+            category: TicketCategory.ab,
+          );
+      container.read(appDataRefreshProvider.notifier).state++;
+      await tester.pumpAndSettle();
+      expect(find.text(appL10n.repeatAllMistakes), findsNothing);
+      expect(find.text(appL10n.activeMistakesClearedTitle), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('mistakes-general-test-card')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('mistakes-hardest-card')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'shows general test, hardest drill, and weak topics when active mistakes are cleared but history exists',
@@ -299,6 +386,24 @@ void main() {
         textScale: 2.0,
         size: const Size(320, 640),
       );
+      expect(find.text(appL10n.mistakesTitle), findsOneWidget);
+      // Проверяем также карточки ниже первого экрана.
+      await tester.drag(find.byType(ListView), const Offset(0, -5000));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('$lang empty state fits a short screen at double text size', (
+      tester,
+    ) async {
+      await pumpMistakes(
+        tester,
+        bank: [_makeQuestion('q1', 'Знаки', 1)],
+        language: lang,
+        textScale: 2,
+        size: const Size(568, 320),
+      );
+      expect(find.text(appL10n.noMistakesYet), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }

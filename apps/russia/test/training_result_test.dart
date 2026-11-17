@@ -118,7 +118,13 @@ void main() {
     String? resumedFeature,
     Widget? entry,
   }) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      if (entry is MistakesScreen)
+        'question_progress_ab': jsonEncode({
+          for (final id in ['q0', 'q1'])
+            id: {'isCorrect': false, 'wrongAttempts': 1},
+        }),
+    });
     final data = source ?? ProgressDataSource();
     await data.init();
 
@@ -137,7 +143,6 @@ void main() {
           if (entry != null) ...[
             questionsDataSourceProvider.overrideWithValue(_TrainingBank()),
             favoriteQuestionsProvider.overrideWith((ref) async => ['q0', 'q1']),
-            wrongQuestionIdsProvider.overrideWith((ref) async => ['q0', 'q1']),
           ],
           if (review != null)
             reviewPromptServiceProvider.overrideWithValue(review),

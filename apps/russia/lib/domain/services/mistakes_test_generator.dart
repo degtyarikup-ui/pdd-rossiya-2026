@@ -68,6 +68,9 @@ class MistakesAnalysis {
       (frequentMistakes.length > activeMistakes.length ||
           frequentMistakes.any((entry) => entry.wrongAttempts >= 2));
 
+  static int _attemptCount(Object? value) =>
+      value is num && value.isFinite ? max(0, value.toInt()) : 0;
+
   static MistakesAnalysis build({
     required List<Question> allQuestions,
     required Map<String, dynamic> progress,
@@ -106,12 +109,12 @@ class MistakesAnalysis {
       final isCurrentlyWrong =
           activeWrongSet.contains(q.id) ||
           (snap != null && snap['isCorrect'] == false);
-      final storedWrong = (snap?['wrongAttempts'] as num?)?.toInt() ?? 0;
+      final storedWrong = _attemptCount(snap?['wrongAttempts']);
       final wrongAttempts = isCurrentlyWrong
           ? max(1, storedWrong)
           : storedWrong;
       final attemptsCount = max(
-        (snap?['attemptsCount'] as num?)?.toInt() ?? 0,
+        _attemptCount(snap?['attemptsCount']),
         wrongAttempts + (isCorrectFlag ? 1 : 0),
       );
       final answeredAtRaw = snap?['answeredAt'];
