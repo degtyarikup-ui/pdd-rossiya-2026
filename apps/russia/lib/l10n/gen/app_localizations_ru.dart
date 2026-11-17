@@ -503,7 +503,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get mistakesEmptyHint =>
-      'Когда появятся неверные ответы, здесь можно будет быстро повторить только слабые вопросы.';
+      'Когда появятся неверные ответы, здесь можно будет повторить ошибки и пройти общие тесты по слабым темам.';
 
   @override
   String get repeatAllMistakes => 'Повторить все ошибки';
@@ -513,6 +513,106 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get mistakeLabel => 'Ошибка';
+
+  @override
+  String get mistakesSmartSectionTitle => 'Тренировки по частым ошибкам';
+
+  @override
+  String get frequentMistakesTestTitle => 'Общий тест по частым ошибкам';
+
+  @override
+  String frequentMistakesTestSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count вопросов',
+      many: '$count вопросов',
+      few: '$count вопроса',
+      one: '$count вопрос',
+    );
+    return '$_temp0 — слабые темы и похожие ситуации';
+  }
+
+  @override
+  String get frequentMistakesDrillTitle => 'Сложные вопросы за всё время';
+
+  @override
+  String frequentMistakesDrillSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count вопросов',
+      many: '$count вопросов',
+      few: '$count вопроса',
+      one: '$count вопрос',
+    );
+    return '$_temp0, в которых вы ошибались чаще всего';
+  }
+
+  @override
+  String get weakTopicsTitle => 'Слабые темы';
+
+  @override
+  String get weakTopicsSubtitle => 'Общие тесты по проблемным правилам';
+
+  @override
+  String weakTopicMistakeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ошибок',
+      many: '$count ошибок',
+      few: '$count ошибки',
+      one: '$count ошибка',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String weakTopicTestMeta(int testCount, int totalCount) {
+    return 'Тест: $testCount из $totalCount';
+  }
+
+  @override
+  String weakTopicFullTestMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Тест: $count вопросов',
+      many: 'Тест: $count вопросов',
+      few: 'Тест: $count вопроса',
+      one: 'Тест: $count вопрос',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String showAllWeakTopics(int count) {
+    return 'Показать все темы ($count)';
+  }
+
+  @override
+  String get hideExtraWeakTopics => 'Свернуть';
+
+  @override
+  String get currentMistakesTitle => 'Текущие ошибки';
+
+  @override
+  String get activeMistakesClearedTitle => 'Текущие ошибки исправлены';
+
+  @override
+  String get activeMistakesClearedHint =>
+      'Закрепите проблемные темы в общих тестах выше.';
+
+  @override
+  String mistakeRepeatCount(int count) {
+    return 'Ошибок: $count';
+  }
+
+  @override
+  String questionsCountBadge(int count) {
+    return '$count вопр.';
+  }
 
   @override
   String get nothingFoundTryAnother =>

@@ -487,7 +487,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get mistakesEmptyHint =>
-      'Дұрыс емес жауаптар пайда болған кезде, мұнда тек әлсіз сұрақтарды тез қайталауға болады.';
+      'Қате жауаптар пайда болған кезде, мұнда қателерді қайталап, әлсіз тақырыптар бойынша жалпы тесттерден өтуге болады.';
 
   @override
   String get repeatAllMistakes => 'Барлық қателерді қайталаңыз';
@@ -497,6 +497,98 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get mistakeLabel => 'Қате';
+
+  @override
+  String get mistakesSmartSectionTitle => 'Жиі қателер бойынша тесттер';
+
+  @override
+  String get frequentMistakesTestTitle => 'Жиі қателер бойынша жалпы тест';
+
+  @override
+  String frequentMistakesTestSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count сұрақ',
+      one: '$count сұрақ',
+    );
+    return '$_temp0 — әлсіз тақырыптар мен ұқсас жағдайлар';
+  }
+
+  @override
+  String get frequentMistakesDrillTitle => 'Барлық уақыттағы қиын сұрақтар';
+
+  @override
+  String frequentMistakesDrillSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count сұрақ',
+      one: '$count сұрақ',
+    );
+    return 'Ең жиі қателескен $_temp0';
+  }
+
+  @override
+  String get weakTopicsTitle => 'Әлсіз тақырыптар';
+
+  @override
+  String get weakTopicsSubtitle => 'Қиын ережелер бойынша жалпы тесттер';
+
+  @override
+  String weakTopicMistakeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count қате',
+      one: '$count қате',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String weakTopicTestMeta(int testCount, int totalCount) {
+    return 'Тест: $totalCount ішінен $testCount';
+  }
+
+  @override
+  String weakTopicFullTestMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count сұрақ',
+      one: '$count сұрақ',
+    );
+    return 'Тест: $_temp0';
+  }
+
+  @override
+  String showAllWeakTopics(int count) {
+    return 'Барлық тақырыпты көрсету ($count)';
+  }
+
+  @override
+  String get hideExtraWeakTopics => 'Жасыру';
+
+  @override
+  String get currentMistakesTitle => 'Ағымдағы қателер';
+
+  @override
+  String get activeMistakesClearedTitle => 'Ағымдағы қателер түзетілді';
+
+  @override
+  String get activeMistakesClearedHint =>
+      'Жоғарыдағы жалпы тесттермен қиын тақырыптарды бекітіңіз.';
+
+  @override
+  String mistakeRepeatCount(int count) {
+    return 'Қателер: $count';
+  }
+
+  @override
+  String questionsCountBadge(int count) {
+    return '$count сұр.';
+  }
 
   @override
   String get nothingFoundTryAnother =>

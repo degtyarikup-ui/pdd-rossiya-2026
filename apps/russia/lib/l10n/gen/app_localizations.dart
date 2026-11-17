@@ -877,7 +877,7 @@ abstract class AppLocalizations {
   /// No description provided for @mistakesEmptyHint.
   ///
   /// In ru, this message translates to:
-  /// **'Когда появятся неверные ответы, здесь можно будет быстро повторить только слабые вопросы.'**
+  /// **'Когда появятся неверные ответы, здесь можно будет повторить ошибки и пройти общие тесты по слабым темам.'**
   String get mistakesEmptyHint;
 
   /// No description provided for @repeatAllMistakes.
@@ -897,6 +897,108 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Ошибка'**
   String get mistakeLabel;
+
+  /// No description provided for @mistakesSmartSectionTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тренировки по частым ошибкам'**
+  String get mistakesSmartSectionTitle;
+
+  /// No description provided for @frequentMistakesTestTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Общий тест по частым ошибкам'**
+  String get frequentMistakesTestTitle;
+
+  /// No description provided for @frequentMistakesTestSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{{count} вопрос} few{{count} вопроса} many{{count} вопросов} other{{count} вопросов}} — слабые темы и похожие ситуации'**
+  String frequentMistakesTestSubtitle(int count);
+
+  /// No description provided for @frequentMistakesDrillTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сложные вопросы за всё время'**
+  String get frequentMistakesDrillTitle;
+
+  /// No description provided for @frequentMistakesDrillSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{{count} вопрос} few{{count} вопроса} many{{count} вопросов} other{{count} вопросов}}, в которых вы ошибались чаще всего'**
+  String frequentMistakesDrillSubtitle(int count);
+
+  /// No description provided for @weakTopicsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Слабые темы'**
+  String get weakTopicsTitle;
+
+  /// No description provided for @weakTopicsSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Общие тесты по проблемным правилам'**
+  String get weakTopicsSubtitle;
+
+  /// No description provided for @weakTopicMistakeCount.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{{count} ошибка} few{{count} ошибки} many{{count} ошибок} other{{count} ошибок}}'**
+  String weakTopicMistakeCount(int count);
+
+  /// No description provided for @weakTopicTestMeta.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тест: {testCount} из {totalCount}'**
+  String weakTopicTestMeta(int testCount, int totalCount);
+
+  /// No description provided for @weakTopicFullTestMeta.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{Тест: {count} вопрос} few{Тест: {count} вопроса} many{Тест: {count} вопросов} other{Тест: {count} вопросов}}'**
+  String weakTopicFullTestMeta(int count);
+
+  /// No description provided for @showAllWeakTopics.
+  ///
+  /// In ru, this message translates to:
+  /// **'Показать все темы ({count})'**
+  String showAllWeakTopics(int count);
+
+  /// No description provided for @hideExtraWeakTopics.
+  ///
+  /// In ru, this message translates to:
+  /// **'Свернуть'**
+  String get hideExtraWeakTopics;
+
+  /// No description provided for @currentMistakesTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Текущие ошибки'**
+  String get currentMistakesTitle;
+
+  /// No description provided for @activeMistakesClearedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Текущие ошибки исправлены'**
+  String get activeMistakesClearedTitle;
+
+  /// No description provided for @activeMistakesClearedHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Закрепите проблемные темы в общих тестах выше.'**
+  String get activeMistakesClearedHint;
+
+  /// No description provided for @mistakeRepeatCount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ошибок: {count}'**
+  String mistakeRepeatCount(int count);
+
+  /// No description provided for @questionsCountBadge.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count} вопр.'**
+  String questionsCountBadge(int count);
 
   /// No description provided for @nothingFoundTryAnother.
   ///

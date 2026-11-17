@@ -237,10 +237,86 @@
   },
   "mistakesTitle": "Работа над ошибками",
   "noMistakesYet": "Ошибок пока нет",
-  "mistakesEmptyHint": "Когда появятся неверные ответы, здесь можно будет быстро повторить только слабые вопросы.",
+  "mistakesEmptyHint": "Когда появятся неверные ответы, здесь можно будет повторить ошибки и пройти общие тесты по слабым темам.",
   "repeatAllMistakes": "Повторить все ошибки",
   "mistakeReview": "Разбор ошибки",
   "mistakeLabel": "Ошибка",
+  "mistakesSmartSectionTitle": "Тренировки по частым ошибкам",
+  "frequentMistakesTestTitle": "Общий тест по частым ошибкам",
+  "frequentMistakesTestSubtitle": "{count, plural, one{{count} вопрос} few{{count} вопроса} many{{count} вопросов} other{{count} вопросов}} — слабые темы и похожие ситуации",
+  "@frequentMistakesTestSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "frequentMistakesDrillTitle": "Сложные вопросы за всё время",
+  "frequentMistakesDrillSubtitle": "{count, plural, one{{count} вопрос} few{{count} вопроса} many{{count} вопросов} other{{count} вопросов}}, в которых вы ошибались чаще всего",
+  "@frequentMistakesDrillSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "weakTopicsTitle": "Слабые темы",
+  "weakTopicsSubtitle": "Общие тесты по проблемным правилам",
+  "weakTopicMistakeCount": "{count, plural, one{{count} ошибка} few{{count} ошибки} many{{count} ошибок} other{{count} ошибок}}",
+  "@weakTopicMistakeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "weakTopicTestMeta": "Тест: {testCount} из {totalCount}",
+  "@weakTopicTestMeta": {
+    "placeholders": {
+      "testCount": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      }
+    }
+  },
+  "weakTopicFullTestMeta": "{count, plural, one{Тест: {count} вопрос} few{Тест: {count} вопроса} many{Тест: {count} вопросов} other{Тест: {count} вопросов}}",
+  "@weakTopicFullTestMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "showAllWeakTopics": "Показать все темы ({count})",
+  "@showAllWeakTopics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hideExtraWeakTopics": "Свернуть",
+  "currentMistakesTitle": "Текущие ошибки",
+  "activeMistakesClearedTitle": "Текущие ошибки исправлены",
+  "activeMistakesClearedHint": "Закрепите проблемные темы в общих тестах выше.",
+  "mistakeRepeatCount": "Ошибок: {count}",
+  "@mistakeRepeatCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "questionsCountBadge": "{count} вопр.",
+  "@questionsCountBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "nothingFoundTryAnother": "Ничего не найдено. Попробуйте другое слово.",
   "pddSearchEmpty": "Ничего не найдено. Попробуйте номер раздела или ключевое слово.",
   "onboardingTitle": "На чем планируешь ездить?",

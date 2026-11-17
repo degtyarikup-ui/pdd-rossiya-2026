@@ -487,7 +487,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mistakesEmptyHint =>
-      'When incorrect answers appear, here you can quickly repeat only weak questions.';
+      'When incorrect answers appear, here you can review errors and take general tests on weak topics.';
 
   @override
   String get repeatAllMistakes => 'Repeat all errors';
@@ -497,6 +497,98 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mistakeLabel => 'Error';
+
+  @override
+  String get mistakesSmartSectionTitle => 'Tests on frequent errors';
+
+  @override
+  String get frequentMistakesTestTitle => 'General test on frequent errors';
+
+  @override
+  String frequentMistakesTestSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count questions',
+      one: '$count question',
+    );
+    return '$_temp0 — weak topics and similar situations';
+  }
+
+  @override
+  String get frequentMistakesDrillTitle => 'Hardest questions over time';
+
+  @override
+  String frequentMistakesDrillSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count questions',
+      one: '$count question',
+    );
+    return '$_temp0 you missed most often';
+  }
+
+  @override
+  String get weakTopicsTitle => 'Weak topics';
+
+  @override
+  String get weakTopicsSubtitle => 'General tests on challenging rules';
+
+  @override
+  String weakTopicMistakeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count errors',
+      one: '$count error',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String weakTopicTestMeta(int testCount, int totalCount) {
+    return 'Test: $testCount of $totalCount';
+  }
+
+  @override
+  String weakTopicFullTestMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Test: $count questions',
+      one: 'Test: $count question',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String showAllWeakTopics(int count) {
+    return 'Show all topics ($count)';
+  }
+
+  @override
+  String get hideExtraWeakTopics => 'Show less';
+
+  @override
+  String get currentMistakesTitle => 'Current errors';
+
+  @override
+  String get activeMistakesClearedTitle => 'Current errors cleared';
+
+  @override
+  String get activeMistakesClearedHint =>
+      'Reinforce challenging topics with the general tests above.';
+
+  @override
+  String mistakeRepeatCount(int count) {
+    return 'Errors: $count';
+  }
+
+  @override
+  String questionsCountBadge(int count) {
+    return '$count q.';
+  }
 
   @override
   String get nothingFoundTryAnother => 'Nothing found. Try another word.';
