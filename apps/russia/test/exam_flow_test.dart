@@ -11,6 +11,7 @@ import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/screens/exam/exam_review_screen.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
 import 'package:pdd_app/presentation/widgets/result_stage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -557,5 +558,62 @@ void main() {
       isNull,
       reason: 'предлагать продолжить сданный экзамен бессмысленно',
     );
+  });
+
+  testWidgets(
+    'при досрочном провале «Мои ошибки» показывают только отвеченные вопросы',
+    (tester) async {
+      await pumpExam(tester);
+
+      // Две ошибки в первом блоке валят экзамен на втором вопросе; вопросы 3..20 не отвечены.
+      await answerCurrent(tester, correct: false);
+      await answerCurrent(tester, correct: false);
+      expect(find.text('Экзамен не сдан'), findsOneWidget);
+
+      await tester.tap(find.text('Мои ошибки'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ExamReviewScreen), findsOneWidget);
+      expect(find.text('Вопрос 1 из 2'), findsOneWidget);
+      expect(find.text('Вы не ответили на этот вопрос'), findsNothing);
+      expect(find.text('Следующий'), findsOneWidget);
+
+      await tester.tap(find.text('Следующий'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Вопрос 2 из 2'), findsOneWidget);
+      expect(find.text('Закрыть'), findsOneWidget);
+      expect(find.text('Вы не ответили на этот вопрос'), findsNothing);
+    },
+  );
+
+  testWidgets('разбор экзамена без ответов показывает пустое состояние', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final dataSource = ProgressDataSource();
+    await dataSource.init();
+    updateAppLocale(const Locale('ru'));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          noAchievementAwards,
+          progressDataSourceProvider.overrideWithValue(dataSource),
+        ],
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ExamReviewScreen(
+            questions: buildQuestions(3),
+            savedAnswers: const [null, null, null],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Нет вопросов для разбора'), findsOneWidget);
   });
 }

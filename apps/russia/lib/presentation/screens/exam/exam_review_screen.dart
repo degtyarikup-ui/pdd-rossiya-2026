@@ -15,7 +15,7 @@ import 'package:pdd_app/presentation/widgets/question_image.dart';
 import 'package:pdd_app/presentation/widgets/question_next_bottom_bar.dart';
 import 'package:pdd_app/presentation/widgets/pdd_comment_text.dart';
 
-/// Разбор после экзамена: все вопросы по порядку, верность ответов и комментарий.
+/// Разбор после экзамена: отвеченные вопросы по порядку, верность ответов и комментарий.
 class ExamReviewScreen extends ConsumerStatefulWidget {
   const ExamReviewScreen({
     super.key,
@@ -50,16 +50,22 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
   @override
   void initState() {
     super.initState();
-    _order = List.generate(widget.questions.length, (i) => i);
+    // Показываем только вопросы, на которые пользователь успел ответить:
+    // после досрочного провала оставшиеся вопросы не должны выглядеть как ошибки
+    // и раскрывать правильные ответы.
+    _order = [
+      for (var i = 0; i < widget.questions.length; i++)
+        if (i < widget.savedAnswers.length && widget.savedAnswers[i] != null) i,
+    ];
     _currentPos = 0;
     _pageController = PageController();
-    if (widget.questions.isNotEmpty) {
+    if (_order.isNotEmpty) {
       _checkFavorite();
+      scheduleScrollQuestionStripToCurrent(
+        controller: _stripController,
+        currentIndex: _currentPos,
+      );
     }
-    scheduleScrollQuestionStripToCurrent(
-      controller: _stripController,
-      currentIndex: _currentPos,
-    );
   }
 
   @override
