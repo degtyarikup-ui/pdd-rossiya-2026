@@ -1,0 +1,424 @@
+[
+  {
+    "id": "ticket_12_8",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_12_8-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_9_12",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_9_12-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_19_10",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_19_10-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_6_9",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_6_9-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_20_3",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_20_3-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_24_5",
+    "findings": [],
+    "unresolved": [
+      "Восстановлены правый поворот и разметка обеих границ неровности. Объёмный профиль искусственной неровности не воспроизведён текущими средствами."
+    ],
+    "freshScreenshot": "ticket_24_5-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_18_3",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_18_3-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_6_8",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_6_8-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_19_11",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_19_11-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_13_1",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_13_1-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_23_12",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_23_12-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_31_7",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_31_7-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_30_3",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_30_3-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_21_19",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_21_19-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_6_4",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_6_4-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_34_8",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_34_8-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_8_12",
+    "findings": [
+      {
+        "level": "warn",
+        "code": "actor-off-road",
+        "message": "parked_van: машина стоит вне дороги",
+        "ref": {
+          "type": "actor",
+          "id": "parked_van"
+        }
+      }
+    ],
+    "unresolved": [],
+    "freshScreenshot": "ticket_8_12-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_16_5",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_16_5-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_34_3",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_34_3-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_22_4",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_22_4-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_26_3",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_26_3-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_34_11",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_34_11-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_10_3",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_10_3-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_26_16",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_26_16-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_33_1",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_33_1-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_8_2",
+    "findings": [],
+    "unresolved": [
+      "Дорожная схема и участники сверены. Подъём и спуск исходной дороги не воспроизведены: текущие поверхности редактора плоские. Нужна ручная оценка допустимости этого ограничения."
+    ],
+    "freshScreenshot": "ticket_8_2-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_6_3",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_6_3-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_12_10",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_12_10-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_4_3",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_4_3-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_22_5",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_22_5-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_34_2",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_34_2-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_20_12",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_20_12-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_30_12",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_30_12-desktop.png",
+    "newCorrection": "Угол припаркованной машины 60° → 90°"
+  },
+  {
+    "id": "ticket_16_4",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_16_4-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_25_4",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_25_4-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_7_12",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_7_12-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_13_4",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_13_4-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_23_2",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_23_2-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_39_8",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_39_8-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_23_3",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_23_3-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_31_3",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_31_3-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_13_5",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_13_5-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_21_2",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_21_2-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_19_3",
+    "findings": [],
+    "unresolved": [
+      "Уточнены ширина и правый изгиб. Продольный подъём на исходной фотографии не воспроизведён плоскими поверхностями редактора. Нужна ручная оценка."
+    ],
+    "freshScreenshot": "ticket_19_3-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_7_8",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_7_8-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_18_7",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_18_7-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_7_3",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_7_3-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_9_2",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_9_2-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_8_11",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_8_11-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_33_5",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_33_5-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_22_10",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_22_10-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_40_4",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_40_4-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_27_3",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_27_3-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_32_11",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_32_11-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_36_7",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_36_7-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_23_9",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_23_9-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_8_7",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_8_7-desktop.png",
+    "newCorrection": null
+  },
+  {
+    "id": "ticket_16_16",
+    "findings": [],
+    "unresolved": [],
+    "freshScreenshot": "ticket_16_16-desktop.png",
+    "newCorrection": null
+  }
+]
