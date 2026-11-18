@@ -33,32 +33,42 @@ function anPremiumMethod(key){return AN_PREMIUM_METHODS[key]||AN_PREMIUM_METHODS
 var anPremiumCharts=new WeakMap();
 var anPremiumResize=new ResizeObserver(function(entries){entries.forEach(function(entry){
  var chart=anPremiumCharts.get(entry.target),svg=entry.target.firstElementChild;
- if(chart&&entry.target.clientWidth&&svg&&Number(svg.getAttribute('width'))!==Math.max(120,entry.target.clientWidth))anMetricLine(entry.target,chart.points,chart.height,chart.label,chart.color);
+ if(chart&&entry.target.clientWidth&&svg&&Number(svg.getAttribute('width'))!==Math.max(120,entry.target.clientWidth))anMetricLine(entry.target,chart.points,chart.height,chart.label,chart.color,chart.secondary);
 });});
 function anPremiumClearSelection(el){
  delete el.dataset.activePoint;
  var marker=el.querySelector('[data-premium-marker]');if(marker)marker.setAttribute('visibility','hidden');
 }
-function anMetricLine(el,points,height,label,color){
+function anMetricLine(el,points,height,label,color,secondary){
  var gradientId=el.id+'-area';
  if(!anPremiumCharts.has(el))anPremiumResize.observe(el);
- anPremiumCharts.set(el,{points:points,height:height,label:label,color:color});
+ anPremiumCharts.set(el,{points:points,height:height,label:label,color:color,secondary:secondary});
  var W=Math.max(120,el.clientWidth),H=height,padL=el.clientWidth<350?40:54,padR=12,padT=16,padB=30,plotW=W-padL-padR,plotH=H-padT-padB;
- var max=Math.max.apply(null,points.map(function(point){return point.value||0;}).concat([1]));
+ var max=Math.max.apply(null,points.map(function(point){return Math.max(point.value||0,secondary?point[secondary.key]||0:0);}).concat([1]));
  var x=function(i){return points.length===1?padL+plotW/2:padL+i*plotW/(points.length-1);};
  var y=function(value){return padT+plotH-value/max*plotH;},bottom=y(0);
  var svg='<svg width="'+W+'" height="'+H+'" role="img" tabindex="0" aria-label="'+anEsc(label)+'"><desc>Стрелки влево и вправо выбирают день и значение. Home — первый день, End — последний.</desc><defs><linearGradient id="'+gradientId+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+(color||AN_PREMIUM_ORANGE)+'" stop-opacity=".22"/><stop offset="100%" stop-color="'+(color||AN_PREMIUM_ORANGE)+'" stop-opacity=".015"/></linearGradient></defs>';
  [0,max].forEach(function(value){svg+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+y(value)+'" y2="'+y(value)+'" stroke="#EFF0F4"/><text x="'+(padL-10)+'" y="'+(y(value)+4)+'" text-anchor="end" font-size="11" font-weight="500" fill="#747B88">'+anNum(value)+'</text>';});
- var runs=[],run=[];
- points.forEach(function(point,i){if(point.value==null){if(run.length)runs.push(run);run=[];}else run.push({x:x(i),y:y(point.value)});});if(run.length)runs.push(run);
- runs.forEach(function(items){
-  if(items.length<2)return;
-  var line=items.map(function(point,i){return(i?'L':'M')+point.x+','+point.y;}).join('');
-  svg+='<path class="an-premium-area" d="'+line+'L'+items[items.length-1].x+','+bottom+'L'+items[0].x+','+bottom+'Z" fill="url(#'+gradientId+')"/><path class="an-premium-line" d="'+line+'" fill="none" stroke="'+(color||AN_PREMIUM_ORANGE)+'" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
- });
+ function drawSeries(key,stroke,fillId){
+  var runs=[],run=[];
+  points.forEach(function(point,i){if(point[key]==null){if(run.length)runs.push(run);run=[];}else run.push({x:x(i),y:y(point[key])});});if(run.length)runs.push(run);
+  runs.forEach(function(items){
+   if(items.length<2)return;
+   var line=items.map(function(point,i){return(i?'L':'M')+point.x+','+point.y;}).join('');
+   svg+='<path class="an-premium-area" d="'+line+'L'+items[items.length-1].x+','+bottom+'L'+items[0].x+','+bottom+'Z" fill="url(#'+fillId+')"/><path class="an-premium-line" d="'+line+'" fill="none" stroke="'+stroke+'" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+  });
+  points.forEach(function(point,i){
+   if(point[key]!=null)svg+='<circle class="an-premium-point" data-premium-dot="'+i+'" cx="'+x(i)+'" cy="'+y(point[key])+'" r="'+(points.length>31?2:3.5)+'" fill="white" stroke="'+stroke+'" stroke-width="2"/>';
+  });
+ }
+ drawSeries('value',color||AN_PREMIUM_ORANGE,gradientId);
+ if(secondary){
+  var secondId=gradientId+'-second';
+  svg+='<defs><linearGradient id="'+secondId+'" href="#'+gradientId+'"><stop offset="0%" stop-color="'+secondary.color+'" stop-opacity=".18"/><stop offset="100%" stop-color="'+secondary.color+'" stop-opacity=".015"/></linearGradient></defs>';
+  drawSeries(secondary.key,secondary.color,secondId);
+ }
  var every=Math.max(1,Math.ceil((points.length-1)/Math.max(1,Math.floor(plotW/70))));
  points.forEach(function(point,i){
-  if(point.value!=null)svg+='<circle class="an-premium-point" data-premium-dot="'+i+'" cx="'+x(i)+'" cy="'+y(point.value)+'" r="'+(points.length>31?2:3.5)+'" fill="white" stroke="'+(color||AN_PREMIUM_ORANGE)+'" stroke-width="2"/>';
   if(i===points.length-1||(points.length-1-i)%every===0)svg+='<text x="'+x(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="11" font-weight="500" fill="#747B88">'+point.label+'</text>';
  });
  svg+='<g data-premium-marker visibility="hidden" pointer-events="none"><line data-premium-guide y1="'+padT+'" y2="'+bottom+'" stroke="'+(color||AN_PREMIUM_ORANGE)+'" stroke-opacity=".45"/><circle data-premium-halo r="12" fill="'+(color||AN_PREMIUM_ORANGE)+'" fill-opacity=".13"/><circle data-premium-selected r="5" fill="'+(color||AN_PREMIUM_ORANGE)+'" stroke="white" stroke-width="2"/></g>';
@@ -68,7 +78,7 @@ function anMetricLine(el,points,height,label,color){
  var show=function(index,event){
   active=index;el.dataset.activePoint=String(index);
   var point=points[index],marker=el.querySelector('[data-premium-marker]'),guide=el.querySelector('[data-premium-guide]');
-  root.setAttribute('aria-label',label+'. '+point.label+': '+(color?anNum(point.value):point.amountCents==null?'нет суммы':anPremiumMoney(point.amountCents)));
+  root.setAttribute('aria-label',label+'. '+point.label+': '+(color?anNum(point.value):point.amountCents==null?'нет суммы':anPremiumMoney(point.amountCents))+(secondary?' · '+secondary.label+': '+anNum(point[secondary.key]):''));
   marker.setAttribute('visibility','visible');guide.setAttribute('x1',x(index));guide.setAttribute('x2',x(index));
   ['halo','selected'].forEach(function(part){var dot=el.querySelector('[data-premium-'+part+']');dot.setAttribute('visibility',point.value==null?'hidden':'visible');dot.setAttribute('cx',x(index));dot.setAttribute('cy',point.value==null?bottom:y(point.value));});
   if(!event){var bounds=root.getBoundingClientRect();event={clientX:bounds.left+x(index),clientY:bounds.top+(point.value==null?bottom:y(point.value))};}

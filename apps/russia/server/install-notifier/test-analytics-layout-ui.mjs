@@ -231,6 +231,7 @@ if(process.argv.includes('--serve')) {
    },kind);
    assert.deepEqual(await page.locator('#'+id+' b').allTextContents(),expected);
   }
+  assert.deepEqual(await page.locator('#an-site-chart .an-premium-line').evaluateAll(lines=>lines.map(line=>line.getAttribute('stroke'))),['#0574F8','#22a875']);
   const siteBox=await page.locator('#an-site-activity').boundingBox();
   assert.ok(siteBox.y>geo.y+geo.height,'site activity is a separate lower card');
   const expectedGrowth=await page.evaluate(()=>({

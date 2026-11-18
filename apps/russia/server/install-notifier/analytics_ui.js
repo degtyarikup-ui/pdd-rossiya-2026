@@ -382,8 +382,7 @@ function anPlot(data) {
   var b=anSum(bk.days,function(d){return d.clicks;});
   var head=anDayLabel(bk.from,true)+(bk.to!==bk.from?' — '+anDayLabel(bk.to):'');
   var tip='<b>'+head+'</b><div class="an-tip-row"><span>Просмотры</span><b>'+anNum(a)+'</b></div><div class="an-tip-row"><span>Переходы</span><b>'+anNum(b)+'</b></div>';
-  bars.push({value:a,color:AN_C.accent,label:anDayLabel(bk.to),tip:tip});
-  bars.push({value:b,color:AN_C.green,label:'',tip:tip});
+  bars.push({value:a,clicks:b,label:anDayLabel(bk.to),tip:tip});
   [['Первые запуски',launches,anSum(bk.days,function(d){return d.installs;}),AN_C.accent],['Новые аккаунты',registrations,anSum(bk.days,function(d){return u&&(u.registrationsByDay||{})[d.date];}),AN_C.green]].forEach(function(m){
    m[1].push({value:m[2],label:anDayLabel(bk.to),tip:'<b>'+head+'</b><div class="an-tip-row"><span>'+m[0]+'</span><b>'+anNum(m[2])+'</b></div>'});
   });
@@ -393,7 +392,7 @@ function anPlot(data) {
   if(tl.length&&m[2])anMetricLine(el,m[1],205,m[4],m[3]);else el.innerHTML='<div class="an-empty">Нет данных за период</div>';
  });
  var el=document.getElementById('an-site-chart');
- if(tl.length)anBars(el,bars,205);else el.innerHTML='<div class="an-empty">Нет данных за период</div>';
+ if(tl.length)anMetricLine(el,bars,205,'Просмотры',AN_C.accent,{key:'clicks',label:'Переходы',color:AN_C.green});else el.innerHTML='<div class="an-empty">Нет данных за период</div>';
  document.getElementById('an-installs-caption').textContent=tl.some(function(d){return d.date<AN_RELIABLE_FROM;})?'До 25.09 данные о первых запусках неполные.':'';
 }
 function anPercent(value,total) { var pct=total?value/total*100:0;return pct>0&&pct<1?'&lt;1%':Math.round(pct)+'%'; }
