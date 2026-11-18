@@ -143,7 +143,7 @@ if(process.argv.includes('--serve')) {
   ];
   await page.evaluate(days=>anRenderActivity({usage:{activity:{days}}}),days);
   assert.match(await activitySummary.innerText(),/Среднее\s*15/);
-  assert.deepEqual(await activityChart.locator('svg > text').allTextContents(),['0','30','6.11','7.11','8.11']);
+  assert.deepEqual(await activityChart.locator('svg > text').allTextContents(),['6.11','7.11','8.11']);
   assert.equal(await activityChart.locator('rect[data-i]').count(),days.length);
   const segments=await activityChart.locator('svg > path').evaluateAll(paths=>paths.map(path=>{
    const {x,y,width,height}=path.getBBox();

@@ -296,7 +296,7 @@ var anBarResize = new ResizeObserver(function (entries) {
 function anBars(el, bars, height, stacked) {
   if (!anBarCharts.has(el)) anBarResize.observe(el);
   anBarCharts.set(el, {bars:bars, height:height, stacked:stacked});
-  var W = Math.max(120, el.clientWidth), H = height, padL = el.clientWidth < 260 ? 36 : 54, padB = 28, padT = 12;
+  var W = Math.max(120, el.clientWidth), H = height, padL = 0, padB = 28, padT = 12;
   var plotW = W - padL, plotH = H - padB - padT, n = bars.length;
   var segments = bars.map(function (b) {
     return (stacked ? b.segments : [b]).filter(function (segment) { return segment.value > 0; });
@@ -311,7 +311,6 @@ function anBars(el, bars, height, stacked) {
   var s = '<svg width="' + W + '" height="' + H + '" role="img">';
   [0, max].forEach(function (g) {
     s += '<line x1="' + padL + '" x2="' + W + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#EFF0F4"/>';
-    s += '<text x="' + (padL - 10) + '" y="' + (y(g) + 4) + '" text-anchor="end" font-size="11" font-weight="500" fill="#747B88">' + anNum(g) + '</text>';
   });
   var perDay = stacked ? 1 : 2;
   var every = perDay * Math.ceil((n / perDay) / Math.max(2, Math.floor(plotW / (stacked ? 48 : 70))));
@@ -326,7 +325,7 @@ function anBars(el, bars, height, stacked) {
       s += '<path fill="' + segment.color + '" d="M' + x + ',' + bottom + 'V' + (top + rr) + 'Q' + x + ',' + top + ' ' + (x + rr) + ',' + top
         + 'H' + (x + bw - rr) + 'Q' + (x + bw) + ',' + top + ' ' + (x + bw) + ',' + (top + rr) + 'V' + bottom + 'Z"/>';
     });
-    if (b.label && (n - perDay - i) % every === 0) s += '<text x="' + Math.min(W - 20, center) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="11" font-weight="500" fill="#747B88">' + b.label + '</text>';
+    if (b.label && (n - perDay - i) % every === 0) s += '<text x="' + Math.max(18, Math.min(W - 18, center)) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="11" font-weight="500" fill="#747B88">' + b.label + '</text>';
     s += '<rect data-i="' + i + '" x="' + (padL + i * slot) + '" y="0" width="' + slot + '" height="' + (padT + plotH) + '" fill="transparent"/>';
   });
   el.innerHTML = s + '</svg>';

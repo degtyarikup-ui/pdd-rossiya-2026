@@ -43,12 +43,12 @@ function anMetricLine(el,points,height,label,color,secondary){
  var gradientId=el.id+'-area';
  if(!anPremiumCharts.has(el))anPremiumResize.observe(el);
  anPremiumCharts.set(el,{points:points,height:height,label:label,color:color,secondary:secondary});
- var W=Math.max(120,el.clientWidth),H=height,padL=el.clientWidth<350?40:54,padR=12,padT=16,padB=30,plotW=W-padL-padR,plotH=H-padT-padB;
+ var W=Math.max(120,el.clientWidth),H=height,padL=12,padR=12,padT=16,padB=30,plotW=W-padL-padR,plotH=H-padT-padB;
  var max=Math.max.apply(null,points.map(function(point){return Math.max(point.value||0,secondary?point[secondary.key]||0:0);}).concat([1]));
  var x=function(i){return points.length===1?padL+plotW/2:padL+i*plotW/(points.length-1);};
  var y=function(value){return padT+plotH-value/max*plotH;},bottom=y(0);
  var svg='<svg width="'+W+'" height="'+H+'" role="img" tabindex="0" aria-label="'+anEsc(label)+'"><desc>Стрелки влево и вправо выбирают день и значение. Home — первый день, End — последний.</desc><defs><linearGradient id="'+gradientId+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+(color||AN_PREMIUM_ORANGE)+'" stop-opacity=".22"/><stop offset="100%" stop-color="'+(color||AN_PREMIUM_ORANGE)+'" stop-opacity=".015"/></linearGradient></defs>';
- [0,max].forEach(function(value){svg+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+y(value)+'" y2="'+y(value)+'" stroke="#EFF0F4"/><text x="'+(padL-10)+'" y="'+(y(value)+4)+'" text-anchor="end" font-size="11" font-weight="500" fill="#747B88">'+anNum(value)+'</text>';});
+ [0,max].forEach(function(value){svg+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+y(value)+'" y2="'+y(value)+'" stroke="#EFF0F4"/>';});
  function drawSeries(key,stroke,fillId){
   var runs=[],run=[];
   points.forEach(function(point,i){if(point[key]==null){if(run.length)runs.push(run);run=[];}else run.push({x:x(i),y:y(point[key])});});if(run.length)runs.push(run);
@@ -69,7 +69,7 @@ function anMetricLine(el,points,height,label,color,secondary){
  }
  var every=Math.max(1,Math.ceil((points.length-1)/Math.max(1,Math.floor(plotW/70))));
  points.forEach(function(point,i){
-  if(i===points.length-1||(points.length-1-i)%every===0)svg+='<text x="'+x(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="11" font-weight="500" fill="#747B88">'+point.label+'</text>';
+  if(i===points.length-1||(points.length-1-i)%every===0)svg+='<text x="'+Math.max(18,Math.min(W-18,x(i)))+'" y="'+(H-6)+'" text-anchor="middle" font-size="11" font-weight="500" fill="#747B88">'+point.label+'</text>';
  });
  svg+='<g data-premium-marker visibility="hidden" pointer-events="none"><line data-premium-guide y1="'+padT+'" y2="'+bottom+'" stroke="'+(color||AN_PREMIUM_ORANGE)+'" stroke-opacity=".45"/><circle data-premium-halo r="12" fill="'+(color||AN_PREMIUM_ORANGE)+'" fill-opacity=".13"/><circle data-premium-selected r="5" fill="'+(color||AN_PREMIUM_ORANGE)+'" stroke="white" stroke-width="2"/></g>';
  points.forEach(function(point,i){var left=i? (x(i-1)+x(i))/2:padL,right=i<points.length-1?(x(i)+x(i+1))/2:W-padR;svg+='<rect data-i="'+i+'" data-premium-point="'+i+'" x="'+left+'" y="0" width="'+Math.max(1,right-left)+'" height="'+bottom+'" fill="transparent"/>';});
