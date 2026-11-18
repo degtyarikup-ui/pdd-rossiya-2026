@@ -170,8 +170,9 @@ export const ADMIN_UI_STYLES = `
     transform: scale(1.05);
   }
   .sidebar.collapsed .sidebar-toggle-btn {
-    width: 36px !important;
-    height: 28px !important;
+    width: 28px;
+    height: 28px;
+    flex: none;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
