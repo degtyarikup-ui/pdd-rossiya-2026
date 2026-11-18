@@ -622,8 +622,6 @@ async function recordDistribution(env, kind, action, body, now) {
         if (paidOn !== body.date) throw new Error('Укажите календарную дату покупки');
         entry.kind = 'development';
         entry.title = title(body.title);
-        if (typeof body.payer !== 'string' || !body.payer.trim() || body.payer.trim().length > 160) throw new Error('Укажите, кто оплатил покупку');
-        entry.payer = body.payer.trim();
       }
     } catch (error) { return reply({ error: error.message }, 400); }
   }

@@ -560,7 +560,7 @@ if (!process.argv.includes('--serve')) test('share rows show accruals, payouts a
     await fundRow.getByRole('button',{name:'Внести расход'}).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Что оплатили').fill('ChatGPT');
-    await dialog.getByLabel('Кто оплатил').fill('Сергей');
+    assert.equal(await dialog.getByLabel('Кто оплатил').count(),0);
     await dialog.getByLabel('Сумма, $',{exact:true}).fill('20');
     const opening = current.settlements.find(share => share.id.startsWith('fund-')).remainingUsd;
     assert.ok((await dialog.locator('#ec-form-preview').innerText()).includes(usd(opening-20)));
@@ -569,7 +569,7 @@ if (!process.argv.includes('--serve')) test('share rows show accruals, payouts a
     await page.locator('[data-ec-view="ledger"]').click();
     await page.getByLabel('Вид операций').selectOption('development');
     const purchase = page.locator('#ec-receipts-body tr').filter({hasText:'ChatGPT'});
-    assert.match(await purchase.innerText(),/Сергей/);
+    assert.doesNotMatch(await purchase.innerText(),/Плательщик|undefined/);
     await purchase.getByRole('button',{name:'ChatGPT',exact:true}).click();
     await dialog.getByLabel('Сумма, $',{exact:true}).fill('21.50');
     await dialog.getByRole('button',{name:'Сохранить',exact:true}).click();

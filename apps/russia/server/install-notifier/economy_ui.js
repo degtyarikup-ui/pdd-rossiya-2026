@@ -384,7 +384,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
    rows.push({key:'payout:'+item.id,id:item.id,kind:'payout',date:item.date,title:item.partnerName,sourceKey:'other',source:monthText(item.month),amountUsd:item.amount,editKind:'payout',original:item});
   });
   (stats.development||[]).forEach(function(item){
-   rows.push({key:'development:'+item.id,id:item.id,kind:'development',date:item.date,title:item.title,sourceKey:'other',source:item.partnerName,sub:'Плательщик — '+item.payer,amountUsd:item.amount,editKind:'development',original:item});
+   rows.push({key:'development:'+item.id,id:item.id,kind:'development',date:item.date,title:item.title,sourceKey:'other',source:item.partnerName,amountUsd:item.amount,editKind:'development',original:item});
   });
   (stats.withdrawals||[]).forEach(function(item){
    var received=item.feeMode==='included'?item.amount-item.fee:item.amount;
@@ -508,11 +508,8 @@ export const ECONOMY_CLIENT_JS = String.raw`
    var direct=dialogContext.direct,selected=stats.selectedMonth,current=today();
    var paidOn=item.date??(selected&&selected!==current.slice(0,7)?'':current);
    var month=paidOn.slice(0,7)||selected||current.slice(0,7);
-   var partners=(stats.payoutPartners||[]).filter(function(version){return version.from<=month;}).at(-1)?.partners||[];
-   var payers='<datalist id="ec-payers">'+partners.map(function(person){return '<option value="'+esc(person.name)+'"></option>';}).join('')+'</datalist>';
    return (direct?'':typeField)+input('title','Что оплатили',item.title||'',{type:'text',full:true})+
     input('amount','Сумма, $',item.amount??'',{min:0.01})+input('date','Дата оплаты',paidOn,{type:'date',max:current})+
-    '<label class="ec-field full"><span>Кто оплатил</span><input type="text" name="payer" list="ec-payers" maxlength="160" required value="'+esc(item.payer||'')+'"></label>'+payers+
     '<div class="ec-fund-field">'+developmentFundField(month,item.partnerId)+'</div><div class="ec-form-preview" id="ec-form-preview" hidden></div>';
   }
   if(kind==='payout'){
@@ -598,7 +595,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
   formNote(note);
  }
  function previewLine(label,value){return '<div class="ec-preview-line"><span>'+esc(label)+'</span><b>'+esc(value)+'</b></div>';}
- function formDraft(){var result={};['title','date','amount','currency','fee','feeMode','store','frequency','endDate','month','partnerId','payer'].forEach(function(name){var node=field(name);if(node)result[name]=node.value;});return result;}
+ function formDraft(){var result={};['title','date','amount','currency','fee','feeMode','store','frequency','endDate','month','partnerId'].forEach(function(name){var node=field(name);if(node)result[name]=node.value;});return result;}
  function detailLine(label,value,raw){return '<dt>'+esc(label)+'</dt><dd>'+ (raw?value:esc(value))+'</dd>';}
  function showDetails(key){
   var row=journal.find(function(item){return item.key===key;});if(!row){var invoice=(stats.expenses.lines||[]).find(function(line){return line.imported&&'expense:'+line.id===key;});if(invoice)row={title:invoice.title,amountUsd:invoice.amountUsd,date:invoice.date,source:'Cloudflare · весь аккаунт',original:invoice};}if(!row||saving)return;
@@ -623,7 +620,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
    if(!el('ec-form').reportValidity())return;
    if(kind==='payout'||kind==='development'){
     body={id:context.id||context.createId,revision:context.item.revision,partnerId:field('partnerId').value,date:field('date').value,amount:Number(field('amount').value)};
-    if(kind==='development'){body.title=field('title').value.trim();body.payer=field('payer').value.trim();}else{body.month=field('month').value;}
+    if(kind==='development'){body.title=field('title').value.trim();}else{body.month=field('month').value;}
     path=group+'/'+(context.id?'update':'add');
    }else if(Object.hasOwn(operationTypes,kind)){
     body={title:field('title').value.trim(),amount:Number(field('amount').value),currency:field('currency').value,date:field('date').value};

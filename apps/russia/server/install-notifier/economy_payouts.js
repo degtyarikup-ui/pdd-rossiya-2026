@@ -21,7 +21,7 @@ export class EconomyPayouts {
     const { action, id, revision, entry } = await request.json();
     const development = path === '/development';
     const key = (development ? 'dev:' : 'pay:') + id;
-    const fields = development ? ['partnerId','month','date','amount','title','payer'] : ['partnerId','month','date','amount'];
+    const fields = development ? ['partnerId','month','date','amount','title'] : ['partnerId','month','date','amount'];
     const result = await this.storage.transaction(async tx => {
       const old = await tx.get(key);
       const replay = action === 'add' && old?.revision === 1 || action === 'update' && old?.revision === revision + 1;
@@ -38,7 +38,7 @@ export class EconomyPayouts {
         entry.partnerName = old.partnerName;
       }
       const next = action === 'delete' ? { deleted: true, revision: revision + 1 }
-        : { ...entry, id, revision: (old?.revision || 0) + 1 };
+        : { ...old, ...entry, id, revision: (old?.revision || 0) + 1 };
       await tx.put(key, next);
       return action === 'delete' ? { ok: true, id } : { ok: true, [development ? 'expense' : 'payout']: next };
     });

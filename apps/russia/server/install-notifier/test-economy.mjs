@@ -765,8 +765,8 @@ test('fund purchases debit the payment month once and leave operating profit and
     manualRevenues:[{id:'sale',title:'Продажи',amount:200,currency:'USD',store:'other',date:'2026-10-04'}]});
   const initial = await stats(env);
   const [fund,person] = initial.settlements;
-  const body = {id:crypto.randomUUID(),date:'2026-10-05',title:'ChatGPT',payer:'Сергей',amount:20.25,partnerId:fund.id};
-  for (const invalid of [{partnerId:person.id},{amount:0},{amount:1.001},{date:'2026-09-31'},{date:'2026-10-17'},{title:' '},{payer:' '}]) {
+  const body = {id:crypto.randomUUID(),date:'2026-10-05',title:'ChatGPT',amount:20.25,partnerId:fund.id};
+  for (const invalid of [{partnerId:person.id},{amount:0},{amount:1.001},{date:'2026-09-31'},{date:'2026-10-17'},{title:' '}]) {
     assert.equal((await api(env,'development/add',{...body,...invalid})).status,400);
   }
   const write = (action, values) => api(env,'development/'+action,{...body,...values});
@@ -779,7 +779,7 @@ test('fund purchases debit the payment month once and leave operating profit and
   assert.deepEqual(saved.settlements[1],person);
   assert.deepEqual(saved.payouts,[]);
   assert.equal(saved.development.length,1);
-  assert.equal(saved.development[0].payer,'Сергей');
+  assert.equal(Object.hasOwn(saved.development[0],'payer'),false);
   assert.deepEqual([balance(saved).paidUsd,balance(saved).remainingUsd],[20.25,79.75]);
   assert.equal((await write('update',{date:'2026-09-30',amount:21,revision:1})).status,200);
   assert.equal((await write('update',{amount:22,revision:1})).status,409);
@@ -792,4 +792,19 @@ test('fund purchases debit the payment month once and leave operating profit and
   assert.equal((await write('delete',{revision:2})).status,200);
   assert.equal((await write('add')).status,409);
   assert.deepEqual((await stats(env,'2026-09')).development,[]);
+});
+
+test('a fund purchase stored with a payer can be retried and edited by the shorter form', async () => {
+  const env = { ...environment(), ECONOMY_PAYOUTS:payoutBinding() };
+  const fund = (await stats(env)).settlements.find(row=>row.id.startsWith('fund-'));
+  const body = {id:crypto.randomUUID(),date:'2026-10-05',title:'Подписка',amount:12,partnerId:fund.id};
+  const ledger = env.ECONOMY_PAYOUTS.get(env.ECONOMY_PAYOUTS.idFromName('project'));
+  const legacy = {...body,kind:'development',month:'2026-10',partnerName:fund.name,payer:'Сергей'};
+  await ledger.fetch('https://ledger/development',{method:'POST',body:JSON.stringify({action:'add',id:body.id,entry:legacy})});
+  assert.equal((await api(env,'development/add',body)).status,200);
+  assert.equal((await api(env,'development/update',{...body,revision:1,amount:15})).status,200);
+  const { development } = await stats(env);
+  assert.equal(development.length,1);
+  assert.equal(development[0].amount,15);
+  assert.equal(development[0].payer,'Сергей');
 });
