@@ -20,7 +20,7 @@ export const ECONOMY_VIEW_HTML = String.raw`
 #economy-view .ec-row-title{border:0;background:none;padding:0;color:inherit;font-size:12px;font-weight:550;text-align:left;line-height:1.5;max-width:100%;overflow-wrap:anywhere}#economy-view .ec-row-title:hover{color:var(--ec-blue)}.ec-badge{display:inline-block;font-size:10px;color:#8791A0;font-weight:400;margin-left:6px}.ec-badge.test{color:#A66A12}#economy-view .ec-edit{display:inline-flex;align-items:center;justify-content:center;border:0;background:#F3F5F8;color:#717D90;width:32px;height:32px;border-radius:9px;padding:7px;flex-shrink:0}#economy-view .ec-edit:hover{background:#E8F1FF;color:var(--ec-blue)}.ec-edit svg{width:14px;height:14px}.ec-empty{text-align:center;padding:36px 12px!important;color:var(--ec-muted);font-size:12px}.ec-pager{margin-top:15px;font-size:11px;color:var(--ec-muted)}.ec-pager .ec-actions{gap:6px}
 /* A shared operation colour in the overview and the journal. */
 #ec-receipts-body tr,.ec-recent-row{--ec-operation:#137A54;--ec-operation-bg:#E8F5EE}
-#economy-view [data-row-kind="expense"]{--ec-operation:#B44337;--ec-operation-bg:#FCEEEA}
+#economy-view [data-row-kind="expense"],#economy-view [data-row-kind="development"]{--ec-operation:#B44337;--ec-operation-bg:#FCEEEA}
 #economy-view [data-row-kind="withdrawal"]{--ec-operation:#1D60B4;--ec-operation-bg:#EAF2FF}
 #economy-view [data-row-kind="commission"]{--ec-operation:#94620B;--ec-operation-bg:#FFF3DC}
 .ec-source-logo{display:inline-flex;width:14px;height:14px;vertical-align:-3px;margin-right:4px;align-items:center;justify-content:center}.ec-source-logo svg,.ec-source-logo img{display:block;width:14px;height:14px}
@@ -31,7 +31,7 @@ export const ECONOMY_VIEW_HTML = String.raw`
 #ec-receipts-body tr:hover{background:#FAFBFD}#ec-receipts-body .ec-row-title:focus-visible{outline:2px solid var(--ec-blue);outline-offset:4px;border-radius:3px}
 .ec-disclosure{background:#fff;border-radius:18px;margin-top:14px}.ec-disclosure>summary{display:flex;align-items:center;gap:12px;list-style:none;cursor:pointer;padding:18px 24px;font-size:12px;font-weight:550}.ec-disclosure>summary::-webkit-details-marker{display:none}.ec-disclosure>summary:after{content:'+';margin-left:auto;color:#89919F;font-size:18px;font-weight:400}.ec-disclosure[open]>summary:after{content:'−'}.ec-disclosure-body{padding:0 24px 22px}.ec-register-tools{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:0 0 14px}.ec-register-tools select{padding:8px 12px}.ec-register-note{font-size:11px;color:var(--ec-muted);margin-top:13px}.ec-planner-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}.ec-planner-grid>div+div{border-left:1px solid var(--ec-line);padding-left:24px}.ec-plan-title{font-size:12px;font-weight:550;margin-bottom:10px}.ec-plan-amount{font-size:25px;font-weight:580;letter-spacing:-.7px;margin-bottom:8px}.ec-plan-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ec-plan-numbers{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}.ec-plan-numbers strong{display:block;font-size:18px;font-weight:570;margin-top:4px;color:#343B49}.ec-plan-controls label{font-size:11px;color:var(--ec-muted);display:flex;flex-direction:column;gap:6px}.ec-plan-controls input{padding:9px 12px;box-sizing:border-box;width:100%}
 .ec-platega-balances{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.ec-platega-balance{padding:14px 16px;background:var(--ec-soft);border-radius:12px}.ec-platega-balance strong{display:block;font-size:21px;font-weight:570;letter-spacing:-.4px;margin:4px 0;font-variant-numeric:tabular-nums}.ec-platega-status{font-size:11px;color:var(--ec-muted);min-width:0}.ec-platega-status.error{color:var(--ec-red)}.ec-feedback{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#E9F6EF;color:#16774F;font-size:12px;padding:12px 16px;margin-bottom:15px;border-radius:12px}.ec-feedback.error{background:#FCEDE8;color:#B1432D}.ec-feedback button{border:0;background:none;color:inherit;font-size:18px;padding:0;line-height:1}
-#ec-dialog{margin:auto;padding:0;border:0;border-radius:22px;width:min(460px,calc(100% - 32px));max-height:calc(100svh - 32px);overflow:auto;color:#17191E;background:#fff;box-shadow:0 20px 80px #17223622}#ec-dialog::backdrop{background:#17223655;backdrop-filter:blur(3px)}#ec-form{padding:26px}#ec-dialog h2{font-size:21px;font-weight:600;letter-spacing:-.6px;margin:0 0 21px}.ec-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.ec-field{display:flex;flex-direction:column;gap:7px;font-size:11px;font-weight:500;color:#6D7583;min-width:0}.ec-field.full{grid-column:1/-1}.ec-field input,.ec-field select{width:100%;box-sizing:border-box;padding:11px 12px;font-weight:450}.ec-form-check{display:flex;align-items:center;gap:8px;grid-column:1/-1;font-size:12px;color:#555E6E}.ec-form-preview{grid-column:1/-1;background:var(--ec-soft);border-radius:11px;padding:13px;font-size:12px;color:var(--ec-muted);line-height:1.65}.ec-share-fields,.ec-share-add{grid-column:1/-1}.ec-share-add{justify-self:start}.ec-share-fields{display:grid;gap:14px}.ec-share-row{display:grid;grid-template-columns:minmax(0,1fr) 72px auto;align-items:end;gap:8px}.ec-preview-line>span{min-width:0;overflow-wrap:anywhere}.ec-preview-line> b{white-space:nowrap}.ec-preview-line{display:flex;align-items:center;justify-content:space-between;gap:10px}.ec-form-preview b{font-weight:600;color:#343B49;font-variant-numeric:tabular-nums}.ec-form-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:23px}.ec-form-actions #ec-delete{margin-right:auto}.ec-form-error{font-size:12px;color:#B1432D;background:#FCEDE8;padding:11px 12px;border-radius:10px;margin-top:16px}.ec-form-note{font-size:11px;color:var(--ec-muted);margin:13px 0 0;line-height:1.5}.ec-settings-extra{grid-column:1/-1;border-top:1px solid var(--ec-line);padding-top:12px}.ec-settings-extra summary{cursor:pointer;font-size:12px;font-weight:500;color:#555E6E}.ec-settings-extra .ec-form-grid{margin-top:16px}.ec-detail-list{grid-column:1/-1;margin:0;display:grid;grid-template-columns:1fr auto;gap:12px 18px;font-size:12px}.ec-detail-list dt{color:var(--ec-muted)}.ec-detail-list dd{margin:0;text-align:right;overflow-wrap:anywhere;min-width:0;max-width:240px}.ec-detail-list .ec-wide{grid-column:1/-1;text-align:left}.ec-detail-copy{font:inherit;background:var(--ec-soft);border:0;padding:8px 10px;border-radius:8px;max-width:100%;overflow-wrap:anywhere;color:#576476;text-align:left}
+#ec-dialog{margin:auto;padding:0;border:0;border-radius:22px;width:min(460px,calc(100% - 32px));max-height:calc(100svh - 32px);overflow:auto;color:#17191E;background:#fff;box-shadow:0 20px 80px #17223622}#ec-dialog::backdrop{background:#17223655;backdrop-filter:blur(3px)}#ec-form{padding:26px}#ec-dialog h2{font-size:21px;font-weight:600;letter-spacing:-.6px;margin:0 0 21px}.ec-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.ec-field{display:flex;flex-direction:column;gap:7px;font-size:11px;font-weight:500;color:#6D7583;min-width:0}.ec-field.full{grid-column:1/-1}.ec-field input,.ec-field select{width:100%;box-sizing:border-box;padding:11px 12px;font-weight:450}.ec-form-check{display:flex;align-items:center;gap:8px;grid-column:1/-1;font-size:12px;color:#555E6E}.ec-form-preview{grid-column:1/-1;background:var(--ec-soft);border-radius:11px;padding:13px;font-size:12px;color:var(--ec-muted);line-height:1.65}.ec-share-fields,.ec-share-add,.ec-fund-field{grid-column:1/-1}.ec-fund-field:has(input[type="hidden"]){display:none}.ec-share-add{justify-self:start}.ec-share-fields{display:grid;gap:14px}.ec-share-row{display:grid;grid-template-columns:minmax(0,1fr) 72px auto;align-items:end;gap:8px}.ec-preview-line>span{min-width:0;overflow-wrap:anywhere}.ec-preview-line> b{white-space:nowrap}.ec-preview-line{display:flex;align-items:center;justify-content:space-between;gap:10px}.ec-form-preview b{font-weight:600;color:#343B49;font-variant-numeric:tabular-nums}.ec-form-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:23px}.ec-form-actions #ec-delete{margin-right:auto}.ec-form-error{font-size:12px;color:#B1432D;background:#FCEDE8;padding:11px 12px;border-radius:10px;margin-top:16px}.ec-form-note{font-size:11px;color:var(--ec-muted);margin:13px 0 0;line-height:1.5}.ec-settings-extra{grid-column:1/-1;border-top:1px solid var(--ec-line);padding-top:12px}.ec-settings-extra summary{cursor:pointer;font-size:12px;font-weight:500;color:#555E6E}.ec-settings-extra .ec-form-grid{margin-top:16px}.ec-detail-list{grid-column:1/-1;margin:0;display:grid;grid-template-columns:1fr auto;gap:12px 18px;font-size:12px}.ec-detail-list dt{color:var(--ec-muted)}.ec-detail-list dd{margin:0;text-align:right;overflow-wrap:anywhere;min-width:0;max-width:240px}.ec-detail-list .ec-wide{grid-column:1/-1;text-align:left}.ec-detail-copy{font:inherit;background:var(--ec-soft);border:0;padding:8px 10px;border-radius:8px;max-width:100%;overflow-wrap:anywhere;color:#576476;text-align:left}
 @media(max-width:900px){.ec-planner-grid{grid-template-columns:1fr}.ec-planner-grid>div+div{border-left:0;border-top:1px solid var(--ec-line);padding:20px 0 0}}
 @media(max-width:600px){#economy-view .ec-card{padding:18px}.ec-ledger-tools{flex-wrap:wrap;gap:9px}.ec-search{flex-basis:100%}.ec-ledger-tools select{flex:1;max-width:none}.ec-disclosure>summary{padding:18px}.ec-disclosure-body{padding:0 18px 20px}
  #economy-view .ec-table,#economy-view .ec-table tbody{display:block}#economy-view .ec-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}#economy-view .ec-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto 28px;gap:5px 9px;padding:14px 0;border-top:1px solid var(--ec-line);align-items:center}#economy-view .ec-table td{border:0;padding:0;min-width:0}#economy-view .ec-table .ec-name{min-width:0;max-width:none;grid-column:1;grid-row:1}#economy-view .ec-table .ec-date{grid-column:1;grid-row:2;font-size:10.5px;width:auto}#economy-view .ec-table .ec-kind{grid-column:1;grid-row:3;font-size:10px}#economy-view .ec-table .ec-money{grid-column:2;grid-row:1/3;white-space:normal;overflow-wrap:anywhere;max-width:112px;font-size:12px}#economy-view .ec-table .ec-cell-action{grid-column:3;grid-row:1/3;width:auto}#economy-view .ec-table .ec-empty{grid-column:1/-1}.ec-table .ec-edit{width:28px!important;height:30px!important}#ec-form{padding:22px}.ec-detail-list dd{max-width:180px}}
@@ -105,9 +105,9 @@ export const ECONOMY_VIEW_HTML = String.raw`
  .ec-share-table :is(th,td){padding:0;text-align:start;min-width:0}
  .ec-share-table tbody th{grid-column:1/-1;grid-row:1}
  .ec-share-table td{grid-column:span 2}
- .ec-share-table tr:has(.ec-pay-partner) th{grid-column:1/4}
+ .ec-share-table tr:has(.ec-share-action button) th{grid-column:1/4}
  .ec-share-table .ec-share-action{grid-column:4/7;grid-row:1;text-align:right}
- .ec-share-table .ec-pay-partner{max-width:100%}
+ .ec-share-table .ec-share-action button{max-width:100%}
  .ec-share-caption{display:block;color:var(--text-muted);font-size:var(--admin-type-caption);font-weight:normal}
  .ec-share-table .ec-share-na,.ec-share-table .ec-share-action:empty{display:none}
  .ec-share-table .ec-allocation-only th{grid-column:1/5}
@@ -183,7 +183,7 @@ export const ECONOMY_VIEW_HTML = String.raw`
 <section id="ec-ledger" aria-label="Журнал операций" hidden>
 <section class="ec-card" aria-labelledby="ec-income-title">
  <div class="ec-head"><div class="ec-head-title"><h2 id="ec-income-title">Операции</h2><span class="ec-caption" id="ec-receipts-count"></span></div><span class="ec-caption" id="ec-withdrawn-total"></span></div>
-<div class="ec-ledger-tools"><input type="search" class="ec-search" id="ec-search" placeholder="Поиск операций" aria-label="Поиск операций"><select id="ec-receipt-mode" aria-label="Вид операций"><option value="all">Все операции</option><option value="income">Поступления</option><option value="expense">Расходы</option><option value="withdrawal">Выводы</option><option value="payout">Выплаты долей</option><option value="commission">Комиссии</option></select><select id="ec-store-filter" aria-label="Источник операции"><option value="all">Все источники</option><option value="web">СБП · Platega</option><option value="appstore">App Store</option><option value="googleplay">Google Play</option><option value="rustore">RuStore</option><option value="other">Другие</option></select></div>
+<div class="ec-ledger-tools"><input type="search" class="ec-search" id="ec-search" placeholder="Поиск операций" aria-label="Поиск операций"><select id="ec-receipt-mode" aria-label="Вид операций"><option value="all">Все операции</option><option value="income">Поступления</option><option value="expense">Расходы</option><option value="withdrawal">Выводы</option><option value="payout">Выплаты долей</option><option value="development">Расходы фонда</option><option value="commission">Комиссии</option></select><select id="ec-store-filter" aria-label="Источник операции"><option value="all">Все источники</option><option value="web">СБП · Platega</option><option value="appstore">App Store</option><option value="googleplay">Google Play</option><option value="rustore">RuStore</option><option value="other">Другие</option></select></div>
  <div class="ec-table-wrap"><table class="ec-table"><thead><tr><th>Дата</th><th>Операция</th><th>Тип</th><th class="ec-money">Сумма</th><th aria-label="Действия"></th></tr></thead><tbody id="ec-receipts-body"><tr><td colspan="5" class="ec-empty">Загрузка операций…</td></tr></tbody></table></div>
  <div class="ec-pager"><span id="ec-page-info"></span><div class="ec-actions"><button type="button" class="btn-action" id="ec-prev" aria-label="Предыдущая страница" disabled>←</button><button type="button" class="btn-action" id="ec-next" aria-label="Следующая страница" disabled>→</button></div></div>
 </section>
@@ -217,8 +217,8 @@ export const ECONOMY_CLIENT_JS = String.raw`
  var feedbackTimer=null;
  var stores={web:'СБП · Platega',appstore:'App Store',googleplay:'Google Play',rustore:'RuStore',other:'Другое'};
  var frequencies={once:'Без повторения',monthly:'Ежемесячно',yearly:'Ежегодно'};
- var operationTypes={revenue:'Поступление',expense:'Расход',withdrawal:'Вывод',payout:'Выплата доли',commission:'Комиссия'};
- var kindLabels={income:'Поступление',expense:'Расход',withdrawal:'Вывод',payout:'Выплата доли',commission:'Комиссия'};
+ var operationTypes={revenue:'Поступление',expense:'Расход',withdrawal:'Вывод',payout:'Выплата доли',development:'Расход фонда',commission:'Комиссия'};
+ var kindLabels={income:'Поступление',expense:'Расход',withdrawal:'Вывод',payout:'Выплата доли',development:'Расход фонда',commission:'Комиссия'};
  var operationIconPaths={
   payout:'<circle cx="9" cy="7" r="3"/><path d="M3 19v-2a6 6 0 0 1 9-5m1 5h8m-3-3 3 3-3 3"/>',
   income:'<path d="m17 7-10 10M7 7v10h10"/>',
@@ -226,7 +226,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
   withdrawal:'<path d="M4 4v16m4-8h12m-5-5 5 5-5 5"/>',
   commission:'<path d="m7 17 10-10"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>'
  };
- function operationIcon(kind){return '<span class="ec-operation-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">'+operationIconPaths[kind]+'</svg></span>';}
+ function operationIcon(kind){return '<span class="ec-operation-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">'+operationIconPaths[kind==='development'?'expense':kind]+'</svg></span>';}
  var editIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z M14 5l5 5"/></svg>';
  var infoIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></svg>';
  function el(id){return document.getElementById(id);}
@@ -336,19 +336,21 @@ export const ECONOMY_CLIENT_JS = String.raw`
   el('ec-shares').querySelectorAll('[data-settlements]').forEach(function(header){header.hidden=!monthly;});
   var activeIds=new Set(stats.profitShares.map(function(share){return share.id;}));
   el('ec-allocation-list').innerHTML=shares.map(function(share){
-   var settled=monthly&&!share.id.startsWith('fund-');
+   var fund=share.id.startsWith('fund-');
    var row='<th scope="row"><div class="ec-share-name"><h3>'+esc(share.name)+'</h3><span>'+pct(share.percent)+'</span></div></th>'+
     '<td><span class="ec-share-caption" aria-hidden="true">Начислено</span>'+usd(share.payoutUsd)+'</td>';
-   if(settled){
+   if(monthly){
     var overpaid=share.remainingUsd<0;
-    var balance=overpaid?'<span class="ec-share-credit">Переплата</span>':'<span class="ec-share-caption" aria-hidden="true">Остаток</span>';
-    var action=activeIds.has(share.id)?'<button type="button" class="ec-link ec-pay-partner" data-pay-partner="'+esc(share.id)+'" aria-label="'+esc('Внести выплату · '+share.name)+'">Внести выплату</button>':'';
-    row+='<td><span class="ec-share-caption" aria-hidden="true">Выплачено</span>'+usd(share.paidUsd)+'</td>'+
+    var balance=overpaid?'<span class="ec-share-credit">'+(fund?'Перерасход':'Переплата')+'</span>':'<span class="ec-share-caption" aria-hidden="true">Остаток</span>';
+    var action='';
+    if(activeIds.has(share.id)){
+     action=fund?'<button type="button" class="ec-link" data-fund-expense="'+esc(share.id)+'">Внести расход</button>':
+      '<button type="button" class="ec-link ec-pay-partner" data-pay-partner="'+esc(share.id)+'" aria-label="'+esc('Внести выплату · '+share.name)+'">Внести выплату</button>';
+    }
+    row+='<td><span class="ec-share-caption" aria-hidden="true">'+(fund?'Потрачено':'Выплачено')+'</span>'+usd(share.paidUsd)+'</td>'+
      '<td class="ec-share-balance">'+balance+usd(Math.abs(share.remainingUsd))+'</td><td class="ec-share-action">'+action+'</td>';
-   }else if(monthly){
-    row+='<td class="ec-share-na">—</td><td class="ec-share-na">—</td><td class="ec-share-action"></td>';
    }
-   return '<tr class="ec-allocation-item'+(settled?'':' ec-allocation-only')+'">'+row+'</tr>';
+   return '<tr class="ec-allocation-item'+(monthly?'':' ec-allocation-only')+'">'+row+'</tr>';
   }).join('');
  }
  function renderCloudflare(){
@@ -381,6 +383,9 @@ export const ECONOMY_CLIENT_JS = String.raw`
   (stats.payouts||[]).forEach(function(item){
    rows.push({key:'payout:'+item.id,id:item.id,kind:'payout',date:item.date,title:item.partnerName,sourceKey:'other',source:monthText(item.month),amountUsd:item.amount,editKind:'payout',original:item});
   });
+  (stats.development||[]).forEach(function(item){
+   rows.push({key:'development:'+item.id,id:item.id,kind:'development',date:item.date,title:item.title,sourceKey:'other',source:item.partnerName,sub:'Плательщик — '+item.payer,amountUsd:item.amount,editKind:'development',original:item});
+  });
   (stats.withdrawals||[]).forEach(function(item){
    var received=item.feeMode==='included'?item.amount-item.fee:item.amount;
    rows.push({key:'withdrawal:'+item.id,id:item.id,kind:'withdrawal',date:item.date,title:item.title||'Вывод средств',sourceKey:item.store,source:stores[item.store]||'Другое',amountUsd:item.receivedUsd,amount:received,currency:item.currency,feeUsd:item.feeUsd,sub:item.fee>0?'':'Без комиссии',editKind:'withdrawal',original:item});
@@ -391,7 +396,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
  }
  function rowAction(row){return row.editKind?'data-edit-kind="'+esc(row.editKind)+'" data-id="'+esc(row.id)+'"':'data-detail-key="'+esc(row.key)+'"';}
  function signedAmount(row){
-  var sign=row.kind==='income'?'+':row.kind==='expense'||row.kind==='commission'?'−':'';
+  var sign=row.kind==='income'?'+':row.kind==='development'||row.kind==='expense'||row.kind==='commission'?'−':'';
   return sign+usd(row.amountUsd);
  }
  function renderOverview(){
@@ -488,9 +493,28 @@ export const ECONOMY_CLIENT_JS = String.raw`
   var choices=payoutChoices(month);
   return select('partnerId','Партнёр',partnerId||'',Object.assign({'':'Выберите партнёра'},choices)).replace('<select ', '<select required ');
  }
+ function developmentFundField(month,id){
+  var scheme=(stats.payoutPartners||[]).filter(function(version){return version.from<=month;}).at(-1);
+  var funds=(scheme?.funds||[]).slice(),original=dialogContext.item;
+  if(original.id&&original.month===month&&!funds.some(function(fund){return fund.id===original.partnerId;}))funds.push({id:original.partnerId,name:original.partnerName});
+  if(funds.length===1)return '<input type="hidden" name="partnerId" value="'+esc(funds[0].id)+'">';
+  var choices=Object.fromEntries(funds.map(function(fund){return [fund.id,fund.name];}));
+  return select('partnerId','Фонд',id||'',Object.assign({'':funds.length?'Выберите фонд':'За этот месяц фонда нет'},choices),true).replace('<select ','<select required ');
+ }
  function operationFields(kind,item){
   var cfg=stats.config,expense=kind==='expense'||kind==='commission',currency=item.currency||'USD';
   var typeField=select('operationType','Тип операции',kind,operationTypes,true);
+  if(kind==='development'){
+   var direct=dialogContext.direct,selected=stats.selectedMonth,current=today();
+   var paidOn=item.date??(selected&&selected!==current.slice(0,7)?'':current);
+   var month=paidOn.slice(0,7)||selected||current.slice(0,7);
+   var partners=(stats.payoutPartners||[]).filter(function(version){return version.from<=month;}).at(-1)?.partners||[];
+   var payers='<datalist id="ec-payers">'+partners.map(function(person){return '<option value="'+esc(person.name)+'"></option>';}).join('')+'</datalist>';
+   return (direct?'':typeField)+input('title','Что оплатили',item.title||'',{type:'text',full:true})+
+    input('amount','Сумма, $',item.amount??'',{min:0.01})+input('date','Дата оплаты',paidOn,{type:'date',max:current})+
+    '<label class="ec-field full"><span>Кто оплатил</span><input type="text" name="payer" list="ec-payers" maxlength="160" required value="'+esc(item.payer||'')+'"></label>'+payers+
+    '<div class="ec-fund-field">'+developmentFundField(month,item.partnerId)+'</div><div class="ec-form-preview" id="ec-form-preview" hidden></div>';
+  }
   if(kind==='payout'){
    var month=item.month||stats.selectedMonth||today().slice(0,7);
    return typeField+partnerField(month,item.partnerId)+input('month','За месяц',month,{type:'month',max:today().slice(0,7)})+
@@ -507,8 +531,8 @@ export const ECONOMY_CLIENT_JS = String.raw`
   return html;
  }
  function showForm(kind,item){
-  if(!stats||saving||stats.period!==period)return;item=item||{};returnFocus=document.activeElement;dialogContext={kind:kind,id:item.id||null,confirmDelete:false,item:item,createId:crypto.randomUUID()};var html='',heading='',note='';
-  if(Object.hasOwn(operationTypes,kind)){heading=item.id?'Изменить операцию':'Новая операция';html=operationFields(kind,item);}
+  if(!stats||saving||stats.period!==period)return;item=item||{};returnFocus=document.activeElement;dialogContext={kind:kind,id:item.id||null,confirmDelete:false,item:item,createId:crypto.randomUUID(),direct:kind==='development'&&!!item.partnerId};var html='',heading='',note='';
+  if(Object.hasOwn(operationTypes,kind)){heading=dialogContext.direct?(item.id?'Изменить расход фонда':'Расход на развитие'):item.id?'Изменить операцию':'Новая операция';html=operationFields(kind,item);}
   else if(kind==='shares'){
    heading='Изменить доли';
    html='<div class="ec-share-fields" id="ec-share-fields">'+stats.profitShares.map(shareFields).join('')+'</div><button type="button" class="btn-action ec-share-add" id="ec-add-share">Добавить долю</button><div class="ec-form-preview" id="ec-form-preview"></div>';
@@ -546,15 +570,15 @@ export const ECONOMY_CLIENT_JS = String.raw`
    }
    el('ec-form-preview').innerHTML=html;return;
   }
-  if(kind==='payout'){
-   var original=dialogContext.item,month=field('month').value,id=field('partnerId').value;
+  if(kind==='payout'||kind==='development'){
+   var fund=kind==='development',original=dialogContext.item,month=fund?field('date').value.slice(0,7):field('month').value,id=field('partnerId').value;
    var row=month===stats.selectedMonth&&stats.settlements?.find(function(share){return share.id===id;});
    var preview=el('ec-form-preview');
    preview.hidden=!row;
    if(row){
     var before=Math.round(row.remainingUsd*100)+(original.id&&original.month===month&&original.partnerId===id?Math.round(original.amount*100):0);
     var after=(before-Math.round(Number(field('amount').value||0)*100))/100;
-    preview.innerHTML=previewLine(after<0?'Переплата после выплаты':'Останется после выплаты',usd(Math.abs(after)));
+    preview.innerHTML=previewLine(fund?(after<0?'Перерасход фонда':'Останется в фонде'):(after<0?'Переплата после выплаты':'Останется после выплаты'),usd(Math.abs(after)));
    }
    formNote('');return;
   }
@@ -574,7 +598,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
   formNote(note);
  }
  function previewLine(label,value){return '<div class="ec-preview-line"><span>'+esc(label)+'</span><b>'+esc(value)+'</b></div>';}
- function formDraft(){var result={};['title','date','amount','currency','fee','feeMode','store','frequency','endDate','month','partnerId'].forEach(function(name){var node=field(name);if(node)result[name]=node.value;});return result;}
+ function formDraft(){var result={};['title','date','amount','currency','fee','feeMode','store','frequency','endDate','month','partnerId','payer'].forEach(function(name){var node=field(name);if(node)result[name]=node.value;});return result;}
  function detailLine(label,value,raw){return '<dt>'+esc(label)+'</dt><dd>'+ (raw?value:esc(value))+'</dd>';}
  function showDetails(key){
   var row=journal.find(function(item){return item.key===key;});if(!row){var invoice=(stats.expenses.lines||[]).find(function(line){return line.imported&&'expense:'+line.id===key;});if(invoice)row={title:invoice.title,amountUsd:invoice.amountUsd,date:invoice.date,source:'Cloudflare · весь аккаунт',original:invoice};}if(!row||saving)return;
@@ -593,13 +617,14 @@ export const ECONOMY_CLIENT_JS = String.raw`
  async function mutate(path,body){var response=await fetch('/api/admin/economy/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});var data;try{data=await response.json();}catch(_){throw new Error('Не удалось получить ответ сервера');}if(!response.ok||!data.ok)throw new Error(data.error||'Не удалось сохранить');return data;}
  async function submitForm(event,deleting){
   if(event)event.preventDefault();if(saving||!dialogContext||dialogContext.kind==='detail')return;
-  var context=dialogContext,kind=context.kind,body={},path='',expense=kind==='expense'||kind==='commission',group=kind==='payout'?'payouts':expense||kind==='builtin'?'expenses':kind==='withdrawal'?'withdrawals':'revenues';
-  if(deleting===true){path=group+'/delete';body.id=context.id;if(kind==='payout')body.revision=context.item.revision;}
+  var context=dialogContext,kind=context.kind,body={},path='',expense=kind==='expense'||kind==='commission',group=kind==='development'?'development':kind==='payout'?'payouts':expense||kind==='builtin'?'expenses':kind==='withdrawal'?'withdrawals':'revenues';
+  if(deleting===true){path=group+'/delete';body.id=context.id;if(kind==='payout'||kind==='development')body.revision=context.item.revision;}
   else{
    if(!el('ec-form').reportValidity())return;
-   if(kind==='payout'){
-    body={id:context.id||context.createId,revision:context.item.revision,partnerId:field('partnerId').value,month:field('month').value,date:field('date').value,amount:Number(field('amount').value)};
-    path='payouts/'+(context.id?'update':'add');
+   if(kind==='payout'||kind==='development'){
+    body={id:context.id||context.createId,revision:context.item.revision,partnerId:field('partnerId').value,date:field('date').value,amount:Number(field('amount').value)};
+    if(kind==='development'){body.title=field('title').value.trim();body.payer=field('payer').value.trim();}else{body.month=field('month').value;}
+    path=group+'/'+(context.id?'update':'add');
    }else if(Object.hasOwn(operationTypes,kind)){
     body={title:field('title').value.trim(),amount:Number(field('amount').value),currency:field('currency').value,date:field('date').value};
     if(expense){body.frequency=field('frequency').value;body.endDate=body.frequency==='once'?null:field('endDate').value||null;body.category=kind==='commission'?'commission':'expense';}
@@ -621,7 +646,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
   finally{saving=false;enableActions();controls.forEach(function(state){state.node.disabled=state.disabled;});set('ec-submit',submitLabel);if(!dialogContext&&!returnFocus?.isConnected)el('ec-add-operation').focus();}
  }
  function formError(message){el('ec-form-error').hidden=false;set('ec-form-error',message);}
- function openRow(event){var button=event.target.closest('button');if(!button||!stats)return;if(button.dataset.detailKey)return showDetails(button.dataset.detailKey);var kind=button.dataset.editKind,id=button.dataset.id;if(!kind)return;var list=kind==='payout'?stats.payouts:kind==='builtin'?stats.expenses.lines:kind==='revenue'?stats.config.manualRevenues:kind==='withdrawal'?stats.config.withdrawals:stats.config.extraExpenses;var item=(list||[]).find(function(row){return row.id===id;});if(item)showForm(kind,item);}
+ function openRow(event){var button=event.target.closest('button');if(!button||!stats)return;if(button.dataset.detailKey)return showDetails(button.dataset.detailKey);var kind=button.dataset.editKind,id=button.dataset.id;if(!kind)return;var list=kind==='development'?stats.development:kind==='payout'?stats.payouts:kind==='builtin'?stats.expenses.lines:kind==='revenue'?stats.config.manualRevenues:kind==='withdrawal'?stats.config.withdrawals:stats.config.extraExpenses;var item=(list||[]).find(function(row){return row.id===id;});if(item)showForm(kind,item);}
  function init(){
   if(!el('economy-view'))return;window.loadEconomy=loadEconomy;
   updatePeriodControls();
@@ -643,6 +668,8 @@ export const ECONOMY_CLIENT_JS = String.raw`
   el('ec-recent-list').addEventListener('click',openRow);
   el('ec-shares').querySelector('[data-payout-history]').onclick=function(){openLedger('payout');};
   el('ec-allocation-list').onclick=function(event){
+   var fund=event.target.closest('[data-fund-expense]');
+   if(fund){showForm('development',{partnerId:fund.dataset.fundExpense});return;}
    var button=event.target.closest('[data-pay-partner]');if(!button)return;
    var share=stats.settlements.find(function(row){return row.id===button.dataset.payPartner;});
    showForm('payout',{partnerId:share.id,month:stats.selectedMonth,amount:share.remainingUsd>0?share.remainingUsd:''});
@@ -657,10 +684,13 @@ export const ECONOMY_CLIENT_JS = String.raw`
   el('ec-feedback').querySelector('button').onclick=function(){el('ec-feedback').hidden=true;};['ec-plan-target','ec-plan-average'].forEach(function(id){el(id).addEventListener('input',updatePlanner);});
   el('ec-form').addEventListener('input',function(event){if(event.target.name!=='operationType')updateFormPreview();});
   el('ec-form').addEventListener('change',function(event){
+   if(event.target.name==='date'&&dialogContext.kind==='development'){
+    var choice=field('partnerId');choice.closest('.ec-fund-field').innerHTML=developmentFundField(event.target.value.slice(0,7),choice.value);
+   }
    if(event.target.name==='month'&&dialogContext.kind==='payout'){
     var partner=field('partnerId');partner.closest('label').outerHTML=partnerField(event.target.value,partner.value);
    }
-   if(event.target.name==='operationType'&&!dialogContext.id){var draft=formDraft(),kind=event.target.value;dialogContext.kind=kind;if(kind==='payout'&&draft.currency==='RUB')draft.amount='';if(kind==='withdrawal'&&!draft.title&&draft.amount==='')draft.currency='USD';el('ec-fields').innerHTML=operationFields(kind,draft);field('operationType').focus();}
+   if(event.target.name==='operationType'&&!dialogContext.id){var draft=formDraft(),kind=event.target.value;dialogContext.kind=kind;if((kind==='payout'||kind==='development')&&draft.currency==='RUB')draft.amount='';if(kind==='withdrawal'&&!draft.title&&draft.amount==='')draft.currency='USD';el('ec-fields').innerHTML=operationFields(kind,draft);field('operationType').focus();}
    updateFormPreview();
   });
   el('ec-form').addEventListener('submit',submitForm);el('ec-cancel').onclick=closeForm;

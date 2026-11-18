@@ -298,11 +298,11 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
   const monthStart = Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), 1);
   const calendarPeriodStart = selectedMonth ? monthStart : period === '30d' ? calendarNow - 29 * DAY : 0;
   const periodStart = period === 'all' ? 0 : calendarPeriodStart - MOSCOW_OFFSET;
-  const [currentConfig, orderKeys, users, cloudflare, fx, payouts] = await Promise.all([
+  const [currentConfig, orderKeys, users, cloudflare, fx, entries] = await Promise.all([
     getEconomyConfig(env), listAll(env, 'pay_order:'),
     typeof deps.listUserSummaries === 'function' ? deps.listUserSummaries(env) : [],
     getCloudflareBilling(env, deps), getUsdRate(env, selectedMonth && now < actualNow ? { ...deps, reportDay: reportDay(now) } : deps),
-    env.ECONOMY_PAYOUTS ? payoutLedger(env).fetch('https://ledger/list').then(response => {
+    env.ECONOMY_PAYOUTS ? payoutLedger(env).fetch('https://ledger/entries').then(response => {
       if (!response.ok) throw new Error('Журнал выплат недоступен');
       return response.json();
     }) : null,
@@ -516,11 +516,14 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
   };
   const usd = economyInUsd(result, fx);
   const versions = currentConfig.shareHistory || [{ from: '2000-01', scheme: shareScheme(currentConfig) }];
-  const payoutPartners = versions.map(({ from, scheme }) => ({ from, partners: profitAllocation(scheme, 0).shares
-    .filter(share => !share.id.startsWith('fund-')).map(({ id, name }) => ({ id, name })) }));
+  const payoutPartners = versions.map(({ from, scheme }) => {
+    const shares = profitAllocation(scheme, 0).shares.map(({ id, name }) => ({ id, name }));
+    return { from, partners: shares.filter(share => !share.id.startsWith('fund-')), funds: shares.filter(share => share.id.startsWith('fund-')) };
+  });
+  const periodEntries = (entries || []).filter(item => inPeriod(timestamp(item.date), periodStart, now));
   return { ...result, currency: 'USD', fx, usd, selectedMonth, payoutPartners,
-    settlements: selectedMonth && payouts ? monthlyBalances(usd.profitShares, payouts, selectedMonth) : null,
-    payouts: payouts?.filter(item => inPeriod(timestamp(item.date), periodStart, now)) || [] };
+    settlements: selectedMonth && entries ? monthlyBalances(usd.profitShares, entries, selectedMonth) : null,
+    development: periodEntries.filter(item => item.kind === 'development'), payouts: periodEntries.filter(item => item.kind !== 'development') };
 }
 export async function handleEconomyAdmin(request, env, url, deps = {}) {
   const path = url.pathname;
@@ -541,7 +544,7 @@ export async function handleEconomyAdmin(request, env, url, deps = {}) {
       return response;
     }
   }
-  const match = path.match(/^\/api\/admin\/economy\/(expenses|revenues|withdrawals|payouts)\/(add|update|delete)$/);
+  const match = path.match(/^\/api\/admin\/economy\/(expenses|revenues|withdrawals|payouts|development)\/(add|update|delete)$/);
   if (request.method !== 'POST' || (!match && path !== '/api/admin/economy/settings')) return reply({ error: 'not found' }, 404);
   let body;
   try { body = await request.json(); } catch (_) { return reply({ error: 'Некорректный JSON' }, 400); }
@@ -555,7 +558,7 @@ export async function handleEconomyAdmin(request, env, url, deps = {}) {
     catch (error) { return reply({ error: error.message }, 400); }
   }
   const [, kind, action] = match;
-  if (kind === 'payouts') return recordPayout(env, action, body, deps.now ?? Date.now());
+  if (kind === 'payouts' || kind === 'development') return recordDistribution(env, kind, action, body, deps.now ?? Date.now());
   const key = kind === 'expenses' ? 'extraExpenses' : kind === 'revenues' ? 'manualRevenues' : 'withdrawals';
   const config = await getEconomyConfig(env);
   const list = config[key];
@@ -594,26 +597,35 @@ export async function handleEconomyAdmin(request, env, url, deps = {}) {
   return reply({ ok: true, [kind === 'expenses' ? 'expense' : kind === 'revenues' ? 'revenue' : 'withdrawal']: item });
 }
 
-async function recordPayout(env, action, body, now) {
+async function recordDistribution(env, kind, action, body, now) {
+  const development = kind === 'development';
   const ledger = payoutLedger(env);
   if (!ledger) return reply({ error: 'Журнал выплат недоступен' }, 503);
   const { id, revision } = body;
-  if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return reply({ error: 'Некорректный номер выплаты' }, 400);
+  if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return reply({ error: 'Некорректный номер записи' }, 400);
   if (action !== 'add' && (!Number.isSafeInteger(revision) || revision < 1)) return reply({ error: 'Обновите запись перед изменением' }, 400);
   let entry;
   if (action !== 'delete') {
-    const { month, partnerId } = body;
+    const { partnerId } = body;
+    const month = development && typeof body.date === 'string' ? body.date.slice(0,7) : body.month;
     if (!validMonth(month, now)) return reply({ error: 'Выберите текущий или прошедший месяц' }, 400);
     const config = await getEconomyConfig(env);
-    const partner = profitAllocation(schemeForMonth(config, month), 0).shares.find(share => share.id === partnerId && !share.id.startsWith('fund-'));
-    if (!partner && action === 'add') return reply({ error: 'Выберите партнёра за указанный месяц' }, 400);
+    const partner = profitAllocation(schemeForMonth(config, month), 0).shares.find(share => share.id === partnerId && share.id.startsWith('fund-') === development);
+    if (!partner && action === 'add') return reply({ error: development ? 'Фонд недоступен за этот месяц' : 'Выберите партнёра за указанный месяц' }, 400);
     try {
-      const paidOn = date(body.date, 'выплата');
-      if (paidOn > reportDay(now)) throw new Error('Дата выплаты ещё не наступила');
-      const amount = number(body.amount, 'сумма выплаты', 0.01, 100000000);
+      const paidOn = date(body.date, 'операция');
+      if (paidOn > reportDay(now)) throw new Error('Дата операции ещё не наступила');
+      const amount = number(body.amount, 'сумма', 0.01, 100000000);
       if (amount !== round(amount)) throw new Error('Укажите сумму с точностью до цента');
       entry = { partnerId, partnerName: partner?.name ?? null, month, date: paidOn, amount };
+      if (development) {
+        if (paidOn !== body.date) throw new Error('Укажите календарную дату покупки');
+        entry.kind = 'development';
+        entry.title = title(body.title);
+        if (typeof body.payer !== 'string' || !body.payer.trim() || body.payer.trim().length > 160) throw new Error('Укажите, кто оплатил покупку');
+        entry.payer = body.payer.trim();
+      }
     } catch (error) { return reply({ error: error.message }, 400); }
   }
-  return ledger.fetch('https://ledger/mutate', { method: 'POST', body: JSON.stringify({ action, id, revision, entry }) });
+  return ledger.fetch(development ? 'https://ledger/development' : 'https://ledger/mutate', { method: 'POST', body: JSON.stringify({ action, id, revision, entry }) });
 }

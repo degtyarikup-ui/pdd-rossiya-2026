@@ -758,3 +758,38 @@ test('partner settlements follow accrual month and are independent of profit and
   assert.equal((await api(env,'payouts/add',body)).status,409);
   assert.deepEqual((await stats(env,'2026-09')).settlements,sep.settlements);
 });
+
+test('fund purchases debit the payment month once and leave operating profit and partner payouts intact', async () => {
+  const env = { ...environment(), ECONOMY_PAYOUTS:payoutBinding() };
+  await seedConfig(env,{profitShares:[{name:'В развитие',percent:50},{name:'Никита',percent:50}],
+    manualRevenues:[{id:'sale',title:'Продажи',amount:200,currency:'USD',store:'other',date:'2026-10-04'}]});
+  const initial = await stats(env);
+  const [fund,person] = initial.settlements;
+  const body = {id:crypto.randomUUID(),date:'2026-10-05',title:'ChatGPT',payer:'Сергей',amount:20.25,partnerId:fund.id};
+  for (const invalid of [{partnerId:person.id},{amount:0},{amount:1.001},{date:'2026-09-31'},{date:'2026-10-17'},{title:' '},{payer:' '}]) {
+    assert.equal((await api(env,'development/add',{...body,...invalid})).status,400);
+  }
+  const write = (action, values) => api(env,'development/'+action,{...body,...values});
+  const balance = report => report.settlements.find(row => row.id===fund.id);
+  assert.deepEqual((await Promise.all([write('add'),write('add')])).map(result=>result.status),[200,200]);
+  assert.equal((await write('add',{title:'Другая покупка'})).status,409);
+  assert.equal((await api(env,'payouts/delete',{id:body.id,revision:1})).status,404);
+  const saved = await stats(env);
+  assert.deepEqual(saved.usd,initial.usd);
+  assert.deepEqual(saved.settlements[1],person);
+  assert.deepEqual(saved.payouts,[]);
+  assert.equal(saved.development.length,1);
+  assert.equal(saved.development[0].payer,'Сергей');
+  assert.deepEqual([balance(saved).paidUsd,balance(saved).remainingUsd],[20.25,79.75]);
+  assert.equal((await write('update',{date:'2026-09-30',amount:21,revision:1})).status,200);
+  assert.equal((await write('update',{amount:22,revision:1})).status,409);
+  assert.deepEqual((await stats(env)).settlements,initial.settlements);
+  const prior = await stats(env,'2026-09');
+  assert.equal(balance(prior).remainingUsd,-21);
+  assert.equal(prior.development[0].month,'2026-09');
+  assert.equal((await stats(env,'all')).development.length,1);
+  assert.equal((await write('delete',{revision:2})).status,200);
+  assert.equal((await write('delete',{revision:2})).status,200);
+  assert.equal((await write('add')).status,409);
+  assert.deepEqual((await stats(env,'2026-09')).development,[]);
+});
