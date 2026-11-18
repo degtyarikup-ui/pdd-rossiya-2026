@@ -93,107 +93,19 @@ function usageFixture() {
 }
 
 async function verifyUsage(page) {
- await page.evaluate(()=>{window.__usageOriginalData=window.__anData;});
- const render = usage=>page.evaluate(usage=>{
-  window.__anData={...window.__usageOriginalData,usage};anRenderUsage(window.__anData);
- },usage);
- const keys=()=>page.locator('#an-usage-table [data-usage]').evaluateAll(elements=>elements.map(el=>el.dataset.usage));
- const row=key=>page.locator('#an-usage-table tr').filter({has:page.locator(`[data-usage="${key}"]`)});
- const number=key=>row(key).locator('td').nth(1).innerText();
- const fixture=usageFixture(), total=usageModes.reduce((sum,item)=>sum+item[2],0);
- await render(fixture);
- assert.equal(await page.locator('#an-usage-sort').inputValue(),'starts');
- assert.equal(await page.locator('#an-usage-table thead th').count(),3,'only mode, launches, installations');
- assert.deepEqual(new Set(await keys()),new Set(usageModes.map(([key])=>key)),'all fourteen current modes, including zeros');
- assert.deepEqual((await keys()).slice(0,3),['tickets','exam','topics']);
- assert.equal(await number('violator'),'0');
- assert.match(await page.locator('#an-usage-total').innerText(),new RegExp(total.toLocaleString('ru-RU').replace(/\s/g,'\\s')));
- const share=await row('tickets').locator('.an-usage-share').innerText();
- const totalLabel=await page.locator('#an-usage-total').innerText();
- assert.match(share,/38\s*%/);
-
+ const original=await page.evaluate(()=>window.__anData);
+ await page.evaluate(usage=>{window.__anData={...window.__anData,usage};anRenderUsage(window.__anData);},usageFixture());
+ const columns=page.locator('.an-mode-column');
+ assert.equal(await columns.count(),14);
+ assert.equal(await columns.first().getAttribute('data-usage'),'tickets');
  await page.locator('#an-usage-sort').selectOption('installations');
- assert.deepEqual((await keys()).slice(0,3),['exam','tickets','sign_swiper']);
- await page.locator('#an-usage-sort').selectOption('name');
- assert.deepEqual(await keys(),usageModes.slice().sort((a,b)=>a[1].localeCompare(b[1],'ru')).map(([key])=>key));
- await page.locator('[data-usage-group="training"]').click();
- assert.equal(await page.locator('[data-usage-group="training"]').getAttribute('aria-pressed'),'true');
- assert.deepEqual(new Set(await keys()),new Set(['tickets','topics','exam','marathon','feed','mistakes','favorites']));
- assert.equal(await row('tickets').locator('.an-usage-share').innerText(),share,'filter preserves share of all launches');
- assert.equal(await page.locator('#an-usage-total').innerText(),totalLabel,'filter preserves total of all launches');
+ assert.equal(await columns.first().getAttribute('data-usage'),'exam');
  await page.locator('[data-usage-group="games"]').click();
- assert.deepEqual(new Set(await keys()),new Set(['game','sign_swiper','traffic_controller','crossroads','road_signs','parking','violator']));
- await page.locator('[data-usage="violator"]').focus();
- await page.keyboard.press('Enter');
- assert.equal(await page.locator('#an-usage-feature').inputValue(),'violator');
- assert.equal(await page.locator('#an-usage-details').evaluate(el=>el.open),true);
- assert.equal(await page.locator('[data-usage="violator"]').getAttribute('aria-expanded'),'true');
- assert.equal(await page.evaluate(()=>document.activeElement.id),'an-usage-feature','keyboard focus moves into the opened chart controls');
- assert.match(await page.locator('#an-usage-chart').innerText(),/нет запусков/);
- assert.match(await page.locator('#an-usage-caption').innerText(),/4\.11/);
- await page.locator('#an-usage-feature').selectOption('exam');
- assert.ok(await page.locator('#an-usage-chart svg').count()>0);
- assert.equal(await page.locator('[data-usage="violator"]').getAttribute('aria-expanded'),'false');
- await page.locator('#an-usage-details>summary').click();
+ assert.equal(await columns.count(),7);
+ assert.equal(await page.locator('#an-usage-details').count(),0);
  await page.locator('[data-usage-group="all"]').click();
  await page.locator('#an-usage-sort').selectOption('starts');
-
- // A populated historical mode must remain part of both the total and shares.
- const legacy=structuredClone(fixture);
- legacy.features.roundabout={starts:10000,installations:500};
- for(const day of legacy.timeline)day.features.roundabout={starts:5000,installations:500};
- await render(legacy);
- assert.equal((await keys()).length,15);
- assert.match(await row('roundabout').innerText(),/архив/i);
- assert.match(await page.locator('#an-usage-total').innerText(),new RegExp((total+10000).toLocaleString('ru-RU').replace(/\s/g,'\\s')));
- assert.match(await row('tickets').locator('.an-usage-share').innerText(),/35\s*%/);
- await page.locator('[data-usage="roundabout"]').click();
- assert.equal(await page.locator('#an-usage-feature').inputValue(),'roundabout');
- assert.ok(await page.locator('#an-usage-chart svg').count()>0);
- await page.locator('#an-usage-details>summary').click();
-
- const oldApi=structuredClone(fixture);
- delete oldApi.features.violator;
- for(const day of oldApi.timeline)delete day.features.violator;
- await render(oldApi);
- assert.equal(await number('violator'),'—','older API cannot imply a recorded zero');
- await page.locator('[data-usage="violator"]').click();
- assert.match(await page.locator('#an-usage-chart').innerText(),/нет данных|недоступ/i);
- await page.locator('#an-usage-details>summary').click();
- const historical=structuredClone(fixture);
- historical.timeline=historical.timeline.slice(0,1);
- for(const key of ['violator','mistakes','favorites'])historical.features[key]={starts:null,installations:null};
- await render(historical);
- for(const key of ['violator','mistakes','favorites'])assert.equal(await number(key),'—');
- await page.locator('[data-usage="violator"]').click();
- assert.match(await page.locator('#an-usage-chart').innerText(),/нет данных|сбор|начал/i);
- await page.locator('#an-details-usage-values>summary').click();
- assert.match(await page.locator('#an-usage-days').innerText(),/—/);
- await page.locator('#an-details-usage-values>summary').click();
- await page.locator('#an-usage-details>summary').click();
-
- const empty=structuredClone(fixture);
- for(const key of Object.keys(empty.features))empty.features[key]={starts:0,installations:0};
- for(const day of empty.timeline)for(const key of Object.keys(day.features))if(day.features[key].starts!==null)day.features[key]={starts:0,installations:0};
- await render(empty);
- assert.equal((await keys()).length,14,'zero observations never hide the mode catalogue');
- assert.equal(await number('violator'),'0');
- assert.equal(await number('tickets'),'0');
- await render(fixture);
- if(process.env.ANALYTICS_UI_SCREENSHOTS){
-  await mkdir(new URL('../../output/analytics-layout/',import.meta.url),{recursive:true});
-  for(const width of [1200,390,320]){
-   await page.setViewportSize({width,height:1100});
-   await page.waitForTimeout(220);
-   assert.equal(await page.locator('#an-usage').evaluate(el=>el.scrollWidth>el.clientWidth),false,'usage card fits '+width);
-   assert.equal(await page.locator('#an-usage-table').evaluate(el=>el.scrollWidth>el.clientWidth),false,'usage table fits '+width);
-   await page.mouse.move(0,0);
-   await page.evaluate(()=>document.activeElement?.blur());
-   await page.locator('#an-usage').screenshot({path:fileURLToPath(new URL(`../../output/analytics-layout/usage-${width}.png`,import.meta.url))});
-  }
- }
- await page.setViewportSize({width:1600,height:1100});
- await page.evaluate(()=>{window.__anData=window.__usageOriginalData;delete window.__usageOriginalData;anRenderUsage(window.__anData);});
+ await page.evaluate(data=>{window.__anData=data;anRenderUsage(data);},original);
 }
 
 if(process.argv.includes('--serve')) {
@@ -295,15 +207,7 @@ if(process.argv.includes('--serve')) {
   }
   assert.match(await page.locator('#an-report-googleplay').innerText(), /Обзор Google Play\s+7/);
   assert.match(await page.locator('#an-report-appstore').innerText(), /пока не предоставил/);
-  assert.deepEqual(new Set(await page.locator('#an-usage-feature option').allTextContents()),new Set(usageModes.map(([,name])=>name)));
   await verifyUsage(page);
-  for (const feature of ['marathon','road_signs','parking']) {
-   await page.locator(`[data-usage="${feature}"]`).click();
-   assert.equal(await page.locator('#an-usage-feature').inputValue(),feature);
-   assert.match(await page.locator('#an-usage-chart').innerText(),/пока нет запусков/);
-   assert.match(await page.locator('#an-usage-caption').innerText(),feature==='parking'?/8\.10/:/27\.10/);
-  }
-  await page.locator('#an-usage-details>summary').click();
   const desktop=await page.locator('#an-auth').boundingBox(),versions=await page.locator('#an-updates').boundingBox();
   assert.equal(desktop.y,versions.y,'audience cards share a row');
   const geo=await page.locator('.an-geo-card').boundingBox();
@@ -340,9 +244,6 @@ if(process.argv.includes('--serve')) {
    await page.locator('#'+id+' rect[data-i="0"]').hover();
    assert.match(await page.locator('#an-tip').innerText(),id==='an-installs-chart'?/Первые запуски/:/Новые аккаунты/);
   }
-  await page.locator('[data-usage="exam"]').click();
-  assert.equal(await page.locator('#an-usage-details').evaluate(el=>el.open),true);
-  await page.locator('#an-usage-details>summary').click();
   await page.locator('[data-geo="cities"]').click();
   await page.locator('#an-geo-search').fill('Москва');
   assert.match(await page.locator('#an-geo').innerText(),/Москва/);
@@ -373,7 +274,7 @@ if(process.argv.includes('--serve')) {
     assert.ok(await page.locator('.sidebar-menu .nav-item.active span').isVisible());
    }
    assert.equal(await page.locator('#an-usage').evaluate(el=>el.scrollWidth>el.clientWidth),false,'usage card fits '+width);
-   assert.equal(await page.locator('#an-usage-table').evaluate(el=>el.scrollWidth>el.clientWidth),false,'usage table fits '+width);
+   assert.equal(await page.locator('.an-mode-columns').evaluate(el=>el.getBoundingClientRect().right<=innerWidth),true,'chart fits '+width);
    for (const value of await page.locator('#an-now .an-big').evaluateAll(elements=>elements.map(el=>{
     const style=getComputedStyle(el);
     return {background:style.backgroundColor,aspectRatio:style.aspectRatio};

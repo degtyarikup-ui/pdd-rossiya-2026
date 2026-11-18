@@ -77,6 +77,11 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-usage .an-table{table-layout:fixed}.an-usage .an-table th{white-space:normal;line-height:1.4;padding-bottom:12px;letter-spacing:0;text-transform:none}.an-usage .an-table th:nth-child(2){width:104px}.an-usage .an-table th:nth-child(3){width:110px}.an-usage .an-table th+th,.an-usage .an-table td+td{padding-left:20px}.an-usage .an-table td{padding:8px 0}.an-usage .an-table td:nth-child(2){font-size:14px;font-weight:650}.an-usage .an-table td:nth-child(3){color:var(--an-muted);font-weight:450}.an-usage abbr{text-decoration:none;cursor:help}.an-usage .an-table th .an-usage-col-note{display:block;font-size:9px;font-weight:400;margin-top:3px}.an-usage .an-table tr.is-selected{background:#F7FAFF}.an-usage .an-table tr.is-selected td:first-child{border-radius:8px 0 0 8px}.an-usage .an-table tr.is-selected td:last-child{border-radius:0 8px 8px 0}
 .an-usage-name{position:relative;display:grid;grid-template-columns:minmax(150px,200px) minmax(60px,1fr) 36px;gap:8px 20px;align-items:center;padding-right:20px}.an-usage-mode{display:block;border:0;padding:0;background:none;color:var(--an-text);font:inherit;font-weight:500;line-height:1.45;text-align:left;cursor:pointer;max-width:100%;min-height:28px;overflow-wrap:anywhere}.an-usage-mode:after{content:'';position:absolute;inset:-8px 0}.an-usage-mode:hover,.an-usage-mode[aria-expanded=true]{color:var(--an-accent)}.an-usage-row-note{display:block;font-size:10px;line-height:1.4;color:var(--an-muted);font-weight:400;margin-top:2px}.an-usage-share{font-size:11px;color:var(--an-muted);font-weight:450;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}.an-usage-track{height:5px;background:#EEF1F5;border-radius:999px;overflow:hidden}.an-usage-track i{display:block;height:100%;background:var(--an-accent);border-radius:999px}.an-usage-track.is-unavailable{background:repeating-linear-gradient(90deg,#E6E9EF 0,#E6E9EF 4px,transparent 4px,transparent 8px)}.an-usage-missing{color:var(--an-muted)}
 .an-usage-empty{padding:12px 14px;margin-bottom:16px;border-radius:10px;background:var(--an-gray);font-size:12px;color:var(--an-text);line-height:1.6}.an-usage-empty p{margin:3px 0 0;font-size:11px;color:var(--an-muted)}.an-usage [hidden]{display:none!important}.an-usage-footer{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-top:16px}.an-usage-footer .an-caption{margin:0;max-width:640px}.an-usage-hint{font-size:11px;line-height:1.6;color:var(--an-muted);white-space:nowrap}
+ .an-mode-columns{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(78px,1fr);overflow-x:auto;gap:8px;padding:6px 2px 10px}
+.an-mode-column{text-align:center;min-width:0;font-size:11px;color:var(--an-muted)}
+.an-mode-plot{height:170px;padding-top:22px;display:flex;align-items:flex-end;justify-content:center;border-bottom:1px solid var(--admin-divider);margin-bottom:8px}
+.an-mode-bar{width:min(56%,48px);position:relative;border-radius:5px 5px 0 0;background:var(--an-accent)}
+.an-mode-bar b{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);white-space:nowrap;padding-bottom:4px;color:var(--an-text);font-size:12px}
 .an-usage-details{margin-top:18px;border-top:1px solid #F2F3F5}.an-usage-details>summary{display:flex;align-items:center;justify-content:space-between;list-style:none;font-size:12px;cursor:pointer;padding:18px 0 0;color:var(--an-text)}.an-usage-details>summary::-webkit-details-marker{display:none}.an-usage-details>summary:after{content:'';width:6px;height:6px;flex-shrink:0;border-right:1.5px solid var(--an-muted);border-bottom:1.5px solid var(--an-muted);transform:rotate(45deg);margin:0 3px 4px 12px}.an-usage-details[open]>summary:after{transform:rotate(225deg);margin-bottom:0}.an-usage-details>summary .an-caption{margin:0 0 0 auto;padding-left:16px;font-size:10px;white-space:nowrap}.an-usage-controls{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:20px 0 12px}.an-usage-controls select{flex:none;width:190px;min-height:38px;padding:8px 10px}.an-usage-controls .an-legend{margin:0;flex-wrap:wrap;gap:8px 14px}.an-usage .an-chart{min-height:160px}.an-usage .an-empty{padding:24px 0}
 @media(max-width:900px){.an-usage-name{grid-template-columns:minmax(0,1fr) 34px;gap:4px 8px}.an-usage-track{grid-column:1;grid-row:2;max-width:260px}.an-usage-share{grid-column:2;grid-row:2}.an-usage-mode{grid-column:1 / -1;min-height:22px}.an-usage-sort>span{display:none}}
 @media(max-width:640px){.an-usage-heading{gap:6px}.an-usage .an-head{align-items:flex-start;gap:12px}.an-usage .an-title{font-size:14px}.an-usage-total{font-size:9px}.an-usage-total b{font-size:20px;margin-top:3px}.an-usage-toolbar{flex-wrap:wrap;gap:12px;margin-bottom:20px}.an-usage-sort{margin-left:auto}.an-usage-toolbar .an-tabs button{font-size:11px;padding:6px 11px}.an-usage-sort select{width:162px;min-height:36px}.an-usage .an-table th:nth-child(2){width:66px}.an-usage .an-table th:nth-child(3){width:70px}.an-usage .an-table th+th,.an-usage .an-table td+td{padding-left:10px}.an-usage .an-table th{font-size:10px}.an-usage .an-table td{font-size:12px;padding:10px 0}.an-usage .an-table td:nth-child(2){font-size:13px}.an-usage-name{padding-right:2px;gap:4px 6px}.an-usage-share{font-size:10px}.an-usage-row-note{font-size:9px}.an-usage-footer{display:block}.an-usage-hint{display:block;margin-top:8px;font-size:10px}.an-usage-controls{flex-wrap:wrap;gap:12px}.an-usage-controls select{width:100%}.an-usage-controls .an-legend{font-size:10px;gap:12px}.an-usage-details>summary .an-caption{font-size:9px;padding-left:8px}.an-usage-details>summary{font-size:11px}}
@@ -135,14 +140,8 @@ ${PREMIUM_REVENUE_HTML}
  <div id="an-body-usage">
   <div class="an-usage-toolbar"><div class="an-tabs" id="an-usage-groups" role="group" aria-label="Тип режима"><button type="button" data-usage-group="all" class="active" aria-pressed="true">Все</button><button type="button" data-usage-group="training" aria-pressed="false">Тренировки</button><button type="button" data-usage-group="games" aria-pressed="false">Игры</button></div><label class="an-usage-sort"><span>Сортировка</span><select class="an-search" id="an-usage-sort" aria-label="Сортировка режимов"><option value="starts">По запускам ↓</option><option value="installations">По установкам ↓</option><option value="name">По названию А–Я</option></select></label></div>
  <div class="an-usage-empty" id="an-usage-empty" role="status" hidden></div>
-  <div id="an-usage-table"></div>
- <div class="an-usage-footer"><div class="an-caption" id="an-usage-coverage"></div><span class="an-usage-hint">Нажмите на режим, чтобы увидеть динамику</span></div>
- <details class="an-usage-details" id="an-usage-details">
-  <summary><span>Динамика по дням</span><span class="an-caption" id="an-usage-caption"></span></summary>
-  <div class="an-usage-controls"><select class="an-search" id="an-usage-feature" aria-label="Режим для динамики"></select><div class="an-legend"><span><i class="an-dot" style="background:#0574F8"></i>Запуски</span><span><i class="an-dot" style="background:#22a875"></i>Установки за день</span></div></div>
-  <div class="an-chart" id="an-usage-chart"></div>
-  <details class="an-day-details" id="an-details-usage-values"><summary>Таблица значений</summary><div class="an-table-wrap" id="an-usage-days"></div></details>
- </details>
+  <div id="an-usage-table" class="an-mode-columns"></div>
+
   </div>
 </div>
 <div class="an-audience-grid">
@@ -462,9 +461,6 @@ function anUsageAvailable(usage,key) {
  var timeline=usage.timeline||[], from=anUsageFrom(usage,key);
  return !timeline.length||timeline.some(function(d){return d.date>=from;});
 }
-function anUsageDay(usage,day,key) {
- return day.date>=anUsageFrom(usage,key)&&day.features&&day.features[key]||{starts:null,installations:null};
-}
 function anRenderUsage(data) {
  var usage=data&&data.usage, features=usage&&usage.features||{}, timeline=usage&&usage.timeline||[], allKeys=anUsageKeys(usage);
  var starts=allKeys.reduce(function(n,k){return n+(features[k]&&features[k].starts||0);},0);
@@ -474,45 +470,24 @@ function anRenderUsage(data) {
   var av=anUsageAvailable(usage,a),bv=anUsageAvailable(usage,b);
   return Number(bv)-Number(av)||(bv?features[b][anUsageSort]||0:0)-(av?features[a][anUsageSort]||0:0)||anUsageName(a).localeCompare(anUsageName(b),'ru');
  });
- if(allKeys.indexOf(anUsageFeature)===-1)anUsageFeature=keys[0]||allKeys[0];
- var table=document.getElementById('an-usage-table'), empty=document.getElementById('an-usage-empty'), details=document.getElementById('an-usage-details');
+ var table=document.getElementById('an-usage-table'),empty=document.getElementById('an-usage-empty');
  var available=allKeys.some(function(k){return anUsageAvailable(usage,k);});
- table.hidden=false;empty.hidden=!!starts;details.hidden=false;
+ empty.hidden=!!starts;
+ empty.textContent=available?'За этот период запусков не зарегистрировано':'За этот период данных нет';
  document.getElementById('an-usage-total').innerHTML='Всего запусков <b>'+(available?anNum(starts):'—')+'</b>';
  document.querySelectorAll('[data-usage-group]').forEach(function(b){var active=b.dataset.usageGroup===anUsageGroup;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
  document.getElementById('an-usage-sort').value=anUsageSort;
- document.getElementById('an-usage-coverage').textContent='Доля от всех запусков за период. «—» — нет данных; 0 — запусков не было.';
- empty.innerHTML=available?'За этот период запусков не зарегистрировано<p>Нулевые значения относятся только к сборкам с поддержкой аналитики.</p>':'За этот период данных нет<p>Начало сбора указано у каждого режима. Если данные ещё загружаются, обновите аналитику.</p>';
- table.innerHTML=anTable(['Режим <span class="an-usage-col-note">доля всех запусков</span>','Запуски','<abbr title="Уникальные установки, в которых запускали режим за выбранный период, включая гостей">Установки</abbr>'],keys.map(function(k){
-  var f=features[k]||{}, hasData=anUsageAvailable(usage,k), from=anUsageFrom(usage,k);
-  var share=hasData&&starts?(f.starts||0)/starts*100:0, label=!hasData?'—':share>0&&share<1?'&lt;1%':Math.round(share)+'%';
-  var partial=timeline.some(function(d){return d.date<from;}), note=!hasData?'Сбор с '+anDayLabel(from):partial?'Данные с '+anDayLabel(from):'';
-  var selected=details.open&&k===anUsageFeature;
-  return '<tr'+(selected?' class="is-selected"':'')+'><td><div class="an-usage-name"><button type="button" class="an-usage-mode" data-usage="'+k+'" aria-controls="an-usage-details" aria-expanded="'+selected+'" aria-label="Показать динамику: '+anUsageName(k)+'">'+anUsageName(k)+(note?'<span class="an-usage-row-note">'+note+'</span>':'')+'</button><div class="an-usage-track'+(!hasData?' is-unavailable':'')+'" aria-hidden="true"><i style="width:'+share+'%"></i></div><span class="an-usage-share" title="Доля всех запусков за выбранный период">'+label+'</span></div></td><td'+(!hasData?' class="an-usage-missing" title="Нет данных за выбранный период"':'')+'>'+(hasData?anNum(f.starts):'—')+'</td><td'+(!hasData?' class="an-usage-missing" title="Нет данных за выбранный период"':'')+'>'+(hasData?anNum(f.installations):'—')+'</td></tr>';
- }));
- var headers=table.querySelectorAll('thead th');
- headers[anUsageSort==='name'?0:anUsageSort==='starts'?1:2].setAttribute('aria-sort',anUsageSort==='name'?'ascending':'descending');
- document.getElementById('an-usage-feature').innerHTML=allKeys.map(function(k){return '<option value="'+k+'">'+anUsageName(k)+'</option>';}).join('');
- document.getElementById('an-usage-feature').value=anUsageFeature;
- document.getElementById('an-usage-caption').textContent='Сбор с '+anDayLabel(anUsageFrom(usage,anUsageFeature))+' · МСК';
- if(details.open)anRenderUsageDetails(data);
+ var metric=anUsageSort==='installations'?'installations':'starts';
+ var max=Math.max(1,...keys.map(function(k){return anUsageAvailable(usage,k)?features[k][metric]||0:0;}));
+ table.innerHTML=keys.map(function(k){
+  var known=anUsageAvailable(usage,k),f=features[k]||{},value=known?anNum(f[metric]):'—';
+  var tip=anUsageName(k)+' · Запуски: '+(known?anNum(f.starts):'—')+' · Установки: '+(known?anNum(f.installations):'—');
+  var height=known?(f[metric]||0)/max*100:0;
+  return '<div class="an-mode-column" tabindex="0" role="img" aria-label="'+tip+'" title="'+tip+'" data-usage="'+k+'"><div class="an-mode-plot"><div class="an-mode-bar" style="height:'+height+'%"><b>'+value+'</b></div></div><span>'+anUsageName(k)+'</span></div>';
+ }).join('');
 }
-function anRenderUsageDetails(data) {
- var usage=data&&data.usage, timeline=usage&&usage.timeline||[], selected=usage&&usage.features&&usage.features[anUsageFeature];
- var available=timeline.filter(function(d){return anUsageDay(usage,d,anUsageFeature).starts!=null;}), bars=[];
- available.forEach(function(d){var f=anUsageDay(usage,d,anUsageFeature),tip='<b>'+anDayLabel(d.date,true)+'</b><div class="an-tip-row"><span>Запуски</span><b>'+anNum(f.starts)+'</b></div><div class="an-tip-row"><span>Установки</span><b>'+anNum(f.installations)+'</b></div>';
-  bars.push({value:f.starts,color:AN_C.accent,label:anDayLabel(d.date),tip:tip},{value:f.installations,color:AN_C.green,label:'',tip:tip});
- });
- var chart=document.getElementById('an-usage-chart');
- if(selected&&selected.starts&&bars.length)anBars(chart,bars,170);
- else chart.innerHTML='<div class="an-empty">'+(available.length?'В этом режиме пока нет запусков за выбранный период.':'За выбранный период нет данных. Сбор этого режима — с '+anDayLabel(anUsageFrom(usage,anUsageFeature))+'.')+'</div>';
- document.getElementById('an-usage-days').innerHTML=timeline.length?anTable(['День','Запуски','Установки'],timeline.slice().reverse().map(function(d){var f=anUsageDay(usage,d,anUsageFeature);return '<tr><td>'+anDayLabel(d.date)+'</td><td>'+(f.starts==null?'—':anNum(f.starts))+'</td><td>'+(f.installations==null?'—':anNum(f.installations))+'</td></tr>';})):'<div class="an-empty">Нет данных по дням</div>';
-}
-document.getElementById('an-usage-table').addEventListener('click',function(e){var b=e.target.closest('[data-usage]');if(b&&window.__anData){anUsageFeature=b.dataset.usage;document.getElementById('an-usage-details').open=true;anRenderUsage(window.__anData);document.getElementById('an-usage-feature').focus();}});
-document.getElementById('an-usage-feature').addEventListener('change',function(e){anUsageFeature=e.target.value;anRenderUsage(window.__anData);});
 document.getElementById('an-usage-sort').addEventListener('change',function(e){anUsageSort=e.target.value;if(window.__anData)anRenderUsage(window.__anData);});
 document.getElementById('an-usage-groups').addEventListener('click',function(e){var b=e.target.closest('[data-usage-group]');if(b){anUsageGroup=b.dataset.usageGroup;if(window.__anData)anRenderUsage(window.__anData);}});
-document.getElementById('an-usage-details').addEventListener('toggle',function(){if(window.__anData)anRenderUsage(window.__anData);});
 
 function anRenderAuth(data) {
  var users=data.users, counts=users&&users.authProviders;
@@ -622,7 +597,7 @@ document.querySelectorAll('#analytics-view .an-fold').forEach(function(toggle){
  var body=document.getElementById(toggle.getAttribute('aria-controls'));
  anSetCardOpen(toggle,body,anReadOpen(body.id,true));
 });
-document.querySelectorAll('#analytics-view details.an-day-details,#an-usage-details').forEach(function(details){
+document.querySelectorAll('#analytics-view details.an-day-details').forEach(function(details){
  details.open=anReadOpen(details.id,details.open);
  details.addEventListener('toggle',function(){anSaveOpen(details.id,details.open);});
 });
@@ -637,7 +612,6 @@ document.getElementById('analytics-view').addEventListener('click',function(even
    if(['an-body-launches','an-body-registrations','an-body-site'].indexOf(body.id)!==-1)anPlot(window.__anData);
    if(body.id==='an-body-activity')anRenderActivity(window.__anData);
    if(body.id==='an-body-premium')anRenderPremium(window.__anData);
-   if(body.id==='an-body-usage' && document.getElementById('an-usage-details').open)anRenderUsageDetails(window.__anData);
  }
 });
 document.getElementById('an-acquisition-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-acquisition]');if(b){anAcquisitionScope=b.dataset.acquisition;if(window.__anData)anRenderAcquisition(window.__anData);}});
