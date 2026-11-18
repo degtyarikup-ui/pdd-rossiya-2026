@@ -242,7 +242,7 @@ if(process.argv.includes('--serve')) {
   assert.deepEqual(segments.map(segment=>segment.color),['#0574F8','#89919F','#89919F']);
   const markers=await activitySummary.locator('.an-dot').evaluateAll(dots=>dots.map(dot=>getComputedStyle(dot).backgroundColor));
   assert.deepEqual(markers,[]);
-  assert.equal(await activitySummary.locator(':scope > span').count(),2);
+  assert.equal(await activitySummary.locator(':scope > span').count(),3);
   assert.doesNotMatch(await activitySummary.innerText(),/Google|iOS/);
   assert.doesNotMatch(await activityCard.innerText(),/Аккаунты · без гостей/);
   assert.equal(android.x,ios.x);
@@ -272,7 +272,7 @@ if(process.argv.includes('--serve')) {
    assert.match(await activitySummary.innerText(),/Сегодня\s*166/);
   }
   await page.evaluate(()=>anRenderActivity({usage:{activity:{days:[]}}}));
-  assert.equal(await activitySummary.innerText(),'');
+  assert.deepEqual(await activitySummary.locator('b').allTextContents(),['—','—','—']);
   await page.evaluate(()=>anRenderActivity(window.__anData));
 
   assert.equal(await page.locator('#an-auth-table tbody tr').count(),4);
@@ -319,14 +319,23 @@ if(process.argv.includes('--serve')) {
   assert.equal(launchesBox.y,accountsBox.y);
   assert.ok(launchesBox.x<accountsBox.x);
   assert.ok(launchesBox.height<=activityBox.height+2,'growth cards stay compact');
+  for (const [id, kind] of [['an-launches-summary','launches'],['an-registrations-summary','registrations']]) {
+   const expected=await page.evaluate(kind=>{
+    const {timeline,users}=window.__anData;
+    const counts=timeline.map(day=>kind==='launches'?day.installs:users.registrationsByDay[day.date]);
+    const complete=counts.slice(0,-1);
+    return [counts.at(-1),Math.round(complete.reduce((sum,n)=>sum+n,0)/complete.length),counts.reduce((sum,n)=>sum+n,0)].map(anNum);
+   },kind);
+   assert.deepEqual(await page.locator('#'+id+' b').allTextContents(),expected);
+  }
   const siteBox=await page.locator('#an-site-activity').boundingBox();
   assert.ok(siteBox.y>geo.y+geo.height,'site activity is a separate lower card');
   const expectedGrowth=await page.evaluate(()=>({
    launches:anNum(anSum(window.__anData.timeline,d=>d.installs)),
    registrations:anNum(window.__anData.users.registrations)
   }));
-  assert.equal(await page.locator('#an-launches-total').innerText(),expectedGrowth.launches);
-  assert.equal(await page.locator('#an-registrations-total').innerText(),expectedGrowth.registrations);
+  assert.equal(await page.locator('#an-launches-summary b').last().innerText(),expectedGrowth.launches);
+  assert.equal(await page.locator('#an-registrations-summary b').last().innerText(),expectedGrowth.registrations);
   for(const id of ['an-installs-chart','an-registrations-chart']){
    await page.locator('#'+id+' rect[data-i="0"]').hover();
    assert.match(await page.locator('#an-tip').innerText(),id==='an-installs-chart'?/Первые запуски/:/Новые аккаунты/);

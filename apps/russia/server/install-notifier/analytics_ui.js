@@ -63,7 +63,10 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-geo-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:16px;font-size:10px;color:var(--an-muted);min-height:30px}
 .an-pagination{display:flex;align-items:center;gap:8px;white-space:nowrap}.an-pagination button{border:0;background:#F4F5F7;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;color:var(--an-text)}.an-pagination button:disabled{opacity:.3;cursor:default}
 .an-audience{display:flex;justify-content:space-between;gap:16px;padding:0 2px 12px;flex-wrap:wrap;font-size:11px;color:var(--an-muted)}.an-audience b{color:var(--an-text);margin-left:6px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
-.an-activity-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:end;margin:4px 0 24px}.an-activity-summary>span{display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--an-muted)}.an-activity-summary b{color:var(--an-text);font-size:21px;font-weight:550;line-height:1;letter-spacing:-.6px;font-variant-numeric:tabular-nums}.an-activity-summary>span:first-child b{font-size:40px;letter-spacing:-1.8px;color:var(--an-accent)}
+
+.an-metric-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 24px}
+.an-metric-summary>span{display:grid;gap:8px;min-width:0;color:var(--an-muted);font-size:11px}
+.an-metric-summary b{color:var(--an-text);font-size:clamp(18px,1.8vw,28px);font-weight:550;line-height:1.2;letter-spacing:-.6px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .an-act-label{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:6px;font-size:11px;color:var(--an-muted);line-height:1}.an-act-label svg{display:inline-block;vertical-align:middle;flex-shrink:0}
 .an-activity-card .an-head{margin-bottom:24px}.an-chart-card .an-head{margin-bottom:24px}.an-dynamics-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:4px 0 24px}.an-dynamics-summary>span{display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--an-muted)}.an-dynamics-summary b{color:var(--an-text);font-size:40px;font-weight:550;line-height:1;letter-spacing:-1.8px;font-variant-numeric:tabular-nums}
 .an-day-details{margin-top:16px}.an-day-details>summary{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--an-text);cursor:pointer;list-style:none;padding-top:14px;border-top:1px solid #F2F3F5}.an-day-details>summary::-webkit-details-marker{display:none}.an-day-details>summary:after{content:'+';font-size:18px;color:var(--an-muted)}.an-day-details[open]>summary:after{content:'−'}.an-day-details .an-table-wrap{max-height:320px;margin-top:18px}
@@ -82,7 +85,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 @media(max-width:1120px){.an-chart-card .an-legend{margin:0 0 8px}.an-grid{gap:12px}.an-kpi{padding:20px}.an-big{font-size:34px}}
 @media(max-width:700px){.an-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.an-now{grid-template-columns:repeat(2,minmax(0,1fr))}.an-now span{justify-content:flex-start}.an-now b{margin-left:auto}}
-@media(max-width:640px){.an-card{padding:20px;border-radius:18px}.an-grid{gap:10px}.an-kpi{padding:18px}.an-kpi-top{font-size:11px;min-height:28px;line-height:1.4}.an-big{font-size:32px;margin-top:10px}.an-head{gap:8px}.an-title{font-size:15px}.an-tabs button{padding:6px 10px;font-size:10px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-activity-summary{gap:14px 10px;grid-template-columns:1.1fr repeat(3,1fr)}.an-activity-summary b{font-size:18px}.an-activity-summary>span:first-child b{font-size:34px}.an-activity-summary>span{font-size:10px;line-height:1.4}.an-dynamics-summary b{font-size:34px}.an-dynamics-summary>span{font-size:10px}.an-geo-footer{flex-wrap:wrap}.an-now{padding:18px 20px;gap:16px}.an-now span{flex-direction:column;align-items:flex-start;gap:8px}.an-now b{margin:0;font-size:20px}.an-chart-card .an-head{flex-wrap:wrap}.an-caption{font-size:10px}}
+@media(max-width:640px){.an-card{padding:20px;border-radius:18px}.an-grid{gap:10px}.an-kpi{padding:18px}.an-kpi-top{font-size:11px;min-height:28px;line-height:1.4}.an-big{font-size:32px;margin-top:10px}.an-head{gap:8px}.an-title{font-size:15px}.an-tabs button{padding:6px 10px;font-size:10px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-dynamics-summary b{font-size:34px}.an-dynamics-summary>span{font-size:10px}.an-geo-footer{flex-wrap:wrap}.an-now{padding:18px 20px;gap:16px}.an-now span{flex-direction:column;align-items:flex-start;gap:8px}.an-now b{margin:0;font-size:20px}.an-chart-card .an-head{flex-wrap:wrap}.an-caption{font-size:10px}}
 .an-scope{font-size:10px;font-weight:500;line-height:1.4;color:var(--an-muted);white-space:nowrap}.an-heading{display:flex;align-items:center;gap:8px;min-width:0}.an-subtitle{font-size:11px;color:var(--an-muted);margin-top:6px;line-height:1.5}
 .an-audience-grid,.an-acquisition-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:16px;margin-bottom:18px}.an-audience-grid>.an-card,.an-acquisition-grid>.an-card{margin:0}
 .an-acquisition-card .an-table{min-width:440px}.an-acquisition-card .an-table td:first-child{max-width:360px;overflow-wrap:anywhere}.an-acquisition-card .an-tabs{margin-bottom:18px}.an-acquisition-card .an-table-name{align-items:flex-start}.an-acquisition-card .an-logo{margin-top:1px}.an-acquisition-card .an-source-detail{display:block;font-size:10px;color:var(--an-muted);font-weight:450;margin-top:3px}.an-acquisition-card .an-subtitle{margin-bottom:16px}.an-acquisition-card details.an-day-details>summary{line-height:1.5}
@@ -99,8 +102,8 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 #analytics-view .an-folded .an-head{margin-bottom:0}
 .an-folded .an-head :is(.an-tabs,.an-scope,.an-subtitle,.an-usage-total){display:none}
 #analytics-view [id^="an-body-"][hidden]{display:none}
-.an-growth-grid{display:contents}.an-growth-grid>.an-card{margin:0}.an-growth-grid .an-title{font-size:14px}.an-growth-grid .an-head{min-height:28px}.an-growth-total{font-size:40px;line-height:1;letter-spacing:-1.8px;font-weight:550;font-variant-numeric:tabular-nums;margin:4px 0 24px}.an-growth-period{font-size:11px;line-height:1.4;color:var(--an-muted);margin-bottom:10px}.an-growth-grid .an-chart{min-height:190px}
-@media(max-width:640px){.an-activity-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.an-growth-grid{gap:10px}.an-growth-grid .an-card{padding:18px}.an-growth-grid .an-title{font-size:14px;letter-spacing:-.2px}.an-growth-grid .an-fold{gap:4px}.an-growth-total{font-size:32px}.an-growth-grid .an-chart{min-height:150px}}
+.an-growth-grid{display:contents}.an-growth-grid>.an-card{margin:0}.an-growth-grid .an-title{font-size:14px}.an-growth-grid .an-head{min-height:28px}.an-growth-grid .an-chart{min-height:190px}
+@media(max-width:640px){.an-growth-grid{gap:10px}.an-growth-grid .an-card{padding:18px}.an-growth-grid .an-title{font-size:14px;letter-spacing:-.2px}.an-growth-grid .an-fold{gap:4px}.an-growth-grid .an-chart{min-height:150px}}
 ${PREMIUM_REVENUE_CSS}
 </style>
 <div class="an-grid" id="an-now" aria-label="Текущее состояние аккаунтов">
@@ -111,18 +114,18 @@ ${PREMIUM_REVENUE_CSS}
  <div class="an-card an-activity-card">
   <div class="an-head"><div class="an-title">${cardToggle('activity', 'Активность по дням')}</div></div>
   <div id="an-body-activity">
-  <div class="an-activity-summary" id="an-activity-summary"></div>
+  <div class="an-metric-summary" id="an-activity-summary"></div>
   <div class="an-chart" id="an-activity-chart"></div>
   </div>
  </div>
  <div class="an-growth-grid">
   <div class="an-card an-chart-card" id="an-launches">
    <div class="an-head"><div class="an-title">${cardToggle('launches', 'Первые запуски')}</div></div>
-   <div id="an-body-launches"><div class="an-growth-period">За период</div><div class="an-growth-total" id="an-launches-total"></div><div class="an-chart" id="an-installs-chart"></div><div class="an-caption" id="an-installs-caption"></div></div>
+   <div id="an-body-launches"><div class="an-metric-summary" id="an-launches-summary"></div><div class="an-chart" id="an-installs-chart"></div><div class="an-caption" id="an-installs-caption"></div></div>
   </div>
   <div class="an-card an-chart-card" id="an-registrations">
    <div class="an-head"><div class="an-title">${cardToggle('registrations', 'Новые аккаунты')}</div></div>
-   <div id="an-body-registrations"><div class="an-growth-period">За период</div><div class="an-growth-total" id="an-registrations-total"></div><div class="an-chart" id="an-registrations-chart"></div></div>
+   <div id="an-body-registrations"><div class="an-metric-summary" id="an-registrations-summary"></div><div class="an-chart" id="an-registrations-chart"></div></div>
   </div>
  </div>
 </div>
@@ -358,10 +361,18 @@ function anTable(headers, rows) {
  return '<table class="an-table"><thead><tr>' + headers.map(function(h){return '<th scope="col">'+h+'</th>';}).join('') + '</tr></thead><tbody>' + rows.join('') + '</tbody></table>';
 }
 function anCell(v) { return '<td>'+anNum(v)+'</td>'; }
+function anMetricSummary(id, daily, periodTotal) {
+ var completed=daily.slice(0,-1).filter(Number.isFinite);
+ var average=completed.length?Math.round(completed.reduce(function(sum,value){return sum+value;},0)/completed.length):null;
+ var metrics=[['Сегодня',daily[daily.length-1]],['Среднее',average],['За период',periodTotal]];
+ document.getElementById(id).innerHTML=metrics.map(function(metric){
+  return '<span>'+metric[0]+'<b>'+(Number.isFinite(metric[1])?anNum(metric[1]):'—')+'</b></span>';
+ }).join('');
+}
 function anPlot(data) {
  var tl=data.timeline||[], u=data.users;
- document.getElementById('an-launches-total').textContent=anNum(anSum(tl,function(d){return d.installs;}));
- document.getElementById('an-registrations-total').textContent=u?anNum(u.registrations):'—';
+ anMetricSummary('an-launches-summary',tl.map(function(d){return d.installs;}),tl.length?anSum(tl,function(d){return d.installs;}):null);
+ anMetricSummary('an-registrations-summary',tl.map(function(d){return u&&u.registrationsByDay&&u.registrationsByDay[d.date];}),u&&u.registrations);
  document.getElementById('an-site-summary').innerHTML=[['Просмотры',anSum(tl,function(d){return d.views;})],['Переходы',anSum(tl,function(d){return d.clicks;})]].map(function(m,i){return '<span><span class="an-act-label"><i class="an-dot" aria-hidden="true" style="background:'+(i?'#22a875':'#0574F8')+'"></i>'+m[0]+'</span><b>'+anNum(m[1])+'</b></span>';}).join('');
  var buckets=anBuckets(tl), bars=[], launches=[], registrations=[];
  buckets.forEach(function(bk){
@@ -422,14 +433,8 @@ var AN_ACTIVITY_SERIES = [
 ];
 function anRenderActivity(data) {
  var activity=data.usage&&data.usage.activity, days=activity?activity.days:[], available=days.filter(function(d){return d.total!=null;});
- var latest=available[available.length-1];
- // The selected period ends today; only its completed days enter the mean.
- var completed=available.filter(function(d){return d.date<days[days.length-1].date;});
- var average=completed.length?Math.round(completed.reduce(function(sum,d){return sum+d.total;},0)/completed.length):null;
+ anMetricSummary('an-activity-summary',days.map(function(d){return d.total;}),activity&&activity.periodTotal);
  var labels=AN_ACTIVITY_SERIES.map(function(series){return (series.icon?anSvgIcon(series.icon):'')+series.label;});
- document.getElementById('an-activity-summary').innerHTML=latest?[
- ['Сегодня',latest.total],['Среднее',average]
- ].map(function(m){return '<span>'+m[0]+'<b>'+(m[1]==null?'—':anNum(m[1]))+'</b></span>';}).join(''):'';
  var bars=available.map(function(d){
   var tip='<b>'+anDayLabel(d.date,true)+'</b>' + [['Активные установки за день',d.total]].concat(AN_ACTIVITY_SERIES.map(function(series,i){
     return ['<span class="an-act-label">'+labels[i]+'</span>',d[series.key]];

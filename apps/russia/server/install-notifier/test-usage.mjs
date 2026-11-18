@@ -138,6 +138,7 @@ test('usage uniques are a period union, Moscow midnight is respected, raw IDs st
   const snapshot = usageSnapshot(days);
   assert.deepEqual(snapshot.features.game, { starts: 3, installations: 2 });
   assert.deepEqual(snapshot.timeline.map(d => d.features.game.installations), [null, 1, 2]);
+  assert.equal(snapshot.activity.periodTotal, 2);
   assert.deepEqual(snapshot.activity.days.map(d => d.total), [null, 1, 2]);
   assert.deepEqual(snapshot.activity.days.slice(1).map(d => d.android), [1, 2]);
   assert.ok(ids.every(id => !JSON.stringify(snapshot).includes(id)));

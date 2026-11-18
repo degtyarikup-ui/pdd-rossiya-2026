@@ -62,6 +62,7 @@ export function usageSnapshot(days, app = 'all') {
     }
     return { date, features };
   });
+  const activeInstallations = new Set();
   const activity = { from: USAGE_FROM, days: days.map(({ date, data }) => {
     if (date < USAGE_FROM) return { date, total: null };
     const installations = new Map();
@@ -73,10 +74,12 @@ export function usageSnapshot(days, app = 'all') {
       }
       for (const [id, platform] of Object.entries(data?.activity || {})) installations.set(id, platform);
     }
+    for (const id of installations.keys()) activeInstallations.add(id);
     const row = { date, total: installations.size, android: 0, ios: 0, web: 0, unknown: 0 };
     for (const platform of installations.values()) row[['android', 'ios', 'web'].includes(platform) ? platform : 'unknown']++;
     return row;
   }) };
+  activity.periodTotal = activity.days.some(day => day.total != null) ? activeInstallations.size : null;
   return { from: USAGE_FROM, activity, collectionFrom: Object.fromEntries(USAGE_FEATURES.map(key => [key, USAGE_COLLECTION_FROM[key] || USAGE_FROM])), timeline, features: Object.fromEntries(USAGE_FEATURES.map(key => [key, {
     starts: totals[key].starts, installations: totals[key].ids.size,
   }])) };
