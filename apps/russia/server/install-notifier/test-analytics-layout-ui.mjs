@@ -422,6 +422,7 @@ if(process.argv.includes('--serve')) {
   assert.equal(await page.locator('#refresh-btn svg').evaluate(el=>getComputedStyle(el).animationName),'adminRefreshSpin');
   await page.evaluate(()=>{checkAuthAndLoad();checkAuthAndLoad();});
   assert.ok(pendingRefresh);
+  assert.equal(await page.locator('#analytics-view > .admin-load-notice').isVisible(),false);
   assert.equal(refreshRequests,1);
   for(const width of [1600,1100,768,390,320]) {
    await page.setViewportSize({width,height:1100});

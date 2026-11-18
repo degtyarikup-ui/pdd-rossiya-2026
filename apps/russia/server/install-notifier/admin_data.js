@@ -80,7 +80,7 @@ export const ADMIN_DATA_CLIENT_JS = String.raw`
     var state=v.pending?(v.cold?'loading':'refreshing'):(v.failed.size?(v.hasData?'stale':'error'):'ready');
     v.el.dataset.loadState=state;v.el.setAttribute('aria-busy',v.pending?'true':'false');
     v.el.classList.toggle('admin-first-load',state==='loading');v.skeleton.hidden=state!=='loading';
-    v.notice.hidden=state==='ready'||state==='loading';v.notice.dataset.state=state;
+    v.notice.hidden=state==='ready'||state==='loading'||(state==='refreshing'&&v.el.id==='analytics-view');v.notice.dataset.state=state;
     v.notice.textContent=state==='refreshing'?'Обновление…':(state==='stale'?'Не удалось обновить данные':'Не удалось загрузить данные');
     if(state==='stale'||state==='error'){
       var button=document.createElement('button');button.type='button';button.textContent='Повторить';button.onclick=function(){Array.from(v.failed).forEach(function(key){var retry=v.retries.get(key);if(retry)retry();});};v.notice.appendChild(button);
