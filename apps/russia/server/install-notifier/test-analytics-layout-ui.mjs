@@ -265,6 +265,23 @@ if(process.argv.includes('--serve')) {
   for(const width of [2415,1600,1100,901,900,768,600,390,320]) {
    await page.setViewportSize({width,height:1100});
    await page.waitForTimeout(220); // dashboard debounces chart sizing for 150 ms
+   if(width===1600||width===390) {
+    const roles=await page.evaluate(()=>{
+     const signature=selector=>{
+      const style=getComputedStyle(document.querySelector(selector));
+      return [style.fontFamily,style.fontSize,style.fontWeight,style.lineHeight].join('|');
+     };
+     return {
+      section:['#analytics-view .an-title','#ec-recent-heading','.ai-card-title'].map(signature),
+      action:['#ec-add-operation','.pb-tabs button','#nt-test'].map(signature),
+      value:['.an-big','#tasks-kpi-total','#ai-m-total'].map(signature),
+      dialog:['#ec-dialog h2','.pc-dialog-title','.task-modal-title'].map(signature),
+     };
+    });
+    for(const [role,signatures] of Object.entries(roles)) {
+     assert.equal(new Set(signatures).size,1,role+' typography at '+width+': '+signatures.join(', '));
+    }
+   }
    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
    assert.equal(overflow,false,'page must fit '+width);
    if(width<=900){

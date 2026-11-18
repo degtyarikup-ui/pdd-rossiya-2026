@@ -230,6 +230,13 @@ test('revisits reuse data, stale data stays visible, refresh and concurrent call
     const refresh = app.hold('/api/admin/economy/stats'), refreshBefore = app.count('/api/admin/economy/stats');
     await page.locator('#ec-refresh').click(); await refresh.ready;
     assert.equal(app.count('/api/admin/economy/stats'), refreshBefore + 1, 'explicit refresh bypasses fresh cache');
+    assert.equal(await page.locator('#ec-refresh').isDisabled(),true);
+    assert.equal(await page.locator('#ec-refresh').getAttribute('aria-busy'),'true');
+    assert.equal(await page.locator('#ec-refresh svg').innerHTML(),await page.locator('#refresh-btn svg').innerHTML());
+    assert.equal(await page.locator('#ec-data-state').isVisible(),true);
+    assert.match(await page.locator('#ec-data-state').innerText(),/Данные на .*МСК · обновление…/);
+    assert.equal(await page.locator('#economy-view > .admin-load-notice').isVisible(),false);
+    assert.equal(await page.locator('#ec-overview').isVisible(),true);
     refresh.release(); await state(page, 'economy-view', 'ready');
 
     app.fail('/api/admin/economy/stats');

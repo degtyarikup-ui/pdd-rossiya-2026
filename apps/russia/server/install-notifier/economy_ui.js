@@ -1,3 +1,4 @@
+import { reportRefreshButton, reportUpdatedLabel } from './admin_report_controls.js';
 import { BRAND_SVGS, PLATEGA_LOGO } from './brand_icons.js';
 import { splitProfit } from './economy_shares.js';
 
@@ -9,8 +10,8 @@ export const ECONOMY_VIEW_HTML = String.raw`
 <div id="economy-view" style="display:none">
 <style>
 #economy-view{color:var(--text,#17191E);--ec-muted:#747B88;--ec-line:#EDF0F3;--ec-soft:#F4F6F9;--ec-blue:#0574F8;--ec-red:#C54C35}
-#economy-view [hidden]{display:none!important}#economy-view button{cursor:pointer}#economy-view button:disabled{cursor:default}
-.ec-toolbar,.ec-actions,.ec-head,.ec-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.ec-actions{justify-content:flex-end;gap:8px}.ec-toolbar{margin-bottom:16px}.ec-toolbar .admin-data-state{padding:0;font-size:10.5px}.ec-period-note{font-size:11px;color:var(--ec-muted);margin:0 0 15px}.ec-seg{display:flex;gap:3px;padding:4px;background:#E9ECF1;border-radius:11px;width:fit-content;max-width:100%}
+#economy-view [hidden]{display:none!important}#economy-view button{cursor:pointer}#economy-view button:disabled{cursor:default}#economy-view .admin-refresh-button:disabled{cursor:progress}
+.ec-toolbar,.ec-actions,.ec-head,.ec-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.ec-actions{justify-content:flex-end;gap:8px}.ec-toolbar{margin-bottom:16px}.ec-period-note{font-size:11px;color:var(--ec-muted);margin:0 0 15px}.ec-seg{display:flex;gap:3px;padding:4px;background:#E9ECF1;border-radius:11px;width:fit-content;max-width:100%}
 #economy-view .ec-seg button{border:0;padding:8px 12px;min-height:34px;border-radius:8px;background:transparent;color:var(--ec-muted);font-size:11.5px;font-weight:550;white-space:nowrap}#economy-view .ec-seg button.active{background:#17191E;color:white}
 #economy-view .ec-card{background:#fff;border-radius:20px;padding:23px 24px;min-width:0}.ec-kpi-label{font-size:13px;color:var(--ec-muted);font-weight:500}.ec-value{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.ec-caption{font-size:11px;color:var(--ec-muted);line-height:1.5}.ec-caption:empty{display:none}#ec-gross-sub:not(:empty){display:flex;flex-wrap:wrap;gap:2px 12px}#ec-gross-sub>span{white-space:nowrap}
 .ec-head{margin-bottom:18px;min-height:34px}.ec-head h2{font-size:15px;letter-spacing:-.3px;font-weight:600;margin:0}.ec-head-title{display:flex;align-items:center;gap:8px}.ec-head-title .ec-caption{font-variant-numeric:tabular-nums}
@@ -37,15 +38,19 @@ export const ECONOMY_VIEW_HTML = String.raw`
 @media(max-width:600px){.ec-operation{gap:8px;align-items:flex-start}.ec-operation-icon{flex-basis:28px;width:28px;height:28px;border-radius:9px;margin-top:1px}.ec-operation-icon svg{width:17px;height:17px}#ec-receipts-body .ec-row-title{font-size:12px}#ec-receipts-body .ec-sub{font-size:10px}#economy-view #ec-receipts-body .ec-date,#economy-view #ec-receipts-body .ec-kind{padding-left:36px}#economy-view #ec-receipts-body .ec-money{font-size:13px}.ec-type-badge{font-size:10px;padding:3px 7px}}
 @media(max-width:370px){.ec-form-grid{gap:14px 10px}}
 #economy-view [data-row-kind="payout"]{--ec-operation:#67429A;--ec-operation-bg:#F3EDFA}
-.ec-toolbar{margin-bottom:18px}.ec-toolbar .ec-actions{flex-wrap:nowrap}
+.ec-toolbar{margin-bottom:18px}.ec-toolbar .ec-actions{flex-wrap:wrap;min-width:0;margin-left:auto}
 #economy-view .ec-navigation{padding:4px;border-radius:12px}
 #economy-view .ec-navigation button{font-size:13px;padding:8px 14px}
-.ec-toolbar svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-#ec-refresh{display:grid;place-items:center;width:36px;height:36px;padding:0}
-#ec-period-menu{position:relative}
+#ec-data-state{display:inline-flex}
+#ec-month-switcher{align-items:stretch;position:relative;flex:none}
+#ec-month-switcher .ec-month-step{display:grid;place-items:center;padding-inline:7px;min-width:28px}
+.ec-month-step svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#ec-month-switcher .ec-month-step:hover:enabled{color:var(--text);background:rgba(255,255,255,.6)}
+#ec-month-switcher .ec-month-step:disabled{opacity:.35}
+#ec-period-menu{position:relative}#ec-period-compact{display:none}
 #ec-period-menu summary,#ec-breakdown summary{list-style:none;cursor:pointer}
 #ec-period-menu summary::-webkit-details-marker,#ec-breakdown summary::-webkit-details-marker{display:none}
-#ec-period-menu summary{display:flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 12px;background:white;border-radius:10px;font-size:12px;font-weight:550}
+#ec-period-menu summary{display:flex;align-items:center;justify-content:center;gap:8px;padding:7px 10px;background:#fff;border-radius:9px;font-size:var(--admin-type-control,11.5px);font-weight:var(--admin-weight-semibold,650);line-height:1.25;white-space:nowrap}
 #ec-period-menu summary i,#ec-breakdown summary::after{content:'';width:6px;height:6px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:translateY(-2px) rotate(45deg)}
 #ec-period-menu[open] summary i,#ec-breakdown[open] summary::after{transform:translateY(2px) rotate(225deg)}
 .ec-period-options{position:absolute;top:calc(100% + 6px);right:0;z-index:5;width:210px;max-width:calc(100vw - 40px);padding:8px;background:white;border:1px solid var(--ec-line);border-radius:14px;box-shadow:0 10px 30px #1f293714}
@@ -64,9 +69,9 @@ export const ECONOMY_VIEW_HTML = String.raw`
 #ec-breakdown summary{display:flex;align-items:center;gap:9px;min-height:42px;font-size:12px;font-weight:500;color:#525c6b}
 .ec-breakdown-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:18px;font-size:13px}.ec-breakdown-grid h3{font-size:12px;color:var(--ec-muted);font-weight:500;margin:4px 0 8px}
 #ec-gross-sub:not(:empty){display:flex;flex-wrap:wrap;gap:5px 14px}
-.ec-breakdown-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 0}
+.ec-breakdown-footer{display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:18px 0}
 .ec-overview-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
-#economy-view .ec-link,#economy-view .ec-pay-partner{font:inherit;font-size:12px;font-weight:550;border:0;background:transparent;color:var(--ec-blue);padding:6px 0}
+#economy-view .ec-link{font:inherit;font-size:12px;font-weight:550;border:0;background:transparent;color:var(--ec-blue);padding:6px 0}
 #economy-view .ec-link span{margin-left:4px}
 .ec-overview-side{min-width:0}.ec-overview-side .ec-planner-grid{grid-template-columns:1fr}.ec-overview-side .ec-planner-grid>div+div{border-left:0;border-top:1px solid var(--ec-line);padding:16px 0 0}
 .ec-overview-grid .ec-head{margin-bottom:10px;gap:6px}
@@ -77,22 +82,48 @@ export const ECONOMY_VIEW_HTML = String.raw`
 .ec-recent-money,.ec-preview-balance b{margin-left:auto;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ec-recent-row .ec-operation-icon{width:32px;height:32px;flex-basis:32px}.ec-overview-empty{font-size:13px;color:var(--ec-muted);padding:12px 0}
 #ec-balance-preview .ec-total{font-size:clamp(24px,2vw,32px);font-weight:600;letter-spacing:-.04em;line-height:1.2;margin:6px 0 16px}.ec-preview-balance span{min-width:0;overflow-wrap:anywhere;font-weight:450}
-#ec-allocation-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr));gap:12px}
-.ec-allocation-item{min-width:0;background:var(--ec-soft);border-radius:14px;padding:18px}
-.ec-allocation-label{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;font-size:15px;font-weight:600;overflow-wrap:anywhere}
-.ec-allocation-label span{font-size:12px;color:var(--ec-muted);font-weight:450}
-.ec-balance-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0 7px}
-.ec-balance-values dt{font-size:11px;color:var(--ec-muted)}.ec-balance-values dd,.ec-allocation-amount{margin:4px 0;font-size:17px;font-weight:570;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.ec-allocation-amount{margin-top:16px}#ec-shares [data-payout-history]{margin-top:14px}
+#ec-shares .ec-head{align-items:flex-start;gap:12px 24px;margin-bottom:20px}
+.ec-shares-intro{flex:1 1 320px;min-width:0}
+#ec-shares .ec-head h2{font-size:var(--admin-type-section,18px);line-height:var(--admin-leading-title,1.3)}
+.ec-shares-intro p,.ec-share-note{margin:6px 0 0;color:var(--text-muted);font-size:var(--admin-type-body,14px);line-height:var(--admin-leading-body,1.5)}
+.ec-shares-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px clamp(6px,1vw,16px)}
+#ec-allocation-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,275px),1fr));gap:var(--admin-gap,16px)}
+.ec-allocation-item{display:flex;flex-direction:column;min-width:0;padding:clamp(16px,1.6vw,24px);border:1px solid var(--admin-divider);border-radius:16px;background:#fff}
+.ec-allocation-item.ec-fund{background:linear-gradient(135deg,#F0F6FF,#FAFCFF);border-color:#DCE9FA}
+.ec-allocation-label{display:flex;align-items:baseline;justify-content:space-between;gap:6px 12px;flex-wrap:wrap}
+.ec-allocation-label h3{margin:0;color:var(--text);font-size:var(--admin-type-title,16px);font-weight:var(--admin-weight-semibold,600);line-height:var(--admin-leading-title,1.3);overflow-wrap:anywhere}
+.ec-allocation-label span{color:var(--text-muted);font-size:var(--admin-type-control,13px);white-space:nowrap}
+.ec-allocation-primary{margin:20px 0 0}
+.ec-allocation-primary dt,.ec-balance-values dt{color:var(--text-muted);font-size:var(--admin-type-control,13px)}
+.ec-allocation-primary dd,.ec-balance-values dd{margin:3px 0 0;line-height:var(--admin-leading-title,1.3);font-weight:var(--admin-weight-semibold,600);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.ec-allocation-primary dd{font-size:var(--admin-type-metric,clamp(26px,2.3vw,34px));letter-spacing:-.035em}
+.ec-fund .ec-allocation-primary dd{color:#1C5AB3}
+.ec-balance-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0 0}
+.ec-balance-values dd{font-size:var(--admin-type-title,16px)}
+.ec-share-progress{display:block;width:100%;height:5px;margin:12px 0 0;border:0;border-radius:999px;overflow:hidden;appearance:none;background:var(--surface-gray);color:var(--success)}
+.ec-share-progress::-webkit-progress-bar{background:var(--surface-gray);border-radius:inherit}
+.ec-share-progress::-webkit-progress-value{background:var(--success);border-radius:inherit}
+.ec-share-progress::-moz-progress-bar{background:var(--success);border-radius:inherit}
+.ec-share-note{max-width:40ch;margin-top:12px}
+.ec-share-action{margin-top:auto;padding-top:18px}
 @media(max-width:760px){.ec-overview-grid{grid-template-columns:1fr}.ec-toolbar{align-items:flex-start}.ec-breakdown-grid{grid-template-columns:1fr}}
 @media(max-width:650px){
  .ec-toolbar{gap:10px}.ec-toolbar .ec-actions{width:100%;justify-content:flex-start}.ec-navigation{width:100%}#economy-view .ec-navigation button{font-size:12px;padding-inline:6px;flex:1}
- #ec-period-menu{min-width:0}#ec-period-menu summary{padding-inline:8px}#ec-period-menu .ec-period-options{left:0;right:auto}
+ #ec-data-state{flex:0 0 100%;min-height:18px;padding:0}#ec-month-switcher .ec-month-step{min-width:24px;padding-inline:4px}#ec-period-menu{min-width:0}#ec-period-menu summary{padding-inline:6px}#ec-period-menu .ec-period-options{left:-26px;right:auto}
  .ec-toolbar #ec-add-operation{margin-left:auto}.ec-summary .ec-kpis{grid-template-columns:1fr 1fr;gap:16px;padding:18px}
  .ec-summary .ec-net{display:block;grid-column:1/-1}.ec-summary .ec-metric{border-left:0;padding:12px 0 0;border-top:1px solid var(--ec-line)}
  .ec-summary .ec-metric .ec-value{font-size:24px}.ec-breakdown-grid{gap:12px}
- .ec-overview-grid{gap:12px;margin-top:12px}.ec-allocation-item+.ec-allocation-item{padding:18px}.ec-allocation-label span{margin:0}
- .ec-ledger-tools select{min-width:0;width:0}.ec-balance-values dd{font-size:15px}
+ .ec-overview-grid{gap:12px;margin-top:12px}
+ .ec-ledger-tools select{min-width:0;width:0}
+}
+@media(max-width:380px){
+ .ec-toolbar .ec-actions{display:grid;grid-template-columns:minmax(0,1fr) 36px auto;gap:5px;align-items:center}
+ #ec-data-state{grid-column:1/-1}
+ #ec-month-switcher{justify-self:start;max-width:100%;padding:3px;gap:1px}
+ #ec-month-switcher .ec-month-step{flex:none;width:24px;min-width:24px;padding-inline:0}
+ #ec-period-menu summary{gap:4px;padding-inline:4px;min-height:30px;box-sizing:border-box}
+ #ec-period-label{display:none}#ec-period-compact{display:inline}
+ .ec-toolbar #ec-add-operation{padding-inline:8px;white-space:nowrap}
 }
 </style>
 <div class="ec-toolbar">
@@ -102,14 +133,19 @@ export const ECONOMY_VIEW_HTML = String.raw`
   <button type="button" data-ec-view="shares" aria-controls="ec-shares" aria-pressed="false">Доли и выплаты</button>
  </div>
  <div class="ec-actions">
-  <details id="ec-period-menu"><summary aria-label="Выбрать период"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg><span id="ec-period-label">Этот месяц</span><i aria-hidden="true"></i></summary>
+  <span class="admin-data-state loading" id="ec-data-state" role="status">Загрузка…</span>
+  <div id="ec-month-switcher" class="segmented" role="group" aria-label="Отчётный период">
+  <button type="button" class="ec-month-step" id="ec-month-prev" aria-label="Предыдущий месяц" title="Предыдущий месяц"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m14 6-6 6 6 6"/></svg></button>
+  <details id="ec-period-menu"><summary aria-label="Выбрать период"><span id="ec-period-label">Этот месяц</span><span id="ec-period-compact" aria-hidden="true">Этот месяц</span><i aria-hidden="true"></i></summary>
    <div class="ec-period-options"><div id="ec-period-tabs" role="group" aria-label="Период">
     <button type="button" data-period="month" class="active" aria-pressed="true">Этот месяц</button>
     <button type="button" data-period="30d" aria-pressed="false">30 дней</button>
     <button type="button" data-period="all" aria-pressed="false">Всё время</button>
    </div><label for="ec-report-month">Отчётный месяц</label><input type="month" id="ec-report-month" min="2000-01"><p id="ec-period-note" class="ec-caption"></p></div>
   </details>
-  <button type="button" class="btn-action" id="ec-refresh" aria-label="Обновить данные" title="Обновить данные"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/></svg></button>
+  <button type="button" class="ec-month-step" id="ec-month-next" aria-label="Следующий месяц" title="Следующий месяц" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m10 6 6 6-6 6"/></svg></button>
+  </div>
+  ${reportRefreshButton('ec-refresh', 'Обновить данные')}
   <button type="button" class="btn-action btn-primary" id="ec-add-operation" disabled>+ Операция</button>
  </div>
 </div>
@@ -125,7 +161,7 @@ export const ECONOMY_VIEW_HTML = String.raw`
    <div><h3>Источники дохода</h3><div id="ec-gross-sub"></div></div>
    <div><h3>Расходы и комиссии</h3><div id="ec-costs-sub"></div></div>
    <div><h3>Курс доллара</h3><div id="ec-fx-status"></div></div>
-  </div><div class="ec-breakdown-footer"><span class="admin-data-state loading" id="ec-data-state" role="status">Загрузка…</span><button type="button" class="btn-action" id="ec-settings" disabled>Настройки расчёта</button></div></details>
+  </div><div class="ec-breakdown-footer"><button type="button" class="btn-action" id="ec-settings" disabled>Настройки расчёта</button></div></details>
  </div>
  <div class="ec-overview-grid">
   <section class="ec-card" aria-labelledby="ec-recent-heading"><div class="ec-head"><h2 id="ec-recent-heading">Последние операции</h2><button type="button" class="ec-link" data-open-view="ledger">В журнал <span aria-hidden="true">→</span></button></div><div id="ec-recent-list"></div></section>
@@ -151,10 +187,12 @@ export const ECONOMY_VIEW_HTML = String.raw`
 <details class="ec-disclosure" id="ec-platega-panel"><summary>Platega <span class="ec-caption">Баланс сейчас</span></summary><div class="ec-disclosure-body"><div class="ec-head"><span class="ec-platega-status" id="ec-platega-status" role="status"></span><button type="button" class="btn-action" id="ec-platega-refresh">Обновить баланс</button></div><div class="ec-platega-balances" id="ec-platega-body"></div></div></details>
 <details class="ec-disclosure" id="ec-cloudflare-panel" hidden><summary>Cloudflare <span class="ec-caption" id="ec-cloudflare-summary"></span></summary><div class="ec-disclosure-body"><div class="ec-head"><span class="ec-platega-status" id="ec-cloudflare-status" role="status"></span><button type="button" class="btn-action" id="ec-cloudflare-refresh">Синхронизировать</button></div><div id="ec-cloudflare-body"></div></div></details>
 </section>
-<section id="ec-shares" class="ec-card" aria-label="Доли и выплаты" hidden>
- <div class="ec-head"><h2>Распределение прибыли</h2><button type="button" class="btn-action" id="ec-edit-shares" disabled>Изменить доли</button></div>
+<section id="ec-shares" class="ec-card" aria-labelledby="ec-shares-heading" hidden>
+ <div class="ec-head">
+  <div class="ec-shares-intro"><h2 id="ec-shares-heading">Распределение прибыли</h2><p id="ec-share-basis"></p></div>
+  <div class="ec-shares-actions"><button type="button" class="ec-link" data-payout-history>История выплат <span aria-hidden="true">→</span></button><button type="button" class="btn-action" id="ec-edit-shares" disabled>Изменить доли</button></div>
+ </div>
  <div class="ec-allocation-list" id="ec-allocation-list"></div>
- <button type="button" class="ec-link" data-payout-history>История выплат <span aria-hidden="true">→</span></button>
 </section>
 <dialog id="ec-dialog" aria-labelledby="ec-dialog-title"><form id="ec-form"><h2 id="ec-dialog-title"></h2><div class="ec-form-grid" id="ec-fields"></div><p class="ec-form-note" id="ec-form-note" hidden></p><div class="ec-form-error" id="ec-form-error" role="alert" hidden></div><div class="ec-form-actions"><button type="button" class="btn-action btn-danger" id="ec-delete" hidden>Удалить</button><button type="button" class="btn-action" id="ec-cancel">Отмена</button><button type="submit" class="btn-action btn-primary" id="ec-submit">Сохранить</button></div></form></dialog>
 </div>`;
@@ -165,6 +203,8 @@ export const ECONOMY_CLIENT_JS = String.raw`
  var splitProfit=${splitProfit.toString()};
  var sourceLogos=${JSON.stringify({appstore:BRAND_SVGS.apple,googleplay:BRAND_SVGS.gplay,rustore:BRAND_SVGS.rustore,web:'<img src="data:image/svg+xml,'+encodeURIComponent(PLATEGA_LOGO)+'" alt="">'})};
  function sourceLogo(key){return sourceLogos[key]?'<span class="ec-source-logo" aria-hidden="true">'+sourceLogos[key]+'</span>':'';}
+ ${reportUpdatedLabel.toString()}
+ var lastUpdatedAt=null,periodRequest=null;
  var stats=null,period='month',receiptMode='all',page=0,requestId=0,loading=null,dialogContext=null,saving=false,returnFocus=null,journal=[],plategaData=null,plategaLoading=false;
  var feedbackTimer=null;
  var stores={web:'СБП · Platega',appstore:'App Store',googleplay:'Google Play',rustore:'RuStore',other:'Другое'};
@@ -204,33 +244,48 @@ export const ECONOMY_CLIENT_JS = String.raw`
    var route=location.hash.split('/')[1];
    showEconomyView(route==='ledger'||route==='shares'?route:'overview',false,false);
   }
-  var id=++requestId,selectedPeriod=period;
-  el('ec-data-state').hidden=false;el('ec-data-state').className='admin-data-state loading';set('ec-data-state',stats?'Обновление…':'Загрузка…');enableActions();
+  if(loading&&periodRequest?.period===period)return loading;
+  periodRequest?.controller.abort();
+  var id=++requestId,selectedPeriod=period,controller=new AbortController();
+  periodRequest={period:period,controller:controller};
+  var refresh=el('ec-refresh'),status=el('ec-data-state');
+  function setStatus(state,text){status.className='admin-data-state '+state;status.textContent=text;}
+  function updatingLabel(){
+   if(stats&&stats.period!==selectedPeriod){
+    if(window.AdminData)return 'Загружаем отчёт…';
+    var displayed=stats.selectedMonth?monthText(stats.selectedMonth):stats.period==='all'?'всё время':'30 дней';
+    return 'Показан отчёт за '+displayed+' · загрузка…';
+   }
+   return lastUpdatedAt?'Данные на '+reportUpdatedLabel(lastUpdatedAt)+' · обновление…':'Загрузка…';
+  }
+  refresh.disabled=true;refresh.setAttribute('aria-busy','true');
+  setStatus('loading',updatingLabel());enableActions();
   function accept(data,meta){
    if(id!==requestId||selectedPeriod!==period)return;if(!data.ok)throw new Error(data.error||'Не удалось загрузить данные');
    var first=!stats;stats=Object.assign({},data,data.usd);if(first){el('ec-plan-target').value=data.usd.targetMonthlyProfitUsd;el('ec-plan-average').value=Number((190/stats.fx.rubPerUsd).toFixed(2));}
-   render();enableActions();el('ec-data-state').className='admin-data-state '+(meta?.refreshing?'loading':'ready');
-   set('ec-data-state',meta?.refreshing?'Обновление…':'Обновлено '+new Date(meta?.updatedAt||Date.now()).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}));
+   render();enableActions();lastUpdatedAt=meta?.updatedAt||Date.now();
+   setStatus(meta?.refreshing?'loading':'ready',meta?.refreshing?updatingLabel():'Обновлено '+reportUpdatedLabel(lastUpdatedAt));
   }
   var task=(async function(){
    try{
     var url='/api/admin/economy/stats?period='+selectedPeriod;
-    if(window.AdminData)await AdminData.load(url,{view:'economy-view',force:force===true,onData:accept});
-    else{var response=await fetch(url);if(response.status===401){if(typeof checkAuthAndLoad==='function')checkAuthAndLoad();throw new Error('Войдите в админку заново');}var data=await response.json();if(!response.ok)throw new Error(data.error||'Не удалось загрузить данные');accept(data,{});}
+    if(window.AdminData)await AdminData.load(url,{
+     view:'economy-view',force:force===true,onData:accept,signal:controller.signal,hasData:stats?.period===selectedPeriod,
+     onRetry:function(){period=selectedPeriod;updatePeriodControls();return loadEconomy(true);},replaceViewRequest:true
+    });
+    else{var response=await fetch(url,{signal:controller.signal});if(response.status===401){if(typeof checkAuthAndLoad==='function')checkAuthAndLoad();throw new Error('Войдите в админку заново');}var data=await response.json();if(!response.ok)throw new Error(data.error||'Не удалось загрузить данные');accept(data,{});}
     return true;
    }catch(error){
     if(id!==requestId)return;
-    el('ec-data-state').className='admin-data-state error';
-    if(window.AdminData){
-     el('ec-data-state').hidden=true;
-     if(el('ec-feedback').classList.contains('error'))el('ec-feedback').hidden=true;
-    }else{
-     set('ec-data-state','Ошибка обновления');feedback(error.message+(stats?' · показаны предыдущие данные':''),true);
+    if(stats&&stats.period!==period){period=stats.period;updatePeriodControls();enableActions();}
+    setStatus('error',lastUpdatedAt?'Данные на '+reportUpdatedLabel(lastUpdatedAt):'Нет обновления');
+    if(!window.AdminData){
+     feedback(error.message+(stats?' · показаны предыдущие данные':''),true);
      if(!stats)el('ec-receipts-body').innerHTML='<tr><td colspan="5" class="ec-empty">Нажмите «Обновить», чтобы повторить</td></tr>';
     }
     return false;
    }
-   finally{if(id===requestId)loading=null;}
+   finally{if(id===requestId){loading=null;periodRequest=null;refresh.disabled=false;refresh.setAttribute('aria-busy','false');}}
   })();loading=task;return task;
  }
  async function loadPlatega(force){
@@ -258,25 +313,39 @@ export const ECONOMY_CLIENT_JS = String.raw`
   var commissions=(exp.paymentFeesUsd||0)+(exp.withdrawalFeesUsd||0)+(exp.lines||[]).filter(function(line){return line.category==='commission';}).reduce(function(sum,line){return sum+line.periodUsd;},0);
   set('ec-costs-sub',stats.cloudflare?.stale?'Cloudflare: показаны прежние счета':'Комиссии '+usd(commissions)+' · Platega '+pct(cfg.paymentFeePercent));
   var loss=profit.operatingUsd<0;el('ec-net-card').classList.toggle('is-loss',loss);set('ec-net-label',loss?'Убыток':'Прибыль');set('ec-net-sub',loss?'К распределению '+usd(0):rev.includedStoreSalesUsd>0?'Оценка после расходов':'После расходов и комиссий');
-  el('ec-report-month').value=stats.selectedMonth||'';
-  var periodLabel=stats.selectedMonth?monthText(stats.selectedMonth):stats.period==='all'?'Всё время':'30 дней';
-  set('ec-period-label',periodLabel.charAt(0).toUpperCase()+periodLabel.slice(1));
-  el('ec-period-menu').querySelector('summary').setAttribute('aria-label','Выбрать период, '+periodLabel);
-  function balance(label,value){return '<div><dt>'+label+'</dt><dd>'+usd(value)+'</dd></div>';}
-  el('ec-allocation-list').innerHTML=(stats.settlements||stats.profitShares).map(function(share){
-   var values='<div class="ec-allocation-amount">'+usd(share.payoutUsd)+'</div>';
-   if(stats.settlements&&!share.id.startsWith('fund-')){
-    values='<dl class="ec-balance-values">'+balance('Начислено',share.payoutUsd)+balance('Выплачено',share.paidUsd)+balance(share.remainingUsd<0?'Переплата':'Осталось',Math.abs(share.remainingUsd))+'</dl>';
-    if(stats.profitShares.some(function(item){return item.id===share.id;}))values+='<button type="button" class="ec-pay-partner" data-pay-partner="'+esc(share.id)+'">Внести выплату</button>';
-   }
-   return '<div class="ec-allocation-item"><div class="ec-allocation-label">'+esc(share.name)+' <span>'+pct(share.percent)+'</span></div>'+values+'</div>';
-  }).join('');
+  updatePeriodControls();
+  renderShares();
   set('ec-fx-status',(stats.fx.stale?'Курс не обновлён · ':'')+'ЦБ '+dateText(stats.fx.effectiveDate,true)+' · $1 = '+Number(stats.fx.rubPerUsd).toLocaleString('ru-RU',{maximumFractionDigits:4})+' ₽');
   var range=stats.periodInfo||{};set('ec-period-note',range.from?dateText(range.from,true)+' — '+dateText(range.to,true):'');
   set('ec-withdrawn-total',stats.withdrawalSummary?.count?'Выведено '+usd(stats.withdrawalSummary.receivedUsd):'');
   set('ec-monthly-cost',usd(exp.monthlyUsd)+' / мес');
   el('ec-ai-note').hidden=!exp.ai?.available;set('ec-ai-note','Gemini: '+usd(exp.ai?.usd)+(exp.ai?.includedInTotal?' · учтено в расходах':' за всё время · вне итога периода'));
   journal=buildJournal();renderOverview();renderReceipts();renderExpenses();renderCloudflare();updatePlanner();
+ }
+ function renderShares(){
+  var monthly=Array.isArray(stats.settlements),shares=monthly?stats.settlements:stats.profitShares;
+  var totalCents=stats.profitShares.reduce(function(sum,share){return sum+Math.round(share.payoutUsd*100);},0);
+  var explanation=monthly?'Каждая выплата за выбранный месяц уменьшает остаток партнёра.':stats.selectedMonth?'Сведения о выплатах за этот месяц недоступны.':'Выберите календарный месяц, чтобы увидеть выплаты и остатки партнёров.';
+  set('ec-share-basis','Прибыль к распределению после расходов — '+usd(totalCents/100)+'. '+explanation);
+  var activeIds=new Set(stats.profitShares.map(function(share){return share.id;}));
+  el('ec-allocation-list').innerHTML=shares.map(function(share){
+   var fund=share.id.startsWith('fund-'),settled=monthly&&!fund;
+   var label=fund?'Выделено на развитие':'Начислено за период',amount=share.payoutUsd,details='',note='',action='';
+   if(fund)note='Эта часть прибыли остаётся в бюджете проекта на развитие.';
+   if(settled){
+    label=share.remainingUsd<0?'Переплата':'Осталось выплатить';
+    amount=Math.abs(share.remainingUsd);
+    details='<dl class="ec-balance-values"><div><dt>Начислено</dt><dd>'+usd(share.payoutUsd)+'</dd></div><div><dt>Выплачено</dt><dd>'+usd(share.paidUsd)+'</dd></div></dl>';
+    if(share.payoutUsd>0){
+     details+='<progress class="ec-share-progress" max="'+share.payoutUsd+'" value="'+Math.min(share.paidUsd,share.payoutUsd)+'" aria-label="Выплаченная часть доли" aria-valuetext="'+usd(share.paidUsd)+' из '+usd(share.payoutUsd)+'"></progress>';
+    }
+    if(share.remainingUsd<0)note='Сумма выплат превысила начисление за месяц.';
+    else if(share.remainingUsd===0)note=share.paidUsd>0?'Доля за месяц выплачена полностью.':'За этот месяц начислений нет.';
+    if(activeIds.has(share.id))action='<div class="ec-share-action"><button type="button" class="btn-action ec-pay-partner" data-pay-partner="'+esc(share.id)+'" aria-label="'+esc('Внести выплату · '+share.name)+'">Внести выплату</button></div>';
+   }
+   return '<article class="ec-allocation-item'+(fund?' ec-fund':'')+'"><div class="ec-allocation-label"><h3>'+esc(share.name)+'</h3><span>'+pct(share.percent)+' прибыли</span></div>'+
+    '<dl class="ec-allocation-primary"><dt>'+label+'</dt><dd>'+usd(amount)+'</dd></dl>'+details+(note?'<p class="ec-share-note">'+note+'</p>':'')+action+'</article>';
+  }).join('');
  }
  function renderCloudflare(){
   var cf=stats.cloudflare;el('ec-cloudflare-panel').hidden=!cf?.configured;if(!cf?.configured)return;
@@ -349,10 +418,33 @@ export const ECONOMY_CLIENT_JS = String.raw`
    if(active&&focusTab)button.focus();
   });
  }
+ function monthStep(offset){
+  var current=today().slice(0,7),calendar=period==='month'?current:period;
+  if(calendar==='30d'||calendar==='all'){
+   if(offset>0)return current;
+   calendar=current;
+  }
+  var date=new Date(calendar+'-01T00:00:00Z');
+  date.setUTCMonth(date.getUTCMonth()+offset);
+  return date.toISOString().slice(0,7);
+ }
+ function updatePeriodControls(){
+  var current=today().slice(0,7),month=period==='month'?current:period;
+  var label=period==='all'?'Всё время':period==='30d'?'30 дней':monthText(month).replace(/\s*г\.$/,'');
+  set('ec-period-label',label.charAt(0).toUpperCase()+label.slice(1));
+  var compact=period==='all'||period==='30d'?label:new Intl.DateTimeFormat('ru-RU',{month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(month+'-01T00:00:00Z')).replace(/\s*г\.$/,'');
+  set('ec-period-compact',compact.charAt(0).toUpperCase()+compact.slice(1));
+  el('ec-report-month').max=current;el('ec-report-month').value=period==='all'||period==='30d'?'':month;
+  el('ec-period-menu').querySelector('summary').setAttribute('aria-label','Выбрать период, '+label);
+  el('ec-month-prev').disabled=monthStep(-1)<'2000-01';el('ec-month-next').disabled=monthStep(1)>current;
+  activate('ec-period-tabs','data-period',period);
+ }
  function selectPeriod(value){
-  var menu=el('ec-period-menu');menu.open=false;menu.querySelector('summary').focus();
-  period=value;page=0;activate('ec-period-tabs','data-period',period);
-  // Keep the label tied to the displayed report if the new request fails.
+  var menu=el('ec-period-menu');
+  if(menu.open){menu.open=false;menu.querySelector('summary').focus();}
+  if(value===today().slice(0,7))value='month';
+  if(value===period)return;
+  period=value;page=0;updatePeriodControls();
   loadEconomy(false);
  }
  function renderReceipts(){
@@ -528,7 +620,9 @@ export const ECONOMY_CLIENT_JS = String.raw`
  function openRow(event){var button=event.target.closest('button');if(!button||!stats)return;if(button.dataset.detailKey)return showDetails(button.dataset.detailKey);var kind=button.dataset.editKind,id=button.dataset.id;if(!kind)return;var list=kind==='payout'?stats.payouts:kind==='builtin'?stats.expenses.lines:kind==='revenue'?stats.config.manualRevenues:kind==='withdrawal'?stats.config.withdrawals:stats.config.extraExpenses;var item=(list||[]).find(function(row){return row.id===id;});if(item)showForm(kind,item);}
  function init(){
   if(!el('economy-view'))return;window.loadEconomy=loadEconomy;
-  el('ec-report-month').max=today().slice(0,7);
+  updatePeriodControls();
+  el('ec-month-prev').onclick=function(){selectPeriod(monthStep(-1));};
+  el('ec-month-next').onclick=function(){selectPeriod(monthStep(1));};
   el('ec-report-month').onchange=function(){if(this.value&&this.validity.valid)selectPeriod(this.value===today().slice(0,7)?'month':this.value);};
   var periodMenu=el('ec-period-menu');
   periodMenu.addEventListener('keydown',function(event){if(event.key==='Escape'&&periodMenu.open){periodMenu.open=false;periodMenu.querySelector('summary').focus();}});

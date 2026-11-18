@@ -535,7 +535,7 @@ function anRenderStoreReports(reports) {
  ['googleplay','appstore'].forEach(function(store){
    var box=document.getElementById('an-report-'+store),r=reports[store];
    var caption=!r?'Отчёт недоступен':r.days?'Даты отчёта '+r.first+' — '+r.last+' · дней с данными: '+r.days:r.latestAvailable?'За выбранный период данных нет. Последняя дата отчёта '+r.latestAvailable:'Магазин пока не предоставил данные';
-   if(r&&r.checkedAt)caption+=' · Проверено '+anUpdatedLabel(Date.parse(r.checkedAt));
+   if(r&&r.checkedAt)caption+=' · Проверено '+reportUpdatedLabel(Date.parse(r.checkedAt));
    box.innerHTML='<div class="an-caption">'+anEsc(caption)+'</div>';
    if(r&&r.days)box.innerHTML+=anTable(['Источник',store==='appstore'?'Первые загрузки':'Установки'],r.rows.map(function(row){
      return '<tr><td>'+anEsc(Object.hasOwn(labels,row[0])?labels[row[0]]:row[0])+'</td>'+anCell(row[1])+'</tr>';

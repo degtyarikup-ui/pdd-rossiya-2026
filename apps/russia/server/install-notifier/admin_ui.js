@@ -1,3 +1,4 @@
+import { reportRefreshButton } from './admin_report_controls.js';
 import { ANALYTICS_LOADER_JS } from './analytics_loader.js';
 
 // Общие улучшения оболочки админки. Исходная разметка старой панели хранится
@@ -38,8 +39,9 @@ export const ADMIN_UI_STYLES = `
   .admin-data-state.ready::before { background: var(--success); }
   .admin-data-state.error { color: var(--danger); background: var(--danger-subtle); }
   .admin-data-state.error::before { background: var(--danger); }
-  #refresh-btn[aria-busy="true"] svg { animation: adminRefreshSpin .85s linear infinite; transform-origin: center; }
-  #refresh-btn:disabled { cursor: progress; }
+  .admin-refresh-button[aria-busy="true"] svg { animation: adminRefreshSpin .85s linear infinite; transform-origin: center; }
+  .admin-refresh-button:disabled { cursor: progress; }
+  @media(prefers-reduced-motion:reduce){.admin-refresh-button[aria-busy="true"] svg{animation:none}}
   @keyframes adminRefreshSpin { to { transform: rotate(360deg); } }
   @keyframes adminPulse { 50% { opacity: .35; } }
   .admin-error-banner {
@@ -300,6 +302,11 @@ export function enhanceAdminHtml(html) {
   result = result.replace(
     '<span class="brand-badge"><span class="live-dot"></span>LIVE</span>',
     ''
+  );
+
+  result = result.replace(
+    /<button class="btn-icon" id="refresh-btn"[^>]*>[\s\S]*?<\/button>/,
+    reportRefreshButton('refresh-btn', 'Обновить аналитику')
   );
 
   // Периоды по возрастанию: Сегодня · 7 · 30 · 90.

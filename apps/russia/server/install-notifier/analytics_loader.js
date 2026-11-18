@@ -1,3 +1,5 @@
+import { reportUpdatedLabel } from './admin_report_controls.js';
+
 // Last successful aggregates render after a lightweight session check, while
 // the expensive stats request refreshes them. Cache never authorizes access.
 export const ANALYTICS_LOADER_JS = String.raw`
@@ -25,9 +27,7 @@ function anWriteCache(key, data, at) {
     .forEach(function(k){if(data[k]!==undefined)snapshot[k]=data[k];});
   try { localStorage.setItem(key,JSON.stringify({at:at,data:snapshot})); } catch (_) {}
 }
-function anUpdatedLabel(at) {
-  return new Date(at).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' МСК';
-}
+${reportUpdatedLabel.toString()}
 function anAuthRequired() {
   ++window.__analyticsRequestId;
   if(anActiveLoad)anActiveLoad.controller.abort();
@@ -63,7 +63,7 @@ async function checkAuthAndLoad(force) {
     cached=anReadCache(key);
     if(cached){
       renderDashboard(cached.data);
-      if(state)state.textContent='Данные на '+anUpdatedLabel(cached.at)+' · обновление…';
+      if(state)state.textContent='Данные на '+reportUpdatedLabel(cached.at)+' · обновление…';
     } else if(window.__anCacheKey!==key){
       // Do not label another period's numbers as the newly selected period.
       renderDashboard({totals:{},timeline:[],sources:[]});
@@ -76,12 +76,12 @@ async function checkAuthAndLoad(force) {
         renderDashboard(data);
         if(!meta.cached&&data.users)anWriteCache(key,data,meta.updatedAt);
         window.__analyticsUpdatedAt=new Date(meta.updatedAt);
-        if(state){state.className='admin-data-state '+(meta.refreshing?'loading':'ready');state.textContent=meta.refreshing?'Данные на '+anUpdatedLabel(meta.updatedAt)+' · обновление…':'Обновлено '+anUpdatedLabel(meta.updatedAt);}
+        if(state){state.className='admin-data-state '+(meta.refreshing?'loading':'ready');state.textContent=meta.refreshing?'Данные на '+reportUpdatedLabel(meta.updatedAt)+' · обновление…':'Обновлено '+reportUpdatedLabel(meta.updatedAt);}
       }
     });
   } catch(err) {
     if(requestId!==window.__analyticsRequestId)return;
-    if(state){state.className='admin-data-state error';state.textContent=cached?'Данные на '+anUpdatedLabel(cached.at):'Нет обновления';}
+    if(state){state.className='admin-data-state error';state.textContent=cached?'Данные на '+reportUpdatedLabel(cached.at):'Нет обновления';}
     var errorText=document.getElementById('admin-error-text');
     if(errorText)errorText.textContent=cached?'Не удалось обновить данные. Показаны сохранённые значения.':'Не удалось загрузить данные. Попробуйте обновить ещё раз.';
     if(banner)banner.classList.add('visible');

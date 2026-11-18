@@ -181,6 +181,43 @@ if (process.argv.includes('--serve')) {
       assert.equal(initial.expenses.paymentFeesRub, 23.2);
       assert.equal(initial.currency,'USD');
       assert.match(await page.locator('#ec-gross-val').innerText(),/^\$6,10$/);
+      const currentDate = new Date(day().slice(0,7)+'-01T00:00:00Z');
+      const previousMonth = new Date(Date.UTC(currentDate.getUTCFullYear(),currentDate.getUTCMonth()-1,1)).toISOString().slice(0,7);
+      assert.equal(await page.locator('#ec-month-next').isDisabled(),true);
+      // A slow previous-month response must never relabel the current report.
+      let releaseMonth, requestedMonth;
+      const blocked = new Promise(resolve => { releaseMonth=resolve; });
+      const requested = new Promise(resolve => { requestedMonth=resolve; });
+      await page.route('**/api/admin/economy/stats?period='+previousMonth,async route=>{
+        requestedMonth(); await blocked;
+        await route.fulfill({json:{...initial,period:previousMonth,selectedMonth:previousMonth}});
+      },{times:1});
+      await page.locator('#ec-month-prev').click(); await requested;
+      assert.equal(await page.locator('#ec-report-month').inputValue(),previousMonth);
+      assert.equal(await page.locator('#ec-overview').isVisible(),false,'previous totals are hidden while the new month loads');
+      assert.equal(await page.locator('#economy-view > .admin-view-skeleton').isVisible(),true);
+      assert.match(await page.locator('#ec-data-state').innerText(),/Загружаем отчёт/);
+      assert.equal(await page.locator('#ec-month-next').isEnabled(),true);
+      await page.locator('#ec-month-next').click(); await settled();
+      const late=page.waitForResponse(response=>response.url().endsWith('period='+previousMonth));
+      releaseMonth(); await late;
+      assert.equal(await page.locator('#ec-report-month').inputValue(),day().slice(0,7));
+      assert.equal(await page.locator('#ec-month-next').isDisabled(),true);
+      assert.equal(await page.locator('#ec-refresh').getAttribute('aria-busy'),'false');
+      const september = (currentDate.getUTCFullYear()-1)+'-09';
+      await page.route('**/api/admin/economy/stats?period='+september,route=>route.fulfill({json:{...initial,period:september,selectedMonth:september}}),{times:1});
+      await page.setViewportSize({width:320,height:800});
+      await openPeriod(); await page.locator('#ec-report-month').fill(september); await settled();
+      const controlRects=await page.locator('#ec-month-prev,#ec-period-menu summary,#ec-month-next,#ec-refresh,#ec-add-operation').evaluateAll(nodes=>nodes.map(node=>{
+        const {top,bottom,left,right,width}=node.getBoundingClientRect();return {top,bottom,left,right,width};
+      }));
+      assert.equal(controlRects.length,5);
+      assert.ok(controlRects.every(rect=>rect.left>=0&&rect.right<=320&&rect.width>=24));
+      assert.ok(Math.max(...controlRects.map(rect=>rect.top))<Math.min(...controlRects.map(rect=>rect.bottom)),'all four actions and month picker fit one line at 320px');
+      assert.match(await page.locator('#ec-period-compact').innerText(),/сент/i);
+      await screenshot('month-toolbar-320');
+      await openPeriod(); await page.locator('#ec-period-tabs [data-period="month"]').click(); await settled();
+      await page.setViewportSize({width:1440,height:900});
       assert.equal(await page.locator('#ec-ledger').isVisible(),false);
       assert.equal(await page.locator('#ec-shares').isVisible(),false);
       assert.equal(await page.locator('#ec-breakdown').getAttribute('open'),null);
@@ -462,4 +499,44 @@ if (!process.argv.includes('--serve')) test('Cloudflare invoices are read-only i
  if(process.env.ECONOMY_UI_SCREENSHOTS){await mkdir(new URL('../../output/cloudflare-billing/',import.meta.url),{recursive:true});await page.locator('#ec-cloudflare-panel').screenshot({path:fileURLToPath(new URL('../../output/cloudflare-billing/mobile-panel.png',import.meta.url))});}
  assert.deepEqual(errors,[]);
  }finally{await browser.close();await preview.close();}
+});
+
+if (!process.argv.includes('--serve')) test('share cards distinguish fund allocation, unpaid, partial, settled and overpaid balances', async () => {
+  const preview = await startPreview();
+  const { chromium } = createRequire(import.meta.url)('playwright');
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
+  try {
+    const context = await browser.newContext({ viewport: { width:1440, height:900 } });
+    const api = preview.url+'/api/admin/economy/';
+    async function post(path,data) {
+      const response = await context.request.post(api+path,{ data }); assert.equal(response.status(),200);
+    }
+    await post('settings',{ profitShares:[
+      {name:'В развитие',percent:40}, {name:'Анна',percent:20}, {name:'Борис',percent:20},
+      {name:'Вера',percent:15}, {name:'Дарья',percent:5}, {name:'Игорь',percent:0},
+    ] });
+    await post('revenues/add',{ title:'Продажи', date:day(), amount:1000, currency:'USD', store:'other' });
+    const report = await (await context.request.get(api+'stats?period=month')).json();
+    const partner = name => report.settlements.find(share => share.name===name);
+    for (const [name,amount] of [['Борис',17],['Вера',partner('Вера').payoutUsd],['Дарья',partner('Дарья').payoutUsd+1]]) {
+      await post('payouts/add',{ id:crypto.randomUUID(),month:report.selectedMonth,date:day(),partnerId:partner(name).id,amount });
+    }
+    const page = await context.newPage();
+    await page.goto(preview.url+'/admin#economy/shares');
+    const card = name => page.locator('.ec-allocation-item').filter({ has:page.getByRole('heading',{ name,exact:true }) });
+    await card('В развитие').waitFor();
+    assert.equal(await card('В развитие').getByRole('button').count(),0);
+    assert.match(await card('В развитие').innerText(),/бюджете проекта/);
+    assert.equal(await card('Анна').locator('progress').getAttribute('value'),'0');
+    assert.equal(await card('Борис').locator('progress').getAttribute('value'),'17');
+    assert.equal(await card('Борис').locator('.ec-allocation-primary dt').innerText(),'Осталось выплатить');
+    assert.match(await card('Вера').innerText(),/выплачена полностью/);
+    assert.match(await card('Дарья').locator('.ec-allocation-primary').innerText(),/Переплата\s+\$1,00/);
+    assert.match(await card('Игорь').innerText(),/начислений нет/);
+    await page.setViewportSize({width:320,height:800});
+    assert.ok(await page.locator('.ec-allocation-item').evaluateAll(nodes=>nodes.every(el=>el.scrollWidth<=el.clientWidth+1)));
+  } finally {
+    await browser.close();
+    await preview.close();
+  }
 });

@@ -80,7 +80,7 @@ export const ADMIN_DATA_CLIENT_JS = String.raw`
     var state=v.pending?(v.cold?'loading':'refreshing'):(v.failed.size?(v.hasData?'stale':'error'):'ready');
     v.el.dataset.loadState=state;v.el.setAttribute('aria-busy',v.pending?'true':'false');
     v.el.classList.toggle('admin-first-load',state==='loading');v.skeleton.hidden=state!=='loading';
-    v.notice.hidden=state==='ready'||state==='loading'||(state==='refreshing'&&v.el.id==='analytics-view');v.notice.dataset.state=state;
+    v.notice.hidden=state==='ready'||state==='loading'||(state==='refreshing'&&(v.el.id==='analytics-view'||v.el.id==='economy-view'));v.notice.dataset.state=state;
     v.notice.textContent=state==='refreshing'?'Обновление…':(state==='stale'?'Не удалось обновить данные':'Не удалось загрузить данные');
     if(state==='stale'||state==='error'){
       var button=document.createElement('button');button.type='button';button.textContent='Повторить';button.onclick=function(){Array.from(v.failed).forEach(function(key){var retry=v.retries.get(key);if(retry)retry();});};v.notice.appendChild(button);
@@ -125,7 +125,11 @@ export const ADMIN_DATA_CLIENT_JS = String.raw`
     var opts=options||{},key=keyFor(url);if(!key)throw new Error('Недопустимый адрес данных');
     var v=viewState(opts.view),identity=authEpoch,version=epoch;
     var stopped=function(){return identity!==authEpoch||(opts.signal&&opts.signal.aborted);};
-    if(v){if(opts.hasData&&authenticated){v.hasData=true;v.cold=false;}v.pending++;v.failed.delete(key);v.retries.set(key,function(){load(url,Object.assign({},opts,{force:true})).catch(function(){});});paint(v);}
+    if(v){
+      if(opts.replaceViewRequest){v.failed.clear();v.retries.clear();v.cold=!(opts.hasData&&authenticated);}
+      if(opts.hasData&&authenticated){v.hasData=true;v.cold=false;}
+      v.pending++;v.failed.delete(key);v.retries.set(key,opts.onRetry||function(){load(url,Object.assign({},opts,{force:true})).catch(function(){});});paint(v);
+    }
     try{
       await ensureSession();if(stopped())throw cancelled();
       while(writes.size){await Promise.allSettled(Array.from(writes));if(stopped())throw cancelled();}
