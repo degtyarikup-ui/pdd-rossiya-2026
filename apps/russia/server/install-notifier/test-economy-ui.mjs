@@ -166,8 +166,10 @@ if (process.argv.includes('--serve')) {
       await open('#ec-add-operation');
       await select('operationType', kind);
     }
+    const view = name => page.locator('[data-ec-view="'+name+'"]').click();
+    const openPeriod = () => page.locator('#ec-period-menu > summary').click();
     async function mode(value) {
-      await page.locator(`#ec-receipt-mode [data-mode="${value}"]`).click();
+      await page.locator('#ec-receipt-mode').selectOption(value);
     }
     const edit = (kind, id) => `#ec-receipts-body .ec-edit[data-edit-kind="${kind}"][data-id="${id}"]`;
     try {
@@ -179,11 +181,23 @@ if (process.argv.includes('--serve')) {
       assert.equal(initial.expenses.paymentFeesRub, 23.2);
       assert.equal(initial.currency,'USD');
       assert.match(await page.locator('#ec-gross-val').innerText(),/^\$6,10$/);
+      assert.equal(await page.locator('#ec-ledger').isVisible(),false);
+      assert.equal(await page.locator('#ec-shares').isVisible(),false);
+      assert.equal(await page.locator('#ec-breakdown').getAttribute('open'),null);
+      assert.ok(await page.locator('#ec-recent-list button').count()<=4);
+      await screenshot('overview-desktop');
+      await page.locator('[data-open-view="shares"]').click();
+      assert.equal(await page.locator('#ec-shares').isVisible(),true);
+      await page.goBack(); await page.locator('#ec-overview').waitFor({state:'visible'});
+      await page.locator('#ec-recent-list button').first().click();
+      await page.locator('#ec-dialog').waitFor({state:'visible'}); await page.keyboard.press('Escape');
+      await page.locator('#ec-breakdown summary').click();
       const incomeSources = page.locator('#ec-gross-sub > span');
       assert.deepEqual(await incomeSources.allTextContents(), ['App Store $3,05', 'Platega $3,05', 'Google Play $0,00']);
       assert.equal(await incomeSources.evaluateAll(nodes => new Set(nodes.map(node => node.offsetTop)).size), 1);
       assert.match(await page.locator('#ec-fx-status').innerText(),/ЦБ.*95/);
       assert.equal(initial.receipts.some(row=>row.isTest),false);
+      await page.locator('[data-open-view="ledger"]').click();
       assert.match(await page.locator('#ec-receipts-body').innerText(), /Анна/);
       const sbpRow = page.locator('#ec-receipts-body tr').filter({ has: page.locator('[data-detail-key="receipt:fixture-sbp"]') });
       assert.match(await sbpRow.innerText(), /Комиссия −\$0,24/);
@@ -238,6 +252,7 @@ if (process.argv.includes('--serve')) {
 
       const shareRows = page.locator('.ec-share-row');
       const shareInput = (index, name) => shareRows.nth(index).locator('[name="share' + name + '"]');
+      await view('shares');
       await open('#ec-edit-shares');
       assert.deepEqual(await shareRows.locator('[name="sharePercent"]').evaluateAll(nodes => nodes.map(node => Number(node.value))), [15, 79.3, 5.7]);
       await shareInput(0, 'Name').fill('Развитие');
@@ -254,7 +269,8 @@ if (process.argv.includes('--serve')) {
         { name: 'Развитие', percent: 50 }, { name: 'Сергей', percent: 40 }, { name: 'Никита', percent: 10 },
       ]);
       await page.reload(); await settled();
-      assert.match(await page.locator('#ec-allocation-list').innerText(), /Развитие 50%/);
+      assert.equal(await page.locator('#ec-shares').isVisible(),true);
+      assert.match(await page.locator('#ec-allocation-list').innerText(), /Развитие\s+50%/);
       for (const width of [320, 390, 900, 1440]) {
         await page.setViewportSize({ width, height:900 });
         assert.ok(await page.locator('#ec-allocation-list').evaluate(el => el.scrollWidth <= el.clientWidth+1));
@@ -264,18 +280,21 @@ if (process.argv.includes('--serve')) {
       await open('#ec-allocation-list .ec-allocation-item:last-child .ec-pay-partner');
       await select('partnerId', (await config()).profitShares[2].id);
       await field('amount', 17); await field('month', priorMonth); await save();
-      await mode('payout');
+      await page.locator('[data-payout-history]').click();
+      assert.equal(await page.locator('#ec-receipt-mode').inputValue(),'payout');
       await page.getByRole('button', {name:'Никита',exact:true}).waitFor();
       const payout = (await stats()).payouts[0];
       assert.equal(payout.month, priorMonth);
+      await view('shares'); await openPeriod();
       await page.locator('#ec-report-month').fill(priorMonth);
       await page.waitForFunction(month => document.querySelector('#ec-report-month').value===month && document.querySelector('#ec-edit-shares').disabled && document.querySelector('#ec-data-state').classList.contains('ready'), priorMonth);
       assert.match(await page.locator('#ec-allocation-list').innerText(), /17,00/);
-      await page.locator('#ec-report-month').fill(currentMonth);
+      await openPeriod(); await page.locator('#ec-report-month').fill(currentMonth);
       await page.waitForFunction(() => !document.querySelector('#ec-edit-shares').disabled);
-      await open(edit('payout',payout.id)); await field('amount', 15); await save();
+      await view('ledger'); await open(edit('payout',payout.id)); await field('amount', 15); await save();
       assert.equal((await stats()).payouts[0].amount,15);
       await open(edit('payout',payout.id)); await remove(); await mode('all');
+      await view('shares');
       await open('#ec-edit-shares');
       await shareRows.nth(2).locator('[data-remove-share]').click();
       await page.locator('#ec-add-share').click();
@@ -284,7 +303,7 @@ if (process.argv.includes('--serve')) {
       await save();
       assert.equal((await config()).profitShares[2].name, 'Резерв');
       assert.equal((await config()).profitShares[2].percent, 10);
-      assert.match(await page.locator('#ec-allocation-list').innerText(), /Резерв 10%/);
+      assert.match(await page.locator('#ec-allocation-list').innerText(), /Резерв\s+10%/);
 
       await add('expense');
       await field('title', 'Дизайн и иллюстрации'); await field('amount', 2500);
@@ -302,7 +321,7 @@ if (process.argv.includes('--serve')) {
       await save();
       let expense = (await config()).extraExpenses.find(item => item.title === 'Дизайн и иллюстрации');
       assert.equal(expense.frequency, 'once');
-      await open(edit('expense', expense.id));
+      await view('ledger'); await open(edit('expense', expense.id));
       await field('title', 'Облачный сервис'); await field('amount', 12);
       await select('frequency', 'monthly'); await select('currency', 'USD');
       await save();
@@ -335,6 +354,7 @@ if (process.argv.includes('--serve')) {
       await open(edit('withdrawal', withdrawal.id)); await select('feeMode', 'included'); await save();
       assert.equal((await stats()).withdrawalSummary.receivedRub, 2232.5);
       await page.reload(); await settled();
+      assert.equal(await page.locator('#ec-ledger').isVisible(),true);
       assert.equal((await config()).withdrawals[0].feeMode, 'included');
       await mode('all');
 
@@ -353,13 +373,14 @@ if (process.argv.includes('--serve')) {
       const revenue = (await config()).manualRevenues.find(item => item.title === 'Партнёрское поступление');
       assert.equal(revenue.amountRub, 950);
       assert.equal((await stats()).revenue.grossRub, 1530);
+      await view('overview'); await page.locator('#ec-breakdown summary').click();
       assert.match(await page.locator('#ec-gross-sub').innerText(), /Другое \$10,00/);
 
       // Later settings edits do not revalue already recorded FX transactions.
       await open('#ec-settings'); await field('paymentFeePercent', 8); await save();
       assert.equal((await stats()).withdrawalSummary.feeRub, 142.5);
       assert.equal((await stats()).revenue.grossRub, 1530);
-      await open(edit('revenue', revenue.id)); await remove();
+      await view('ledger'); await open(edit('revenue', revenue.id)); await remove();
       assert.equal((await stats()).revenue.grossRub, 580);
       await open(edit('withdrawal', withdrawal.id)); await remove();
       assert.equal((await config()).withdrawals.length, 0);
@@ -367,11 +388,11 @@ if (process.argv.includes('--serve')) {
 
       // Date filters include old transactions only for the all-time view.
       const allResponse = page.waitForResponse(response => response.url().includes('/economy/stats?period=all'));
-      await page.locator('#ec-period-tabs [data-period="all"]').click(); await allResponse; await settled();
+      await openPeriod(); await page.locator('#ec-period-tabs [data-period="all"]').click(); await allResponse; await settled();
       await page.locator('#ec-search').fill('Прошлая выплата');
       assert.equal(await page.locator(edit('revenue', 'fixture-old-income')).count(), 1);
       const recentResponse = page.waitForResponse(response => response.url().includes('/economy/stats?period=30d'));
-      await page.locator('#ec-period-tabs [data-period="30d"]').click(); await recentResponse; await settled();
+      await openPeriod(); await page.locator('#ec-period-tabs [data-period="30d"]').click(); await recentResponse; await settled();
       assert.equal(await page.locator(edit('revenue', 'fixture-old-income')).count(), 0);
       await page.locator('#ec-search').clear();
 
@@ -389,14 +410,17 @@ if (process.argv.includes('--serve')) {
       for (const width of [390, 320]) {
         await page.setViewportSize({ width, height: 844 });
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `page fits ${width}px`);
+        await view('overview');
         const clipped = await page.locator('#economy-view .ec-value').evaluateAll(nodes => nodes.filter(node => node.scrollWidth > node.clientWidth + 1).map(node => node.textContent));
         assert.deepEqual(clipped, [], `KPI values fit ${width}px`);
-        assert.ok(await incomeSources.evaluateAll(nodes => new Set(nodes.map(node => node.offsetTop)).size > 1), 'income sources wrap on mobile');
+        assert.ok(await incomeSources.evaluateAll(nodes => nodes.every(node => node.getBoundingClientRect().right <= innerWidth)), 'income sources fit on mobile');
         assert.equal(await page.locator('#ec-gross-sub').evaluate(node => node.scrollWidth <= node.clientWidth + 1), true);
+        await view('ledger');
         const rowActions = await page.locator('#ec-receipts-body .ec-money:visible, #ec-receipts-body .ec-edit:visible').evaluateAll(nodes => nodes.map(node => {
           const r = node.getBoundingClientRect(); return { text: node.textContent.trim() || node.getAttribute('aria-label'), left: r.left, right: r.right };
         }));
         assert.deepEqual(rowActions.filter(r => r.left < -1 || r.right > width + 1), [], `amounts and edit controls fit ${width}px`);
+        await view('shares');
         await open('#ec-edit-shares');
         assert.equal(await page.locator('#ec-dialog').evaluate(node => node.scrollWidth <= node.clientWidth + 1), true);
         await screenshot(`mobile-${width}-shares-dialog`);
@@ -410,7 +434,8 @@ if (process.argv.includes('--serve')) {
         await page.locator('#ec-dialog').waitFor({ state: 'hidden' });
         assert.equal(await page.locator('#ec-add-operation').evaluate(node => node === document.activeElement), true, 'Escape restores focus');
       }
-      await page.setViewportSize({ width: 390, height: 844 }); await screenshot('mobile');
+      await page.setViewportSize({ width: 390, height: 844 }); await view('overview');
+      await page.locator('#ec-breakdown summary').click(); await screenshot('mobile');
       assert.deepEqual(pageErrors, []);
       assert.deepEqual(preview.requests.filter(request => request.status >= 500), []);
     } finally {
@@ -427,12 +452,13 @@ if (!process.argv.includes('--serve')) test('Cloudflare invoices are read-only i
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
  try {
  const page=await browser.newPage({viewport:{width:1440,height:1100}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto(preview.url+'/admin#economy');await page.locator('#ec-cloudflare-panel').waitFor({state:'visible'});
+ await page.goto(preview.url+'/admin#economy');await page.locator('[data-ec-view="ledger"]').click();await page.locator('#ec-cloudflare-panel').waitFor({state:'visible'});
  await page.locator('#ec-cloudflare-panel summary').click();assert.match(await page.locator('#ec-cloudflare-body').innerText(),/весь|всего аккаунта/);
  await page.locator('#ec-receipts-body [data-detail-key="expense:cloudflare:today"]').first().click();assert.match(await page.locator('#ec-fields').innerText(),/IN-TODAY/);assert.equal(await page.locator('#ec-submit').isVisible(),false);await page.locator('#ec-cancel').click();
  await page.locator('#ec-expense-register summary').click();await page.locator('#ec-expenses-body [data-detail-key="expense:cloudflare:old"]').first().click();assert.match(await page.locator('#ec-fields').innerText(),/IN-OLD/);await page.locator('#ec-cancel').click();
- await page.locator('#ec-settings').click();await page.locator('#ec-submit').click();await page.locator('#ec-dialog').waitFor({state:'hidden'});
+ await page.locator('[data-ec-view="overview"]').click();await page.locator('#ec-breakdown summary').click();await page.locator('#ec-settings').click();await page.locator('#ec-submit').click();await page.locator('#ec-dialog').waitFor({state:'hidden'});
  await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
+ await page.locator('[data-ec-view="ledger"]').click();
  if(process.env.ECONOMY_UI_SCREENSHOTS){await mkdir(new URL('../../output/cloudflare-billing/',import.meta.url),{recursive:true});await page.locator('#ec-cloudflare-panel').screenshot({path:fileURLToPath(new URL('../../output/cloudflare-billing/mobile-panel.png',import.meta.url))});}
  assert.deepEqual(errors,[]);
  }finally{await browser.close();await preview.close();}
