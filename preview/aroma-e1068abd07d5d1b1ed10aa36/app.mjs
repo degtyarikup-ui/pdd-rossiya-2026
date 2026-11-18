@@ -102,7 +102,7 @@ function palette() {
   return `<div class="palette"><h2 class="sr-only" tabindex="-1">Выберите ноту · ${choices.length} из 3 выбрано</h2><div class="filters"><div id="note-families" class="filter-scroll" role="group" aria-label="Группы нот">${familyGroups.map(g=>`<button class="filter" data-family="${g.value}" aria-pressed="${family===g.value}" ${g.families&&!available.some(name=>g.families.includes(noteFamilies.get(name)))?'disabled':''}>${g.label}</button>`).join('')}</div><div class="rail-controls"><button type="button" data-rail="-1" aria-controls="note-families" aria-label="Прокрутить категории влево">${icons.back}</button><button type="button" data-rail="1" aria-controls="note-families" aria-label="Прокрутить категории вправо">${icons.arrow}</button></div></div><div class="note-grid" aria-label="Доступные ноты">${displayed.length?displayed.map((name,index)=>`<button class="note-choice" data-note="${escape(name)}" aria-label="Выбрать ноту ${escape(name)}">${ingredient(name,index>=9)}<span class="note-label">${escape(name)}</span><span class="add-note" aria-hidden="true">+</span></button>`).join(''):`<div class="empty-search">Нет подходящих нот<button data-action="clear-filter">Сбросить фильтр</button></div>`}</div></div>`;
 }
 function bottleLabel(perfume, bottle) {
-  return `${perfume.brand} ${perfume.name}, ${bottle.ml} мл`;
+  return [perfume.brand, perfume.name].join(' ') + (bottle.ml ? `, ${bottle.ml} мл` : '');
 }
 function volumeOptions(perfume, current) {
   if (perfume.bottles.length < 2) return '';
@@ -142,7 +142,7 @@ function result() {
       <p class="product-brand">${escape(perfume.brand)}</p>
       <h2 tabindex="-1">${escape(perfume.name)}</h2>
       ${volumeOptions(perfume,bottle)}
-      <p class="product-description">${escape(bottle.description)}</p>
+      <p class="product-description">${escape(bottle.description || perfume.notes.join(', '))}</p>
       <div class="result-notes" aria-label="Ваши ноты">${choices.map((n,i)=>`<button class="result-note" data-remove="${i}" aria-label="Убрать ноту ${escape(n)}"><span class="result-note-art">${ingredient(n)}${removeMark()}</span><span>${escape(n)}</span></button>`).join('')}</div>
       <div class="result-actions"><button class="gold-button" data-action="reset">${icons.reset}Собрать ещё</button>${matches.length>1?`<div class="result-paging" aria-label="Подходящие ароматы"><button class="paging-button" data-page="-1" aria-label="Предыдущий аромат">${icons.back}</button><span>${resultIndex+1} / ${matches.length}</span><button class="paging-button" data-page="1" aria-label="Следующий аромат">${icons.arrow}</button></div>`:''}</div>
     </div>
@@ -235,7 +235,7 @@ root.addEventListener('click', event => {
 async function load(){
   try{
     root.setAttribute('aria-busy','true');
-    const response=await fetch('./data/runtime-catalog.json?v=20261118-catalog1');if(!response.ok)throw new Error('Catalog unavailable');
+    const response=await fetch('./data/runtime-catalog.json?v=20261118-matrix');if(!response.ok)throw new Error('Catalog unavailable');
     catalog=await response.json();
     noteFamilies=new Map(catalog.notes.map(note=>[note.name,note.family]));
     for (const value of ['women','men']) if (!getPerfumesForGender(catalog.perfumes,value).length) throw new Error(`Empty fragrance category: ${value}`);
