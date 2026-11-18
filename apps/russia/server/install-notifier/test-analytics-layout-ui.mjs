@@ -98,13 +98,12 @@ async function verifyUsage(page) {
  const columns=page.locator('.an-mode-column');
  assert.equal(await columns.count(),14);
  assert.equal(await columns.first().getAttribute('data-usage'),'tickets');
- await page.locator('#an-usage-sort').selectOption('installations');
- assert.equal(await columns.first().getAttribute('data-usage'),'exam');
+ assert.equal(await page.locator('#an-usage select').count(),0);
+ assert.doesNotMatch(await columns.first().getAttribute('title'),/Установки/);
  await page.locator('[data-usage-group="games"]').click();
  assert.equal(await columns.count(),7);
  assert.equal(await page.locator('#an-usage-details').count(),0);
  await page.locator('[data-usage-group="all"]').click();
- await page.locator('#an-usage-sort').selectOption('starts');
  await page.evaluate(data=>{window.__anData=data;anRenderUsage(data);},original);
 }
 
