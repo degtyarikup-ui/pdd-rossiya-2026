@@ -36,10 +36,11 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-kpi-top{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--an-muted)}.an-kpi-top .an-dot{display:none}.an-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .an-kpi.is-primary{background:var(--an-accent);color:white}.an-kpi.is-primary .an-kpi-top{color:#fff}
 .an-charts-grid{
- display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
  gap:16px;margin-bottom:18px
 }
 .an-charts-grid>.an-card{margin:0}
+@media(max-width:1120px){.an-charts-grid{grid-template-columns:minmax(0,1fr)}}
 .an-chart{width:100%;min-height:190px;overflow:hidden}.an-chart svg{display:block;max-width:100%}
 .an-legend{display:flex;gap:16px;align-items:center;font-size:11px;color:var(--an-muted);margin-bottom:8px}.an-legend span{display:flex;align-items:center;gap:6px}
 .an-caption{font-size:11px;line-height:1.6;color:var(--an-muted);margin-top:12px}.an-caption:empty{display:none}
@@ -98,7 +99,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 #analytics-view .an-folded .an-head{margin-bottom:0}
 .an-folded .an-head :is(.an-tabs,.an-scope,.an-subtitle,.an-usage-total){display:none}
 #analytics-view [id^="an-body-"][hidden]{display:none}
-.an-growth-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,196px),1fr));gap:16px;min-width:0}.an-growth-grid>.an-card{margin:0}.an-growth-grid .an-title{font-size:14px}.an-growth-grid .an-head{min-height:28px}.an-growth-total{font-size:40px;line-height:1;letter-spacing:-1.8px;font-weight:550;font-variant-numeric:tabular-nums;margin:4px 0 24px}.an-growth-period{font-size:11px;line-height:1.4;color:var(--an-muted);margin-bottom:10px}.an-growth-grid .an-chart{min-height:190px}
+.an-growth-grid{display:contents}.an-growth-grid>.an-card{margin:0}.an-growth-grid .an-title{font-size:14px}.an-growth-grid .an-head{min-height:28px}.an-growth-total{font-size:40px;line-height:1;letter-spacing:-1.8px;font-weight:550;font-variant-numeric:tabular-nums;margin:4px 0 24px}.an-growth-period{font-size:11px;line-height:1.4;color:var(--an-muted);margin-bottom:10px}.an-growth-grid .an-chart{min-height:190px}
 @media(max-width:640px){.an-activity-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.an-growth-grid{gap:10px}.an-growth-grid .an-card{padding:18px}.an-growth-grid .an-title{font-size:14px;letter-spacing:-.2px}.an-growth-grid .an-fold{gap:4px}.an-growth-total{font-size:32px}.an-growth-grid .an-chart{min-height:150px}}
 ${PREMIUM_REVENUE_CSS}
 </style>
@@ -371,12 +372,12 @@ function anPlot(data) {
   bars.push({value:a,color:AN_C.accent,label:anDayLabel(bk.to),tip:tip});
   bars.push({value:b,color:AN_C.green,label:'',tip:tip});
   [['Первые запуски',launches,anSum(bk.days,function(d){return d.installs;}),AN_C.accent],['Новые аккаунты',registrations,anSum(bk.days,function(d){return u&&(u.registrationsByDay||{})[d.date];}),AN_C.green]].forEach(function(m){
-   m[1].push({segments:[{value:m[2],color:m[3]}],label:anDayLabel(bk.to),tip:'<b>'+head+'</b><div class="an-tip-row"><span>'+m[0]+'</span><b>'+anNum(m[2])+'</b></div>'});
+   m[1].push({value:m[2],label:anDayLabel(bk.to),tip:'<b>'+head+'</b><div class="an-tip-row"><span>'+m[0]+'</span><b>'+anNum(m[2])+'</b></div>'});
   });
  });
- [['an-installs-chart',launches,true],['an-registrations-chart',registrations,!!u]].forEach(function(m){
+ [['an-installs-chart',launches,true,AN_C.accent,'Первые запуски'],['an-registrations-chart',registrations,!!u,AN_C.green,'Новые аккаунты']].forEach(function(m){
   var el=document.getElementById(m[0]);
-  if(tl.length&&m[2])anBars(el,m[1],205,true);else el.innerHTML='<div class="an-empty">Нет данных за период</div>';
+  if(tl.length&&m[2])anMetricLine(el,m[1],205,m[4],m[3]);else el.innerHTML='<div class="an-empty">Нет данных за период</div>';
  });
  var el=document.getElementById('an-site-chart');
  if(tl.length)anBars(el,bars,205);else el.innerHTML='<div class="an-empty">Нет данных за период</div>';

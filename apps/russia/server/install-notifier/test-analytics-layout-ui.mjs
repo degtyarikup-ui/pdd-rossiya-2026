@@ -314,6 +314,7 @@ if(process.argv.includes('--serve')) {
   const activityBox=await activityCard.boundingBox();
   const launchesBox=await page.locator('#an-launches').boundingBox();
   const accountsBox=await page.locator('#an-registrations').boundingBox();
+  assert.ok(Math.abs(activityBox.width-launchesBox.width)<1 && Math.abs(accountsBox.width-launchesBox.width)<1);
   assert.equal(activityBox.y,launchesBox.y);
   assert.equal(launchesBox.y,accountsBox.y);
   assert.ok(launchesBox.x<accountsBox.x);
