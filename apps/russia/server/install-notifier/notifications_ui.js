@@ -19,14 +19,14 @@ const chip = (name, value, label, type = 'radio') => `<label class="nf-chip"><in
 export const NOTIFICATIONS_VIEW_HTML = `
 <div id="notifications-view" style="display:none">
 <style>
-#notifications-view{--nf-line:#E9ECF1;--nf-soft:#F4F6F9;--nf-warn:#C77700}#notifications-view [hidden]{display:none!important}
+#notifications-view{container:notification-view / inline-size;--nf-line:#E9ECF1;--nf-soft:#F4F6F9;--nf-warn:#C77700}#notifications-view [hidden]{display:none!important}
 #notifications-view .nf-card,#notifications-view .nt-card{background:#fff;border-radius:20px;padding:24px}
 .nf-tile input,.nf-chip input,.nf-seg input,.nf-push input{position:absolute;opacity:0;pointer-events:none}
 .nf-push i{width:36px;height:22px;flex-shrink:0;border-radius:20px;background:#DDE1E9;position:relative;transition:background .15s}
 .nf-push i:before{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.15)}
 .nf-push input:checked~i{background:var(--primary)}.nf-push input:checked~i:before{transform:translateX(14px)}
 .nf-push input:focus-visible~i{outline:2px solid var(--primary);outline-offset:2px}
-.nf-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start;margin-bottom:16px}
+.nf-grid{display:grid;grid-template-columns:minmax(0,1fr) clamp(310px,25%,380px);gap:16px;align-items:start;margin-bottom:16px}
 .nf-sec{padding:20px 0;border-top:1px solid var(--nf-line)}.nf-sec:first-child{padding-top:0;border-top:0}
 .nf-sec h4{margin:0 0 12px;font-size:12px;font-weight:600;color:var(--text-muted)}
 .nf-push{display:flex;align-items:center;gap:14px;padding:12px 16px 12px 12px;border-radius:16px;background:var(--nf-soft);cursor:pointer;position:relative;margin-bottom:10px;color:var(--text-muted)}
@@ -76,7 +76,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .nf-tabs{display:flex;gap:4px;background:var(--nf-soft);border-radius:12px;padding:3px}.nf-tabs button{flex:1;border:0;background:none;border-radius:9px;padding:8px 6px;font:inherit;font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer}
 .nf-tabs button.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(16,24,40,.1)}.nf-tabs button[hidden]{display:none}
 .nf-os{display:flex;justify-content:center;gap:16px;margin:12px 0 0}.nf-os[hidden]{display:none}.nf-os button{border:0;background:none;font:inherit;font-size:12px;font-weight:600;color:#A3AAB6;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:4px}.nf-os button svg{width:14px;height:14px}.nf-os button.on{color:var(--text)}
-.nf-phone{margin:14px auto 0;width:284px;height:584px;border-radius:46px;background:#14161B;padding:9px;box-sizing:border-box;box-shadow:0 18px 40px -18px rgba(16,24,40,.45)}
+.nf-phone{margin:14px auto 0;width:min(284px,100%);aspect-ratio:284/584;border-radius:46px;background:#14161B;padding:9px;box-sizing:border-box;box-shadow:0 18px 40px -18px rgba(16,24,40,.45)}
 .nf-screen{width:100%;height:100%;border-radius:38px;overflow:hidden;position:relative;background:#F8F9FA;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',Roboto,sans-serif;color:#121212}
 .nf-screen *{box-sizing:border-box}
 .l1{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lc{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
@@ -130,7 +130,16 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .nf-sum{display:flex;gap:12px;align-items:center;background:var(--nf-soft);border-radius:14px;padding:12px;margin-bottom:12px}.nf-sum .nf-thumb{background-color:#fff}.nf-sum b{display:block;font-size:14px;overflow-wrap:anywhere}.nf-sum small{display:block;font-size:12px;color:var(--text-muted);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .nf-modal .nf-tags{margin:0 0 18px}.nf-modal .nf-actions{display:flex;gap:8px;justify-content:flex-end}
 #notifications-view .nf-modal input{width:100%;box-sizing:border-box;border:1.5px solid var(--nf-line);border-radius:12px;padding:11px 14px;font:inherit;font-size:14px;margin-bottom:16px}
-@media(max-width:1180px){.nf-grid{grid-template-columns:minmax(0,1fr)}.nf-preview{position:static}.nf-msg{grid-template-columns:52px minmax(0,1fr) auto}.nf-msg>.nf-who,.nf-msg>.nf-metric{grid-column:2}.nf-msg>.nf-acts{grid-column:1/-1;justify-content:flex-start}}
+@container notification-view (min-width:1480px){
+ #nt-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
+ #nt-form>.nf-sec:nth-child(2){padding-top:0;border-top:0}
+ #nt-form>:not(.nf-sec){grid-column:1/-1}
+}
+@container notification-view (max-width:840px){
+ .nf-grid{grid-template-columns:minmax(0,1fr)}
+ .nf-preview{position:static}
+}
+@media(max-width:1180px){.nf-msg{grid-template-columns:52px minmax(0,1fr) auto}.nf-msg>.nf-who,.nf-msg>.nf-metric{grid-column:2}.nf-msg>.nf-acts{grid-column:1/-1;justify-content:flex-start}}
 @media(max-width:600px){#notifications-view .nf-card{padding:18px}.nf-two,.nf-row{grid-template-columns:minmax(0,1fr)}.nf-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.nf-tile{padding:12px 4px 10px}.nf-tile svg{width:44px;height:32px}.nf-drop.has{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:8px 10px}.nf-drop.has img{width:56px;height:56px;grid-row:1/3}.nf-drop.has .nf-grow{grid-column:2/4}.nf-drop.has small{white-space:normal;line-height:1.4}.nf-drop.has [data-img="replace"]{justify-self:start;padding-left:0}.nf-bar .nf-grow{display:none}.nf-bar #nt-publish{width:100%;justify-content:center;order:5}}
 </style>
 <div id="nt-page-error" class="nt-error" role="alert"></div>

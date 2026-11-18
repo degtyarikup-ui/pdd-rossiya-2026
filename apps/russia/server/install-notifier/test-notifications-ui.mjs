@@ -119,8 +119,23 @@ if (process.argv.includes('--serve')) {
     await page.click('#nt-os [data-os="android"]');
     const image = page.locator('#nt-screen .nf-android-image');
     assert.equal(await image.count(), 1);
-    assert.equal(await image.evaluate(el => getComputedStyle(el).aspectRatio), '2 / 1');
-    assert.match(await image.evaluate(el => getComputedStyle(el).backgroundImage), /icon-192\.png/);
+    const androidPreview = await page.evaluate(() => {
+      const style = getComputedStyle(document.querySelector('#nt-screen .nf-android-image'));
+      return { aspectRatio: style.aspectRatio, backgroundImage: style.backgroundImage };
+    });
+    assert.equal(androidPreview.aspectRatio, '2 / 1');
+    assert.match(androidPreview.backgroundImage, /icon-192\.png/);
+    for (const width of [320, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      const preview = await page.locator('.nf-preview').boundingBox();
+      const phone = await page.locator('.nf-phone').boundingBox();
+      const editor = await page.locator('#nt-form').boundingBox();
+      assert.ok(phone.x >= preview.x && phone.x + phone.width <= preview.x + preview.width);
+      assert.ok(preview.x + preview.width <= width);
+      if (width === 320) assert.ok(preview.y >= editor.y + editor.height);
+      else assert.ok(preview.x >= editor.x + editor.width);
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
     assert.match(await page.textContent('#nt-screen'), /ПДД Россия 2026/);
     assert.equal(await page.isDisabled('input[name="nt-platform"][value="web"]'), true);
     // Platforms are picked independently; a push never goes to the web.

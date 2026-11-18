@@ -13,7 +13,19 @@ export const LINKS_VIEW_HTML = String.raw`
     <div id="links-view" style="display:none;">
       <style>
         #links-view .an-title { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-        .ln-field { margin-bottom:24px; }
+        .ln-builder { container:link-builder / inline-size; }
+        .ln-fields { display:grid; gap:16px 24px; margin-bottom:20px; }
+        .ln-fields .ln-field { min-width:0; margin:0; }
+        .ln-fields .ln-input { max-width:none; }
+        .ln-error:empty { display:none; }
+        @container link-builder (min-width:640px) {
+          .ln-fields { grid-template-columns:2fr 1fr; }
+          .ln-field:first-child { grid-column:1 / -1; }
+        }
+        @container link-builder (min-width:1180px) {
+          .ln-fields { grid-template-columns:1.4fr 1fr .65fr; }
+          .ln-field:first-child { grid-column:auto; }
+        }
         .ln-field .an-label { margin-bottom:8px; }
         .ln-chips { display:flex; flex-wrap:wrap; gap:8px; }
         .ln-chip { display:inline-flex; align-items:center; gap:8px; border:none; background:#EFF0F4; color:#121212; border-radius:12px; padding:8px 14px 8px 8px; font:inherit; font-size:15px; font-weight:700; cursor:pointer; }
@@ -51,20 +63,22 @@ export const LINKS_VIEW_HTML = String.raw`
         @media (max-width:640px) { .ln-hide-sm { display:none; } #links-view .ln-table td, #links-view .ln-table th { padding-left:10px; } }
       </style>
 
-      <div class="an-card">
+      <div class="an-card ln-builder">
         <div class="an-title">Новая ссылка</div>
-        <div class="ln-field">
-          <div class="an-label">Где разместите</div>
-          <div class="ln-chips" id="ln-sources"></div>
-          <input class="ln-input" id="ln-source-custom" placeholder="Свой канал латиницей, например mailing" style="display:none;margin-top:8px">
-        </div>
-        <div class="ln-field">
-          <div class="an-label">Куда ведёт</div>
-          <div class="ln-chips" id="ln-pages"></div>
-        </div>
-        <div class="ln-field">
-          <div class="an-label" title="Помогает отличать ссылки одного канала">Метка</div>
-          <input class="ln-input" id="ln-campaign" placeholder="например bio или reels_12" autocomplete="off">
+        <div class="ln-fields">
+          <div class="ln-field">
+            <div class="an-label">Где разместите</div>
+            <div class="ln-chips" id="ln-sources"></div>
+            <input class="ln-input" id="ln-source-custom" placeholder="Свой канал латиницей, например mailing" style="display:none;margin-top:8px">
+          </div>
+          <div class="ln-field">
+            <div class="an-label">Куда ведёт</div>
+            <div class="ln-chips" id="ln-pages"></div>
+          </div>
+          <div class="ln-field">
+            <div class="an-label" title="Помогает отличать ссылки одного канала">Метка</div>
+            <input class="ln-input" id="ln-campaign" placeholder="например bio или reels_12" autocomplete="off">
+          </div>
         </div>
         <div class="ln-result">
           <div class="ln-url" id="ln-url"></div>

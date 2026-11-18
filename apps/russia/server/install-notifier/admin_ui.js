@@ -265,24 +265,6 @@ export const ADMIN_UI_STYLES = `
     width: 0;
     height: 0;
   }
-  @media (max-width: 760px) {
-    /* Телефон: меню — горизонтальная лента сверху, контент на всю ширину. */
-    #app { flex-direction: column; }
-    .sidebar { width: 100% !important; height: auto; position: static; }
-    .sidebar-toggle-btn { display: none !important; }
-    .sidebar.collapsed { width: 100% !important; }
-    .sidebar-menu { flex-direction: row; overflow-x: auto; padding: 8px 12px; gap: 4px; }
-    .nav-item { white-space: nowrap; flex-shrink: 0; width: auto !important; height: auto !important; padding: 9px 12px !important; }
-    .nav-item span { display: inline !important; }
-    .sidebar-context { margin: 0 12px; }
-    .sidebar-footer { display: none; }
-    .top-bar, .header { flex-direction: column; align-items: stretch; }
-    .top-actions { justify-content: flex-start; }
-    .admin-data-state { display: none; }
-    .main-area, .content { padding: 20px 16px; }
-    .top-bar, .header { align-items: flex-start; gap: 14px; }
-    .top-actions { flex-wrap: wrap; justify-content: flex-end; }
-  }
 </style>`;
 
 export function enhanceAdminHtml(html) {

@@ -337,11 +337,31 @@ if(process.argv.includes('--serve')) {
   await page.locator('#an-geo-search').fill('Москва');
   assert.match(await page.locator('#an-geo').innerText(),/Москва/);
   await page.locator('#an-geo-reset').click();
-  for(const width of [1600,1100,768,390,320]) {
+  await page.setViewportSize({width:2415,height:900});
+  await page.evaluate(()=>window.scrollTo(0,600));
+  const sidebar=page.locator('.sidebar');
+  for(const collapsed of [false,true]){
+   const bounds=await sidebar.boundingBox();
+   assert.equal(bounds.x,0,'sidebar meets the left edge');
+   assert.equal(bounds.y,0,'sidebar stays at the top while the dashboard scrolls');
+   assert.equal(bounds.height,900);
+   assert.equal(await sidebar.evaluate(el=>el.classList.contains('collapsed')),collapsed);
+   const main=await page.locator('main').boundingBox();
+   assert.equal(main.x,bounds.width);
+   assert.equal(main.x+main.width,await page.evaluate(()=>document.documentElement.clientWidth));
+   if(!collapsed)await page.locator('#sidebar-toggle-btn').click();
+  }
+  for(const width of [2415,1600,1100,901,900,768,600,390,320]) {
    await page.setViewportSize({width,height:1100});
    await page.waitForTimeout(220); // dashboard debounces chart sizing for 150 ms
    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
    assert.equal(overflow,false,'page must fit '+width);
+   if(width<=900){
+    const menu=await sidebar.boundingBox(),main=await page.locator('main').boundingBox();
+    assert.equal(main.width,menu.width,'horizontal menu leaves the full viewport for content');
+    assert.equal(main.y,menu.y+menu.height);
+    assert.ok(await page.locator('.sidebar-menu .nav-item.active span').isVisible());
+   }
    assert.equal(await page.locator('#an-usage').evaluate(el=>el.scrollWidth>el.clientWidth),false,'usage card fits '+width);
    assert.equal(await page.locator('#an-usage-table').evaluate(el=>el.scrollWidth>el.clientWidth),false,'usage table fits '+width);
    for (const value of await page.locator('#an-now .an-big').evaluateAll(elements=>elements.map(el=>{
