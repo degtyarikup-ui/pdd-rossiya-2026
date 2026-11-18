@@ -311,10 +311,12 @@ if (process.argv.includes('--serve')) {
       for (const width of [320, 390, 900, 1440]) {
         await page.setViewportSize({ width, height:900 });
         assert.ok(await page.locator('#ec-allocation-list').evaluate(el => el.scrollWidth <= el.clientWidth+1));
-        assert.ok(await page.locator('.ec-balance-values dd').evaluateAll(items => items.every(el => el.scrollWidth<=el.clientWidth+1)));
+        const rowFits = await page.locator('#ec-allocation-list .ec-allocation-item')
+          .evaluateAll(items => items.map(row => row.scrollWidth <= row.clientWidth + 1));
+        assert.ok(rowFits.length > 0 && rowFits.every(Boolean), 'share rows fit at '+width+'px');
       }
       const currentMonth = day().slice(0,7), priorMonth = day(-40).slice(0,7);
-      await open('#ec-allocation-list .ec-allocation-item:last-child .ec-pay-partner');
+      await open('.ec-allocation-item:has(h3:text-is("Никита")) .ec-pay-partner');
       await select('partnerId', (await config()).profitShares[2].id);
       await field('amount', 17); await field('month', priorMonth); await save();
       await page.locator('[data-payout-history]').click();
@@ -501,7 +503,7 @@ if (!process.argv.includes('--serve')) test('Cloudflare invoices are read-only i
  }finally{await browser.close();await preview.close();}
 });
 
-if (!process.argv.includes('--serve')) test('share cards distinguish fund allocation, unpaid, partial, settled and overpaid balances', async () => {
+if (!process.argv.includes('--serve')) test('share rows show accruals, payouts and balances without decorative cards or repeated explanations', async () => {
   const preview = await startPreview();
   const { chromium } = createRequire(import.meta.url)('playwright');
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
@@ -523,18 +525,37 @@ if (!process.argv.includes('--serve')) test('share cards distinguish fund alloca
     }
     const page = await context.newPage();
     await page.goto(preview.url+'/admin#economy/shares');
-    const card = name => page.locator('.ec-allocation-item').filter({ has:page.getByRole('heading',{ name,exact:true }) });
-    await card('В развитие').waitFor();
-    assert.equal(await card('В развитие').getByRole('button').count(),0);
-    assert.match(await card('В развитие').innerText(),/бюджете проекта/);
-    assert.equal(await card('Анна').locator('progress').getAttribute('value'),'0');
-    assert.equal(await card('Борис').locator('progress').getAttribute('value'),'17');
-    assert.equal(await card('Борис').locator('.ec-allocation-primary dt').innerText(),'Осталось выплатить');
-    assert.match(await card('Вера').innerText(),/выплачена полностью/);
-    assert.match(await card('Дарья').locator('.ec-allocation-primary').innerText(),/Переплата\s+\$1,00/);
-    assert.match(await card('Игорь').innerText(),/начислений нет/);
+    const shares = page.locator('#ec-shares');
+    const rows = shares.locator('.ec-allocation-item');
+    const rowFor = name => rows.filter({ has: page.getByRole('heading',{ name,exact:true }) });
+    await rowFor('В развитие').waitFor();
+    assert.equal(await rows.count(),6);
+    assert.equal(await shares.getByRole('heading',{name:'Распределение прибыли'}).count(),0);
+    assert.equal(await shares.locator('progress,meter,[role="progressbar"],[role="meter"]').count(),0);
+    assert.doesNotMatch(await shares.innerText(),/прибыли после расходов|к распределению после расходов|в бюджете проекта|остаток партнёра|%\s+прибыли|доля за месяц выплачена|выплат превысила|начислений нет/i);
+    for (const label of ['Начислено','Выплачено','Остаток']) {
+      assert.ok(await shares.getByText(label,{exact:true}).first().isVisible(),label);
+    }
+    const decoratedRows = await rows.evaluateAll(items => items.filter(row => {
+      const style = getComputedStyle(row);
+      return style.backgroundImage.includes('gradient') || parseFloat(style.borderLeftWidth)>0 || parseFloat(style.borderRightWidth)>0;
+    }).map(row => row.querySelector('h3')?.textContent));
+    assert.deepEqual(decoratedRows,[], 'rows use the shared surface, with no individual frame or gradient');
+
+    const current = await (await context.request.get(api+'stats?period=month')).json();
+    const usd = value => '$'+Math.abs(value).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
+    for (const { id,name,payoutUsd,paidUsd,remainingUsd } of current.settlements) {
+      const row = rowFor(name);
+      const displayed = await row.innerText();
+      const fund = id.startsWith('fund-');
+      const values = fund ? [payoutUsd] : [payoutUsd,paidUsd,remainingUsd];
+      assert.deepEqual(displayed.match(/\$[\d   ]+,\d{2}/gu) || [], values.map(usd), name);
+      assert.equal(displayed.includes('Переплата'), !fund && remainingUsd<0, name);
+      assert.equal(await row.getByRole('button',{name:/Внести выплату/}).count(), fund ? 0 : 1, name);
+      if (fund) assert.equal((displayed.match(/[—–]/gu)||[]).length,2,'fund has no partner payout or outstanding balance');
+    }
     await page.setViewportSize({width:320,height:800});
-    assert.ok(await page.locator('.ec-allocation-item').evaluateAll(nodes=>nodes.every(el=>el.scrollWidth<=el.clientWidth+1)));
+    assert.ok(await rows.evaluateAll(items => items.every(row => row.scrollWidth <= row.clientWidth+1)));
   } finally {
     await browser.close();
     await preview.close();

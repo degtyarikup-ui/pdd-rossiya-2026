@@ -82,30 +82,38 @@ export const ECONOMY_VIEW_HTML = String.raw`
 .ec-recent-money,.ec-preview-balance b{margin-left:auto;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ec-recent-row .ec-operation-icon{width:32px;height:32px;flex-basis:32px}.ec-overview-empty{font-size:13px;color:var(--ec-muted);padding:12px 0}
 #ec-balance-preview .ec-total{font-size:clamp(24px,2vw,32px);font-weight:600;letter-spacing:-.04em;line-height:1.2;margin:6px 0 16px}.ec-preview-balance span{min-width:0;overflow-wrap:anywhere;font-weight:450}
-#ec-shares .ec-head{align-items:flex-start;gap:12px 24px;margin-bottom:20px}
-.ec-shares-intro{flex:1 1 320px;min-width:0}
-#ec-shares .ec-head h2{font-size:var(--admin-type-section,18px);line-height:var(--admin-leading-title,1.3)}
-.ec-shares-intro p,.ec-share-note{margin:6px 0 0;color:var(--text-muted);font-size:var(--admin-type-body,14px);line-height:var(--admin-leading-body,1.5)}
-.ec-shares-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px clamp(6px,1vw,16px)}
-#ec-allocation-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,275px),1fr));gap:var(--admin-gap,16px)}
-.ec-allocation-item{display:flex;flex-direction:column;min-width:0;padding:clamp(16px,1.6vw,24px);border:1px solid var(--admin-divider);border-radius:16px;background:#fff}
-.ec-allocation-item.ec-fund{background:linear-gradient(135deg,#F0F6FF,#FAFCFF);border-color:#DCE9FA}
-.ec-allocation-label{display:flex;align-items:baseline;justify-content:space-between;gap:6px 12px;flex-wrap:wrap}
-.ec-allocation-label h3{margin:0;color:var(--text);font-size:var(--admin-type-title,16px);font-weight:var(--admin-weight-semibold,600);line-height:var(--admin-leading-title,1.3);overflow-wrap:anywhere}
-.ec-allocation-label span{color:var(--text-muted);font-size:var(--admin-type-control,13px);white-space:nowrap}
-.ec-allocation-primary{margin:20px 0 0}
-.ec-allocation-primary dt,.ec-balance-values dt{color:var(--text-muted);font-size:var(--admin-type-control,13px)}
-.ec-allocation-primary dd,.ec-balance-values dd{margin:3px 0 0;line-height:var(--admin-leading-title,1.3);font-weight:var(--admin-weight-semibold,600);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.ec-allocation-primary dd{font-size:var(--admin-type-metric,clamp(26px,2.3vw,34px));letter-spacing:-.035em}
-.ec-fund .ec-allocation-primary dd{color:#1C5AB3}
-.ec-balance-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0 0}
-.ec-balance-values dd{font-size:var(--admin-type-title,16px)}
-.ec-share-progress{display:block;width:100%;height:5px;margin:12px 0 0;border:0;border-radius:999px;overflow:hidden;appearance:none;background:var(--surface-gray);color:var(--success)}
-.ec-share-progress::-webkit-progress-bar{background:var(--surface-gray);border-radius:inherit}
-.ec-share-progress::-webkit-progress-value{background:var(--success);border-radius:inherit}
-.ec-share-progress::-moz-progress-bar{background:var(--success);border-radius:inherit}
-.ec-share-note{max-width:40ch;margin-top:12px}
-.ec-share-action{margin-top:auto;padding-top:18px}
+#ec-shares{container-type:inline-size}
+.ec-share-table{width:100%;border-collapse:collapse;font-size:var(--admin-type-body);line-height:var(--admin-leading-body);font-variant-numeric:tabular-nums}
+.ec-share-table :is(th,td){border:0;padding:12px 0 12px clamp(12px,2vw,32px);text-align:right;vertical-align:middle}
+.ec-share-table thead th{padding-top:0;padding-bottom:4px;color:var(--text-muted);font-size:var(--admin-type-caption);font-weight:var(--admin-weight-medium);text-transform:none;letter-spacing:normal}
+.ec-share-table :is(th,td):first-child{text-align:left;padding-left:0}
+.ec-share-table tbody th{color:inherit;text-transform:none;letter-spacing:normal}
+.ec-share-name{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px}
+.ec-share-name h3{margin:0;font-size:var(--admin-type-title);font-weight:var(--admin-weight-semibold);overflow-wrap:anywhere}
+.ec-share-name span,.ec-share-credit{color:var(--text-muted);font-size:var(--admin-type-caption);font-weight:normal}
+.ec-share-table td{overflow-wrap:anywhere}
+.ec-share-table .ec-share-balance{font-weight:var(--admin-weight-semibold)}
+.ec-share-table .ec-share-na{color:var(--text-muted)}
+.ec-share-credit{display:block}
+.ec-share-caption{display:none}
+.ec-shares-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;margin-top:12px}
+@container(max-width:640px){
+ .ec-share-table,.ec-share-table tbody{display:block}
+ .ec-share-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ .ec-share-table tr{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));align-items:baseline;gap:10px 6px;padding:12px 0}
+ .ec-share-table tbody tr:first-child{padding-top:0}
+ .ec-share-table :is(th,td){padding:0;text-align:start;min-width:0}
+ .ec-share-table tbody th{grid-column:1/-1;grid-row:1}
+ .ec-share-table td{grid-column:span 2}
+ .ec-share-table tr:has(.ec-pay-partner) th{grid-column:1/4}
+ .ec-share-table .ec-share-action{grid-column:4/7;grid-row:1;text-align:right}
+ .ec-share-table .ec-pay-partner{max-width:100%}
+ .ec-share-caption{display:block;color:var(--text-muted);font-size:var(--admin-type-caption);font-weight:normal}
+ .ec-share-table .ec-share-na,.ec-share-table .ec-share-action:empty{display:none}
+ .ec-share-table .ec-allocation-only th{grid-column:1/5}
+ .ec-share-table .ec-allocation-only td:first-of-type{grid-column:5/7;grid-row:1;text-align:right}
+ .ec-shares-actions{margin-top:8px}
+}
 @media(max-width:760px){.ec-overview-grid{grid-template-columns:1fr}.ec-toolbar{align-items:flex-start}.ec-breakdown-grid{grid-template-columns:1fr}}
 @media(max-width:650px){
  .ec-toolbar{gap:10px}.ec-toolbar .ec-actions{width:100%;justify-content:flex-start}.ec-navigation{width:100%}#economy-view .ec-navigation button{font-size:12px;padding-inline:6px;flex:1}
@@ -187,12 +195,12 @@ export const ECONOMY_VIEW_HTML = String.raw`
 <details class="ec-disclosure" id="ec-platega-panel"><summary>Platega <span class="ec-caption">Баланс сейчас</span></summary><div class="ec-disclosure-body"><div class="ec-head"><span class="ec-platega-status" id="ec-platega-status" role="status"></span><button type="button" class="btn-action" id="ec-platega-refresh">Обновить баланс</button></div><div class="ec-platega-balances" id="ec-platega-body"></div></div></details>
 <details class="ec-disclosure" id="ec-cloudflare-panel" hidden><summary>Cloudflare <span class="ec-caption" id="ec-cloudflare-summary"></span></summary><div class="ec-disclosure-body"><div class="ec-head"><span class="ec-platega-status" id="ec-cloudflare-status" role="status"></span><button type="button" class="btn-action" id="ec-cloudflare-refresh">Синхронизировать</button></div><div id="ec-cloudflare-body"></div></div></details>
 </section>
-<section id="ec-shares" class="ec-card" aria-labelledby="ec-shares-heading" hidden>
- <div class="ec-head">
-  <div class="ec-shares-intro"><h2 id="ec-shares-heading">Распределение прибыли</h2><p id="ec-share-basis"></p></div>
-  <div class="ec-shares-actions"><button type="button" class="ec-link" data-payout-history>История выплат <span aria-hidden="true">→</span></button><button type="button" class="btn-action" id="ec-edit-shares" disabled>Изменить доли</button></div>
- </div>
- <div class="ec-allocation-list" id="ec-allocation-list"></div>
+<section id="ec-shares" class="ec-card" aria-label="Доли и выплаты" hidden>
+ <table class="ec-share-table" aria-label="Доли и выплаты"><thead><tr>
+  <th scope="col">Доля</th><th scope="col">Начислено</th><th scope="col" data-settlements>Выплачено</th><th scope="col" data-settlements>Остаток</th><th scope="col" data-settlements aria-label="Действие"></th>
+ </tr></thead><tbody id="ec-allocation-list"></tbody></table>
+ <p id="ec-settlements-status" class="ec-caption" hidden>Данные о выплатах недоступны</p>
+ <div class="ec-shares-actions"><button type="button" class="ec-link" data-payout-history>История выплат</button><button type="button" class="btn-action" id="ec-edit-shares" disabled>Изменить доли</button></div>
 </section>
 <dialog id="ec-dialog" aria-labelledby="ec-dialog-title"><form id="ec-form"><h2 id="ec-dialog-title"></h2><div class="ec-form-grid" id="ec-fields"></div><p class="ec-form-note" id="ec-form-note" hidden></p><div class="ec-form-error" id="ec-form-error" role="alert" hidden></div><div class="ec-form-actions"><button type="button" class="btn-action btn-danger" id="ec-delete" hidden>Удалить</button><button type="button" class="btn-action" id="ec-cancel">Отмена</button><button type="submit" class="btn-action btn-primary" id="ec-submit">Сохранить</button></div></form></dialog>
 </div>`;
@@ -324,27 +332,23 @@ export const ECONOMY_CLIENT_JS = String.raw`
  }
  function renderShares(){
   var monthly=Array.isArray(stats.settlements),shares=monthly?stats.settlements:stats.profitShares;
-  var totalCents=stats.profitShares.reduce(function(sum,share){return sum+Math.round(share.payoutUsd*100);},0);
-  var explanation=monthly?'Каждая выплата за выбранный месяц уменьшает остаток партнёра.':stats.selectedMonth?'Сведения о выплатах за этот месяц недоступны.':'Выберите календарный месяц, чтобы увидеть выплаты и остатки партнёров.';
-  set('ec-share-basis','Прибыль к распределению после расходов — '+usd(totalCents/100)+'. '+explanation);
+  el('ec-settlements-status').hidden=monthly||!stats.selectedMonth;
+  el('ec-shares').querySelectorAll('[data-settlements]').forEach(function(header){header.hidden=!monthly;});
   var activeIds=new Set(stats.profitShares.map(function(share){return share.id;}));
   el('ec-allocation-list').innerHTML=shares.map(function(share){
-   var fund=share.id.startsWith('fund-'),settled=monthly&&!fund;
-   var label=fund?'Выделено на развитие':'Начислено за период',amount=share.payoutUsd,details='',note='',action='';
-   if(fund)note='Эта часть прибыли остаётся в бюджете проекта на развитие.';
+   var settled=monthly&&!share.id.startsWith('fund-');
+   var row='<th scope="row"><div class="ec-share-name"><h3>'+esc(share.name)+'</h3><span>'+pct(share.percent)+'</span></div></th>'+
+    '<td><span class="ec-share-caption" aria-hidden="true">Начислено</span>'+usd(share.payoutUsd)+'</td>';
    if(settled){
-    label=share.remainingUsd<0?'Переплата':'Осталось выплатить';
-    amount=Math.abs(share.remainingUsd);
-    details='<dl class="ec-balance-values"><div><dt>Начислено</dt><dd>'+usd(share.payoutUsd)+'</dd></div><div><dt>Выплачено</dt><dd>'+usd(share.paidUsd)+'</dd></div></dl>';
-    if(share.payoutUsd>0){
-     details+='<progress class="ec-share-progress" max="'+share.payoutUsd+'" value="'+Math.min(share.paidUsd,share.payoutUsd)+'" aria-label="Выплаченная часть доли" aria-valuetext="'+usd(share.paidUsd)+' из '+usd(share.payoutUsd)+'"></progress>';
-    }
-    if(share.remainingUsd<0)note='Сумма выплат превысила начисление за месяц.';
-    else if(share.remainingUsd===0)note=share.paidUsd>0?'Доля за месяц выплачена полностью.':'За этот месяц начислений нет.';
-    if(activeIds.has(share.id))action='<div class="ec-share-action"><button type="button" class="btn-action ec-pay-partner" data-pay-partner="'+esc(share.id)+'" aria-label="'+esc('Внести выплату · '+share.name)+'">Внести выплату</button></div>';
+    var overpaid=share.remainingUsd<0;
+    var balance=overpaid?'<span class="ec-share-credit">Переплата</span>':'<span class="ec-share-caption" aria-hidden="true">Остаток</span>';
+    var action=activeIds.has(share.id)?'<button type="button" class="ec-link ec-pay-partner" data-pay-partner="'+esc(share.id)+'" aria-label="'+esc('Внести выплату · '+share.name)+'">Внести выплату</button>':'';
+    row+='<td><span class="ec-share-caption" aria-hidden="true">Выплачено</span>'+usd(share.paidUsd)+'</td>'+
+     '<td class="ec-share-balance">'+balance+usd(Math.abs(share.remainingUsd))+'</td><td class="ec-share-action">'+action+'</td>';
+   }else if(monthly){
+    row+='<td class="ec-share-na">—</td><td class="ec-share-na">—</td><td class="ec-share-action"></td>';
    }
-   return '<article class="ec-allocation-item'+(fund?' ec-fund':'')+'"><div class="ec-allocation-label"><h3>'+esc(share.name)+'</h3><span>'+pct(share.percent)+' прибыли</span></div>'+
-    '<dl class="ec-allocation-primary"><dt>'+label+'</dt><dd>'+usd(amount)+'</dd></dl>'+details+(note?'<p class="ec-share-note">'+note+'</p>':'')+action+'</article>';
+   return '<tr class="ec-allocation-item'+(settled?'':' ec-allocation-only')+'">'+row+'</tr>';
   }).join('');
  }
  function renderCloudflare(){
@@ -506,9 +510,9 @@ export const ECONOMY_CLIENT_JS = String.raw`
   if(!stats||saving||stats.period!==period)return;item=item||{};returnFocus=document.activeElement;dialogContext={kind:kind,id:item.id||null,confirmDelete:false,item:item,createId:crypto.randomUUID()};var html='',heading='',note='';
   if(Object.hasOwn(operationTypes,kind)){heading=item.id?'Изменить операцию':'Новая операция';html=operationFields(kind,item);}
   else if(kind==='shares'){
-   heading='Распределение прибыли';
+   heading='Изменить доли';
    html='<div class="ec-share-fields" id="ec-share-fields">'+stats.profitShares.map(shareFields).join('')+'</div><button type="button" class="btn-action ec-share-add" id="ec-add-share">Добавить долю</button><div class="ec-form-preview" id="ec-form-preview"></div>';
-   note='Каждая доля считается от общей прибыли. Сумма долей должна быть 100%.';
+   note='Сумма долей должна быть 100%.';
   }
   else if(kind==='settings'){
    heading='Настройки экономики';var cfg=stats.config;
