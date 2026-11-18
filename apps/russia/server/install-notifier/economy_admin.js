@@ -2,7 +2,8 @@
 // Доход включает продажи магазинов по тарифу; выплаты магазинов — справочные.
 import { getUsdRate } from './economy_fx.js';
 import { economyInUsd } from './economy_usd.js';
-import { profitAllocation } from './economy_shares.js';
+import { monthlyBalances, payoutLedger } from './economy_payouts.js';
+import { profitAllocation, shareScheme, schemeForMonth } from './economy_shares.js';
 import { handlePlategaBalances } from './economy_platega.js';
 import { getCloudflareBilling, cloudflareExpenseLines } from './economy_cloudflare.js';
 import { mapAdminReads } from './admin_reads.js';
@@ -78,7 +79,8 @@ function normalizeProfitShares(items) {
     if (!object(item)) throw new Error('Некорректная доля');
     const percent = number(item.percent, 'доля', 0, 100);
     if (percent !== round(percent)) throw new Error('Укажите долю с точностью до двух знаков после запятой');
-    return { name: title(item.name), percent };
+    if (item.id !== undefined && (typeof item.id !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(item.id))) throw new Error('Некорректный получатель');
+    return { name: title(item.name), percent, ...(item.id ? { id: item.id } : {}) };
   });
   if (shares.reduce((sum, share) => sum + Math.round(share.percent * 100), 0) !== 10000) {
     throw new Error('Сумма долей должна быть 100%');
@@ -156,6 +158,7 @@ function safeConfig(parsed = {}) {
   if (Object.hasOwn(parsed, 'profitShares')) {
     try { result.profitShares = normalizeProfitShares(parsed.profitShares); } catch (_) { /* use legacy shares */ }
   }
+  if (Array.isArray(parsed.shareHistory)) result.shareHistory = parsed.shareHistory;
   for (const key of booleanSettings) {
     if (typeof parsed[key] === 'boolean') result[key] = parsed[key];
   }
@@ -176,16 +179,27 @@ export function isTestOrder(order) {
 }
 export async function getEconomyConfig(env) {
   if (!env?.INSTALLS) return safeConfig();
-  try { return safeConfig(JSON.parse(await env.INSTALLS.get(CONFIG_KEY) || '{}')); }
-  catch (_) { return safeConfig(); }
+  return safeConfig(JSON.parse(await env.INSTALLS.get(CONFIG_KEY) || '{}'));
 }
-export async function saveEconomyConfig(env, updates) {
+export async function saveEconomyConfig(env, updates, now = Date.now()) {
   if (!env?.INSTALLS) throw new Error('Хранилище недоступно');
   if (!object(updates)) throw new Error('Некорректные настройки');
   const next = await getEconomyConfig(env);
+  const previous = shareScheme(next);
   for (const [key, value] of Object.entries(updates)) {
     if (numericRules[key]) next[key] = number(value, key, ...numericRules[key]);
-    else if (key === 'profitShares') next.profitShares = normalizeProfitShares(value);
+    else if (key === 'profitShares') {
+      const old = profitAllocation(previous, 0).shares;
+      const used = new Set();
+      next.profitShares = normalizeProfitShares(value).map(share => {
+        const match = share.id ? old.find(item => item.id === share.id) : old.find(item => !used.has(item.id) && item.name === share.name);
+        if (share.id && !match) throw new Error('Состав долей изменился. Обновите страницу.');
+        const id = match?.id || (/^(в развитие|развитие)$/iu.test(share.name) ? 'fund-' : '') + crypto.randomUUID();
+        if (used.has(id)) throw new Error('Получатель указан дважды');
+        used.add(id);
+        return { ...share, id };
+      });
+    }
     else if (booleanSettings.includes(key)) {
       if (typeof value !== 'boolean') throw new Error('Некорректное значение: ' + key);
       next[key] = value;
@@ -201,6 +215,12 @@ export async function saveEconomyConfig(env, updates) {
   if (hasNikita && hasSergey && Math.abs(updates.nikitaSharePercent + updates.sergeySharePercent - 100) > 0.001) throw new Error('Сумма долей должна быть 100%');
   if (hasSergey && !hasNikita) next.nikitaSharePercent = round(100 - next.sergeySharePercent);
   next.sergeySharePercent = round(100 - next.nikitaSharePercent);
+  const scheme = shareScheme(next);
+  if (JSON.stringify(previous) !== JSON.stringify(scheme)) {
+    const month = reportDay(now).slice(0, 7);
+    const history = next.shareHistory || [{ from: '2000-01', scheme: previous }];
+    next.shareHistory = [...history.filter(item => item.from < month), { from: month, scheme }];
+  }
   await env.INSTALLS.put(CONFIG_KEY, JSON.stringify(next));
   return next;
 }
@@ -261,19 +281,33 @@ function budgetMonths(start, now) {
   }
   return months;
 }
+function validMonth(value, now) {
+  return typeof value === 'string' && /^20[0-9]{2}-(0[1-9]|1[0-2])$/.test(value) && value <= reportDay(now).slice(0, 7);
+}
+function validPeriod(period, now) {
+  return ['month', '30d', 'all'].includes(period) || validMonth(period, now);
+}
 export async function computeEconomyStats(env, period = 'month', deps = {}) {
-  if (!['month', '30d', 'all'].includes(period)) throw new Error('Неизвестный период');
-  const now = deps.now ?? Date.now();
+  const actualNow = deps.now ?? Date.now();
+  if (!validPeriod(period, actualNow)) throw new Error('Неизвестный период');
+  const selectedMonth = period === 'month' ? reportDay(actualNow).slice(0, 7) : validMonth(period, actualNow) ? period : null;
+  const monthEnd = selectedMonth && Date.UTC(Number(selectedMonth.slice(0, 4)), Number(selectedMonth.slice(5)), 1) - MOSCOW_OFFSET - 1;
+  const now = selectedMonth ? Math.min(actualNow, monthEnd) : actualNow;
   const calendarNow = Date.parse(reportDay(now));
   const nowDate = new Date(calendarNow);
   const monthStart = Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), 1);
-  const calendarPeriodStart = period === 'month' ? monthStart : period === '30d' ? calendarNow - 29 * DAY : 0;
+  const calendarPeriodStart = selectedMonth ? monthStart : period === '30d' ? calendarNow - 29 * DAY : 0;
   const periodStart = period === 'all' ? 0 : calendarPeriodStart - MOSCOW_OFFSET;
-  const [config, orderKeys, users, cloudflare, fx] = await Promise.all([
+  const [currentConfig, orderKeys, users, cloudflare, fx, payouts] = await Promise.all([
     getEconomyConfig(env), listAll(env, 'pay_order:'),
     typeof deps.listUserSummaries === 'function' ? deps.listUserSummaries(env) : [],
-    getCloudflareBilling(env, deps), getUsdRate(env, deps),
+    getCloudflareBilling(env, deps), getUsdRate(env, selectedMonth && now < actualNow ? { ...deps, reportDay: reportDay(now) } : deps),
+    env.ECONOMY_PAYOUTS ? payoutLedger(env).fetch('https://ledger/list').then(response => {
+      if (!response.ok) throw new Error('Журнал выплат недоступен');
+      return response.json();
+    }) : null,
   ]);
+  const config = selectedMonth ? { ...currentConfig, profitShares: undefined, ...schemeForMonth(currentConfig, selectedMonth) } : currentConfig;
   const orders = await mapAdminReads(orderKeys, async key => {
     try { return JSON.parse(await env.INSTALLS.get(key.name)); }
     catch (_) { return null; }
@@ -450,7 +484,7 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
   estimatedReceipts.sort((a, b) => timestamp(b.date) - timestamp(a.date));
   const estimatedStoresRub = round(estimatedReceipts.reduce((sum, receipt) => sum + ((!receipt.isTest || !config.excludeTestOrders) ? receipt.amountRub : 0), 0));
   const result = {
-    period, updatedAt: new Date(now).toISOString(), cloudflare,
+    period, updatedAt: new Date(actualNow).toISOString(), cloudflare,
     periodInfo: { from: dayString(budgetStart), to: reportDay(now), timeZone: 'Europe/Moscow',
       budgetMonths: Math.round(multiplier * 10000) / 10000, infrastructureBasis: cloudflare.configured ? 'cloudflare_invoices_and_domain_budget' : 'prorated_monthly_budget',
       allTimeStartBasis: period === 'all' ? 'earliest_known_record' : undefined },
@@ -480,7 +514,13 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
       payingConversionRate: realUsersCount ? round(activePayingCount / realUsersCount * 100) : 0,
       arppu: activePayingCount ? round(grossRevenueRub / activePayingCount) : 0, arpu: realUsersCount ? round(grossRevenueRub / realUsersCount) : 0 },
   };
-  return { ...result, currency: 'USD', fx, usd: economyInUsd(result, fx) };
+  const usd = economyInUsd(result, fx);
+  const versions = currentConfig.shareHistory || [{ from: '2000-01', scheme: shareScheme(currentConfig) }];
+  const payoutPartners = versions.map(({ from, scheme }) => ({ from, partners: profitAllocation(scheme, 0).shares
+    .filter(share => !share.id.startsWith('fund-')).map(({ id, name }) => ({ id, name })) }));
+  return { ...result, currency: 'USD', fx, usd, selectedMonth, payoutPartners,
+    settlements: selectedMonth && payouts ? monthlyBalances(usd.profitShares, payouts, selectedMonth) : null,
+    payouts: payouts?.filter(item => inPeriod(timestamp(item.date), periodStart, now)) || [] };
 }
 export async function handleEconomyAdmin(request, env, url, deps = {}) {
   const path = url.pathname;
@@ -491,7 +531,7 @@ export async function handleEconomyAdmin(request, env, url, deps = {}) {
   if (path === '/api/admin/economy/platega' && request.method === 'GET') return handlePlategaBalances(env, deps);
   if (path === '/api/admin/economy/stats' && request.method === 'GET') {
     const period = url.searchParams.get('period') || 'month';
-    if (!['month', '30d', 'all'].includes(period)) return reply({ error: 'Неизвестный период' }, 400);
+    if (!validPeriod(period, deps.now ?? Date.now())) return reply({ error: 'Неизвестный период' }, 400);
     try { return reply({ ok: true, ...await computeEconomyStats(env, period, deps) }); }
     catch (error) {
       if (error.code !== 'economy_billing_unavailable') throw error;
@@ -501,7 +541,7 @@ export async function handleEconomyAdmin(request, env, url, deps = {}) {
       return response;
     }
   }
-  const match = path.match(/^\/api\/admin\/economy\/(expenses|revenues|withdrawals)\/(add|update|delete)$/);
+  const match = path.match(/^\/api\/admin\/economy\/(expenses|revenues|withdrawals|payouts)\/(add|update|delete)$/);
   if (request.method !== 'POST' || (!match && path !== '/api/admin/economy/settings')) return reply({ error: 'not found' }, 404);
   let body;
   try { body = await request.json(); } catch (_) { return reply({ error: 'Некорректный JSON' }, 400); }
@@ -511,10 +551,11 @@ export async function handleEconomyAdmin(request, env, url, deps = {}) {
     if (Object.hasOwn(body, 'usdRate')) return reply({ error: 'Курс обновляется автоматически по данным ЦБ' }, 400);
     if (body.excludeTestOrders === false) return reply({ error: 'Тестовые операции всегда исключены' }, 400);
     if (['extraExpenses', 'manualRevenues', 'withdrawals'].some(key => Object.hasOwn(body, key))) return reply({ error: 'Изменяйте записи через журнал операций' }, 400);
-    try { return reply({ ok: true, config: await saveEconomyConfig(env, body) }); }
+    try { return reply({ ok: true, config: await saveEconomyConfig(env, body, deps.now ?? Date.now()) }); }
     catch (error) { return reply({ error: error.message }, 400); }
   }
   const [, kind, action] = match;
+  if (kind === 'payouts') return recordPayout(env, action, body, deps.now ?? Date.now());
   const key = kind === 'expenses' ? 'extraExpenses' : kind === 'revenues' ? 'manualRevenues' : 'withdrawals';
   const config = await getEconomyConfig(env);
   const list = config[key];
@@ -551,4 +592,28 @@ export async function handleEconomyAdmin(request, env, url, deps = {}) {
   if (action === 'add') list.unshift(item); else list[index] = item;
   await saveEconomyConfig(env, { [key]: list });
   return reply({ ok: true, [kind === 'expenses' ? 'expense' : kind === 'revenues' ? 'revenue' : 'withdrawal']: item });
+}
+
+async function recordPayout(env, action, body, now) {
+  const ledger = payoutLedger(env);
+  if (!ledger) return reply({ error: 'Журнал выплат недоступен' }, 503);
+  const { id, revision } = body;
+  if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return reply({ error: 'Некорректный номер выплаты' }, 400);
+  if (action !== 'add' && (!Number.isSafeInteger(revision) || revision < 1)) return reply({ error: 'Обновите запись перед изменением' }, 400);
+  let entry;
+  if (action !== 'delete') {
+    const { month, partnerId } = body;
+    if (!validMonth(month, now)) return reply({ error: 'Выберите текущий или прошедший месяц' }, 400);
+    const config = await getEconomyConfig(env);
+    const partner = profitAllocation(schemeForMonth(config, month), 0).shares.find(share => share.id === partnerId && !share.id.startsWith('fund-'));
+    if (!partner && action === 'add') return reply({ error: 'Выберите партнёра за указанный месяц' }, 400);
+    try {
+      const paidOn = date(body.date, 'выплата');
+      if (paidOn > reportDay(now)) throw new Error('Дата выплаты ещё не наступила');
+      const amount = number(body.amount, 'сумма выплаты', 0.01, 100000000);
+      if (amount !== round(amount)) throw new Error('Укажите сумму с точностью до цента');
+      entry = { partnerId, partnerName: partner?.name ?? null, month, date: paidOn, amount };
+    } catch (error) { return reply({ error: error.message }, 400); }
+  }
+  return ledger.fetch('https://ledger/mutate', { method: 'POST', body: JSON.stringify({ action, id, revision, entry }) });
 }

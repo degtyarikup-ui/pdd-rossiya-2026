@@ -1,3 +1,4 @@
+import { payoutBinding } from './fixture-economy-payouts.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_ECONOMY_CONFIG, getEconomyConfig, saveEconomyConfig, computeEconomyStats, handleEconomyAdmin, isTestOrder } from './economy_admin.js';
@@ -35,7 +36,7 @@ test('defaults and saved zero settings survive reload and calculations', async (
   assert.equal((await getEconomyConfig(env)).nikitaSharePercent, 6.7);
   assert.equal((await getEconomyConfig(env)).paymentFeePercent, 8);
   await saveEconomyConfig(env, { cloudflareMonthlyUsd: 0, domainMonthlyRub: 0, reinvestPercent: 0,
-    nikitaSharePercent: 0, targetMonthlyProfit: 0, paymentFeePercent: 0 });
+    nikitaSharePercent: 0, targetMonthlyProfit: 0, paymentFeePercent: 0 }, NOW);
   await order(env, 'real', { amount: 1000 });
   const result = await stats(env);
   assert.equal(result.config.nikitaSharePercent, 0);
@@ -84,10 +85,10 @@ test('editable shares allocate the full profit and reject invalid updates withou
     [{ name: 'Резерв', percent: 33.333 }, { name: 'Развитие', percent: 66.667 }]]) {
     assert.equal((await api(env, 'settings', { profitShares: invalid })).status, 400);
   }
-  assert.deepEqual((await getEconomyConfig(env)).profitShares, profitShares);
+  assert.deepEqual((await getEconomyConfig(env)).profitShares.map(({name, percent}) => ({name, percent})), profitShares);
   assert.equal((await api(env, 'settings', { profitShares: [{ name: ' Резерв ', percent: 100 }] })).status, 200);
   await saveEconomyConfig(env, { paymentFeePercent: 8 });
-  assert.deepEqual((await getEconomyConfig(env)).profitShares, [{ name: 'Резерв', percent: 100 }]);
+  assert.deepEqual((await getEconomyConfig(env)).profitShares.map(({name, percent}) => ({name, percent})), [{ name: 'Резерв', percent: 100 }]);
   await api(env, 'expenses/add', { title: 'Расход', amount: 1500, date: '2026-10-16' });
   assert.equal((await stats(env)).usd.profitShares[0].payoutUsd, 0);
 });
@@ -721,4 +722,39 @@ test('record limit returns a validation response without modifying any saved rec
     assert.equal(result.status, 400, kind);
     assert.equal(await env.INSTALLS.get('economy_config'), before);
   }
+});
+
+test('partner settlements follow accrual month and are independent of profit and withdrawals', async () => {
+  const env = { ...environment(), ECONOMY_PAYOUTS: payoutBinding() };
+  await seedConfig(env, { profitShares: [{name:'В развитие',percent:50},{name:'Сергей',percent:40},{name:'Никита',percent:10}],
+    manualRevenues: [{ id:'sale', title:'Продажи', amount:181.10, currency:'USD', store:'other', date:'2026-09-20' }] });
+  const sep = await stats(env, '2026-09');
+  const nikita = sep.settlements.find(row => row.name === 'Никита');
+  assert.equal(nikita.remainingUsd, 18.11);
+  const body = { id:crypto.randomUUID(), month:'2026-09', date:'2026-10-15', amount:17, partnerId:nikita.id };
+  for (const invalid of [{amount:-1},{amount:0.001},{date:'2026-10-17'},{month:'2026-13'},{month:'2027-01'},
+    {partnerId:'missing'},{partnerId:sep.settlements[0].id}]) {
+    assert.equal((await api(env, 'payouts/add', { ...body,...invalid })).status, 400);
+  }
+  const [first, retry] = await Promise.all([api(env,'payouts/add',body),api(env,'payouts/add',body)]);
+  assert.equal(first.status,200); assert.equal(retry.status,200);
+  const updated = await stats(env, '2026-09'), row = updated.settlements.find(item => item.id === nikita.id);
+  assert.deepEqual([row.payoutUsd,row.paidUsd,row.remainingUsd],[18.11,17,1.11]);
+  assert.equal(updated.settlements.find(item => item.name==='Сергей').paidUsd,0);
+  assert.deepEqual(updated.usd,sep.usd);
+  assert.equal(updated.payouts.length,0);
+  const oct = await stats(env);
+  assert.equal(oct.payouts.length,1);
+  assert.equal(oct.settlements.find(item => item.id === nikita.id).paidUsd,0);
+  assert.equal((await api(env,'payouts/update',{...body,revision:1,amount:20})).status,200);
+  assert.equal((await api(env,'payouts/update',{...body,revision:1,amount:18})).status,409);
+  assert.equal((await stats(env,'2026-09')).settlements.find(item=>item.id===nikita.id).remainingUsd,-1.89);
+  const currentShares = oct.usd.profitShares.map(({id,name,percent})=>({id,name,percent}));
+  currentShares[2].name='Николай'; currentShares[2].percent=5; currentShares[1].percent=45;
+  assert.equal((await api(env,'settings',{profitShares:currentShares})).status,200);
+  assert.equal((await stats(env)).usd.profitShares[2].name,'Николай');
+  assert.deepEqual((await stats(env,'2026-09')).usd.profitShares,sep.usd.profitShares);
+  assert.equal((await api(env,'payouts/delete',{id:body.id,revision:2})).status,200);
+  assert.equal((await api(env,'payouts/add',body)).status,409);
+  assert.deepEqual((await stats(env,'2026-09')).settlements,sep.settlements);
 });

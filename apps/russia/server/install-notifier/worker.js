@@ -1,3 +1,4 @@
+export { EconomyPayouts } from './economy_payouts.js';
 import { pollStoreReviews, storeReviewsAdmin } from './store_reviews.js';
 export { StoreReviews } from './store_reviews.js';
 import { PROMOCODES_NAV_HTML, PROMOCODES_VIEW_HTML, PROMOCODES_CLIENT_JS } from './promocodes_ui.js';

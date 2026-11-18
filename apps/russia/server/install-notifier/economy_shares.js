@@ -15,11 +15,26 @@ export function splitProfit(shares, profit) {
 
 const round = value => Math.round((value + Number.EPSILON) * 100) / 100;
 
+function identifyShare(share, index) {
+  const fund = /^(в развитие|развитие)$/iu.test(share.name);
+  return { ...share, id: share.id || (fund ? 'fund-' : 'partner-') + index };
+}
+
+export function shareScheme(config) {
+  return config.profitShares ? { profitShares: config.profitShares }
+    : { reinvestPercent: config.reinvestPercent, nikitaSharePercent: config.nikitaSharePercent, sergeySharePercent: config.sergeySharePercent };
+}
+
+export function schemeForMonth(config, month) {
+  const versions = config.shareHistory || [];
+  return versions.filter(item => item.from <= month).at(-1)?.scheme || shareScheme(config);
+}
+
 export function profitAllocation(config, profit) {
   if (config.profitShares) {
     const payouts = splitProfit(config.profitShares, profit);
     return {
-      shares: config.profitShares.map((share, i) => ({ ...share, amount: payouts[i] })),
+      shares: config.profitShares.map((share, i) => ({ ...identifyShare(share, i), amount: payouts[i] })),
       reinvest: 0, distributable: profit, partners: {},
     };
   }
@@ -37,7 +52,7 @@ export function profitAllocation(config, profit) {
     { name: 'Сергей', percent: round(100 - fundPercent - nikitaTotalPercent), amount: sergey },
     { name: 'Никита', percent: nikitaTotalPercent, amount: nikita },
   ];
-  return { shares, reinvest, distributable, partners: {
+  return { shares: shares.map(identifyShare), reinvest, distributable, partners: {
     sergey: { name: shares[1].name, role: 'Основатель / Разработка', percent: sergeySharePercent, amount: sergey },
     nikita: { name: shares[2].name, role: 'Партнёр / Развитие', percent: nikitaSharePercent, amount: nikita },
   } };

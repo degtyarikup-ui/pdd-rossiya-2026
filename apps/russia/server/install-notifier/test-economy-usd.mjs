@@ -41,3 +41,16 @@ test('old clients cannot enable tests or manually change the global exchange rat
  const req=new Request('https://test/api/admin/economy/settings',{method:'POST',body:JSON.stringify(body)});const response=await handleEconomyAdmin(req,env,new URL(req.url));assert.equal(response.status,400);
  }
 });
+
+test('historical month-end FX stays separate from the live rate',async()=>{
+ const env=environment(),requests=[];
+ const fxFetch=async input=>{
+   const date=new URL(input).searchParams.get('date_req');
+   requests.push(date);
+   return new Response(xml(date.replaceAll('/','.'),date==='31/10/2026'?'85':'80'));
+ };
+ const [live,past]=await Promise.all([getUsdRate(env,{now,fxFetch}),getUsdRate(env,{now,reportDay:'2026-10-31',fxFetch})]);
+ assert.equal(live.rubPerUsd,80);assert.equal(past.rubPerUsd,85);
+ assert.equal((await getUsdRate(env,{now:now+86400000,reportDay:'2026-10-31',fxFetch})).rubPerUsd,85);
+ assert.equal(requests.length,2);
+});

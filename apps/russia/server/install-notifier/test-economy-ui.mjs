@@ -8,6 +8,7 @@ import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { payoutBinding } from './fixture-economy-payouts.mjs';
 import worker from './worker.js';
 import { DEFAULT_ECONOMY_CONFIG } from './economy_admin.js';
 
@@ -34,8 +35,13 @@ class MemoryKV {
 const day = (offset = 0) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Moscow' }).format(new Date(Date.now() + offset * 86400000));
 
 async function startPreview() {
-  const env = { INSTALLS: new MemoryKV(), ADMIN_PASSWORD: crypto.randomUUID() };
-  await env.INSTALLS.put('economy_fx_usd_v1',JSON.stringify({rubPerUsd:95,effectiveDate:day(),requestedDay:day(),checkedAt:new Date().toISOString(),source:'CBR'}));
+  const env = { INSTALLS: new MemoryKV(), ECONOMY_PAYOUTS: payoutBinding(), ADMIN_PASSWORD: crypto.randomUUID() };
+  const lastDay = new Date(day(-40).slice(0,7)+'-01T00:00:00Z');
+  lastDay.setUTCMonth(lastDay.getUTCMonth()+1,0);
+  const priorDay = lastDay.toISOString().slice(0,10);
+  for (const [key,date] of [['economy_fx_usd_v1',day()],['economy_fx_usd_v1:'+priorDay,priorDay]]) {
+    await env.INSTALLS.put(key,JSON.stringify({rubPerUsd:95,rubPerUnit:{USD:95,RUB:1},effectiveDate:date,requestedDay:date,checkedAt:new Date().toISOString(),source:'CBR'}));
+  }
   const config = {
     ...structuredClone(DEFAULT_ECONOMY_CONFIG),
     extraExpenses: [
@@ -244,18 +250,40 @@ if (process.argv.includes('--serve')) {
       await shareInput(2, 'Percent').fill('10');
       await screenshot('shares-dialog');
       await save();
-      assert.deepEqual((await config()).profitShares, [
+      assert.deepEqual((await config()).profitShares.map(({ name, percent }) => ({ name, percent })), [
         { name: 'Развитие', percent: 50 }, { name: 'Сергей', percent: 40 }, { name: 'Никита', percent: 10 },
       ]);
       await page.reload(); await settled();
       assert.match(await page.locator('#ec-allocation-list').innerText(), /Развитие 50%/);
+      for (const width of [320, 390, 900, 1440]) {
+        await page.setViewportSize({ width, height:900 });
+        assert.ok(await page.locator('#ec-allocation-list').evaluate(el => el.scrollWidth <= el.clientWidth+1));
+        assert.ok(await page.locator('.ec-balance-values dd').evaluateAll(items => items.every(el => el.scrollWidth<=el.clientWidth+1)));
+      }
+      const currentMonth = day().slice(0,7), priorMonth = day(-40).slice(0,7);
+      await open('#ec-allocation-list .ec-allocation-item:last-child .ec-pay-partner');
+      await select('partnerId', (await config()).profitShares[2].id);
+      await field('amount', 17); await field('month', priorMonth); await save();
+      await mode('payout');
+      await page.getByRole('button', {name:'Никита',exact:true}).waitFor();
+      const payout = (await stats()).payouts[0];
+      assert.equal(payout.month, priorMonth);
+      await page.locator('#ec-report-month').fill(priorMonth);
+      await page.waitForFunction(month => document.querySelector('#ec-report-month').value===month && document.querySelector('#ec-edit-shares').disabled && document.querySelector('#ec-data-state').classList.contains('ready'), priorMonth);
+      assert.match(await page.locator('#ec-allocation-list').innerText(), /17,00/);
+      await page.locator('#ec-report-month').fill(currentMonth);
+      await page.waitForFunction(() => !document.querySelector('#ec-edit-shares').disabled);
+      await open(edit('payout',payout.id)); await field('amount', 15); await save();
+      assert.equal((await stats()).payouts[0].amount,15);
+      await open(edit('payout',payout.id)); await remove(); await mode('all');
       await open('#ec-edit-shares');
       await shareRows.nth(2).locator('[data-remove-share]').click();
       await page.locator('#ec-add-share').click();
       await shareInput(2, 'Name').fill('Резерв');
       await shareInput(2, 'Percent').fill('10');
       await save();
-      assert.deepEqual((await config()).profitShares[2], { name: 'Резерв', percent: 10 });
+      assert.equal((await config()).profitShares[2].name, 'Резерв');
+      assert.equal((await config()).profitShares[2].percent, 10);
       assert.match(await page.locator('#ec-allocation-list').innerText(), /Резерв 10%/);
 
       await add('expense');

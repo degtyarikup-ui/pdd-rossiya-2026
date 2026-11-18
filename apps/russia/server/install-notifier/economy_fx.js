@@ -18,21 +18,24 @@ export function parseCbrUsd(xml, requestedDay) {
 }
 export async function getUsdRate(env, deps = {}) {
   if (deps.fx) return deps.fx; // Explicit deterministic test dependency.
-  const now=deps.now??Date.now(), today=moscowDay(now);
-  let cached;try { cached=JSON.parse(await env.INSTALLS.get(KEY)); } catch(_) {}
+  const now=deps.now??Date.now(), today=deps.reportDay ?? moscowDay(now);
+  const key=deps.reportDay ? KEY+':'+today : KEY;
+  let cached;try { cached=JSON.parse(await env.INSTALLS.get(key)); } catch(_) {}
   if (!(cached?.rubPerUsd > 0 && cached.effectiveDate <= today)) cached=null;
-  if(cached && !deps.force && (!deps.allCurrencies || cached.rubPerUnit) && cached.requestedDay===today && now-Date.parse(cached.checkedAt)<3600000) return {...cached,stale:false};
-  let task=flights.get(env.INSTALLS);
+  if(cached && !deps.force && (!deps.allCurrencies || cached.rubPerUnit) && cached.requestedDay===today && (deps.reportDay || now-Date.parse(cached.checkedAt)<3600000)) return {...cached,stale:false};
+  let pending=flights.get(env.INSTALLS);
+  if(!pending){pending=new Map();flights.set(env.INSTALLS,pending);}
+  let task=pending.get(today);
   if(!task){
     task=(async()=>{
       const requestDate=today.split('-').reverse().join('/');
       const response=await (deps.fxFetch||fetch)('https://www.cbr.ru/scripts/XML_daily.asp?date_req='+encodeURIComponent(requestDate),{redirect:'manual',signal:AbortSignal.timeout(7000)});
       if(!response.ok)throw new Error('CBR unavailable');
       const data={...parseCbrUsd(await response.text(),today),requestedDay:today,checkedAt:new Date(now).toISOString()};
-      await env.INSTALLS.put(KEY,JSON.stringify(data));return data;
-    })();flights.set(env.INSTALLS,task);
+      await env.INSTALLS.put(key,JSON.stringify(data));return data;
+    })();pending.set(today,task);
   }
   try{return {...await task,stale:false};}
   catch(_){if(cached)return {...cached,stale:true};throw new Error('Не удалось получить курс ЦБ. Повторите обновление.');}
-  finally{if(flights.get(env.INSTALLS)===task)flights.delete(env.INSTALLS);}
+  finally{if(pending.get(today)===task)pending.delete(today);}
 }

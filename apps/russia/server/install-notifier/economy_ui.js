@@ -39,9 +39,16 @@ export const ECONOMY_VIEW_HTML = String.raw`
  #economy-view .ec-table,#economy-view .ec-table tbody{display:block}#economy-view .ec-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}#economy-view .ec-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto 28px;gap:5px 9px;padding:14px 0;border-top:1px solid var(--ec-line);align-items:center}#economy-view .ec-table td{border:0;padding:0;min-width:0}#economy-view .ec-table .ec-name{min-width:0;max-width:none;grid-column:1;grid-row:1}#economy-view .ec-table .ec-date{grid-column:1;grid-row:2;font-size:10.5px;width:auto}#economy-view .ec-table .ec-kind{grid-column:1;grid-row:3;font-size:10px}#economy-view .ec-table .ec-money{grid-column:2;grid-row:1/3;white-space:normal;overflow-wrap:anywhere;max-width:112px;font-size:12px}#economy-view .ec-table .ec-cell-action{grid-column:3;grid-row:1/3;width:auto}#economy-view .ec-table .ec-empty{grid-column:1/-1}.ec-table .ec-edit{width:28px!important;height:30px!important}#ec-form{padding:22px}.ec-detail-list dd{max-width:180px}}
 @media(max-width:600px){.ec-operation{gap:8px;align-items:flex-start}.ec-operation-icon{flex-basis:28px;width:28px;height:28px;border-radius:9px;margin-top:1px}.ec-operation-icon svg{width:17px;height:17px}#ec-receipts-body .ec-row-title{font-size:12px}#ec-receipts-body .ec-sub{font-size:10px}#economy-view #ec-receipts-body .ec-date,#economy-view #ec-receipts-body .ec-kind{padding-left:36px}#economy-view #ec-receipts-body .ec-money{font-size:13px}.ec-type-badge{font-size:10px;padding:3px 7px}}
 @media(max-width:370px){.ec-allocation-amount{font-size:14px}.ec-value{font-size:24px}.ec-form-grid{gap:14px 10px}.ec-ledger-tabs{gap:14px}}
+.ec-period-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+#ec-report-month{font:inherit;font-size:12px;color:inherit;min-width:0;max-width:100%;padding:8px 10px;border:1px solid var(--ec-line);border-radius:8px;background:white}
+#ec-allocation-list{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.ec-balance-values{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 0}.ec-balance-values div{min-width:0}.ec-balance-values dt{font-size:11px;color:var(--ec-muted)}.ec-balance-values dd{margin:3px 0;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#economy-view .ec-pay-partner{margin-top:6px;padding:4px 0;border:0;background:transparent;color:var(--ec-blue);font:inherit;font-size:12px}
+#ec-receipts-body tr[data-row-kind="payout"]{--ec-operation:#67429A;--ec-operation-bg:#F3EDFA}
+@media(max-width:650px){.ec-period-controls{width:100%}#ec-allocation-list{grid-template-columns:1fr;gap:12px}.ec-allocation-item+.ec-allocation-item{border-left:0;border-top:1px solid var(--ec-line);padding:12px 0 0}.ec-balance-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}}
 </style>
 <div class="ec-toolbar">
- <div class="ec-seg" id="ec-period-tabs" aria-label="Период"><button type="button" data-period="month" class="active" aria-pressed="true">Этот месяц</button><button type="button" data-period="30d" aria-pressed="false">30 дней</button><button type="button" data-period="all" aria-pressed="false">Всё время</button></div>
+ <div class="ec-period-controls"><div class="ec-seg" id="ec-period-tabs" aria-label="Период"><button type="button" data-period="month" class="active" aria-pressed="true">Этот месяц</button><button type="button" data-period="30d" aria-pressed="false">30 дней</button><button type="button" data-period="all" aria-pressed="false">Всё время</button></div><input type="month" id="ec-report-month" aria-label="Отчётный месяц" title="Отчётный месяц" min="2000-01"></div>
  <div class="ec-actions"><span class="admin-data-state loading" id="ec-data-state" role="status">Загрузка…</span><button type="button" class="btn-action" id="ec-refresh" aria-label="Обновить данные">Обновить</button><button type="button" class="btn-action" id="ec-settings" disabled>Настройки</button><button type="button" class="btn-action btn-primary" id="ec-add-operation" disabled>+ Операция</button></div>
 </div>
 <div id="ec-feedback" class="ec-feedback" role="status" hidden><span></span><button type="button" aria-label="Закрыть сообщение">×</button></div>
@@ -58,7 +65,7 @@ export const ECONOMY_VIEW_HTML = String.raw`
 <div class="ec-caption" id="ec-fx-status" role="status" style="margin:0 0 16px"></div>
 <section class="ec-card" aria-labelledby="ec-income-title">
  <div class="ec-head"><div class="ec-head-title"><h2 id="ec-income-title">Операции</h2><span class="ec-caption" id="ec-receipts-count"></span></div><span class="ec-caption" id="ec-withdrawn-total"></span></div>
- <div class="ec-ledger-tabs" id="ec-receipt-mode" aria-label="Вид операций"><button type="button" class="active" data-mode="all" aria-pressed="true">Все</button><button type="button" data-mode="income" aria-pressed="false">Поступления</button><button type="button" data-mode="expense" aria-pressed="false">Расходы</button><button type="button" data-mode="withdrawal" aria-pressed="false">Выводы</button><button type="button" data-mode="commission" aria-pressed="false">Комиссии</button></div>
+ <div class="ec-ledger-tabs" id="ec-receipt-mode" aria-label="Вид операций"><button type="button" class="active" data-mode="all" aria-pressed="true">Все</button><button type="button" data-mode="income" aria-pressed="false">Поступления</button><button type="button" data-mode="expense" aria-pressed="false">Расходы</button><button type="button" data-mode="withdrawal" aria-pressed="false">Выводы</button><button type="button" data-mode="payout" aria-pressed="false">Выплаты долей</button><button type="button" data-mode="commission" aria-pressed="false">Комиссии</button></div>
  <div class="ec-ledger-tools"><input type="search" class="ec-search" id="ec-search" placeholder="Поиск операций" aria-label="Поиск операций"><select id="ec-store-filter" aria-label="Источник операции"><option value="all">Все источники</option><option value="web">СБП · Platega</option><option value="appstore">App Store</option><option value="googleplay">Google Play</option><option value="rustore">RuStore</option><option value="other">Другие</option></select></div>
  <div class="ec-table-wrap"><table class="ec-table"><thead><tr><th>Дата</th><th>Операция</th><th>Тип</th><th class="ec-money">Сумма</th><th aria-label="Действия"></th></tr></thead><tbody id="ec-receipts-body"><tr><td colspan="5" class="ec-empty">Загрузка операций…</td></tr></tbody></table></div>
  <div class="ec-pager"><span id="ec-page-info"></span><div class="ec-actions"><button type="button" class="btn-action" id="ec-prev" aria-label="Предыдущая страница" disabled>←</button><button type="button" class="btn-action" id="ec-next" aria-label="Следующая страница" disabled>→</button></div></div>
@@ -86,9 +93,10 @@ export const ECONOMY_CLIENT_JS = String.raw`
  var stats=null,period='month',receiptMode='all',page=0,requestId=0,loading=null,dialogContext=null,saving=false,returnFocus=null,journal=[],plategaData=null,plategaLoading=false;
  var stores={web:'СБП · Platega',appstore:'App Store',googleplay:'Google Play',rustore:'RuStore',other:'Другое'};
  var frequencies={once:'Без повторения',monthly:'Ежемесячно',yearly:'Ежегодно'};
- var operationTypes={revenue:'Поступление',expense:'Расход',withdrawal:'Вывод',commission:'Комиссия'};
- var kindLabels={income:'Поступление',expense:'Расход',withdrawal:'Вывод',commission:'Комиссия'};
+ var operationTypes={revenue:'Поступление',expense:'Расход',withdrawal:'Вывод',payout:'Выплата доли',commission:'Комиссия'};
+ var kindLabels={income:'Поступление',expense:'Расход',withdrawal:'Вывод',payout:'Выплата доли',commission:'Комиссия'};
  var operationIconPaths={
+  payout:'<circle cx="9" cy="7" r="3"/><path d="M3 19v-2a6 6 0 0 1 9-5m1 5h8m-3-3 3 3-3 3"/>',
   income:'<path d="m17 7-10 10M7 7v10h10"/>',
   expense:'<path d="M7 17 17 7M7 7h10v10"/>',
   withdrawal:'<path d="M4 4v16m4-8h12m-5-5 5 5-5 5"/>',
@@ -106,10 +114,11 @@ export const ECONOMY_CLIENT_JS = String.raw`
  function set(id,value){var node=el(id);if(node)node.textContent=value;}
  function today(){return new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Moscow'}).format(new Date());}
  function dateText(value,year){var date=new Date(value);return Number.isFinite(date.getTime())?date.toLocaleDateString('ru-RU',{timeZone:'Europe/Moscow',day:'numeric',month:'short',year:year?'numeric':undefined}):'—';}
+ function monthText(month){return new Intl.DateTimeFormat('ru-RU',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(month+'-01T12:00:00Z'));}
  function field(name){return el('ec-form').elements.namedItem(name);}
  function feedback(message,error){el('ec-feedback').hidden=false;el('ec-feedback').classList.toggle('error',!!error);el('ec-feedback').querySelector('span').textContent=message;}
  function activate(container,attribute,value){el(container).querySelectorAll('button').forEach(function(button){var active=button.getAttribute(attribute)===value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});}
- function enableActions(){['ec-settings','ec-edit-shares','ec-add-operation','ec-add-expense'].forEach(function(id){el(id).disabled=!stats||saving||stats.period!==period;});}
+ function enableActions(){['ec-settings','ec-edit-shares','ec-add-operation','ec-add-expense'].forEach(function(id){el(id).disabled=!stats||saving||stats.period!==period||(id==='ec-edit-shares'&&stats.selectedMonth&&stats.selectedMonth!==today().slice(0,7));});}
  async function loadEconomy(force){
   var id=++requestId,selectedPeriod=period;
   el('ec-data-state').hidden=false;el('ec-data-state').className='admin-data-state loading';set('ec-data-state',stats?'Обновление…':'Загрузка…');enableActions();
@@ -165,8 +174,15 @@ export const ECONOMY_CLIENT_JS = String.raw`
   var commissions=(exp.paymentFeesUsd||0)+(exp.withdrawalFeesUsd||0)+(exp.lines||[]).filter(function(line){return line.category==='commission';}).reduce(function(sum,line){return sum+line.periodUsd;},0);
   set('ec-costs-sub',stats.cloudflare?.stale?'Cloudflare: показаны прежние счета':'Комиссии '+usd(commissions)+' · Platega '+pct(cfg.paymentFeePercent));
   var loss=profit.operatingUsd<0;el('ec-net-card').classList.toggle('is-loss',loss);set('ec-net-label',loss?'Убыток':'Прибыль');set('ec-net-sub',loss?'Распределение — $0.00':rev.includedStoreSalesUsd>0?'Оценка после расходов':'После расходов и комиссий');
-  el('ec-allocation-list').innerHTML=stats.profitShares.map(function(share){
-   return '<div class="ec-allocation-item"><div class="ec-allocation-label">'+esc(share.name)+' <span>'+pct(share.percent)+'</span></div><div class="ec-allocation-amount">'+usd(share.payoutUsd)+'</div></div>';
+  el('ec-report-month').value=stats.selectedMonth||'';
+  function balance(label,value){return '<div><dt>'+label+'</dt><dd>'+usd(value)+'</dd></div>';}
+  el('ec-allocation-list').innerHTML=(stats.settlements||stats.profitShares).map(function(share){
+   var values='<div class="ec-allocation-amount">'+usd(share.payoutUsd)+'</div>';
+   if(stats.settlements&&!share.id.startsWith('fund-')){
+    values='<dl class="ec-balance-values">'+balance('Начислено',share.payoutUsd)+balance('Выплачено',share.paidUsd)+balance(share.remainingUsd<0?'Переплата':'Осталось',Math.abs(share.remainingUsd))+'</dl>';
+    if(stats.profitShares.some(function(item){return item.id===share.id;}))values+='<button type="button" class="ec-pay-partner" data-pay-partner="'+esc(share.id)+'">Внести выплату</button>';
+   }
+   return '<div class="ec-allocation-item"><div class="ec-allocation-label">'+esc(share.name)+' <span>'+pct(share.percent)+'</span></div>'+values+'</div>';
   }).join('');
   set('ec-fx-status',(stats.fx.stale?'Курс не обновлён · ':'')+'ЦБ '+dateText(stats.fx.effectiveDate,true)+' · $1 = '+Number(stats.fx.rubPerUsd).toLocaleString('ru-RU',{maximumFractionDigits:4})+' ₽');
   var range=stats.periodInfo||{};set('ec-period-note',range.from?dateText(range.from,true)+' — '+dateText(range.to,true):'');
@@ -202,6 +218,9 @@ export const ECONOMY_CLIENT_JS = String.raw`
   (stats.expenses.lines||[]).filter(function(line){return line.periodUsd>0;}).forEach(function(line){
    var recurring=line.frequency!=='once';rows.push({key:'expense:'+line.id,id:line.id,kind:line.category==='commission'?'commission':'expense',date:recurring?range.to:line.date,dateLabel:recurring?'За период':null,title:line.title,sourceKey:'other',source:line.imported?'Cloudflare · весь аккаунт':'Проект',amountUsd:line.periodUsd,amount:!recurring?line.amount:null,currency:line.currency,sub:line.imported?'Счёт · API':line.builtin?'Бюджет':recurring?frequencies[line.frequency]+(line.occurrences>1?' · '+num(line.occurrences)+' списаний':''):'',editKind:line.imported?null:line.builtin?'builtin':line.category==='commission'?'commission':'expense',original:line});
   });
+  (stats.payouts||[]).forEach(function(item){
+   rows.push({key:'payout:'+item.id,id:item.id,kind:'payout',date:item.date,title:item.partnerName,sourceKey:'other',source:monthText(item.month),amountUsd:item.amount,editKind:'payout',original:item});
+  });
   (stats.withdrawals||[]).forEach(function(item){
    var received=item.feeMode==='included'?item.amount-item.fee:item.amount;
    rows.push({key:'withdrawal:'+item.id,id:item.id,kind:'withdrawal',date:item.date,title:item.title||'Вывод средств',sourceKey:item.store,source:stores[item.store]||'Другое',amountUsd:item.receivedUsd,amount:received,currency:item.currency,feeUsd:item.feeUsd,sub:item.fee>0?'':'Без комиссии',editKind:'withdrawal',original:item});
@@ -235,12 +254,29 @@ export const ECONOMY_CLIENT_JS = String.raw`
   set('ec-be-week',feeFactor>0?num(Math.ceil(monthly/(stats.tariffs.weeklyUsd*feeFactor)))+' продаж':'—');set('ec-be-quarter',feeFactor>0?num(Math.ceil(monthly/(stats.tariffs.quarterlyUsd*feeFactor)))+' продаж':'—');
   set('ec-plan-revenue',possible?usd(Math.ceil(required)):'—');set('ec-plan-sales',possible?num(Math.ceil(required/average)):'—');
  }
- function input(name,label,value,options){options=options||{};return '<label class="ec-field '+(options.full?'full':'')+'"><span>'+esc(label)+'</span><input name="'+name+'" type="'+(options.type||'number')+'" value="'+esc(value)+'" '+(options.required===false?'':'required')+' '+(options.type==='text'?'maxlength="160"':options.type==='date'?(options.max?'max="'+esc(options.max)+'"':''):'min="'+(options.min??0)+'" max="'+(options.max??100000000)+'" step="'+(options.step||'0.01')+'"')+'></label>';}
+ function input(name,label,value,options){options=options||{};return '<label class="ec-field '+(options.full?'full':'')+'"><span>'+esc(label)+'</span><input name="'+name+'" type="'+(options.type||'number')+'" value="'+esc(value)+'" '+(options.required===false?'':'required')+' '+(options.type==='text'?'maxlength="160"':(options.type==='date'||options.type==='month')?(options.max?'max="'+esc(options.max)+'"':''):'min="'+(options.min??0)+'" max="'+(options.max??100000000)+'" step="'+(options.step||'0.01')+'"')+'></label>';}
  function select(name,label,value,choices,full){return '<label class="ec-field '+(full?'full':'')+'"><span>'+esc(label)+'</span><select name="'+name+'">'+Object.keys(choices).map(function(key){return '<option value="'+esc(key)+'" '+(key===value?'selected':'')+'>'+esc(choices[key])+'</option>';}).join('')+'</select></label>';}
  function formNote(note){el('ec-form-note').hidden=!note;set('ec-form-note',note);}
+ function payoutChoices(month){
+  var versions=(stats.payoutPartners||[]).filter(function(version){return version.from<=month;});
+  var partners=versions.at(-1)?.partners||[],choices=Object.fromEntries(partners.map(function(partner){return [partner.id,partner.name];}));
+  var original=dialogContext.item;
+  if(original.id&&original.month===month&&!choices[original.partnerId])choices[original.partnerId]=original.partnerName;
+  return choices;
+ }
+ function partnerField(month,partnerId){
+  var choices=payoutChoices(month);
+  return select('partnerId','Партнёр',partnerId||'',Object.assign({'':'Выберите партнёра'},choices)).replace('<select ', '<select required ');
+ }
  function operationFields(kind,item){
   var cfg=stats.config,expense=kind==='expense'||kind==='commission',currency=item.currency||'USD';
-  var html=select('operationType','Тип операции',kind,operationTypes,true)+input('amount',kind==='withdrawal'?'Сумма вывода':'Сумма',item.amount??item.amountUsd??'',{min:0.01})+select('currency','Валюта',currency,{USD:'Доллары · $',RUB:'Рубли · ₽'});
+  var typeField=select('operationType','Тип операции',kind,operationTypes,true);
+  if(kind==='payout'){
+   var month=item.month||stats.selectedMonth||today().slice(0,7);
+   return typeField+partnerField(month,item.partnerId)+input('month','За месяц',month,{type:'month',max:today().slice(0,7)})+
+    input('amount','Сумма, $',item.amount??'',{min:0.01})+input('date','Дата выплаты',item.date||today(),{type:'date',max:today()})+'<div class="ec-form-preview" id="ec-form-preview" hidden></div>';
+  }
+  var html=typeField+input('amount',kind==='withdrawal'?'Сумма вывода':'Сумма',item.amount??item.amountUsd??'',{min:0.01})+select('currency','Валюта',currency,{USD:'Доллары · $',RUB:'Рубли · ₽'});
   if(kind==='withdrawal')html+=input('fee','Комиссия',item.fee??0)+select('feeMode','Как списана',item.feeMode||'additional',{additional:'Сверх суммы',included:'Из суммы вывода'});
   html+=input('date',expense?'Дата платежа':'Дата',(item.date||today()).slice(0,10),{type:'date',max:expense?undefined:today()});
   if(expense)html+=select('frequency','Повторение',item.frequency||'once',frequencies);
@@ -251,7 +287,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
   return html;
  }
  function showForm(kind,item){
-  if(!stats||saving||stats.period!==period)return;item=item||{};returnFocus=document.activeElement;dialogContext={kind:kind,id:item.id||null,confirmDelete:false,item:item};var html='',heading='',note='';
+  if(!stats||saving||stats.period!==period)return;item=item||{};returnFocus=document.activeElement;dialogContext={kind:kind,id:item.id||null,confirmDelete:false,item:item,createId:crypto.randomUUID()};var html='',heading='',note='';
   if(Object.hasOwn(operationTypes,kind)){heading=item.id?'Изменить операцию':'Новая операция';html=operationFields(kind,item);}
   else if(kind==='shares'){
    heading='Распределение прибыли';
@@ -268,12 +304,12 @@ export const ECONOMY_CLIENT_JS = String.raw`
   set('ec-dialog-title',heading);el('ec-fields').innerHTML=html;el('ec-form-error').hidden=true;formNote(note);el('ec-delete').hidden=!item.id;set('ec-delete',kind==='builtin'?'Отключить':'Удалить');el('ec-submit').hidden=false;set('ec-submit',item.id||kind==='shares'||kind==='settings'?'Сохранить':'Добавить');set('ec-cancel','Отмена');if(item.id&&field('operationType'))field('operationType').disabled=true;updateFormPreview();el('ec-dialog').showModal();
  }
  function shareFields(share){
-  return '<div class="ec-share-row">'+input('shareName','Название',share.name,{type:'text'})+input('sharePercent','Доля, %',share.percent,{max:100})+'<button type="button" class="btn-action btn-danger" data-remove-share>Удалить</button></div>';
+  return '<div class="ec-share-row" data-partner-id="'+esc(share.id||'')+'">'+input('shareName','Название',share.name,{type:'text'})+input('sharePercent','Доля, %',share.percent,{max:100})+'<button type="button" class="btn-action btn-danger" data-remove-share>Удалить</button></div>';
  }
  function readShares(){
   return Array.from(el('ec-share-fields').children,function(row){
    var value=row.querySelector('[name="sharePercent"]').value;
-   return {name:row.querySelector('[name="shareName"]').value.trim(),percent:value===''?NaN:Number(value)};
+   return {id:row.dataset.partnerId||undefined,name:row.querySelector('[name="shareName"]').value.trim(),percent:value===''?NaN:Number(value)};
   });
  }
  function shareTotal(shares){
@@ -289,6 +325,18 @@ export const ECONOMY_CLIENT_JS = String.raw`
     html+=shares.map(function(share,i){return previewLine(share.name,usd(amounts[i]));}).join('');
    }
    el('ec-form-preview').innerHTML=html;return;
+  }
+  if(kind==='payout'){
+   var original=dialogContext.item,month=field('month').value,id=field('partnerId').value;
+   var row=month===stats.selectedMonth&&stats.settlements?.find(function(share){return share.id===id;});
+   var preview=el('ec-form-preview');
+   preview.hidden=!row;
+   if(row){
+    var before=Math.round(row.remainingUsd*100)+(original.id&&original.month===month&&original.partnerId===id?Math.round(original.amount*100):0);
+    var after=(before-Math.round(Number(field('amount').value||0)*100))/100;
+    preview.innerHTML=previewLine(after<0?'Переплата после выплаты':'Останется после выплаты',usd(Math.abs(after)));
+   }
+   formNote('');return;
   }
   if(!Object.hasOwn(operationTypes,kind))return;
   var amount=Number(field('amount').value)||0,currency=field('currency').value,expense=kind==='expense'||kind==='commission',rate=stats.fx.rubPerUsd,dollars=currency==='USD'?amount:amount/rate,note='';
@@ -306,7 +354,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
   formNote(note);
  }
  function previewLine(label,value){return '<div class="ec-preview-line"><span>'+esc(label)+'</span><b>'+esc(value)+'</b></div>';}
- function formDraft(){var result={};['title','date','amount','currency','fee','feeMode','store','frequency','endDate'].forEach(function(name){var node=field(name);if(node)result[name]=node.value;});return result;}
+ function formDraft(){var result={};['title','date','amount','currency','fee','feeMode','store','frequency','endDate','month','partnerId'].forEach(function(name){var node=field(name);if(node)result[name]=node.value;});return result;}
  function detailLine(label,value,raw){return '<dt>'+esc(label)+'</dt><dd>'+ (raw?value:esc(value))+'</dd>';}
  function showDetails(key){
   var row=journal.find(function(item){return item.key===key;});if(!row){var invoice=(stats.expenses.lines||[]).find(function(line){return line.imported&&'expense:'+line.id===key;});if(invoice)row={title:invoice.title,amountUsd:invoice.amountUsd,date:invoice.date,source:'Cloudflare · весь аккаунт',original:invoice};}if(!row||saving)return;
@@ -325,11 +373,14 @@ export const ECONOMY_CLIENT_JS = String.raw`
  async function mutate(path,body){var response=await fetch('/api/admin/economy/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});var data;try{data=await response.json();}catch(_){throw new Error('Не удалось получить ответ сервера');}if(!response.ok||!data.ok)throw new Error(data.error||'Не удалось сохранить');return data;}
  async function submitForm(event,deleting){
   if(event)event.preventDefault();if(saving||!dialogContext||dialogContext.kind==='detail')return;
-  var context=dialogContext,kind=context.kind,body={},path='',expense=kind==='expense'||kind==='commission',group=expense||kind==='builtin'?'expenses':kind==='withdrawal'?'withdrawals':'revenues';
-  if(deleting===true){path=group+'/delete';body.id=context.id;}
+  var context=dialogContext,kind=context.kind,body={},path='',expense=kind==='expense'||kind==='commission',group=kind==='payout'?'payouts':expense||kind==='builtin'?'expenses':kind==='withdrawal'?'withdrawals':'revenues';
+  if(deleting===true){path=group+'/delete';body.id=context.id;if(kind==='payout')body.revision=context.item.revision;}
   else{
    if(!el('ec-form').reportValidity())return;
-   if(Object.hasOwn(operationTypes,kind)){
+   if(kind==='payout'){
+    body={id:context.id||context.createId,revision:context.item.revision,partnerId:field('partnerId').value,month:field('month').value,date:field('date').value,amount:Number(field('amount').value)};
+    path='payouts/'+(context.id?'update':'add');
+   }else if(Object.hasOwn(operationTypes,kind)){
     body={title:field('title').value.trim(),amount:Number(field('amount').value),currency:field('currency').value,date:field('date').value};
     if(expense){body.frequency=field('frequency').value;body.endDate=body.frequency==='once'?null:field('endDate').value||null;body.category=kind==='commission'?'commission':'expense';}
     else{body.store=field('store').value;}
@@ -350,9 +401,16 @@ export const ECONOMY_CLIENT_JS = String.raw`
   finally{saving=false;enableActions();controls.forEach(function(state){state.node.disabled=state.disabled;});set('ec-submit',submitLabel);if(!dialogContext&&!returnFocus?.isConnected)el('ec-add-operation').focus();}
  }
  function formError(message){el('ec-form-error').hidden=false;set('ec-form-error',message);}
- function openRow(event){var button=event.target.closest('button');if(!button||!stats)return;if(button.dataset.detailKey)return showDetails(button.dataset.detailKey);var kind=button.dataset.editKind,id=button.dataset.id;if(!kind)return;var list=kind==='builtin'?stats.expenses.lines:kind==='revenue'?stats.config.manualRevenues:kind==='withdrawal'?stats.config.withdrawals:stats.config.extraExpenses;var item=(list||[]).find(function(row){return row.id===id;});if(item)showForm(kind,item);}
+ function openRow(event){var button=event.target.closest('button');if(!button||!stats)return;if(button.dataset.detailKey)return showDetails(button.dataset.detailKey);var kind=button.dataset.editKind,id=button.dataset.id;if(!kind)return;var list=kind==='payout'?stats.payouts:kind==='builtin'?stats.expenses.lines:kind==='revenue'?stats.config.manualRevenues:kind==='withdrawal'?stats.config.withdrawals:stats.config.extraExpenses;var item=(list||[]).find(function(row){return row.id===id;});if(item)showForm(kind,item);}
  function init(){
   if(!el('economy-view'))return;window.loadEconomy=loadEconomy;
+  el('ec-report-month').max=today().slice(0,7);
+  el('ec-report-month').onchange=function(){if(!this.value||!this.validity.valid)return;period=this.value===today().slice(0,7)?'month':this.value;page=0;activate('ec-period-tabs','data-period',period);loadEconomy(false);};
+  el('ec-allocation-list').onclick=function(event){
+   var button=event.target.closest('[data-pay-partner]');if(!button)return;
+   var share=stats.settlements.find(function(row){return row.id===button.dataset.payPartner;});
+   showForm('payout',{partnerId:share.id,month:stats.selectedMonth,amount:share.remainingUsd>0?share.remainingUsd:''});
+  };
   el('ec-period-tabs').addEventListener('click',function(event){var button=event.target.closest('[data-period]');if(!button)return;period=button.dataset.period;page=0;activate('ec-period-tabs','data-period',period);loadEconomy(false);});
   el('ec-refresh').onclick=function(){loadEconomy(true);};el('ec-settings').onclick=function(){showForm('settings');};el('ec-edit-shares').onclick=function(){showForm('shares');};el('ec-add-operation').onclick=function(){showForm('expense');};el('ec-add-expense').onclick=function(){showForm('expense');};
   el('ec-receipt-mode').addEventListener('click',function(event){var button=event.target.closest('[data-mode]');if(!button)return;receiptMode=button.dataset.mode;page=0;activate('ec-receipt-mode','data-mode',receiptMode);renderReceipts();});
@@ -363,7 +421,10 @@ export const ECONOMY_CLIENT_JS = String.raw`
   el('ec-feedback').querySelector('button').onclick=function(){el('ec-feedback').hidden=true;};['ec-plan-target','ec-plan-average'].forEach(function(id){el(id).addEventListener('input',updatePlanner);});
   el('ec-form').addEventListener('input',function(event){if(event.target.name!=='operationType')updateFormPreview();});
   el('ec-form').addEventListener('change',function(event){
-   if(event.target.name==='operationType'&&!dialogContext.id){var draft=formDraft(),kind=event.target.value;dialogContext.kind=kind;if(kind==='withdrawal'&&!draft.title&&draft.amount==='')draft.currency='USD';el('ec-fields').innerHTML=operationFields(kind,draft);field('operationType').focus();}
+   if(event.target.name==='month'&&dialogContext.kind==='payout'){
+    var partner=field('partnerId');partner.closest('label').outerHTML=partnerField(event.target.value,partner.value);
+   }
+   if(event.target.name==='operationType'&&!dialogContext.id){var draft=formDraft(),kind=event.target.value;dialogContext.kind=kind;if(kind==='payout'&&draft.currency==='RUB')draft.amount='';if(kind==='withdrawal'&&!draft.title&&draft.amount==='')draft.currency='USD';el('ec-fields').innerHTML=operationFields(kind,draft);field('operationType').focus();}
    updateFormPreview();
   });
   el('ec-form').addEventListener('submit',submitForm);el('ec-cancel').onclick=closeForm;
