@@ -15,6 +15,7 @@
   const button = (act, label, icon, cls = "") => `<button class="btn ${cls}" data-act="${act}">${icon ? ic(icon) : ""}<span>${esc(label)}</span></button>`;
   const slider = (name, label, value, min, max, step, shown) => `<div class="slider-row"><div class="slider-h"><span>${esc(label)}</span><em data-shown="${name}">${esc(shown)}</em></div>
     <input type="range" aria-label="${esc(label)}" min="${min}" max="${max}" step="${step}" value="${value}" data-slider="${name}"></div>`;
+  const zebraColours = [{value:"white", title:"Белая"}, {value:"white_yellow", title:"Бело-жёлтая"}, {value:"yellow", title:"Жёлтая"}];
   const stopStyles = [{ value: "solid", title: "Сплошная", icon: "stopline" }, { value: "yield", title: "Треугольники", icon: "yieldline" }];
   const setStopStyle = (item, value) => {
     if (value === "yield") item.stopStyle = "yield";
@@ -1249,6 +1250,7 @@
       const feature = (key,title,icon) => `<button class="pick ${e.set[key] ? "on" : ""}" aria-pressed="${!!e.set[key]}" data-act="end" data-end="${e.end}" data-what="${key}">${ic(icon)}${title}</button>`;
       return card(ends.length === 1 ? "Въезд" : `Въезд · ${endLabel(e)}`, `
         <div class="road-entry">${feature("stop","Стоп-линия","stopline")}${feature("zebra","Зебра","zebra")}</div>
+        ${e.set.zebra ? chips(`zebra-colour-${e.end}`, zebraColours, e.set.zebraColour || "white") : ""}
         ${e.set.stop ? `<div class="road-row"><span>Линия</span>${chips(`stop-style-${e.end}`, stopStyles, e.set.stopStyle || "solid")}</div>` : ""}
         ${e.kind === "junction" ? roadNumber(`approach-${e.end}`,"Отступ",offset,limits.min,limits.max,.1,reset) : ""}
         ${e.kind === "junction" && st.surface === "sand" ? roadNumber(`paved-${e.end}`,"Асфальт",Layout.pavedEnd(st,e.end),0,Layout.PAVED_MAX,1) : ""}
@@ -1282,6 +1284,9 @@
         st.ends[d.end] = { ...(st.ends[d.end] || {}) };
         st.ends[d.end][d.what] = !st.ends[d.end][d.what];
       }),
+      ...Object.fromEntries(ends.map(e => [`chip:zebra-colour-${e.end}`, v => {
+        if (zebraColours.some(c => c.value === v)) edit(() => { st.ends[e.end].zebraColour = v; });
+      }])),
       ...Object.fromEntries(ends.map(e => [`chip:stop-style-${e.end}`, v => {
         if (!stopStyles.some(style => style.value === v)) return;
         edit(() => {
@@ -1614,7 +1619,7 @@
           + button("mark-flip", "Развернуть на 180°", "rotr", "ghost wide"), {cls:"path-sheet"}) : ""}
       ${m.type === "stop" ? card("Вид линии", chips("stop-style", stopStyles, m.stopStyle || "solid")
         + (m.stopStyle === "yield" ? button("yield-flip", "Развернуть треугольники", "rotr", "ghost wide") : "")) : ""}
-      ${bus ? "" : card("Цвет", chips("colour", [{ value: "white", html: `<span class="paint w"></span>`, title: "Белая" }, { value: "yellow", html: `<span class="paint y"></span>`, title: "Жёлтая" }], m.colour || "white"), {cls:"path-inline"})}
+      ${bus ? "" : card("Цвет", chips("colour", m.type === "zebra" ? zebraColours : [{ value: "white", html: `<span class="paint w"></span>`, title: "Белая" }, { value: "yellow", html: `<span class="paint y"></span>`, title: "Жёлтая" }], m.colour || "white"), {cls:"path-inline"})}
       ${m.type === "solid" || m.type === "dashed" ? card("Параметры линии", button("simplify-points","Упростить точки","marking","ghost wide")+slider("line-width","Толщина",m.width ?? .13,.08,.4,.01,`${(m.width ?? .13).toFixed(2)} м`)
         + (m.double ? button("flip", "На другую сторону", "rotr", "ghost wide") : "")
         + (ref.v !== undefined && ref.v > 0 && ref.v < m.points.length - 1 ? button("split", "Разрезать в точке", "marking", "ghost wide") : "")) : ""}
@@ -1636,6 +1641,10 @@
       ])),
       "bus-side": () => { if(!App.isLocked(ref))App.edit(()=>{m.side=-(m.side ?? 1);}); },
       "chip:type": (v) => { if(App.isLocked(ref) || !Object.hasOwn(Catalog.MARKS,v) || Layout.markingStyle(m) === v)return; App.edit(() => {
+        if (m.type === "zebra") {
+          if (m.colour === "white_yellow") m.colour = "white";
+          delete m.compactStripes;
+        }
         const wasLine = ["solid","dashed"].includes(m.type);
         delete m.double; delete m.side;
         Object.assign(m,Layout.lineFields(v));

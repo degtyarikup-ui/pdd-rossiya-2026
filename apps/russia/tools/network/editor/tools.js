@@ -475,7 +475,7 @@ const Tools = (() => {
       if (e.shift) { App.toggle(h); return; }
       // Road bodies and handles can be grabbed immediately. The screen-space threshold keeps
       // an ordinary click from moving them; lawns still select first.
-      const thing = h === e.labelRef || ["pocket", "decor", "sign", "actor", "officer", "light", "node", "street", "road", "stop"].includes(h.t);
+      const thing = h === e.labelRef || (h.t === "marking" && App.objectOf(h)?.type === "zebra") || ["pocket", "decor", "sign", "actor", "officer", "light", "node", "street", "road", "stop"].includes(h.t);
       if (!already) App.select(h);
       if (!already && !thing) return;
       // Alt copies objects; for road geometry it temporarily disables snapping.

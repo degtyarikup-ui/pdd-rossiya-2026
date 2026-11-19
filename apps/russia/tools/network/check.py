@@ -97,7 +97,7 @@ def check_layers(scene: dict, area, out: list) -> None:
         if kind not in MARKING_TYPES:
             finding(out, "error", "marking-type", f"{m.get('id')}: неизвестный тип разметки {kind!r}", ref)
             continue
-        if m.get("colour", "white") not in MARKING_COLOURS:
+        if m.get("colour", "white") not in MARKING_COLOURS and not (kind == "zebra" and m.get("colour") == "white_yellow"):
             finding(out, "error", "marking-colour", f"{m.get('id')}: неизвестный цвет разметки {m.get('colour')!r}", ref)
         if kind == "bus_stop":
             problem = bus_stop_marking.error(m)

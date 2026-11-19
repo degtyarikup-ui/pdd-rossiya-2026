@@ -584,25 +584,35 @@ def single_marking(m: dict, *, dash_gap=GAP):
             at += DASH + dash_gap
         return unary_union(dashes) if dashes else Polygon()
     if kind == "zebra":
-        if len(pts) < 2:
-            return Polygon()
-        (ax, az), (bx, bz) = pts[0], pts[1]
-        dx, dz = bx - ax, bz - az
-        length = float(np.hypot(dx, dz))
-        if length < 1e-6:
-            return Polygon()
-        ux, uz = dx / length, dz / length          # across the road
-        nx, nz = -uz, ux                           # along the traffic
-        half = float(m.get("length", ZEBRA_LENGTH)) / 2
-        bars, t = [], ZEBRA_STRIPE / 2
-        while t <= length - ZEBRA_STRIPE / 2 + 1e-9:
-            cx, cz = ax + ux * t, az + uz * t
-            a = (cx - nx * half, cz - nz * half)
-            b = (cx + nx * half, cz + nz * half)
-            bars.append(LineString([a, b]).buffer(ZEBRA_STRIPE / 2, cap_style=2))
-            t += 2 * ZEBRA_STRIPE
-        return unary_union(bars) if bars else Polygon()
+        return unary_union([bar for _, bar in zebra_bars(m)])
     raise ValueError(f"unknown marking type {kind!r}")
+
+
+def zebra_bars(mark):
+    """Yield the colour and footprint of each bar along the crossing axis."""
+    points = mark.get("points", [])
+    if len(points) < 2:
+        return
+    (ax, az), (bx, bz) = points[:2]
+    dx, dz = bx - ax, bz - az
+    span = float(np.hypot(dx, dz))
+    if span < 1e-6:
+        return
+    ux, uz = dx / span, dz / span
+    half = float(mark.get("length", ZEBRA_LENGTH)) / 2
+    colour = mark.get("colour", "white")
+    alternating = colour == "white_yellow"
+    compact = alternating or mark.get("compactStripes")
+    width, pitch = (0.5, 0.65) if compact else (ZEBRA_STRIPE, 2 * ZEBRA_STRIPE)
+    for index in range(math.ceil(span / pitch)):
+        start = index * pitch
+        end = min(start + width, span)
+        if end <= start or (not compact and end - start < width - 1e-9):
+            break
+        cx, cz = ax + ux * (start + end) / 2, az + uz * (start + end) / 2
+        axis = LineString([(cx + uz * half, cz - ux * half), (cx - uz * half, cz + ux * half)])
+        paint = ("white", "yellow")[index % 2] if alternating else colour
+        yield paint, axis.buffer((end - start) / 2, cap_style=2)
 
 
 def ground(scene: dict):
@@ -886,6 +896,10 @@ def build(scene: dict) -> dict:
         colour = m.get("colour", "yellow" if m.get("type") == "bus_stop" else "white")
         if colour == "rail":
             continue  # Old traced rail paint is replaced by the actual tram routes.
+        if m.get("type") == "zebra" and colour == "white_yellow":
+            for paint, bar in zebra_bars(m):
+                marks.setdefault(paint, []).append(bar)
+            continue
         if colour not in MARK_COLOURS:
             raise ValueError(f"{scene.get('id')}: marking {m.get('id')} has unknown colour {colour!r}")
         if m.get("type", "solid") == "paint":

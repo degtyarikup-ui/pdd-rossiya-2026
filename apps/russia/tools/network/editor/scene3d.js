@@ -1834,6 +1834,16 @@ const Scene3D = (() => {
       for (let k = 0; k + 1 < pts.length; k++) if (segDist(w, pts[k], pts[k + 1]) < tol) return true;
       return false;
     };
+    // Pick a crossing through its whole rectangle, even where a lane line passes through it.
+    if (w && !hidden.has("marks")) {
+      for (const m of model.markings || []) {
+        if (m.type !== "zebra" || m.points?.length !== 2 || App.isGeneratedSurface(m, model)) continue;
+        const ref = {t:"marking", id:m.id};
+        const [a,b] = m.points, dx = b[0]-a[0], dz = b[1]-a[1], span = Math.hypot(dx,dz);
+        const x = w.x-a[0], z = w.z-a[1], along = x*dx + z*dz;
+        if (span && along >= 0 && along <= span*span && Math.abs(x*dz-z*dx) <= span*(m.length || 4)/2 && !skip(ref)) return ref;
+      }
+    }
     if (!hidden.has("routes")) {
       for (const r of [...model.routes.filter(r=>r.kind==='annotation'),...model.routes.filter(r=>r.kind!=='annotation')]) {
         if (playerGuideHidden(r)) continue;

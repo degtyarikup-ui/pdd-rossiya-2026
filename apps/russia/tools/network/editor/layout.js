@@ -636,7 +636,7 @@ const Layout = (() => {
           const profile = custom ? customProfile(L,st,st.a === nid ? at : total-at,crop,total) : null;
           const incomingWidth = profile ? profile[st.b === nid ? "rightWidth" : "leftWidth"] : w/2;
           const outgoingWidth = profile ? profile[st.b === nid ? "leftWidth" : "rightWidth"] : w/2;
-          mark({ type: "zebra", length: ZEBRA_LEN, points: [P(add(c, mul(right(tin), -outgoingWidth))), P(add(c, mul(right(tin), incomingWidth)))] });
+          mark({ type: "zebra", length: ZEBRA_LEN, ...(end.zebraColour ? {colour:end.zebraColour} : {}), points: [P(add(c, mul(right(tin), -outgoingWidth))), P(add(c, mul(right(tin), incomingWidth)))] });
         }
       }
     }
