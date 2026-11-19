@@ -61,7 +61,7 @@ const Scene3D = (() => {
   function loadGltf(url) {
     if (!gltfCache.has(url)) {
       gltfCache.set(url, new Promise((resolve) => {
-        loader.load(url, (g) => resolve(g.scene), undefined, () => resolve(null));
+        loader.load(url, (g) => resolve(url.startsWith("/asset/scenery/") ? Catalog.prepareScenery(g.scene) : g.scene), undefined, () => resolve(null));
       }));
     }
     return gltfCache.get(url).then((root) => (root ? root.clone(true) : null));

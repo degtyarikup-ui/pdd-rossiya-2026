@@ -74,6 +74,10 @@
       "title": "Клумба — борта"
     },
     {
+      "id": "parking/roadworks_barrier",
+      "title": "Ограждение дорожных работ"
+    },
+    {
       "id": "parking/sandbox",
       "title": "Песочница"
     },

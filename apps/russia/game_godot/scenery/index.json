@@ -720,6 +720,15 @@
    "title": "Крыша автомойки",
    "source": "parking",
    "opacity": 0.34901960784313724
+  },
+  "parking/roadworks_barrier": {
+   "size": [
+    2.35,
+    0.85,
+    0.5
+   ],
+   "title": "Ограждение дорожных работ",
+   "source": "parking"
   }
  },
  "seasons": {

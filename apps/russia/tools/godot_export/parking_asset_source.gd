@@ -59,6 +59,13 @@ func _export() -> void:
 	_add("table", "Стол со скамейками", func(l): L._table(l, 0, 0))
 	_add("tent", "Палатка", func(l): L._tent(l, 0, 0, "#D67E45"))
 	_add("umbrella", "Зонт кафе", func(l): L._umbrella(l, 0, 0, "#D8CBA6"))
+	# One red/white pair from Parking._build_works, at its nominal 1.2 m pitch.
+	_add("roadworks_barrier", "Ограждение дорожных работ", func(l):
+		for i in 2:
+			var x := (i - 0.5) * 1.2
+			var colour := "#D43C36" if i == 0 else "#F2F4F8"
+			L._block(l, x, 0, 1.15, 0.5, 0.55, colour)
+			L._block(l, x, 0, 1.08, 0.3, 0.30, colour, 0.55))
 	_add("cone", "Дорожный конус", func(l): L._cone(l, 0, 0))
 	_add("bin", "Урна", func(l): L._bin(l, 0, 0))
 	_add("fence", "Ограждение площадки", func(l): L._fence(l, Vector2(-2.5, 0), Vector2(2.5, 0)))

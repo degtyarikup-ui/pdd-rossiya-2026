@@ -3,7 +3,7 @@
 // (localStorage) so the next visit shows them at once.
 const Thumbs = (() => {
   const SIZE = 160;
-  const VERSION = "t5";
+  const VERSION = "t6";
   // Trees and bushes are white in their files: the game paints them (the season's colour).
   const TINT = Catalog.PROP_TINTS;
   const cache = new Map();
@@ -91,6 +91,7 @@ const Thumbs = (() => {
   async function render(url, tint) {
     if (!renderer) setup();
     let root = (await loader.loadAsync(url)).scene;
+    if (url.startsWith("/asset/scenery/")) Catalog.prepareScenery(root);
     if (url.includes("?sidecar=")) {
       const bundle = new THREE.Group();
       if (url.endsWith("=1")) {

@@ -39,6 +39,9 @@ out.mkdir(parents=True, exist_ok=True)
 subprocess.run(['node', str(Path(__file__).with_name('parking_presets_check.js')),
                 str(out / 'catalog.json'), str(out / 'original.json'), str(out / 'placed.json')], check=True)
 placed = json.loads((out / 'placed.json').read_text())
+stop = placed['stop']
+placed['decor'].append({'id': 'work_zone_test', 'prop': 'parking/roadworks_barrier',
+                        'pos': [stop['x'], stop['z']], 'yaw': 0.75, 'scale': [1, 1, 1]})
 new_ids = {p['id'] for p in placed['decor'] if p['prop'].startswith('parking/')}
 assert not [f for f in check.check_scene(placed) if f['code'] == 'prop-on-road' and f.get('ref', {}).get('id') in new_ids]
 placed['pockets'] = [dict(id='pocket_test', pos=[4.2, 12], yaw=3.141592653589793,
@@ -60,10 +63,13 @@ with tempfile.TemporaryDirectory(prefix='save-', dir=out) as tmp:
         engine_sync.engine_base.cache_clear()
         httpd = server.Server(('127.0.0.1', 0), server.Handler)
         worker = threading.Thread(target=httpd.serve_forever, daemon=True); worker.start()
+        origin = f'http://127.0.0.1:{httpd.server_port}'
+        with urlopen(origin + '/api/local-session') as session:
+            token = json.load(session)['token']
         def request(body=None):
-            req = Request(f'http://127.0.0.1:{httpd.server_port}/api/scene/{sid}',
+            req = Request(f'{origin}/api/scene/{sid}',
                           data=None if body is None else json.dumps(body).encode(),
-                          headers={'Content-Type': 'application/json'})
+                          headers={'Content-Type': 'application/json', 'X-Local-Token': token})
             with urlopen(req, timeout=60) as response:
                 return json.loads(response.read())
         try:

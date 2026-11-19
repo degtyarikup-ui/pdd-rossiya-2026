@@ -272,7 +272,7 @@ def check_scene(scene: dict) -> list:
     # on an apron. A centre-point test would flag every correctly placed canopy.
     apron_props = {"parking/fuel_canopy", "parking/fuel_roof", "parking/fuel_pump",
                    "parking/wash_bay", "parking/wash_roof", "parking/garage_open",
-                   "parking/bollard", "parking/barrier", "parking/cone"}
+                   "parking/bollard", "parking/barrier", "parking/cone", "parking/roadworks_barrier"}
     for d in scene.get("decor", []):
         if d["prop"] not in apron_props and area.buffer(0.5).covers(Point(d["pos"])):
             finding(out, "warn", "prop-on-road", f"{d['prop']} стоит на проезжей части", {"type": "prop", "id": d.get("id")})
