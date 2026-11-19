@@ -57,16 +57,70 @@ async function run() {
     await page.click('#redo');
     assert.deepEqual(await page.evaluate(() => App.S.terrain.profile), saved);
 
-    await page.locator('[data-terrain-action="add-bump"]').click();
-    const slider = page.getByRole('slider', {name:'Высота неровности'});
-    await slider.focus();
-    await slider.press('End');
-    assert.equal(await page.evaluate(() => App.S.terrain.bumps[0].height), .2);
-    await page.locator('[data-terrain-action="remove-bump"]').click();
-    await page.locator('[data-terrain-action="flat"]').click();
+    const root = page.locator('.terrain-editor');
+    assert.equal(await root.locator('p, input, button, details').count(), 0);
+    const clickAt = async (x,y,button='left') => page.mouse.click(...await screenPoint(x,y),{button});
+    const readTerrain = () => page.evaluate(() => App.S.terrain);
+    const command = name => graph.locator(`[data-command="${name}"]`).click();
+    const point = () => graph.locator('[data-point="1"] circle:not(.hit)');
+    const streetCount = await page.evaluate(() => App.S.layout.streets.length);
+
+    await point().click();
+    await page.keyboard.press('ArrowUp');
+    assert(Math.abs((await readTerrain()).profile[1][1] - saved[1][1] - .1) < .001);
+    await page.keyboard.press('ArrowDown');
+    assert.deepEqual((await readTerrain()).profile,saved);
+    await page.keyboard.press('Backspace');
+    assert.equal(await readTerrain(), undefined);
+    assert.equal(await page.evaluate(() => App.S.layout.streets.length), streetCount);
+    await page.click('#undo');
+    await point().click({button:'right'});
+    assert.equal(await readTerrain(), undefined);
+    await page.click('#undo');
+    await point().click();
+    await command('delete');
+    assert.equal(await readTerrain(), undefined);
+    await page.click('#undo');
+    await clickAt(30,128,'right');
+    assert.deepEqual((await readTerrain()).profile,saved);
+
+    // A contextual action creates a bump at the clicked road coordinate.
+    await clickAt(212,65,'right');
+    await root.getByRole('button',{name:'Добавить неровность'}).click();
+    let bump = (await readTerrain()).bumps[0];
+    assert(Math.abs(bump.centre[1]-34) < 1);
+    const dragHandle = async (name, dx, dy) => {
+      const centre = await graph.locator(`[data-handle="${name}"] circle:not(.hit)`).evaluate(el =>
+        [Number(el.getAttribute('cx')),Number(el.getAttribute('cy'))]);
+      await page.mouse.move(...await screenPoint(...centre));
+      await page.mouse.down();
+      await page.mouse.move(...await screenPoint(centre[0]+dx,centre[1]+dy),{steps:4});
+      await page.mouse.up();
+    };
+    await dragHandle('height',0,-40);
+    await dragHandle('width',20,0);
+    await dragHandle('length',15,0);
+    await dragHandle('position',8,-9);
+    const changed = (await readTerrain()).bumps[0];
+    assert.equal(changed.height,.2);
+    assert(changed.width > bump.width && changed.length > bump.length);
+    assert(changed.centre[0] > bump.centre[0] && changed.centre[1] > bump.centre[1]);
+    await command('back');
+    await graph.locator('[data-bump="0"]').click();
+    await command('delete');
+    assert.equal((await readTerrain()).bumps?.length || 0,0);
+    await command('menu');
+    await root.getByRole('button',{name:'Выровнять профиль'}).click();
     await page.waitForFunction(() => !App.S.terrain && App.state.build.surfaces.every(s => !s.heights?.some(h => h > 1)));
+    await page.click('#undo');
+    assert.deepEqual((await readTerrain()).profile,saved);
+    await page.evaluate(() => { App.state.locked.add('roads'); App.renderInspector(); });
+    await point().click({button:'right'});
+    await clickAt(200,97);
+    await page.keyboard.press('Delete');
+    assert.deepEqual((await readTerrain()).profile,saved);
     assert.deepEqual(errors, []);
-    console.log('Terrain editor: graph dragging, asphalt raycast, level side exit, undo/redo, bump sliders and flatten passed');
+    console.log('Terrain editor: graph dragging, asphalt raycast, level side exit, undo/redo, point deletion, graphical bump handles, flatten and road lock passed');
   } finally {
     await browser.close();
   }

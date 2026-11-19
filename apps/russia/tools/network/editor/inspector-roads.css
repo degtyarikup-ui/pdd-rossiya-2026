@@ -73,17 +73,27 @@
 
 .road-summary { margin: 10px 0 0; color: var(--ink-3); font-size: 12px; line-height: 1.45; }
 
-.terrain-editor { display:grid; gap:8px; }
-.terrain-editor p { margin:0; color:var(--ink-2); font-size:12px; }
-.terrain-editor svg { width:100%; display:block; background:var(--field); border-radius:6px; touch-action:none; cursor:crosshair; }
-.terrain-editor svg .grid { stroke:var(--line); }
-.terrain-editor svg text { font-size:9px; fill:var(--ink-2); }
-.terrain-editor svg .area { fill:#419ced; opacity:.18; }
-.terrain-editor svg .profile { fill:none; stroke:#58b7ff; stroke-width:2; }
+.terrain-editor { position:relative; }
+.terrain-editor svg { width:100%; display:block; background:var(--field); border-radius:6px; touch-action:none; cursor:crosshair; user-select:none; }
+.terrain-editor svg:focus-visible { outline:1px solid var(--ink-2); outline-offset:1px; }
+.terrain-editor .grid { stroke:var(--line); fill:none; }
+.terrain-editor svg text { font-size:9px; fill:var(--ink-2); pointer-events:none; }
+.terrain-editor .area { fill:#419ced; opacity:.18; }
+.terrain-editor .profile { fill:none; stroke:#58b7ff; stroke-width:2; }
 .terrain-editor circle { fill:#58b7ff; stroke:var(--field); stroke-width:2; cursor:grab; }
-.terrain-editor circle.selected { stroke:var(--ink); }
-.terrain-editor circle.fixed { fill:var(--ink-2); cursor:default; }
-.terrain-slider { display:grid; grid-template-columns:1fr auto; gap:2px; font-size:12px; }
-.terrain-slider input { grid-column:1/-1; width:100%; }
-.terrain-slider output { font-variant-numeric:tabular-nums; }
-.terrain-bump summary { cursor:pointer; margin-bottom:6px; }
+.terrain-editor circle.hit { fill:transparent; stroke:none; }
+.terrain-editor .selected circle:not(.hit) { stroke:var(--ink); }
+.terrain-editor .fixed circle { cursor:default; }
+.terrain-editor .fixed circle:not(.hit) { fill:var(--ink-2); }
+.terrain-editor .graph-icon, .terrain-editor .bump-mark { cursor:pointer; }
+.terrain-editor .graph-icon rect { fill:var(--field); }
+.terrain-editor .graph-icon path { fill:none; stroke:var(--ink-2); stroke-width:2; stroke-linecap:round; }
+.terrain-editor .graph-icon:hover path { stroke:var(--ink); }
+.terrain-editor .bump-mark path, .terrain-editor .footprint { fill:#eab665; }
+.terrain-editor .plan { fill:none; stroke:var(--line); }
+.terrain-editor .bump-shape { fill:#eab66540; stroke:#eab665; }
+.terrain-editor [data-handle="height"] circle { cursor:ns-resize; }
+.terrain-editor :is([data-handle="length"],[data-handle="width"]) circle { cursor:ew-resize; }
+.terrain-menu { position:absolute; z-index:1; display:grid; background:var(--field); padding:3px; border:1px solid var(--line); border-radius:5px; }
+.terrain-menu button { color:var(--ink); background:var(--field); text-align:left; padding:5px 8px; border:0; cursor:pointer; }
+.terrain-menu button:hover, .terrain-menu button:focus-visible { background:var(--line); }
