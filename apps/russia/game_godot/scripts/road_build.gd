@@ -103,6 +103,21 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 	board.set_meta("height", height)
 	if with_pole and mounting.get("mount", "pole") == "cantilever":
 		_cantilever(root, board, height, mounting)
+		# Hang all faces on one steel rail down to the centre of the lowest plate.
+		var beam := root.get_node("cantilever_beam") as MeshInstance3D
+		var bottom := board.position.y + (board.get_child(0) as Node3D).position.y
+		var hanger := MeshInstance3D.new()
+		hanger.name = "sign_hanger"
+		var rail := CylinderMesh.new()
+		rail.top_radius = 0.12
+		rail.bottom_radius = rail.top_radius
+		rail.height = beam.position.y - bottom
+		rail.radial_segments = 12
+		rail.rings = 1
+		hanger.mesh = rail
+		hanger.material_override = beam.material_override
+		hanger.position = Vector3(board.position.x, (beam.position.y + bottom) * 0.5, board.position.z + rail.top_radius)
+		root.add_child(hanger)
 		return root
 	# A continuous shared pole reaches the upper face's centre, behind both faces.
 	if with_pole:

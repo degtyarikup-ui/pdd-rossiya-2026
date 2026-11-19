@@ -870,6 +870,15 @@ const Scene3D = (() => {
           const part = (size, pos, colour = 0x7a7f87) => { const m = new THREE.Mesh(new THREE.BoxGeometry(...size), mat(colour)); m.position.set(...pos); support.add(m); return m; };
           part([0.7, 0.3, 0.7], [0, 0.15, 0.09], 0x62676d);
           part([spec.armLength, 0.22, 0.22], [spec.side * spec.armLength / 2, spec.postHeight, 0.09]);
+          // A continuous steel hanger touches the back of every face, including the lowest plate.
+          if (parts.length) {
+            const bottom = board.position.y + parts[0].mesh.position.y;
+            const radius = 0.12;
+            const hanger = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, spec.postHeight - bottom, 12), mat(0x7a7f87));
+            hanger.name = "sign_hanger";
+            hanger.position.set(spec.x, (spec.postHeight + bottom) / 2, board.position.z + radius);
+            support.add(hanger);
+          }
           const start = new THREE.Vector3(0, spec.postHeight - 1.4, 0.24), end = new THREE.Vector3(spec.x, spec.postHeight, 0.24);
           const brace = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, start.distanceTo(end), 8), mat(0x7a7f87));
           brace.position.copy(start.clone().add(end).multiplyScalar(0.5));

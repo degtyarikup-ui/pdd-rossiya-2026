@@ -69,6 +69,14 @@ func _initialize() -> void:
 			assert(is_equal_approx((pole.mesh as CylinderMesh).height, board.position.y + top_face.position.y))
 		else:
 			assert(sign.has_node("cantilever_post") and not sign.has_node("sign_post"))
+			var hanger := sign.get_node("sign_hanger") as MeshInstance3D
+			var beam := sign.get_node("cantilever_beam") as MeshInstance3D
+			var rail := hanger.mesh as CylinderMesh
+			assert(is_equal_approx(hanger.position.y + rail.height / 2, beam.position.y))
+			assert(is_equal_approx(hanger.position.y - rail.height / 2, board.position.y + bottom_face.position.y))
+			assert(is_equal_approx(hanger.position.x, board.position.x))
+			assert(is_equal_approx(hanger.position.z - rail.top_radius, board.position.z))
+			assert(hanger.position.z + rail.top_radius > beam.position.z - (beam.mesh as BoxMesh).size.z / 2)
 		sign.free()
 	settings = {"laneDirections": [["left", "straight"], ["straight", "right"]], "secondSign": {"code": "2.4"}}
 	sign = RoadBuild.sign_node("5.15.1", "", "", [], [], true, settings)
