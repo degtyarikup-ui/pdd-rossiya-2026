@@ -8,6 +8,7 @@ cannot be driven correctly (the car would leave the road, the question could
 not be answered on the road); warnings are things to look at by hand.
 The web editor calls check_scene() on every save.
 """
+import terrain as terrain_profile
 import number_sign
 import json
 import math
@@ -136,6 +137,9 @@ def check_layers(scene: dict, area, out: list) -> None:
 
 def check_scene(scene: dict) -> list:
     out = []
+    terrain_error = terrain_profile.validation_error(scene)
+    if terrain_error:
+        finding(out, "error", "terrain-invalid", terrain_error)
     check_question_view(scene, out)
     if scene.get("schema") != 1:
         finding(out, "error", "schema", f"неизвестная версия схемы: {scene.get('schema')!r}")

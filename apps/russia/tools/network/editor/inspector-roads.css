@@ -72,3 +72,18 @@
 #inspector .shape-point-fields + .path-actions .btn:disabled { opacity: .4; }
 
 .road-summary { margin: 10px 0 0; color: var(--ink-3); font-size: 12px; line-height: 1.45; }
+
+.terrain-editor { display:grid; gap:8px; }
+.terrain-editor p { margin:0; color:var(--ink-2); font-size:12px; }
+.terrain-editor svg { width:100%; display:block; background:var(--field); border-radius:6px; touch-action:none; cursor:crosshair; }
+.terrain-editor svg .grid { stroke:var(--line); }
+.terrain-editor svg text { font-size:9px; fill:var(--ink-2); }
+.terrain-editor svg .area { fill:#419ced; opacity:.18; }
+.terrain-editor svg .profile { fill:none; stroke:#58b7ff; stroke-width:2; }
+.terrain-editor circle { fill:#58b7ff; stroke:var(--field); stroke-width:2; cursor:grab; }
+.terrain-editor circle.selected { stroke:var(--ink); }
+.terrain-editor circle.fixed { fill:var(--ink-2); cursor:default; }
+.terrain-slider { display:grid; grid-template-columns:1fr auto; gap:2px; font-size:12px; }
+.terrain-slider input { grid-column:1/-1; width:100%; }
+.terrain-slider output { font-variant-numeric:tabular-nums; }
+.terrain-bump summary { cursor:pointer; margin-bottom:6px; }

@@ -733,6 +733,9 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 			a.yaw_offset = move_toward(a.yaw_offset, 0.0, maxf(0.01, advance / steps * 0.15))
 			a.node.position = p + a.offset
 			a.node.rotation.y = heading + a.yaw_offset
+			if situation.network and situation.network.data.has("terrain"):
+				if a.type == "pedestrian": a.node.position.y = TerrainProfile.height(situation.network.data.terrain,a.node.position.x,a.node.position.z)+float(a.node.get_meta("terrain_base",0.0))
+				else: TerrainProfile.pose(a.node,situation.network.data.terrain,a.hl*.65,float(a.node.get_meta("terrain_base",0.0))+a.offset.y)
 			var me := a.footprint()
 			var player_contact: bool = swept.get("player", false) or DRIVE.overlap(me, player, 0.04)
 			var traffic_contact: bool = swept.get("blocked", false)

@@ -29,7 +29,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import check  # noqa: E402
 import build  # noqa: E402
-from surface_support import SurfaceSupport  # noqa: E402
+from surface_support import SurfaceSupport
+from terrain import height as terrain_height  # noqa: E402
 
 ROOT = check.ROOT
 SIT = ROOT / "game_godot" / "situations"
@@ -264,7 +265,7 @@ def sync(sid: str) -> dict:
         actors.append((asset, a))
     out["actors"] = [a for _, a in actors]
 
-    out["props"] = [{"prop": p["prop"], "pos": [p["pos"][0], support.height(*p["pos"]) if p["prop"].startswith("parking/") else 0.0, p["pos"][1]], "yaw": p["yaw"],
+    out["props"] = [{"prop": p["prop"], "pos": [p["pos"][0], support.height(*p["pos"]) if p["prop"].startswith("parking/") else terrain_height(net.get("terrain", {}), *p["pos"]), p["pos"][1]], "yaw": p["yaw"],
                      "scale": p["scale"], "tint": p.get("tint")} for p in net.get("decor", [])]
 
     q = net.get("question") or {}

@@ -73,6 +73,7 @@ void fragment() {
 
 static var _shader: Shader
 
+var _terrain: Dictionary = {}
 var length := 0.0
 var colour := Color.WHITE
 var _material: ShaderMaterial
@@ -98,7 +99,8 @@ static func make_material(arrow_colour: Color) -> ShaderMaterial:
 
 ## `points`: the route on the ground (x, z), densely sampled from start to tip. Without
 ## `arrowhead` the line ends with a round cap.
-func build(points: PackedVector2Array, arrow_colour: Color, arrowhead := true) -> void:
+func build(points: PackedVector2Array, arrow_colour: Color, arrowhead := true, terrain: Dictionary = {}) -> void:
+	_terrain = terrain
 	colour = arrow_colour
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var distances := PackedFloat32Array([0.0])
@@ -293,4 +295,4 @@ func _vertex(st: SurfaceTool, p: Vector2, uv: Vector2, uv2: Vector2) -> void:
 	st.set_normal(Vector3.UP)
 	st.set_uv(uv)
 	st.set_uv2(uv2)
-	st.add_vertex(Vector3(p.x, Situation.GUIDE_LIFT, p.y))
+	st.add_vertex(Vector3(p.x, Situation.GUIDE_LIFT+TerrainProfile.height(_terrain,p.x,p.y), p.y))

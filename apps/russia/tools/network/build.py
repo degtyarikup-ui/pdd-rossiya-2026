@@ -42,6 +42,7 @@ and LAWN_TIDY), so the traced edges do not jitter and the kerbs run smooth. The 
 traced: they are the carriageway's outline offset EDGE_OFFSET inward, so they follow every rounding of
 the kerb; the traced paint is cut back from the kerb (EDGE_BAND) to make room for them.
 """
+import terrain
 import json
 import math
 import sys
@@ -995,13 +996,13 @@ def build(scene: dict) -> dict:
         kerb_segments.extend(v for i in range(0, len(end_segments), 4)
                              if not original_edges.covers(LineString([(end_segments[i], end_segments[i+1]), (end_segments[i+2], end_segments[i+3])]))
                              for v in end_segments[i:i+4])
-    return {
+    return terrain.deform(scene, {
         "id": scene["id"],
         "surfaces": surfaces,
         "kerbs": {"y0": ROAD_Y, "y1": KERB, "colour": KERB_COLOUR, "segs": railway_geometry.cut_kerbs(kerb_segments, railway["opening"])},
         # The drivable carriageway as the drawing has it (the car drives where the asphalt is).
         "carriageway": polygons_json(road),
-    }
+    })
 
 
 def main(argv):

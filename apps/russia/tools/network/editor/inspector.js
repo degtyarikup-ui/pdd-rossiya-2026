@@ -93,7 +93,7 @@
     const same = lastSelection === selection;
     const scroll = same ? p.scrollTop : 0;
     const active = document.activeElement;
-    if (same && active && active === compositionField) return;
+    if (same && (active && active === compositionField || App.terrainEditor?.editing())) return;
     // Keep keyboard focus on the same field when an edit rebuilds the inspector.
     const focus = same && active && p.contains(active)
       ? Array.from(active.attributes).filter(a => a.name.startsWith("data-")) : [];
@@ -101,6 +101,7 @@
       ? {value:active.value, initial:active.defaultValue, start:active.selectionStart, end:active.selectionEnd} : null;
     lastSelection = selection;
     render(p);
+    if (state.S) App.terrainEditor?.mount(p,state.S);
     if (selectionLocked()) {
       p.querySelectorAll("button, input, select").forEach(field => { field.disabled = true; });
     }
@@ -244,6 +245,7 @@
           ? propertyRow("После ответа", `<span class="signal-sequence"><i class="signal-dot yellow"></i>Жёлтый ${ic("chevron")}<i class="signal-dot red"></i>Красный</span>`)
           : propertyRow("Пауза на красном", chips("redWait", waits, q.redWait ?? "")))
         + (s.actors.length ? propertyRow("Уступить", `<div class="yield-choices">${yields}</div>`) : ""), {cls:"property-fields"})}
+      ${App.terrainEditor ? card("Рельеф сцены", App.terrainEditor.html(s)) : ""}
       ${playerGuideCard(q)}
       ${card("", propertyRow("Кадр вопроса", button("frame", "Настроить", "video", "ghost"))
         + propertyRow("Дороги", `<div class="insp-actions">${button("select-roads", "Все дороги", "road", "ghost") + button("templates", "Шаблоны", "junction", "ghost")}</div>`)
@@ -1262,6 +1264,7 @@
         <label><span>Направление, ° <small>A → B</small></span><input type="number" data-text="road-heading" aria-label="Направление дороги A → B, градусы" min="-360" max="360" step="0.1" value="${Math.round(degrees * 10) / 10}" required></label>
         </div><button class="btn ghost small road-straighten" data-act="straighten" ${st.bend ? "" : "disabled"}>${ic("road")}<span>Выпрямить</span></button>`, {cls:"road-sheet"})}
       ${roadSettings([st])}
+      ${App.terrainEditor ? card("Рельеф сцены", App.terrainEditor.html(s)) : ""}
       ${App.hasPlayerPlan(s) ? card("", `<label class="road-row"><span>Игрок</span><select data-text="player-end" aria-label="Направление игрока">${!isPlayer ? '<option value="" selected disabled>Не назначен</option>' : ""}${direction}</select></label>`, {cls:"road-sheet"}) : ""}
       ${st.kind === "highway" && !Layout.hasCustomLanes(st) && highwayEnds.length ? card(highwayEnds.length === 1 ? "Стык трассы" : "", portScheme(), {cls:"road-sheet"}) : ""}
       ${ends.map(endPanel).join("")}

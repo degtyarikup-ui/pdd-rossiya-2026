@@ -3832,6 +3832,14 @@ func _process(delta: float) -> void:
 			current.junction.resolution.faults.erase("offroad")
 	player.position = drive.pos
 	player.rotation.y = drive.yaw
+	player.rotation.x = 0.0
+	player.rotation.z = 0.0
+	if current and current.sit.network and current.sit.network.data.has("terrain"):
+		var local: Vector3 = current.sit.to_local(drive.pos)
+		var pose := TerrainProfile.placement(current.sit.network.data.terrain,local.x,local.z,drive.yaw-current.sit.rotation.y,drive.half_length*.65)
+		player.position.y = current.sit.to_global(Vector3(local.x,pose.x,local.z)).y
+		player.rotation.x = pose.y
+		player.rotation.z = pose.z
 	for w in wheels:
 		w.rotate_x(drive.speed * delta / 0.34)
 	for a in front_axles:
@@ -3981,7 +3989,7 @@ func _update_camera(delta: float) -> Vector3:
 	var next_heading := want if snap else cam_heading + clampf(heading_step, -0.9 * delta, 0.9 * delta)
 	var next_pitch := wanted_pitch if snap else cam_pitch + clampf(pitch_step, -0.7 * delta, 0.7 * delta)
 	var fwd := Vector3(sin(next_heading), 0, cos(next_heading))
-	var driving_look := Vector3(drive.pos.x, 0, drive.pos.z) + fwd * 10.0
+	var driving_look := Vector3(drive.pos.x, player.position.y, drive.pos.z) + fwd * 10.0
 	var look := driving_look.lerp(question_look, cam_question_blend)
 	var target_size := lerpf(42.0, question_size, cam_question_blend)
 	if snap:

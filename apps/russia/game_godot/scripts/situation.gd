@@ -254,6 +254,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 		var light: Node3D = TrafficSignal.make(l) if TrafficSignal.supports(l) else PackFiles.instance(dir + "light_%d.glb" % i)
 		light = RoadBuild.light_with_signs(light, l.get("mountedSigns", []), l.get("mountedMainRoad", []), l)
 		light.position = _v(l.pos)
+		if s.network: light.position.y += TerrainProfile.height(s.network.data.get("terrain",{}),light.position.x,light.position.z)
 		light.rotation.y = l.yaw
 		light.scale = Vector3.ONE * float(l.scale)
 		s.add_child(light)
@@ -281,6 +282,10 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 			_vertex_colours_as_albedo(actor)
 		actor.position = _v(a.pos)
 		actor.rotation.y = a.yaw
+		if s.network and s.network.data.has("terrain"):
+			var terrain_base := actor.position.y-TerrainProfile.height(s.network.data.terrain,actor.position.x,actor.position.z)
+			actor.set_meta("terrain_base",terrain_base)
+			if a.type != "pedestrian": TerrainProfile.pose(actor,s.network.data.terrain,float(a.get("halfLength",2.1))*.65,terrain_base)
 		actor.scale = _v(a.scale)
 		# Prepare lenses while loading; they start together when the question opens.
 		var plan = a.get("signalPlan")
@@ -331,7 +336,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 			var sign := RoadBuild.sign_node(str(sg.code), plate, plate_sign, main_road, roads, true, sg)
 			if sign == null:
 				continue
-			sign.position = Vector3(sg.pos[0], 0.0, sg.pos[1])
+			sign.position = Vector3(sg.pos[0], TerrainProfile.height(s.network.data.get("terrain",{}),sg.pos[0],sg.pos[1]), sg.pos[1])
 			sign.rotation.y = float(sg.get("yaw", PI)) - PI
 			s.add_child(sign)
 			s._signs.append(sign)
@@ -544,6 +549,8 @@ static func _without_baked_ground_staged(mesh: Mesh, net: RoadNetwork = null, fr
 			if sleeper_layer > 0 and not layers.is_empty() and is_equal_approx(layers[idx[k]].x, float(sleeper_layer)) and is_equal_approx(layers[idx[k + 1]].x, float(sleeper_layer)) and is_equal_approx(layers[idx[k + 2]].x, float(sleeper_layer)): continue
 			if _legacy_rail_triangle(a, b, c, colours, idx[k], idx[k + 1], idx[k + 2]): continue
 			var flat := absf(a.y - b.y) < 0.001 and absf(a.y - c.y) < 0.001
+			# Elevated authored surfaces replace the old flat paint as well as its asphalt.
+			if flat and net and net.data.has("terrain") and a.y >= -0.5 and a.y < 0.215: continue
 			if flat and a.y < -0.001 and a.y > -0.5:
 				continue
 			# Its own pavement (0.18 m, ~200 000 m2 over all scenes) and lawns 6 mm above it lie
@@ -780,6 +787,7 @@ func _build_evidence(dir: String) -> void:
 		if not l.get("letter") is String or str(l.letter).is_empty(): continue
 		var token := _letter_node(l.letter, letter_colour(str(l.letter)))
 		token.position = _v(l.pos)
+		if network: token.position.y += TerrainProfile.height(network.data.get("terrain",{}),token.position.x,token.position.z)
 		add_child(token)
 		_evidence.append(token)
 
@@ -811,7 +819,7 @@ func _trajectory_guide() -> Node3D:
 			continue
 		# A smooth ribbon with a round start and a rounded head (a round end without one).
 		var route := RouteArrow.new()
-		route.build(_smooth(pts), letter_colour(str(tr.get("label", ""))), tr.get("arrowhead", true) != false)
+		route.build(_smooth(pts), letter_colour(str(tr.get("label", ""))), tr.get("arrowhead", true) != false,network.data.get("terrain",{}) if network else {})
 		root.add_child(route)
 	return root
 

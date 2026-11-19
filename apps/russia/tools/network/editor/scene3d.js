@@ -158,7 +158,7 @@ const Scene3D = (() => {
       const tones = [new THREE.Color("#2c2f36"), new THREE.Color(s.soil_colour || "#6f5840"), new THREE.Color(GRASS_COLOUR)];
       const pos = [], col = [];
       for (const i of s.idx) {
-        pos.push(s.verts[i * 2], s.y, s.verts[i * 2 + 1]);
+        pos.push(s.verts[i * 2], s.heights?.[i] ?? s.y, s.verts[i * 2 + 1]);
         const w = [s.shares[i * 3], s.shares[i * 3 + 1], s.shares[i * 3 + 2]];
         for (const c of ["r", "g", "b"]) col.push(tones[0][c] * w[0] + tones[1][c] * w[1] + tones[2][c] * w[2]);
       }
@@ -195,12 +195,15 @@ const Scene3D = (() => {
     if (!build) return;
     for (const s of build.surfaces) {
       if (!s.idx.length) continue;
-      (s.layer === "" ? mk : g).add(surfaceMesh(s));
+      const mesh = surfaceMesh(s);
+      mesh.name = s.id;
+      (s.layer === "" ? mk : g).add(mesh);
     }
     const kerbs = build.kerbs, segs = kerbs.segs, pos = [];
     for (let j = 0; j < segs.length; j += 4) {
       const ax = segs[j], az = segs[j + 1], bx = segs[j + 2], bz = segs[j + 3];
-      pos.push(ax, kerbs.y0, az, bx, kerbs.y0, bz, bx, kerbs.y1, bz, ax, kerbs.y0, az, bx, kerbs.y1, bz, ax, kerbs.y1, az);
+      const ha=kerbs.heights?.[j/2]||0,hb=kerbs.heights?.[j/2+1]||0;
+      pos.push(ax, kerbs.y0+ha, az, bx, kerbs.y0+hb, bz, bx, kerbs.y1+hb, bz, ax, kerbs.y0+ha, az, bx, kerbs.y1+hb, bz, ax, kerbs.y1+ha, az);
     }
     const kg = new THREE.BufferGeometry();
     kg.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
@@ -316,7 +319,17 @@ const Scene3D = (() => {
   }
   function polyline(points, y, colour, px, opacity = 1, dashed = false) {
     const geo = new THREE.LineGeometry();
-    geo.setPositions(points.flatMap((p) => [p[0], y, p[1]]));
+    if (displayedTerrain) {
+      const dense = [];
+      for (let i = 1; i < points.length; i++) {
+        const [ax, az] = points[i-1], [bx, bz] = points[i];
+        const count = Math.max(1, Math.ceil(Math.hypot(bx-ax, bz-az) / .5));
+        for (let j = 0; j < count; j++) dense.push([ax+(bx-ax)*j/count, az+(bz-az)*j/count]);
+      }
+      if (points.length) dense.push(points.at(-1));
+      points = dense;
+    }
+    geo.setPositions(points.flatMap(([x,z]) => [x, y + SurfaceSupport.terrainHeight(displayedTerrain,x,z), z]));
     const line = new THREE.Line2(geo, lineMat(colour, px, opacity, dashed));
     if (dashed) line.computeLineDistances();
     line.userData.own = true;
@@ -349,6 +362,10 @@ const Scene3D = (() => {
     const bx = ex - ux * back, bz = ez - uz * back;
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.Float32BufferAttribute([ex, y, ez, bx - uz * side, y, bz + ux * side, bx + uz * side, y, bz - ux * side], 3));
+    if (displayedTerrain) {
+      const p = g.getAttribute('position');
+      for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) + SurfaceSupport.terrainHeight(displayedTerrain,p.getX(i),p.getZ(i)));
+    }
     const m = new THREE.Mesh(g, basic(colour, { transparent: opacity < 1, opacity }));
     m.userData.own = true;
     m.renderOrder = 5;
@@ -990,13 +1007,23 @@ const Scene3D = (() => {
 
   function placeAnchor(g, t, o) {
     if (t === "stop" || t === "player") {
-      g.position.set(model.stop.x, 0, model.stop.z);
+      g.position.set(model.stop.x, SurfaceSupport.terrainHeight(displayedTerrain,model.stop.x,model.stop.z), model.stop.z);
       g.rotation.y = model.stop.yaw || 0;
       return;
     }
-    const y = t === "actor" || (t === "decor" && o.prop?.startsWith("parking/")) ? SurfaceSupport.at(build, o.pos[0], o.pos[1]).y : 0;
+    const y = t === "actor" || (t === "decor" && o.prop?.startsWith("parking/")) ? SurfaceSupport.at(build, o.pos[0], o.pos[1]).y : SurfaceSupport.terrainHeight(displayedTerrain,o.pos[0],o.pos[1]);
     g.position.set(o.pos[0], y + (o.y || 0), o.pos[1]);
     g.rotation.y = o.yaw || 0;
+    if (t === 'actor') { g.rotation.x = 0; g.rotation.z = 0; }
+    if (t === 'actor' && o.type !== 'pedestrian' && displayedTerrain) {
+      const [x,z] = o.pos, sin = Math.sin(g.rotation.y), cos = Math.cos(g.rotation.y);
+      const heightAt = (dx,dz) => SurfaceSupport.terrainHeight(displayedTerrain,x+dx,z+dz);
+      const front = heightAt(sin*1.3,cos*1.3), rear = heightAt(-sin*1.3,-cos*1.3);
+      const right = heightAt(cos*.8,-sin*.8), left = heightAt(-cos*.8,sin*.8);
+      g.position.y = (front+rear)/2 + (o.y || 0);
+      g.rotation.x = -Math.atan2(front-rear,2.6);
+      g.rotation.z = Math.atan2(right-left,1.6);
+    }
     if (t === "light") g.scale.setScalar(o.scale || 1);
     else if (o.scale) g.scale.set(o.scale[0], o.scale[1], o.scale[2]);
   }
@@ -1233,7 +1260,7 @@ const Scene3D = (() => {
 
   // ---- draft (a road or a line being drawn) and ghost (an object being placed) -----------
   function annotationMesh(route, border, opacity=1) {
-    const vertices=AnnotationLine.geometry(route,border).flatMap(p=>[p[0],border ? .24 : .245,p[1]]);
+    const vertices=AnnotationLine.geometry(route,border).flatMap(p=>[p[0],(border ? .24 : .245)+SurfaceSupport.terrainHeight(displayedTerrain,p[0],p[1]),p[1]]);
     const geometry=new THREE.BufferGeometry();
     geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
     const colour=border ? (route.colour==='#ffffff'?'#20242b':'#ffffff') : route.colour || '#20242b';
@@ -1598,7 +1625,9 @@ const Scene3D = (() => {
   }
 
   // ---- public: content -------------------------------------------------------------------
+  let displayedTerrain;
   function load(S, B) {
+    displayedTerrain = B && S.terrain ? structuredClone(S.terrain) : undefined;
     loadToken++;
     model = S; build = B;
     for (const [, e] of anchors) groups.anchors.remove(e.group);
@@ -1619,8 +1648,15 @@ const Scene3D = (() => {
     rebuildSelection();
     needsRender = true;
   }
-  function setBuild(B) {
+  function setBuild(B, terrain) {
+    const changedTerrain = JSON.stringify(displayedTerrain) !== JSON.stringify(terrain);
+    displayedTerrain = terrain;
     build = B;
+    if (changedTerrain) {
+      rebuildRoutes();
+      rebuildPlan();
+      rebuildSelection();
+    }
     rebuildRoads();
     syncAnchors();
     // Refilter a fresh cached GLB copy against the latest coverage, including

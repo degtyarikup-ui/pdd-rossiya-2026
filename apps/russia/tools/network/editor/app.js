@@ -327,13 +327,14 @@ const App = (() => {
     const gesture = dragBase === null ? null : dragGeneration;
     const current = () => epoch === previewEpoch && sid === state.id;
     try {
+      const terrain = state.S.terrain ? structuredClone(state.S.terrain) : undefined;
       const r = await api(`/api/preview/${sid}`, state.S);
       // During the same drag, show completed frames in order. After release,
       // cancellation, undo or a scene change only the exact latest frame may win.
       const live = gesture !== null && dragBase !== null && gesture === dragGeneration;
       if (!current() || (mine !== previewRevision && !live)) return;
       state.build = r.build;
-      Scene3D.setBuild(r.build);
+      Scene3D.setBuild(r.build, terrain);
       if (mine === previewRevision) {
         state.findings = r.findings;
         state.edges = r.edges;

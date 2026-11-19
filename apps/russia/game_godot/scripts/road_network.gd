@@ -352,7 +352,7 @@ func _add_field(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Transfo
 		var share: Array = []
 		for c in 3:
 			var i: int = idx[k + c]
-			corners.append(Vector3(v[i * 2], y, v[i * 2 + 1]))
+			corners.append(Vector3(v[i * 2],float(s.heights[i]) if s.has("heights") else y,v[i * 2 + 1]))
 			var sh := Vector3(w[i * 3], w[i * 3 + 1], w[i * 3 + 2])
 			if str(s.id) == "rural_shoulder":
 				# Runtime joins trim the saved crop; fade at the actual retained edge.
@@ -426,18 +426,20 @@ func _add_kerbs(st: SurfaceTool, scenery: Scenery, uv_z: float) -> void:
 	var segs: Array = kerbs.segs
 	var j := 0
 	while j < segs.size():
-		var a := Vector3(segs[j], kerbs.y0, segs[j + 1])
-		var b := Vector3(segs[j + 2], kerbs.y0, segs[j + 3])
-		var top_a := Vector3(a.x, kerbs.y1, a.z)
-		var top_b := Vector3(b.x, kerbs.y1, b.z)
+		var ha := float(kerbs.heights[j/2]) if kerbs.has("heights") else 0.0
+		var hb := float(kerbs.heights[j/2+1]) if kerbs.has("heights") else 0.0
+		var a := Vector3(segs[j], kerbs.y0+ha, segs[j + 1])
+		var b := Vector3(segs[j + 2], kerbs.y0+hb, segs[j + 3])
+		var top_a := Vector3(a.x, kerbs.y1+ha, a.z)
+		var top_b := Vector3(b.x, kerbs.y1+hb, b.z)
 		if _join_median([a,b,top_b,top_a]):
 			j+=4
 			continue
 		for segment in _service_kerb_segments(a, b):
 			var from: Vector3 = segment[0]
 			var to: Vector3 = segment[1]
-			var t := Vector3(from.x, kerbs.y1, from.z)
-			var u := Vector3(to.x, kerbs.y1, to.z)
+			var t := Vector3(from.x, from.y+float(kerbs.y1)-float(kerbs.y0), from.z)
+			var u := Vector3(to.x, to.y+float(kerbs.y1)-float(kerbs.y0), to.z)
 			for triangle in [[from,to,u],[from,u,t]]:
 				for poly in SceneStitch.render_pieces(triangle,stitch_bindings):
 					for fan in range(1,poly.size()-1):

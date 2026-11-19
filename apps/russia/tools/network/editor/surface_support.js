@@ -36,6 +36,16 @@ const SurfaceSupport = (() => {
     }
     return best;
   }
-  return {at};
+  function terrainHeight(data={},x,z) {
+    const points=data.profile||[];let y=points.length?(z<=points[0][0]?points[0][1]:points[points.length-1][1]):0;
+    for(let i=0;i<points.length-1;i++){const [a,h]=points[i],[b,k]=points[i+1];if(z>=a&&z<=b){let t=(z-a)/(b-a);t=t*t*(3-2*t);y=h+(k-h)*t;break;}}
+    if (points.length) {
+      const crop = points.at(-1)[0], t = Math.min(1, Math.max(0, (crop-Math.abs(x))/Math.min(12,crop)));
+      y *= t*t*(3-2*t);
+    }
+    for(const b of data.bumps||[]){const u=Math.abs(z-b.centre[1])/(b.length/2),side=Math.max(0,Math.min(1,(b.width/2-Math.abs(x-b.centre[0]))/.15));if(u<1)y+=b.height*(1+Math.cos(Math.PI*u))*.5*side;}
+    return y;
+  }
+  return {at,terrainHeight};
 })();
 if (typeof module !== "undefined") module.exports = SurfaceSupport;

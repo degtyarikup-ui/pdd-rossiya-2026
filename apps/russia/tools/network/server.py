@@ -471,6 +471,9 @@ class Handler(LocalOnlyHandler, BaseHTTPRequestHandler):
         if scene.get("id") != m[2]:
             return self.send(400, {"error": "scene id does not match the URL"})
         findings = check.check_scene(scene)
+        terrain_error = next((f for f in findings if f.get("code") == "terrain-invalid"), None)
+        if terrain_error:
+            return self.send(400, {"error": terrain_error["message"], "findings": findings})
         if m[1] == "preview":
             return self.send(200, {"findings": findings, "build": build.build(scene), "edges": edges(scene)})
         candidate = QUESTION_POOL.draft_source(m[2])

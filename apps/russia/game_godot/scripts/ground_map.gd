@@ -48,17 +48,21 @@ func at(p: Vector3) -> int:
 		var u := (b-c).cross(q-c)/float(t[3])
 		var v := (q-c).cross(a-c)/float(t[3])
 		if u < -0.00001 or v < -0.00001 or u+v > 1.00001: continue
-		if float(t[4]) > height+0.0001:
-			height = t[4]; kind = t[5]
-		elif absf(float(t[4])-height)<0.0001: kind |= int(t[5])
+		var sampled := u*float(t[6])+v*float(t[7])+(1.0-u-v)*float(t[8])
+		if sampled > height+0.0001:
+			height = sampled; kind = t[5]
+		elif absf(sampled-height)<0.0001: kind |= int(t[5])
 	return kind
 
 
 func walk_height(p: Vector3) -> float:
+	return height_at(p,WALK)
+
+func height_at(p: Vector3, mask := ROAD | WALK) -> float:
 	var q := Vector2(p.x,p.z)
 	var height := -INF
 	for t in buckets.get(Vector2i(floori(q.x/CELL),floori(q.y/CELL)),[]):
-		if int(t[5]) != WALK: continue
+		if (int(t[5]) & mask) == 0: continue
 		var u: float = (t[1]-t[2]).cross(q-t[2])/float(t[3])
 		var v: float = (q-t[2]).cross(t[0]-t[2])/float(t[3])
 		if u < -0.00001 or v < -0.00001 or u+v > 1.00001: continue

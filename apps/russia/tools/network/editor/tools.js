@@ -376,7 +376,11 @@ const Tools = (() => {
       : "Дороги сцены построятся заново. Можно отменить ⌘Z.", "Заменить");
     if (!ok || !roadEditStillCurrent(s, snapshot)) return;
     App.edit((sc) => {
-      if (options.format) { sc.crop = options.crop; sc.sceneFormat = options.format; }
+      if (options.format) {
+        if (sc.terrain && options.crop !== sc.crop) App.terrainEditor.resize(sc.terrain, sc.crop || 90, options.crop);
+        sc.crop = options.crop;
+        sc.sceneFormat = options.format;
+      }
       sc.layout = Layout.template(kind, sc.crop || 90);
       sc.roads = []; sc.markings = []; sc.lawns = [];
       sc.routes = sc.routes.filter((r) => ["choice", "actor", "guide", "annotation"].includes(r.kind));
