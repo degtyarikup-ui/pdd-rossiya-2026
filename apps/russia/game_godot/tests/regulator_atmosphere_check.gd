@@ -79,8 +79,9 @@ func run() -> void:
 	atmosphere._process(0.0)
 	expect(atmosphere.fog == 1.0 and atmosphere.rain == 0.0 and not atmosphere.drops.visible,
 		"forced fog preview applies without rain")
-	expect(environment.fog_depth_begin == 15.0 and environment.fog_depth_end == 50.0,
-		"fog preserves the near visibility range")
+	expect(environment.fog_depth_begin >= Regulator.CAM_NEAR_POS.length()
+		and environment.fog_depth_end > Regulator.CAM_FAR_POS.length() + 25.0,
+		"fog keeps the officer legible at both camera limits")
 	expect(atmosphere.headlight.visible, "fog enables the headlight")
 	_check_stable(atmosphere, sun, environment, junction, "fog")
 	_clear_transition(atmosphere, sun, environment, junction, "fog")
@@ -90,6 +91,25 @@ func run() -> void:
 	for i in 1200: atmosphere._process(1.0 / 60.0)
 	expect(atmosphere.rain == 1.0, "rain transition reaches its exact endpoint")
 	_check_stable(atmosphere, sun, environment, junction, "settled rain")
+	var snow := Snow.new(48)
+	scene.add_child(snow)
+	atmosphere.snowfall = snow
+	atmosphere.snow_budget = 24
+	atmosphere.set_shadows(false)
+	expect(not atmosphere.drops.visible and snow.multimesh.visible_instance_count == 24,
+		"winter overcast reaches the low snow budget without liquid rain")
+	expect(is_zero_approx(junction.asphalt_mat.get_shader_parameter("wetness")),
+		"winter snowfall leaves the liquid-rain gloss off")
+	expect(is_equal_approx(sun.light_energy, atmosphere.clear_sun * Quality.NO_SHADOW_SUN * 0.45),
+		"overcast keeps its lighting when low quality disables shadows")
+	atmosphere.set_weather("clear", true)
+	atmosphere._process(0.0)
+	expect(snow.multimesh.visible_instance_count == 12
+		and is_equal_approx(sun.light_energy, atmosphere.clear_sun * Quality.NO_SHADOW_SUN),
+		"clearing to gentle snow restores low-quality daylight")
+	atmosphere.set_shadows(true)
+	expect(is_equal_approx(sun.light_energy, atmosphere.clear_sun),
+		"restoring shadows recovers the original daylight")
 	scene.free()
 	print("regulator atmosphere: ", checks, " checks, ", failed, " failures")
 	quit(1 if failed else 0)

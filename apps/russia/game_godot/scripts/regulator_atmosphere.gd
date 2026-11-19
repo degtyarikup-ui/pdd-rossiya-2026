@@ -13,6 +13,8 @@ var weather := "clear"
 var rain := 0.0
 var fog := 0.0
 var auto_timer := randf_range(240.0, 420.0)
+var snowfall: Snow
+var snow_budget := 48
 var drops: MultiMeshInstance3D
 var rain_material: ShaderMaterial
 var rain_clock := 0.0
@@ -32,12 +34,13 @@ const DROPS := 600
 
 
 func _init(cam: Camera3D, env: Environment, light: DirectionalLight3D,
-		road: RegulatorJunction, vehicle: RegulatorCar) -> void:
+		road: RegulatorJunction, vehicle: RegulatorCar, flakes: Snow = null) -> void:
 	camera = cam
 	environment = env
 	sun = light
 	junction = road
 	car = vehicle
+	snowfall = flakes
 	dry_road = Color("#2C2F36")
 	dry_sky = env.fog_light_color if env.background_mode == Environment.BG_SKY else env.background_color
 	clear_fog_begin = env.fog_depth_begin
@@ -84,6 +87,14 @@ func _ready() -> void:
 	_apply_weather()
 
 
+func set_shadows(enabled: bool) -> void:
+	# The baseline is clear daylight even if a weather preview is active on the first frame.
+	sun.light_energy = clear_sun
+	Quality.set_sun_shadows(sun, environment, enabled)
+	_applied_rain = -1.0
+	_apply_weather()
+
+
 func set_weather(kind: String, immediate := false) -> void:
 	weather = kind if kind in ["clear", "rain", "fog"] else "clear"
 	if immediate:
@@ -125,20 +136,24 @@ func _apply_weather() -> void:
 	var overcast := maxf(rain, fog * 0.85)
 	environment.background_color = dry_sky.lerp(Color("#A8BAC8"), overcast)
 	environment.fog_light_color = environment.background_color
-	sun.light_energy = clear_sun * (1.0 - overcast * 0.55)
-	environment.fog_depth_begin = lerpf(clear_fog_begin, 15.0, fog)
-	environment.fog_depth_end = lerpf(clear_fog_end, 50.0, fog)
+	sun.light_energy = clear_sun * (1.0 if sun.shadow_enabled else Quality.NO_SHADOW_SUN) * (1.0 - overcast * 0.55)
+	environment.fog_depth_begin = lerpf(clear_fog_begin, 45.0, fog)
+	environment.fog_depth_end = lerpf(clear_fog_end, 110.0, fog)
 	environment.fog_density = lerpf(clear_fog_density, 1.0, fog)
-	var road_colour := dry_road.lerp(Color("#141A22"), rain * 0.9 + fog * 0.25)
+	# The same overcast interval brings snow in winter and liquid rain otherwise.
+	var wetness := 0.0 if snowfall != null else rain
+	if snowfall != null:
+		snowfall.multimesh.visible_instance_count = roundi(lerpf(snow_budget * 0.5, snow_budget, rain))
+	var road_colour := dry_road.lerp(Color("#141A22"), wetness * 0.9 + fog * 0.25)
 	junction.asphalt_mat.set_shader_parameter("surface_colour", Vector3(road_colour.r, road_colour.g, road_colour.b))
-	junction.asphalt_mat.set_shader_parameter("wetness", rain)
+	junction.asphalt_mat.set_shader_parameter("wetness", wetness)
 	if junction.authored_network != null:
-		junction.sc.material.set_shader_parameter("wetness", rain)
-	var walk_colour := dry_walk.lerp(dry_walk * 0.72, rain * 0.35 + fog * 0.15)
+		junction.sc.material.set_shader_parameter("wetness", wetness)
+	var walk_colour := dry_walk.lerp(dry_walk * 0.72, wetness * 0.35 + fog * 0.15)
 	junction.sidewalk_mat.set_shader_parameter("surface_colour", Vector3(walk_colour.r, walk_colour.g, walk_colour.b))
 	headlight.light_energy = overcast * 2.0
 	headlight.visible = overcast > 0.0
-	drops.visible = rain > 0.01
+	drops.visible = wetness > 0.01
 
 
 func rain_bounds() -> Rect2:

@@ -549,7 +549,7 @@ func _plot(slot: int, rng: RandomNumberGenerator, side: float, z: float, style: 
 
 
 func _bush() -> Color:
-	return Color("#C9D2D8") if winter else Color("#56764C")
+	return sc.foliage_colour("street/bush") if winter else Color("#56764C")
 
 
 func _park(slot: int, rng: RandomNumberGenerator, pos: Vector3, yaw: float) -> void:

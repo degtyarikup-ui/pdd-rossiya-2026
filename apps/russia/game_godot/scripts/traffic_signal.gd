@@ -14,6 +14,8 @@ const VEHICLE := {
 	"arrow": [Color("#36FF88"),Color("#123126")],
 }
 const TRAM := ["bottom","mid","left","right"]
+# T.5 lenses are 0.36 m wide with only 0.06 m of housing between neighbouring apertures.
+const TRAM_HALO_SIZE := 0.46
 
 static func supports(config: Dictionary) -> bool:
 	if config.get("reversible"): return true
@@ -196,7 +198,7 @@ static func set_state(node: Node3D,state: String,tram: String="straight",flash_o
 			aperture.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		if not lamp.has_meta("halo"):
 			var palette: Array=VEHICLE.get(name,[Color("#F0F6FF")])
-			var halo:=Glow.signal_halo(palette[0],.9 if name.begins_with("tram_") else 1.15,true)
+			var halo:=Glow.signal_halo(palette[0], TRAM_HALO_SIZE if name.begins_with("tram_") else 1.15, true)
 			# A sideways supplementary aperture uses its arrow glyph, without round bloom.
 			if name=="arrow": halo.visible=false
 			lamp.add_child(halo)

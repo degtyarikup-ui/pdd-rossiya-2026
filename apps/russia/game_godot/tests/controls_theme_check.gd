@@ -77,6 +77,9 @@ func _run() -> void:
 		check(winter_ui._speed_small.get_theme_color("font_color") == snow_ink, tag + ": winter unit stays dark on snow")
 		check(winter_ui._run_pill.get_theme_stylebox("panel") is StyleBoxEmpty, tag + ": winter progress keeps overlay geometry")
 		check(winter_ui._speed_pill.get_theme_stylebox("panel") is StyleBoxEmpty, tag + ": winter speed keeps overlay geometry")
+		for metric in [ui._speed_big, ui._run_small, winter_ui._speed_big, winter_ui._run_small]:
+			check(metric.get_theme_constant("outline_size") >= 2 and absf(metric.get_theme_color("font_outline_color").get_luminance() - metric.get_theme_color("font_color").get_luminance()) > 0.7,
+				tag + ": outlined metrics remain legible when the road passes beneath them")
 		winter_ui.queue_free()
 		await process_frame
 	Ui.dark = original_dark

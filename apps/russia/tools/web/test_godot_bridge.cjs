@@ -21,11 +21,12 @@ test('Godot host operations pass strings as data and resolve shared assets witho
 });
 test('report replies require both the parent window and exact origin, and cleanup removes the listener', () => {
   const f = fixture(), data = JSON.stringify({bridge:'pdd-godot',kind:'question_report_result',request_id:'one',success:true});
-  f.bridge.beginReport(); f.bridge.beginReport(); assert.equal(f.listeners.size,1);
+  const permanent = new Set(f.listeners); // The voice bridge also listens between reports.
+  f.bridge.beginReport(); f.bridge.beginReport(); assert.equal(f.listeners.size,permanent.size + 1);
   for(const event of [{source:{},origin:'https://pdd-drive.app',data},{source:f.window.parent,origin:'https://evil.test',data}]) {
     f.message(event); assert.equal(f.bridge.reportReply(),'');
   }
   f.message({source:f.window.parent,origin:'https://pdd-drive.app',data});
   assert.equal(f.bridge.reportReply(),data);
-  f.bridge.endReport(); assert.equal(f.listeners.size,0); assert.equal(f.bridge.reportReply(),'');
+  f.bridge.endReport(); assert.deepEqual(f.listeners,permanent); assert.equal(f.bridge.reportReply(),'');
 });

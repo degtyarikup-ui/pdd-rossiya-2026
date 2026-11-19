@@ -3,7 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/presentation/screens/game/godot_web_screen.dart';
 
 void main() {
-  for (final mode in ['--regulator', '--crossroads', '--city']) {
+  for (final mode in [
+    '--regulator',
+    '--crossroads',
+    '--parking',
+    '--violator',
+    '--city',
+  ]) {
     testWidgets('$mode returns its summary with a stationary fade', (
       tester,
     ) async {
@@ -45,24 +51,26 @@ void main() {
     });
   }
 
-  testWidgets('system Back closes a mini-game only once', (tester) async {
-    final navigator = GlobalKey<NavigatorState>();
-    await tester.pumpWidget(
-      MaterialApp(
-        navigatorKey: navigator,
-        home: const Scaffold(body: Text('Menu')),
-      ),
-    );
-    final result = navigator.currentState!.push(
-      GodotWebScreen.route(args: ['--crossroads']),
-    );
-    await tester.pumpAndSettle();
-    await tester.binding.handlePopRoute();
-    await tester.binding.handlePopRoute();
-    await tester.pumpAndSettle();
-    expect(await result, '{"game":"crossroads","runs":[]}');
-    expect(find.text('Menu'), findsOneWidget);
-    expect(navigator.currentState!.canPop(), isFalse);
-    expect(tester.takeException(), isNull);
-  });
+  for (final game in ['regulator', 'crossroads', 'parking', 'violator']) {
+    testWidgets('system Back closes $game only once', (tester) async {
+      final navigator = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigator,
+          home: const Scaffold(body: Text('Menu')),
+        ),
+      );
+      final result = navigator.currentState!.push(
+        GodotWebScreen.route(args: ['--$game']),
+      );
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(await result, '{"game":"$game","runs":[]}');
+      expect(find.text('Menu'), findsOneWidget);
+      expect(navigator.currentState!.canPop(), isFalse);
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

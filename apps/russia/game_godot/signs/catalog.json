@@ -603,14 +603,8 @@
     "title": "Примыкание второстепенной дороги",
     "group": "Знаки приоритета",
     "folkName": "",
-    "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
-    "sourceSha256": "cc2d106b278e5d3f1e849718e661a4d6f6b1a4409d4b79fbd7a82ab13713cee2",
-    "panel": [
-      0,
-      0,
-      100,
-      116
-    ],
+    "source": "assets/countries/ru/images/signs/official_2_3_2.svg",
+    "sourceSha256": "8749c67e3e94d329824d48e4052e19909c7d3758198102cd2f5deee69c37b536",
     "sha256": "6ba0be839c5c12773d72e814f62127e08951a557049049f566ab16b20420d48b",
     "face": {
       "shape": 4,
@@ -621,14 +615,8 @@
     "title": "Примыкание второстепенной дороги",
     "group": "Знаки приоритета",
     "folkName": "",
-    "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
-    "sourceSha256": "cc2d106b278e5d3f1e849718e661a4d6f6b1a4409d4b79fbd7a82ab13713cee2",
-    "panel": [
-      100,
-      0,
-      100,
-      116
-    ],
+    "source": "assets/countries/ru/images/signs/official_2_3_3.svg",
+    "sourceSha256": "6ca42d043263ed72af3c8db66b716704abf9c6b1374d89b7c00ae3afb8b33844",
     "sha256": "b1432ef2703ed33ed63db0b44982195c1cc49d525a1b822508676c8fcc4b4f03",
     "face": {
       "shape": 4,
@@ -639,14 +627,8 @@
     "title": "Примыкание второстепенной дороги",
     "group": "Знаки приоритета",
     "folkName": "",
-    "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
-    "sourceSha256": "cc2d106b278e5d3f1e849718e661a4d6f6b1a4409d4b79fbd7a82ab13713cee2",
-    "panel": [
-      0,
-      116,
-      100,
-      116
-    ],
+    "source": "assets/countries/ru/images/signs/official_2_3_4.svg",
+    "sourceSha256": "84b33ebe0050872eb0f96d4512f7bf539e30322ad47e7407c3a333d6109ada1b",
     "sha256": "a84fc4ad55c2760a33d9254713e36f15c864982ac2f6075a565abcfa2ac3e336",
     "face": {
       "shape": 4,
@@ -657,14 +639,8 @@
     "title": "Примыкание второстепенной дороги",
     "group": "Знаки приоритета",
     "folkName": "",
-    "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
-    "sourceSha256": "cc2d106b278e5d3f1e849718e661a4d6f6b1a4409d4b79fbd7a82ab13713cee2",
-    "panel": [
-      100,
-      116,
-      100,
-      116
-    ],
+    "source": "assets/countries/ru/images/signs/official_2_3_5.svg",
+    "sourceSha256": "963a89cbafae0055f5e66f68abf5304a42115539483984bb9b6403cfde30ea97",
     "sha256": "f1428a08af6dc95f25f791972ad63a88187a46c583497cbc526145ddc3dc5ab7",
     "face": {
       "shape": 4,
@@ -675,14 +651,8 @@
     "title": "Примыкание второстепенной дороги",
     "group": "Знаки приоритета",
     "folkName": "",
-    "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
-    "sourceSha256": "cc2d106b278e5d3f1e849718e661a4d6f6b1a4409d4b79fbd7a82ab13713cee2",
-    "panel": [
-      0,
-      232,
-      100,
-      116
-    ],
+    "source": "assets/countries/ru/images/signs/official_2_3_6.svg",
+    "sourceSha256": "8581d00042afd1d29521e754bf31288b4f331cd613ec9531c3ed11fad42ec404",
     "sha256": "d8fded87521b8d40ce0e6ce6387f578bd877f2d15fd519b508c4574c4769e098",
     "face": {
       "shape": 4,
@@ -693,14 +663,8 @@
     "title": "Примыкание второстепенной дороги",
     "group": "Знаки приоритета",
     "folkName": "",
-    "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
-    "sourceSha256": "cc2d106b278e5d3f1e849718e661a4d6f6b1a4409d4b79fbd7a82ab13713cee2",
-    "panel": [
-      100,
-      232,
-      100,
-      116
-    ],
+    "source": "assets/countries/ru/images/signs/official_2_3_7.svg",
+    "sourceSha256": "14aec9cc28815fef241158e4760a1c0eebf6f2d8c4c02cf58bcbdb4825af3e25",
     "sha256": "5c256c6b1342de83f57aef53c2174e0741b1aa827b8b46e95aedc9157e061d0e",
     "face": {
       "shape": 4,
@@ -3675,24 +3639,24 @@
     "title": "Тип тележки транспортного средства",
     "group": "Знаки дополнительной информации (таблички)",
     "folkName": "",
-    "source": "assets/countries/ru/images/signs/dc4b2b2243c4b3ed51eb412e81774e2c.svg",
-    "sourceSha256": "8dec70553fc6d8ffffa13e5d4ca7e7dc274c8e3498022844fa005fa30186c959",
-    "sha256": "8dec70553fc6d8ffffa13e5d4ca7e7dc274c8e3498022844fa005fa30186c959",
-    "face": {
-      "shape": 3,
-      "radius": 0.245
-    }
-  },
-  "8.20.2": {
-    "title": "Тип тележки транспортного средства",
-    "group": "Знаки дополнительной информации (таблички)",
-    "folkName": "",
     "source": "assets/countries/ru/images/signs/4964059b55f06c6c82a53768ce928f66.svg",
     "sourceSha256": "5919239e8eed12b63717c4fd436332af9b7dbff0906468ba0d31aca61c41abf3",
     "sha256": "5919239e8eed12b63717c4fd436332af9b7dbff0906468ba0d31aca61c41abf3",
     "face": {
       "shape": 3,
       "radius": 0.2575
+    }
+  },
+  "8.20.2": {
+    "title": "Тип тележки транспортного средства",
+    "group": "Знаки дополнительной информации (таблички)",
+    "folkName": "",
+    "source": "assets/countries/ru/images/signs/dc4b2b2243c4b3ed51eb412e81774e2c.svg",
+    "sourceSha256": "8dec70553fc6d8ffffa13e5d4ca7e7dc274c8e3498022844fa005fa30186c959",
+    "sha256": "8dec70553fc6d8ffffa13e5d4ca7e7dc274c8e3498022844fa005fa30186c959",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
     }
   },
   "8.21.1": {

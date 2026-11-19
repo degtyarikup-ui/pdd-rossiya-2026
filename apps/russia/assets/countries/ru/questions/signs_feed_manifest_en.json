@@ -855,7 +855,7 @@
     "number": "2.3.2",
     "title": "Junction of secondary road",
     "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   ",
-    "image": "6e7cae8e6d057533a64b2c3f4a766e85.svg",
+    "image": "official_2_3_2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Give way",
@@ -872,7 +872,7 @@
     "number": "2.3.3",
     "title": "Junction of secondary road",
     "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   ",
-    "image": "6e7cae8e6d057533a64b2c3f4a766e85.svg",
+    "image": "official_2_3_3.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "End of the main road",
@@ -889,7 +889,7 @@
     "number": "2.3.4",
     "title": "Junction of secondary road",
     "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   ",
-    "image": "6e7cae8e6d057533a64b2c3f4a766e85.svg",
+    "image": "official_2_3_4.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Advantage of oncoming traffic",
@@ -906,7 +906,7 @@
     "number": "2.3.5",
     "title": "Junction of secondary road",
     "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   ",
-    "image": "6e7cae8e6d057533a64b2c3f4a766e85.svg",
+    "image": "official_2_3_5.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Advantage over oncoming traffic",
@@ -923,7 +923,7 @@
     "number": "2.3.6",
     "title": "Junction of secondary road",
     "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   ",
-    "image": "6e7cae8e6d057533a64b2c3f4a766e85.svg",
+    "image": "official_2_3_6.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Advantage of oncoming traffic",
@@ -940,7 +940,7 @@
     "number": "2.3.7",
     "title": "Junction of secondary road",
     "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   ",
-    "image": "6e7cae8e6d057533a64b2c3f4a766e85.svg",
+    "image": "official_2_3_7.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Advantage of oncoming traffic",
@@ -5122,7 +5122,7 @@
     "number": "8.20.1",
     "title": "Vehicle bogie type",
     "description": "Used with sign 3.12. Indicate the number of adjacent axles of the vehicle, for each of which the mass indicated on the sign is the maximum permissible.",
-    "image": "dc4b2b2243c4b3ed51eb412e81774e2c.svg",
+    "image": "4964059b55f06c6c82a53768ce928f66.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Except for type of vehicle",
@@ -5139,7 +5139,7 @@
     "number": "8.20.2",
     "title": "Vehicle bogie type",
     "description": "Used with sign 3.12. Indicate the number of adjacent axles of the vehicle, for each of which the mass indicated on the sign is the maximum permissible.",
-    "image": "4964059b55f06c6c82a53768ce928f66.svg",
+    "image": "dc4b2b2243c4b3ed51eb412e81774e2c.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Coverage area",

@@ -69,7 +69,7 @@ var session_id := "crossroads"
 var run_sequence := 0
 var completed_runs: Array[Dictionary] = []
 var economy := { "seconds": 60, "lives": 5, "maxScore": 1500, "base": 40, "step": 2, "bonusCap": 5 }
-var season_name := "summer"
+var season_name := Host.game_season()
 
 # Camera controls
 var cam_yaw := 0.93607
@@ -139,9 +139,6 @@ func _setup_args() -> void:
 	GameSound.haptics = true
 	Ui.lang = "ru"
 	Ui.configure_theme(Host.user_args())
-	var month := int(Time.get_date_dict_from_system().month)
-	if season_name == "summer":
-		season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
 
 	for arg in Host.user_args():
 		if arg.begins_with("--lang="):
@@ -156,8 +153,6 @@ func _setup_args() -> void:
 			var config = JSON.parse_string(arg.trim_prefix("--economy="))
 			if config is Dictionary:
 				economy.merge(config, true)
-		elif arg.begins_with("--season="):
-			season_name = arg.trim_prefix("--season=")
 		elif arg == "--auto":
 			auto_play = true
 		elif arg.begins_with("--shot="):

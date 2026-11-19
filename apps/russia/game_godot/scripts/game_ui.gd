@@ -264,8 +264,8 @@ func _build_hud() -> void:
 
 func _metric_pill(content: HBoxContainer) -> PanelContainer:
 	for label: Label in content.get_children():
-		label.add_theme_constant_override("outline_size", 0)
-		label.add_theme_color_override("font_shadow_color", Color.TRANSPARENT)
+		label.add_theme_constant_override("outline_size", 3)
+		label.add_theme_color_override("font_outline_color", Color(1, 1, 1, 0.85) if snow else Color(0.07, 0.09, 0.12, 0.85))
 	var pill := PanelContainer.new()
 	pill.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE

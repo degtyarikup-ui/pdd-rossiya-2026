@@ -203,11 +203,17 @@ static func _label(l: Dictionary, key: String, x: float, y: float, z: float, wid
 	l.labels.append(entry)
 
 
+## Keep the visible cutaway roof and its sheltered footprint together.
+static func _roof(l: Dictionary, footprint: Dictionary, height: float, colour: String) -> void:
+	P._wall(l, footprint, 0.12, colour, height, false)
+	l.walls[-1]["shelter"] = true
+
+
 ## A roof on columns; `glass` roofs let the camera see the car under them.
 static func _canopy(l: Dictionary, x0: float, z0: float, x1: float, z1: float, h: float, colour: String,
 		columns: Array, glass := "#DDE6EC59") -> void:
 	for c: Vector2 in columns: _post(l, c.x, c.y, 0.18, h, METAL)
-	P._wall(l, P.rect(x0, z0, x1, z1), 0.12, glass, h, false)
+	_roof(l, P.rect(x0, z0, x1, z1), h, glass)
 	for edge in [[Vector2(x0, z0), Vector2(x1, z0)], [Vector2(x0, z1), Vector2(x1, z1)], [Vector2(x0, z0), Vector2(x0, z1)], [Vector2(x1, z0), Vector2(x1, z1)]]:
 		_wall_ab(l, edge[0], edge[1], 0.25, 0.55, colour, h - 0.25, false)
 
@@ -574,7 +580,7 @@ static func _wash() -> Dictionary:
 		_block(l, x, -depth * 0.5, 0.3, depth, 3.2, "tex:panel:#D7DCE0")
 		_block(l, x, -0.26, 0.36, 0.6, 3.26, "#2D6FB8", -0.01, false)
 	_block(l, 0.0, -depth - 0.15, 2.5 * pitch * 2.0 + 0.3, 0.3, 3.4, "tex:panel:#C3CBD1")
-	P._wall(l, P.rect(-11.0, -depth - 0.3, 11.0, 0.2), 0.12, "#DDE6EC59", 3.3, false)
+	_roof(l, P.rect(-11.0, -depth - 0.3, 11.0, 0.2), 3.3, "#DDE6EC59")
 	var busy := {0: ["sedan", "#3B4A63"], 1: ["suv", "#D9DCE3"], 4: ["wagon", "#6E8E6A"]}
 	for i in 5:
 		var cx := -2.0 * pitch + i * pitch

@@ -16,6 +16,26 @@ void main() {
   });
   tearDown(() => updateAppLocale(const Locale('ru')));
 
+  testWidgets('result thumbnail follows the saved paint without a renderer', (
+    tester,
+  ) async {
+    for (final paint in ['blue', 'silver', 'leopard']) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GameCarThumbnail(
+            car: GameCar('sedan', paint),
+            loader: null,
+            cache: const {},
+          ),
+        ),
+      );
+      final asset =
+          tester.widget<Image>(find.byType(Image)).image as AssetImage;
+      final canonical = GameGarageService.normalizePaint(paint);
+      expect(asset.assetName, 'assets/game/garage/sedan-$canonical.webp');
+    }
+  });
+
   for (final locale in ['ru', 'en', 'kk']) {
     testWidgets(
       'garage catalogue and car fit small accessible $locale screens',

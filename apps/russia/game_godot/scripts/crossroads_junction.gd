@@ -28,6 +28,8 @@ const OFFICER_SCALE := 2.2
 
 var sc: Scenery
 var asphalt_mat: ShaderMaterial
+var _asphalt_colour := Color("#2C2F36")
+var _grass_colour: Color
 var marking_mat: StandardMaterial3D
 var curb_mat: ShaderMaterial
 var sidewalk_mat: ShaderMaterial
@@ -255,7 +257,7 @@ func build_tram_path(curve: Curve3D) -> void:
 
 
 func _create_materials() -> void:
-	asphalt_mat = sc.surface_material("asphalt", Color("#2C2F36"))
+	asphalt_mat = sc.surface_material("asphalt", _asphalt_colour)
 	dirt_mat = sc.surface_material("dirt", Color("#8D7151"))
 	marking_mat = StandardMaterial3D.new()
 	marking_mat.albedo_color = Color("#F2F4F8")
@@ -265,25 +267,24 @@ func _create_materials() -> void:
 	sidewalk_mat = sc.surface_material("pavement", sc.color("sidewalk"))
 	var is_winter: bool = sc.season.get("precipitation", "") == "snow"
 	# Calibrate winter ground tone in crossroads: avoid blinding flat whiteout under overhead camera
-	var ground_col := Color("#A8B8C6") if is_winter else sc.color("ground")
-	grass_mat = sc.surface_material("grass", ground_col)
+	_grass_colour = Color("#A8B8C6") if is_winter else sc.color("ground")
+	grass_mat = sc.surface_material("grass", _grass_colour)
 	stone_mat = sc.surface_material("pavement", Color("#8D7E75"))
 
 
 func _update_asphalt_tint() -> void:
 	if asphalt_mat == null: return
-	var tint_col: Color
 	if _is_highway_junction():
-		tint_col = Color("#24272D")
+		_asphalt_colour = Color("#24272D")
 	elif _is_rural_junction():
-		tint_col = Color("#3A3D44")
+		_asphalt_colour = Color("#3A3D44")
 	elif _is_suburban_junction():
-		tint_col = Color("#30333A")
+		_asphalt_colour = Color("#30333A")
 	else:
 		# Standard city asphalt matching "Живой город"
-		tint_col = Color("#2C2F36")
-	asphalt_mat.set_shader_parameter("surface_colour", Vector3(tint_col.r, tint_col.g, tint_col.b))
-	asphalt_mat.set_shader_parameter("plain_tint", Vector3(tint_col.r, tint_col.g, tint_col.b))
+		_asphalt_colour = Color("#2C2F36")
+	asphalt_mat.set_shader_parameter("surface_colour", Vector3(_asphalt_colour.r, _asphalt_colour.g, _asphalt_colour.b))
+	asphalt_mat.set_shader_parameter("plain_tint", Vector3(_asphalt_colour.r, _asphalt_colour.g, _asphalt_colour.b))
 
 
 func _update_crowd_visibility() -> void:
@@ -587,9 +588,7 @@ func _ground_shares(p: Vector2) -> Vector3:
 
 ## A ground mesh over [x0, x1] × [z0, z1] sampled from the field.
 func _field_mesh(x0: float, x1: float, z0: float, z1: float, y: float, max_long := FIELD_STEP) -> MeshInstance3D:
-	var is_winter: bool = sc.season.get("precipitation", "") == "snow"
-	var ground_col := Color("#A8B8C6") if is_winter else sc.color("ground")
-	var colours := [Color("#2C2F36"), Color("#8D7151"), ground_col]
+	var colours := [_asphalt_colour, Color("#8D7151"), _grass_colour]
 	var layers := [sc.layer_of("asphalt"), sc.layer_of("dirt"), sc.layer_of("grass")]
 	var nx := maxi(1, ceili((x1 - x0) / (FIELD_STEP if x1 - x0 < 20.0 else max_long)))
 	var nz := maxi(1, ceili((z1 - z0) / (FIELD_STEP if z1 - z0 < 20.0 else max_long)))
@@ -1758,7 +1757,7 @@ func _build_rural_scenery_decor() -> void:
 	var canopy_colors: Array = sc.season.canopy
 	var birch_color: Color = sc.color("birch")
 	var pine_color: Color = sc.color("pine") if sc.season.has("pine") else Color("#2D4D2E")
-	var bush_color: Color = Color.WHITE if sc.season.get("precipitation", "") == "snow" else Color("#3E6B32")
+	var bush_color: Color = sc.color("canopy") if sc.season.get("precipitation", "") == "snow" else Color("#3E6B32")
 
 	# --- 1. Authentic Russian Village / Rural Crossroads ---
 	# Small single-story village houses (scale 0.90..0.95), wooden fences, gardens, birches and pines
@@ -1966,7 +1965,7 @@ func _build_suburban_scenery_decor() -> void:
 
 	# Suburban yard fences, evergreen conifers and garden shrubs (breaks up vast empty snow lawns)
 	var is_winter: bool = sc.season.get("precipitation", "") == "snow"
-	var bush_col: Color = Color.WHITE if is_winter else Color("#3E6B32")
+	var bush_col: Color = sc.color("canopy") if is_winter else Color("#3E6B32")
 	# Fences enclosing suburban cottage plots
 	for c in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
 		var ns_side := "south" if c.y > 0 else "north"
@@ -2219,7 +2218,7 @@ func _build_urban_scenery_decor() -> void:
 	else:
 		_build_rural_forest_skyline("west")
 
-	var bush_color: Color = Color.WHITE if sc.season.get("precipitation", "") == "snow" else Color("#3E6B32")
+	var bush_color: Color = sc.color("canopy") if sc.season.get("precipitation", "") == "snow" else Color("#3E6B32")
 	if sc.season.has("pine"):
 		pine_color = sc.color("pine")
 	else:

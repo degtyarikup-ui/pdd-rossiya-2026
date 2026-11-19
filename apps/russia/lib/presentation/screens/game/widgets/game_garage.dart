@@ -1278,8 +1278,7 @@ class _GarageSwatch extends StatelessWidget {
 }
 
 /// A car picture from the engine, cached per model+paint; falls back to the
-/// bundled PNG of the model (or a car icon) while it loads or without a
-/// renderer.
+/// bundled preview in the selected paint while it loads or offline.
 class GameCarThumbnail extends StatefulWidget {
   final GameCar car;
   final GameThumbnailLoader? loader;
@@ -1362,14 +1361,9 @@ class _GameCarThumbnailState extends State<GameCarThumbnail> {
     }
     final id = widget.car.id;
     final paint = GameGarageService.normalizePaint(widget.car.paint);
-    // Every model has a bundled picture of the same mesh (default paint):
-    // never an icon in place of the car.
     if (GameGarageService.vehicleIds.contains(id)) {
       return Image.asset(
-        id == GameGarageService.mini ||
-                GameGarageService.premiumPaints.contains(paint)
-            ? _garagePreviewAsset(id, paint)
-            : 'assets/game/vehicle-$id.png',
+        _garagePreviewAsset(id, paint),
         fit: BoxFit.contain,
         excludeFromSemantics: true,
       );

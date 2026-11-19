@@ -75,6 +75,17 @@ func run() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--out="):out=arg.trim_prefix("--out=")
 	if out!="":root.get_texture().get_image().save_png(out)
+	# The horizontal spacing on T.5 is tighter than the vertical pair.
+	for view in views:
+		if view.kind != "tram" or view.rear: continue
+		TrafficSignal.set_state(view.model, "green", "all")
+		await RenderingServer.frame_post_draw
+		var image: Image = view.vp.get_texture().get_image()
+		var mid: Node3D = view.model.find_child("lamp_tram_mid", true, false)
+		for side in ["left", "right"]:
+			var lamp: Node3D = view.model.find_child("lamp_tram_" + side, true, false)
+			var gap: Vector2 = view.camera.unproject_position(mid.global_position.lerp(lamp.global_position, 0.5))
+			check(image.get_pixelv(Vector2i(gap)).get_luminance() < 0.45, "T.5 all: separate " + side + " and middle")
 	print("signals render: ",checks," checks, ",bad," failures")
 	quit(1 if bad else 0)
 

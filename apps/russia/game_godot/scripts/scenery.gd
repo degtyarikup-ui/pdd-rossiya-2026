@@ -59,6 +59,7 @@ func _init(season_name: String) -> void:
 	material = ShaderMaterial.new()
 	material.shader = load("res://shaders/scenery.gdshader")
 	material.set_shader_parameter("detail", array)
+	material.set_shader_parameter("foliage_layer", float(layer_of("leaves")))
 	material.set_shader_parameter("macro", macro)
 	material.set_shader_parameter("macro_scale", macro_scale)
 	material.set_shader_parameter("gain", gains)
@@ -97,6 +98,12 @@ func size_of(prop: String) -> Vector3:
 func color(key: String, i := 0) -> Color:
 	var v = season[key]
 	return Color(v[i % v.size()] if v is Array else v)
+
+
+## Neutral foliage meshes use the species palette underneath their winter snow cap.
+func foliage_colour(prop: String, i := 0) -> Color:
+	var kind: String = index.props.get(prop, {}).get("kind", "")
+	return color(kind if kind in ["pine", "birch"] else "canopy", i)
 
 
 ## Copies of one prop drawn by one MultiMesh, split into per-chunk ranges:

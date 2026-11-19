@@ -20,7 +20,7 @@ uniform float detail_texels[24];      // feature density: grain 256, broad windo
 uniform vec2 detail_fade = vec2(180.0, 450.0);  // metres: the grain fades to a flat tone with distance, where it would only shimmer
 uniform vec3 plain_tint = vec3(1.0);   // tint of a non-instanced mesh (roads)
 uniform float plain_snow = 0.0;
-uniform vec3 snow_color = vec3(0.78, 0.82, 0.85);  // sRGB, like COLOR
+#include "res://shaders/seasonal_paint.gdshaderinc"
 
 // Procedural regulator surfaces use the same maps on the world metre grid.
 uniform bool world_uv = false;
@@ -37,10 +37,12 @@ varying float surface_side;
 varying vec3 tint;
 varying float snow;
 varying float building_opacity;
+varying float up;
 
 void vertex() {
 	surface_position = (surface_frame * MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	surface_side = abs(NORMAL.y) < 0.5 ? 1.0 : 0.0;
+	up = normalize(MODEL_NORMAL_MATRIX * NORMAL).y;
 	tint = INSTANCE_CUSTOM.rgb;
 	snow = INSTANCE_CUSTOM.a > 0.0001 ? floor(INSTANCE_CUSTOM.a + 0.001) : plain_snow;
 	building_opacity = INSTANCE_CUSTOM.a > 0.0001 ? fract(INSTANCE_CUSTOM.a) * 2.0 : uniform_alpha;
@@ -54,9 +56,7 @@ void fragment() {
 		t = plain_tint;
 		s = plain_snow;
 	}
-	vec3 base = COLOR.rgb;
-	if (COLOR.a > 0.75) base *= t;
-	else if (COLOR.a > 0.25) base = mix(base, snow_color, s);
+	vec3 base = seasonal_colour(COLOR, t, s, up, UV2.x);
 	int layer = world_uv ? surface_layer - 1 : int(UV2.x + 0.5) - 1;
 	if (world_uv) base = surface_colour;
 	vec2 detail_uv = world_uv ? (surface_side > 0.5 ? vec2(surface_position.x + surface_position.z, surface_position.y) : surface_position.xz) / texture_period : (grid_uv && layer >= 0 ? surface_position.xz / texture_periods[layer] : UV);

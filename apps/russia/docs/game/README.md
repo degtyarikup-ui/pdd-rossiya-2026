@@ -568,6 +568,9 @@ godot --headless --path game_godot --script res://tests/ambient_transition_check
 godot --path game_godot --script res://tests/ambient_transition_check.gd -- --season=autumn # реальные позы MultiMesh и положение в кадре
 godot --headless --path game_godot --script res://tests/lighting_check.gd # свет/тени в том же кадре при поворотах мира, все уровни качества
 godot --path game_godot --script res://tests/lighting_render_check.gd # нужен рендер: яркость граней, машина и тени до/после перехода
+godot --headless --path game_godot --script res://tests/winter_season_check.gd # календарь и сезонные настройки игровых сцен
+godot --path game_godot --script res://tests/winter_surface_render_check.gd # реальные пиксели снега, тротуара и разметки на high/low, окраска фасадов и кровель
+godot --path game_godot --script res://tests/mini_winter_visibility_check.gd # снег, парковочные места и видимость в мини-играх на high/low
 godot --headless --path game_godot --script res://tests/mesh_clip_check.gd # обрезка геометрии: исходный алгоритм, атрибуты, границы и быстрые повторные проходы
 godot --headless --path game_godot --script res://tests/retained_surface_check.gd # старые улицы и сцены не перекрывают дорогу после цепочки поворотов
 godot --headless --path game_godot --script res://tests/retirement_support_check.gd # очистка старых дорог не удаляет опору машины после долгого манёвра
@@ -1048,8 +1051,12 @@ NPC с `"beacon": "amber"`) намеренно крупные: ореол 4,4–
   авто-понижение качества выключали тени — сцена тускнела. Теперь тени включаются и
   выключаются только через `Quality.set_sun_shadows()`, которая без теней поднимает
   солнце ×2,8 и рассеянный свет ×1,15 (в пределах ~10% от вида с тенями) во всех трёх играх.
-- **Осень:** тёплый рассеянный свет `ambientTint` (`scenery/index.json`) в городе и
-  мини-играх; небо мини-игр по-прежнему ясное во все сезоны.
+- Осенний рассеянный свет в городе и мини-играх использует тёплый оттенок
+  `ambientTint` из `scenery/index.json`.
+- В обычной сборке все пять 3D-игр выбирают зиму при входе с 1 декабря по последний
+  день февраля по местной дате устройства. Цвета снега, тротуара и крыш задаёт
+  зимняя палитра в `scenery/index.json`. Шейдер `seasonal_paint.gdshaderinc`
+  наносит снег на верхние грани крон и кровли и сохраняет цвет фасадов.
 - Для подбора на устройстве без пересборки: `--sun-bias=`, `--sun-normal-bias=`,
   `--sun-blur=`, `--sun-distance=`, `--sun-mode=split2|split4`, `--sun-fade=`,
   `--sun-energy-mul=`, `--ambient-mul=` (запуск через `adb ... --esa pdd_game_args`).

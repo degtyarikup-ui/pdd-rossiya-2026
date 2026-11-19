@@ -2018,6 +2018,66 @@
       "page": 3,
       "method": "Vector transcription of the official 8.9.2 plate; glyphs converted to paths (Arial Bold).",
       "sha256": "970bb1c5a8879548ab15eb1b3ba726a0ec01e91aad998640edbe3492658b75af"
+    },
+    "official_2_3_2.svg": {
+      "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "viewBox": [
+        0,
+        0,
+        100,
+        116
+      ],
+      "sha256": "8749c67e3e94d329824d48e4052e19909c7d3758198102cd2f5deee69c37b536"
+    },
+    "official_2_3_3.svg": {
+      "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "viewBox": [
+        100,
+        0,
+        100,
+        116
+      ],
+      "sha256": "6ca42d043263ed72af3c8db66b716704abf9c6b1374d89b7c00ae3afb8b33844"
+    },
+    "official_2_3_4.svg": {
+      "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "viewBox": [
+        0,
+        116,
+        100,
+        116
+      ],
+      "sha256": "84b33ebe0050872eb0f96d4512f7bf539e30322ad47e7407c3a333d6109ada1b"
+    },
+    "official_2_3_5.svg": {
+      "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "viewBox": [
+        100,
+        116,
+        100,
+        116
+      ],
+      "sha256": "963a89cbafae0055f5e66f68abf5304a42115539483984bb9b6403cfde30ea97"
+    },
+    "official_2_3_6.svg": {
+      "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "viewBox": [
+        0,
+        232,
+        100,
+        116
+      ],
+      "sha256": "8581d00042afd1d29521e754bf31288b4f331cd613ec9531c3ed11fad42ec404"
+    },
+    "official_2_3_7.svg": {
+      "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "viewBox": [
+        100,
+        232,
+        100,
+        116
+      ],
+      "sha256": "14aec9cc28815fef241158e4760a1c0eebf6f2d8c4c02cf58bcbdb4825af3e25"
     }
   }
 }

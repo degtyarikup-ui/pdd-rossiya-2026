@@ -4,10 +4,19 @@ func _initialize() -> void:
 	call_deferred("run")
 func run() -> void:
 	var world = load("res://main.tscn").instantiate()
+	world.only_id = "ticket_18_9"
+	world.bag = [world.only_id]
 	root.add_child(world)
-	for i in 3: await process_frame
+	# The loader reads the real question while it warms the card. Finish that
+	# work before replacing world.current with the camera fixture below.
+	for i in 1500:
+		if world.loader == null and not world.staging: break
+		await process_frame
+	if world.loader != null or world.staging:
+		push_error("Occlusion fixture timed out waiting for the city")
+		quit(1)
+		return
 	world.set_process(false)
-	while world.staging: await process_frame
 	# The street now owns separate instanced prop and parked-car pools.
 	for pool in world.street.pools.values(): pool.node.visible=false
 	for pool in world.street.parked.values(): pool.node.visible=false

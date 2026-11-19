@@ -791,11 +791,11 @@
    "hillColor": "#8e8a55"
   },
   "winter": {
-   "ground": "#e4e8ec",
+   "ground": "#8999a5",
    "verge": [
-    "#e4e8ec",
-    "#e4e8ec",
-    "#e4e8ec"
+    "#8999a5",
+    "#8999a5",
+    "#8999a5"
    ],
    "sky": "#e1e6eb",
    "skyDark": "#20262c",
@@ -813,10 +813,10 @@
     "#3a6b45",
     "#40704a"
    ],
-   "roof": "#c7d0d8",
+   "roof": "#a1adb7",
    "sidewalk": "#616668",
    "precipitation": "snow",
-   "hillColor": "#d8dee3"
+   "hillColor": "#aab7c2"
   }
  }
 }

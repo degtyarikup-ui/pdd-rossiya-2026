@@ -21,7 +21,6 @@ SOURCE = ROOT / 'assets/countries/ru/questions/signs.json'
 OUTPUT = ROOT / 'game_godot/signs'
 # Source sheets contain several complete examples. A placed sign must show one panel.
 PANELS = {
-    **{f'2.3.{i + 2}': [(i % 2) * 100, (i // 2) * 116, 100, 116] for i in range(6)},
     '5.15.2':[11, 11, 80, 80], '5.15.3':[14, 11, 80, 80],
     '5.15.4':[14, 12, 80, 80], '5.15.7':[28, 19, 142, 72],
 }

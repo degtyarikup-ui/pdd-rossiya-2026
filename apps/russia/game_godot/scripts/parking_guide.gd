@@ -134,9 +134,15 @@ void fragment() {
 	float w = stroke * 0.5 * (1.0 + 0.4 * swept);
 	float outline = 1.0 - smoothstep(w - aa, w + aa, line);
 	float inside = fill * (1.0 - smoothstep(-aa, aa, box));
-	float a = max(outline, inside) * colour.a * opacity;
+	// A narrow dark edge keeps both white bay paint and green guidance visible
+	// on sand, pale paving and lit concrete. It fades together with the frame.
+	float border_width = clamp(aa, 0.035, 0.075);
+	float border = 0.85 * (1.0 - smoothstep(w + border_width - aa, w + border_width + aa, line));
+	float paint = max(outline, inside);
+	float coverage = paint + (1.0 - paint) * border;
+	float a = coverage * colour.a * opacity;
 	if (a < 0.003) { discard; }
-	ALBEDO = colour.rgb;
+	ALBEDO = mix(vec3(0.075, 0.11, 0.13), colour.rgb, paint / coverage);
 	ALPHA = a;
 }
 """

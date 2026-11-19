@@ -57,7 +57,8 @@ func _build_authored_scene() -> void:
 	surfaces.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(surfaces)
 	for item in authored_network.data.get("decor", []):
-		var pool = _get_pool(str(item.prop), 256, true)
+		var prop := str(item.prop)
+		var pool = _get_pool(prop, 256, true)
 		if pool == null: continue
 		var size: Array = item.get("scale", [1,1,1])
 		var pos := Vector3(-float(item.pos[0]), float(item.get("y", 0)), -float(item.pos[1]))
@@ -66,6 +67,9 @@ func _build_authored_scene() -> void:
 		var seasonal: Dictionary = item.get("seasonColour", {})
 		if not seasonal.is_empty() and str(item.get("tint", "")).to_lower() == seasonal.authoredTint:
 			tint = sc.color(str(seasonal.key), int(seasonal.index))
+		elif sc.season.precipitation == "snow" and (prop.begins_with("trees/") or prop == "street/bush"):
+			# Older editor placements have only their authored summer tint.
+			tint = sc.foliage_colour(prop, pool.used.get(0, 0))
 		tint.a = 1.0 if sc.season.precipitation == "snow" else 0.0
 		pool.put(0, Transform3D(basis, pos), tint)
 	_finish_pools()

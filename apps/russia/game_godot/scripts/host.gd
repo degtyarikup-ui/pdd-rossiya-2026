@@ -138,6 +138,22 @@ static func user_args() -> Array:
 	return Array(OS.get_cmdline_user_args())
 
 
+## Snapshot the local season at entry, including each new embedded iOS run.
+static func game_season() -> String:
+	return resolve_season(user_args(), int(Time.get_date_dict_from_system().month))
+
+
+static func resolve_season(args: Array, month: int) -> String:
+	for arg: String in args:
+		if arg.begins_with("--season="):
+			var explicit := arg.trim_prefix("--season=")
+			if explicit in ["summer", "autumn", "winter"]:
+				return explicit
+	if month == 12 or month <= 2:
+		return "winter"
+	return "autumn" if month >= 9 else "summer"
+
+
 static func _query_args() -> Array:
 	return parse_query(str(JavaScriptBridge.get_interface("window").location.search))
 

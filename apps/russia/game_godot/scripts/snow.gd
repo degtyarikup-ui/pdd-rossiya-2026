@@ -7,6 +7,10 @@ const SPAN_X := 56.0
 const SPAN_Z := 70.0
 const HEIGHT := 16.0
 
+# Local particle coordinates to a unit box. An empty list is the usual open sky.
+var shelters: Array[Transform3D] = []
+const UNIT_BOX := AABB(Vector3(-1, -1, -1), Vector3(2, 2, 2))
+
 var flakes: Array[Dictionary] = []
 var colors: Array[Color] = [
 	Color(1.0, 1.0, 1.0, 0.96),
@@ -83,7 +87,8 @@ func _spawn(flake: Dictionary, centre: Vector3, anywhere_high: bool) -> void:
 
 func step(delta: float, centre: Vector3) -> void:
 	centre = to_local(centre)
-	for i in flakes.size():
+	var active := multimesh.visible_instance_count
+	for i in (flakes.size() if active < 0 else active):
 		var flake := flakes[i]
 		if not flake.born:
 			_spawn(flake, centre, true)
@@ -108,6 +113,11 @@ func step(delta: float, centre: Vector3) -> void:
 
 		var reach := maxf(absf(flake.x - centre.x) / SPAN_X, absf(flake.z - centre.z) / SPAN_Z)
 		fade *= smoothstep(0.0, 0.4, flake.time) * (1.0 - smoothstep(0.6, 0.72, reach))
+		var at := Vector3(flake.x, flake.y, flake.z)
+		for shelter in shelters:
+			if UNIT_BOX.has_point(shelter * at):
+				fade = 0.0
+				break
 		var s: float = flake.scale * maxf(0.0001, fade)
-		multimesh.set_instance_transform(i, Transform3D(basis.scaled(Vector3(s, s, s)), Vector3(flake.x, flake.y, flake.z)))
+		multimesh.set_instance_transform(i, Transform3D(basis.scaled(Vector3(s, s, s)), at))
 		multimesh.set_instance_color(i, flake.color)

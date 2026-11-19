@@ -163,8 +163,8 @@ var crosswalks: Dictionary = CROSSWALKS
 var asphalt_material: StandardMaterial3D
 var sidewalk_mat: StandardMaterial3D
 var curb_mat: StandardMaterial3D
-var lawn_grass_mat: StandardMaterial3D
-var grass_mat: StandardMaterial3D
+var lawn_grass_mat: Material
+var grass_mat: Material
 var street_lamps: Array[OmniLight3D] = []   # the real lights of the four corner lamps
 var lamp_pools: MultiMeshInstance3D           # light pools under every lamp
 const LAMP_POOL_SIZE := 13.0
@@ -368,7 +368,7 @@ var run_sequence := 0
 var completed_runs: Array[Dictionary] = []
 var previous_best := 0
 var result_action := ""
-var season_name := "summer"
+var season_name := Host.game_season()
 var snow: Snow
 var economy := { "seconds": 180, "lives": 5, "maxScore": 1500, "base": 50, "step": 5, "bonusCap": 5 }
 
@@ -383,6 +383,7 @@ var adaptive_quality := false
 var _quality_mobile := false
 var lamp_lights_allowed := true   # real lights at the corner lamps (not on the low tier)
 var beacon_lights_allowed := true # real lights on emergency beacons (not on the low tier)
+var winter_daylight := {}
 var shadow_sun_factor := 1.0      # sun / ambient compensation while shadows are off (Quality)
 var shadow_ambient_factor := 1.0
 var hud: PerfHud
@@ -457,8 +458,6 @@ func _apply_tier(next: String, automatic := false) -> void:
 	beacon_lights_allowed = tier != "low"
 	if is_instance_valid(rain_drops):
 		rain_drops.multimesh.visible_instance_count = RAIN_DROPS_LOW if tier == "low" else -1
-	if is_instance_valid(snow):
-		snow.multimesh.visible_instance_count = 48 if tier == "low" else -1
 	_refresh_lighting()
 	if hud: hud.tier = tier
 
@@ -538,9 +537,6 @@ func _setup_args() -> void:
 	GameSound.haptics = true
 	Ui.lang = "ru"
 	Ui.configure_theme(Host.user_args())
-	var month := int(Time.get_date_dict_from_system().month)
-	if season_name == "summer":
-		season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
 	for arg in Host.user_args():
 		if arg.begins_with("--session-id="):
 			session_id = arg.trim_prefix("--session-id=")
@@ -555,8 +551,6 @@ func _setup_args() -> void:
 		elif arg.begins_with("--difficulty="):
 			difficulty = arg.trim_prefix("--difficulty=")
 			difficulty_from_args = true
-		elif arg.begins_with("--season="):
-			season_name = arg.trim_prefix("--season=")
 		elif arg.begins_with("--mode="):
 			game_mode = "patrol" if arg.trim_prefix("--mode=") == "patrol" else "blitz"
 		elif arg == "--tutorial":
@@ -588,6 +582,13 @@ func _setup_environment() -> void:
 	env.name = "Environment"
 	env.environment = Environment.new()
 	MiniGameLighting.apply(sun, env.environment, season_name, true)
+	if season_name == "winter":
+		winter_daylight = {
+			"sun_energy": sun.light_energy, "sun_color": sun.light_color,
+			"sky_color": env.environment.background_color,
+			"amb_energy": env.environment.ambient_light_energy, "amb_color": env.environment.ambient_light_color,
+			"lamp_energy": 0.0, "asphalt_rough": 0.88
+		}
 	add_child(env)
 
 	cam_pivot = Node3D.new()
@@ -606,7 +607,7 @@ func _setup_environment() -> void:
 
 func _setup_audio() -> void:
 	sound = GameSound.new()
-	sound.enabled = true
+	sound.enabled = "--mute" not in Host.user_args()
 	add_child(sound)
 
 
@@ -705,13 +706,16 @@ func _setup_road_geometry() -> void:
 	curb_mat.albedo_color = sc.color("sidewalk").darkened(0.08) if is_winter else Color("#72776E") # Balanced curb tone
 	curb_mat.roughness = 0.70
 
-	lawn_grass_mat = StandardMaterial3D.new()
-	lawn_grass_mat.albedo_color = sc.color("ground") if is_winter else Color("#38532C") # Soft natural Russian lawn green
-	lawn_grass_mat.roughness = 0.92
-
-	grass_mat = StandardMaterial3D.new()
-	grass_mat.albedo_color = sc.color("ground") if is_winter else Color("#2F4525") # Natural surrounding ground
-	grass_mat.roughness = 0.95
+	if is_winter:
+		grass_mat = sc.surface_material("grass", sc.color("ground"))
+		lawn_grass_mat = grass_mat
+	else:
+		lawn_grass_mat = StandardMaterial3D.new()
+		lawn_grass_mat.albedo_color = Color("#38532C")
+		lawn_grass_mat.roughness = 0.92
+		grass_mat = StandardMaterial3D.new()
+		grass_mat.albedo_color = Color("#2F4525")
+		grass_mat.roughness = 0.95
 
 	var white_mat := StandardMaterial3D.new()
 	white_mat.albedo_color = Color("#F2F4F8") # Road marking white matching Crossroads
@@ -1456,7 +1460,7 @@ func _build_city_scenery() -> void:
 	var pine_colors: Array = sc.season.pine if sc != null else [Color("#2B4D28")]
 
 	var is_winter: bool = sc != null and sc.season.precipitation == "snow"
-	var bush_color: Color = Color.WHITE if is_winter else Color(canopy_colors[0])
+	var bush_color: Color = Color(canopy_colors[0])
 
 	# Soil pits material for urban tree pits (приствольные квадраты земли)
 	var soil_mat := StandardMaterial3D.new()
@@ -2104,6 +2108,9 @@ func _apply_light_blend(cur: int, nxt: int, w: float) -> void:
 		env.environment.ambient_light_color = p_cur.amb_color.lerp(p_next.amb_color, w)
 	_set_lamp_energy(lerpf(p_cur.lamp_energy, p_next.lamp_energy, w))
 	rain_amount = (1.0 - w if cur == 3 else 0.0) + (w if nxt == 3 else 0.0)
+	if is_instance_valid(snow):
+		var budget := 48 if tier == "low" else snow.multimesh.instance_count
+		snow.multimesh.visible_instance_count = roundi(lerpf(budget * 0.5, budget, rain_amount))
 	if is_instance_valid(asphalt_material):
 		asphalt_material.roughness = lerpf(p_cur.asphalt_rough, p_next.asphalt_rough, w)
 		# Wet asphalt darkens: the Compatibility renderer has no reflections to show it otherwise.
@@ -2118,13 +2125,13 @@ func _refresh_lighting() -> void:
 func _get_weather_preset(idx: int) -> Dictionary:
 	match idx:
 		0: # Day - natural filmic sunlight matching Crossroads & Living City
-			var is_win := season_name == "winter"
+			if not winter_daylight.is_empty(): return winter_daylight
 			return {
-				"sun_energy": 0.50 if is_win else 0.56,
-				"sun_color": Color("#EAF1FA") if is_win else Color("#FFE3B8"),
+				"sun_energy": 0.56,
+				"sun_color": Color("#FFE3B8"),
 				"sky_color": Color("#35465C"),
-				"amb_energy": 0.45 if is_win else 0.40,
-				"amb_color": Color("#E1E6EB") if is_win else Color("#FFF1DE"),
+				"amb_energy": 0.40,
+				"amb_color": Color("#FFF1DE"),
 				"lamp_energy": 0.0,
 				"asphalt_rough": 0.88
 			}
@@ -2140,21 +2147,21 @@ func _get_weather_preset(idx: int) -> Dictionary:
 			}
 		2: # Night - street lamps and headlights illuminate the junction
 			return {
-				"sun_energy": 0.05,
-				"sun_color": Color("#1A2845"),
+				"sun_energy": 0.10,
+				"sun_color": Color("#91A7C1"),
 				"sky_color": Color("#121822"),
-				"amb_energy": 0.18,
-				"amb_color": Color("#1C2636"),
+				"amb_energy": 0.43,
+				"amb_color": Color("#A1B2CB"),
 				"lamp_energy": 3.6,
 				"asphalt_rough": 0.80
 			}
 		3: # Rain - wet reflective asphalt sheen, stormy overcast
 			return {
-				"sun_energy": 0.12,
-				"sun_color": Color("#283C50"),
+				"sun_energy": 0.16,
+				"sun_color": Color("#A6B9CA"),
 				"sky_color": Color("#1E2834"),
-				"amb_energy": 0.24,
-				"amb_color": Color("#283442"),
+				"amb_energy": 0.46,
+				"amb_color": Color("#ACBED0"),
 				"lamp_energy": 2.8,
 				"asphalt_rough": 0.22
 			}

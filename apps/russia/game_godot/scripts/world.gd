@@ -78,6 +78,7 @@ var question_signal_side := ""
 var tier := "high"
 var street_half := Street.ROAD_HALF   # carriageway half-width of the ring street (a multi-lane exit widens it)
 var leaves: Leaves                # autumn only
+var season_name := Host.game_season()
 var snow: Snow                    # winter only
 const CAMERA_PITCH := atan2(42.0, 44.0)
 const CAMERA_DISTANCE := 60.8276253029822 # hypot(42, 44); a rotation preserves the legacy offset.
@@ -478,12 +479,7 @@ func _setup_language() -> void:
 
 
 func _season() -> String:
-	for arg in Host.user_args():
-		if arg.begins_with("--season="):
-			return arg.trim_prefix("--season=")
-	# Same calendar as seasons.js: Sep–Nov autumn, Dec–Feb winter.
-	var m: int = Time.get_date_dict_from_system().month
-	return "autumn" if m >= 9 and m <= 11 else ("winter" if m == 12 or m <= 2 else "summer")
+	return season_name
 
 
 ## Every junction, one after another, in this one run (no window restarts):
@@ -491,12 +487,13 @@ func _season() -> String:
 func _run_previews() -> void:
 	await get_tree().process_frame
 	var ids := []
-	for f in DirAccess.get_files_at("res://network"):
-		if f.ends_with(".json"):
-			ids.append(f.trim_suffix(".json"))
+	for id in DirAccess.get_directories_at("res://situations"):
+		if FileAccess.file_exists("res://situations/%s/scene.json" % id):
+			ids.append(id)
 	ids.sort()
 	DirAccess.make_dir_recursive_absolute(previews_out)
 	(find_children("*", "WorldEnvironment", false, false)[0] as WorldEnvironment).environment.fog_enabled = false
+	if is_instance_valid(loader): loader.visible = false
 	ui.visible = false
 	hud.visible = false
 	controls.set_active(false)
@@ -508,24 +505,30 @@ func _run_previews() -> void:
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.keep_aspect = Camera3D.KEEP_HEIGHT
 	camera.size = 190.0
+	# Use the same patch of seasonal ground for every preview, outside the active street.
+	set_process(false)
+	ground.position.z = 3000.0
 	var n := 0
 	for id in ids:
 		var sit := Situation.load_scene(id, scenery)
 		if sit == null:
 			continue
-		sit.place_at(3000.0 + float(n) * 1000.0, scenery)
+		sit.place_at(ground.position.z, scenery)
 		add_child(sit)
 		sit.set_evidence_visible(false)
 		camera.position = sit.global_position + Vector3(0, 300, 0)
 		camera.look_at(sit.global_position, Vector3(0, 0, 1))
 		await get_tree().process_frame
-		await get_tree().process_frame
-		get_viewport().get_texture().get_image().save_png(previews_out.path_join(id + ".png"))
+		await RenderingServer.frame_post_draw
+		if get_viewport().get_texture().get_image().save_png(previews_out.path_join(id + ".png")) != OK:
+			get_tree().quit(1)
+			return
 		print("[preview] ", id)
 		sit.queue_free()
 		await get_tree().process_frame
+		Situation.forget(id)
 		n += 1
-	get_tree().quit()
+	get_tree().quit(0 if n == ids.size() and n > 0 else 1)
 
 
 ## Straight-down picture of one junction (north = +Z, like the editor): 190 m across.

@@ -15,13 +15,18 @@ func _initialize() -> void:
 	var copies := 0
 	for id in ids:
 		if not FileAccess.file_exists("res://network/build/%s.json" % id):
+			push_error("Missing built network for " + str(id))
+			bad += 1
 			continue
 		var t0 := Time.get_ticks_msec()
 		var net := RoadNetwork.load_scene(id)
 		print("net ", id, " ", Time.get_ticks_msec() - t0, " ms")
 		if net == null:
+			bad += 1
 			continue
 		checked += 1
+		var data := JSON.parse_string(FileAccess.get_file_as_string("res://situations/%s/scene.json" % id)) as Dictionary
+		if data.get("procedural", false): continue # No baked road in network-only scenes.
 		var mesh := _baked_static(id)
 		if mesh == null:
 			continue
@@ -34,7 +39,7 @@ func _initialize() -> void:
 			bad += 1
 			print("copies left: ", id, " ", left)
 	print("junctions: ", checked, " with copies left: ", bad, " copy triangles left: ", copies)
-	quit(1 if bad > 0 else 0)
+	quit(1 if bad > 0 or checked == 0 else 0)
 
 
 func _baked_static(id: String) -> Mesh:

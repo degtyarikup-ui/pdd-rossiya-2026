@@ -57,9 +57,10 @@ var vehicle_id := "sedan"
 var vehicle_paint := Color("#0574F8")
 var vehicle_leopard := false
 var geo: Dictionary
-var season_name := "summer"
+var season_name := Host.game_season()
 var sc: Scenery
 var snow: Snow
+var _snow_count := 80
 
 var camera: Camera3D
 var sun: DirectionalLight3D
@@ -171,9 +172,6 @@ func _setup_args() -> void:
 	GameSound.haptics = true
 	Ui.lang = "ru"
 	Ui.configure_theme(Host.user_args())
-	var month := int(Time.get_date_dict_from_system().month)
-	if season_name == "summer":
-		season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
 	for arg: String in Host.user_args():
 		if arg.begins_with("--lang="): Ui.lang = arg.trim_prefix("--lang=")
 		elif arg == "--no-haptics": GameSound.haptics = false
@@ -182,7 +180,6 @@ func _setup_args() -> void:
 		elif arg.begins_with("--vehicle="): vehicle_id = arg.trim_prefix("--vehicle=")
 		elif arg.begins_with("--paint="): vehicle_paint = Color(arg.trim_prefix("--paint="))
 		elif arg == "--leopard": vehicle_leopard = true
-		elif arg.begins_with("--season="): season_name = arg.trim_prefix("--season=")
 		elif arg == "--auto": auto_drive = true
 		elif arg == "--all": _play_all = true
 		elif arg.begins_with("--level="): _forced_level = clampi(int(arg.trim_prefix("--level=")), 0, ParkingLevels.COUNT - 1)
@@ -234,8 +231,7 @@ func _setup_quality() -> void:
 	_display_hz = maxi(30, roundi(DisplayServer.screen_get_refresh_rate(DisplayServer.SCREEN_OF_MAIN_WINDOW)))
 	if DisplayServer.screen_get_refresh_rate() <= 0.0: _display_hz = 60
 	Engine.max_fps = int(profile.max_fps)
-	if snow != null:
-		snow.multimesh.visible_instance_count = 40 if tier == "low" else -1
+	_snow_count = 40 if tier == "low" else 80
 	adaptive_quality = mobile and not fixed
 	frame_budget.reset(profile.scale, profile.shadows, profile.msaa != Viewport.MSAA_DISABLED)
 
@@ -406,10 +402,18 @@ func _load_level(index: int) -> void:
 	ParkingLighting.apply_environment(sun, env.environment, level.get("night", false), level.id == "underground", season_name, sun.shadow_enabled)
 	if season_name == "winter" and not level.get("indoor", false) and level.id != "underground":
 		if snow == null:
-			snow = Snow.new(80)
+			snow = Snow.new(_snow_count)
 			snow.name = "Snow"
 			snow.scale = Vector3.ONE * 1.3
 			add_child(snow)
+		snow.shelters.clear()
+		for wall: Dictionary in level.walls:
+			if not wall.get("shelter", false): continue
+			var box: Dictionary = wall.box
+			var half_height := float(wall.y0 + wall.h) * 0.5
+			var centre := Vector3(box.c.x, half_height, box.c.y)
+			var axes := Basis(Vector3.UP, box.yaw).scaled_local(Vector3(box.half.x, half_height, box.half.y))
+			snow.shelters.append(Transform3D(axes, centre).affine_inverse() * snow.transform)
 		snow.visible = true
 	elif snow != null:
 		snow.visible = false
@@ -509,6 +513,8 @@ func _mat(key: String) -> Material:
 				# detail maps (plaster, brick, panels, wood, metal, window frames) on a metre grid.
 				var parts := key.split(":")
 				var m := sc.surface_material(parts[1], Color(parts[2]))
+				if parts[1] in ["roofFlat", "roofTile"]:
+					m.set_shader_parameter("surface_snow_cap", true)
 				var period: float = float(parts[3]) if parts.size() > 3 else float(sc.kinds[parts[1]].get("u", 2.0))
 				m.set_shader_parameter("texture_period", period if period > 0.0 else 2.0)
 				_mats[key] = m
@@ -870,7 +876,7 @@ func _build_props() -> void:
 	for t: Vector2 in level.pines:
 		put.call("trees/pine_0", t, i * 1.3, Vector3.ONE * (0.95 + 0.25 * fmod(i * 0.37, 1.0)), tree_tint.call("trees/pine_0", i))
 		i += 1
-	for b: Dictionary in level.bushes: put.call("street/bush", b.pos, b.yaw, Vector3.ONE, Color(canopy[0]) if sc.season.precipitation != "snow" else Color.WHITE)
+	for b: Dictionary in level.bushes: put.call("street/bush", b.pos, b.yaw, Vector3.ONE, Color(canopy[0]))
 	for l: Vector2 in level.lamps: put.call("street/lamp", l, 0.0, Vector3.ONE, Color.WHITE)
 	for b: Dictionary in level.buildings:
 		var prop: String = b.prop

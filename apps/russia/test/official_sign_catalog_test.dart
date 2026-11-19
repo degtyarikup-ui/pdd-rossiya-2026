@@ -104,6 +104,7 @@ void main() {
     final byNumber = {for (final sign in signs) sign.number: sign};
     for (final numbers in [
       [for (var i = 1; i <= 6; i++) '1.4.$i'],
+      [for (var i = 2; i <= 7; i++) '2.3.$i'],
       [for (var i = 1; i <= 3; i++) '4.8.$i'],
       ['5.7.1', '5.7.2'],
       ['5.13.1', '5.13.2'],
@@ -126,6 +127,23 @@ void main() {
         numbers.length,
         reason: '$numbers',
       );
+    }
+  });
+
+  test('8.20 plates match the axle counts in PDD appendix B.8, page 4', () {
+    for (final suffix in ['', '_en', '_kk']) {
+      final signs = RoadSignsEngine.parseSignsJson(
+        _readMap('$_questions/signs$suffix.json'),
+      );
+      final images = {for (final sign in signs) sign.number: sign.image};
+      expect(
+        images['8.20.1'],
+        '4964059b55f06c6c82a53768ce928f66.svg',
+      ); // 2 axles
+      expect(
+        images['8.20.2'],
+        'dc4b2b2243c4b3ed51eb412e81774e2c.svg',
+      ); // 3 axles
     }
   });
 

@@ -49,8 +49,13 @@ func foliage_colours() -> void:
 					check(tint.s > (.02 if season_name == "winter" else .1) and tint.v < .95,label+" absent foliage tint has a natural colour")
 					if prop == "trees/pine_0": check(tint.g > tint.r and tint.g > tint.b,label+" conifers remain green")
 				check(is_equal_approx(tint.a,1.0 if season_name == "winter" else 0.0),label+" winter snow is independent of RGB")
-			check(tints[3].is_equal_approx(Color("#654321",tints[3].a)),label+" explicit author colour is preserved")
-			check(tints[4].is_equal_approx(Color(1,1,1,tints[4].a)),label+" explicit white is preserved")
+			if season_name == "winter" and prop != "street/lamp":
+				var palette := "pine" if prop == "trees/pine_0" else ("birch" if prop == "trees/birch_0" else "canopy")
+				for i in [3, 4]:
+					check(tints[i].is_equal_approx(Color(sc.color(palette, i), 1.0)), label + " authored foliage switches to its winter species palette")
+			else:
+				check(tints[3].is_equal_approx(Color("#654321",tints[3].a)),label+" explicit author colour is preserved")
+				check(tints[4].is_equal_approx(Color(1,1,1,tints[4].a)),label+" explicit white is preserved")
 			if DisplayServer.get_name() != "headless":
 				for i in tints.size():
 					var actual: Color = sit._pools[prop].get_instance_custom_data(i)

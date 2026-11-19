@@ -50,7 +50,7 @@ var session_id := "regulator"
 var run_sequence := 0
 var ready_for_play := false
 var economy := { "seconds": 60, "lives": 5, "maxScore": 1500, "base": 24, "step": 2, "bonusCap": 4 }
-var season_name := "summer"
+var season_name := Host.game_season()
 var leaves: Leaves
 var snow: Snow
 var atmosphere: RegulatorAtmosphere
@@ -123,9 +123,6 @@ func _setup_args() -> void:
 	GameSound.haptics = true
 	Ui.lang = "ru"
 	Ui.configure_theme(Host.user_args())
-	var month := int(Time.get_date_dict_from_system().month)
-	if season_name == "summer":
-		season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
 
 	for arg in Host.user_args():
 		if arg.begins_with("--lang="):
@@ -140,8 +137,6 @@ func _setup_args() -> void:
 			var config = JSON.parse_string(arg.trim_prefix("--economy="))
 			if config is Dictionary:
 				economy.merge(config, true)
-		elif arg.begins_with("--season="):
-			season_name = arg.trim_prefix("--season=")
 		elif arg == "--auto":
 			auto_answer = true
 		elif arg.begins_with("--shot="):
@@ -214,7 +209,7 @@ func _setup_scene_objects() -> void:
 		snow = Snow.new(48)
 		snow.scale = Vector3.ONE * 0.7
 		add_child(snow)
-	atmosphere = RegulatorAtmosphere.new(camera, env.environment, sun, junction, car)
+	atmosphere = RegulatorAtmosphere.new(camera, env.environment, sun, junction, car, snow)
 	add_child(atmosphere)
 
 
@@ -246,15 +241,14 @@ func _apply_tier(next: String, automatic := false) -> void:
 	var viewport := get_viewport()
 	viewport.scaling_3d_scale = profile.scale
 	viewport.msaa_3d = profile.msaa
-	Quality.set_sun_shadows(sun, env.environment, profile.shadows)
+	atmosphere.snow_budget = 24 if tier == "low" else 48
+	atmosphere.set_shadows(profile.shadows)
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if tier == "high" else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	Engine.max_fps = 60 if _quality_mobile and profile.max_fps == 0 else int(profile.max_fps)
 	adaptive_quality = automatic and _quality_mobile
 	frame_budget.reset(profile.scale, profile.shadows, profile.msaa != Viewport.MSAA_DISABLED)
 	if leaves:
 		leaves.multimesh.visible_instance_count = 6 if tier == "low" else -1
-	if snow:
-		snow.multimesh.visible_instance_count = 24 if tier == "low" else -1
 	if junction:
 		var walkers := junction.walker_crowds.size()
 		junction.set_walker_budget(-1 if Quality.ambient_walkers(tier, walkers, Engine.max_fps) >= walkers
@@ -270,7 +264,7 @@ func _update_frame_budget(delta: float) -> void:
 	var viewport := get_viewport()
 	viewport.scaling_3d_scale = update.scale
 	viewport.msaa_3d = Viewport.MSAA_2X if update.antialias else Viewport.MSAA_DISABLED
-	Quality.set_sun_shadows(sun, env.environment, update.shadows)
+	atmosphere.set_shadows(update.shadows)
 	Engine.max_fps = int(update.get("max_fps", Engine.max_fps))
 
 

@@ -23,35 +23,36 @@ func expect(ok: bool, msg: String) -> void:
 func run() -> void:
 	print("--- Winter Seasonal Styling Check Across All Games ---")
 
-	# 1. Calendar logic check
-	# Dec (12), Jan (1), Feb (2) are winter; Sep-Nov (9-11) are autumn; rest summer.
-	for m in range(1, 13):
-		var season := "winter" if (m == 12 or m <= 2) else ("autumn" if (m >= 9 and m <= 11) else "summer")
-		if m == 12:
-			expect(season == "winter", "December 1st (month 12) activates winter")
-		elif m == 1:
-			expect(season == "winter", "January (month 1) is winter")
-		elif m == 2:
-			expect(season == "winter", "February (month 2) is winter")
-		elif m == 11:
-			expect(season == "autumn", "November (month 11) is autumn")
-		elif m == 7:
-			expect(season == "summer", "July (month 7) is summer")
+	var months := ["winter", "winter", "summer", "summer", "summer", "summer",
+		"summer", "summer", "autumn", "autumn", "autumn", "winter"]
+	for i in months.size():
+		expect(Host.resolve_season([], i + 1) == months[i], "Standalone season for month %d" % (i + 1))
+	expect(Host.resolve_season(Host.parse_query("?parking=1&season=winter"), 11) == "winter",
+		"Web host can preview winter before December")
+	expect(Host.resolve_season(["--season=unknown"], 12) == "winter", "Invalid override uses the calendar")
+	expect(Host.resolve_season(["--season=", "--season=summer"], 12) == "summer", "Valid explicit summer in December")
 
 	# 2. Scenery index winter palette check
 	var sc_winter := Scenery.new("winter")
 	expect(sc_winter.season.precipitation == "snow", "Winter precipitation is snow")
-	expect(sc_winter.color("ground") == Color("#e4e8ec"), "Winter ground is snow white (#e4e8ec)")
+	var ground := sc_winter.color("ground")
+	var ground_rgb := Vector3(ground.r, ground.g, ground.b)
+	expect(ground.get_luminance() > sc_winter.color("sidewalk").get_luminance(), "Winter snow is lighter than the cleared sidewalk")
 	expect(sc_winter.color("sidewalk") == Color("#616668"), "Winter sidewalk has concrete tone (#616668)")
-	expect(sc_winter.season.roof == "#c7d0d8", "Winter roof has snow cover tone (#c7d0d8)")
+	expect(sc_winter.color("roof").get_luminance() > ground.get_luminance(), "Fresh roof snow is lighter than roadside snow")
 
 	# 3. Snow particle class check
 	var snow := Snow.new(60)
 	root.add_child(snow)
 	expect(snow.multimesh != null, "Snow uses MultiMeshInstance3D")
 	expect(snow.multimesh.instance_count == 60, "Snow multimesh instance count matches")
+	snow.multimesh.visible_instance_count = 30
 	snow.step(0.1, Vector3.ZERO)
 	expect(snow.flakes[0].born, "Snow flakes spawn and step correctly")
+	expect(not snow.flakes[30].born, "Snow skips flakes outside the visible budget")
+	snow.multimesh.visible_instance_count = -1
+	snow.step(0.1, Vector3.ZERO)
+	expect(snow.flakes[59].born, "Raising quality restores the whole snow field")
 	snow.queue_free()
 
 	# 4. Crossroads winter check
@@ -81,8 +82,8 @@ func run() -> void:
 	root.add_child(violator_sc)
 	expect(violator_sc.snow != null, "Violator spawns Snow in winter")
 	expect(violator_sc.sc.season.precipitation == "snow", "Violator uses winter scenery")
-	expect(violator_sc.lawn_grass_mat.albedo_color == Color("#e4e8ec"), "Violator lawn grass is winter snow (#e4e8ec)")
-	expect(violator_sc.grass_mat.albedo_color == Color("#e4e8ec"), "Violator surrounding terrain is winter snow (#e4e8ec)")
+	expect(violator_sc.lawn_grass_mat.get_shader_parameter("surface_colour") == ground_rgb, "Violator lawns use the textured winter palette")
+	expect(violator_sc.grass_mat.get_shader_parameter("surface_colour") == ground_rgb, "Violator surrounding terrain uses the same snow")
 	expect(violator_sc.sidewalk_mat.albedo_color == Color("#616668"), "Violator sidewalk has winter tone (#616668)")
 	await dispose_game(violator_sc)
 
@@ -94,7 +95,7 @@ func run() -> void:
 	parking_sc._load_level(0) # level 0 is hotel (outdoor)
 	expect(parking_sc.snow != null, "Parking spawns Snow on outdoor level in winter")
 	expect(parking_sc.snow.visible, "Parking snow is visible on outdoor level")
-	expect(parking_sc.sc.color("ground") == Color("#e4e8ec"), "Parking ground palette is winter snow")
+	expect(parking_sc.sc.color("ground") == ground, "Parking ground palette is winter snow")
 
 	# Test indoor/underground level
 	parking_sc._load_level(16) # level 16 is underground
