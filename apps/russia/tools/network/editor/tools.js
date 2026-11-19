@@ -154,6 +154,7 @@ const Tools = (() => {
         + Layout.TEMPLATES.map(t => tile("tpl", t.id, t.title, Layout.svg(Layout.template(t.id, S().crop || 90), S().crop || 90, 62))).join("");
     } else if (tool === "marking") {
       html = Object.entries(Catalog.MARKS).map(([k,v]) => tile("mark", k, k === "arrow" ? "Направления" : v.title, k === "bus_stop" ? BusStopMark.svg() : k === "stop_text" ? DirectionMark.svg("stop_text") : k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`, opts.mark === k, v.title)).join("");
+      if (opts.mark === "zebra") extra = '<p class="empty-note">Укажите два края перехода поперёк дороги.</p>';
       if (opts.mark === "arrow") extra = `<div class="shelf-strip direction-options">${DirectionMark.variants.map(([k,title]) => tile("mark-direction", k, title, DirectionMark.svg(k), opts.markDirection === k)).join("")}</div>`;
     } else if (tool === "answer" && !opts.pathFor && !opts.answerRoute) {
       extra = renderAnswerOptions();
@@ -779,7 +780,7 @@ const Tools = (() => {
     dblclick() { finishDraft(); },
   };
 
-  // ---- markings: lines by clicks; stop lines and zebras by a click at a junction's arm -----------
+  // ---- markings: lines by clicks; automatic stop lines by a click at a junction's arm -----------
   const marking = {
     move(e) {
       if (draft && e.world) {
@@ -795,13 +796,13 @@ const Tools = (() => {
       if (!e.world) return;
       if (App.state.locked.has("marks")) return App.toast("Слой разметки заблокирован", "warn");
       const s = S(), p = [snapGrid(e.world.x, e), snapGrid(e.world.z, e)];
-      if ((opts.mark === "stop" || opts.mark === "zebra") && Layout.controlsPlayer(s)) return toggleEnd(p, opts.mark);
+      if (opts.mark === "stop" && Layout.controlsPlayer(s)) return toggleStopLine(p);
       if (!draft) draft = { points: [] };
       if (sameDraftPoint(p)) return;
       draft.points.push(p);
-      if (["arrow", "stop_text"].includes(opts.mark) && draft.points.length === 2 && Math.hypot(p[0] - draft.points[0][0], p[1] - draft.points[0][1]) < 1) {
+      if (["arrow", "stop_text", "zebra"].includes(opts.mark) && draft.points.length === 2 && Math.hypot(p[0] - draft.points[0][0], p[1] - draft.points[0][1]) < 1) {
         draft.points.pop();
-        return App.toast("Задайте стрелку длиной не меньше метра", "warn");
+        return App.toast(opts.mark === "zebra" ? "Расстояние между краями перехода должно быть не меньше метра" : "Задайте стрелку длиной не меньше метра", "warn");
       }
       if (opts.mark === "bus_stop" && draft.points.length === 2 && (BusStopMark.length(draft) < 2 || BusStopMark.length(draft) > 60)) {
         draft.points.pop(); return App.toast("Задайте длину остановки от 2 до 60 м", "warn");
@@ -812,8 +813,8 @@ const Tools = (() => {
     dblclick() { finishDraft(); },
   };
 
-  // The end of a street nearest to the point (at a junction or a dead end): its stop line or zebra on or off.
-  function toggleEnd(p, what) {
+  // The end of a street nearest to the point (at a junction or a dead end): its stop line on or off.
+  function toggleStopLine(p) {
     const s = S(), L = s.layout;
     let best = null;
     for (const st of L.streets) {
@@ -831,7 +832,7 @@ const Tools = (() => {
       const st = Layout.streetOf(sc.layout, best.st.id);
       st.ends = st.ends || {};
       st.ends[best.end] = { ...(st.ends[best.end] || {}) };
-      st.ends[best.end][what] = !st.ends[best.end][what];
+      st.ends[best.end].stop = !st.ends[best.end].stop;
     });
   }
 

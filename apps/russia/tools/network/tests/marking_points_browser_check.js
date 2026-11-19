@@ -58,6 +58,32 @@ const {chromium} = require('playwright');
     assert.equal(await page.evaluate(()=>App.state.sel.length),2);
     const output=path.resolve(__dirname,'../../../output/marking-points');fs.mkdirSync(output,{recursive:true});
     await page.screenshot({path:path.join(output,'selected-points.png')});
+    // Draw away from either end of the street. A crossing is one undoable manual marking.
+    await page.evaluate(()=>Tools.set('marking'));
+    await page.click('[data-mark="zebra"]');
+    const crossingEnds = [[-8,5],[8,5]];
+    for (const [x,z] of crossingEnds) {
+      const p = await screen(x,z);
+      await page.mouse.click(p.x,p.y);
+    }
+    const crossing = await page.evaluate(()=>App.S.markings.find(m=>m.type==='zebra' && !m.auto));
+    assert.deepEqual(crossing?.points,crossingEnds);
+    const builds = await page.evaluate(async id=>{
+      const s = JSON.parse(JSON.stringify(App.S));
+      Layout.apply(s);
+      const countWhite = async () => {
+        const {build} = await App.api('/api/preview/'+s.id,s);
+        return build.surfaces.find(surface=>surface.id==='marking_white')?.idx.length || 0;
+      };
+      const withCrossing = await countWhite();
+      s.markings = s.markings.filter(m=>m.id!==id);
+      return [withCrossing,await countWhite()];
+    },crossing.id);
+    assert.ok(builds[0]>builds[1],'crossing survives layout rebuild and adds painted stripes');
+    await page.click('#undo');
+    assert.ok(!await page.evaluate(id=>App.S.markings.some(m=>m.id===id),crossing.id));
+    await page.click('#redo');
+    assert.deepEqual(await page.evaluate(id=>App.S.markings.find(m=>m.id===id).points,crossing.id),crossingEnds);
     assert.deepEqual(errors,[]);assert.deepEqual(writes,[]);
     console.log('Marking points browser: real marquee, group drag, delete, undo, simplify and Shift selection PASS');
   }finally{await browser.close();}
