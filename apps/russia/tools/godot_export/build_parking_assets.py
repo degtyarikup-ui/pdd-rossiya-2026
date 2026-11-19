@@ -61,7 +61,13 @@ def post(mesh, item):
     for i in range(sides):
         j = (i+1) % sides
         mesh.face([rings[0][j], rings[0][i], rings[1][i], rings[1][j]], color, kind)
-        if top > 0:
+        if item.get('smooth'):
+            slope = (radius - top) / h
+            length = math.hypot(1, slope)
+            for vertex, corner in enumerate((j, i, i, j), start=len(mesh.normals) - 4):
+                angle = corner * math.tau / sides + phase
+                mesh.normals[vertex] = (math.cos(angle)/length, slope/length, math.sin(angle)/length)
+        if top > 0 and item.get('cap_top', True):
             mesh.face([(x, y+h, z), rings[1][j], rings[1][i]], color, kind)
 
 

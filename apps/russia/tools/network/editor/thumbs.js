@@ -3,7 +3,7 @@
 // (localStorage) so the next visit shows them at once.
 const Thumbs = (() => {
   const SIZE = 160;
-  const VERSION = "t6";
+  const VERSION = "t7";
   // Trees and bushes are white in their files: the game paints them (the season's colour).
   const TINT = Catalog.PROP_TINTS;
   const cache = new Map();

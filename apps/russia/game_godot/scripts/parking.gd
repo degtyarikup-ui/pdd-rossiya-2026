@@ -591,7 +591,7 @@ func _build_ground() -> void:
 	_build_tree_pits()
 	for post: Dictionary in level.posts:
 		_cylinder_into(_ground_tool("solid:" + str(post.colour)), post.pos, post.r, post.h, post.get("y0", 0.0),
-			post.get("r_top", -1.0), post.get("sides", 12), post.get("phase", 0.0))
+			post.get("r_top", -1.0), post.get("sides", 12), post.get("phase", 0.0), post.get("smooth", false), post.get("cap_top", true))
 	for arrow: Dictionary in level.arrows: _paint_arrow(arrow)
 	for ring: Dictionary in level.rings: _paint_ring(ring)
 	for w: Dictionary in level.walls:
@@ -645,9 +645,9 @@ func _build_works() -> void:
 		paint.cull_mode = BaseMaterial3D.CULL_DISABLED
 		node.material_override = paint
 		root3d.add_child(node)
-	# A cone: a dark foot, an orange body and a white band.
-	var parts := [[_cylinder(0.05, 0.17, 0.62), 0.31, "#FF6A1A"], [_cylinder(0.105, 0.125, 0.09), 0.36, "#F2F4F8"],
-		[_box_mesh(Vector3(0.42, 0.04, 0.42)), 0.02, "#2B2F36"]]
+	# Use the same striped cone as the scene editor, on the roadworks rubber foot.
+	var parts := [[Models.mesh_of("res://scenery/parking/cone.glb"), 0.0, null],
+		[_box_mesh(Vector3(0.42, 0.04, 0.42)), 0.02, _mat("#2B2F36")]]
 	for part: Array in parts:
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -656,7 +656,7 @@ func _build_works() -> void:
 		for i in cones.size(): mm.set_instance_transform(i, cones[i].translated(Vector3(0, float(part[1]), 0)))
 		var node := MultiMeshInstance3D.new()
 		node.multimesh = mm
-		node.material_override = _mat(part[2])
+		node.material_override = part[2]
 		root3d.add_child(node)
 
 
@@ -761,7 +761,7 @@ func _build_tree_pits() -> void:
 
 
 ## An upright cylinder or cone (bollards, columns, tents, umbrellas) into a batched colour mesh.
-func _cylinder_into(st: SurfaceTool, c: Vector2, r: float, h: float, y0: float, r_top := -1.0, sides := 12, phase := 0.0) -> void:
+func _cylinder_into(st: SurfaceTool, c: Vector2, r: float, h: float, y0: float, r_top := -1.0, sides := 12, phase := 0.0, smooth := false, cap_top := true) -> void:
 	var rt := r if r_top < 0.0 else r_top
 	for i in sides:
 		var a0 := TAU * i / sides + phase
@@ -772,9 +772,13 @@ func _cylinder_into(st: SurfaceTool, c: Vector2, r: float, h: float, y0: float, 
 		var q1 := Vector3(c.x + cos(a1) * rt, y0 + h, c.y + sin(a1) * rt)
 		var n := Vector3(cos((a0 + a1) * 0.5) * h, r - rt, sin((a0 + a1) * 0.5) * h).normalized()
 		for v in [p0, p1, q1, p0, q1, q0]:
-			st.set_normal(n)
+			if smooth:
+				var radial := Vector2(v.x - c.x, v.z - c.y).normalized()
+				st.set_normal(Vector3(radial.x, (r - rt) / h, radial.y).normalized())
+			else:
+				st.set_normal(n)
 			st.add_vertex(v)
-		if rt > 0.001:
+		if cap_top and rt > 0.001:
 			for v in [Vector3(c.x, y0 + h, c.y), q1, q0]:
 				st.set_normal(Vector3.UP)
 				st.add_vertex(v)

@@ -630,8 +630,15 @@ static func _wash() -> Dictionary:
 
 
 static func _cone(l: Dictionary, x: float, z: float) -> void:
-	l.posts.append({"pos": Vector2(x, z), "r": 0.17, "r_top": 0.04, "h": 0.65, "colour": "#FF6A1A", "y0": 0.0, "solid": true})
-	_post(l, x, z, 0.12, 0.1, WHITE, 0.3, false)
+	# The stripes are colour changes on one taper, with a shared radius at every seam.
+	var edges := PackedFloat64Array([0.0, 0.18, 0.27, 0.39, 0.48, 0.65])
+	for i in range(edges.size() - 1):
+		var bottom := edges[i]
+		var top := edges[i + 1]
+		l.posts.append({"pos": Vector2(x, z), "y0": bottom, "h": top - bottom,
+			"r": 0.17 - 0.2 * bottom, "r_top": 0.17 - 0.2 * top, "sides": 32,
+			"colour": WHITE if i % 2 else "#FF6A1A", "smooth": true,
+			"cap_top": i == edges.size() - 2, "solid": i == 0})
 
 
 # --- 6. Forest car park: nose first into a 60° bay, gravel and pines ---
