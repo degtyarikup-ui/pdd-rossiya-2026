@@ -7,7 +7,7 @@
 "continueLabel" = "Сохрани серию сегодня";
 "startLabel" = "Начни новую серию";
 "streak_widget_flame_name" = "Серия · Огонёк";
-"streak_widget_flame_description" = "Оранжевый фон после занятия сегодня, спокойный — до него.";
+"streak_widget_flame_description" = "Дни подряд и личный рекорд. В широком виджете видны занятия за последние семь дней.";
 "streak_widget_minimal_name" = "Серия · Минимал";
 "streak_widget_minimal_description" = "Лаконичная серия и рекорд. Фон меняется после занятия.";
 "streak_widget_record_name" = "Серия · Рекорд";

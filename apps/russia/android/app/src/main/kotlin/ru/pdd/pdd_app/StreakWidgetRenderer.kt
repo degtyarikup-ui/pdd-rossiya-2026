@@ -1,7 +1,6 @@
 package ru.pdd.pdd_app
 
 import android.app.PendingIntent
-import android.content.res.ColorStateList
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -9,63 +8,69 @@ import android.util.SizeF
 import android.view.View
 import android.widget.RemoteViews
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
-/** Shared by the real providers and on-device inflation/reapply regression tests. */
 internal object StreakWidgetRenderer {
     fun render(
         context: Context,
-        style: StreakWidgetStyle,
         state: StreakWidgetState,
         data: JSONObject,
         wide: Boolean,
-        tall: Boolean,
+        now: Calendar = Calendar.getInstance(),
     ): RemoteViews {
-        val (current, best, done) = state
+        val layout = if (wide) R.layout.streak_widget_wide else R.layout.streak_widget
+        val views = RemoteViews(context.packageName, layout)
+        views.setTextViewText(R.id.streak_current, state.current.toString())
+        views.setTextViewText(R.id.streak_best, state.best.toString())
+        views.setFloat(R.id.streak_flame, "setAlpha", if (state.done) 1f else 0.66f)
+        if (!wide) {
+            views.setImageViewResource(R.id.streak_status_icon,
+                if (state.done) R.drawable.streak_widget_check else R.drawable.streak_widget_clock)
+        }
         fun label(key: String, fallback: Int) =
             data.optString(key).takeIf { it.isNotBlank() } ?: context.getString(fallback)
-        val views = RemoteViews(context.packageName, style.layout(wide))
-        views.setTextViewText(R.id.streak_current, current.toString())
-        views.setTextViewText(R.id.streak_best, best.toString())
-        views.setTextViewText(R.id.streak_label, label("currentLabel", R.string.currentLabel))
-        views.setTextViewText(R.id.streak_best_label, label("bestLabel", R.string.bestLabel))
-        views.setTextViewText(R.id.streak_status, when {
-            done -> label("doneLabel", R.string.doneLabel)
-            current > 0 -> label("continueLabel", R.string.continueLabel)
+        val status = when {
+            state.done -> label("doneLabel", R.string.doneLabel)
+            state.current > 0 -> label("continueLabel", R.string.continueLabel)
             else -> label("startLabel", R.string.startLabel)
-        })
-        // Also reset visibility when the launcher reapplies an older compact view.
-        views.setViewVisibility(R.id.streak_status, View.VISIBLE)
-        views.setFloat(R.id.streak_flame, "setAlpha", if (current > 0) 1f else 0.4f)
-        val palette = StreakWidgetPalette.from(context, style, done)
-        views.setInt(R.id.streak_root, "setBackgroundResource", palette.background)
-        for (id in listOf(R.id.streak_current, R.id.streak_best)) views.setTextColor(id, palette.primary)
-        for (id in listOf(R.id.streak_label, R.id.streak_best_label)) views.setTextColor(id, palette.secondary)
-        views.setTextColor(R.id.streak_status, palette.accent)
-        views.setInt(R.id.streak_flame, "setColorFilter", palette.icon)
-        views.setInt(R.id.streak_trophy, "setColorFilter", palette.icon)
-        if (style == StreakWidgetStyle.FLAME) {
-            views.setInt(R.id.streak_art, "setColorFilter", palette.icon)
-            views.setFloat(R.id.streak_art, "setAlpha", if (done) 0.12f else 0.08f)
-            views.setInt(R.id.streak_record_badge, "setBackgroundResource",
-                if (done) R.drawable.streak_widget_active_record_surface else R.drawable.streak_widget_record_surface)
-            views.setInt(R.id.streak_status_group, "setBackgroundResource",
-                if (done) R.drawable.streak_widget_active_status_surface else R.drawable.streak_widget_status_surface)
-            views.setImageViewResource(R.id.streak_status_icon,
-                if (done) R.drawable.streak_widget_check else R.drawable.streak_widget_clock)
-            views.setInt(R.id.streak_status_icon, "setColorFilter", palette.accent)
         }
-        if (style == StreakWidgetStyle.MINIMAL && !wide) {
-            views.setInt(R.id.streak_divider, "setBackgroundColor", palette.divider)
-        }
-        if (style == StreakWidgetStyle.RECORD) {
-            views.setProgressBar(R.id.streak_progress, 100, state.progressPercent, false)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                views.setColorStateList(R.id.streak_progress, "setProgressTintList", ColorStateList.valueOf(palette.accent))
-                views.setColorStateList(R.id.streak_progress, "setProgressBackgroundTintList", ColorStateList.valueOf(palette.track))
+        val description = mutableListOf(
+            "${label("currentLabel", R.string.currentLabel)}: ${state.current}",
+            "${label("bestLabel", R.string.bestLabel)}: ${state.best}",
+            status,
+        )
+        if (wide) {
+            val locale = data.optString("locale").takeIf { it.isNotBlank() }?.let(Locale::forLanguageTag)
+                ?: context.resources.configuration.locales[0]
+            val dates = data.optJSONArray("activeDates")
+            val active = buildSet {
+                if (dates != null) {
+                    for (i in 0 until dates.length()) add(dates.optString(i))
+                } else {
+                    // Pre-upgrade snapshots have only the last known day of activity.
+                    add(data.optString("lastActiveDate"))
+                }
             }
-            views.setContentDescription(R.id.streak_progress,
-                "${label("currentLabel", R.string.currentLabel)}: $current; ${label("bestLabel", R.string.bestLabel)}: $best")
+            val dateKey = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).apply { timeZone = now.timeZone }
+            val weekday = SimpleDateFormat("EEE", locale).apply { timeZone = now.timeZone }
+            val fullDay = SimpleDateFormat("d MMMM", locale).apply { timeZone = now.timeZone }
+            val cursor = (now.clone() as Calendar).apply { add(Calendar.DATE, -6) }
+            views.removeAllViews(R.id.streak_week)
+            repeat(7) { index ->
+                val day = RemoteViews(context.packageName, R.layout.streak_day)
+                val studied = dateKey.format(cursor.time) in active
+                day.setTextViewText(R.id.streak_day_label, weekday.format(cursor.time).trimEnd('.'))
+                day.setImageViewResource(R.id.streak_day_icon,
+                    if (studied) R.drawable.streak_widget_flame else R.drawable.streak_widget_day_empty)
+                day.setViewVisibility(R.id.streak_day_today, if (index == 6) View.VISIBLE else View.INVISIBLE)
+                views.addView(R.id.streak_week, day)
+                if (studied) description.add(fullDay.format(cursor.time))
+                cursor.add(Calendar.DATE, 1)
+            }
         }
+        views.setContentDescription(R.id.streak_root, description.joinToString(", "))
         val launch = Intent(context, MainActivity::class.java).apply {
             action = Intent.ACTION_MAIN
             addCategory(Intent.CATEGORY_LAUNCHER)
@@ -78,57 +83,17 @@ internal object StreakWidgetRenderer {
 
     fun responsive(
         context: Context,
-        style: StreakWidgetStyle,
         state: StreakWidgetState,
         data: JSONObject,
         minWidth: Int,
-        minHeight: Int,
+        now: Calendar = Calendar.getInstance(),
     ): RemoteViews {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             return RemoteViews(mapOf(
-                SizeF(130f, 130f) to render(context, style, state, data, false, false),
-                SizeF(130f, 190f) to render(context, style, state, data, false, true),
-                SizeF(250f, 130f) to render(context, style, state, data, true, false),
-                SizeF(250f, 190f) to render(context, style, state, data, true, true),
+                SizeF(130f, 130f) to render(context, state, data, false, now),
+                SizeF(250f, 130f) to render(context, state, data, true, now),
             ))
         }
-        return render(context, style, state, data, minWidth >= 250, minHeight >= 190)
-    }
-}
-
-internal data class StreakWidgetPalette(
-    val background: Int,
-    val primary: Int,
-    val secondary: Int,
-    val accent: Int,
-    val icon: Int,
-    val divider: Int,
-    val track: Int,
-) {
-    companion object {
-        fun from(context: Context, style: StreakWidgetStyle, done: Boolean): StreakWidgetPalette {
-            fun color(id: Int) = context.getColor(id)
-            if (done) return StreakWidgetPalette(
-                R.drawable.streak_widget_active_background,
-                color(R.color.streak_widget_active_text),
-                color(R.color.streak_widget_active_secondary),
-                color(R.color.streak_widget_active_text),
-                color(R.color.streak_widget_active_icon),
-                color(R.color.streak_widget_active_divider),
-                color(R.color.streak_widget_active_divider),
-            )
-            val record = style == StreakWidgetStyle.RECORD
-            val accent = color(if (record) R.color.streak_record_accent else R.color.streak_widget_accent)
-            return StreakWidgetPalette(
-                when (style) {
-                    StreakWidgetStyle.FLAME -> R.drawable.streak_widget_background
-                    StreakWidgetStyle.MINIMAL -> R.drawable.streak_widget_minimal_background
-                    StreakWidgetStyle.RECORD -> R.drawable.streak_widget_record_background
-                },
-                color(if (record) R.color.streak_record_text else R.color.streak_widget_text),
-                color(if (record) R.color.streak_record_secondary else R.color.streak_widget_secondary),
-                accent, accent, color(R.color.streak_widget_border), color(R.color.streak_record_track),
-            )
-        }
+        return render(context, state, data, minWidth >= 250, now)
     }
 }

@@ -14,17 +14,14 @@ import org.json.JSONObject
 import java.util.Calendar
 
 // Keep the original provider identity so already placed widgets survive updates.
-open class StreakWidgetProvider : AppWidgetProvider() {
-    private val style: StreakWidgetStyle
-        get() = StreakWidgetStyle.entries.first { it.providerClass == javaClass }
-
+class StreakWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
-        ids.forEach { update(context, manager, it, style) }
+        ids.forEach { update(context, manager, it) }
         scheduleMidnight(context)
     }
 
     override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) {
-        update(context, manager, id, style)
+        update(context, manager, id)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -36,11 +33,7 @@ open class StreakWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onDisabled(context: Context) {
-        val manager = AppWidgetManager.getInstance(context)
-        // Removing one design must not stop midnight updates for the others.
-        if (StreakWidgetStyle.entries.none { ids(context, manager, it).isNotEmpty() }) {
-            (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(midnightIntent(context))
-        }
+        (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(midnightIntent(context))
     }
 
     companion object {
@@ -75,29 +68,22 @@ open class StreakWidgetProvider : AppWidgetProvider() {
             return true
         }
 
-        private fun ids(context: Context, manager: AppWidgetManager, style: StreakWidgetStyle) =
-            manager.getAppWidgetIds(ComponentName(context, style.providerClass))
-
         internal fun refreshAll(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
-            var hasWidgets = false
-            StreakWidgetStyle.entries.forEach { style ->
-                val installed = ids(context, manager, style)
-                hasWidgets = hasWidgets || installed.isNotEmpty()
-                installed.forEach { update(context, manager, it, style) }
-            }
-            if (hasWidgets) scheduleMidnight(context)
+            val installed = manager.getAppWidgetIds(ComponentName(context, StreakWidgetProvider::class.java))
+            installed.forEach { update(context, manager, it) }
+            if (installed.isNotEmpty()) scheduleMidnight(context)
         }
 
-        private fun update(context: Context, manager: AppWidgetManager, id: Int, style: StreakWidgetStyle) {
+        private fun update(context: Context, manager: AppWidgetManager, id: Int) {
             val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("snapshot", null)
             val data = try { JSONObject(raw ?: "{}") } catch (_: Exception) { JSONObject() }
+            val now = Calendar.getInstance()
             val state = StreakWidgetState.from(data.optInt("current"), data.optInt("longest"),
-                data.optString("lastActiveDate").takeIf { it.isNotBlank() })
+                data.optString("lastActiveDate").takeIf { it.isNotBlank() }, now)
             val options = manager.getAppWidgetOptions(id)
-            val views = StreakWidgetRenderer.responsive(context, style, state, data,
-                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH),
-                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT))
+            val views = StreakWidgetRenderer.responsive(context, state, data,
+                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH), now)
             manager.updateAppWidget(id, views)
         }
 
@@ -114,20 +100,5 @@ open class StreakWidgetProvider : AppWidgetProvider() {
             (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager)
                 .set(AlarmManager.RTC, next.timeInMillis, midnightIntent(context))
         }
-    }
-}
-
-class MinimalStreakWidgetProvider : StreakWidgetProvider()
-class RecordStreakWidgetProvider : StreakWidgetProvider()
-
-internal enum class StreakWidgetStyle(val providerClass: Class<out AppWidgetProvider>) {
-    FLAME(StreakWidgetProvider::class.java),
-    MINIMAL(MinimalStreakWidgetProvider::class.java),
-    RECORD(RecordStreakWidgetProvider::class.java);
-
-    fun layout(wide: Boolean): Int = when (this) {
-        FLAME -> if (wide) R.layout.streak_widget_wide else R.layout.streak_widget
-        MINIMAL -> if (wide) R.layout.streak_widget_minimal_wide else R.layout.streak_widget_minimal
-        RECORD -> if (wide) R.layout.streak_widget_record_wide else R.layout.streak_widget_record
     }
 }

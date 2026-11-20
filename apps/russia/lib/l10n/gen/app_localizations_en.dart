@@ -5364,7 +5364,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeWidgetFlameDescription =>
-      'A bright orange background after studying today, a calm background before.';
+      'Your streak and personal best. The wide widget shows which of the last seven days you studied.';
 
   @override
   String get homeWidgetMinimalName => 'Streak · Minimal';

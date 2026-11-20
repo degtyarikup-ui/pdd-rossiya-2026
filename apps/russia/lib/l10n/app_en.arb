@@ -1838,7 +1838,7 @@
   "homeWidgetContinue": "Keep your streak today",
   "homeWidgetStart": "Start a new streak",
   "homeWidgetFlameName": "Streak · Flame",
-  "homeWidgetFlameDescription": "A bright orange background after studying today, a calm background before.",
+  "homeWidgetFlameDescription": "Your streak and personal best. The wide widget shows which of the last seven days you studied.",
   "homeWidgetMinimalName": "Streak · Minimal",
   "homeWidgetMinimalDescription": "A clean streak counter and personal best. The background changes after studying.",
   "homeWidgetRecordName": "Streak · Record",

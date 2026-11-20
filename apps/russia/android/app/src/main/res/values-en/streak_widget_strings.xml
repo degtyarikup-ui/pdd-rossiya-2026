@@ -8,7 +8,7 @@
     <string name="continueLabel">Keep your streak today</string>
     <string name="startLabel">Start a new streak</string>
     <string name="streak_widget_flame_name">Streak · Flame</string>
-    <string name="streak_widget_flame_description">A bright orange background after studying today, a calm background before.</string>
+    <string name="streak_widget_flame_description">Your streak and personal best. The wide widget shows which of the last seven days you studied.</string>
     <string name="streak_widget_minimal_name">Streak · Minimal</string>
     <string name="streak_widget_minimal_description">A clean streak counter and personal best. The background changes after studying.</string>
     <string name="streak_widget_record_name">Streak · Record</string>

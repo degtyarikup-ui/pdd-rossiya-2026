@@ -8,7 +8,7 @@
     <string name="continueLabel">Сохрани серию сегодня</string>
     <string name="startLabel">Начни новую серию</string>
     <string name="streak_widget_flame_name">Серия · Огонёк</string>
-    <string name="streak_widget_flame_description">Оранжевый фон после занятия сегодня, спокойный — до него.</string>
+    <string name="streak_widget_flame_description">Дни подряд и личный рекорд. В широком виджете видны занятия за последние семь дней.</string>
     <string name="streak_widget_minimal_name">Серия · Минимал</string>
     <string name="streak_widget_minimal_description">Лаконичная серия и рекорд. Фон меняется после занятия.</string>
     <string name="streak_widget_record_name">Серия · Рекорд</string>

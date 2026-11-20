@@ -8911,7 +8911,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetFlameDescription.
   ///
   /// In ru, this message translates to:
-  /// **'Оранжевый фон после занятия сегодня, спокойный — до него.'**
+  /// **'Дни подряд и личный рекорд. В широком виджете видны занятия за последние семь дней.'**
   String get homeWidgetFlameDescription;
 
   /// No description provided for @homeWidgetMinimalName.

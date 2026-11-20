@@ -9,23 +9,36 @@ import 'package:pdd_app/l10n/l10n.dart';
 class StreakWidgetService {
   static const channel = MethodChannel('pdd/streak_widget');
 
-  static Map<String, Object?> snapshot(Streak streak, AppLocalizations l10n) =>
-      {
-        'current': streak.current,
-        'longest': streak.longest,
-        // A calendar date, never UTC: native widgets age the streak offline.
-        'lastActiveDate': streak.lastActiveDate == null
-            ? null
-            : '${streak.lastActiveDate!.year.toString().padLeft(4, '0')}-'
-                  '${streak.lastActiveDate!.month.toString().padLeft(2, '0')}-'
-                  '${streak.lastActiveDate!.day.toString().padLeft(2, '0')}',
-        'nameLabel': l10n.homeWidgetName,
-        'currentLabel': l10n.homeWidgetCurrent,
-        'bestLabel': l10n.homeWidgetBest,
-        'doneLabel': l10n.homeWidgetDone,
-        'continueLabel': l10n.homeWidgetContinue,
-        'startLabel': l10n.homeWidgetStart,
-      };
+  static Map<String, Object?> snapshot(
+    Streak streak,
+    AppLocalizations l10n, {
+    DateTime? now,
+  }) {
+    final today = Streak.day(now ?? DateTime.now());
+    final lastActive = streak.lastActiveDate;
+    final lastDay = lastActive == null ? null : Streak.day(lastActive);
+    final week = List.generate(7, (i) => Streak.shiftDay(today, i - 6));
+    return {
+      'current': streak.current,
+      'longest': streak.longest,
+      // Local calendar dates let the widget roll forward while the app sleeps.
+      'lastActiveDate': lastDay == null ? null : _isoDate(lastDay),
+      'activeDates': [
+        for (final day in week)
+          if (day == lastDay || streak.hasActivityOn(day)) _isoDate(day),
+      ],
+      'locale': l10n.localeName,
+      'nameLabel': l10n.homeWidgetName,
+      'currentLabel': l10n.homeWidgetCurrent,
+      'bestLabel': l10n.homeWidgetBest,
+      'doneLabel': l10n.homeWidgetDone,
+      'continueLabel': l10n.homeWidgetContinue,
+      'startLabel': l10n.homeWidgetStart,
+    };
+  }
+
+  static String _isoDate(DateTime date) =>
+      date.toIso8601String().split('T').first;
 
   static Future<void> update(Streak streak, AppLocalizations l10n) async {
     if (kIsWeb ||

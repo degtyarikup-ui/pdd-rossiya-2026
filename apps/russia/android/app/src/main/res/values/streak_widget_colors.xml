@@ -1,24 +1,4 @@
 <resources>
-    <color name="streak_widget_background">#FFF8F0</color>
-    <color name="streak_widget_text">#25221F</color>
-    <color name="streak_widget_secondary">#776B60</color>
-    <color name="streak_widget_accent">#D85117</color>
-    <color name="streak_widget_border">#F5DEC7</color>
-    <color name="streak_minimal_background">#FFFFFF</color>
-    <color name="streak_record_background">#182A46</color>
-    <color name="streak_record_text">#F8FAFF</color>
-    <color name="streak_record_secondary">#BCCBE1</color>
-    <color name="streak_record_accent">#FFBA6B</color>
-    <color name="streak_record_track">#354964</color>
-    <!-- AppColors.gold: the exact streak celebration background. -->
+    <!-- Same orange used on the in-game streak celebration. -->
     <color name="streak_widget_active_background">#FFA53C</color>
-    <color name="streak_widget_active_text">#3E250D</color>
-    <color name="streak_widget_active_secondary">#573516</color>
-    <color name="streak_widget_active_icon">#FFFFFF</color>
-    <color name="streak_widget_active_divider">#4D573516</color>
-    <color name="streak_widget_active_highlight">#FFCC80</color>
-    <color name="streak_widget_record_surface">#14D85117</color>
-    <color name="streak_widget_status_surface">#1AD85117</color>
-    <color name="streak_widget_active_record_surface">#40FFFFFF</color>
-    <color name="streak_widget_active_status_surface">#B3FFFFFF</color>
 </resources>

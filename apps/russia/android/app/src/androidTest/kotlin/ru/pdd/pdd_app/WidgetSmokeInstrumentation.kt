@@ -23,7 +23,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.ProgressBar
+import android.widget.LinearLayout
 import android.widget.RemoteViews
 import android.widget.TextView
 import org.json.JSONObject
@@ -74,7 +74,7 @@ class WidgetSmokeInstrumentation : Instrumentation() {
             fallbackCopy()
             responsiveHosts()
             midnightPalette()
-            legacyHiddenStatus()
+            calendarStrip()
             sharedPublication()
         } catch (error: Throwable) {
             failed++
@@ -112,38 +112,20 @@ class WidgetSmokeInstrumentation : Instrumentation() {
         check(!view.isLayoutRequested) { "layout did not settle" }
     }
 
-    private fun assertValues(view: View, state: StreakWidgetState, style: StreakWidgetStyle) {
-        check(view.findViewById<TextView>(R.id.streak_status).visibility == View.VISIBLE) { "today's status is hidden" }
-        check(view.findViewById<TextView>(R.id.streak_current)?.text?.toString() == state.current.toString()) { "current count missing or stale" }
-        check(view.findViewById<TextView>(R.id.streak_best)?.text?.toString() == state.best.toString()) { "best count missing or stale" }
-        if (style == StreakWidgetStyle.RECORD) {
-            check(view.findViewById<ProgressBar>(R.id.streak_progress).progress == state.progressPercent)
-        }
-        check(view.findViewById<View>(R.id.streak_root).hasOnClickListeners()) { "widget tap listener missing" }
+    private fun assertValues(view: View, state: StreakWidgetState) {
         val root = view.findViewById<View>(R.id.streak_root)
-        val gold = root.context.getColor(R.color.streak_widget_active_background)
-        val background = root.background as GradientDrawable
-        val fill = background.color?.defaultColor ?: background.colors!!.first()
-        check((fill == gold) == state.done) { "background does not match today's activity" }
-        if (state.done) {
-            check(view.findViewById<TextView>(R.id.streak_current).currentTextColor ==
-                root.context.getColor(R.color.streak_widget_active_text))
+        check(root.hasOnClickListeners()) { "widget tap listener missing" }
+        val fill = (root.background as GradientDrawable).color!!.defaultColor
+        check(fill == root.context.getColor(R.color.streak_widget_active_background))
+        for ((id, count) in listOf(R.id.streak_current to state.current, R.id.streak_best to state.best)) {
+            val text = view.findViewById<TextView>(id)
+            check(text.text.toString() == count.toString()) { "stale count" }
+            check(text.currentTextColor == android.graphics.Color.WHITE)
         }
-        for (id in listOf(R.id.streak_flame, R.id.streak_trophy)) {
-            check(view.findViewById<ImageView>(id)?.drawable != null) { "missing vector icon" }
-        }
-        if (style == StreakWidgetStyle.FLAME) {
-            check(view.findViewById<ImageView>(R.id.streak_art).drawable != null)
-            check(view.findViewById<ImageView>(R.id.streak_art).alpha in 0.05f..0.2f)
-            check(view.findViewById<ImageView>(R.id.streak_status_icon).drawable != null)
-            for ((id, color) in listOf(
-                R.id.streak_record_badge to if (state.done) R.color.streak_widget_active_record_surface else R.color.streak_widget_record_surface,
-                R.id.streak_status_group to if (state.done) R.color.streak_widget_active_status_surface else R.color.streak_widget_status_surface,
-            )) {
-                val surface = view.findViewById<View>(id).background as GradientDrawable
-                check(surface.color!!.defaultColor == root.context.getColor(color)) { "stale card surface after update" }
-            }
-        }
+        val flame = view.findViewById<ImageView>(R.id.streak_flame)
+        check(flame.drawable != null && flame.alpha == if (state.done) 1f else 0.66f)
+        check(view.findViewById<ImageView>(R.id.streak_rays).drawable != null)
+        check(view.findViewById<ImageView>(R.id.streak_trophy).drawable != null)
     }
 
     private fun assertTextFits(root: ViewGroup, view: View = root) {
@@ -225,112 +207,71 @@ class WidgetSmokeInstrumentation : Instrumentation() {
 
     private fun assertCopy(root: View, context: Context, scenario: Scenario, data: JSONObject) {
         val labels = listOf(
-            Triple(R.id.streak_label, "currentLabel", R.string.currentLabel),
-            Triple(R.id.streak_best_label, "bestLabel", R.string.bestLabel),
-            Triple(R.id.streak_status, scenario.statusKey, scenario.statusResource),
+            "currentLabel" to R.string.currentLabel,
+            "bestLabel" to R.string.bestLabel,
+            scenario.statusKey to scenario.statusResource,
         )
-        for ((id, key, resource) in labels) {
+        val description = root.findViewById<View>(R.id.streak_root).contentDescription.toString()
+        for ((key, resource) in labels) {
             val expected = data.optString(key).takeIf { it.isNotBlank() } ?: context.getString(resource)
-            check(root.findViewById<TextView>(id).text.toString() == expected) {
-                "${scenario.name}: wrong $key (including stale text after reapply)"
-            }
+            check(description.contains(expected)) { "missing localized description: $expected" }
         }
     }
 
     private fun renderMatrix() {
-        for (style in StreakWidgetStyle.entries) {
-            for (language in listOf("ru", "en", "kk")) for (dark in listOf(false, true)) {
-                for (font in listOf(1f, 2f)) for ((width, height) in listOf(130 to 130, 130 to 190, 250 to 130, 250 to 190, 360 to 300)) {
-                    for (scenario in scenarios) case("render $style $language dark=$dark font=$font ${width}x$height ${scenario.name}") {
-                        val state = state(scenario)
-                        val context = configured(language, dark, font)
-                        val wide = width >= 250
-                        val tall = height >= 190
-                        // Also inflate the gallery preview, without any remote actions.
-                        RemoteViews(context.packageName, style.layout(wide)).apply(context, FrameLayout(context))
-                        val data = copy(context, scenario)
-                        val remote = StreakWidgetRenderer.render(context, style, state, data, wide, tall)
-                        val root = remote.apply(context, FrameLayout(context)) as ViewGroup
-                        layout(root, context, width, height)
-                        try {
-                            assertValues(root, state, style)
-                            assertCopy(root, context, scenario, data)
-                            assertTextFits(root)
-                        } finally {
-                            if (language == "ru" && height == 130 && scenario.name in listOf("yesterday, no lesson today", "lesson today")) {
-                                capture(root, "${style.name}-$width-dark$dark-font$font-active${state.done}")
-                            }
-                            if (language == "ru" && height == 130 && scenario.name == "first lesson") {
-                                capture(root, "${style.name}-$width-dark$dark-font$font-first-lesson")
-                            }
-                        }
-                        // Reapply must clear old counts, progress, and today's state.
-                        val reset = StreakWidgetState(0, 0, false)
-                        StreakWidgetRenderer.render(context, style, reset, JSONObject(snapshot(context, 0, 0)), wide, tall)
-                            .reapply(context, root)
-                        layout(root, context, width, height)
-                        assertValues(root, reset, style)
+        for (language in listOf("ru", "en", "kk")) for (dark in listOf(false, true)) {
+            for (font in listOf(1f, 2f)) for ((width, height) in listOf(130 to 130, 130 to 190, 250 to 130, 250 to 190, 360 to 300)) {
+                for (scenario in scenarios) case("render $language dark=$dark font=$font ${width}x$height ${scenario.name}") {
+                    val state = state(scenario)
+                    val context = configured(language, dark, font)
+                    val wide = width >= 250
+                    val data = copy(context, scenario)
+                    val remote = StreakWidgetRenderer.render(context, state, data, wide)
+                    val root = remote.apply(context, FrameLayout(context)) as ViewGroup
+                    layout(root, context, width, height)
+                    assertValues(root, state)
+                    assertCopy(root, context, scenario, data)
+                    assertTextFits(root)
+                    if (language == "ru" && !dark && font == 1f && scenario.name == "first lesson") {
+                        capture(root, "flame-${width}x$height")
                     }
                 }
             }
         }
-        report.appendLine("Rendered/reapplied all designs, 5 sizes, ru/en/kk, light/dark, 100%/200% text and 8 dated scenarios; checked exact labels and statuses.")
+        report.appendLine("Rendered five sizes, three languages, light/dark, 100%/200% text and eight dated scenarios.")
     }
 
     private fun transitionMatrix() {
-        // Every ordered pair catches stale text/colors in both directions, including
-        // imports, reset, restart, a new record and unchanged repeated publications.
-        for (style in StreakWidgetStyle.entries) for (language in listOf("ru", "en", "kk")) {
-            for (dark in listOf(false, true)) for ((width, height) in listOf(130 to 130, 250 to 190)) {
-                for (before in scenarios) for (after in scenarios) {
-                        case("transition $style $language dark=$dark ${width}x$height ${before.name} -> ${after.name}") {
-                            val context = configured(language, dark, 2f)
-                            val wide = width >= 250
-                            val tall = height >= 190
-                            val root = StreakWidgetRenderer.render(context, style, state(before), copy(context, before), wide, tall)
-                                .apply(context, FrameLayout(context)) as ViewGroup
-                            layout(root, context, width, height)
-                            assertValues(root, before.expected, style)
-                            assertCopy(root, context, before, copy(context, before))
-                            val data = copy(context, after)
-                            StreakWidgetRenderer.render(context, style, state(after), data, wide, tall).reapply(context, root)
-                            layout(root, context, width, height)
-                            assertValues(root, after.expected, style)
-                            assertCopy(root, context, after, data)
-                            assertTextFits(root)
-                            if (language == "ru" && !dark && before.name == "long series waiting for lesson" && after.name == "never studied") {
-                                capture(root, "${style.name}-reapply-999-to-0-$width")
-                            }
-                        }
-                }
+        for ((width, height) in listOf(130 to 130, 250 to 190)) for (language in listOf("ru", "en", "kk")) {
+            for (before in scenarios) for (after in scenarios) case("transition ${before.name} -> ${after.name} $language $width") {
+                val context = configured(language, true, 2f)
+                val wide = width >= 250
+                val root = StreakWidgetRenderer.render(context, state(before), copy(context, before), wide)
+                    .apply(context, FrameLayout(context)) as ViewGroup
+                layout(root, context, width, height)
+                val data = copy(context, after)
+                StreakWidgetRenderer.render(context, state(after), data, wide).reapply(context, root)
+                layout(root, context, width, height)
+                assertValues(root, after.expected)
+                assertCopy(root, context, after, data)
+                assertTextFits(root)
+                if (wide) check(root.findViewById<LinearLayout>(R.id.streak_week).childCount == 7)
             }
         }
-        report.appendLine("Checked all 64 ordered state transitions per design/language/theme with 200% text in small and wide layouts.")
     }
 
     private fun fallbackCopy() {
-        // A newly added widget may have no translated snapshot yet. Blank legacy
-        // values must fall back too, and a language update must replace old copy.
-        for (style in StreakWidgetStyle.entries) for (language in listOf("ru", "en", "kk")) {
-            for (scenario in scenarios.take(3)) for (blank in listOf(false, true)) {
-                case("fallback copy $style $language ${scenario.name} blank=$blank") {
-                    val context = configured(language, false, 2f)
-                    val data = JSONObject()
-                    if (blank) for (key in listOf("currentLabel", "bestLabel", "startLabel", "continueLabel", "doneLabel")) {
-                        data.put(key, "   ")
-                    }
-                    val root = StreakWidgetRenderer.render(context, style, state(scenario),
-                        copy(configured("en", false, 2f), scenario), true, true)
-                        .apply(context, FrameLayout(context)) as ViewGroup
-                    StreakWidgetRenderer.render(context, style, state(scenario), data, true, true).reapply(context, root)
-                    layout(root, context, 250, 190)
-                    assertCopy(root, context, scenario, data)
-                    assertTextFits(root)
-                }
+        for (language in listOf("ru", "en", "kk")) for (scenario in scenarios.take(3)) {
+            case("fallback copy $language ${scenario.name}") {
+                val context = configured(language, false, 1f)
+                val data = JSONObject().put("currentLabel", "  ")
+                val root = StreakWidgetRenderer.render(context, state(scenario), data, true)
+                    .apply(context, FrameLayout(context))
+                assertCopy(root, context, scenario, data)
             }
         }
-        report.appendLine("Checked missing/blank translations and replacement of previous-language copy for all three statuses.")
     }
+
 
     private class HostView(context: Context) : AppWidgetHostView(context) {
         var error = false
@@ -339,86 +280,85 @@ class WidgetSmokeInstrumentation : Instrumentation() {
     }
 
     private fun responsiveHosts() {
-        for (style in StreakWidgetStyle.entries) {
-            var testHost: HostView? = null
-            var testContext: Context? = null
-            val state = StreakWidgetState(7, 21, true)
-            case("responsive host setup $style") {
-                val context = configured("ru", false, 1f)
-                testContext = context
-                val info = AppWidgetManager.getInstance(context).installedProviders.first {
-                    it.provider == ComponentName(context, style.providerClass)
-                }
-                testHost = HostView(context).apply {
-                    setAppWidget(-100, info)
-                    setPadding(0, 0, 0, 0)
-                    updateAppWidget(StreakWidgetRenderer.responsive(context, style, state,
-                        JSONObject(snapshot(context)), 130, 130))
-                }
+        var testHost: HostView? = null
+        val state = StreakWidgetState(7, 21, true)
+        val context = configured("ru", false, 1f)
+        case("responsive host setup") {
+            val providers = AppWidgetManager.getInstance(context).installedProviders.filter {
+                it.provider.packageName == context.packageName
             }
-            // RemoteViews.applyAsync posts its completion to the main looper.
-            // Even an inline worker executor must yield before asserting its result.
+            check(providers.size == 1 && providers.single().provider == ComponentName(context, StreakWidgetProvider::class.java))
+            testHost = HostView(context).apply {
+                setAppWidget(-100, providers.single())
+                setPadding(0, 0, 0, 0)
+                updateAppWidget(StreakWidgetRenderer.responsive(context, state, JSONObject(snapshot(context)), 130))
+            }
+        }
+        waitForIdleSync()
+        val host = testHost ?: return
+        for ((width, height) in listOf(130 to 130, 250 to 130, 250 to 190, 130 to 190, 130 to 130)) {
+            case("responsive layout ${width}x$height") {
+                if (Build.VERSION.SDK_INT < 31) {
+                    host.updateAppWidget(StreakWidgetRenderer.responsive(context, state, JSONObject(snapshot(context)), width))
+                }
+                layout(host, context, width, height)
+            }
             waitForIdleSync()
-            val host = testHost ?: continue
-            val context = testContext ?: continue
-            for ((width, height) in listOf(130 to 130, 250 to 130, 250 to 190, 130 to 190, 130 to 130)) {
-                case("responsive layout $style ${width}x$height") {
-                    if (Build.VERSION.SDK_INT < 31) {
-                        // Older launchers ask the provider to render again after resizing.
-                        host.updateAppWidget(StreakWidgetRenderer.responsive(context, style, state,
-                            JSONObject(snapshot(context)), width, height))
-                    }
-                    layout(host, context, width, height)
-                }
-                waitForIdleSync()
-                case("responsive values $style ${width}x$height") {
-                    layout(host, context, width, height)
-                    check(!host.error) { "host fell back to its error view" }
-                    assertValues(host, state, style)
-                    check(host.findViewById<View>(R.id.streak_status).visibility == View.VISIBLE) {
-                        "status disappeared at ${width}x$height"
-                    }
-                }
+            case("responsive values ${width}x$height") {
+                layout(host, context, width, height)
+                check(!host.error)
+                assertValues(host, state)
+                check((host.findViewById<LinearLayout>(R.id.streak_week) != null) == (width >= 250))
             }
         }
     }
 
     private fun midnightPalette() {
-        for (style in StreakWidgetStyle.entries) case("background changes at local midnight $style") {
+        case("main flame changes at local midnight") {
             val context = configured("ru", false, 1f)
-            fun day(date: Int) = Calendar.getInstance().apply {
-                clear(); set(2026, Calendar.NOVEMBER, date, 0, 1)
-            }
             val data = JSONObject(snapshot(context))
-            val today = StreakWidgetState.from(7, 21, "2026-11-16", day(16))
-            val tomorrow = StreakWidgetState.from(7, 21, "2026-11-16", day(17))
-            check(today.done && !tomorrow.done && tomorrow.current == 7)
-            val root = StreakWidgetRenderer.render(context, style, today, data, false, false)
-                .apply(context, FrameLayout(context))
-            layout(root, context, 130, 130)
-            assertValues(root, today, style)
-            StreakWidgetRenderer.render(context, style, tomorrow, data, false, false).reapply(context, root)
-            layout(root, context, 130, 130)
-            assertValues(root, tomorrow, style)
+            val today = StreakWidgetState(7, 21, true)
+            val tomorrow = today.copy(done = false)
+            val root = StreakWidgetRenderer.render(context, today, data, false).apply(context, FrameLayout(context))
+            assertValues(root, today)
+            StreakWidgetRenderer.render(context, tomorrow, data, false).reapply(context, root)
+            assertValues(root, tomorrow)
         }
     }
 
-    private fun legacyHiddenStatus() {
-        for (style in StreakWidgetStyle.entries) case("old compact host reveals today's status $style") {
-            val context = configured("ru", true, 2f)
-            val scenario = scenarios.first()
-            val data = copy(context, scenario)
-            val remote = StreakWidgetRenderer.render(context, style, state(scenario), data, false, false)
+    private fun calendarStrip() {
+        case("weekly flames roll across a year boundary and reset when data changes") {
+            val context = configured("en", false, 1f)
+            val now = Calendar.getInstance(TimeZone.getTimeZone("Europe/Minsk")).apply {
+                clear(); set(2027, Calendar.JANUARY, 2, 0, 10)
+            }
+            val data = JSONObject().put("locale", "ru").put("activeDates",
+                org.json.JSONArray(listOf("2026-12-28", "2026-12-31", "2027-01-02")))
+            val state = StreakWidgetState(1, 21, true)
+            val remote = StreakWidgetRenderer.render(context, state, data, true, now)
             val root = remote.apply(context, FrameLayout(context)) as ViewGroup
-            layout(root, context, 130, 130)
-            // A launcher may retain a view whose visibility came from the old APK.
-            root.findViewById<TextView>(R.id.streak_status).visibility = View.GONE
-            remote.reapply(context, root)
-            layout(root, context, 130, 130)
-            assertValues(root, scenario.expected, style)
-            assertCopy(root, context, scenario, data)
-            assertTextFits(root)
-            capture(root, "${style.name}-compact-status-visible")
+            val week = root.findViewById<LinearLayout>(R.id.streak_week)
+            fun assertDays(labels: List<String>, active: Set<Int>) {
+                check(week.childCount == 7)
+                for (i in labels.indices) {
+                    val day = week.getChildAt(i)
+                    check(day.findViewById<TextView>(R.id.streak_day_label).text.toString().lowercase(Locale.ROOT) == labels[i])
+                    val marker = day.findViewById<ImageView>(R.id.streak_day_icon)
+                    val expected = context.getDrawable(if (i in active) R.drawable.streak_widget_flame else R.drawable.streak_widget_day_empty)!!
+                    check(marker.drawable.intrinsicWidth == expected.intrinsicWidth)
+                    check((day.findViewById<View>(R.id.streak_day_today).visibility == View.VISIBLE) == (i == 6))
+                }
+            }
+            assertDays(listOf("вс", "пн", "вт", "ср", "чт", "пт", "сб"), setOf(1, 4, 6))
+            layout(root, context, 250, 130)
+            capture(root, "flame-week")
+            val compact = StreakWidgetRenderer.render(context, state, data, false, now)
+                .apply(context, FrameLayout(context))
+            layout(compact, context, 130, 130)
+            capture(compact, "flame-compact")
+            now.add(Calendar.DATE, 1)
+            StreakWidgetRenderer.render(context, state.copy(done = false), data, true, now).reapply(context, root)
+            assertDays(listOf("пн", "вт", "ср", "чт", "пт", "сб", "вс"), setOf(0, 3, 5))
         }
     }
 
@@ -442,76 +382,26 @@ class WidgetSmokeInstrumentation : Instrumentation() {
         val host = object : AppWidgetHost(context, 0x50444473) {
             override fun onCreateView(context: Context, id: Int, info: AppWidgetProviderInfo): AppWidgetHostView = HostView(context)
         }
-        val views = linkedMapOf<StreakWidgetStyle, HostView>()
-        val ids = linkedMapOf<StreakWidgetStyle, Int>()
+        var view: HostView? = null
         uiAutomation.adoptShellPermissionIdentity("android.permission.BIND_APPWIDGET")
         try {
             case("bind isolated test host") {
                 host.deleteHost()
                 host.startListening()
-                for (style in StreakWidgetStyle.entries) {
-                    val id = host.allocateAppWidgetId()
-                    check(manager.bindAppWidgetIdIfAllowed(id, ComponentName(context, style.providerClass))) { "widget bind denied" }
-                    ids[style] = id
-                    views[style] = host.createView(context, id, manager.getAppWidgetInfo(id)) as HostView
-                }
+                val id = host.allocateAppWidgetId()
+                check(manager.bindAppWidgetIdIfAllowed(id, ComponentName(context, StreakWidgetProvider::class.java)))
+                view = host.createView(context, id, manager.getAppWidgetInfo(id)) as HostView
             }
-            if (views.size != 3) return
+            val result = view ?: return
             val data = snapshot(context)
-            case("publish to all providers") { check(StreakWidgetProvider.publish(context, data)) }
-            await("all three providers received 7", {
-                views.values.all { !it.error && it.findViewById<TextView>(R.id.streak_current)?.text?.toString() == "7" }
-            })
-            case("clear host cache without changing snapshot") { views.values.forEach { it.updateAppWidget(null) } }
+            case("publish to provider") { check(StreakWidgetProvider.publish(context, data)) }
+            fun received(count: String) = !result.error && result.findViewById<TextView>(R.id.streak_current)?.text?.toString() == count
+            await("widget received 7") { received("7") }
+            case("clear host cache") { result.updateAppWidget(null) }
             case("republish unchanged snapshot") { check(StreakWidgetProvider.publish(context, data)) }
-            await("unchanged publication repairs all hosts", {
-                views.values.all { it.findViewById<TextView>(R.id.streak_current)?.text?.toString() == "7" }
-            })
-            val format = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
-            fun previousDay(days: Int) = format.format(Calendar.getInstance().apply {
-                add(Calendar.DATE, -days)
-            }.time)
-            val publications = listOf(
-                Triple("opened without a lesson", snapshot(context).apply { put("lastActiveDate", previousDay(1)) },
-                    StreakWidgetState(7, 21, false)),
-                Triple("still no lesson after republishing", snapshot(context).apply { put("lastActiveDate", previousDay(1)) },
-                    StreakWidgetState(7, 21, false)),
-                Triple("lesson extends the series", snapshot(context, 8, 21), StreakWidgetState(8, 21, true)),
-                Triple("missed day expires the series", snapshot(context, 8, 21).apply { put("lastActiveDate", previousDay(2)) },
-                    StreakWidgetState(0, 21, false)),
-                Triple("lesson restarts the series", snapshot(context, 1, 21), StreakWidgetState(1, 21, true)),
-            )
-            for ((name, publication, expected) in publications) {
-                case("publish $name") { check(StreakWidgetProvider.publish(context, publication)) }
-                val status = context.getString(when {
-                    expected.done -> R.string.doneLabel
-                    expected.current > 0 -> R.string.continueLabel
-                    else -> R.string.startLabel
-                })
-                await("all providers show $name with matching background and status", {
-                    views.all { (style, view) -> runCatching {
-                        assertValues(view, expected, style)
-                        check(view.findViewById<TextView>(R.id.streak_status).text.toString() == status)
-                    }.isSuccess }
-                })
-            }
-            case("remove only one design") { host.deleteAppWidgetId(ids.getValue(StreakWidgetStyle.FLAME)) }
-            case("midnight refresh continues for remaining providers") {
-                prefs.edit().putString("snapshot", JSONObject(snapshot(context, 9, 21)).toString()).commit()
-                StreakWidgetProvider().onReceive(context, Intent("ru.pdd.pdd_app.STREAK_MIDNIGHT"))
-            }
-            await("remaining designs updated after removal", {
-                views.filterKeys { it != StreakWidgetStyle.FLAME }.values.all {
-                    it.findViewById<TextView>(R.id.streak_current)?.text?.toString() == "9"
-                }
-            })
+            await("unchanged publication repairs host") { received("7") }
             case("reset snapshot") { check(StreakWidgetProvider.publish(context, snapshot(context, 0, 0))) }
-            await("reset reaches remaining designs", {
-                views.filterKeys { it != StreakWidgetStyle.FLAME }.values.all {
-                    it.findViewById<TextView>(R.id.streak_current)?.text?.toString() == "0" &&
-                        it.findViewById<TextView>(R.id.streak_best)?.text?.contains("0") == true
-                }
-            })
+            await("reset reaches the widget") { received("0") }
         } finally {
             runOnMainSync {
                 host.stopListening()
@@ -521,6 +411,6 @@ class WidgetSmokeInstrumentation : Instrumentation() {
             }
             uiAutomation.dropShellPermissionIdentity()
         }
-        report.appendLine("Checked shared publication, unchanged-snapshot recovery, reset, and refresh after removing one design; restored original data.")
+        report.appendLine("Checked publication, unchanged-snapshot recovery and reset; restored original data.")
     }
 }

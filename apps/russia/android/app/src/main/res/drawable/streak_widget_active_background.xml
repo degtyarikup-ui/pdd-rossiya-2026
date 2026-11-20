@@ -1,6 +1,0 @@
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <gradient android:startColor="@color/streak_widget_active_background"
-        android:endColor="@color/streak_widget_active_highlight" android:angle="45" />
-    <corners android:radius="24dp" />
-    <stroke android:width="1dp" android:color="#30FFFFFF" />
-</shape>

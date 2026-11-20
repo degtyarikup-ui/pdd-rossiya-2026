@@ -1,166 +1,100 @@
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/streak_root"
+<?xml version="1.0" ?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/streak_root"
     android:background="@drawable/streak_widget_background"
-    android:clipToOutline="true">
-    <ImageView
-        android:id="@+id/streak_art"
-        android:layout_width="104dp"
-        android:layout_height="136dp"
-        android:src="@drawable/streak_widget_flame"
-        android:scaleType="fitCenter"
-        android:importantForAccessibility="no"
-        android:layout_gravity="top|end"
-        android:layout_marginEnd="-16dp"
-        android:layout_marginTop="-8dp"
-        android:tint="@color/streak_widget_accent"
-        android:alpha="0.10" />
+    android:clipToOutline="true"
+    android:importantForAccessibility="yes">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="12dp">
-        <LinearLayout
+        android:gravity="center">
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:layout_weight="1.2">
             <ImageView
-                android:id="@+id/streak_flame"
-                android:layout_width="18dp"
+                android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:src="@drawable/streak_widget_flame"
-                android:scaleType="fitCenter"
-                android:importantForAccessibility="no" />
-            <!-- A physical size cap keeps single digits inside this narrow column at large font scales. -->
-            <TextView
-                android:id="@+id/streak_current"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:text="0"
-                android:textSize="56sp"
-                android:textColor="@color/streak_widget_text"
-                android:maxLines="1"
-                android:includeFontPadding="false"
-                android:gravity="center_vertical"
-                android:fontFamily="sans-serif-black"
-                android:autoSizeTextType="uniform"
-                android:autoSizeMinTextSize="5sp"
-                android:autoSizeMaxTextSize="50dp"
-                android:autoSizeStepGranularity="1sp"
-                android:layout_weight="0.9"
-                android:layout_marginStart="6dp"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/streak_label"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:text="@string/currentLabel"
-                android:textSize="10sp"
-                android:textColor="@color/streak_widget_secondary"
-                android:maxLines="2"
-                android:includeFontPadding="false"
-                android:gravity="center_vertical"
-                android:fontFamily="sans-serif"
-                android:autoSizeTextType="uniform"
-                android:autoSizeMinTextSize="5sp"
-                android:autoSizeMaxTextSize="10sp"
-                android:autoSizeStepGranularity="1sp"
-                android:layout_weight="1.1"
-                android:layout_marginStart="4dp" />
-        </LinearLayout>
-        <LinearLayout
-            android:id="@+id/streak_record_badge"
-            android:layout_width="match_parent"
-            android:layout_height="26dp"
-            android:layout_marginTop="4dp"
-            android:paddingStart="6dp"
-            android:paddingEnd="6dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:background="@drawable/streak_widget_record_surface">
-            <ImageView
-                android:id="@+id/streak_trophy"
-                android:layout_width="12dp"
-                android:layout_height="match_parent"
-                android:src="@drawable/streak_widget_trophy"
-                android:scaleType="fitCenter"
-                android:importantForAccessibility="no" />
-            <TextView
-                android:id="@+id/streak_best"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:text="0"
-                android:textSize="14sp"
-                android:textColor="@color/streak_widget_text"
-                android:maxLines="1"
-                android:includeFontPadding="false"
-                android:gravity="center_vertical"
-                android:fontFamily="sans-serif"
-                android:autoSizeTextType="uniform"
-                android:autoSizeMinTextSize="5sp"
-                android:autoSizeMaxTextSize="14sp"
-                android:autoSizeStepGranularity="1sp"
-                android:layout_weight="0.7"
-                android:layout_marginStart="4dp"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/streak_best_label"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:text="@string/bestLabel"
-                android:textSize="9sp"
-                android:textColor="@color/streak_widget_secondary"
-                android:maxLines="1"
-                android:includeFontPadding="false"
-                android:gravity="center_vertical"
-                android:fontFamily="sans-serif"
-                android:autoSizeTextType="uniform"
-                android:autoSizeMinTextSize="5sp"
-                android:autoSizeMaxTextSize="9sp"
-                android:autoSizeStepGranularity="1sp"
-                android:layout_weight="1.5"
-                android:layout_marginStart="3dp" />
-        </LinearLayout>
-        <LinearLayout
-            android:id="@+id/streak_status_group"
-            android:layout_width="match_parent"
-            android:layout_height="26dp"
-            android:layout_marginTop="6dp"
-            android:paddingStart="7dp"
-            android:paddingEnd="7dp"
-            android:background="@drawable/streak_widget_status_surface"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-            <ImageView
-                android:id="@+id/streak_status_icon"
-                android:layout_width="12dp"
-                android:layout_height="match_parent"
-                android:src="@drawable/streak_widget_clock"
-                android:scaleType="fitCenter"
+                android:id="@+id/streak_rays"
+                android:src="@drawable/streak_widget_rays"
                 android:importantForAccessibility="no"
-                android:tint="@color/streak_widget_accent"
-                android:layout_marginEnd="5dp" />
-            <TextView
-                android:id="@+id/streak_status"
-                android:layout_width="0dp"
+                android:scaleType="fitXY"/>
+            <ImageView
+                android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:text="@string/startLabel"
-                android:textSize="10sp"
-                android:textColor="@color/streak_widget_accent"
-                android:maxLines="2"
-                android:includeFontPadding="false"
-                android:gravity="center_vertical"
-                android:fontFamily="sans-serif"
-                android:autoSizeTextType="uniform"
-                android:autoSizeMinTextSize="5sp"
-                android:autoSizeMaxTextSize="10sp"
-                android:autoSizeStepGranularity="1sp"
-                android:layout_weight="1" />
-        </LinearLayout>
+                android:id="@+id/streak_flame"
+                android:src="@drawable/streak_widget_flame"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter"
+                android:paddingTop="22dp"
+                android:paddingBottom="1dp"/>
+        </FrameLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:id="@+id/streak_current"
+            android:text="7"
+            android:textColor="#FFFFFF"
+            android:textSize="51sp"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="7dp"
+            android:autoSizeMaxTextSize="51dp"
+            android:autoSizeStepGranularity="1dp"
+            android:maxLines="1"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:fontFamily="sans-serif-black"
+            android:importantForAccessibility="no"
+            android:layout_weight="0.8"
+            android:paddingBottom="6dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"/>
     </LinearLayout>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="20dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_gravity="end|top"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="12dp">
+        <ImageView
+            android:layout_width="13dp"
+            android:layout_height="13dp"
+            android:id="@+id/streak_trophy"
+            android:src="@drawable/streak_widget_trophy"
+            android:importantForAccessibility="no"
+            android:scaleType="fitCenter"
+            android:tint="#FFFFFF"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="17dp"
+            android:id="@+id/streak_best"
+            android:text="21"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="7dp"
+            android:autoSizeMaxTextSize="14dp"
+            android:autoSizeStepGranularity="1dp"
+            android:maxLines="1"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:fontFamily="sans-serif-black"
+            android:importantForAccessibility="no"
+            android:layout_marginStart="4dp"
+            android:maxWidth="55dp"/>
+    </LinearLayout>
+    <ImageView
+        android:id="@+id/streak_status_icon"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="11dp"
+        android:layout_marginBottom="11dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/streak_widget_check"/>
 </FrameLayout>

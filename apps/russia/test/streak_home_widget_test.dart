@@ -44,8 +44,17 @@ void main() {
           activeDays: const {},
         ),
         l10n,
+        now: DateTime(2026, 3, 10),
       );
       expect(data['lastActiveDate'], '2026-03-08');
+      expect(data['activeDates'], [
+        '2026-03-04',
+        '2026-03-05',
+        '2026-03-06',
+        '2026-03-07',
+        '2026-03-08',
+      ]);
+      expect(data['locale'], language);
       expect(data['current'], 7);
       expect(data['longest'], 21);
       expect(data['currentLabel'], l10n.homeWidgetCurrent);
@@ -55,6 +64,8 @@ void main() {
           'current',
           'longest',
           'lastActiveDate',
+          'activeDates',
+          'locale',
           'nameLabel',
           'currentLabel',
           'bestLabel',
@@ -64,6 +75,26 @@ void main() {
         ]),
       );
     }
+  });
+
+  test('shares earlier activity across gaps, limited to the rolling week', () {
+    final data = StreakWidgetService.snapshot(
+      Streak(
+        current: 1,
+        longest: 3,
+        lastActiveDate: DateTime(2026, 1, 2),
+        startDate: DateTime(2026, 1, 2),
+        activeDays: {
+          DateTime(2025, 12, 26), // Before the window.
+          DateTime(2025, 12, 27),
+          DateTime(2025, 12, 30),
+          DateTime(2026, 1, 2),
+        },
+      ),
+      lookupAppLocalizations(const Locale('ru')),
+      now: DateTime(2026, 1, 2),
+    );
+    expect(data['activeDates'], ['2025-12-27', '2025-12-30', '2026-01-02']);
   });
 
   test(
@@ -97,6 +128,7 @@ void main() {
       expect(calls.last['current'], 0);
       expect(calls.last['longest'], 0);
       expect(calls.last['lastActiveDate'], isNull);
+      expect(calls.last['activeDates'], isEmpty);
     },
   );
 

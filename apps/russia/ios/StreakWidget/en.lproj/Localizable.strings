@@ -7,7 +7,7 @@
 "continueLabel" = "Keep your streak today";
 "startLabel" = "Start a new streak";
 "streak_widget_flame_name" = "Streak · Flame";
-"streak_widget_flame_description" = "A bright orange background after studying today, a calm background before.";
+"streak_widget_flame_description" = "Your streak and personal best. The wide widget shows which of the last seven days you studied.";
 "streak_widget_minimal_name" = "Streak · Minimal";
 "streak_widget_minimal_description" = "A clean streak counter and personal best. The background changes after studying.";
 "streak_widget_record_name" = "Streak · Record";

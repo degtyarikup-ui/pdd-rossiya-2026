@@ -5411,7 +5411,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get homeWidgetFlameDescription =>
-      'Оранжевый фон после занятия сегодня, спокойный — до него.';
+      'Дни подряд и личный рекорд. В широком виджете видны занятия за последние семь дней.';
 
   @override
   String get homeWidgetMinimalName => 'Серия · Минимал';

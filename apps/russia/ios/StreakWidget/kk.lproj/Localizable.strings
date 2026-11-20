@@ -7,7 +7,7 @@
 "continueLabel" = "Бүгін серияны жалғастыр";
 "startLabel" = "Жаңа серияны баста";
 "streak_widget_flame_name" = "Серия · Жалын";
-"streak_widget_flame_description" = "Бүгінгі сабақтан кейін қызғылт сары фон, оған дейін — тыныш реңк.";
+"streak_widget_flame_description" = "Қатарынан оқыған күндеріңіз бен жеке рекордыңыз. Кең виджетте соңғы жеті күндегі сабақтар белгіленеді.";
 "streak_widget_minimal_name" = "Серия · Минимал";
 "streak_widget_minimal_description" = "Ықшам серия мен рекорд. Сабақтан кейін фон өзгереді.";
 "streak_widget_record_name" = "Серия · Рекорд";

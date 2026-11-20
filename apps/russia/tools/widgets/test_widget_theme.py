@@ -1,67 +1,49 @@
-"""Cross-platform contracts for the streak celebration color and native icons."""
+"""Public gallery and visual contracts for the home-screen streak widget."""
 from pathlib import Path
 import re
 import unittest
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
-
-
-def colors():
-    return {e.attrib['name']: e.text.lstrip('#') for e in ET.parse(
-        ROOT / 'android/app/src/main/res/values/streak_widget_colors.xml').getroot()}
-
-
-def luminance(rgb):
-    channels = [int(rgb[i:i+2], 16) / 255 for i in (0, 2, 4)]
-    linear = [v / 12.92 if v <= 0.04045 else ((v + .055) / 1.055) ** 2.4 for v in channels]
-    return sum(a * b for a, b in zip(linear, (.2126, .7152, .0722)))
+ANDROID = ROOT / 'android/app/src/main'
+RES = ANDROID / 'res'
+NS = '{http://schemas.android.com/apk/res/android}'
+SWIFT = (ROOT / 'ios/StreakWidget/StreakWidget.swift').read_text()
 
 
 class WidgetThemeTest(unittest.TestCase):
-    def test_gallery_preview_always_shows_today_status(self):
-        android_ns = '{http://schemas.android.com/apk/res/android}'
-        for path in (ROOT / 'android/app/src/main/res/layout').glob('streak_widget*.xml'):
-            status = next(e for e in ET.parse(path).getroot().iter()
-                          if e.attrib.get(android_ns + 'id') == '@+id/streak_status')
-            self.assertEqual(status.attrib.get(android_ns + 'visibility', 'visible'), 'visible', str(path))
-
-    def test_gold_matches_the_app_celebration_on_both_platforms(self):
-        source = (ROOT.parents[1] / 'packages/pdd_ui/lib/src/app_colors.dart').read_text()
-        app_gold = re.search(r'static const Color gold = Color\(0xFF([0-9A-Fa-f]{6})\)', source).group(1).upper()
-        self.assertEqual(colors()['streak_widget_active_background'].upper(), app_gold)
-        swift = (ROOT / 'ios/StreakWidget/StreakWidget.swift').read_text()
-        ios_gold = re.search(r'static let activeBackground = Color\(widgetRGB: 0x([0-9A-Fa-f]{6})\)', swift).group(1)
-        self.assertEqual(ios_gold.upper(), app_gold)
-        ios_highlight = re.search(r'static let activeHighlight = Color\(widgetRGB: 0x([0-9A-Fa-f]{6})\)', swift).group(1)
-        self.assertEqual(ios_highlight.upper(), colors()['streak_widget_active_highlight'].upper())
-        gradient = ET.parse(ROOT / 'android/app/src/main/res/drawable/streak_widget_active_background.xml').getroot().find('gradient')
-        ns = '{http://schemas.android.com/apk/res/android}'
-        self.assertEqual(gradient.attrib[ns + 'startColor'], '@color/streak_widget_active_background')
-        self.assertEqual(gradient.attrib[ns + 'endColor'], '@color/streak_widget_active_highlight')
-
-    def test_small_text_has_readable_contrast_on_bright_background(self):
-        palette = colors()
-        for key in ('streak_widget_active_text', 'streak_widget_active_secondary'):
-            for background in ('streak_widget_active_background', 'streak_widget_active_highlight'):
-                light, dark = sorted([luminance(palette[key]), luminance(palette[background])], reverse=True)
-                self.assertGreaterEqual((light + .05) / (dark + .05), 4.5, (key, background))
-
-    def test_native_widget_content_uses_icons_instead_of_emoji(self):
-        paths = list((ROOT / 'android/app/src/main/res/layout').glob('streak_widget*.xml')) + [
-            ROOT / 'android/app/src/main/kotlin/ru/pdd/pdd_app/StreakWidgetRenderer.kt',
-            ROOT / 'ios/StreakWidget/StreakWidget.swift',
+    def test_gallery_has_one_resizable_streak_widget(self):
+        manifest = ET.parse(ANDROID / 'AndroidManifest.xml')
+        receivers = [
+            receiver.attrib[NS + 'name'] for receiver in manifest.findall('.//receiver')
+            if any(meta.get(NS + 'name') == 'android.appwidget.provider'
+                   for meta in receiver.findall('meta-data'))
+            and 'Streak' in receiver.get(NS + 'name', '')
         ]
-        for path in paths:
-            self.assertNotRegex(path.read_text(), '[\U0001F000-\U0001FFFF]', str(path))
-        android_ns = '{http://schemas.android.com/apk/res/android}'
-        for path in paths:
-            if path.suffix != '.xml':
-                continue
-            by_id = {e.attrib.get(android_ns + 'id'): e.tag for e in ET.parse(path).getroot().iter()}
-            for name in ('streak_flame', 'streak_trophy'):
-                self.assertEqual(by_id['@+id/' + name], 'ImageView', str(path))
+        self.assertEqual([name.split('.')[-1] for name in receivers], ['StreakWidgetProvider'])
+        info = ET.parse(RES / 'xml/streak_widget_info.xml').getroot()
+        self.assertEqual(set(info.get(NS + 'resizeMode').split('|')), {'horizontal', 'vertical'})
+        self.assertIn('kind: "PddStudyStreak"', SWIFT)
+        self.assertNotIn('PddStudyStreakMinimal', SWIFT)
+        self.assertNotIn('PddStudyStreakRecord', SWIFT)
 
+    def test_compact_and_wide_share_the_celebration_art(self):
+        source = (ROOT.parents[1] / 'packages/pdd_ui/lib/src/app_colors.dart').read_text()
+        gold = re.search(r'static const Color gold = Color\(0xFF([0-9A-Fa-f]{6})\)', source).group(1)
+        palette = ET.parse(RES / 'values/streak_widget_colors.xml')
+        self.assertEqual(palette.find("color[@name='streak_widget_active_background']").text, '#' + gold)
+        for wide in (False, True):
+            path = RES / 'layout' / ('streak_widget_wide.xml' if wide else 'streak_widget.xml')
+            layout = ET.parse(path)
+            elements = {node.get(NS + 'id'): node for node in layout.iter()}
+            self.assertEqual(elements['@+id/streak_rays'].get(NS + 'src'), '@drawable/streak_widget_rays')
+            self.assertEqual(elements['@+id/streak_flame'].tag, 'ImageView')
+            self.assertEqual(elements['@+id/streak_trophy'].tag, 'ImageView')
+            self.assertEqual('@+id/streak_week' in elements, wide)
+            for metric in ('current', 'best'):
+                self.assertEqual(elements['@+id/streak_' + metric].get(NS + 'textColor'), '#FFFFFF')
+        self.assertTrue((RES / 'drawable-nodpi/streak_widget_rays.png').is_file())
+        self.assertIn('CelebrationBackground', SWIFT)
 
 if __name__ == '__main__':
     unittest.main()

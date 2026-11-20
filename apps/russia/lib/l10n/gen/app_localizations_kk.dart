@@ -5352,7 +5352,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get homeWidgetFlameDescription =>
-      'Бүгінгі сабақтан кейін қызғылт сары фон, оған дейін — тыныш реңк.';
+      'Қатарынан оқыған күндеріңіз бен жеке рекордыңыз. Кең виджетте соңғы жеті күндегі сабақтар белгіленеді.';
 
   @override
   String get homeWidgetMinimalName => 'Серия · Минимал';

@@ -2,86 +2,23 @@ import SwiftUI
 import WidgetKit
 
 private let widgetGroup = "group.ru.pdd.pddApp.streak"
-enum StreakWidgetStyle: String {
-    // Preserve the original kind for already placed widgets.
-    case flame = "PddStudyStreak"
-    case minimal = "PddStudyStreakMinimal"
-    case record = "PddStudyStreakRecord"
 
-    var resourceName: String {
-        switch self {
-        case .flame: return "flame"
-        case .minimal: return "minimal"
-        case .record: return "record"
-        }
-    }
-    @ViewBuilder func background(done: Bool) -> some View {
-        ZStack(alignment: .topTrailing) {
-            if done {
-                LinearGradient(colors: [StreakWidgetPalette.activeBackground, StreakWidgetPalette.activeHighlight],
-                               startPoint: .bottomLeading, endPoint: .topTrailing)
-            } else {
-                switch self {
-                case .flame:
-                    ZStack {
-                        Color(uiColor: .secondarySystemBackground)
-                        Color.orange.opacity(0.06)
-                    }
-                case .minimal:
-                    Color(uiColor: .systemBackground)
-                case .record:
-                    Color(widgetRGB: 0x14243D)
-                }
-            }
-            if self == .flame {
-                Image(systemName: "flame.fill").resizable().scaledToFit()
-                    .frame(width: 112, height: 146)
-                    .foregroundStyle(done ? Color.white : Color.orange)
-                    .opacity(done ? 0.12 : 0.08).offset(x: 18, y: -10)
-                    .accessibilityHidden(true)
-            }
-        }.clipped()
-    }
+// Date keys are the app's Gregorian calendar days in the device's time zone.
+private func dayKeyFormatter() -> DateFormatter {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.calendar = Calendar(identifier: .gregorian)
+    formatter.timeZone = .autoupdatingCurrent
+    formatter.dateFormat = "yyyy-MM-dd"
+    return formatter
 }
 
-private extension Color {
-    init(widgetRGB rgb: UInt32) {
-        self.init(red: Double((rgb >> 16) & 255) / 255,
-                  green: Double((rgb >> 8) & 255) / 255,
-                  blue: Double(rgb & 255) / 255)
-    }
-}
-
-struct StreakWidgetPalette {
-    // AppColors.gold, also used by the full-screen streak celebration.
-    static let activeBackground = Color(widgetRGB: 0xFFA53C)
-    static let activeHighlight = Color(widgetRGB: 0xFFCC80)
-    let ink: Color
-    let secondaryInk: Color
-    let accent: Color
-    let icon: Color
-    let separator: Color
-    let track: Color
-
-    init(style: StreakWidgetStyle, done: Bool) {
-        if done {
-            let primary = Color(widgetRGB: 0x3E250D)
-            let secondary = Color(widgetRGB: 0x573516)
-            ink = primary
-            secondaryInk = secondary
-            accent = primary
-            icon = .white
-            separator = secondary.opacity(0.3)
-            track = secondary.opacity(0.3)
-        } else {
-            ink = style == .record ? .white : .primary
-            secondaryInk = style == .record ? .white.opacity(0.72) : .secondary
-            accent = style == .record ? Color(widgetRGB: 0xFFBA6B) : .orange
-            icon = accent
-            separator = style == .record ? .white.opacity(0.2) : Color.secondary.opacity(0.25)
-            track = style == .record ? .white.opacity(0.15) : Color.secondary.opacity(0.15)
-        }
-    }
+private struct ActivityDay: Identifiable {
+    let id: String
+    let weekday: String
+    let spokenDate: String
+    let active: Bool
+    let today: Bool
 }
 
 struct StreakEntry: TimelineEntry {
@@ -89,13 +26,8 @@ struct StreakEntry: TimelineEntry {
     let snapshot: [String: Any]
 
     private var lastActive: Date? {
-        guard let iso = snapshot["lastActiveDate"] as? String else { return nil }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .autoupdatingCurrent
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.isLenient = false
-        return formatter.date(from: iso)
+        guard let value = snapshot["lastActiveDate"] as? String else { return nil }
+        return dayKeyFormatter().date(from: value)
     }
 
     var current: Int {
@@ -104,19 +36,46 @@ struct StreakEntry: TimelineEntry {
                   to: Calendar.current.startOfDay(for: date)), last >= yesterday else { return 0 }
         return max(0, snapshot["current"] as? Int ?? 0)
     }
-    var progress: Double { best > 0 ? min(1, max(0, Double(current) / Double(best))) : 0 }
+
     var best: Int { max(current, snapshot["longest"] as? Int ?? 0) }
     var done: Bool { lastActive.map { Calendar.current.isDate($0, inSameDayAs: date) } ?? false }
+
     func label(_ key: String) -> String {
-        snapshot[key] as? String ?? NSLocalizedString(key == "nameLabel" ? "streak_widget_name" : key, comment: "Home screen widget")
+        snapshot[key] as? String ?? NSLocalizedString(key, comment: "Home screen widget")
     }
-    var status: String { label(done ? "doneLabel" : current > 0 ? "continueLabel" : "startLabel") }
+
+    fileprivate var week: [ActivityDay] {
+        let calendar = Calendar.autoupdatingCurrent
+        let keys = dayKeyFormatter()
+        // Already installed widgets can still have the old snapshot until the next app launch.
+        var active = Set(snapshot["activeDates"] as? [String] ?? [])
+        if let last = snapshot["lastActiveDate"] as? String { active.insert(last) }
+        let formatter = DateFormatter()
+        formatter.locale = (snapshot["locale"] as? String).map { Locale(identifier: $0) } ?? .autoupdatingCurrent
+        formatter.timeZone = .autoupdatingCurrent
+        formatter.dateFormat = "EEE"
+        let spoken = DateFormatter()
+        spoken.locale = formatter.locale
+        spoken.dateStyle = .full
+
+        return (-6...0).compactMap { offset in
+            guard let day = calendar.date(byAdding: .day, value: offset, to: date) else { return nil }
+            let key = keys.string(from: day)
+            return ActivityDay(id: key, weekday: formatter.string(from: day), spokenDate: spoken.string(from: day),
+                               active: active.contains(key), today: offset == 0)
+        }
+    }
 }
 
 struct StreakProvider: TimelineProvider {
     func placeholder(in context: Context) -> StreakEntry {
-        StreakEntry(date: Date(), snapshot: ["current": 7, "longest": 21,
-            "lastActiveDate": ISO8601DateFormatter().string(from: Date()).prefix(10).description])
+        let date = Date()
+        let keys = dayKeyFormatter()
+        let days = [-6, -4, -2, -1, 0].compactMap { offset in
+            Calendar.current.date(byAdding: .day, value: offset, to: date).map { keys.string(from: $0) }
+        }
+        return StreakEntry(date: date, snapshot: ["current": 3, "longest": 12,
+                           "lastActiveDate": keys.string(from: date), "activeDates": days])
     }
 
     private func read() -> [String: Any] {
@@ -136,8 +95,7 @@ struct StreakProvider: TimelineProvider {
         let snapshot = read()
         let calendar = Calendar.autoupdatingCurrent
         let midnight = calendar.startOfDay(for: now)
-        // Include the grace day and expiry even if the app stays closed.
-        let entries = [StreakEntry(date: now, snapshot: snapshot)] + (1...3).compactMap { offset in
+        let entries = [StreakEntry(date: now, snapshot: snapshot)] + (1...7).compactMap { offset in
             calendar.date(byAdding: .day, value: offset, to: midnight).map {
                 StreakEntry(date: $0, snapshot: snapshot)
             }
@@ -146,241 +104,172 @@ struct StreakProvider: TimelineProvider {
     }
 }
 
+// Static outline of the in-game BurningFlame, including its cut-out tongue.
+private struct CelebrationFlame: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x, y: y) }
+        func curve(_ x1: CGFloat, _ y1: CGFloat, _ x2: CGFloat, _ y2: CGFloat, _ x: CGFloat, _ y: CGFloat) {
+            path.addCurve(to: point(x, y), control1: point(x1, y1), control2: point(x2, y2))
+        }
+        path.move(to: point(50, 112))
+        curve(26,112,14,95,14,77)
+        curve(14,64,20,54,26,47)
+        curve(26,60,31,67,37,68)
+        curve(30,45,43,25,60,9)
+        curve(56,32,70,38,76,52)
+        curve(79,46,79,42,78,37)
+        curve(90,53,94,66,92,80)
+        curve(90,100,73,112,50,112)
+        path.closeSubpath()
+        path.move(to: point(51,104))
+        curve(35,104,32,91,36,82)
+        curve(38,75,43,69,48,61)
+        curve(47,73,55,77,57,82)
+        curve(58,78,59,76,59,74)
+        curve(66,83,70,92,63,100)
+        curve(60,103,56,104,51,104)
+        path.closeSubpath()
+        let scale = min(rect.width / 80, rect.height / 104)
+        return path.applying(CGAffineTransform(translationX: rect.midX - 53 * scale,
+                                               y: rect.midY - 60.5 * scale).scaledBy(x: scale, y: scale))
+    }
+}
+
+private struct CelebrationBackground: View {
+    let center: UnitPoint
+
+    var body: some View {
+        GeometryReader { bounds in
+            let radius = max(bounds.size.width, bounds.size.height) * 0.85
+            ZStack {
+                Color(red: 1, green: 165 / 255, blue: 60 / 255)
+                AngularGradient(stops: (0...48).map { index in
+                    Gradient.Stop(color: .white.opacity(index % 4 == 1 ? 0.36 : 0),
+                                  location: Double(index) / 48)
+                }, center: center)
+                .mask(RadialGradient(colors: [.white, .clear], center: center,
+                                     startRadius: 0, endRadius: radius))
+            }
+        }
+    }
+}
+
 struct StreakWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: StreakEntry
-    let style: StreakWidgetStyle
-    private var palette: StreakWidgetPalette { StreakWidgetPalette(style: style, done: entry.done) }
+
     private var small: Bool { family == .systemSmall }
     private var large: Bool { family == .systemLarge }
-
-    private var count: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Image(systemName: "flame.fill")
-                .resizable().scaledToFit()
-                .frame(width: large ? 42 : 28, height: large ? 52 : 34)
-                .foregroundStyle(palette.icon)
-                .opacity(entry.current > 0 ? 1 : 0.4).accessibilityHidden(true)
-            Text(entry.current, format: .number)
-                .font(.system(size: large ? 64 : small ? 30 : 40, weight: .bold, design: .rounded))
-                .minimumScaleFactor(0.4).lineLimit(1)
-        }
+    private var center: UnitPoint {
+        UnitPoint(x: small || large ? 0.5 : 0.42, y: small ? 0.43 : large ? 0.38 : 0.34)
     }
 
-    private var metric: some View {
-        VStack(alignment: style == .minimal ? .center : .leading, spacing: 4) {
-            count
-            Text(entry.label("currentLabel")).font(.caption).foregroundStyle(palette.secondaryInk)
-                .lineLimit(2).minimumScaleFactor(0.7)
-        }.accessibilityElement(children: .combine)
+    private func flame(height: CGFloat) -> some View {
+        CelebrationFlame().fill(.white, style: FillStyle(eoFill: true))
+            .frame(width: height * 0.78, height: height)
     }
 
-    private var bestCount: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Image(systemName: "trophy.fill")
-                .font(.system(size: small ? 17 : 24))
-                .foregroundStyle(palette.icon).accessibilityHidden(true)
-            Text(entry.best, format: .number)
-                .font(.system(size: small ? 19 : 30, weight: .semibold, design: .rounded))
-                .lineLimit(1).minimumScaleFactor(0.4)
-        }
+    private var number: some View {
+        Text(entry.current, format: .number)
+            .font(.system(size: large ? 76 : small ? 40 : 52, weight: .heavy, design: .rounded))
+            .minimumScaleFactor(0.35).lineLimit(1)
     }
 
-    private var record: some View {
-        VStack(alignment: style == .minimal ? .center : .leading, spacing: 4) {
-            bestCount
-            Text(entry.label("bestLabel")).font(.caption).foregroundStyle(palette.secondaryInk)
-                .lineLimit(2).minimumScaleFactor(0.7)
-        }.accessibilityElement(children: .combine)
-    }
-
-    private var status: some View {
+    private var streak: some View {
         Group {
-            if small { Text(entry.status) }
-            else { Label(entry.status, systemImage: entry.done ? "checkmark.circle.fill" : "sparkles") }
-        }
-        .font(small ? .caption2 : .caption).foregroundStyle(palette.accent)
-        .lineLimit(2).minimumScaleFactor(0.7).layoutPriority(1)
-    }
-
-    private var compactRecord: some View {
-        HStack(spacing: 6) {
-            bestCount
-            Text(entry.label("bestLabel")).font(.caption2).foregroundStyle(palette.secondaryInk)
-                .lineLimit(2).minimumScaleFactor(0.7)
-        }.accessibilityElement(children: .combine)
-    }
-
-    private var heading: some View {
-        Text(entry.label("nameLabel")).font(.headline).foregroundStyle(palette.secondaryInk)
-            .lineLimit(2).minimumScaleFactor(0.7)
-    }
-
-    private var progress: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                Capsule().fill(palette.track)
-                Capsule().fill(palette.accent).frame(width: geometry.size.width * entry.progress)
-            }
-        }.frame(height: large ? 8 : 5)
-            .accessibilityElement()
-            .accessibilityLabel(Text(entry.label("bestLabel")))
-            .accessibilityValue(Text(entry.progress, format: .percent.precision(.fractionLength(0))))
-    }
-
-    private var flameMetric: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                Image(systemName: "flame.fill").resizable().scaledToFit()
-                    .frame(width: small ? 18 : 22, height: 28).foregroundStyle(palette.icon)
-                    .opacity(entry.current > 0 ? 1 : 0.4).accessibilityHidden(true)
-                Text(entry.current, format: .number)
-                    .font(.system(size: large ? 72 : small ? 44 : 56, weight: .heavy, design: .rounded))
-                    .lineLimit(1).minimumScaleFactor(0.3).frame(maxWidth: .infinity, alignment: .leading)
-                if small {
-                    Text(entry.label("currentLabel")).font(.system(size: 10)).foregroundStyle(palette.secondaryInk)
-                        .lineLimit(2).minimumScaleFactor(0.5).frame(width: 46, alignment: .leading)
+            if small || large {
+                VStack(spacing: 2) {
+                    flame(height: large ? 92 : 48).opacity(entry.done ? 1 : 0.74)
+                    number
                 }
-            }.frame(maxHeight: .infinity, alignment: .leading)
-            if !small {
-                Text(entry.label("currentLabel")).font(.caption2).foregroundStyle(palette.secondaryInk)
-                    .lineLimit(1).minimumScaleFactor(0.5)
-            }
-        }.accessibilityElement(children: .combine)
-    }
-
-    private var flameRecord: some View {
-        Group {
-            if small {
-                HStack(spacing: 4) {
-                    Image(systemName: "trophy.fill").font(.system(size: 12)).foregroundStyle(palette.icon)
-                        .accessibilityHidden(true)
-                    Text(entry.best, format: .number)
-                        .font(.system(size: 14, weight: .bold, design: .rounded)).lineLimit(1).minimumScaleFactor(0.4)
-                    Text(entry.label("bestLabel")).font(.system(size: 9)).foregroundStyle(palette.secondaryInk)
-                        .lineLimit(1).minimumScaleFactor(0.5)
-                }.padding(.horizontal, 6).frame(maxWidth: .infinity, minHeight: 26, maxHeight: 26, alignment: .leading)
             } else {
-                record.padding(10).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                HStack(spacing: 9) { flame(height: 46); number }
             }
         }
-        .background(RoundedRectangle(cornerRadius: 10).fill(entry.done ? Color.white.opacity(0.25) : Color.primary.opacity(0.06)))
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(entry.label("currentLabel")))
+        .accessibilityValue(Text("\(entry.current). \(entry.label(entry.done ? "doneLabel" : entry.current > 0 ? "continueLabel" : "startLabel"))"))
     }
 
-    private var flameStatus: some View {
-        HStack(spacing: 5) {
-            Image(systemName: entry.done ? "checkmark.circle.fill" : "clock")
-                .font(.system(size: 12)).accessibilityHidden(true)
-            Text(entry.status).font(.system(size: small ? 10 : 12, weight: .medium))
-                .lineLimit(2).minimumScaleFactor(0.6).frame(maxWidth: .infinity, alignment: .leading)
+    private var best: some View {
+        HStack(spacing: 4) {
+            if #available(iOS 16.0, *) { Image(systemName: "trophy.fill") }
+            else { Image(systemName: "rosette") }
+            Text(entry.best, format: .number).lineLimit(1).minimumScaleFactor(0.6)
         }
-        .foregroundStyle(palette.accent).padding(.horizontal, 7)
-        .frame(height: small ? 26 : 28)
-        .background(RoundedRectangle(cornerRadius: 13).fill(entry.done ? Color.white.opacity(0.7) : Color.primary.opacity(0.08)))
-        .layoutPriority(1)
+        .font(.system(size: 12, weight: .bold, design: .rounded))
+        .padding(.vertical, 4).padding(.horizontal, 7)
+        .background(Capsule().fill(Color.black.opacity(0.12)))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(entry.label("bestLabel")))
+        .accessibilityValue(Text(entry.best, format: .number))
     }
 
-    private var flameLayout: some View {
-        VStack(alignment: .leading, spacing: small ? 6 : 10) {
-            if large { heading }
-            if small {
-                flameMetric
-                flameRecord
-            } else {
-                HStack(spacing: 12) {
-                    flameMetric.frame(maxWidth: .infinity, alignment: .leading)
-                    flameRecord.frame(maxWidth: .infinity, alignment: .leading)
-                }.frame(maxHeight: .infinity)
-            }
-            flameStatus
-        }
-    }
-
-    @ViewBuilder private var minimalLayout: some View {
-        VStack(spacing: small ? 3 : 12) {
-            if large { heading }
-            Spacer(minLength: 0)
-            if small {
-                metric
-                Divider().overlay(palette.separator)
-                compactRecord
-            } else {
-                HStack(spacing: 20) {
-                    metric.frame(maxWidth: .infinity)
-                    Divider().frame(height: 56).overlay(palette.separator)
-                    record.frame(maxWidth: .infinity)
+    private var week: some View {
+        HStack(spacing: 0) {
+            ForEach(entry.week) { day in
+                VStack(spacing: 3) {
+                    Text(day.weekday)
+                        .font(.system(size: large ? 13 : 11, weight: .semibold))
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                    ZStack {
+                        if day.active { flame(height: large ? 22 : 15) }
+                        else { Circle().strokeBorder(.white.opacity(0.8), lineWidth: 1.3).frame(width: 8, height: 8) }
+                    }.frame(height: large ? 22 : 15)
+                    Capsule().fill(.white).frame(width: 10, height: 2).opacity(day.today ? 1 : 0)
                 }
-            }
-            Spacer(minLength: 0)
-            status
-        }
-    }
-
-    @ViewBuilder private var recordLayout: some View {
-        VStack(alignment: .leading, spacing: small ? 2 : 12) {
-            if large { heading; Spacer(minLength: 0) }
-            if small {
-                metric
-                Spacer(minLength: 0)
-                progress
-                compactRecord
-                status
-            } else {
-                HStack(spacing: 20) {
-                    metric.frame(maxWidth: .infinity, alignment: .leading)
-                    record.frame(maxWidth: .infinity, alignment: .leading)
-                }
-                progress
-                if large { Spacer(minLength: 0) }
-                status
+                .frame(maxWidth: .infinity)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(day.spokenDate))
+                .accessibilityAddTraits(day.active ? .isSelected : [])
             }
         }
+        .padding(.vertical, large ? 10 : 5)
+        .padding(.horizontal, 4)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color.black.opacity(0.12)))
     }
 
     var body: some View {
-        Group {
-            switch style {
-            case .flame: flameLayout
-            case .minimal: minimalLayout
-            case .record: recordLayout
+        VStack(spacing: 2) {
+            HStack { Spacer(minLength: 0); best }
+            streak.frame(maxWidth: .infinity, maxHeight: .infinity)
+            if !small { week }
+        }
+        .overlay(alignment: .bottomLeading) {
+            if small && entry.done {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .accessibilityHidden(true)
             }
         }
-        .foregroundStyle(palette.ink)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(2)
-        .streakBackground(style: style, done: entry.done)
+        .foregroundStyle(.white)
+        .padding(small ? 10 : large ? 16 : 10)
+        .modifier(WidgetBackdrop(center: center))
     }
 }
 
-private extension View {
-    @ViewBuilder func streakBackground(style: StreakWidgetStyle, done: Bool) -> some View {
+private struct WidgetBackdrop: ViewModifier {
+    let center: UnitPoint
+
+    func body(content: Content) -> some View {
         if #available(iOS 17.0, *) {
-            self.containerBackground(for: .widget) { style.background(done: done) }
+            content.containerBackground(for: .widget) { CelebrationBackground(center: center) }
         } else {
-            self.padding(14).background { style.background(done: done) }
+            content.background(CelebrationBackground(center: center))
         }
-    }
-}
-
-struct StudyStreakWidget: Widget {
-    let style: StreakWidgetStyle
-
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind: style.rawValue, provider: StreakProvider()) { entry in
-            StreakWidgetView(entry: entry, style: style)
-        }
-        .configurationDisplayName(NSLocalizedString("streak_widget_\(style.resourceName)_name", comment: "Widget name"))
-        .description(NSLocalizedString("streak_widget_\(style.resourceName)_description", comment: "Widget description"))
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
 @main
-struct StudyStreakWidgets: WidgetBundle {
-    var body: some Widget {
-        StudyStreakWidget(style: .flame)
-        StudyStreakWidget(style: .minimal)
-        StudyStreakWidget(style: .record)
+struct StudyStreakWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "PddStudyStreak", provider: StreakProvider()) { entry in
+            StreakWidgetView(entry: entry)
+        }
+        .configurationDisplayName(NSLocalizedString("streak_widget_flame_name", comment: "Widget name"))
+        .description(NSLocalizedString("streak_widget_flame_description", comment: "Widget description"))
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+        .contentMarginsDisabled()
     }
 }
