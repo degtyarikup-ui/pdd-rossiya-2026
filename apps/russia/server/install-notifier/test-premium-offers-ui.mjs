@@ -63,6 +63,9 @@ test('admin stages a discount, activates a rate and sees stale edits across tabs
     await page.route(probe, route => route.fulfill({status:503,json:{error:'sbp_trial_unavailable'}}), {times:1});
     await trialCheck.click();
     await trialStatus.filter({hasText:'Не удалось проверить'}).waitFor();
+    await page.route(probe, route => route.fulfill({status:503,json:{error:'sbp_trial_unavailable',reason:'provider_http',providerStatus:403}}), {times:1});
+    await trialCheck.click();
+    await trialStatus.filter({hasText:'Platega вернула HTTP 403.'}).waitFor();
     await dialog.getByRole('button', {name:'Отмена'}).click();
     const saveDraft = async price => {
       await edit('draft');
