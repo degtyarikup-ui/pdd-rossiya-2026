@@ -458,8 +458,11 @@ export const TASKS_VIEW_HTML = `
       height: 26px;
       border-radius: 50%;
       object-fit: cover;
-      opacity: .8;
-      transition: opacity .12s ease;
+      transition: opacity .12s ease, filter .12s ease;
+    }
+    .task-assignee-btn[aria-pressed="false"] img {
+      filter: grayscale(1);
+      opacity: .45;
     }
     .task-assignee-check {
       position: absolute;
@@ -471,9 +474,6 @@ export const TASKS_VIEW_HTML = `
       pointer-events: none;
     }
     .task-assignee-btn[aria-pressed="true"] .task-assignee-check { display: block; }
-    .task-assignee-btn[aria-pressed="true"] img,
-    .task-assignees .task-assignee-btn:hover img,
-    .task-assignees .task-assignee-btn:focus-visible img { opacity: 1; }
     .task-assignee-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
     .task-assignee-btn:disabled { cursor: wait; }
     .task-foot-actions {
