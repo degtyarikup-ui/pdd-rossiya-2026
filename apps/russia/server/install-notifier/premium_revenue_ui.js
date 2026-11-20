@@ -33,18 +33,18 @@ function anPremiumMethod(key){return AN_PREMIUM_METHODS[key]||AN_PREMIUM_METHODS
 var anPremiumCharts=new WeakMap();
 var anPremiumResize=new ResizeObserver(function(entries){entries.forEach(function(entry){
  var chart=anPremiumCharts.get(entry.target),svg=entry.target.firstElementChild;
- if(chart&&entry.target.clientWidth&&svg&&Number(svg.getAttribute('width'))!==Math.max(120,entry.target.clientWidth))anMetricLine(entry.target,chart.points,chart.height,chart.label,chart.color,chart.secondary);
+ if(chart&&entry.target.clientWidth&&svg&&Number(svg.getAttribute('width'))!==Math.max(120,entry.target.clientWidth))anMetricLine(entry.target,chart.points,chart.height,chart.label,chart.color,chart.extraSeries);
 });});
 function anPremiumClearSelection(el){
  delete el.dataset.activePoint;
  var marker=el.querySelector('[data-premium-marker]');if(marker)marker.setAttribute('visibility','hidden');
 }
-function anMetricLine(el,points,height,label,color,secondary){
+function anMetricLine(el,points,height,label,color,extraSeries=[]){
  var gradientId=el.id+'-area';
  if(!anPremiumCharts.has(el))anPremiumResize.observe(el);
- anPremiumCharts.set(el,{points:points,height:height,label:label,color:color,secondary:secondary});
+ anPremiumCharts.set(el,{points:points,height:height,label:label,color:color,extraSeries:extraSeries});
  var W=Math.max(120,el.clientWidth),H=height,padL=12,padR=12,padT=16,padB=30,plotW=W-padL-padR,plotH=H-padT-padB;
- var max=Math.max.apply(null,points.map(function(point){return Math.max(point.value||0,secondary?point[secondary.key]||0:0);}).concat([1]));
+ var max=Math.max.apply(null,points.map(function(point){return extraSeries.reduce(function(high,series){return Math.max(high,point[series.key]||0);},point.value||0);}).concat([1]));
  var x=function(i){return points.length===1?padL+plotW/2:padL+i*plotW/(points.length-1);};
  var y=function(value){return padT+plotH-value/max*plotH;},bottom=y(0);
  var svg='<svg width="'+W+'" height="'+H+'" role="img" tabindex="0" aria-label="'+anEsc(label)+'"><desc>Стрелки влево и вправо выбирают день и значение. Home — первый день, End — последний.</desc><defs><linearGradient id="'+gradientId+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+(color||AN_PREMIUM_ORANGE)+'" stop-opacity=".22"/><stop offset="100%" stop-color="'+(color||AN_PREMIUM_ORANGE)+'" stop-opacity=".015"/></linearGradient></defs>';
@@ -62,11 +62,11 @@ function anMetricLine(el,points,height,label,color,secondary){
   });
  }
  drawSeries('value',color||AN_PREMIUM_ORANGE,gradientId);
- if(secondary){
-  var secondId=gradientId+'-second';
-  svg+='<defs><linearGradient id="'+secondId+'" href="#'+gradientId+'"><stop offset="0%" stop-color="'+secondary.color+'" stop-opacity=".18"/><stop offset="100%" stop-color="'+secondary.color+'" stop-opacity=".015"/></linearGradient></defs>';
-  drawSeries(secondary.key,secondary.color,secondId);
- }
+ extraSeries.forEach(function(series,index){
+  var seriesId=gradientId+'-'+index;
+  svg+='<defs><linearGradient id="'+seriesId+'" href="#'+gradientId+'"><stop offset="0%" stop-color="'+series.color+'" stop-opacity=".18"/><stop offset="100%" stop-color="'+series.color+'" stop-opacity=".015"/></linearGradient></defs>';
+  drawSeries(series.key,series.color,seriesId);
+ });
  var every=Math.max(1,Math.ceil((points.length-1)/Math.max(1,Math.floor(plotW/70))));
  points.forEach(function(point,i){
   if(i===points.length-1||(points.length-1-i)%every===0)svg+='<text x="'+Math.max(18,Math.min(W-18,x(i)))+'" y="'+(H-6)+'" text-anchor="middle" font-size="11" font-weight="500" fill="#747B88">'+point.label+'</text>';
@@ -78,7 +78,7 @@ function anMetricLine(el,points,height,label,color,secondary){
  var show=function(index,event){
   active=index;el.dataset.activePoint=String(index);
   var point=points[index],marker=el.querySelector('[data-premium-marker]'),guide=el.querySelector('[data-premium-guide]');
-  root.setAttribute('aria-label',label+'. '+point.label+': '+(color?anNum(point.value):point.amountCents==null?'нет суммы':anPremiumMoney(point.amountCents))+(secondary?' · '+secondary.label+': '+anNum(point[secondary.key]):''));
+  root.setAttribute('aria-label',label+'. '+point.label+': '+(color?(point.value==null?'—':anNum(point.value)):point.amountCents==null?'нет суммы':anPremiumMoney(point.amountCents))+extraSeries.map(function(series){return ' · '+series.label+': '+(point[series.key]==null?'—':anNum(point[series.key]));}).join(''));
   marker.setAttribute('visibility','visible');guide.setAttribute('x1',x(index));guide.setAttribute('x2',x(index));
   ['halo','selected'].forEach(function(part){var dot=el.querySelector('[data-premium-'+part+']');dot.setAttribute('visibility',point.value==null?'hidden':'visible');dot.setAttribute('cx',x(index));dot.setAttribute('cy',point.value==null?bottom:y(point.value));});
   if(!event){var bounds=root.getBoundingClientRect();event={clientX:bounds.left+x(index),clientY:bounds.top+(point.value==null?bottom:y(point.value))};}

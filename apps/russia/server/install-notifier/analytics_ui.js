@@ -67,6 +67,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-metric-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 24px}
 .an-metric-summary>span{display:grid;gap:8px;min-width:0;color:var(--an-muted);font-size:11px}
 .an-metric-summary b{color:var(--an-text);font-size:clamp(18px,1.8vw,28px);font-weight:550;line-height:1.2;letter-spacing:-.6px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#an-activity-legend{flex-wrap:wrap;gap:4px 16px;margin:4px 0 0}#an-activity-legend:empty{display:none}
 .an-act-label{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:6px;font-size:11px;color:var(--an-muted);line-height:1}.an-act-label svg{display:inline-block;vertical-align:middle;flex-shrink:0}
 .an-activity-card .an-head{margin-bottom:24px}.an-chart-card .an-head{margin-bottom:24px}.an-dynamics-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:4px 0 24px}.an-dynamics-summary>span{display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--an-muted)}.an-dynamics-summary b{color:var(--an-text);font-size:40px;font-weight:550;line-height:1;letter-spacing:-1.8px;font-variant-numeric:tabular-nums}
 .an-day-details{margin-top:16px}.an-day-details>summary{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--an-text);cursor:pointer;list-style:none;padding-top:14px;border-top:1px solid #F2F3F5}.an-day-details>summary::-webkit-details-marker{display:none}.an-day-details>summary:after{content:'+';font-size:18px;color:var(--an-muted)}.an-day-details[open]>summary:after{content:'−'}.an-day-details .an-table-wrap{max-height:320px;margin-top:18px}
@@ -125,6 +126,7 @@ ${PREMIUM_REVENUE_CSS}
   <div id="an-body-activity">
   <div class="an-metric-summary" id="an-activity-summary"></div>
   <div class="an-chart" id="an-activity-chart"></div>
+  <div class="an-legend" id="an-activity-legend"></div>
   </div>
  </div>
  <div class="an-growth-grid">
@@ -283,60 +285,6 @@ function anTipShow(html, ev) {
 function anTipHide() { var t = document.getElementById('an-tip'); if (t) t.style.display = 'none'; }
 document.addEventListener('pointerdown', function (e) { if (!e.target.closest('rect[data-i]')) anTipHide(); });
 
-// Столбцы в реальных пикселях контейнера. На оси Y — только 0 и максимум.
-var anBarCharts = new WeakMap();
-var anBarResize = new ResizeObserver(function (entries) {
-  entries.forEach(function (entry) {
-    var el = entry.target, width = el.clientWidth, svg = el.firstElementChild;
-    if (!width || !svg || svg.tagName !== 'svg' || Number(svg.getAttribute('width')) === Math.max(120, width)) return;
-    var chart = anBarCharts.get(el);
-    anBars(el, chart.bars, chart.height, chart.stacked);
-  });
-});
-function anBars(el, bars, height, stacked) {
-  if (!anBarCharts.has(el)) anBarResize.observe(el);
-  anBarCharts.set(el, {bars:bars, height:height, stacked:stacked});
-  var W = Math.max(120, el.clientWidth), H = height, padL = 0, padB = 28, padT = 12;
-  var plotW = W - padL, plotH = H - padB - padT, n = bars.length;
-  var segments = bars.map(function (b) {
-    return (stacked ? b.segments : [b]).filter(function (segment) { return segment.value > 0; });
-  });
-  var totals = segments.map(function (parts) {
-    return parts.reduce(function (sum, segment) { return sum + segment.value; }, 0);
-  });
-  var max = Math.max.apply(null, totals.concat([1]));
-  var y = function (v) { return padT + plotH - v / max * plotH; };
-  var slot = plotW / n, bw = stacked ? Math.min(64, slot * 0.7) : Math.max(3, Math.min(40, slot - Math.max(2, slot * 0.3)));
-  var r = Math.min(6, bw / 2);
-  var s = '<svg width="' + W + '" height="' + H + '" role="img">';
-  [0, max].forEach(function (g) {
-    s += '<line x1="' + padL + '" x2="' + W + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#EFF0F4"/>';
-  });
-  var perDay = stacked ? 1 : 2;
-  var every = perDay * Math.ceil((n / perDay) / Math.max(2, Math.floor(plotW / (stacked ? 48 : 70))));
-  bars.forEach(function (b, i) {
-    var center = padL + (Math.floor(i / perDay) + 0.5) * slot * perDay;
-    var x = center + (stacked ? -bw / 2 : i % 2 ? 3 : -bw - 3);
-    var cumulative = 0;
-    segments[i].forEach(function (segment, index, parts) {
-      var bottom = y(cumulative);
-      cumulative += segment.value;
-      var top = y(cumulative), rr = index === parts.length - 1 ? Math.min(r, bottom - top) : 0;
-      s += '<path fill="' + segment.color + '" d="M' + x + ',' + bottom + 'V' + (top + rr) + 'Q' + x + ',' + top + ' ' + (x + rr) + ',' + top
-        + 'H' + (x + bw - rr) + 'Q' + (x + bw) + ',' + top + ' ' + (x + bw) + ',' + (top + rr) + 'V' + bottom + 'Z"/>';
-    });
-    if (b.label && (n - perDay - i) % every === 0) s += '<text x="' + Math.max(18, Math.min(W - 18, center)) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="11" font-weight="500" fill="#747B88">' + b.label + '</text>';
-    s += '<rect data-i="' + i + '" x="' + (padL + i * slot) + '" y="0" width="' + slot + '" height="' + (padT + plotH) + '" fill="transparent"/>';
-  });
-  el.innerHTML = s + '</svg>';
-  el.querySelectorAll('rect[data-i]').forEach(function (hit) {
-    var show = function (e) { anTipShow(bars[+hit.dataset.i].tip, e); };
-    hit.addEventListener('mousemove', show);
-    hit.addEventListener('pointerdown', show);
-    hit.addEventListener('mouseleave', anTipHide);
-  });
-}
-
 // 90 дней — по неделям (от сегодняшнего дня назад), иначе по дням.
 function anBuckets(tl) {
   if (tl.length <= 31) return tl.map(function (d) { return { from: d.date, to: d.date, days: [d] }; });
@@ -391,7 +339,7 @@ function anPlot(data) {
   if(tl.length&&m[2])anMetricLine(el,m[1],205,m[4],m[3]);else el.innerHTML='<div class="an-empty">Нет данных за период</div>';
  });
  var el=document.getElementById('an-site-chart');
- if(tl.length)anMetricLine(el,bars,205,'Просмотры',AN_C.accent,{key:'clicks',label:'Переходы',color:AN_C.green});else el.innerHTML='<div class="an-empty">Нет данных за период</div>';
+ if(tl.length)anMetricLine(el,bars,205,'Просмотры',AN_C.accent,[{key:'clicks',label:'Переходы',color:AN_C.green}]);else el.innerHTML='<div class="an-empty">Нет данных за период</div>';
  document.getElementById('an-installs-caption').textContent=tl.some(function(d){return d.date<AN_RELIABLE_FROM;})?'До 25.09 данные о первых запусках неполные.':'';
 }
 function anPercent(value,total) { var pct=total?value/total*100:0;return pct>0&&pct<1?'&lt;1%':Math.round(pct)+'%'; }
@@ -426,24 +374,30 @@ function anRenderGeo() {
  document.querySelectorAll('[data-geo]').forEach(function(b){b.classList.toggle('active',b.dataset.geo===anGeoMode);b.setAttribute('aria-pressed',String(b.dataset.geo===anGeoMode));});
 }
 var AN_ACTIVITY_SERIES = [
- {key:'android', label:'Google Play / Android', icon:'gplay', color:AN_C.accent},
- {key:'ios', label:'iOS', icon:'apple', color:'#89919F'},
- {key:'web', label:'Веб', icon:'web', color:AN_C.green},
- {key:'unknown', label:'Платформа неизвестна', icon:null, color:'#CDD2DA'}
+ {key:'value',label:'Общая',color:AN_C.accent},
+ {key:'android',label:'Android',color:AN_C.green},
+ {key:'ios',label:'iOS',color:'#8063B8'}
 ];
 function anRenderActivity(data) {
- var activity=data.usage&&data.usage.activity, days=activity?activity.days:[], available=days.filter(function(d){return d.total!=null;});
+ var activity=data.usage&&data.usage.activity, days=activity?activity.days:[];
  anMetricSummary('an-activity-summary',days.map(function(d){return d.total;}),activity&&activity.periodTotal);
- var labels=AN_ACTIVITY_SERIES.map(function(series){return (series.icon?anSvgIcon(series.icon):'')+series.label;});
- var bars=available.map(function(d){
-  var tip='<b>'+anDayLabel(d.date,true)+'</b>' + [['Активные установки за день',d.total]].concat(AN_ACTIVITY_SERIES.map(function(series,i){
-    return ['<span class="an-act-label">'+labels[i]+'</span>',d[series.key]];
-  })).map(function(m){return '<div class="an-tip-row"><span>'+m[0]+'</span><b>'+anNum(m[1])+'</b></div>';}).join('');
-  var segments=AN_ACTIVITY_SERIES.map(function(series){return {value:d[series.key],color:series.color};});
-  return {segments:segments,label:anDayLabel(d.date),tip:tip};
+ var el=document.getElementById('an-activity-chart'),legend=document.getElementById('an-activity-legend');
+ if(!days.some(function(day){return day.total!=null;})){
+  anPremiumCharts.delete(el);anPremiumResize.unobserve(el);
+  el.innerHTML='<div class="an-empty">Нет истории активности за выбранный период</div>';
+  legend.textContent='';return;
+ }
+ function seriesLabel(series){return '<span class="an-act-label"><i class="an-dot" aria-hidden="true" style="background:'+series.color+'"></i>'+series.label+'</span>';}
+ legend.innerHTML=AN_ACTIVITY_SERIES.map(seriesLabel).join('');
+ var points=days.map(function(day){
+  var platformsKnown=day.total!=null&&!(day.total>0&&day.unknown===day.total);
+  var point={label:anDayLabel(day.date),value:day.total,android:platformsKnown?day.android:null,ios:platformsKnown?day.ios:null};
+  point.tip='<b>'+anDayLabel(day.date,true)+'</b>'+AN_ACTIVITY_SERIES.map(function(series){
+   return '<div class="an-tip-row">'+seriesLabel(series)+'<b>'+(point[series.key]==null?'—':anNum(point[series.key]))+'</b></div>';
+  }).join('');
+  return point;
  });
- var el=document.getElementById('an-activity-chart');
- if(bars.length)anBars(el,bars,205,true);else el.innerHTML='<div class="an-empty">Нет истории активности за выбранный период</div>';
+ anMetricLine(el,points,205,AN_ACTIVITY_SERIES[0].label,AN_ACTIVITY_SERIES[0].color,AN_ACTIVITY_SERIES.slice(1));
 }
 var anUsageGroup = 'all';
 var AN_USAGE_NAMES = {tickets:'Билеты',topics:'Темы',exam:'Экзамен',marathon:'Марафон',feed:'Лента',mistakes:'Работа над ошибками',favorites:'Избранное',game:'Живой город',sign_swiper:'Это знак',traffic_controller:'Регулировщик',crossroads:'Перекрёсток',road_signs:'Знаки',parking:'Парковка',violator:'Нарушитель'};

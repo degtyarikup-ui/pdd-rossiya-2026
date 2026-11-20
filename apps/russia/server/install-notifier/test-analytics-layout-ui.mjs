@@ -135,9 +135,9 @@ if(process.argv.includes('--serve')) {
    const chart=document.getElementById('an-activity-chart');
    return Number(chart.querySelector('svg')?.getAttribute('width'))===chart.clientWidth;
   },null,{timeout:3000});
-  assert.equal(await activityCard.locator('.an-caption,.an-day-details,.an-legend').count(),0);
+  assert.equal(await activityCard.locator('.an-caption,.an-day-details').count(),0);
   const days=[
-   {date:'2026-11-06',total:30,android:10,ios:20},
+   {date:'2026-11-06',total:30,android:8,ios:20,web:2},
    {date:'2026-11-07',total:0,android:0,ios:0},
    {date:'2026-11-08',total:20,android:0,ios:20},
   ];
@@ -145,24 +145,28 @@ if(process.argv.includes('--serve')) {
   assert.match(await activitySummary.innerText(),/Среднее\s*15/);
   assert.deepEqual(await activityChart.locator('svg > text').allTextContents(),['6.11','7.11','8.11']);
   assert.equal(await activityChart.locator('rect[data-i]').count(),days.length);
-  const segments=await activityChart.locator('svg > path').evaluateAll(paths=>paths.map(path=>{
-   const {x,y,width,height}=path.getBBox();
-   return {color:path.getAttribute('fill'),x,y,width,height};
-  }));
-  const [android,ios,iosOnly]=segments;
-  assert.deepEqual(segments.map(segment=>segment.color),['#0574F8','#89919F','#89919F']);
+  assert.deepEqual(await activityCard.locator('#an-activity-legend span').allTextContents(),['Общая','Android','iOS']);
+  assert.equal(await activityChart.locator('.an-premium-line').count(),3);
+  const positions=await activityChart.locator('circle[data-premium-dot="0"]').evaluateAll(dots=>dots.map(dot=>Number(dot.getAttribute('cy'))));
+  assert.equal(positions.length,3);
+  assert.ok(positions[0]<positions[2] && positions[2]<positions[1]);
   const markers=await activitySummary.locator('.an-dot').evaluateAll(dots=>dots.map(dot=>getComputedStyle(dot).backgroundColor));
   assert.deepEqual(markers,[]);
   assert.equal(await activitySummary.locator(':scope > span').count(),3);
   assert.doesNotMatch(await activitySummary.innerText(),/Google|iOS/);
   assert.doesNotMatch(await activityCard.innerText(),/Аккаунты · без гостей/);
-  assert.equal(android.x,ios.x);
-  assert.equal(android.width,ios.width);
-  assert.ok(Math.abs(android.y-ios.y-ios.height)<0.001,'the segments touch');
-  assert.ok(Math.abs(2*android.height-ios.height)<0.001,'segment heights follow platform counts');
-  assert.ok(Math.abs(iosOnly.y+iosOnly.height-android.y-android.height)<0.001,'iOS starts at zero without Android activity');
   await activityChart.locator('rect[data-i="0"]').hover();
-  assert.match(await page.locator('#an-tip').innerText(),/Google Play \/ Android\s*10[\s\S]*iOS\s*20/);
+  const tip=await page.locator('#an-tip').innerText();
+  assert.match(tip,/Общая\s*30[\s\S]*Android\s*8[\s\S]*iOS\s*20/);
+  assert.doesNotMatch(tip,/Веб|Web|неизвестна/i);
+  await activityChart.locator('svg').press('Home');
+  assert.match(await activityChart.locator('svg').getAttribute('aria-label'),/Общая.*30.*Android: 8.*iOS: 20/);
+  await activityChart.locator('svg').press('Escape');
+  await page.evaluate(()=>anRenderActivity({usage:{activity:{days:[
+   {date:'2026-11-05',total:7,unknown:7,android:0,ios:0}, {date:'2026-11-06',total:null},
+  ]}}}));
+  assert.equal(await activityChart.locator('circle[data-premium-dot]').count(),1,'only the known total gets a point');
+
   await page.evaluate(days=>{
     anRenderActivity({usage:{activity:{days,comparison:{minute:852,today:0,average:12,days:3}}}});
   },days);
