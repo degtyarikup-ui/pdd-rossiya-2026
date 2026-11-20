@@ -489,7 +489,7 @@ if (!process.argv.includes('--serve')) test('Paywall editor requires text and tr
     const iconRect = await previewIcon.boundingBox();
     const labelRect = await page.locator('.paywall-preview-button span').boundingBox();
     assert.equal(iconRect.height, 22);
-    assert.equal(iconRect.x - (labelRect.x + labelRect.width), 8);
+    assert.equal(labelRect.x - (iconRect.x + iconRect.width), 8);
     assert.equal(await page.isEnabled('#nt-publish'),true);
     await page.locator('#nt-drop [data-img="remove"]').click();
     assert.equal(await page.locator('.paywall-preview-button img').count(),0);

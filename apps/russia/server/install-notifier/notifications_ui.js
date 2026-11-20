@@ -370,7 +370,7 @@ function paywall(d){
  var color=d.accent;
  var ink=color?onAccent(color):BLUE;
  var image=https(d.imageUrl)?'<img src="'+esc(d.imageUrl)+'" alt="">':'';
- var extra=d.buttonText?'<div class="paywall-preview-button" style="background:'+(color||'#fff')+';color:'+ink+'"><span>'+esc(d.buttonText)+'</span>'+image+'</div>':'';
+ var extra=d.buttonText?'<div class="paywall-preview-button" style="background:'+(color||'#fff')+';color:'+ink+'">'+image+'<span>'+esc(d.buttonText)+'</span></div>':'';
  return '<div class="ap ap-paywall">'+status(true)+'<div class="ap-title">Готовьтесь без ограничений</div><div class="paywall-preview-actions">'+extra+'<div class="paywall-preview-button">Оформить подписку</div></div></div>';
 }
 function renderPreview(){

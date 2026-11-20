@@ -88,6 +88,10 @@ class PaywallNoticeButton extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      if (image != null)
+                        hasIcon ? image : Flexible(child: image),
+                      if (image != null && label.isNotEmpty)
+                        const SizedBox(width: AppDimensions.spacingM),
                       if (label.isNotEmpty)
                         Flexible(
                           child: Text(
@@ -99,10 +103,6 @@ class PaywallNoticeButton extends StatelessWidget {
                             ),
                           ),
                         ),
-                      if (image != null && label.isNotEmpty)
-                        const SizedBox(width: AppDimensions.spacingM),
-                      if (image != null)
-                        hasIcon ? image : Flexible(child: image),
                     ],
                   ),
                 ),

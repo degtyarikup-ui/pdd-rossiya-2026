@@ -613,7 +613,7 @@ void main() {
     );
     expect(tester.getSize(image), const Size(56, 32));
     expect(
-      tester.getTopLeft(image).dx - tester.getTopRight(label).dx,
+      tester.getTopLeft(label).dx - tester.getTopRight(image).dx,
       closeTo(12, .01),
     );
     slot.value = null;
