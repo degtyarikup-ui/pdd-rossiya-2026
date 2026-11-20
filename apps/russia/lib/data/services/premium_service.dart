@@ -716,6 +716,7 @@ class PremiumService extends ChangeNotifier {
     required int expectedPriceRub,
     String method = 'sbp',
     bool checkout = false,
+    bool fromOnboarding = false,
     String? campaignId,
   }) async {
     if (!kIsWeb) {
@@ -747,6 +748,7 @@ class PremiumService extends ChangeNotifier {
           'email': email.trim(),
           'method': method,
           if (kIsWeb && checkout) 'checkout': 'sbp',
+          if (fromOnboarding) 'purchaseEntry': 'onboarding',
           if (kIsWeb && checkout && campaignId != null)
             'noticeCampaignId': campaignId,
           'app': CountryConfig.current.code,

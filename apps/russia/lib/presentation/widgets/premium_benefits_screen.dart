@@ -25,6 +25,7 @@ class PremiumBenefitsScreen extends StatefulWidget {
     this.onDismissed,
     this.onBack,
     this.dismissLabel,
+    this.fromOnboarding = false,
   });
 
   /// The Premium-only game that opened the screen, named above the headline.
@@ -36,6 +37,7 @@ class PremiumBenefitsScreen extends StatefulWidget {
   final ValueChanged<bool?>? onDismissed;
   final VoidCallback? onBack;
   final String? dismissLabel;
+  final bool fromOnboarding;
 
   @override
   State<PremiumBenefitsScreen> createState() => _PremiumBenefitsScreenState();
@@ -122,7 +124,10 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
   Future<void> _showPlans() async {
     if (_showingPlans) return;
     setState(() => _showingPlans = true);
-    final result = await PremiumPlansSheet.show(context);
+    final result = await PremiumPlansSheet.show(
+      context,
+      fromOnboarding: widget.fromOnboarding,
+    );
     if (!mounted) return;
     setState(() => _showingPlans = false);
     if (result == PremiumPlansResult.purchased) {

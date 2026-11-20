@@ -302,6 +302,33 @@ test('сбой сохранения после создания СБП не ра
 });
 
 
+test('СБП: отметка онбординга зависит от входа в оплату и возраста аккаунта', async () => {
+  const { buildSbpPurchaseMessage } = await import('./payments.js');
+  const fake = fakePlatega();
+  try {
+    for (const [purchaseEntry, ageMinutes, expected] of [
+      ['onboarding', 1, true],
+      [undefined, 1, false],
+      ['onboarding', 16, false],
+    ]) {
+      const env = baseEnv();
+      const token = await login(env);
+      const profile = {
+        id: 'google_1', provider: 'google',
+        createdAt: new Date(Date.now() - ageMinutes * 60_000).toISOString(),
+      };
+      await env.INSTALLS.put('user:' + profile.id, JSON.stringify(profile));
+      const response = await worker.fetch(req('/api/user/pay-intent', {
+        email: 'receipt@example.com', tier: 'weekly', method: 'sbp', client: 'android', purchaseEntry,
+      }, token), env);
+      const { order: orderId } = await response.json();
+      const order = JSON.parse(await env.INSTALLS.get('pay_order:' + orderId));
+      const message = buildSbpPurchaseMessage(order, null, String);
+      assert.equal(message.includes('из онбординга сразу после регистрации'), expected);
+    }
+  } finally { fake.restore(); }
+});
+
 test('СБП: контекст Android сохраняется в заказе, HTML экранируется, старый клиент неизвестен', async () => {
   const fake = fakePlatega();
   try {

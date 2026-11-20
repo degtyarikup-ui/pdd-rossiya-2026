@@ -25,9 +25,13 @@ import 'package:url_launcher/url_launcher.dart';
 enum PremiumPlansResult { purchased, webPayment, referral }
 
 class PremiumPlansSheet extends StatefulWidget {
-  const PremiumPlansSheet({super.key});
+  const PremiumPlansSheet({super.key, this.fromOnboarding = false});
 
-  static Future<PremiumPlansResult?> show(BuildContext context) {
+  final bool fromOnboarding;
+  static Future<PremiumPlansResult?> show(
+    BuildContext context, {
+    bool fromOnboarding = false,
+  }) {
     HapticFeedbackHelper.tap();
     return showModalBottomSheet<PremiumPlansResult>(
       context: context,
@@ -47,7 +51,7 @@ class PremiumPlansSheet extends StatefulWidget {
         maxWidth: 600,
         maxHeight: MediaQuery.sizeOf(context).height * 0.92,
       ),
-      builder: (_) => const PremiumPlansSheet(),
+      builder: (_) => PremiumPlansSheet(fromOnboarding: fromOnboarding),
     );
   }
 
@@ -319,6 +323,7 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
         context: context,
         tier: tier,
         live: _sbpLive,
+        fromOnboarding: widget.fromOnboarding,
         expectedPriceRub: catalog.amount(tier),
       );
       if (!mounted || result == null) return;

@@ -24,6 +24,7 @@ Future<WebPaymentResult?> showWebPaymentDialog({
   required BuildContext context,
   required PremiumTier tier,
   required bool live,
+  bool fromOnboarding = false,
   required int expectedPriceRub,
 }) {
   return showDialog<WebPaymentResult>(
@@ -31,6 +32,7 @@ Future<WebPaymentResult?> showWebPaymentDialog({
     builder: (_) => _WebPaymentDialog(
       tier: tier,
       live: live,
+      fromOnboarding: fromOnboarding,
       expectedPriceRub: expectedPriceRub,
     ),
   );
@@ -40,11 +42,13 @@ class _WebPaymentDialog extends StatefulWidget {
   const _WebPaymentDialog({
     required this.tier,
     required this.live,
+    required this.fromOnboarding,
     required this.expectedPriceRub,
   });
 
   final PremiumTier tier;
   final bool live;
+  final bool fromOnboarding;
   final int expectedPriceRub;
 
   @override
@@ -85,6 +89,7 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
     final start = await PremiumService.instance.startWebPayment(
       tier: widget.tier,
       email: email,
+      fromOnboarding: widget.fromOnboarding,
       expectedPriceRub: widget.expectedPriceRub,
     );
     if (!mounted) return;

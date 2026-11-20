@@ -136,6 +136,8 @@ export function buildSbpPurchaseMessage(order, expiresAt, esc, renewal = false) 
     NOTICE_CAMPAIGN_RE.test(order.noticeCampaignId || '')
       ? `• <b>Переход к оплате:</b> из баннера / уведомления · <code>${esc(order.noticeCampaignId)}</code>` : null,
     ...premiumContextLines({ ...context, platform }, esc),
+    context.onboardingAfterSignup === true
+      ? '• <b>Переход к оплате:</b> из онбординга сразу после регистрации' : null,
     context.metadataSource === 'profile' ? '• <b>Данные устройства:</b> из последнего профиля на момент создания заказа' : null,
     `• <b>ID аккаунта:</b> <code>${esc(order.userId)}</code>`,
     `• <b>Действует до (СБП):</b> ${premiumDate(expiresAt)}`, '',
@@ -172,7 +174,6 @@ export async function handlePayIntent(request, env, user, deps) {
   const attribution = checkout && typeof body.noticeCampaignId === 'string' &&
     NOTICE_CAMPAIGN_RE.test(body.noticeCampaignId)
     ? { noticeCampaignId: body.noticeCampaignId } : {};
-  const context = paymentContext(body, user);
   const live = webPaymentsLive(env);
   const key = 'pay_intent:' + user.id;
   const previous = await readJson(env, key);
@@ -209,6 +210,17 @@ export async function handlePayIntent(request, env, user, deps) {
           (versioned || checkout || (repeat && previous.lastOrder.tier === tier && previous.lastOrder.client === client))) {
         return jsonResponse({ ok: true, available: true, url: reserved.url, order: reserved.orderId });
       }
+    }
+  }
+
+  const context = paymentContext(body, user);
+  if (body.purchaseEntry === 'onboarding') {
+    // The session has an issuance-time identity. Read the saved registration
+    // date so that signing in again cannot make an old account look new.
+    const profile = await readJson(env, 'user:' + user.id).catch(() => null);
+    const accountAge = now - Date.parse(profile?.createdAt);
+    if (accountAge >= 0 && accountAge <= 15 * 60_000) {
+      context.onboardingAfterSignup = true;
     }
   }
 
