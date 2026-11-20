@@ -166,6 +166,14 @@ if(process.argv.includes('--serve')) {
    {date:'2026-11-05',total:7,unknown:7,android:0,ios:0}, {date:'2026-11-06',total:null},
   ]}}}));
   assert.equal(await activityChart.locator('circle[data-premium-dot]').count(),1,'only the known total gets a point');
+  await page.evaluate(()=>anRenderActivity({usage:{activity:{days:[
+   {date:'2026-11-16',total:12,unknown:9,android:3,ios:0},
+   {date:'2026-11-17',total:12,unknown:0,android:8,ios:4},
+  ]}}}));
+  assert.equal(await activityChart.locator('circle[data-premium-dot="0"]').count(),1);
+  assert.equal(await activityChart.locator('circle[data-premium-dot="1"]').count(),3);
+  await activityChart.locator('rect[data-i="0"]').hover();
+  assert.match(await page.locator('#an-tip').innerText(),/Общая\s*12[\s\S]*Android\s*≥ 3[\s\S]*iOS\s*—/);
 
   await page.evaluate(days=>{
     anRenderActivity({usage:{activity:{days,comparison:{minute:852,today:0,average:12,days:3}}}});

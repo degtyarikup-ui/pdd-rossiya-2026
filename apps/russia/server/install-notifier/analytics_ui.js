@@ -376,7 +376,7 @@ function anRenderGeo() {
 var AN_ACTIVITY_SERIES = [
  {key:'value',label:'Общая',color:AN_C.accent},
  {key:'android',label:'Android',color:AN_C.green},
- {key:'ios',label:'iOS',color:'#8063B8'}
+ {key:'ios',label:'iOS',color:AN_C.text}
 ];
 function anRenderActivity(data) {
  var activity=data.usage&&data.usage.activity, days=activity?activity.days:[];
@@ -390,10 +390,13 @@ function anRenderActivity(data) {
  function seriesLabel(series){return '<span class="an-act-label"><i class="an-dot" aria-hidden="true" style="background:'+series.color+'"></i>'+series.label+'</span>';}
  legend.innerHTML=AN_ACTIVITY_SERIES.map(seriesLabel).join('');
  var points=days.map(function(day){
-  var platformsKnown=day.total!=null&&!(day.total>0&&day.unknown===day.total);
+  var platformsKnown=day.total!=null&&!(day.unknown>0);
   var point={label:anDayLabel(day.date),value:day.total,android:platformsKnown?day.android:null,ios:platformsKnown?day.ios:null};
   point.tip='<b>'+anDayLabel(day.date,true)+'</b>'+AN_ACTIVITY_SERIES.map(function(series){
-   return '<div class="an-tip-row">'+seriesLabel(series)+'<b>'+(point[series.key]==null?'—':anNum(point[series.key]))+'</b></div>';
+   var count=point[series.key];
+   var value=count==null?'—':anNum(count);
+   if(series.key!=='value'&&day.unknown>0&&day[series.key]>0)value='≥ '+anNum(day[series.key]);
+   return '<div class="an-tip-row">'+seriesLabel(series)+'<b>'+value+'</b></div>';
   }).join('');
   return point;
  });
