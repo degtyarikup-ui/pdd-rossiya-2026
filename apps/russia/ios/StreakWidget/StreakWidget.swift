@@ -174,7 +174,9 @@ struct StreakWidgetView: View {
     private func glowingFlame(height: CGFloat, rayDiameter: CGFloat) -> some View {
         flame(height: height)
             .opacity(entry.done || (!small && !large) ? 1 : 0.74)
-            .background { CelebrationBackground(diameter: rayDiameter).opacity(entry.done ? 1 : 0.35) }
+            .background {
+                if entry.done { CelebrationBackground(diameter: rayDiameter) }
+            }
     }
 
     private func streak(rayDiameter: CGFloat) -> some View {

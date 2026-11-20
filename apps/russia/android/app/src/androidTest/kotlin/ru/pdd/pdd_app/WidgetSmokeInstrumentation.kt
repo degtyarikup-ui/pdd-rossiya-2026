@@ -130,7 +130,9 @@ class WidgetSmokeInstrumentation : Instrumentation() {
         }
         val flame = view.findViewById<ImageView>(R.id.streak_flame)
         check(flame.drawable != null && flame.alpha == if (state.done) 1f else 0.66f)
-        check(view.findViewById<ImageView>(R.id.streak_rays).drawable != null)
+        val rays = view.findViewById<ImageView>(R.id.streak_rays)
+        check(rays.drawable != null)
+        check(rays.visibility == if (state.done) View.VISIBLE else View.INVISIBLE)
         check(view.findViewById<ImageView>(R.id.streak_trophy).drawable != null)
     }
 
