@@ -108,15 +108,15 @@ static func prepare(situation_id: String, on_done: Callable) -> void:
 		for i in data.actors.size():
 			if not _uses_shared_model(str(data.actors[i].type)):
 				more.append(dir + "actor_%d.glb" % i)
-		# Optional: the route guide (only for a scene without trajectories) and the ticket picture.
+		# Legacy scenes can store the guide as a mesh. Editor routes are drawn from points.
 		var optional: Array = []
-		if data.get("showPlayerGuide", true) != false and (not (data.get("trajectories", []) is Array) or data.trajectories.is_empty()):
+		if data.get("showPlayerGuide", true) != false and not _has_generated_guide(data):
 			optional.append(dir + "guide.glb")
 		var picture := GameUi.picture_name(situation_id)
 		if picture != "":
 			optional.append("res://questions/%s.webp" % picture)
-		PackFiles.fetch_all(more + optional, func(ok2: bool):
-			var parsed := ok2
+		PackFiles.fetch_all(more + optional, func(_all_fetched: bool):
+			var parsed := true
 			for p in first + more:
 				if not PackFiles.exists(p):
 					parsed = false
@@ -124,7 +124,10 @@ static func prepare(situation_id: String, on_done: Callable) -> void:
 				if p.ends_with(".glb"): await (Engine.get_main_loop() as SceneTree).process_frame
 				if not on_done.is_valid(): return
 				if p.ends_with(".glb") and PackFiles.exists(p) and not PackFiles.parse_glb(p):
-					parsed = false
+					if p in optional:
+						PackFiles.forget(p)
+					else:
+						parsed = false
 			if parsed:
 				_ready_ids[situation_id] = true
 			if on_done.is_valid(): on_done.call(parsed)))
@@ -752,11 +755,22 @@ func _tram_render_props() -> Array:
 const TOKEN_BLUE := Color("#0574F8")
 
 
+static func _has_generated_guide(scene_data: Dictionary) -> bool:
+	var trajectories: Variant = scene_data.get("trajectories")
+	if trajectories is Array and not trajectories.is_empty():
+		return true
+	if scene_data.get("showPlayerGuide", true) == false:
+		return false
+	var points: Variant = scene_data.get("playerGuidePoints")
+	if points is Array and points.size() >= 2:
+		return true
+	var spec: Variant = scene_data.get("spec")
+	var exits: Variant = scene_data.get("exits")
+	return spec is Dictionary and exits is Dictionary and spec.get("maneuver", "") != "" and exits.has(spec.maneuver)
+
+
 func _build_evidence(dir: String) -> void:
-	# The question's route lines come from the network's trajectories (what the editor shows);
-	var has_custom_guide: bool = data.get("showPlayerGuide", true) != false and data.get("playerGuidePoints", []).size() >= 2
-	var has_traj: bool = has_custom_guide or (data.trajectories is Array and not data.trajectories.is_empty()) or (data.get("showPlayerGuide", true) != false and data.get("spec") is Dictionary and data.get("exits") is Dictionary and data.spec.get("maneuver", "") != "" and data.exits.has(data.spec.get("maneuver", "")))
-	if has_traj:
+	if _has_generated_guide(data):
 		_guide = _trajectory_guide()
 		add_child(_guide)
 	elif data.get("showPlayerGuide", true) != false and PackFiles.exists(dir + "guide.glb"):

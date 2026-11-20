@@ -242,6 +242,11 @@
    "duration": 10.512,
    "sourceQuestionId": "850f07c45a86afbcd4b4f09f017c6edc"
   },
+  "ticket_10_3": {
+   "file": "q_6a1c11c9544ea40744863668b84d01b6.mp3",
+   "duration": 12.48,
+   "sourceQuestionId": "6a1c11c9544ea40744863668b84d01b6"
+  },
   "ticket_11_13": {
    "file": "q_f0e8b486407c5e33be8d2af0fb28a632.mp3",
    "duration": 9.24,
@@ -261,6 +266,11 @@
    "file": "q_a9419c0922d0cbc85156257aa264792b.mp3",
    "duration": 12.48,
    "sourceQuestionId": "a9419c0922d0cbc85156257aa264792b"
+  },
+  "ticket_12_10": {
+   "file": "q_433127439544633941d7e20012cc1963.mp3",
+   "duration": 16.296,
+   "sourceQuestionId": "433127439544633941d7e20012cc1963"
   },
   "ticket_12_13": {
    "file": "q_d72dcc8b68b6d5a24de5e002d7c2b9eb.mp3",
@@ -282,6 +292,16 @@
    "duration": 10.632,
    "sourceQuestionId": "6532585f70efb2d6b01a0ebe668c3cf3"
   },
+  "ticket_12_8": {
+   "file": "q_1c039b62c895602472e8441ffe43ad14.mp3",
+   "duration": 14.064,
+   "sourceQuestionId": "1c039b62c895602472e8441ffe43ad14"
+  },
+  "ticket_13_1": {
+   "file": "q_69b51e1c875cd1fd3060e79842c3e831.mp3",
+   "duration": 13.68,
+   "sourceQuestionId": "69b51e1c875cd1fd3060e79842c3e831"
+  },
   "ticket_13_13": {
    "file": "q_25b3ae65d4bbdc58906e2bf2311c011b.mp3",
    "duration": 11.232,
@@ -296,6 +316,11 @@
    "file": "q_fd37552baccdfe11681a8b7b81c7becb.mp3",
    "duration": 14.616,
    "sourceQuestionId": "fd37552baccdfe11681a8b7b81c7becb"
+  },
+  "ticket_13_4": {
+   "file": "q_c728711456f888ff4ec548bdb2cc7c6f.mp3",
+   "duration": 17.808,
+   "sourceQuestionId": "c728711456f888ff4ec548bdb2cc7c6f"
   },
   "ticket_14_13": {
    "file": "q_0d98d1d61f57dd4f66f07e984bb07668.mp3",
@@ -351,6 +376,11 @@
    "file": "q_43c7d1df676cc2c46e9ad63da072fc72.mp3",
    "duration": 13.56,
    "sourceQuestionId": "43c7d1df676cc2c46e9ad63da072fc72"
+  },
+  "ticket_16_4": {
+   "file": "q_8ee8cc73d6a66a5ac437c8de19107a3f.mp3",
+   "duration": 16.872,
+   "sourceQuestionId": "8ee8cc73d6a66a5ac437c8de19107a3f"
   },
   "ticket_17_13": {
    "file": "q_c871839f6ef53eaf9f70aea52ed1a1c0.mp3",
@@ -1062,6 +1092,11 @@
    "duration": 21.168,
    "sourceQuestionId": "0f172f2c9a5243acc91d3f22fad845ca"
   },
+  "ticket_4_3": {
+   "file": "q_d5ab4a89d3dd4ae5a17c49b10fcccd22.mp3",
+   "duration": 11.808,
+   "sourceQuestionId": "d5ab4a89d3dd4ae5a17c49b10fcccd22"
+  },
   "ticket_4_5": {
    "file": "q_0436282e58243561c2f0ebb6c4b093c1.mp3",
    "duration": 19.416,
@@ -1127,10 +1162,35 @@
    "duration": 18.12,
    "sourceQuestionId": "8c3616674b46014b2338c7c719b2bc8d"
   },
+  "ticket_6_3": {
+   "file": "q_6a4ad28934938be20ae26980b213ef0f.mp3",
+   "duration": 13.128,
+   "sourceQuestionId": "6a4ad28934938be20ae26980b213ef0f"
+  },
+  "ticket_6_4": {
+   "file": "q_14bac0907c2773e8618b1772d131c6f3.mp3",
+   "duration": 16.368,
+   "sourceQuestionId": "14bac0907c2773e8618b1772d131c6f3"
+  },
   "ticket_6_7": {
    "file": "q_cb57e6a2fa841818a28e7b2c49adc97b.mp3",
    "duration": 15.72,
    "sourceQuestionId": "cb57e6a2fa841818a28e7b2c49adc97b"
+  },
+  "ticket_6_8": {
+   "file": "q_17a1d1a9b907bab9cd4c3549e3b51fb3.mp3",
+   "duration": 13.896,
+   "sourceQuestionId": "17a1d1a9b907bab9cd4c3549e3b51fb3"
+  },
+  "ticket_6_9": {
+   "file": "q_65d9f6968baf5b7650a9dc870bbc0e6f.mp3",
+   "duration": 11.64,
+   "sourceQuestionId": "65d9f6968baf5b7650a9dc870bbc0e6f"
+  },
+  "ticket_7_12": {
+   "file": "q_1ab15bf82bbc2702abb009e21ac27be3.mp3",
+   "duration": 12.6,
+   "sourceQuestionId": "1ab15bf82bbc2702abb009e21ac27be3"
   },
   "ticket_7_13": {
    "file": "q_3b4b6092cf50c0e628ce0f2559df3f90.mp3",
@@ -1147,10 +1207,30 @@
    "duration": 13.272,
    "sourceQuestionId": "d30d4ea921f8cf6d97e3e484725cd7f6"
   },
+  "ticket_7_3": {
+   "file": "q_bf06bbf89a29a444bbc395a8adafde98.mp3",
+   "duration": 11.448,
+   "sourceQuestionId": "bf06bbf89a29a444bbc395a8adafde98"
+  },
   "ticket_7_5": {
    "file": "q_1ea113763fed8b87fa881c794a3a0ff7.mp3",
    "duration": 17.328,
    "sourceQuestionId": "1ea113763fed8b87fa881c794a3a0ff7"
+  },
+  "ticket_7_8": {
+   "file": "q_744b56480eff4d06f68d4d9a77e5c658.mp3",
+   "duration": 13.992,
+   "sourceQuestionId": "744b56480eff4d06f68d4d9a77e5c658"
+  },
+  "ticket_8_11": {
+   "file": "q_d81b730e232ceee0cde358cc15fc3b72.mp3",
+   "duration": 14.568,
+   "sourceQuestionId": "d81b730e232ceee0cde358cc15fc3b72"
+  },
+  "ticket_8_12": {
+   "file": "q_6b52488e69c53f56b2e8e06283c470a2.mp3",
+   "duration": 13.824,
+   "sourceQuestionId": "6b52488e69c53f56b2e8e06283c470a2"
   },
   "ticket_8_13": {
    "file": "q_0da9f27691b4a0af365aa244ec7151f6.mp3",
@@ -1167,10 +1247,30 @@
    "duration": 11.784,
    "sourceQuestionId": "5bc912be09a0a696eb5c958b22569472"
   },
+  "ticket_8_2": {
+   "file": "q_df85bfa11498b2d45823faeb4a7504ab.mp3",
+   "duration": 17.04,
+   "sourceQuestionId": "df85bfa11498b2d45823faeb4a7504ab"
+  },
   "ticket_8_4": {
    "file": "q_0c98f0d36e471489ed1f1fe21aea256e.mp3",
    "duration": 13.032,
    "sourceQuestionId": "0c98f0d36e471489ed1f1fe21aea256e"
+  },
+  "ticket_8_7": {
+   "file": "q_ddba5acfc28e009636cce621e0b785e4.mp3",
+   "duration": 14.664,
+   "sourceQuestionId": "ddba5acfc28e009636cce621e0b785e4"
+  },
+  "ticket_9_12": {
+   "file": "q_42ac87d970fd030177149379f2ddf6ce.mp3",
+   "duration": 12.336,
+   "sourceQuestionId": "42ac87d970fd030177149379f2ddf6ce"
+  },
+  "ticket_9_2": {
+   "file": "q_b19ba2cc652a455dca7a9a44381932be.mp3",
+   "duration": 16.968,
+   "sourceQuestionId": "b19ba2cc652a455dca7a9a44381932be"
   }
  }
 }

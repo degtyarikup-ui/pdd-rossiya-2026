@@ -960,3 +960,19 @@ Godot для новых и старых моделей). Тесты пишут �
 `parking_preset_editor_check.js`, `parking_preset_save_check.py` в `tools/network/tests/`,
 `game_godot/tests/pocket_geometry_check.gd` и `parking_editor_assets_check.gd`; браузерная проверка —
 `pocket_browser_check.js` (без сохранения авторских сцен).
+
+## Подъёмы, спуски и объёмная неровность
+
+Управление графиком и неровностями описано в разделе [«Рельеф»](#рельеф).
+
+Данные: `terrain.profile: [[z,height],…]`, `terrain.bumps:
+[{centre:[x,z],width,length,height}]`. В исходнике сохраняется только профиль;
+плотная сетка с `heights` — производная геометрия `build.py`. Разметка и бордюры
+повторяют рельеф; положение и наклон машин учитывают высоту под колёсной базой.
+Физика разгона/торможения и управление остаются штатными: гравитационный разгон
+со спуска и удары подвески на неровности не моделируются.
+
+Без `terrain` прежняя геометрия не меняется. Новые модели не нужны.
+Проверки: `terrain_check.py`, `terrain_save_check.py`,
+`terrain_editor_browser_check.js` в `tools/network/tests/`, а также
+`godot --headless --path game_godot --script res://tests/terrain_profile_check.gd`.

@@ -49,16 +49,10 @@ func run() -> void:
 	world.only_id = "ticket_28_13"
 	world.bag = ["ticket_28_13"]
 	root.add_child(world)
+	var deadline := Time.get_ticks_msec() + 60000
+	while Time.get_ticks_msec() < deadline and (world.loader != null or world.current.is_empty()):
+		await process_frame
 	world.set_process(false)
-	await process_frame # Deferred scene staging starts here.
-	for i in 1200:
-		if not world.staging: break
-		await process_frame
-	world.spawn_after = world.drive.pos.z
-	world._maybe_spawn()
-	for i in 10:
-		if world.loader == null: break
-		await process_frame
 	check(world.loader == null, "City loading completes before testing active signal time")
 	if world.current.is_empty():
 		check(false, "Example ticket is ready")
@@ -71,7 +65,7 @@ func run() -> void:
 	var car: Fleet.Signals = sit.actors[1].get_node("vehicle_signals")
 	tram.set_process(false)
 	car.set_process(false)
-		check(tram.side == "R" and car.side == "R", "Participants show authored intentions during distant approach")
+	check(tram.side == "R" and car.side == "R", "Participants show authored intentions during distant approach")
 	check(Fleet.actor_signal_side(sit.data.actors[0]) == "R", "Tram follows saved right signal")
 	check(Fleet.actor_signal_side(sit.data.actors[1]) == "R", "Oncoming car follows saved right signal")
 	# Empty background isolates question timing from ambient clearance.

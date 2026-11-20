@@ -1,15 +1,22 @@
 ## Run with rendering enabled: buildings reveal a stationary player without changing other pixels.
 extends SceneTree
+
+# Desktop QA may run behind another window. Keep the pause menu out of the pixel samples.
+class CaptureWorld extends "res://scripts/world.gd":
+	func _capturing() -> bool:
+		return true
+
 func _initialize() -> void:
 	call_deferred("run")
 func run() -> void:
-	var world = load("res://main.tscn").instantiate()
+	var world = CaptureWorld.new()
 	world.only_id = "ticket_18_9"
 	world.bag = [world.only_id]
 	root.add_child(world)
 	# The loader reads the real question while it warms the card. Finish that
 	# work before replacing world.current with the camera fixture below.
-	for i in 1500:
+	var deadline := Time.get_ticks_msec() + 60000
+	while Time.get_ticks_msec() < deadline:
 		if world.loader == null and not world.staging: break
 		await process_frame
 	if world.loader != null or world.staging:
@@ -55,9 +62,11 @@ func run() -> void:
 	sign.position=Vector3(3,0,0)
 	signs.add_child(sign)
 	for i in 3: await process_frame
+	await RenderingServer.frame_post_draw
 	var covered: Image = root.get_texture().get_image()
 	for i in 30: world._update_occlusion(1.0/60.0)
 	for i in 3: await process_frame
+	await RenderingServer.frame_post_draw
 	var shown: Image = root.get_texture().get_image()
 	var center: Vector2 = world.camera.unproject_position(Vector3(0,1.2,0))
 	var changed := 0
@@ -66,8 +75,11 @@ func run() -> void:
 			var a := covered.get_pixel(x,y)
 			var b := shown.get_pixel(x,y)
 			if Vector3(a.r-b.r,a.g-b.g,a.b-b.b).length()>0.06: changed+=1
-	covered.save_png("../output/building-covered.png")
-	shown.save_png("../output/building-reveal.png")
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--out="):
+			var out := arg.trim_prefix("--out=")
+			covered.save_png(out.path_join("building-covered.png"))
+			shown.save_png(out.path_join("building-reveal.png"))
 	var contacts = world.street.pools.get("tree_contact")
 	var ok: bool = changed>100 and world.scenery.occluders[-1].fades.get(0,1.0)<0.26 and contacts!=null and contacts.node.cast_shadow==GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	print("occlusion rendered: ",changed," changed pixels; batched ground contact ",contacts!=null,"; ","PASS" if ok else "FAIL")

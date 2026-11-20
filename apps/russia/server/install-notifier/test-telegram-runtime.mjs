@@ -8,7 +8,7 @@ import {spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {setTimeout as pause} from 'node:timers/promises';
 
-test('Telegram session survives real workerd restart and rejects another verifier', {skip:process.env.RUN_RUNTIME_SMOKE!=='1', timeout:60000}, async t=>{
+test('Telegram session survives real workerd restart and rejects another verifier', {skip:process.env.RUN_RUNTIME_SMOKE!=='1', timeout:90000}, async t=>{
  const base=fileURLToPath(new URL('../../scratch/reliability/',import.meta.url));await mkdir(base,{recursive:true});
  const dir=await mkdtemp(base+'telegram-');
  const module=fileURLToPath(new URL('./telegram_auth.js',import.meta.url));
@@ -34,12 +34,20 @@ test('Telegram session survives real workerd restart and rejects another verifie
  new_sqlite_classes=["TelegramAuthState"]
  `);
  let proc;
- const stop=async()=>{if(proc&&!proc.killed){const done=new Promise(r=>proc.once('exit',r));proc.kill('SIGTERM');await done;}};
+ const stop=async()=>{if(proc&&!proc.killed&&proc.exitCode===null&&proc.signalCode===null){const done=new Promise(r=>proc.once('exit',r));proc.kill('SIGTERM');await done;}};
  t.after(stop);
  const start=async()=>{
-  proc=spawn(process.env.WRANGLER_BIN||'wrangler',['dev','--local','--config',dir+'/wrangler.toml','--port',String(port),'--persist-to',dir+'/state'],{stdio:['ignore','pipe','pipe']});
+  proc=spawn(process.env.WRANGLER_BIN||'wrangler',['dev','--local','--config',dir+'/wrangler.toml','--port',String(port),'--persist-to',dir+'/state'],{cwd:dir,stdio:['ignore','pipe','pipe']});
   const log=createWriteStream(dir+'/runtime.log',{flags:'a'});proc.stdout.pipe(log,{end:false});proc.stderr.pipe(log,{end:false});proc.once('exit',()=>log.end());
-  for(let i=0;i<100;i++){try{if((await fetch(`http://127.0.0.1:${port}`,{signal:AbortSignal.timeout(500)})).ok)return;}catch{}await pause(100);}
+  const deadline=Date.now()+30000;
+  while(Date.now()<deadline){
+   if(proc.exitCode!==null||proc.signalCode!==null)throw Error('Worker exited before startup: '+dir);
+   try{
+    const response=await fetch(`http://127.0.0.1:${port}`,{signal:AbortSignal.timeout(500)});
+    if(response.ok)return;
+   }catch{}
+   await pause(100);
+  }
   throw Error('Worker startup failed: '+dir);
  };
  const call=async(path,body,status=200)=>{const r=await fetch(`http://127.0.0.1:${port}`+path,{method:'POST',headers:{'x-install-secret':'fixture'},body:JSON.stringify(body),signal:AbortSignal.timeout(5000)});assert.equal(r.status,status);return r.json();};

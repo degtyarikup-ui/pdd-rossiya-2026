@@ -18,7 +18,8 @@ const {chromium} = require('playwright');
       }
       return route.continue();
     });
-    await page.goto('http://127.0.0.1:8950/?scene=ticket_5_7');
+    const base = process.env.EDITOR_URL || 'http://127.0.0.1:8950';
+    await page.goto(base + '/?scene=ticket_5_7');
     await page.waitForFunction(()=>typeof App!=='undefined' && App.S?.id==='ticket_5_7' && document.querySelector('#loading').hidden);
     await page.evaluate(async()=>{
       const s = {schema:1,id:'ticket_5_7',procedural:true,crop:70,

@@ -1165,7 +1165,7 @@
  "geometry": null,
  "type": "crossroad",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
  "signs": [],
@@ -1175,16 +1175,10 @@
  "compliance": {
   "status": "ok"
  },
- "questionPool": {
-  "sourceQuestionId": "65d9f6968baf5b7650a9dc870bbc0e6f",
-  "category": "ab",
-  "ticket": 6,
-  "number": 9
- },
  "assistantReview": {
   "author": "codex",
   "batch": "2026-11-16-next-five",
-  "status": "pending"
+  "status": "approved"
  },
  "questionView": {
   "centre": [

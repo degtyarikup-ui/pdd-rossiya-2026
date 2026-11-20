@@ -1724,7 +1724,7 @@
  "geometry": null,
  "type": "crossroad",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
  "signs": [
@@ -1748,23 +1748,17 @@
  "compliance": {
   "status": "ok"
  },
- "questionPool": {
-  "sourceQuestionId": "6a1c11c9544ea40744863668b84d01b6",
-  "category": "ab",
-  "ticket": 10,
-  "number": 3
- },
  "assistantReview": {
   "author": "codex",
   "batch": "2026-11-16-next-five",
-  "status": "pending"
+  "status": "approved"
  },
  "questionView": {
   "centre": [
-   -1.5,
-   -4
+   -1.801,
+   3.954
   ],
-  "height": 28,
+  "height": 23.428,
   "yaw": 0,
   "pitch": 0.4,
   "elevation": 0

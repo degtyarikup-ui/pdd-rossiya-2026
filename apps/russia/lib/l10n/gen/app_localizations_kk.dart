@@ -5395,6 +5395,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get onboardingSkip => 'Өткізу';
 
   @override
+  String get onboardingPlanSaveFailed => 'Оқу жоспарын сақтау мүмкін болмады.';
+
+  @override
   String get onboardingContinue => 'Келесі';
 
   @override

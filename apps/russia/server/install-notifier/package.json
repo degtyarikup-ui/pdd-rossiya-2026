@@ -35,5 +35,8 @@
   },
   "dependencies": {
     "jose": "^6.2.12"
+  },
+  "devDependencies": {
+    "pngjs": "^7.0.0"
   }
 }

@@ -117,12 +117,12 @@
    "colour": "yellow",
    "points": [
     [
-     -6.92,
-     -30
+     -6.727,
+     -68.128
     ],
     [
-     -6.92,
-     35
+     -6.727,
+     -3.128
     ]
    ],
    "width": 0.13
@@ -141,8 +141,16 @@
      -91
     ],
     [
-     -5.25,
-     -18
+     -5,
+     -64.5
+    ],
+    [
+     -5,
+     -35.5
+    ],
+    [
+     -5.214,
+     -15.331
     ]
    ],
    "playerFree": true
@@ -153,12 +161,8 @@
    "exit": "straight",
    "points": [
     [
-     -5.25,
-     -18
-    ],
-    [
-     -5.25,
-     -16.323
+     -5.214,
+     -15.331
     ],
     [
      -5.25,
@@ -427,24 +431,20 @@
    "manual": true,
    "points": [
     [
-     -5.25,
-     -18
-    ],
-    [
-     -5.25,
-     -14
+     -5.214,
+     -15.331
     ],
     [
      -5.5,
-     -11
+     -5
     ],
     [
-     -5.8,
-     -8
+     -6.5,
+     0
     ],
     [
-     -5.8,
-     1
+     -6.5,
+     5
     ]
    ]
   }
@@ -527,22 +527,12 @@
    "toward": "n",
    "mode": "free",
    "pose": {
-    "x": -5.25,
-    "z": -18,
+    "x": -5.214,
+    "z": -15.331,
     "yaw": 0
    },
    "questionAt": 114
   },
-  "freeApproachPath": [
-   [
-    -5.25,
-    -91
-   ],
-   [
-    -5.25,
-    -18
-   ]
-  ],
   "freePaths": {
    "straight": [
     [
@@ -810,11 +800,29 @@
      91
     ]
    ]
-  }
+  },
+  "freeApproachPath": [
+   [
+    -1.75,
+    -91
+   ],
+   [
+    -5,
+    -64.5
+   ],
+   [
+    -5,
+    -35.5
+   ],
+   [
+    -5.214,
+    -15.331
+   ]
+  ]
  },
  "stop": {
-  "x": -5.25,
-  "z": -18,
+  "x": -5.214,
+  "z": -15.331,
   "yaw": 0
  },
  "exitWidths": {
@@ -825,7 +833,7 @@
  "geometry": null,
  "type": "crossroad",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
  "signs": [
@@ -845,16 +853,10 @@
  "compliance": {
   "status": "ok"
  },
- "questionPool": {
-  "sourceQuestionId": "bf06bbf89a29a444bbc395a8adafde98",
-  "category": "ab",
-  "ticket": 7,
-  "number": 3
- },
  "assistantReview": {
   "author": "codex",
   "batch": "2026-11-16-next-five",
-  "status": "pending"
+  "status": "approved"
  },
  "questionView": {
   "centre": [

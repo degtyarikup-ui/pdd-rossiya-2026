@@ -5407,6 +5407,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingSkip => 'Skip';
 
   @override
+  String get onboardingPlanSaveFailed => 'Could not save your study plan.';
+
+  @override
   String get onboardingContinue => 'Next';
 
   @override

@@ -197,7 +197,7 @@ export class StoreReviews {
       const statuses = await this.state.storage.get('stores') || {};
       await this.say('<b>Подключение магазинов</b>\n' + Object.keys(STORE_NAMES).map(s => {
         const x = statuses[s]; return `${x?.ok ? '✅' : '⚠️'} ${STORE_NAMES[s]}: ${x ? x.ok ? `отзывов получено: ${x.count}` : x.error : 'ожидание первой проверки'}${x?.lastSuccess ? ' · ' + new Date(x.lastSuccess).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }) : ''}`;
-      }).join('\n') + '\n\nПроверка каждые 10 минут. Ответьте текстом на карточку отзыва.');
+      }).join('\n') + '\n\nПроверка раз в сутки в 22:00 МСК. Ответьте текстом на карточку отзыва.');
       return true;
     }
     const hash = await this.state.storage.get('m:' + message.reply_to_message?.message_id);

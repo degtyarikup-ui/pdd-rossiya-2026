@@ -109,6 +109,29 @@ test('public tracker cannot forge purchases, reports or registrations',async()=>
     const r=await worker.fetch(new Request('https://test/api/track',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type})}),env);assert.equal(r.status,400);
   }
 });
+test('only the daily report cron polls the configured store reviews', async t => {
+  const { env } = setup();
+  const requests = [];
+  const pending = [];
+  t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 503 }));
+  env.INSTALLS.list = async () => ({ keys: [], list_complete: true });
+  const binding = status => ({ idFromName: name => name, get: () => ({ fetch: async () => Response.json({ ok: true }, { status }) }) });
+  env.TELEGRAM = binding(200);
+  env.STATS = binding(202);
+  env.STORE_REVIEW_CREDENTIALS = 'fixture';
+  env.STORE_REVIEWS_ENABLED = 'true';
+  env.STORE_REVIEWS = { idFromName: name => name, get: () => ({ fetch: async url => {
+    requests.push(url);
+    return Response.json({ ok: true });
+  } }) };
+  for (const [cron, expected] of [['*/5 * * * *', 0], ['5 21 * * SUN', 0], ['0 19 * * *', 1]]) {
+    await worker.scheduled({ cron, scheduledTime: Date.parse('2026-11-20T19:00:00Z') }, env,
+      { waitUntil: task => pending.push(task) });
+    while (pending.length) await Promise.all(pending.splice(0));
+    assert.equal(requests.length, expected, cron);
+  }
+  assert.deepEqual(requests, ['https://reviews/poll']);
+});
 test('daily report waits for stats backlog and retries without a duplicate summary',async()=>{
   const {env,state}=setup();
   await env.INSTALLS.put('tg:daily_pending',JSON.stringify({scheduledTime:Date.parse('2026-10-03T19:00:00Z')}));

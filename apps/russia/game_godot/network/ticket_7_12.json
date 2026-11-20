@@ -1043,8 +1043,8 @@
      -91
     ],
     [
-     -1.75,
-     -18
+     -1.886,
+     -20.174
     ]
    ],
    "playerFree": true
@@ -1054,6 +1054,18 @@
    "kind": "manoeuvre",
    "exit": "straight",
    "points": [
+    [
+     -1.886,
+     -20.174
+    ],
+    [
+     -1.841,
+     -19.449
+    ],
+    [
+     -1.795,
+     -18.725
+    ],
     [
      -1.75,
      -18
@@ -1330,8 +1342,8 @@
    ],
    "label": "А",
    "labelPosition": [
-    2.0,
-    9.5
+    2.23,
+    0.219
    ],
    "manual": true
   },
@@ -1366,8 +1378,8 @@
    ],
    "label": "Б",
    "labelPosition": [
-    -5.5,
-    9.5
+    -5.679,
+    0.693
    ],
    "manual": true
   },
@@ -1380,26 +1392,22 @@
      -18
     ],
     [
-     -3,
-     -17
+     -2.5,
+     -16
     ],
     [
-     -5.3,
-     -15
+     -5.5,
+     -12.5
     ],
     [
-     -5.7,
-     -12
-    ],
-    [
-     -5.7,
-     -8
+     -6,
+     -8.5
     ]
    ],
    "label": "В",
    "labelPosition": [
-    -5.5,
-    -6
+    -4.72,
+    -14.13
    ],
    "manual": true
   }
@@ -1497,8 +1505,8 @@
    "toward": "n",
    "mode": "free",
    "pose": {
-    "x": -1.75,
-    "z": -18,
+    "x": -1.886,
+    "z": -20.174,
     "yaw": 0
    },
    "questionAt": 114
@@ -1775,8 +1783,8 @@
   }
  },
  "stop": {
-  "x": -1.75,
-  "z": -18,
+  "x": -1.886,
+  "z": -20.174,
   "yaw": 0
  },
  "exitWidths": {
@@ -1787,7 +1795,7 @@
  "geometry": null,
  "type": "road_question",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
  "signs": [
@@ -1795,8 +1803,8 @@
    "id": "one_way",
    "code": "5.5",
    "pos": [
-    -8.1,
-    -12
+    -7.299,
+    -12.724
    ],
    "yaw": 3.141592653589793
   },
@@ -1804,8 +1812,8 @@
    "id": "no_parking",
    "code": "3.28",
    "pos": [
-    -8.1,
-    0
+    -7.497,
+    3.544
    ],
    "yaw": 3.141592653589793
   }
@@ -1816,25 +1824,19 @@
  "compliance": {
   "status": "ok"
  },
- "questionPool": {
-  "sourceQuestionId": "1ab15bf82bbc2702abb009e21ac27be3",
-  "category": "ab",
-  "ticket": 7,
-  "number": 12
- },
  "assistantReview": {
   "author": "codex",
   "batch": "2026-11-16-three-scenes",
-  "status": "pending"
+  "status": "approved"
  },
  "questionView": {
   "centre": [
-   -1.75,
-   -3
+   -1.97,
+   -1.408
   ],
-  "height": 32,
+  "height": 24.108,
   "yaw": 0,
-  "pitch": 0.65,
+  "pitch": 0.559,
   "elevation": 0
  }
 }

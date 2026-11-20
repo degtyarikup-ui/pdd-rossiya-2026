@@ -129,15 +129,13 @@ class OnboardingService {
 
   /// Помечает онбординг завершённым и сохраняет выбранный дневной темп.
   Future<void> complete({required OnboardingPace pace}) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!await prefs.setInt(dailyGoalKey, pace.minutesPerDay) ||
+        !await prefs.setBool(completedKey, true)) {
+      throw StateError('Failed to save onboarding');
+    }
     _pace = pace;
     _shouldShow = false;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(dailyGoalKey, _pace.minutesPerDay);
-      await prefs.setBool(completedKey, true);
-    } catch (e) {
-      debugPrint('OnboardingService complete error: $e');
-    }
   }
 
   @visibleForTesting

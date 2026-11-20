@@ -231,6 +231,7 @@ class _PhotoStripState extends State<_PhotoStrip> {
       height: widget.cardHeight,
       child: ListView.separated(
         controller: _scrollController,
+        shrinkWrap: true,
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         padding: EdgeInsets.only(

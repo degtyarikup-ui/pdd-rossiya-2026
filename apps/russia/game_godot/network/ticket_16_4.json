@@ -3995,7 +3995,7 @@
  "geometry": null,
  "type": "crossroad",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
  "signs": [
@@ -4003,8 +4003,8 @@
    "id": "sign_0",
    "code": "6.2",
    "pos": [
-    -4.7,
-    -5
+    -5.053,
+    -6.239
    ],
    "yaw": 3.141592653589793,
    "secondSign": {
@@ -4019,21 +4019,15 @@
  "compliance": {
   "status": "ok"
  },
- "questionPool": {
-  "sourceQuestionId": "8ee8cc73d6a66a5ac437c8de19107a3f",
-  "category": "ab",
-  "ticket": 16,
-  "number": 4
- },
  "assistantReview": {
   "author": "codex",
   "batch": "2026-11-16-fifty-scenes",
-  "status": "pending"
+  "status": "approved"
  },
  "questionView": {
   "centre": [
-   -2.8,
-   -2
+   -2.871,
+   1.381
   ],
   "height": 23,
   "yaw": 0,

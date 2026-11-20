@@ -86,16 +86,13 @@ export class AccountState extends ProductionAccountState {
       if(path==='/_runtime/memory-write-fault')return this.serial(async()=>{
         await this.state.storage.transaction(async txn=>{
           await txn.put('doc:user_progress:google_runtime_fixture',{key:'user_progress:google_runtime_fixture',value:'{}',epoch:'1'});
-          this.state.storage.sql.exec('SELECT 1 IN ('+Array.from({length:10000},(_,i)=>i).join(',')+')').toArray();
+          throw new Error('fixture storage failure: SQLITE_NOMEM');
         });
         return Response.json({unexpectedSuccess:true});
       });
       if(path==='/_runtime/memory-fault')return this.serial(()=>{
-        // Compile a deliberately oversized VM program in local SQLite only.
-        // The workerd opcode limit produces a real SQLITE_NOMEM without large
-        // data or touching any production/account table.
-        this.state.storage.sql.exec('SELECT 1 IN ('+Array.from({length:10000},(_,i)=>i).join(',')+')').toArray();
-        return Response.json({unexpectedSuccess:true});
+        // Inject the storage exception. SQLite compilation limits vary with workerd versions.
+        throw new Error('fixture storage failure: SQLITE_NOMEM');
       });
       if(path==='/_runtime/repair-state')return this.serial(()=>Response.json(this.runtimeRepair));
       if(path==='/_runtime/schedule-repair')return this.serial(async()=>{
@@ -325,14 +322,16 @@ new_sqlite_classes = [${classes.map(JSON.stringify).join(', ')}]
 
     const oldInstance=await api('/__runtime_fixture/instance',{fixture:true});
     await api('/__runtime_fixture/memory-fault',{fixture:true,body:{},expected:503});
+    const afterReadFault=await api('/__runtime_fixture/instance',{fixture:true});
+    assert.notEqual(afterReadFault.instance,oldInstance.instance,'read failure must evict the volatile account instance');
     await api('/__runtime_fixture/memory-write-fault',{fixture:true,body:{},expected:503});
     const newInstance=await api('/__runtime_fixture/instance',{fixture:true});
-    assert.notEqual(newInstance.instance,oldInstance.instance,'native SQLite failure must evict the volatile account instance');
+    assert.notEqual(newInstance.instance,afterReadFault.instance,'write failure must evict the volatile account instance');
     assert.deepEqual((await api('/api/user/progress?userId='+userId,{token})).progress,written.progress);
     const afterMemoryFault=await api('/api/user/status',{token});
     assert.equal(afterMemoryFault.premiumExpiresAt,premium.premiumExpiresAt);
     assert.equal(afterMemoryFault.isPremium,true);
-    t.diagnostic('real SQLite allocation error resets only the running instance; confirmed progress and Premium survive');
+    t.diagnostic('injected SQLITE_NOMEM aborts the real workerd instance and rolls back a SQLite transaction; confirmed progress and Premium survive');
 
     const pressure=await api('/__runtime_fixture/pressure',{fixture:true});
     assert.deepEqual(pressure,{pendingBefore:61,pendingAfter:0,progressUnchanged:true});

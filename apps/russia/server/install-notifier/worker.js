@@ -3825,11 +3825,12 @@ const workerHandlers = {
       user.storeVerifiedAtByStore = { ...(user.storeVerifiedAtByStore || {}), [store]: Date.now() };
       user.autoRenewEnabled = verified.autoRenewEnabled;
       user.storeVerifiedAt = Date.now();
-      if (store !== 'appstore' && (!isTrialProduct(verified.reference.productId) || verified.reference.paid === true)) {
-        user.purchasedAt = new Date().toISOString();
-      } else if (store === 'appstore' && !verified.reference.isTest && verified.reference.paid !== false && !verified.reference.refunded &&
-          Number.isFinite(verified.purchaseDate) && verified.purchaseDate > (Date.parse(user.purchasedAt) || 0)) {
-        user.purchasedAt = new Date(verified.purchaseDate).toISOString();
+      const { isTest, refunded, paid, productId } = verified.reference;
+      if (!isTest && !refunded && paid !== false && (!isTrialProduct(productId) || paid === true)) {
+        if (store !== 'appstore') user.purchasedAt = new Date().toISOString();
+        else if (Number.isFinite(verified.purchaseDate) && verified.purchaseDate > (Date.parse(user.purchasedAt) || 0)) {
+          user.purchasedAt = new Date(verified.purchaseDate).toISOString();
+        }
       }
       if (platform) user.platform = platform;
       if (appVersion) user.appVersion = appVersion;
@@ -4395,7 +4396,6 @@ const workerHandlers = {
     // Триггер автопостинга: проверяет расписание и продолжает оборвавшиеся
     // публикации (у Instagram уходит несколько минут только на кодирование).
     if (event.cron === HOURLY_CRON) {
-      if (env.STORE_REVIEWS_ENABLED) ctx.waitUntil(cronTask('reviews', pollStoreReviews(env)));
       // Keep fresh public signing keys available across isolates before login.
       ctx.waitUntil(cronTask('provider_keys', refreshProviderKeyCaches(env).then(results => {
         for (const [provider, result] of Object.entries(results)) {

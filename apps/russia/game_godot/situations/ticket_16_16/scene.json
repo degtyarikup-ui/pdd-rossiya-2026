@@ -529,12 +529,12 @@
  ],
  "questionView": {
   "centre": [
-   -6,
-   -3
+   -26.12,
+   40.411
   ],
-  "height": 37,
-  "yaw": 0,
-  "pitch": 0.65,
+  "height": 34.924,
+  "yaw": -0.421,
+  "pitch": 0.247,
   "elevation": 0
  }
 }

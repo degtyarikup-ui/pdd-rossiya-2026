@@ -8980,6 +8980,12 @@ abstract class AppLocalizations {
   /// **'Пропустить'**
   String get onboardingSkip;
 
+  /// No description provided for @onboardingPlanSaveFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось сохранить план занятий.'**
+  String get onboardingPlanSaveFailed;
+
   /// No description provided for @onboardingContinue.
   ///
   /// In ru, this message translates to:

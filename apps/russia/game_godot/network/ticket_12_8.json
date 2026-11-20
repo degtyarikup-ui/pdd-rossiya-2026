@@ -5655,7 +5655,9 @@
    },
    "sidecar": false,
    "clearDistance": 27,
-   "paint": "#2B2F36"
+   "paint": "#2B2F36",
+   "halfWidth": 0.34,
+   "halfLength": 1.075
   },
   {
    "id": "changing_car",
@@ -7379,7 +7381,7 @@
  "geometry": null,
  "type": "crossroad",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
  "signs": [],
@@ -7389,16 +7391,10 @@
  "compliance": {
   "status": "ok"
  },
- "questionPool": {
-  "sourceQuestionId": "1c039b62c895602472e8441ffe43ad14",
-  "category": "ab",
-  "ticket": 12,
-  "number": 8
- },
  "assistantReview": {
   "author": "codex",
   "batch": "2026-11-16-fifty-scenes",
-  "status": "pending"
+  "status": "approved"
  },
  "questionView": {
   "centre": [

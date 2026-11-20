@@ -1850,6 +1850,7 @@
   "addToFavorites": "Add to favorites",
   "removeFromFavorites": "Remove from favorites",
   "onboardingSkip": "Skip",
+  "onboardingPlanSaveFailed": "Could not save your study plan.",
   "onboardingContinue": "Next",
   "onboardingContinueFree": "Continue without Premium",
   "onboardingStepSemantics": "Step {step} of {total}",

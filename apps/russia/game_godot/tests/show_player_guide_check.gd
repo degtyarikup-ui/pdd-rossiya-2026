@@ -57,6 +57,9 @@ func check_generated_guides(data: Dictionary) -> void:
 
 
 func check_legacy_guides() -> void:
+	check(not Situation._has_generated_guide({"trajectories": []}), "Archived scenes can use their guide mesh")
+	var editor_scene: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://situations/ticket_10_3/scene.json"))
+	check(Situation._has_generated_guide(editor_scene), "Ticket 10 question 3 draws its editor points without fetching an archived mesh")
 	for enabled in [true, false]:
 		var sit := Situation.new()
 		sit.data = {"trajectories": [], "labels": [], "showPlayerGuide": enabled}

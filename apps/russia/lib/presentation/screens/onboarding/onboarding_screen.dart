@@ -15,6 +15,7 @@ import 'package:pdd_app/presentation/screens/onboarding/widgets/onboarding_perso
 import 'package:pdd_app/presentation/screens/onboarding/widgets/onboarding_plan_ready_step.dart';
 import 'package:pdd_app/presentation/screens/onboarding/widgets/onboarding_smart_practice_step.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/premium_benefits_screen.dart';
 
 /// Пятишаговый онбординг первого запуска:
@@ -46,6 +47,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   late TicketCategory _selectedCategory;
   late OnboardingPace _selectedPace;
   bool _saving = false;
+  bool _categoryWritePending = false;
 
   @override
   void initState() {
@@ -67,10 +69,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Future<void> _savePlan() async {
     if (widget.preview) return;
     final currentCategory = ref.read(appSettingsProvider).ticketCategory;
-    if (currentCategory != _selectedCategory) {
+    if (_categoryWritePending || currentCategory != _selectedCategory) {
+      _categoryWritePending = true;
       await ref
           .read(appSettingsProvider.notifier)
           .setTicketCategory(_selectedCategory);
+      _categoryWritePending = false;
     }
     await OnboardingService.instance.complete(pace: _selectedPace);
   }
@@ -95,15 +99,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       widget.onCompleted();
       return;
     }
-    await _saveBefore(widget.onCompleted);
+    await _saveBefore(widget.onCompleted, skip: true);
   }
 
-  Future<void> _saveBefore(VoidCallback onSaved) async {
+  Future<void> _saveBefore(VoidCallback onSaved, {bool skip = false}) async {
     setState(() => _saving = true);
     try {
       await _savePlan();
     } catch (error) {
       debugPrint('Onboarding save error: $error');
+      if (!mounted) return;
+      setState(() => _saving = false);
+      AppToast.show(
+        context,
+        context.l10n.onboardingPlanSaveFailed,
+        type: AppToastType.error,
+      );
+      if (skip) onSaved();
+      return;
     }
     if (!mounted) return;
     setState(() => _saving = false);

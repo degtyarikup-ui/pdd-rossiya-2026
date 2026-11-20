@@ -3070,7 +3070,7 @@
  "geometry": null,
  "type": "crossroad",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
  "signs": [
@@ -3094,16 +3094,10 @@
  "compliance": {
   "status": "ok"
  },
- "questionPool": {
-  "sourceQuestionId": "b19ba2cc652a455dca7a9a44381932be",
-  "category": "ab",
-  "ticket": 9,
-  "number": 2
- },
  "assistantReview": {
   "author": "codex",
   "batch": "2026-11-16-fifty-scenes",
-  "status": "pending"
+  "status": "approved"
  },
  "questionView": {
   "centre": [

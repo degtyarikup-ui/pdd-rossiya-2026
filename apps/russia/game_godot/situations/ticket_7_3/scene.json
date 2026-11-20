@@ -8,8 +8,8 @@
  "crop": 90.0,
  "centerZ": 0,
  "startZ": -90.0,
- "stopZ": -18,
- "playerStartX": -5.25,
+ "stopZ": -15.331,
+ "playerStartX": -5.214,
  "playerStartRotY": 0,
  "leftLane": 1.75,
  "rightLane": 1.75,
@@ -37,12 +37,8 @@
   "straight": {
    "points": [
     [
-     -5.25,
-     -18
-    ],
-    [
-     -5.25,
-     -16.323
+     -5.214,
+     -15.331
     ],
     [
      -5.25,
@@ -367,24 +363,20 @@
  "annotations": [],
  "playerGuidePoints": [
   [
-   -5.25,
-   -18
-  ],
-  [
-   -5.25,
-   -14
+   -5.214,
+   -15.331
   ],
   [
    -5.5,
-   -11
+   -5
   ],
   [
-   -5.8,
-   -8
+   -6.5,
+   0
   ],
   [
-   -5.8,
-   1
+   -6.5,
+   5
   ]
  ],
  "questionView": {

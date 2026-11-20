@@ -2623,6 +2623,7 @@
   "addToFavorites": "Добавить в избранное",
   "removeFromFavorites": "Убрать из избранного",
   "onboardingSkip": "Пропустить",
+  "onboardingPlanSaveFailed": "Не удалось сохранить план занятий.",
   "onboardingContinue": "Далее",
   "onboardingContinueFree": "Продолжить без Премиума",
   "onboardingStepSemantics": "Шаг {step} из {total}",

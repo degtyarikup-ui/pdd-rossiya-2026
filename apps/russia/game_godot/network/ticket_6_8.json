@@ -959,7 +959,7 @@
  "geometry": null,
  "type": "road_question",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
  "signs": [],
@@ -969,16 +969,10 @@
  "compliance": {
   "status": "ok"
  },
- "questionPool": {
-  "sourceQuestionId": "17a1d1a9b907bab9cd4c3549e3b51fb3",
-  "category": "ab",
-  "ticket": 6,
-  "number": 8
- },
  "assistantReview": {
   "author": "codex",
   "batch": "2026-11-16-three-scenes",
-  "status": "pending"
+  "status": "approved"
  },
  "questionView": {
   "centre": [

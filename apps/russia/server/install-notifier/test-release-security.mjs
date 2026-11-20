@@ -159,6 +159,34 @@ test('Google verification ignores supplied expiry and validates account binding'
     accountId = 'wrong-account'; await assert.rejects(verifyStorePurchase(body, e, 'google_123'), /another account/);
   } finally { globalThis.fetch = original; }
 });
+test('Google trial and test periods keep Premium without recording a paid profile date', async t => {
+  const { privateKey } = await generateKeyPair('RS256', { extractable: true });
+  const credentials = JSON.stringify({ client_email: 'trial@example.invalid', private_key: await exportPKCS8(privateKey) });
+  const trialId = 'ru.pdd.pddapp.sub.3months.trial3d';
+  let purchase;
+  t.mock.method(globalThis, 'fetch', async url => {
+    if (String(url) === 'https://oauth2.googleapis.com/token') return Response.json({ access_token: 'fixture' });
+    assert.ok(String(url).includes('/purchases/subscriptionsv2/tokens/'));
+    return Response.json(purchase);
+  });
+  for (const [id, phase, isTest, expectPaid] of [
+    [trialId, { freeTrial: {} }, false, false], [trialId, {}, false, false],
+    [productId, { basePrice: {} }, true, false], [trialId, { basePrice: {} }, false, true],
+  ]) {
+    const e = { ...env(), __DURABLE_EFFECTS: [], GOOGLE_PLAY_SERVICE_ACCOUNT: credentials,
+      PURCHASE_CLAIMS: { idFromName: name => name, get: () => ({ fetch: async () => Response.json({ ok: true }) }) } };
+    const session = await login(e);
+    purchase = { ...subscription(), ...(isTest ? { testPurchase: {} } : {}),
+      lineItems: [{ productId: id, expiryTime: new Date(Date.now() + 3 * 86400000).toISOString(),
+        latestSuccessfulOrderId: 'GPA.123', offerPhase: phase }] };
+    const response = await worker.fetch(request('/api/user/purchase', {
+      store: 'googleplay', country: 'ru', productId: id, purchaseToken: 'fixture',
+    }, session.token), e);
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).isPremium, true);
+    assert.equal(Boolean(JSON.parse(await e.INSTALLS.get('user:google_123')).purchasedAt), expectPaid);
+  }
+});
 test('concurrent receipt claims cannot transfer ownership', async () => {
   const data = new Map(); let queue = Promise.resolve();
   const txn = { get: async k => data.get(k), put: async (k, v) => data.set(k, v) };

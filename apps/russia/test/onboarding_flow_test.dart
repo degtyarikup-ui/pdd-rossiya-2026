@@ -32,6 +32,8 @@ import 'package:pdd_app/presentation/widgets/premium_celebration_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_plans_sheet.dart';
 import 'package:pdd_app/presentation/widgets/promo_code_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// ignore: depend_on_referenced_packages
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 
 import 'iap_catalog_test.dart' show CatalogStore, playQuarter, product;
 
@@ -238,6 +240,60 @@ void main() {
       }
     });
   }
+
+  testWithStorePlatform(
+    'failed storage keeps the confirmed plan editable until the retry succeeds',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final store = _RejectPlanOnce();
+      SharedPreferencesStorePlatform.instance = store;
+      final source = ProgressDataSource();
+      await source.init();
+      await OnboardingService.instance.init();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [progressDataSourceProvider.overrideWithValue(source)],
+          child: MaterialApp(
+            locale: const Locale('ru'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: OnboardingScreen(onCompleted: () {}),
+          ),
+        ),
+      );
+      await precacheOnboardingAssets(tester);
+      final next = find.byKey(const ValueKey('onboarding-primary-cta'));
+      for (var step = 0; step < 4; step++) {
+        await tester.pumpAndSettle();
+        if (step == 2) {
+          await tester.tap(
+            find.byKey(const ValueKey('onboarding-category-cd')),
+          );
+          await tester.pumpAndSettle();
+        }
+        await tester.tap(next);
+      }
+      await tester.pumpAndSettle();
+      expect(find.text(appL10n.onboardingPlanSaveFailed), findsOneWidget);
+      expect(find.byKey(const ValueKey('onboarding-step-3')), findsOneWidget);
+      expect(OnboardingService.instance.shouldShow, isTrue);
+      await tester.tap(next);
+      await tester.pumpAndSettle();
+      expect(store.categoryAttempts, 2);
+      expect(find.byKey(const ValueKey('onboarding-step-3')), findsOneWidget);
+      expect(OnboardingService.instance.shouldShow, isTrue);
+      await tester.tap(next);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('onboarding-step-4')), findsOneWidget);
+      expect(OnboardingService.instance.shouldShow, isFalse);
+      expect(
+        (await source.loadAppSettings()).ticketCategory,
+        TicketCategory.cd,
+      );
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
   testWithStorePlatform(
     'eligible first-time user sees the trial and renewal terms from onboarding',
@@ -787,6 +843,15 @@ void main() {
 
   for (final layout in [
     (
+      name: 'desktop-ru',
+      size: const Size(1280, 850),
+      scale: 1.0,
+      lang: 'ru',
+      dark: false,
+      disableAnimations: false,
+      padding: EdgeInsets.zero,
+    ),
+    (
       name: 'pixel-9-pro-xl-dark-ru',
       size: const Size(448, 997),
       scale: 1.0,
@@ -880,6 +945,22 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
 
+        if (layout.name == 'desktop-ru') {
+          final strips = find.byType(ListView);
+          expect(strips, findsNWidgets(2));
+          for (var row = 0; row < 2; row++) {
+            final photos = find.descendant(
+              of: strips.at(row),
+              matching: find.byType(Image),
+            );
+            expect(photos, findsNWidgets(5));
+            final leftMargin = tester.getTopLeft(photos.first).dx;
+            final rightMargin =
+                layout.size.width - tester.getTopRight(photos.last).dx;
+            expect(leftMargin, closeTo(rightMargin, 8));
+          }
+        }
+
         if (capture && layout.name == 'pixel-9-pro-xl-dark-ru') {
           await capturePreview(tester, previewKey, 'pixel_dark_step_1');
         }
@@ -909,6 +990,25 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+  }
+}
+
+class _RejectPlanOnce extends InMemorySharedPreferencesStore {
+  _RejectPlanOnce() : super.empty();
+
+  int categoryAttempts = 0;
+  bool rejectCompletion = true;
+
+  @override
+  Future<bool> setValue(String type, String key, Object value) async {
+    if (key == 'flutter.app_settings' && ++categoryAttempts == 1) return false;
+    if (key == 'flutter.${OnboardingService.completedKey}' &&
+        value == true &&
+        rejectCompletion) {
+      rejectCompletion = false;
+      return false;
+    }
+    return super.setValue(type, key, value);
   }
 }
 

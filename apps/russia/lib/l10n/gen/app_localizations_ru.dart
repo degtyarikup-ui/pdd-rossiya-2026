@@ -5454,6 +5454,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get onboardingSkip => 'Пропустить';
 
   @override
+  String get onboardingPlanSaveFailed => 'Не удалось сохранить план занятий.';
+
+  @override
   String get onboardingContinue => 'Далее';
 
   @override

@@ -1850,6 +1850,7 @@
   "addToFavorites": "Таңдаулыларға қосу",
   "removeFromFavorites": "Таңдаулылардан алып тастау",
   "onboardingSkip": "Өткізу",
+  "onboardingPlanSaveFailed": "Оқу жоспарын сақтау мүмкін болмады.",
   "onboardingContinue": "Келесі",
   "onboardingContinueFree": "Премиумсыз жалғастыру",
   "onboardingStepSemantics": "{total} қадамның {step}-і",
