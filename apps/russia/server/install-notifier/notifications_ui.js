@@ -124,7 +124,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .ib-l{padding:0 12px;display:flex;flex-direction:column;gap:8px}.ic{background:#fff;border-radius:14px;padding:12px;display:flex;gap:10px;font-size:12px}.ic.old{opacity:.45}
 .ic .ci{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center}.ic .ci svg{width:16px;height:16px}.ic .cc{flex:1;min-width:0}.ic .ct{display:flex;gap:6px;align-items:flex-start}.ic .ct b{flex:1;font-size:12.5px;line-height:1.3;overflow-wrap:anywhere}.ic .dot{width:7px;height:7px;border-radius:50%;background:#ED4621;flex-shrink:0;margin-top:4px}
 .ic p{margin:3px 0 0;color:rgba(18,18,18,.75);line-height:1.4;overflow-wrap:anywhere}.ic .ci-img{margin-top:7px;border-radius:10px;width:100%;display:block}.ic .cf{display:flex;justify-content:space-between;margin-top:7px;font-size:10.5px;color:#A1A6B7}.ic .cf span{color:#0574F8;font-weight:600;font-size:11.5px}
-.ap-paywall{background:#0574F8;color:#fff}.ap-paywall .ap-title{margin:auto 16px;text-align:center;font-size:24px}.paywall-preview-actions{display:grid;gap:6px;margin:0 12px 16px}.paywall-preview-button{min-height:37px;padding:7px 11px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:5px;text-align:center;font-size:12px;font-weight:600;background:#fff;color:#0574F8;overflow-wrap:anywhere}.paywall-preview-button img{width:16px;height:16px;object-fit:contain}
+.ap-paywall{background:#0574F8;color:#fff}.ap-paywall .ap-title{margin:auto 16px;text-align:center;font-size:24px}.paywall-preview-actions{display:grid;gap:6px;margin:0 12px 16px}.paywall-preview-button{min-height:37px;padding:7px 11px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;font-size:12px;font-weight:600;background:#fff;color:#0574F8;overflow-wrap:anywhere}.paywall-preview-button img{width:auto;height:22px;max-width:38px;object-fit:contain;flex-shrink:0}
 .nf-hist-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.nf-hist-h h3{margin:0;font-size:16px}
 .nf-msg{display:grid;grid-template-columns:52px minmax(0,1.6fr) minmax(0,1fr) 140px auto;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--nf-line)}.nf-msg:first-of-type{border-top:0}
 .nf-thumb{width:52px;height:52px;flex-shrink:0;border-radius:12px;background:var(--nf-soft) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#A3AAB6}.nf-thumb svg{width:36px;height:26px}
@@ -370,7 +370,7 @@ function paywall(d){
  var color=d.accent;
  var ink=color?onAccent(color):BLUE;
  var image=https(d.imageUrl)?'<img src="'+esc(d.imageUrl)+'" alt="">':'';
- var extra=d.buttonText?'<div class="paywall-preview-button" style="background:'+(color||'#fff')+';color:'+ink+'">'+image+'<span>'+esc(d.buttonText)+'</span></div>':'';
+ var extra=d.buttonText?'<div class="paywall-preview-button" style="background:'+(color||'#fff')+';color:'+ink+'"><span>'+esc(d.buttonText)+'</span>'+image+'</div>':'';
  return '<div class="ap ap-paywall">'+status(true)+'<div class="ap-title">Готовьтесь без ограничений</div><div class="paywall-preview-actions">'+extra+'<div class="paywall-preview-button">Оформить подписку</div></div></div>';
 }
 function renderPreview(){

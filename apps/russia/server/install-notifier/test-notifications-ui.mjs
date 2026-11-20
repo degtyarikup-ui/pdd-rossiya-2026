@@ -484,7 +484,12 @@ if (!process.argv.includes('--serve')) test('Paywall editor requires text and tr
     assert.equal(await page.isDisabled('#nt-publish'),true);
     assert.equal(await page.isDisabled('#nt-test'),true);
     await page.fill('#nt-button','Подробнее');
-    await page.waitForSelector('.paywall-preview-button img');
+    const previewIcon = page.locator('.paywall-preview-button img');
+    await previewIcon.waitFor();
+    const iconRect = await previewIcon.boundingBox();
+    const labelRect = await page.locator('.paywall-preview-button span').boundingBox();
+    assert.equal(iconRect.height, 22);
+    assert.equal(iconRect.x - (labelRect.x + labelRect.width), 8);
     assert.equal(await page.isEnabled('#nt-publish'),true);
     await page.locator('#nt-drop [data-img="remove"]').click();
     assert.equal(await page.locator('.paywall-preview-button img').count(),0);

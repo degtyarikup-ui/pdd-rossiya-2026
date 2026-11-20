@@ -45,6 +45,11 @@ class PaywallNoticeButton extends StatelessWidget {
             ? AppColors.accent
             : textOnNoticeAccent(accent);
         final label = notice.buttonText;
+        final hasIcon = label.isNotEmpty && notice.imageUrl.isNotEmpty;
+        final style = paywallButtonStyle(
+          background: accent,
+          foreground: foreground,
+        );
 
         Future<void> open() async {
           unawaited(notifications.recordNoticeEvent(notice.id, 'click'));
@@ -70,16 +75,19 @@ class PaywallNoticeButton extends StatelessWidget {
                 enabled: enabled,
                 child: ElevatedButton(
                   onPressed: enabled ? open : null,
-                  style: paywallButtonStyle(
-                    background: accent,
-                    foreground: foreground,
-                  ),
+                  style: hasIcon
+                      ? style.copyWith(
+                          padding: const WidgetStatePropertyAll(
+                            EdgeInsets.symmetric(
+                              horizontal: AppDimensions.spacingL,
+                              vertical: AppDimensions.spacingM,
+                            ),
+                          ),
+                        )
+                      : style,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (image != null) Flexible(child: image),
-                      if (image != null && label.isNotEmpty)
-                        const SizedBox(width: AppDimensions.spacingS),
                       if (label.isNotEmpty)
                         Flexible(
                           child: Text(
@@ -91,6 +99,10 @@ class PaywallNoticeButton extends StatelessWidget {
                             ),
                           ),
                         ),
+                      if (image != null && label.isNotEmpty)
+                        const SizedBox(width: AppDimensions.spacingM),
+                      if (image != null)
+                        hasIcon ? image : Flexible(child: image),
                     ],
                   ),
                 ),
@@ -102,13 +114,21 @@ class PaywallNoticeButton extends StatelessWidget {
         if (notice.imageUrl.isEmpty) return button();
         return Image.network(
           notice.imageUrl,
-          width: label.isEmpty ? null : 24,
-          height: 24,
+          height: hasIcon ? 32 : 24,
           fit: BoxFit.contain,
           semanticLabel: label.isEmpty ? appL10n.noticeOpen : null,
           excludeFromSemantics: label.isNotEmpty,
-          frameBuilder: (context, image, frame, _) =>
-              button(image: frame == null ? null : image),
+          frameBuilder: (context, image, frame, _) {
+            if (frame == null) return button();
+            return button(
+              image: hasIcon
+                  ? ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 56),
+                      child: image,
+                    )
+                  : image,
+            );
+          },
           errorBuilder: (context, error, stack) => button(),
         );
       },

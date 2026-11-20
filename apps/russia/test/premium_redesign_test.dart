@@ -584,12 +584,38 @@ void main() {
     });
     await tester.pump();
     expect(plansButton, findsOneWidget);
-    expect(tester.widget<Image>(find.descendant(
-      of: find.byType(PremiumPlansSheet),
-      matching: find.byType(Image),
-    )).width, 24);
     await tester.pumpAndSettle();
     expect(plansButton, findsOneWidget);
+
+    const iconProvider = NetworkImage('https://example.test/loaded-icon.png');
+    final recorder = ui.PictureRecorder();
+    Canvas(recorder).drawColor(Colors.white, BlendMode.src);
+    final picture = recorder.endRecording();
+    final icon = picture.toImageSync(80, 40);
+    picture.dispose();
+    final cache = PaintingBinding.instance.imageCache;
+    cache.putIfAbsent(
+      iconProvider,
+      () => OneFrameImageStreamCompleter(
+        SynchronousFuture(ImageInfo(image: icon)),
+      ),
+    );
+    addTearDown(() => cache.evict(iconProvider));
+    slot.value = AppNotice.parse({...campaign, 'imageUrl': iconProvider.url});
+    await tester.pump();
+    final image = find.descendant(
+      of: plansButton,
+      matching: find.byType(RawImage),
+    );
+    final label = find.descendant(
+      of: plansButton,
+      matching: find.text('Подробнее'),
+    );
+    expect(tester.getSize(image), const Size(56, 32));
+    expect(
+      tester.getTopLeft(image).dx - tester.getTopRight(label).dx,
+      closeTo(12, .01),
+    );
     slot.value = null;
     await tester.pump();
     expect(secondary, findsNothing);
