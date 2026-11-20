@@ -6,6 +6,9 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/data/services/remote_notifications_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 
+Color textOnNoticeAccent(Color accent) =>
+    accent.computeLuminance() > .179 ? Colors.black : Colors.white;
+
 /// Network image for admin notices: never breaks the layout on errors.
 class _NoticeImage extends StatelessWidget {
   final String url;
@@ -45,9 +48,9 @@ class AppNoticeDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accent = notice.accent ?? theme.colorScheme.primary;
-    final onAccent = accent.computeLuminance() > 0.55
-        ? Colors.black87
-        : Colors.white;
+    final onAccent = notice.accent == null
+        ? Colors.white
+        : textOnNoticeAccent(accent);
     final hasImage = notice.imageUrl.isNotEmpty;
     final compact = notice.layout == 'compact';
     final colors = AppColors.of(context);
@@ -362,6 +365,16 @@ class AppNoticeBanner extends StatelessWidget {
             ),
       );
     }
+    final chipColor = accent.withValues(alpha: colors.isDark ? .18 : .08);
+    final tintLuminance =
+        Color.alphaBlend(chipColor, colors.cardBackground).computeLuminance();
+    final accentLuminance = accent.computeLuminance();
+    final contrast =
+        (math.max(tintLuminance, accentLuminance) + .05) /
+        (math.min(tintLuminance, accentLuminance) + .05);
+    final chipInk = notice.accent != null && contrast < 4.5
+        ? colors.primaryText
+        : accent;
     return _surface(
       context,
       Padding(
@@ -450,7 +463,7 @@ class AppNoticeBanner extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: colors.isDark ? .18 : .08),
+                  color: chipColor,
                   borderRadius: BorderRadius.circular(
                     AppDimensions.smallRadius,
                   ),
@@ -468,13 +481,13 @@ class AppNoticeBanner extends StatelessWidget {
                         style: theme.textTheme.labelLarge?.copyWith(
                           fontSize: 12,
                           height: 1.2,
-                          color: accent,
+                          color: chipInk,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Icon(Icons.arrow_forward_rounded, size: 15, color: accent),
+                    Icon(Icons.arrow_forward_rounded, size: 15, color: chipInk),
                   ],
                 ),
               ),

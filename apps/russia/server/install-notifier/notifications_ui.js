@@ -17,6 +17,8 @@ const LAYOUT_ART = {
 const tile = (value, label) => `<label class="nf-tile"><input type="radio" name="nt-place" value="${value}">${ART[value]}<b>${label}</b></label>`;
 const chip = (name, value, label, type = 'radio') => `<label class="nf-chip"><input type="${type}" name="${name}" value="${value}"><span>${label}</span></label>`;
 
+const ACCENT_PRESETS = ['#B7F700', '#FFA53C', '#000000', '#FFFFFF', '#0574F8', '#2BC280'];
+
 export const NOTIFICATIONS_VIEW_HTML = `
 <div id="notifications-view" style="display:none">
 <style>
@@ -55,8 +57,14 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .nf-count{position:absolute;right:12px;bottom:12px;font-size:11px;color:#A3AAB6;font-variant-numeric:tabular-nums;pointer-events:none}.nf-in input~.nf-count{top:50%;bottom:auto;transform:translateY(-50%)}
 .nf-count.warn{color:var(--nf-warn)}.nf-count.over{color:var(--danger);font-weight:700}
 .nf-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.nf-row+.nf-row{margin-top:10px}.nf-row [hidden]{display:none}
-.nf-swatches{display:flex;gap:8px;align-items:center;margin-top:12px}.nf-swatch{width:24px;height:24px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #D9DEE6;cursor:pointer;padding:0}.nf-swatch.on{box-shadow:0 0 0 2px var(--text)}
-.nf-swatches input[type=color]{width:28px;height:28px;padding:0;border:0;background:none;cursor:pointer}.nf-swatches[hidden]{display:none}
+.nf-swatches,.nf-presets{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.nf-swatches{margin-top:12px;column-gap:12px}
+.nf-swatch{width:24px;height:24px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #D9DEE6;cursor:pointer;padding:0}
+.nf-swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--text)}.nf-swatch:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+.nf-custom-color{display:inline-flex;align-items:center;gap:6px;padding:0 6px;border:1px solid var(--nf-line);border-radius:8px;background:#fff}
+.nf-custom-color:focus-within{border-color:var(--primary)}.nf-custom-color:has([aria-invalid="true"]){border-color:var(--danger)}
+#notifications-view .nf-custom-color input[type=color]{width:24px;height:26px;padding:2px;border:0;background:none;cursor:pointer}
+#notifications-view .nf-custom-color input[type=text]{width:8ch;box-sizing:content-box;min-height:30px;border:0;outline:none;border-radius:0;background:none;padding:0;font:12px ui-monospace,monospace}
+.nf-swatches[hidden]{display:none}
 .nf-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}
 .nf-chips{display:flex;flex-wrap:wrap;gap:6px}.nf-chips+.nf-chips{margin-top:8px}.nf-chips[hidden]{display:none}
 .nf-chip{position:relative}.nf-chip span{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:10px;background:var(--nf-soft);font-size:12px;font-weight:550;color:#4A5262;cursor:pointer}
@@ -163,7 +171,10 @@ export const NOTIFICATIONS_VIEW_HTML = `
 <div class="nf-row"><select id="nt-action" aria-label="Действие"><option value="none">Ничего</option><option value="url">Открыть ссылку</option><option value="tickets">Билеты</option><option value="topics">Темы</option><option value="game">Игра</option><option value="feed">Лента</option><option value="settings">Настройки</option><option value="premium">Премиум</option></select><input type="url" id="nt-url" placeholder="https://…" aria-label="Ссылка" hidden></div>
 <label class="nf-toggle" id="nt-profile-button-wrap" hidden><input type="checkbox" id="nt-profile-button">Добавить кнопку</label>
 <div class="nf-row" id="nt-button-wrap"><input id="nt-button" maxlength="24" placeholder="Текст кнопки" aria-label="Текст кнопки"><input id="nt-dismiss" maxlength="24" placeholder="Вторая кнопка" aria-label="Вторая кнопка"></div>
-<div class="nf-swatches" id="nt-swatches"><button type="button" class="nf-swatch" data-color="" style="background:#0574F8" title="Как в приложении"></button><button type="button" class="nf-swatch" data-color="#16A34A" style="background:#16A34A"></button><button type="button" class="nf-swatch" data-color="#F59E0B" style="background:#F59E0B"></button><button type="button" class="nf-swatch" data-color="#DC2626" style="background:#DC2626"></button><button type="button" class="nf-swatch" data-color="#7C3AED" style="background:#7C3AED"></button><button type="button" class="nf-swatch" data-color="#121212" style="background:#121212"></button><input type="color" id="nt-accent" value="#0574F8" title="Свой цвет"></div>
+<div class="nf-swatches" id="nt-swatches">
+<div class="nf-presets" role="group" aria-label="Готовые цвета">${ACCENT_PRESETS.map(color => `<button type="button" class="nf-swatch" data-color="${color}" style="background:${color}" title="${color}" aria-label="${color}" aria-pressed="false"></button>`).join('')}</div>
+<div class="nf-custom-color"><input type="color" id="nt-accent" value="#0574F8" title="Палитра" aria-label="Палитра"><input type="text" id="nt-hex" placeholder="HEX" aria-label="Цвет HEX" autocomplete="off" spellcheck="false"></div>
+</div>
 </section>
 <section class="nf-sec nf-two">
 <div><h4>Кому</h4><div class="nf-chips" id="nt-platforms">${chip('nt-platform', 'ios', 'iOS', 'checkbox')}${chip('nt-platform', 'android', 'Android', 'checkbox')}${chip('nt-platform', 'web', 'Веб', 'checkbox')}</div>
@@ -245,6 +256,16 @@ function saveRecipients(list){try{localStorage.setItem('nt-test-targets',JSON.st
 function chosen(){return recipients().filter(function(r){return r.on;}).map(function(r){return r.v;});}
 function pushAvailable(){return !!(cfg&&ready&&cfg.pushEnabled)&&S.audiences.length===3&&(!S.platforms.length||mobile().length>0);}
 
+function parseAccent(value){
+ var hex=value.trim();
+ if(!hex)return '';
+ return /^#?[0-9a-f]{6}$/i.test(hex)?'#'+hex.replace(/^#/,'').toUpperCase():null;
+}
+function setAccent(value){
+ S.accent=parseAccent(typeof value==='string'?value:'')||'';
+ el('hex').value=S.accent;
+}
+
 function draft(){
  var push=S.push,place=S.place,title=el('title').value.trim(),body=el('body').value.trim(),action=el('action').value;
  if(place==='paywall')return {kind:place,app:'ru',platforms:S.platforms.filter(function(p){return p!=='ios';}),store:has('android')&&S.stores.length===1?S.stores[0]:'all',audiences:S.audiences.slice(),
@@ -270,6 +291,7 @@ function problem(d){
  if(S.place==='banner'&&d.body.length>200)return 'Текст баннера — до 200 символов';
  if(d.imageUrl&&!https(d.imageUrl))return 'Картинка должна открываться по https://';
  if(d.action==='url'&&!https(d.actionUrl))return 'Укажите ссылку https://';
+ if(d.layout!=='image'&&parseAccent(el('hex').value)===null)return 'Формат #RRGGBB';
  if(S.when==='later'){var t=startAt();if(!t)return 'Выберите время старта';if(t<Date.now()-60000)return 'Время старта уже прошло';}
  return '';
 }
@@ -280,6 +302,15 @@ function tabs(){if(S.place==='paywall')return ['paywall'];var t=[];if(S.push)t.p
 function osLabel(){var a=brand('apple'),g=brand('android');el('os').querySelector('[data-os="ios"]').innerHTML=a+'iPhone';el('os').querySelector('[data-os="android"]').innerHTML=g+'Android';}
 function status(dark){return '<div class="ph-st"'+(dark?' style="color:#fff"':'')+'><span>9:41</span><i></i><span>●●●</span></div>';}
 function lockDate(){return new Date().toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'});}
+function luminance(color, whiteMix=0){
+ var rgb=color.slice(1).match(/../g).map(function(v){
+  var n=(parseInt(v,16)/255)*(1-whiteMix)+whiteMix;
+  return n<=.04045?n/12.92:Math.pow((n+.055)/1.055,2.4);
+ });
+ return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;
+}
+function onAccent(color){return luminance(color)>.179?'#000':'#fff';}
+function readableAccent(color,whiteMix){return (luminance(color,whiteMix)+.05)/(luminance(color)+.05)>=4.5?color:'#121212';}
 // iPhone (Notification Service Extension): a thumbnail on the right, the picture above the text when expanded.
 function pushIos(d){
  var title=d.title||'ПДД 2026',body=d.body,img=d.imageUrl&&https(d.imageUrl);
@@ -288,7 +319,7 @@ function pushIos(d){
  return '<div class="lk">'+status(true)+'<div class="lk-date">'+esc(lockDate())+'</div><div class="lk-time">9:41</div>'+card(false)+'<div class="lk-cap">Раскрыто</div>'+card(true)+'</div>';
 }
 function pushAndroid(d){
- var c=d.accent||BLUE,img=d.imageUrl&&https(d.imageUrl),head=function(open){return '<div class="an-h"><i style="background:'+esc(c)+'">'+SVG.bell+'</i><span style="color:'+esc(c)+'">ПДД Россия 2026</span>· сейчас<em>'+(open?'⌃':'⌄')+'</em></div>';};
+ var c=d.accent||BLUE,img=d.imageUrl&&https(d.imageUrl),head=function(open){return '<div class="an-h"><i style="background:'+esc(c)+';color:'+(d.accent?onAccent(c):'#fff')+'">'+SVG.bell+'</i><span style="color:'+esc(d.accent?readableAccent(c,1):c)+'">ПДД Россия 2026</span>· сейчас<em>'+(open?'⌃':'⌄')+'</em></div>';};
  var lines=function(open){return (d.title?'<b class="l1">'+esc(d.title)+'</b>':'')+(d.body?'<p class="'+(open&&!img?'lc':'l1')+'"'+(open&&!img?' style="-webkit-line-clamp:8"':'')+'>'+esc(d.body)+'</p>':'');};
  return '<div class="lk an">'+status(true)+'<div class="lk-date">'+esc(lockDate())+'</div><div class="lk-time">9:41</div>'
   +'<div class="an-n">'+head(false)+'<div class="an-b"><div>'+lines(false)+'</div>'+(img?'<span class="an-th" style="'+bg(d.imageUrl)+'"></span>':'')+'</div></div>'
@@ -300,7 +331,7 @@ function bannerHtml(d){
  var img=d.imageUrl&&https(d.imageUrl),c=d.accent||BLUE;
  if(d.layout==='image')return img?'<div class="aimg"><img src="'+esc(d.imageUrl)+'" alt="">'+noticeClose(true)+'</div>':'';
  var chipText=d.buttonText||'Подробнее';
- return '<div class="ab"><span class="ab-mark" style="background:'+esc(c)+'"></span><div class="ab-row">'+(img?'<span class="ab-th" style="'+bg(d.imageUrl)+'"></span>':'')+'<div style="min-width:0">'+(d.title?'<b>'+esc(d.title)+'</b>':'')+(d.body?'<p>'+esc(d.body)+'</p>':'')+'</div></div>'+(d.button?'<span class="ab-chip" style="color:'+esc(c)+';background:'+esc(c)+'14">'+esc(chipText)+' →</span>':'')+noticeClose(false)+'</div>';
+ return '<div class="ab"><span class="ab-mark" style="background:'+esc(c)+'"></span><div class="ab-row">'+(img?'<span class="ab-th" style="'+bg(d.imageUrl)+'"></span>':'')+'<div style="min-width:0">'+(d.title?'<b>'+esc(d.title)+'</b>':'')+(d.body?'<p>'+esc(d.body)+'</p>':'')+'</div></div>'+(d.button?'<span class="ab-chip" style="color:'+esc(d.accent?readableAccent(c,.92):c)+';background:'+esc(c)+'14">'+esc(chipText)+' →</span>':'')+noticeClose(false)+'</div>';
 }
 function windowHtml(d){
  var img=d.imageUrl&&https(d.imageUrl),c=d.accent||BLUE;
@@ -308,7 +339,7 @@ function windowHtml(d){
  var pic=img&&d.layout!=='compact'?'<div class="im'+(d.layout==='cover'?' cover':'')+'" style="'+bg(d.imageUrl)+'"></div>':'';
  var label=d.buttonText||(d.action==='none'?'Понятно':'Открыть');
  return '<div class="aw">'+pic+'<div class="in2">'+(img&&d.layout==='compact'?'<div class="ic2" style="'+bg(d.imageUrl)+'"></div>':'')+(d.title?'<b>'+esc(d.title)+'</b>':'')+(d.body?'<p>'+esc(d.body)+'</p>':'')
-  +(d.button?'<div class="bt" style="background:'+esc(c)+';color:#fff">'+esc(label)+'</div>'+(d.dismissText?'<div class="bt2">'+esc(d.dismissText)+'</div>':''):'')+'</div>'+noticeClose(img&&d.layout!=='compact')+'</div>';
+  +(d.button?'<div class="bt" style="background:'+esc(c)+';color:'+(d.accent?onAccent(c):'#fff')+'">'+esc(label)+'</div>'+(d.dismissText?'<div class="bt2">'+esc(d.dismissText)+'</div>':''):'')+'</div>'+noticeClose(img&&d.layout!=='compact')+'</div>';
 }
 function home(d){
  var stats='<div class="sk sk-stats"><span class="sk-ring"></span><div style="flex:1"><div class="sk-l" style="width:70%"></div><div class="sk-l" style="width:45%"></div><div class="sk-l" style="width:58%"></div></div></div>';
@@ -321,8 +352,7 @@ function home(d){
 function profileBanner(d){
  var img=d.imageUrl&&https(d.imageUrl),c=d.accent||BLUE,content=!!(d.title||d.body||d.button);
  if(!img&&!content)return '';
- var rgb=c.slice(1).match(/../g).map(function(v){var n=parseInt(v,16)/255;return n<=.04045?n/12.92:Math.pow((n+.055)/1.055,2.4);});
- var ink=(rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722)>.55?'#121212':'#fff';
+ var ink=d.accent?onAccent(c):'#fff';
  return '<div class="pb'+(!img&&!d.title&&!d.body?' only-button':'')+'">'+(img?'<img src="'+esc(d.imageUrl)+'" alt=""'+(d.imageWidth?' width="'+d.imageWidth+'" height="'+d.imageHeight+'"':'')+'>':'')+(content?'<div class="pb-content">'+(d.title?'<b>'+esc(d.title)+'</b>':'')+(d.body?'<p>'+esc(d.body)+'</p>':'')+(d.button?'<span class="pb-button" style="background:'+esc(c)+';color:'+ink+'">'+esc(d.buttonText||'Подробнее')+'</span>':'')+'</div>':'')+noticeClose(img)+'</div>';
 }
 function profile(d){
@@ -337,9 +367,8 @@ function inbox(d){
  return '<div class="ap">'+status()+'<div class="ib-h"><i>←</i>Уведомления</div><div class="ib-l">'+card+old+old+'</div></div>';
 }
 function paywall(d){
- var color=/^#[a-f0-9]{6}$/i.test(d.accent)?d.accent:'';
- var rgb=color?color.slice(1).match(/../g).map(function(v){var n=parseInt(v,16)/255;return n<=.04045?n/12.92:Math.pow((n+.055)/1.055,2.4);}):[];
- var ink=color?((rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722)>.179?'#000':'#fff'):BLUE;
+ var color=d.accent;
+ var ink=color?onAccent(color):BLUE;
  var image=https(d.imageUrl)?'<img src="'+esc(d.imageUrl)+'" alt="">':'';
  var extra=d.buttonText?'<div class="paywall-preview-button" style="background:'+(color||'#fff')+';color:'+ink+'">'+image+'<span>'+esc(d.buttonText)+'</span></div>':'';
  return '<div class="ap ap-paywall">'+status(true)+'<div class="ap-title">Готовьтесь без ограничений</div><div class="paywall-preview-actions">'+extra+'<div class="paywall-preview-button">Оформить подписку</div></div></div>';
@@ -386,7 +415,10 @@ function sync(){
  el('button').required=onPaywall;
  el('button').placeholder=onPaywall?'Текст кнопки (обязательно)':S.place==='popup'?(d.action==='none'?'Кнопка: Понятно':'Кнопка: Открыть'):'Кнопка: Подробнее';
  el('url').hidden=d.action!=='url';el('swatches').hidden=imageOnly;
- document.querySelectorAll('#nt-swatches .nf-swatch').forEach(function(s){s.classList.toggle('on',s.dataset.color===S.accent);});
+ var picker=el('accent'),pickerColor=(S.accent||(onPaywall?'#FFFFFF':BLUE)).toLowerCase();
+ if(picker.value!==pickerColor)picker.value=pickerColor;
+ el('hex').setAttribute('aria-invalid',String(!imageOnly&&parseAccent(el('hex').value)===null));
+ el('swatches').querySelectorAll('[data-color]').forEach(function(s){s.setAttribute('aria-pressed',String(s.dataset.color===S.accent));});
  var drop=el('drop');
  drop.setAttribute('aria-label',onPaywall?'Иконка кнопки (необязательно)':'Картинка');
  var spec=imageSpec(),size=spec.w+' × '+spec.h,fit=imageFit(spec);
@@ -401,10 +433,10 @@ function sync(){
  renderPreview();saveDraft();
 }
 function saveDraft(){try{localStorage.setItem('nt-draft',JSON.stringify({s:{push:S.push,place:S.place,layout:S.layout,accent:S.accent,platforms:S.platforms,stores:S.stores,audiences:S.audiences,days:S.days,image:S.image,profileButton:S.profileButton},title:el('title').value,body:el('body').value,action:el('action').value,url:el('url').value,button:el('button').value,dismiss:el('dismiss').value}));}catch(_){}}
-function loadDraft(){try{var x=JSON.parse(localStorage.getItem('nt-draft')||'null');if(!x)return;Object.assign(S,x.s||{});if(!Array.isArray(S.platforms))S.platforms=ALL.slice();if(!Array.isArray(x.s&&x.s.stores))S.stores=storesOf(x.s||{});if(!Array.isArray(S.audiences))S.audiences=ALL_AUDIENCES.slice();delete S.platform;delete S.store;['title','body','action','url','button','dismiss'].forEach(function(k){if(typeof x[k]==='string')el(k).value=x[k];});}catch(_){}}
-function clearForm(){['title','body','url','button','dismiss','start'].forEach(function(k){el(k).value='';});el('action').value='none';Object.assign(S,{push:false,place:'news',layout:'standard',accent:'',platforms:ALL.slice(),stores:['play','rustore'],audiences:ALL_AUDIENCES.slice(),when:'now',days:'7',image:'',imgW:0,imgH:0,profileButton:false,tab:''});pending=null;el('editor-error').textContent='';}
+function loadDraft(){try{var x=JSON.parse(localStorage.getItem('nt-draft')||'null');if(!x)return;Object.assign(S,x.s||{});setAccent(S.accent);if(!Array.isArray(S.platforms))S.platforms=ALL.slice();if(!Array.isArray(x.s&&x.s.stores))S.stores=storesOf(x.s||{});if(!Array.isArray(S.audiences))S.audiences=ALL_AUDIENCES.slice();delete S.platform;delete S.store;['title','body','action','url','button','dismiss'].forEach(function(k){if(typeof x[k]==='string')el(k).value=x[k];});}catch(_){}}
+function clearForm(){['title','body','url','button','dismiss','start'].forEach(function(k){el(k).value='';});el('action').value='none';Object.assign(S,{push:false,place:'news',layout:'standard',accent:'',platforms:ALL.slice(),stores:['play','rustore'],audiences:ALL_AUDIENCES.slice(),when:'now',days:'7',image:'',imgW:0,imgH:0,profileButton:false,tab:''});setAccent('');pending=null;el('editor-error').textContent='';}
 function fill(m){
- clearForm();S.push=m.kind==='push';S.place=placeOf(m);S.platforms=platformsOf(m).slice();S.stores=storesOf(m);S.audiences=audiencesOf(m).slice();S.layout=m.layout==='cover'||m.layout==='compact'?m.layout:'standard';S.accent=m.accent||'';S.image=m.imageUrl||'';S.imgW=m.imageWidth||0;S.imgH=m.imageHeight||0;S.profileButton=S.place==='profile'&&m.button!==false&&m.layout!=='image';
+ clearForm();S.push=m.kind==='push';S.place=placeOf(m);S.platforms=platformsOf(m).slice();S.stores=storesOf(m);S.audiences=audiencesOf(m).slice();S.layout=m.layout==='cover'||m.layout==='compact'?m.layout:'standard';setAccent(m.accent);S.image=m.imageUrl||'';S.imgW=m.imageWidth||0;S.imgH=m.imageHeight||0;S.profileButton=S.place==='profile'&&m.button!==false&&m.layout!=='image';
  S.days=m.persistent?'forever':String([1,3,7,30].find(function(days){return days*86400000>=m.expiresAt-(m.startAt||m.createdAt);})||7);
  el('title').value=m.title||'';el('body').value=m.body||'';el('action').value=m.action||'none';el('url').value=m.actionUrl||'';el('button').value=m.buttonText||'';el('dismiss').value=m.dismissText||'';
  el('result').textContent='';if(S.image&&!S.imgW)setImage(S.image);else sync();el('form').scrollIntoView({behavior:'smooth',block:'start'});
@@ -483,7 +515,7 @@ function onFormEdit(e){
  var t=e&&e.target;if(!t)return sync();
  // Text input already synced on input. Rebuilding the image controls again on
  // blur would remove a link button between pointerdown and click.
- if(e.type==='change'&&(t.tagName==='TEXTAREA'||t.matches('input:not([type=checkbox]):not([type=radio])')))return;
+ if(e.type==='change'&&t.id!=='nt-accent'&&(t.tagName==='TEXTAREA'||t.matches('input:not([type=checkbox]):not([type=radio])')))return;
  if(t.closest&&t.closest('#nt-recips'))return;
  if(t.id==='nt-push'){S.push=t.checked;S.tab=S.push?'push':'';if(S.push){S.platforms=mobile();if(!S.platforms.length)S.platforms=['ios','android'];}}
  else if(t.name==='nt-place'){S.place=t.value;S.tab=S.place==='news'&&S.push?'inbox':S.place==='news'?'inbox':S.place==='profile'?'profile':'home';}
@@ -494,12 +526,22 @@ function onFormEdit(e){
  else if(t.name==='nt-when')S.when=t.value;
  else if(t.name==='nt-days')S.days=t.value;
  else if(t.name==='nt-layout'){S.layout=t.value;S.tab='home';}
- else if(t.id==='nt-accent')S.accent=t.value.toUpperCase();
+ else if(t.id==='nt-accent')setAccent(t.value);
+ else if(t.id==='nt-hex'){
+  var accent=parseAccent(t.value);
+  if(accent!==null)S.accent=accent;
+ }
  else if(t.id==='nt-target')return;
  pending=null;el('result').textContent='';sync();
 }
 el('form').addEventListener('input',onFormEdit);el('form').addEventListener('change',onFormEdit);
-el('swatches').addEventListener('click',function(e){var s=e.target.closest('.nf-swatch');if(!s)return;S.accent=s.dataset.color;sync();});
+el('hex').addEventListener('blur',function(){if(parseAccent(this.value)!==null)this.value=S.accent;});
+el('swatches').addEventListener('click',function(e){
+ var swatch=e.target.closest('[data-color]');
+ if(!swatch)return;
+ setAccent(swatch.dataset.color);
+ pending=null;el('result').textContent='';sync();
+});
 el('tabs').addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(b){S.tab=b.dataset.tab;renderPreview();}});
 el('os').addEventListener('click',function(e){var b=e.target.closest('[data-os]');if(b){S.os=b.dataset.os;renderPreview();}});
 el('reset').onclick=function(){clearForm();el('result').textContent='';sync();};

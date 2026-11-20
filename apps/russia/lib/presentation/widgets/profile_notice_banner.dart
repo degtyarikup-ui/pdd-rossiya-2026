@@ -144,9 +144,9 @@ class _ProfileNoticeBannerState extends State<ProfileNoticeBanner> {
     final hasContent = hasTitle || hasBody || hasButton;
     if (!hasImage && !hasContent) return const SizedBox.shrink();
     final accent = notice.accent ?? colors.accent;
-    final onAccent = accent.computeLuminance() > .55
-        ? Colors.black87
-        : Colors.white;
+    final onAccent = notice.accent == null
+        ? Colors.white
+        : textOnNoticeAccent(accent);
     final wholeCardTap = !hasButton && notice.tap != null;
     final imageRatio = _image == null
         ? notice.imageAspectRatio ?? 16 / 9

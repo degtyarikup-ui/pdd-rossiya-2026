@@ -489,10 +489,52 @@ if (!process.argv.includes('--serve')) test('Paywall editor requires text and tr
     await page.locator('#nt-drop [data-img="remove"]').click();
     assert.equal(await page.locator('.paywall-preview-button img').count(),0);
     assert.equal(await page.isEnabled('#nt-publish'),true);
+    const presets = ['#B7F700', '#FFA53C', '#000000', '#FFFFFF', '#0574F8', '#2BC280'];
+    const hex = page.locator('#nt-hex');
+    const picker = page.locator('#nt-accent');
+    assert.deepEqual(await page.locator('#nt-swatches [data-color]').evaluateAll(
+      buttons => buttons.map(button => button.dataset.color),
+    ), presets);
+    assert.equal(await hex.inputValue(), '');
+    assert.equal(await picker.inputValue(), '#ffffff');
+    for (const color of presets) {
+      const preset = page.locator('#nt-swatches [data-color="'+color+'"]');
+      await preset.click();
+      assert.equal(await preset.getAttribute('aria-pressed'), 'true');
+      assert.equal(await hex.inputValue(), color);
+      assert.equal(await picker.inputValue(), color.toLowerCase());
+      assert.equal(await page.locator('#nt-swatches [aria-pressed="true"]').count(), 1);
+    }
+    await picker.fill('#ffffff');
+    assert.equal(await hex.inputValue(), '#FFFFFF');
+    const previewButton = page.locator('.paywall-preview-button').first();
+    assert.equal(await previewButton.evaluate(button => getComputedStyle(button).color), 'rgb(0, 0, 0)');
+    await hex.fill('#12');
+    assert.equal(await hex.getAttribute('aria-invalid'), 'true');
+    assert.equal(await page.isDisabled('#nt-publish'), true);
+    await hex.fill('');
+    assert.equal(await page.isEnabled('#nt-publish'), true);
+    assert.equal(await page.locator('#nt-swatches [aria-pressed="true"]').count(), 0);
+    await hex.fill('4a7bc2');
+    assert.equal(await picker.inputValue(), '#4a7bc2');
+    assert.equal(await page.isEnabled('#nt-publish'), true);
+    await page.setViewportSize({width:320,height:900});
+    const colorBar = await page.locator('#nt-swatches').boundingBox();
+    const custom = await page.locator('.nf-custom-color').boundingBox();
+    assert.ok(custom.x + custom.width <= colorBar.x + colorBar.width);
+    await page.setViewportSize({width:1440,height:1100});
+    await page.reload();
+    await page.click('[data-feature="notifications"]');
+    assert.equal(await hex.inputValue(), '#4A7BC2');
     await choose(page,'input[name="nt-days"][value="forever"]');
     await page.click('#nt-publish');
     await page.click('#nt-confirm-send');
     await page.waitForSelector('.nf-msg:has-text("Подробнее")');
+    const campaign = [...app.data.values()].find(item => item?.kind === 'paywall');
+    assert.equal(campaign.accent, '#4A7BC2');
+    await page.click('[data-nt-copy="'+campaign.id+'"]');
+    assert.equal(await hex.inputValue(), campaign.accent);
+    assert.equal(await picker.inputValue(), campaign.accent.toLowerCase());
     const row = page.locator('.nf-msg:has-text("Подробнее")');
     await row.locator('[data-nt-toggle]').click();
     await row.getByText('Выключено',{exact:true}).waitFor();

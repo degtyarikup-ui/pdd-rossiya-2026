@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/data/services/remote_notifications_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_notice_widgets.dart';
@@ -368,6 +369,29 @@ void main() {
     expect(opened, 0);
     expect(dismissed, 0);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('white banner accent keeps its action text readable', (
+    tester,
+  ) async {
+    final notice = AppNotice(
+      id: 'c069e042-5b7b-40a0-b15e-b80c4444ce1d',
+      title: 'Обновление',
+      body: '',
+      expiresAt: DateTime.now().add(const Duration(days: 1)),
+      kind: 'banner',
+      accent: Colors.white,
+      buttonText: 'Открыть',
+      action: NoticeAction.tickets,
+    );
+    await tester.pumpWidget(
+      buildBannerBox(width: 360, notice: notice, onTap: () {}, onDismiss: () {}),
+    );
+    final label = find.text(notice.buttonText);
+    final colors = AppColors.of(tester.element(label));
+    expect(tester.widget<Text>(label).style?.color, colors.primaryText);
+    expect(tester.widget<Icon>(find.byIcon(Icons.arrow_forward_rounded)).color,
+        colors.primaryText);
   });
 
   testWidgets('legacy emoji is not shown in banners or dialogs', (

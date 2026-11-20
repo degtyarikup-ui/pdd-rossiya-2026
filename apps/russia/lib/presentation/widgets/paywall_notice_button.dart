@@ -43,9 +43,7 @@ class PaywallNoticeButton extends StatelessWidget {
         final accent = notice.accent ?? AppColors.white;
         final foreground = notice.accent == null
             ? AppColors.accent
-            : accent.computeLuminance() > .179
-            ? Colors.black
-            : Colors.white;
+            : textOnNoticeAccent(accent);
         final label = notice.buttonText;
 
         Future<void> open() async {
