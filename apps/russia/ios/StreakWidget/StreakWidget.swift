@@ -137,21 +137,20 @@ private struct CelebrationFlame: Shape {
 }
 
 private struct CelebrationBackground: View {
-    let center: UnitPoint
+    let diameter: CGFloat
 
     var body: some View {
-        GeometryReader { bounds in
-            let radius = max(bounds.size.width, bounds.size.height) * 0.85
-            ZStack {
-                Color(red: 1, green: 165 / 255, blue: 60 / 255)
-                AngularGradient(stops: (0...48).map { index in
-                    Gradient.Stop(color: .white.opacity(index % 4 == 1 ? 0.36 : 0),
-                                  location: Double(index) / 48)
-                }, center: center)
-                .mask(RadialGradient(colors: [.white, .clear], center: center,
-                                     startRadius: 0, endRadius: radius))
-            }
-        }
+        AngularGradient(stops: (0...48).map { index in
+            Gradient.Stop(color: .white.opacity(index % 4 == 1 ? 0.44 : 0),
+                          location: Double(index) / 48)
+        }, center: .center)
+        .mask(RadialGradient(stops: [
+            .init(color: .white, location: 0),
+            .init(color: .white.opacity(0.85), location: 0.42),
+            .init(color: .clear, location: 1),
+        ], center: .center, startRadius: 0, endRadius: diameter / 2))
+        .frame(width: diameter, height: diameter)
+        .accessibilityHidden(true)
     }
 }
 
@@ -161,10 +160,6 @@ struct StreakWidgetView: View {
 
     private var small: Bool { family == .systemSmall }
     private var large: Bool { family == .systemLarge }
-    private var center: UnitPoint {
-        UnitPoint(x: small || large ? 0.5 : 0.42, y: small ? 0.43 : large ? 0.38 : 0.34)
-    }
-
     private func flame(height: CGFloat) -> some View {
         CelebrationFlame().fill(.white, style: FillStyle(eoFill: true))
             .frame(width: height * 0.78, height: height)
@@ -176,15 +171,21 @@ struct StreakWidgetView: View {
             .minimumScaleFactor(0.35).lineLimit(1)
     }
 
-    private var streak: some View {
+    private func glowingFlame(height: CGFloat, rayDiameter: CGFloat) -> some View {
+        flame(height: height)
+            .opacity(entry.done || (!small && !large) ? 1 : 0.74)
+            .background { CelebrationBackground(diameter: rayDiameter) }
+    }
+
+    private func streak(rayDiameter: CGFloat) -> some View {
         Group {
             if small || large {
                 VStack(spacing: 2) {
-                    flame(height: large ? 92 : 48).opacity(entry.done ? 1 : 0.74)
+                    glowingFlame(height: large ? 92 : 48, rayDiameter: rayDiameter)
                     number
                 }
             } else {
-                HStack(spacing: 9) { flame(height: 46); number }
+                HStack(spacing: 9) { glowingFlame(height: 46, rayDiameter: rayDiameter); number }
             }
         }
         .accessibilityElement(children: .ignore)
@@ -215,7 +216,7 @@ struct StreakWidgetView: View {
                         .lineLimit(1).minimumScaleFactor(0.7)
                     ZStack {
                         if day.active { flame(height: large ? 22 : 15) }
-                        else { Circle().strokeBorder(.white.opacity(0.8), lineWidth: 1.3).frame(width: 8, height: 8) }
+                        else { Circle().fill(.white).frame(width: 5, height: 5) }
                     }.frame(height: large ? 22 : 15)
                     Capsule().fill(.white).frame(width: 10, height: 2).opacity(day.today ? 1 : 0)
                 }
@@ -231,32 +232,38 @@ struct StreakWidgetView: View {
     }
 
     var body: some View {
-        VStack(spacing: 2) {
-            HStack { Spacer(minLength: 0); best }
-            streak.frame(maxWidth: .infinity, maxHeight: .infinity)
-            if !small { week }
-        }
-        .overlay(alignment: .bottomLeading) {
-            if small && entry.done {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 15, weight: .semibold))
-                    .accessibilityHidden(true)
+        GeometryReader { bounds in
+            // Keep a circular field centered on the actual flame, even when the
+            // number of digits changes the width of the horizontal metric.
+            let diameter = max(bounds.size.width, bounds.size.height) * 2
+            VStack(spacing: 2) {
+                HStack { Spacer(minLength: 0); best }.zIndex(1)
+                streak(rayDiameter: diameter).frame(maxWidth: .infinity, maxHeight: .infinity)
+                if !small { week }
             }
+            .overlay(alignment: .bottomLeading) {
+                if small && entry.done {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .accessibilityHidden(true)
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(small ? 10 : large ? 16 : 10)
         }
-        .foregroundStyle(.white)
-        .padding(small ? 10 : large ? 16 : 10)
-        .modifier(WidgetBackdrop(center: center))
+        .clipped()
+        .modifier(WidgetBackdrop())
     }
 }
 
 private struct WidgetBackdrop: ViewModifier {
-    let center: UnitPoint
+    private let orange = Color(red: 1, green: 165 / 255, blue: 60 / 255)
 
     func body(content: Content) -> some View {
         if #available(iOS 17.0, *) {
-            content.containerBackground(for: .widget) { CelebrationBackground(center: center) }
+            content.containerBackground(for: .widget) { orange }
         } else {
-            content.background(CelebrationBackground(center: center))
+            content.background(orange)
         }
     }
 }

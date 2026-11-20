@@ -27,23 +27,32 @@ class WidgetThemeTest(unittest.TestCase):
         self.assertNotIn('PddStudyStreakMinimal', SWIFT)
         self.assertNotIn('PddStudyStreakRecord', SWIFT)
 
-    def test_compact_and_wide_share_the_celebration_art(self):
+    def test_all_sizes_share_the_celebration_art(self):
         source = (ROOT.parents[1] / 'packages/pdd_ui/lib/src/app_colors.dart').read_text()
         gold = re.search(r'static const Color gold = Color\(0xFF([0-9A-Fa-f]{6})\)', source).group(1)
         palette = ET.parse(RES / 'values/streak_widget_colors.xml')
         self.assertEqual(palette.find("color[@name='streak_widget_active_background']").text, '#' + gold)
-        for wide in (False, True):
-            path = RES / 'layout' / ('streak_widget_wide.xml' if wide else 'streak_widget.xml')
+        for filename in ('streak_widget.xml', 'streak_widget_wide.xml', 'streak_widget_row.xml'):
+            path = RES / 'layout' / filename
             layout = ET.parse(path)
             elements = {node.get(NS + 'id'): node for node in layout.iter()}
-            self.assertEqual(elements['@+id/streak_rays'].get(NS + 'src'), '@drawable/streak_widget_rays')
+            rays = elements['@+id/streak_rays']
+            self.assertEqual(rays.get(NS + 'src'), '@drawable/streak_widget_rays', filename)
+            self.assertEqual(rays.get(NS + 'scaleType'), 'centerCrop', filename)
             self.assertEqual(elements['@+id/streak_flame'].tag, 'ImageView')
             self.assertEqual(elements['@+id/streak_trophy'].tag, 'ImageView')
-            self.assertEqual('@+id/streak_week' in elements, wide)
+            self.assertEqual('@+id/streak_week' in elements, filename != 'streak_widget.xml')
             for metric in ('current', 'best'):
                 self.assertEqual(elements['@+id/streak_' + metric].get(NS + 'textColor'), '#FFFFFF')
         self.assertTrue((RES / 'drawable-nodpi/streak_widget_rays.png').is_file())
         self.assertIn('CelebrationBackground', SWIFT)
+
+    def test_inactive_day_is_a_solid_white_dot(self):
+        marker = ET.parse(RES / 'drawable/streak_widget_day_empty.xml').getroot()
+        path = marker.find('path')
+        self.assertEqual(path.get(NS + 'fillColor'), '#FFFFFF')
+        self.assertIsNone(path.get(NS + 'strokeColor'))
+
 
 if __name__ == '__main__':
     unittest.main()

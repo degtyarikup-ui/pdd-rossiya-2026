@@ -82,8 +82,7 @@ class StreakWidgetProvider : AppWidgetProvider() {
             val state = StreakWidgetState.from(data.optInt("current"), data.optInt("longest"),
                 data.optString("lastActiveDate").takeIf { it.isNotBlank() }, now)
             val options = manager.getAppWidgetOptions(id)
-            val views = StreakWidgetRenderer.responsive(context, state, data,
-                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH), now)
+            val views = StreakWidgetRenderer.responsive(context, state, data, options, now)
             manager.updateAppWidget(id, views)
         }
 

@@ -220,13 +220,13 @@ class WidgetSmokeInstrumentation : Instrumentation() {
 
     private fun renderMatrix() {
         for (language in listOf("ru", "en", "kk")) for (dark in listOf(false, true)) {
-            for (font in listOf(1f, 2f)) for ((width, height) in listOf(130 to 130, 130 to 190, 250 to 130, 250 to 190, 360 to 300)) {
+            for (font in listOf(1f, 2f)) for ((width, height) in listOf(130 to 40, 250 to 40, 370 to 104, 130 to 130, 130 to 190, 250 to 130, 250 to 190, 360 to 300)) {
                 for (scenario in scenarios) case("render $language dark=$dark font=$font ${width}x$height ${scenario.name}") {
                     val state = state(scenario)
                     val context = configured(language, dark, font)
                     val wide = width >= 250
                     val data = copy(context, scenario)
-                    val remote = StreakWidgetRenderer.render(context, state, data, wide)
+                    val remote = StreakWidgetRenderer.render(context, state, data, wide, singleRow = height < 124)
                     val root = remote.apply(context, FrameLayout(context)) as ViewGroup
                     layout(root, context, width, height)
                     assertValues(root, state)
@@ -238,7 +238,7 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                 }
             }
         }
-        report.appendLine("Rendered five sizes, three languages, light/dark, 100%/200% text and eight dated scenarios.")
+        report.appendLine("Rendered eight sizes, three languages, light/dark, 100%/200% text and eight dated scenarios.")
     }
 
     private fun transitionMatrix() {
@@ -279,6 +279,13 @@ class WidgetSmokeInstrumentation : Instrumentation() {
         override fun getErrorView(): View { error = true; return super.getErrorView() }
     }
 
+    private fun widgetOptions(width: Int, height: Int) = Bundle().apply {
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, width)
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, height)
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, width)
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, height)
+    }
+
     private fun responsiveHosts() {
         var testHost: HostView? = null
         val state = StreakWidgetState(7, 21, true)
@@ -288,18 +295,20 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                 it.provider.packageName == context.packageName
             }
             check(providers.size == 1 && providers.single().provider == ComponentName(context, StreakWidgetProvider::class.java))
+            val minimumHeight = providers.single().minResizeHeight / context.resources.displayMetrics.density
+            check(minimumHeight in 39f..41f) { "provider advertises minimum resize height $minimumHeight dp" }
             testHost = HostView(context).apply {
                 setAppWidget(-100, providers.single())
                 setPadding(0, 0, 0, 0)
-                updateAppWidget(StreakWidgetRenderer.responsive(context, state, JSONObject(snapshot(context)), 130))
+                updateAppWidget(StreakWidgetRenderer.responsive(context, state, JSONObject(snapshot(context)), widgetOptions(130, 130)))
             }
         }
         waitForIdleSync()
         val host = testHost ?: return
-        for ((width, height) in listOf(130 to 130, 250 to 130, 250 to 190, 130 to 190, 130 to 130)) {
+        for ((width, height) in listOf(130 to 130, 130 to 40, 250 to 40, 370 to 104, 370 to 124, 250 to 190, 130 to 190, 130 to 86, 130 to 130)) {
             case("responsive layout ${width}x$height") {
                 if (Build.VERSION.SDK_INT < 31) {
-                    host.updateAppWidget(StreakWidgetRenderer.responsive(context, state, JSONObject(snapshot(context)), width))
+                    host.updateAppWidget(StreakWidgetRenderer.responsive(context, state, JSONObject(snapshot(context)), widgetOptions(width, height)))
                 }
                 layout(host, context, width, height)
             }
@@ -308,7 +317,12 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                 layout(host, context, width, height)
                 check(!host.error)
                 assertValues(host, state)
-                check((host.findViewById<LinearLayout>(R.id.streak_week) != null) == (width >= 250))
+                val row = host.findViewById<View>(R.id.streak_row_content)
+                check((row != null) == (height < 124)) { "incorrect height family for ${width}x$height" }
+                val week = host.findViewById<LinearLayout>(R.id.streak_week)
+                check((week?.visibility == View.VISIBLE) == (width >= 250))
+                if (width >= 250) check(week.childCount == 7)
+                assertTextFits(host)
             }
         }
     }
@@ -356,6 +370,12 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                 .apply(context, FrameLayout(context))
             layout(compact, context, 130, 130)
             capture(compact, "flame-compact")
+            for (width in listOf(130, 250, 370)) {
+                val row = StreakWidgetRenderer.render(context, state, data, width >= 250, now, singleRow = true)
+                    .apply(context, FrameLayout(context)) as ViewGroup
+                layout(row, context, width, 64)
+                capture(row, "flame-row-$width")
+            }
             now.add(Calendar.DATE, 1)
             StreakWidgetRenderer.render(context, state.copy(done = false), data, true, now).reapply(context, root)
             assertDays(listOf("пн", "вт", "ср", "чт", "пт", "сб", "вс"), setOf(0, 3, 5))

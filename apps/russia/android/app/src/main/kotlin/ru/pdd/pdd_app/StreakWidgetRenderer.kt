@@ -1,9 +1,11 @@
 package ru.pdd.pdd_app
 
 import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
 import android.util.SizeF
 import android.view.View
 import android.widget.RemoteViews
@@ -13,18 +15,30 @@ import java.util.Calendar
 import java.util.Locale
 
 internal object StreakWidgetRenderer {
+    private const val WEEK_WIDTH = 250
+    private const val TALL_HEIGHT = 124
+
     fun render(
         context: Context,
         state: StreakWidgetState,
         data: JSONObject,
         wide: Boolean,
         now: Calendar = Calendar.getInstance(),
+        singleRow: Boolean = false,
     ): RemoteViews {
-        val layout = if (wide) R.layout.streak_widget_wide else R.layout.streak_widget
+        val layout = when {
+            singleRow -> R.layout.streak_widget_row
+            wide -> R.layout.streak_widget_wide
+            else -> R.layout.streak_widget
+        }
         val views = RemoteViews(context.packageName, layout)
         views.setTextViewText(R.id.streak_current, state.current.toString())
         views.setTextViewText(R.id.streak_best, state.best.toString())
         views.setFloat(R.id.streak_flame, "setAlpha", if (state.done) 1f else 0.66f)
+        if (singleRow) {
+            views.setViewVisibility(R.id.streak_week, if (wide) View.VISIBLE else View.GONE)
+            views.setViewVisibility(R.id.streak_status_icon, if (wide) View.GONE else View.VISIBLE)
+        }
         if (!wide) {
             views.setImageViewResource(R.id.streak_status_icon,
                 if (state.done) R.drawable.streak_widget_check else R.drawable.streak_widget_clock)
@@ -85,15 +99,25 @@ internal object StreakWidgetRenderer {
         context: Context,
         state: StreakWidgetState,
         data: JSONObject,
-        minWidth: Int,
+        options: Bundle,
         now: Calendar = Calendar.getInstance(),
     ): RemoteViews {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             return RemoteViews(mapOf(
-                SizeF(130f, 130f) to render(context, state, data, false, now),
-                SizeF(250f, 130f) to render(context, state, data, true, now),
+                SizeF(130f, 40f) to render(context, state, data, false, now, singleRow = true),
+                SizeF(WEEK_WIDTH.toFloat(), 40f) to render(context, state, data, true, now, singleRow = true),
+                SizeF(130f, TALL_HEIGHT.toFloat()) to render(context, state, data, false, now),
+                SizeF(WEEK_WIDTH.toFloat(), TALL_HEIGHT.toFloat()) to render(context, state, data, true, now),
             ))
         }
-        return render(context, state, data, minWidth >= 250, now)
+        // On older launchers minWidth/maxHeight describe portrait, maxWidth/minHeight landscape.
+        val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 130)
+        val maxWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, minWidth)
+        val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 130)
+        val maxHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, minHeight)
+        return RemoteViews(
+            render(context, state, data, maxWidth >= WEEK_WIDTH, now, singleRow = minHeight < TALL_HEIGHT),
+            render(context, state, data, minWidth >= WEEK_WIDTH, now, singleRow = maxHeight < TALL_HEIGHT),
+        )
     }
 }
