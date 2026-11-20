@@ -14,6 +14,7 @@
         android:layout_height="match_parent"
         android:layout_marginStart="-46dp"
         android:scaleType="centerCrop"
+        android:alpha="0.85"
         android:src="@drawable/streak_widget_rays"
         android:importantForAccessibility="no" />
 

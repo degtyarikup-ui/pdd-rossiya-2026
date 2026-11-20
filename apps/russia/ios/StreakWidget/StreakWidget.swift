@@ -175,7 +175,7 @@ struct StreakWidgetView: View {
         flame(height: height)
             .opacity(entry.done || (!small && !large) ? 1 : 0.74)
             .background {
-                if entry.done { CelebrationBackground(diameter: rayDiameter) }
+                if entry.done { CelebrationBackground(diameter: rayDiameter).opacity(0.85) }
             }
     }
 

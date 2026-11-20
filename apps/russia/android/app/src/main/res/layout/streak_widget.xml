@@ -22,6 +22,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:id="@+id/streak_rays"
+                android:alpha="0.85"
                 android:src="@drawable/streak_widget_rays"
                 android:importantForAccessibility="no"
                 android:layout_marginTop="-42dp"

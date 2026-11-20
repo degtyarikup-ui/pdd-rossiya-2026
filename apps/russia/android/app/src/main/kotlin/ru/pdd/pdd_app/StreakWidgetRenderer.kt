@@ -37,6 +37,7 @@ internal object StreakWidgetRenderer {
         val views = RemoteViews(context.packageName, layout)
         val background = if (state.done) R.drawable.streak_widget_background else R.drawable.streak_widget_waiting_background
         views.setInt(R.id.streak_root, "setBackgroundResource", background)
+        views.setFloat(R.id.streak_rays, "setAlpha", 0.85f)
         views.setViewVisibility(R.id.streak_rays, if (state.done) View.VISIBLE else View.INVISIBLE)
         views.setTextViewText(R.id.streak_current, state.current.toString())
         views.setTextViewText(R.id.streak_best, state.best.toString())
@@ -45,11 +46,11 @@ internal object StreakWidgetRenderer {
         if (!singleRow && wide) {
             val weekSurface = if (state.done) R.drawable.streak_widget_week_surface else R.drawable.streak_widget_waiting_week_surface
             views.setInt(R.id.streak_week, "setBackgroundResource", weekSurface)
-            views.setViewVisibility(R.id.streak_status_icon, if (state.done) View.VISIBLE else View.GONE)
         }
-        if (!wide) {
-            views.setImageViewResource(R.id.streak_status_icon,
-                if (state.done) R.drawable.streak_widget_check else R.drawable.streak_widget_clock)
+        if (!singleRow || !wide) {
+            // A launcher can reapply updates to a view holding the old status image.
+            views.setImageViewResource(R.id.streak_status_icon, R.drawable.streak_widget_check)
+            views.setViewVisibility(R.id.streak_status_icon, if (state.done) View.VISIBLE else View.GONE)
         }
         fun label(key: String, fallback: Int) =
             data.optString(key).takeIf { it.isNotBlank() } ?: context.getString(fallback)

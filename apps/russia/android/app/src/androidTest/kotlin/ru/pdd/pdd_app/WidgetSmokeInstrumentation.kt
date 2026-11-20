@@ -114,9 +114,8 @@ class WidgetSmokeInstrumentation : Instrumentation() {
 
     private fun assertValues(view: View, state: StreakWidgetState) {
         val root = view.findViewById<View>(R.id.streak_root)
-        val week = root.findViewById<View>(R.id.streak_week)
-        if (week != null && root.findViewById<View>(R.id.streak_row_content) == null) {
-            check(root.findViewById<View>(R.id.streak_status_icon).visibility ==
+        root.findViewById<View>(R.id.streak_status_icon)?.let { checkmark ->
+            check(checkmark.visibility ==
                 (if (state.done) View.VISIBLE else View.GONE))
         }
         check(root.hasOnClickListeners()) { "widget tap listener missing" }
@@ -131,7 +130,7 @@ class WidgetSmokeInstrumentation : Instrumentation() {
         val flame = view.findViewById<ImageView>(R.id.streak_flame)
         check(flame.drawable != null && flame.alpha == if (state.done) 1f else 0.66f)
         val rays = view.findViewById<ImageView>(R.id.streak_rays)
-        check(rays.drawable != null)
+        check(rays.drawable != null && rays.alpha == 0.85f)
         check(rays.visibility == if (state.done) View.VISIBLE else View.INVISIBLE)
         check(view.findViewById<ImageView>(R.id.streak_trophy).drawable != null)
     }
