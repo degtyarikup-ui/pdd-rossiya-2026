@@ -128,6 +128,18 @@ class CountryConfig {
   /// null — ссылки не подсвечиваются.
   final String? pddPointMarker;
 
+  /// Количество билетов в одной категории (РФ: 40).
+  final int ticketsPerCategory;
+
+  /// Количество тематических разделов для тренировки (РФ: 26).
+  final int topicsCount;
+
+  /// Количество фотографий выпускников с правами на стартовом экране онбординга.
+  final int onboardingLearnerPhotoCount;
+
+  /// Общее число вопросов в одной категории билетов.
+  int get questionsPerCategory => ticketsPerCategory * examRules.mainCount;
+
   const CountryConfig({
     required this.code,
     required this.appTitle,
@@ -138,6 +150,9 @@ class CountryConfig {
     required this.examRules,
     required this.webUrl,
     required this.shareCardHost,
+    this.ticketsPerCategory = 40,
+    this.topicsCount = 26,
+    this.onboardingLearnerPhotoCount = 10,
     this.androidPackageName = '',
     this.appStoreId = '',
     this.privacyUrl = '',
@@ -242,6 +257,15 @@ class CountryConfig {
 
   /// Каталог изображений дорожной разметки.
   String get markupImagesDir => '$assetsRoot/images/markup';
+
+  /// Каталог фотографий выпускников с правами для экрана онбординга.
+  String get onboardingImagesDir => '$assetsRoot/images/onboarding';
+
+  /// Список путей к фотографиям выпускников для мозаики онбординга.
+  List<String> get onboardingLearnerPhotos => [
+    for (var i = 1; i <= onboardingLearnerPhotoCount; i++)
+      '$onboardingImagesDir/learner_${i.toString().padLeft(2, '0')}.webp',
+  ];
 
   static const CountryConfig russia = CountryConfig(
     code: 'ru',

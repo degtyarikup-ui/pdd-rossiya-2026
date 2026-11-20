@@ -5390,4 +5390,132 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get removeFromFavorites => 'Таңдаулылардан алып тастау';
+
+  @override
+  String get onboardingSkip => 'Өткізу';
+
+  @override
+  String get onboardingContinue => 'Келесі';
+
+  @override
+  String get onboardingContinueFree => 'Премиумсыз жалғастыру';
+
+  @override
+  String onboardingStepSemantics(int step, int total) {
+    return '$total қадамның $step-і';
+  }
+
+  @override
+  String onboardingHeroTitle(String office) {
+    return '$office теория емтиханын\nбірінші реттен тапсырыңыз';
+  }
+
+  @override
+  String onboardingHeroSubtitle(int questions) {
+    return 'Түсіндірмесі бар 2026 жылғы $questions сұрақ. Жарнамасыз.';
+  }
+
+  @override
+  String get onboardingSmartTitle => 'Әлсіз тақырыптар\nбірден көрінеді';
+
+  @override
+  String onboardingSmartSubtitle(int topics) {
+    return '$topics тақырып, қатемен жұмыс, 3D қала және 6 ойын.';
+  }
+
+  @override
+  String get onboardingProgressExample => 'Прогресс үлгісі';
+
+  @override
+  String get onboardingTopicCrossroads => 'Жол қиылыстары';
+
+  @override
+  String get onboardingTopicRegulator => 'Реттеуші сигналдары';
+
+  @override
+  String get onboardingTopicParking => 'Тоқтау мен тұрақ';
+
+  @override
+  String get onboardingTopicSigns => 'Жол белгілері';
+
+  @override
+  String onboardingTopicScore(int done, int total) {
+    return '$done / $total';
+  }
+
+  @override
+  String get onboardingSetupTitle => 'Санат пен қарқын';
+
+  @override
+  String get onboardingSetupPaceOnlyTitle => 'Оқу қарқыны';
+
+  @override
+  String get onboardingCategorySection => 'Санат';
+
+  @override
+  String get onboardingCategoryAbTitle => 'A, B';
+
+  @override
+  String get onboardingCategoryAbSubtitle => 'Жеңіл көлік, мото';
+
+  @override
+  String get onboardingCategoryCdTitle => 'C, D';
+
+  @override
+  String get onboardingCategoryCdSubtitle => 'Жүк көлігі, автобус';
+
+  @override
+  String get onboardingPaceSection => 'Күндік уақыт';
+
+  @override
+  String onboardingPaceMinutes(int minutes) {
+    return 'Күніне $minutes мин';
+  }
+
+  @override
+  String get onboardingPaceCalmSub => '~4 апта';
+
+  @override
+  String get onboardingPaceOptimalSub => '~18 күн';
+
+  @override
+  String get onboardingPaceIntensiveSub => '~10 күн';
+
+  @override
+  String onboardingPlanReadyTitle(String date) {
+    return '$date дейінгі\nоқу жоспары';
+  }
+
+  @override
+  String onboardingPlanReadySubtitle(String category, int minutes) {
+    return '$category санаты · күніне $minutes мин';
+  }
+
+  @override
+  String onboardingPlanReadyPaceOnlySubtitle(int minutes) {
+    return 'Күніне $minutes мин';
+  }
+
+  @override
+  String onboardingPlanItemTickets(int tickets, int questions) {
+    return '2026 жылғы $tickets билет пен $questions сұрақ';
+  }
+
+  @override
+  String onboardingPlanItemExam(String office, int extra) {
+    return '$office емтиханының симуляциясы: әр қате үшін +$extra сұрақ';
+  }
+
+  @override
+  String get onboardingPlanItemOffline =>
+      'Билеттер офлайн және жарнамасыз қолжетімді';
+
+  @override
+  String get onboardingForecastToday => 'Бүгін';
+
+  @override
+  String get debugSection => 'Жөндеу';
+
+  @override
+  String get debugRestartOnboarding => 'Онбордингті алдын ала көру';
 }
