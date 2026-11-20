@@ -33,9 +33,44 @@ func wait_for(condition: Callable, seconds: float, label: String) -> bool:
 	return ok
 
 func release_world(world: Node) -> void:
+	var scenery: WeakRef = weakref(world.scenery)
+	# The host announces exit before destroying the scene. Frame-sliced staging
+	# observes this flag while its owner and the rendering resources still exist.
+	world._exiting = true
+	await process_frame
+	await process_frame
 	world.queue_free()
 	await process_frame
 	await process_frame
+	expect(scenery.get_ref() == null, "shutting down releases the world's scenery")
+
+func check_guide_retraction() -> void:
+	var sit := Situation.new()
+	root.add_child(sit)
+	var guide := Node3D.new()
+	sit.add_child(guide)
+	sit._guide = guide
+	sit.set_evidence_visible(true)
+	sit.set_evidence_visible(false, true)
+	var previous := sit._guide_hide_timer
+	sit.set_evidence_visible(true, true)
+	sit.set_evidence_visible(false, true)
+	var current := sit._guide_hide_timer
+	# Trigger each deadline separately so this regression is independent of the frame rate.
+	current.time_left = 60.0
+	previous.time_left = 0.0
+	await process_frame
+	await process_frame
+	expect(guide.visible, "an earlier retraction cannot hide a new animation")
+	current.time_left = 0.0
+	await process_frame
+	await process_frame
+	expect(not guide.visible, "the latest retraction hides the guide")
+	sit.set_evidence_visible(true)
+	sit.set_evidence_visible(false, true)
+	var pending := sit._guide_hide_timer
+	sit.free()
+	expect(pending.timeout.get_connections().is_empty(), "freeing the junction disconnects its pending guide update")
 
 func screenshot(world: Node, name: String) -> void:
 	if DisplayServer.get_name() == "headless": return
@@ -208,6 +243,7 @@ func delayed_question(id: String, lanes: int, fail_once: bool) -> void:
 
 func run() -> void:
 	swept_plane_controls()
+	await check_guide_retraction()
 	await delayed_question("ticket_30_13", 2, true)
 	await delayed_question("ticket_15_13", 4, false)
 	print("question streaming: ", checks, " checks, ", failures, " failures")

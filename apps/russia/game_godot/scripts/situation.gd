@@ -35,6 +35,7 @@ var _badges: Array[Node3D] = []      # name plates over the participants
 var _evidence_on := false            # what set_evidence_visible last asked for
 const EVIDENCE_OUT := 0.52           # s: routes swept up after the answer
 var _evidence_motion: Tween
+var _guide_hide_timer: SceneTreeTimer
 ## Staging may outlive its owner for a few frames while a worker is joined.
 var _staging_owner: WeakRef
 
@@ -943,6 +944,9 @@ static func _guide_material(colour: Color) -> StandardMaterial3D:
 func set_evidence_visible(on: bool, animate := false) -> void:
 	if animate and on == _evidence_on: return
 	_evidence_on = on
+	if _guide_hide_timer != null:
+		_guide_hide_timer.timeout.disconnect(_hide_retracted_guide)
+		_guide_hide_timer = null
 	if is_instance_valid(_evidence_motion): _evidence_motion.kill()
 	_evidence_motion = null
 	var has_marks := is_instance_valid(_guide) or not (_evidence.is_empty() and _badges.is_empty())
@@ -1012,15 +1016,17 @@ func _move_evidence(on: bool) -> void:
 				if route is Node3D and not route is RouteArrow: (route as Node3D).visible = false)
 	if not on and is_instance_valid(_guide):
 		# Once the last route has been swept up the guide node is hidden, as without motion.
-		var guide := _guide
-		var holder: WeakRef = weakref(self)
-		var last := EVIDENCE_OUT + 0.06 * maxf(0.0, guide.get_child_count() - 1) + 0.05
-		get_tree().create_timer(last, false).timeout.connect(func():
-			var sit: Situation = holder.get_ref()
-			if sit == null or not is_instance_valid(guide) or sit._evidence_on: return
-			guide.visible = false
-			for route in guide.get_children():
-				if route is RouteArrow: (route as RouteArrow).reset())
+		var last := EVIDENCE_OUT + 0.06 * maxf(0.0, _guide.get_child_count() - 1) + 0.05
+		_guide_hide_timer = get_tree().create_timer(last, false)
+		_guide_hide_timer.timeout.connect(_hide_retracted_guide, CONNECT_ONE_SHOT)
+
+
+func _hide_retracted_guide() -> void:
+	_guide_hide_timer = null
+	if _evidence_on or not is_instance_valid(_guide): return
+	_guide.visible = false
+	for route in _guide.get_children():
+		if route is RouteArrow: (route as RouteArrow).reset()
 
 
 ## A letter or plate at rest: its own size, place and colours, shown or hidden.
