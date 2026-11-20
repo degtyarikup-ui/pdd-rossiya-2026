@@ -87,7 +87,14 @@ test('admin stages a discount, activates a rate and sees stale edits across tabs
     assert.match(await current.textContent(), /240 ₽ по акции/);
     await activate('promotion');
     await current.filter({hasText:'250 ₽ по акции'}).waitFor();
+    assert.match(await panel.locator('#offers-googleplay-current').textContent(), /289 ₽ в каталоге РФ/);
+    await edit('googleplay');
+    assert.deepEqual(await dialog.locator('.of-choice small').allTextContents(),
+      ['289 ₽ в каталоге РФ','370 ₽ в каталоге РФ','289 ₽ в каталоге РФ']);
+    assert.ok(await dialog.locator('#offers-play-region').isVisible());
+    await page.keyboard.press('Escape');
     await edit('appstore');
+    assert.ok(await dialog.locator('#offers-play-region').isHidden());
     await choose('standard');
     await dialog.getByLabel('3 дня бесплатно').check();
     await apply();

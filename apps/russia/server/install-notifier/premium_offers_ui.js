@@ -97,6 +97,7 @@ export const OFFERS_VIEW = `
     ${['legacy','standard','promotion'].map(mode => `<label class="of-choice"><input type="radio" name="mode" value="${mode}"><strong></strong><small></small></label>`).join('')}
    </fieldset>
    <div id="offers-discount" hidden><label class="of-label" for="offers-draft-input">Акционная цена, ₽</label><input id="offers-draft-input" name="priceRub" type="number" min="1" max="369" step="1" required></div>
+   <p class="of-note" id="offers-play-region" hidden>В России оплата через Google Play приостановлена. В других странах действует местная цена.</p>
    <label class="of-trial" id="offers-trial"><span>3 дня бесплатно</span><input type="checkbox" name="trial"></label>
    <p class="of-note" id="offers-renewal" hidden>Подписка будет продлеваться по акционной цене.</p>
    <div id="offers-probe" hidden><button id="offers-sbp-trial" type="button">Проверить пробный период СБП</button><p id="offers-sbp-trial-status" role="status"></p></div>
@@ -122,14 +123,18 @@ export const OFFERS_JS = `
   function modeOf(key) {
     return key === 'sbp' ? data.settings.sbpMode : data.settings.nativeQuarter[key];
   }
-  const appleRate = mode => rub(mode === 'standard' ? 370 : 290);
+  function storePrice(store, mode) {
+    const oldPrice = store === 'googleplay' ? 289 : 290;
+    const region = store === 'googleplay' ? ' в каталоге РФ' : ' в РФ';
+    return rub(mode === 'standard' ? 370 : oldPrice) + region;
+  }
   function render() {
     const s = data.settings;
     el('sbp-current').textContent = rub(data.catalog.tariffs.threeMonths.priceRub) + (s.sbpMode === 'promotion' ? ' по акции' : '');
     el('draft-price').textContent = rub(s.draftPriceRub);
     for (const key of ['appstore','googleplay']) {
       const mode = modeOf(key);
-      el(key + '-current').textContent = key === 'appstore' ? appleRate(mode) + (mode === 'promotion' ? ' по акции' : ' в РФ') : modeNames[mode];
+      el(key + '-current').textContent = storePrice(key, mode) + (mode === 'promotion' ? ' · акция' : '');
       const trial = el(key + '-trial-value');
       trial.textContent = s.storeTrials[key] ? '3 дня бесплатно' : 'Выключен';
       trial.parentElement.toggleAttribute('data-on', s.storeTrials[key]);
@@ -155,6 +160,7 @@ export const OFFERS_JS = `
     el('discount').hidden = price.disabled = !draft;
     el('trial').hidden = form.elements.trial.disabled = draft || sbp;
     el('probe').hidden = !sbp;
+    el('play-region').hidden = key !== 'googleplay';
     el('sbp-trial-status').textContent = '';
     price.value = s.draftPriceRub;
     if (!draft) {
@@ -164,7 +170,7 @@ export const OFFERS_JS = `
         const input = row.querySelector('input'), mode = input.value;
         input.checked = mode === modeOf(key);
         row.querySelector('strong').textContent = sbp ? rub(amounts[mode]) : modeNames[mode];
-        row.querySelector('small').textContent = sbp ? captions[mode] : key === 'appstore' ? appleRate(mode) + ' в РФ' : mode === 'promotion' ? 'По прежней цене' : '';
+        row.querySelector('small').textContent = sbp ? captions[mode] : storePrice(key, mode);
       }
     }
     form.elements.trial.checked = s.storeTrials[key] === true;
