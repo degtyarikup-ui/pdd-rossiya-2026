@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:pdd_app/data/services/iap_service.dart';
+import 'package:pdd_app/data/services/payment_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -9,8 +11,6 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
-import 'package:pdd_app/data/services/iap_service.dart';
-import 'package:pdd_app/data/services/payment_mode.dart';
 import 'package:pdd_app/presentation/widgets/premium_celebration_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_plans_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_motion.dart';
@@ -18,11 +18,24 @@ import 'package:pdd_app/presentation/widgets/premium_motion.dart';
 /// The benefits stay visible behind the plan picker. Only a completed store
 /// purchase/restore or an Android browser handoff closes this route as well.
 class PremiumBenefitsScreen extends StatefulWidget {
-  const PremiumBenefitsScreen({super.key, this.lockedGame, this.lockedFeature});
+  const PremiumBenefitsScreen({
+    super.key,
+    this.lockedGame,
+    this.lockedFeature,
+    this.onDismissed,
+    this.onBack,
+    this.dismissLabel,
+  });
 
   /// The Premium-only game that opened the screen, named above the headline.
   final String? lockedGame;
   final String? lockedFeature;
+
+  /// Optional host callback used when embedded (e.g. as the final onboarding
+  /// paywall step) instead of popping a pushed dialog route.
+  final ValueChanged<bool?>? onDismissed;
+  final VoidCallback? onBack;
+  final String? dismissLabel;
 
   @override
   State<PremiumBenefitsScreen> createState() => _PremiumBenefitsScreenState();
@@ -89,6 +102,23 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
     super.dispose();
   }
 
+  void _dismiss([bool? result]) {
+    if (widget.onDismissed case final onDismissed?) {
+      onDismissed(result);
+    } else {
+      Navigator.of(context).pop(result);
+    }
+  }
+
+  void _handleEscape() {
+    if (_showingPlans || ModalRoute.of(context)?.isCurrent == false) return;
+    if (widget.onBack case final onBack?) {
+      onBack();
+    } else {
+      Navigator.of(context).maybePop();
+    }
+  }
+
   Future<void> _showPlans() async {
     if (_showingPlans) return;
     setState(() => _showingPlans = true);
@@ -105,7 +135,7 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
       if (!mounted) return;
     }
     if (result != null) {
-      Navigator.of(context).pop(result != PremiumPlansResult.webPayment);
+      _dismiss(result != PremiumPlansResult.webPayment);
     }
   }
 
@@ -114,14 +144,8 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
     final l10n = context.l10n;
     return CallbackShortcuts(
       bindings: {
-        const SingleActivator(
-          LogicalKeyboardKey.escape,
-          includeRepeats: false,
-        ): () {
-          if (!_showingPlans && ModalRoute.of(context)?.isCurrent != false) {
-            Navigator.of(context).maybePop();
-          }
-        },
+        const SingleActivator(LogicalKeyboardKey.escape, includeRepeats: false):
+            _handleEscape,
       },
       child: Focus(
         autofocus: true,
@@ -261,53 +285,79 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
                                   AppDimensions.screenPadding,
                                   12,
                                 ),
-                                child: PremiumReveal(
-                                  key: const ValueKey('premium-reveal-cta'),
-                                  progress: _entrance,
-                                  begin: .42,
-                                  end: .9,
-                                  distance: 8,
-                                  child: PremiumPressFeedback(
-                                    enabled: !_showingPlans,
-                                    child: ElevatedButton(
-                                      key: const ValueKey('premium-show-plans'),
-                                      onPressed: _showingPlans
-                                          ? null
-                                          : _showPlans,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.white,
-                                        foregroundColor: AppColors.accent,
-                                        disabledBackgroundColor:
-                                            AppColors.white,
-                                        disabledForegroundColor:
-                                            AppColors.accent,
-                                        minimumSize: const Size(
-                                          double.infinity,
-                                          56,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 16,
-                                        ),
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            AppDimensions.buttonRadius,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    PremiumReveal(
+                                      key: const ValueKey('premium-reveal-cta'),
+                                      progress: _entrance,
+                                      begin: .42,
+                                      end: .9,
+                                      distance: 8,
+                                      child: PremiumPressFeedback(
+                                        enabled: !_showingPlans,
+                                        child: ElevatedButton(
+                                          key: const ValueKey(
+                                            'premium-show-plans',
+                                          ),
+                                          onPressed: _showingPlans
+                                              ? null
+                                              : _showPlans,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.white,
+                                            foregroundColor: AppColors.accent,
+                                            disabledBackgroundColor:
+                                                AppColors.white,
+                                            disabledForegroundColor:
+                                                AppColors.accent,
+                                            minimumSize: const Size(
+                                              double.infinity,
+                                              56,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 16,
+                                            ),
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    AppDimensions.buttonRadius,
+                                                  ),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            _trialAvailable
+                                                ? l10n.premiumTrialButton
+                                                : l10n.paywallSubscribe,
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              fontSize: 17,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                      child: Text(
-                                        _trialAvailable
-                                            ? l10n.premiumTrialButton
-                                            : l10n.paywallSubscribe,
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 17,
-                                          fontWeight: FontWeight.w600,
+                                    ),
+                                    if (widget.dismissLabel case final label?)
+                                      TextButton(
+                                        key: const ValueKey(
+                                          'premium-dismiss-offer',
+                                        ),
+                                        onPressed: _showingPlans
+                                            ? null
+                                            : _dismiss,
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: AppColors.white,
+                                        ),
+                                        child: Text(
+                                          label,
+                                          textAlign: TextAlign.center,
                                         ),
                                       ),
-                                    ),
-                                  ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -325,13 +375,21 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
                       child: PremiumPressFeedback(
                         pressedScale: .94,
                         child: Tooltip(
-                          message: MaterialLocalizations.of(
-                            context,
-                          ).closeButtonTooltip,
+                          message: widget.onBack == null
+                              ? MaterialLocalizations.of(
+                                  context,
+                                ).closeButtonTooltip
+                              : MaterialLocalizations.of(
+                                  context,
+                                ).backButtonTooltip,
                           child: AppChromeIconButton(
-                            key: const ValueKey('premium-close-benefits'),
-                            icon: Icons.close_rounded,
-                            onTap: () => Navigator.of(context).pop(),
+                            key: widget.onBack == null
+                                ? const ValueKey('premium-close-benefits')
+                                : const ValueKey('onboarding-back'),
+                            icon: widget.onBack == null
+                                ? Icons.close_rounded
+                                : Icons.arrow_back_ios_new_rounded,
+                            onTap: widget.onBack ?? _dismiss,
                             backgroundColor: AppColors.primaryText,
                             iconColor: AppColors.white,
                           ),

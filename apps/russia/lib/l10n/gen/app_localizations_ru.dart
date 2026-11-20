@@ -5449,4 +5449,132 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get removeFromFavorites => 'Убрать из избранного';
+
+  @override
+  String get onboardingSkip => 'Пропустить';
+
+  @override
+  String get onboardingContinue => 'Далее';
+
+  @override
+  String get onboardingContinueFree => 'Продолжить без Премиума';
+
+  @override
+  String onboardingStepSemantics(int step, int total) {
+    return 'Шаг $step из $total';
+  }
+
+  @override
+  String onboardingHeroTitle(String office) {
+    return 'Сдайте теорию $office\nс первого раза';
+  }
+
+  @override
+  String onboardingHeroSubtitle(int questions) {
+    return '$questions вопросов 2026 с разборами, без рекламы';
+  }
+
+  @override
+  String get onboardingSmartTitle => 'Сразу видно,\nчто подтянуть';
+
+  @override
+  String onboardingSmartSubtitle(int topics) {
+    return '$topics тем, разбор ошибок, 3D-город и 6 игр';
+  }
+
+  @override
+  String get onboardingProgressExample => 'Пример прогресса';
+
+  @override
+  String get onboardingTopicCrossroads => 'Проезд перекрёстков';
+
+  @override
+  String get onboardingTopicRegulator => 'Сигналы регулировщика';
+
+  @override
+  String get onboardingTopicParking => 'Остановка и стоянка';
+
+  @override
+  String get onboardingTopicSigns => 'Дорожные знаки';
+
+  @override
+  String onboardingTopicScore(int done, int total) {
+    return '$done из $total';
+  }
+
+  @override
+  String get onboardingSetupTitle => 'Категория и темп';
+
+  @override
+  String get onboardingSetupPaceOnlyTitle => 'Темп занятий';
+
+  @override
+  String get onboardingCategorySection => 'Категория';
+
+  @override
+  String get onboardingCategoryAbTitle => 'A, B';
+
+  @override
+  String get onboardingCategoryAbSubtitle => 'Легковые и мото';
+
+  @override
+  String get onboardingCategoryCdTitle => 'C, D';
+
+  @override
+  String get onboardingCategoryCdSubtitle => 'Грузовики и автобусы';
+
+  @override
+  String get onboardingPaceSection => 'Время в день';
+
+  @override
+  String onboardingPaceMinutes(int minutes) {
+    return '$minutes мин в день';
+  }
+
+  @override
+  String get onboardingPaceCalmSub => '~4 недели';
+
+  @override
+  String get onboardingPaceOptimalSub => '~18 дней';
+
+  @override
+  String get onboardingPaceIntensiveSub => '~10 дней';
+
+  @override
+  String onboardingPlanReadyTitle(String date) {
+    return 'План занятий\nдо $date';
+  }
+
+  @override
+  String onboardingPlanReadySubtitle(String category, int minutes) {
+    return 'Категория $category · $minutes мин в день';
+  }
+
+  @override
+  String onboardingPlanReadyPaceOnlySubtitle(int minutes) {
+    return '$minutes мин в день';
+  }
+
+  @override
+  String onboardingPlanItemTickets(int tickets, int questions) {
+    return '$tickets билетов и $questions вопросов 2026';
+  }
+
+  @override
+  String onboardingPlanItemExam(String office, int extra) {
+    return 'Экзамен как в $office: +$extra вопросов за ошибку';
+  }
+
+  @override
+  String get onboardingPlanItemOffline =>
+      'Билеты доступны офлайн и без рекламы';
+
+  @override
+  String get onboardingForecastToday => 'Сегодня';
+
+  @override
+  String get debugSection => 'Отладка';
+
+  @override
+  String get debugRestartOnboarding => 'Открыть предпросмотр онбординга';
 }
