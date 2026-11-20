@@ -324,7 +324,7 @@ test('СБП: отметка онбординга зависит от входа
       const { order: orderId } = await response.json();
       const order = JSON.parse(await env.INSTALLS.get('pay_order:' + orderId));
       const message = buildSbpPurchaseMessage(order, null, String);
-      assert.equal(message.includes('из онбординга сразу после регистрации'), expected);
+      assert.equal(message.includes('Переход к оплате:</b> онбординг'), expected);
     }
   } finally { fake.restore(); }
 });

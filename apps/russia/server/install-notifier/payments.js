@@ -137,7 +137,7 @@ export function buildSbpPurchaseMessage(order, expiresAt, esc, renewal = false) 
       ? `• <b>Переход к оплате:</b> из баннера / уведомления · <code>${esc(order.noticeCampaignId)}</code>` : null,
     ...premiumContextLines({ ...context, platform }, esc),
     context.onboardingAfterSignup === true
-      ? '• <b>Переход к оплате:</b> из онбординга сразу после регистрации' : null,
+      ? '• <b>Переход к оплате:</b> онбординг' : null,
     context.metadataSource === 'profile' ? '• <b>Данные устройства:</b> из последнего профиля на момент создания заказа' : null,
     `• <b>ID аккаунта:</b> <code>${esc(order.userId)}</code>`,
     `• <b>Действует до (СБП):</b> ${premiumDate(expiresAt)}`, '',
