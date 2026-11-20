@@ -3077,31 +3077,20 @@ async function saveUserProfile(env, user) {
 // Сводки пользователей для аналитики: list() в KV тоже лимитирован
 // (1000 в сутки на бесплатном тарифе), поэтому не чаще раза в 5 минут.
 const userSummaryCaches = new WeakMap();
-const pendingUserSummaries = new WeakMap();
-function freshUserSummaries(env) {
-  if (!env.INSTALLS) return Promise.resolve([]);
-  let pending = pendingUserSummaries.get(env.INSTALLS);
-  if (!pending) {
-    pending = listUserSummaries(env).finally(() => {
-      if (pendingUserSummaries.get(env.INSTALLS) === pending) pendingUserSummaries.delete(env.INSTALLS);
-    });
-    pendingUserSummaries.set(env.INSTALLS, pending);
-  }
-  return pending;
+
+async function getAllUsers(env) {
+  // The Worker can only complete KV and DO I/O within the originating request.
+  return env.INSTALLS ? listUserSummaries(env) : [];
 }
+
 async function cachedUserSummaries(env) {
   if (!env.INSTALLS) return [];
   const cached = userSummaryCaches.get(env.INSTALLS);
   if (cached && Date.now() - cached.at < 5 * 60 * 1000) return cached.users;
-  const users = await freshUserSummaries(env);
+  const users = await getAllUsers(env);
   userSummaryCaches.set(env.INSTALLS, { at: Date.now(), users });
   return users;
 }
-
-async function getAllUsers(env) {
-  return freshUserSummaries(env);
-}
-
 
 const workerHandlers = {
   async fetch(request, env, ctx) {
@@ -3439,7 +3428,7 @@ const workerHandlers = {
 
     if (url.pathname.startsWith('/api/admin/economy')) {
       if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
-      return handleEconomyAdmin(request, env, url, { listUserSummaries: freshUserSummaries });
+      return handleEconomyAdmin(request, env, url, { listUserSummaries: getAllUsers });
     }
 
     if (url.pathname === '/api/admin/app-updates') {

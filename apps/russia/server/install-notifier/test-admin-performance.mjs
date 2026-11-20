@@ -169,27 +169,50 @@ test('analytics batches independent counters, recent events and store reports; c
   t.diagnostic('14-day analytics: cold 6 bounded rounds; accounting days and restored transactions remain fresh while immutable activity retains its cache. Separate KV bindings never share history or user summaries.');
 });
 
-test('simultaneous economy, users and analytics share one summary read without caching subsequent financial reads', async () => {
+test('analytics and economy finish even while another request is still listing users', { timeout: 5000 }, async () => {
   const user = { id: 'one', provider: 'google', app: 'ru', createdAt: new Date().toISOString() };
   const kv = new DelayedKV([['economy_config', config], ['user:one', json(user)]]);
   kv.metadata.set('user:one', userSummary(user));
   const env = envFor(kv);
-  const responses = await kv.finish(Promise.all([
-    request(env, '/api/admin/economy/stats'), request(env, '/api/admin/users'), request(env, '/api/admin/stats?days=1'),
-  ]));
-  assert.ok(responses.every(response => response.status === 200));
-  assert.equal(kv.count('list:user:'), 1);
+  let releaseList;
+  let signalListStarted;
+  const blocked = new Promise(resolve => { releaseList = resolve; });
+  const listStarted = new Promise(resolve => { signalListStarted = resolve; });
+  const list = kv.list.bind(kv);
+  kv.list = async options => {
+    const page = list(options);
+    if (options.prefix === 'user:' && kv.count('list:user:') === 1) {
+      signalListStarted();
+      await blocked;
+    }
+    return page;
+  };
+  const users = request(env, '/api/admin/users');
+  await listStarted;
+  try {
+    const [analytics, economy] = await kv.finish(Promise.all([
+      request(env, '/api/admin/stats?days=1'), request(env, '/api/admin/economy/stats'),
+    ]));
+    assert.equal(analytics.status, 200);
+    assert.equal(economy.status, 200);
+    assert.equal((await analytics.json()).users.registered, 1);
+    assert.equal((await economy.json()).unitEconomics.totalUsersCount, 1);
+  } finally {
+    releaseList();
+  }
+  assert.equal((await (await users).json()).users.length, 1);
+  assert.equal(kv.count('list:user:'), 3);
   assert.equal(kv.count('user:one'), 0);
   const added = { ...user, id: 'two' };
   kv.data.set('user:two', json(added));
   kv.metadata.set('user:two', userSummary(added));
   const fresh = await kv.finish(request(env, '/api/admin/economy/stats'));
   assert.equal((await fresh.json()).unitEconomics.totalUsersCount, 2);
-  assert.equal(kv.count('list:user:'), 2, 'completed summary reads do not become a financial cache');
+  assert.equal(kv.count('list:user:'), 4, 'completed summary reads do not become a financial cache');
   assert.equal(kv.count('economy_config'), 2);
 });
 
-test('a failed in-flight summary read is released so the next analytics request retries', async () => {
+test('a failed summary read does not prevent the next analytics request from retrying', async () => {
   const kv = new DelayedKV();
   const env = envFor(kv);
   kv.failures.add('list:user:');
