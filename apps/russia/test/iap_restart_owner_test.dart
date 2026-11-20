@@ -17,7 +17,7 @@ import 'iap_recovery_test.dart' show FakeStore;
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   test(
-    'iOS token and durable owner survive service restart and another login',
+    'iOS token, owner and onboarding source survive restart and another login',
     () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.linux;
       InAppPurchase.instance;
@@ -44,6 +44,7 @@ void main() {
         }),
       });
       final owners = <String>[];
+      final purchaseEntries = <String?>[];
       Future<void> drain() async {
         for (var i = 0; i < 40; i++) {
           await Future<void>.delayed(Duration.zero);
@@ -56,7 +57,7 @@ void main() {
           await PremiumService.instance.init();
           await auth.init();
           await iap.init();
-          iap.buyProduct(PremiumTier.weekly).ignore();
+          iap.buyProduct(PremiumTier.weekly, fromOnboarding: true).ignore();
           await drain();
           expect(
             store.lastPurchaseParam?.applicationUserName,
@@ -85,6 +86,7 @@ void main() {
           await auth.completeSignInForTesting(user('A'), 'credential');
           await drain();
           expect(owners, ['apple_A']);
+          expect(purchaseEntries, ['onboarding']);
           expect(store.completed, hasLength(1));
           expect(
             jsonDecode(
@@ -132,7 +134,9 @@ void main() {
             );
           }
           if (request.url.path == '/api/user/purchase') {
-            owners.add(jsonDecode(request.body)['userId']);
+            final body = jsonDecode(request.body);
+            owners.add(body['userId']);
+            purchaseEntries.add(body['purchaseEntry']);
             return http.Response(
               jsonEncode({
                 'ok': true,

@@ -29,7 +29,7 @@ import { getUsdRate } from './economy_fx.js';
 import { getCloudflareBilling } from './economy_cloudflare.js';
 import { handleEconomyAdmin } from './economy_admin.js';
 import { mapAdminReads } from './admin_reads.js';
-import { premiumBanner, premiumContextLines, premiumDate } from './premium_message.js';
+import { premiumBanner, premiumContextLines, premiumDate, premiumPurchaseEntryLine } from './premium_message.js';
 import { metadataFields, acquisitionFields, mergeAcquisition, attributionLines, installSourceLines, deviceLine, attributedDestination, marketingSource, siteSourceKey, SOURCE_LABELS } from './attribution.js';
 import { storeReportSnapshot } from './store_reports.js';
 import { renderDailyChart, pngBase64 } from './daily_chart.js';
@@ -741,6 +741,7 @@ export function buildPremiumPurchaseMessage(p) {
     `• <b>Email:</b> ${email}`,
     `• <b>Оплата:</b> ${storeStr}`,
     `• <b>Автопродление:</b> ${p.autoRenewEnabled === true ? 'да' : p.autoRenewEnabled === false ? 'нет' : 'неизвестно'}`, '',
+    p.renewal ? null : premiumPurchaseEntryLine(p.purchaseEntry),
     ...premiumContextLines(p, esc),
     p.id ? `• <b>ID аккаунта:</b> <code>${esc(String(p.id).slice(0, 120))}</code>` : null,
     p.expiresAt ? `• <b>Действует до:</b> ${premiumDate(p.expiresAt)}` : '• <b>Действует:</b> Навсегда',
@@ -806,6 +807,7 @@ async function logStorePurchase(env, user, verified, details = {}) {
         : null;
     }
     const msg = buildPremiumPurchaseMessage({ ...user, ...details, tier, store, platform, price, purchaseDate: verified.purchaseDate,
+      purchaseEntry: details.purchaseEntry,
       expiresAt: verified.expiresAt, orderId: verified.orderId, renewal: verified.renewal, autoRenewEnabled: verified.autoRenewEnabled });
     const notification = await sendTelegram(env, msg, key, { topic: 'purchases' });
     if (!notification.ok) throw new Error('purchase notification queue unavailable');
@@ -3841,7 +3843,7 @@ const workerHandlers = {
       }
 
       try {
-        await logStorePurchase(env, user, verified, { tier, tierName, price });
+        await logStorePurchase(env, user, verified, { tier, tierName, price, purchaseEntry: body.purchaseEntry });
       } catch (_) { console.error('Purchase saved; notification unavailable'); }
 
       return jsonResponse({

@@ -244,6 +244,7 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
       final result = await IapService.instance.buyProduct(
         tier,
         expectedOffer: expected,
+        fromOnboarding: widget.fromOnboarding,
       );
       if (mounted) {
         setState(() => _isLoading = false);

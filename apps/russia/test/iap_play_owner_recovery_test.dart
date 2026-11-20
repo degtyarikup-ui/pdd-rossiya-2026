@@ -82,8 +82,9 @@ class PlayStore extends InAppPurchasePlatform {
 GooglePlayPurchaseDetails payment(
   String product,
   String owner,
-  PurchaseStateWrapper state,
-) => GooglePlayPurchaseDetails.fromPurchase(
+  PurchaseStateWrapper state, {
+  bool acknowledged = false,
+}) => GooglePlayPurchaseDetails.fromPurchase(
   PurchaseWrapper(
     orderId: 'order',
     packageName: 'ru.pdd.pdd_app',
@@ -93,7 +94,7 @@ GooglePlayPurchaseDetails payment(
     products: [product],
     isAutoRenewing: true,
     originalJson: '{}',
-    isAcknowledged: false,
+    isAcknowledged: acknowledged,
     purchaseState: state,
     obfuscatedAccountId: sha256.convert(utf8.encode(owner)).toString(),
   ),
@@ -132,6 +133,7 @@ void main() {
         }),
       });
       var verifications = 0;
+      String? purchaseEntry;
       await http.runWithClient(
         () async {
           await PremiumService.instance.init();
@@ -147,11 +149,19 @@ void main() {
               'own_pending',
               'foreign_paid',
               'own_paid',
+              'onboarding_paid',
+              'onboarding_acknowledged',
             ]) {
               final prefs = await SharedPreferences.getInstance();
               await prefs.setString(
                 'iap_pending_owners_v1',
-                jsonEncode({product: 'google_A'}),
+                jsonEncode({
+                  product: scenario.startsWith('onboarding_')
+                      ? 'google_B'
+                      : 'google_A',
+                  if (scenario.startsWith('onboarding_'))
+                    '_onboarding': [product],
+                }),
               );
               final response = QueryPurchaseDetailsResponse(
                 pastPurchases: switch (scenario) {
@@ -175,6 +185,14 @@ void main() {
                       PurchaseStateWrapper.purchased,
                     ),
                   ],
+                  'onboarding_paid' || 'onboarding_acknowledged' => [
+                    payment(
+                      product,
+                      'google_B',
+                      PurchaseStateWrapper.purchased,
+                      acknowledged: scenario == 'onboarding_acknowledged',
+                    )..status = PurchaseStatus.restored,
+                  ],
                   _ => [],
                 },
                 error: scenario == 'query_error'
@@ -192,6 +210,8 @@ void main() {
               final launches = store.launches;
               final verified = verifications;
               final result = await iap.buyProduct(tier);
+              final ownPaid =
+                  scenario == 'own_paid' || scenario.startsWith('onboarding_');
               if (scenario == 'stale') {
                 expect(result, PurchaseResult.canceled);
                 expect(store.launches, launches + 1);
@@ -205,7 +225,7 @@ void main() {
                 expect(store.launches, launches, reason: scenario);
                 expect(
                   result,
-                  scenario == 'own_paid'
+                  ownPaid
                       ? PurchaseResult.success
                       : scenario == 'query_error'
                       ? PurchaseResult.storeUnavailable
@@ -227,7 +247,13 @@ void main() {
                     contains('google_A'),
                   );
                 }
-                if (scenario == 'own_paid') expect(verifications, verified + 1);
+                if (ownPaid) {
+                  expect(verifications, verified + 1);
+                  expect(
+                    purchaseEntry,
+                    scenario == 'onboarding_paid' ? 'onboarding' : null,
+                  );
+                }
               }
               iap.dispose();
             }
@@ -239,7 +265,9 @@ void main() {
           }
           if (request.url.path == '/api/user/purchase') {
             verifications++;
-            expect(jsonDecode(request.body)['userId'], 'google_B');
+            final body = jsonDecode(request.body);
+            expect(body['userId'], 'google_B');
+            purchaseEntry = body['purchaseEntry'];
             return http.Response(
               jsonEncode({
                 'ok': true,

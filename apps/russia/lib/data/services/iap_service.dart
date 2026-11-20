@@ -60,6 +60,7 @@ enum PurchaseFailure {
 }
 
 typedef NativeOfferPolicy = ({bool standard, bool trial});
+typedef _PendingVerification = (PurchaseDetails, String?, bool);
 
 class _StoreProductQuery {
   _StoreProductQuery(this.ids);
@@ -133,8 +134,10 @@ class IapService extends ChangeNotifier {
   late final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   Future<void> _purchaseQueue = Future.value();
-  final Map<String, (PurchaseDetails, String?)> _pendingVerification = {};
+  final Map<String, _PendingVerification> _pendingVerification = {};
   final Map<String, String> _pendingStoreOwners = {};
+  final Set<String> _pendingOnboarding = {};
+  static const _onboardingKey = '_onboarding';
   final Set<String> _pendingProducts = {};
   static const _ownersKey = 'iap_pending_owners_v1';
   bool _ownersLoaded = false;
@@ -146,6 +149,10 @@ class IapService extends ChangeNotifier {
     if (raw != null) {
       final data = jsonDecode(raw);
       if (data is Map) {
+        final onboarding = data[_onboardingKey];
+        if (onboarding is List) {
+          _pendingOnboarding.addAll(onboarding.whereType<String>());
+        }
         for (final entry in data.entries) {
           if (entry.key is String && entry.value is String) {
             _pendingStoreOwners[entry.key as String] = entry.value as String;
@@ -158,13 +165,20 @@ class IapService extends ChangeNotifier {
 
   Future<void> _saveOwners() async {
     final prefs = await SharedPreferences.getInstance();
-    if (!await prefs.setString(_ownersKey, jsonEncode(_pendingStoreOwners))) {
+    final reservations = {
+      ..._pendingStoreOwners,
+      // Older clients still read the product-to-owner entries.
+      if (_pendingOnboarding.isNotEmpty)
+        _onboardingKey: _pendingOnboarding.toList(),
+    };
+    if (!await prefs.setString(_ownersKey, jsonEncode(reservations))) {
       throw StateError('purchase ownership storage unavailable');
     }
   }
 
   Future<void> _clearOwner(String product) async {
     _pendingStoreOwners.remove(product);
+    _pendingOnboarding.remove(product);
     await _saveOwners();
   }
 
@@ -300,9 +314,12 @@ class IapService extends ChangeNotifier {
     // Capture ownership when StoreKit delivers the event. Queue processing
     // may wait for another verification while the signed-in account changes.
     final ownedPurchases = purchases.map((purchase) {
+      final product = purchase.productID;
+      final reservedOwner = _pendingStoreOwners[product];
+      final playOwner = _playPurchaseOwner(purchase);
       final owner =
-          _playPurchaseOwner(purchase) ??
-          _pendingStoreOwners[purchase.productID] ??
+          playOwner ??
+          reservedOwner ??
           (purchase.productID == _currentPurchaseProductId
               ? _currentPurchaseOwner
               : _restoreOwner ?? AuthService.instance.currentUser?.id);
@@ -311,16 +328,31 @@ class IapService extends ChangeNotifier {
       } else {
         _pendingProducts.remove(purchase.productID);
       }
+      final matchesReservation =
+          reservedOwner != null &&
+          (playOwner == null || _ownerMatches(playOwner, reservedOwner));
+      // Play's past-purchases query marks deliveries as restored, including
+      // unfinished payments after a restart. Acknowledged purchases and
+      // StoreKit restores are not evidence of a new checkout.
+      final isNewDelivery = purchase is GooglePlayPurchaseDetails
+          ? purchase.pendingCompletePurchase
+          : purchase.status == PurchaseStatus.purchased;
+      final fromOnboarding =
+          matchesReservation &&
+          _pendingOnboarding.contains(product) &&
+          isNewDelivery;
       if (purchase.status == PurchaseStatus.pending && owner != null) {
         // Ask to Buy can complete after a temporary purchase-stream error.
-        _pendingStoreOwners[purchase.productID] = owner;
+        if (!matchesReservation) _pendingOnboarding.remove(product);
+        _pendingStoreOwners[product] =
+            reservedOwner != null && matchesReservation ? reservedOwner : owner;
         unawaited(
           _saveOwners().catchError(
             (Object error) => _report('iap.owner', error: error),
           ),
         );
       }
-      return (purchase, owner);
+      return (purchase, owner, fromOnboarding);
     }).toList();
     _enqueuePurchaseWork(() => _onPurchaseUpdated(ownedPurchases));
   }
@@ -450,7 +482,9 @@ class IapService extends ChangeNotifier {
       if (!auth.hasServerSession) return;
       final purchases = _pendingVerification.values
           .where(
-            (entry) => entry.$2 == null || entry.$2 == auth.currentUser?.id,
+            (entry) =>
+                entry.$2 == null ||
+                _ownerMatches(entry.$2, auth.currentUser?.id),
           )
           .toList();
       if (purchases.isNotEmpty) await _onPurchaseUpdated(purchases);
@@ -834,6 +868,7 @@ class IapService extends ChangeNotifier {
   Future<PurchaseResult> buyProduct(
     PremiumTier tier, {
     IapOffer? expectedOffer,
+    bool fromOnboarding = false,
   }) async {
     if (_paymentBusy) {
       _report('iap.buy', code: 'purchase_in_progress');
@@ -844,7 +879,11 @@ class IapService extends ChangeNotifier {
       // A delivered receipt takes priority over a failed availability probe.
       // Otherwise the paywall could offer another payment via SBP.
       if (_retryDeliveredProduct(tier)) return PurchaseResult.error;
-      final result = await _buyNative(tier, expectedOffer);
+      final result = await _buyNative(
+        tier,
+        expectedOffer,
+        fromOnboarding: fromOnboarding,
+      );
       if ((result == PurchaseResult.storeUnavailable ||
               result == PurchaseResult.productNotFound) &&
           _retryDeliveredProduct(tier)) {
@@ -878,8 +917,9 @@ class IapService extends ChangeNotifier {
 
   Future<PurchaseResult> _buyNative(
     PremiumTier tier,
-    IapOffer? expectedOffer,
-  ) async {
+    IapOffer? expectedOffer, {
+    required bool fromOnboarding,
+  }) async {
     if (!supportsStoreBilling) {
       return PurchaseResult.storeUnavailable;
     }
@@ -931,7 +971,10 @@ class IapService extends ChangeNotifier {
     // existing Premium purchase before offering a second contract in the
     // expanded catalog, including after reinstall or a change of PDD account.
     if (defaultTargetPlatform == TargetPlatform.android &&
-        (expectedOffer != null || _policy.standard || _policy.trial)) {
+        (expectedOffer != null ||
+            _policy.standard ||
+            _policy.trial ||
+            _pendingOnboarding.contains(product.id))) {
       final result = await _reconcilePlayOwner(product.id, allPlans: true);
       if (result != null) return result;
       if (_retryDeliveredProduct(tier)) return PurchaseResult.error;
@@ -1000,6 +1043,8 @@ class IapService extends ChangeNotifier {
         return PurchaseResult.error;
       }
       _pendingStoreOwners[product.id] = owner!;
+      _pendingOnboarding.remove(product.id);
+      if (fromOnboarding) _pendingOnboarding.add(product.id);
       // Persist before the OS payment sheet: deferred StoreKit transactions can
       // be delivered after the process dies and another account signs in.
       await _saveOwners();
@@ -1135,13 +1180,14 @@ class IapService extends ChangeNotifier {
   }
 
   Future<void> _onPurchaseUpdated(
-    List<(PurchaseDetails, String?)> purchaseDetailsList,
+    List<_PendingVerification> purchaseDetailsList,
   ) async {
     if (purchaseDetailsList.isEmpty) {
       _safeCompleteRestore(false);
       return;
     }
-    for (final (purchaseDetails, owner) in purchaseDetailsList) {
+    for (final (purchaseDetails, owner, fromOnboarding)
+        in purchaseDetailsList) {
       if (purchaseDetails.status == PurchaseStatus.pending) {
         // In progress
       } else {
@@ -1176,7 +1222,7 @@ class IapService extends ChangeNotifier {
           final auth = AuthService.instance;
           final pending = _pendingVerification.putIfAbsent(
             key,
-            () => (purchaseDetails, owner),
+            () => (purchaseDetails, owner, fromOnboarding),
           );
           if (pending.$2 != null &&
               !_ownerMatches(pending.$2, auth.currentUser?.id)) {
@@ -1198,6 +1244,7 @@ class IapService extends ChangeNotifier {
             price: price,
             store: store,
             transactionId: purchaseDetails.purchaseID,
+            fromOnboarding: pending.$3,
             productId: purchaseDetails.productID,
             purchaseToken:
                 purchaseDetails.verificationData.serverVerificationData,

@@ -173,18 +173,22 @@ test('Google trial and test periods keep Premium without recording a paid profil
     [trialId, { freeTrial: {} }, false, false], [trialId, {}, false, false],
     [productId, { basePrice: {} }, true, false], [trialId, { basePrice: {} }, false, true],
   ]) {
-    const e = { ...env(), __DURABLE_EFFECTS: [], GOOGLE_PLAY_SERVICE_ACCOUNT: credentials,
+    const effects = [];
+    const e = { ...env(), BOT_TOKEN: 'test', CHAT_ID: 'test', __DURABLE_EFFECTS: effects, GOOGLE_PLAY_SERVICE_ACCOUNT: credentials,
       PURCHASE_CLAIMS: { idFromName: name => name, get: () => ({ fetch: async () => Response.json({ ok: true }) }) } };
     const session = await login(e);
     purchase = { ...subscription(), ...(isTest ? { testPurchase: {} } : {}),
       lineItems: [{ productId: id, expiryTime: new Date(Date.now() + 3 * 86400000).toISOString(),
         latestSuccessfulOrderId: 'GPA.123', offerPhase: phase }] };
     const response = await worker.fetch(request('/api/user/purchase', {
-      store: 'googleplay', country: 'ru', productId: id, purchaseToken: 'fixture',
+      store: 'googleplay', country: 'ru', productId: id, purchaseToken: 'fixture', purchaseEntry: 'onboarding',
     }, session.token), e);
     assert.equal(response.status, 200);
     assert.equal((await response.json()).isPremium, true);
     assert.equal(Boolean(JSON.parse(await e.INSTALLS.get('user:google_123')).purchasedAt), expectPaid);
+    const purchaseNotices = effects.filter(effect => effect.kind === 'telegram');
+    assert.equal(purchaseNotices.length, Number(expectPaid));
+    if (expectPaid) assert.match(purchaseNotices[0].text, /Переход к оплате:<\/b> онбординг/);
   }
 });
 test('concurrent receipt claims cannot transfer ownership', async () => {

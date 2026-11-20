@@ -574,6 +574,7 @@ class PremiumService extends ChangeNotifier {
     required String productId,
     required String purchaseToken,
     String? transactionId,
+    bool fromOnboarding = false,
   }) async {
     _purchaseVerificationFailure = PurchaseVerificationFailure.unavailable;
     final auth = AuthService.instance;
@@ -599,6 +600,7 @@ class PremiumService extends ChangeNotifier {
           // Google Play still requires its opaque purchase token.
           if (store != 'appstore') 'purchaseToken': purchaseToken,
           'transactionId': ?transactionId,
+          if (fromOnboarding) 'purchaseEntry': 'onboarding',
           'country': CountryConfig.current.code,
         }),
       );

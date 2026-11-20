@@ -12,6 +12,10 @@ export function premiumDate(value) {
     year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' МСК';
 }
 
+export function premiumPurchaseEntryLine(entry) {
+  return entry === 'onboarding' ? '• <b>Переход к оплате:</b> онбординг' : null;
+}
+
 export function premiumContextLines(context, esc) {
   const meta = metadataFields(context);
   const origin = { android: '🤖 Android', ios: '🍎 iOS', web: '🌐 Сайт / веб-приложение' };

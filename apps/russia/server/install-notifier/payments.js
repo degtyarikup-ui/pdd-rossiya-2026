@@ -17,7 +17,7 @@ import { reportIncident, errorCode, markIncidentReported } from './diagnostics.j
 // клиента на сайт. Повторное подтверждение того же заказа ничего не
 // добавляет: заказ отмечается в user.webPayments.
 
-import { premiumBanner, premiumContextLines, premiumDate } from './premium_message.js';
+import { premiumBanner, premiumContextLines, premiumDate, premiumPurchaseEntryLine } from './premium_message.js';
 import { premiumPurchaseEvent } from './premium_analytics.js';
 import { metadataFields } from './attribution.js';
 import { putUserRecord } from './user_store.js';
@@ -135,8 +135,7 @@ export function buildSbpPurchaseMessage(order, expiresAt, esc, renewal = false) 
     '• <b>Оплата:</b> СБП · Platega', '• <b>Автопродление:</b> нет', '',
     NOTICE_CAMPAIGN_RE.test(order.noticeCampaignId || '')
       ? `• <b>Переход к оплате:</b> из баннера / уведомления · <code>${esc(order.noticeCampaignId)}</code>` : null,
-    context.purchaseEntry === 'onboarding'
-      ? '• <b>Переход к оплате:</b> онбординг' : null,
+    premiumPurchaseEntryLine(context.purchaseEntry),
     ...premiumContextLines({ ...context, platform }, esc),
     context.metadataSource === 'profile' ? '• <b>Данные устройства:</b> из последнего профиля на момент создания заказа' : null,
     `• <b>ID аккаунта:</b> <code>${esc(order.userId)}</code>`,

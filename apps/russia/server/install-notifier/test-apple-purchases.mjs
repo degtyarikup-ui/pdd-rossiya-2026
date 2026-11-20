@@ -105,6 +105,7 @@ test('restoring an App Store receipt logs only a current paid period and uses Ap
     { patch: { price: 0 }, active: true },
     { patch: { productId: 'ru.pdd.pddApp.sub.3months.trial3d', price: null }, active: true },
     { patch: {}, active: true, shouldLog: true },
+    { patch: { transactionReason: 'PURCHASE' }, active: true, shouldLog: true },
   ];
   for (const { patch, status, active, shouldLog = false } of cases) {
     const records = new Map(), effects = [];
@@ -119,7 +120,7 @@ test('restoring an App Store receipt logs only a current paid period and uses Ap
     const token = await signSession(e, { user: { id, provider: 'apple' }, expiresAt: Date.now() + 60000, generation: '' });
     const restore = () => worker.fetch(new Request('https://test/api/user/purchase', {
       method: 'POST', headers: { 'x-install-secret': e.SHARED_SECRET, authorization: `Bearer ${token}` },
-      body: JSON.stringify({ ...body, productId: data.productId, price: '99 ₽' }),
+      body: JSON.stringify({ ...body, productId: data.productId, price: '99 ₽', purchaseEntry: 'onboarding' }),
     }), e);
     await withApple(async url => new URL(url).pathname.includes('/subscriptions/') ? statusResponse(data, status, renewal)
       : Response.json({ signedTransactionInfo: await signed(data) }), async () => {
@@ -143,7 +144,9 @@ test('restoring an App Store receipt logs only a current paid period and uses Ap
       assert.equal(effect.item.revenue.money?.milliunits || 0, data.price || 0);
     }
     if (shouldLog) {
-      assert.match(purchaseEffects[0].text, /<b>Автопродление Premium<\/b>/);
+      const initialPurchase = data.transactionReason === 'PURCHASE';
+      assert.match(purchaseEffects[0].text, initialPurchase ? /<b>Покупка Premium<\/b>/ : /<b>Автопродление Premium<\/b>/);
+      assert.equal(purchaseEffects[0].text.includes('Переход к оплате:</b> онбординг'), initialPurchase);
       assert.match(purchaseEffects[0].text, /0,99\s*\$/);
       assert.doesNotMatch(purchaseEffects[0].text, /99 ₽/);
       assert.ok(purchaseEffects[0].text.includes('Дата транзакции:</b> ' + premiumDate(purchaseDate)));
