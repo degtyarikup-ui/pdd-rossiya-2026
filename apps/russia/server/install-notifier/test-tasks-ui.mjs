@@ -109,11 +109,6 @@ async function browserFixture() {
 const picker = (page, id) => page.locator('#tasks-board-container .task-assignees[data-task-id="' + id + '"]');
 const button = (page, id, assignee) => picker(page, id).locator('[data-assignee="' + assignee + '"]');
 const priorityButton = (page, id) => page.locator('.task-priority-btn[data-priority-task="' + id + '"]');
-async function chooseAssignee(page, id, assignee) {
-  const desired = button(page, id, assignee);
-  if (!await desired.isVisible()) await picker(page, id).locator('[aria-pressed="true"]').click();
-  await desired.click();
-}
 async function assigned(page, id, assignee) {
   await page.waitForFunction(({ id, assignee }) => {
     const control = document.querySelector('#tasks-board-container .task-assignees[data-task-id="' + id + '"]');
@@ -152,28 +147,22 @@ test('the board stays compact and avatars work in every column, after reload, ed
     await page.locator('#tasks-archive-btn').click();
     assert.equal(await page.locator('#tasks-board-container .task-assignees').count(), 7);
     for (const [index, status] of STATUSES.entries()) {
-      const id = 'task-' + status, assignee = index % 2 ? 'nikita' : 'sergey';
+      const id = 'task-' + status, assignee = status === 'ready' ? 'nikita' : status === 'released' ? 'sergey' : index % 2 ? 'nikita' : 'sergey';
       assert.equal(await picker(page, id).locator('button').count(), 2);
-      await chooseAssignee(page, id, assignee);
+      await button(page, id, assignee).click();
       await assigned(page, id, assignee);
-      assert.equal(await picker(page, id).locator('button:visible').count(), 1, 'assigned tasks display one avatar');
+      assert.equal(await picker(page, id).locator('button:visible').count(), 2, 'both avatars remain visible');
       assert.equal((await app.task(id)).assignee, assignee);
       assert.equal(await page.locator('#tasks-edit-modal').isVisible(), false, 'avatar clicks do not open the editor');
     }
     assert.equal(await page.locator('#tasks-board-container .task-assignee-btn img').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0 && image.src.startsWith('data:image/'))), true);
     assert.deepEqual(await page.evaluate(() => window.taskTestNotices), [], 'assigning does not show success notices');
-    const count = app.requests.length;
-    await button(page, 'task-planned', 'nikita').click();
-    assert.equal(await picker(page, 'task-planned').getAttribute('data-expanded'), 'true');
-    await button(page, 'task-planned', 'nikita').click();
-    assert.equal(app.requests.length, count, 'opening and closing the selected avatar does not save again');
     await page.locator('#tasks-board-container').evaluate(board => { board.scrollLeft = 0; });
     await capture(page, 'board-desktop');
 
     await page.reload();
     await assigned(page, 'task-planned', 'nikita');
     await page.evaluate(() => { window.adminToast = () => {}; });
-    await button(page, 'task-planned', 'nikita').click();
     await button(page, 'task-planned', 'sergey').focus();
     await page.keyboard.press('Enter');
     await assigned(page, 'task-planned', 'sergey');
@@ -250,7 +239,7 @@ test('assignment updates immediately, blocks duplicate clicks and rolls back aft
     await hold.entered.promise;
     assert.equal(await button(page, 'legacy-task', 'sergey').getAttribute('aria-pressed'), 'true');
     assert.equal(await picker(page, 'legacy-task').locator('button:disabled').count(), 2);
-    assert.equal(await picker(page, 'legacy-task').locator('button:visible').count(), 1, 'an optimistic assignment collapses immediately');
+    assert.equal(await picker(page, 'legacy-task').locator('button:visible').count(), 2, 'both avatars remain visible while saving');
     assert.equal((await app.task('legacy-task')).assignee, undefined, 'optimistic rendering happens before persistence');
     hold.release.resolve();
     await assigned(page, 'legacy-task', 'sergey');
@@ -259,11 +248,9 @@ test('assignment updates immediately, blocks duplicate clicks and rolls back aft
     app.failAssignment();
     const failure = page.waitForResponse(response => response.url().endsWith('/api/admin/tasks/assign') && response.status() === 503);
     await button(page, 'legacy-task', 'sergey').click();
-    await button(page, 'legacy-task', 'nikita').click();
     await failure;
     await assigned(page, 'legacy-task', 'sergey');
     assert.equal(await button(page, 'legacy-task', 'nikita').getAttribute('aria-pressed'), 'false');
-    assert.equal(await picker(page, 'legacy-task').getAttribute('data-expanded'), 'true', 'failed reassignment reopens the choices');
     assert.equal(await picker(page, 'legacy-task').locator('button:visible').count(), 2);
     assert.equal((await app.task('legacy-task')).assignee, 'sergey');
     const notices = await page.evaluate(() => window.taskTestNotices);
@@ -272,67 +259,41 @@ test('assignment updates immediately, blocks duplicate clicks and rolls back aft
     assert.match(notices[0].message, /Проверка ошибки сохранения/);
     await button(page, 'legacy-task', 'nikita').click();
     await assigned(page, 'legacy-task', 'nikita');
-    assert.equal(await picker(page, 'legacy-task').locator('button:visible').count(), 1, 'retry collapses to the saved avatar');
     assert.equal(await page.locator('#tasks-edit-modal').isVisible(), false);
     assert.deepEqual(errors, []);
   } finally { await fixture.close(); }
 });
 
-test('assigned avatars expand inline, cancel without saving, and support keyboard replacement', { timeout: 60000 }, async () => {
+test('pressing the selected avatar clears the assignment and restores both muted avatars', { timeout: 45000 }, async () => {
   const fixture = await browserFixture(), { app, page, errors } = fixture;
   try {
     const id = 'task-ready', control = picker(page, id);
-    assert.equal(await control.locator('button').count(), 2, 'both options stay in the DOM');
-    assert.equal(await control.locator('button:visible').count(), 1, 'stored assignment initially shows one avatar');
-    assert.equal(await button(page, id, 'sergey').getAttribute('aria-expanded'), 'false');
-    assert.equal(await picker(page, 'legacy-task').locator('button:visible').count(), 2, 'unassigned tasks keep both choices visible');
+    await assigned(page, id, 'sergey');
+    assert.equal(await control.locator('button:visible').count(), 2);
+
+    const hold = app.holdAssignment();
     await button(page, id, 'sergey').focus();
     await page.keyboard.press('Enter');
-    assert.equal(await control.getAttribute('data-expanded'), 'true');
-    assert.equal(await button(page, id, 'sergey').getAttribute('aria-expanded'), 'true');
-    assert.equal(await control.locator('button:visible').count(), 2);
-    assert.equal(await button(page, id, 'sergey').evaluate(button => button === document.activeElement), true, 'opening does not replace the focused button');
-    assert.equal(app.requests.length, 0, 'expansion does not write');
-    await page.keyboard.press('Tab');
-    assert.equal(await button(page, id, 'nikita').evaluate(button => button === document.activeElement), true);
-    await page.keyboard.press('Enter');
-    await assigned(page, id, 'nikita');
-    assert.equal(await control.getAttribute('data-expanded'), 'false');
-    assert.equal(await control.locator('button:visible').count(), 1);
-    assert.equal(await button(page, id, 'nikita').evaluate(button => button === document.activeElement), true, 'choosing keeps focus on the saved avatar');
-    assert.equal((await app.task(id)).assignee, 'nikita');
-    assert.equal(app.requests.length, 1);
+    await hold.entered.promise;
+    assert.equal(await control.locator('[aria-pressed="true"]').count(), 0);
+    assert.equal(await control.locator('button:disabled').count(), 2);
+    assert.equal((await app.task(id)).assignee, 'sergey');
+    hold.release.resolve();
+    await control.locator('button:disabled').first().waitFor({ state: 'detached' });
+    assert.equal((await app.task(id)).assignee, '');
+    assert.equal(await button(page, id, 'sergey').evaluate(button => button === document.activeElement), true);
 
     await page.reload();
-    await assigned(page, id, 'nikita');
-    assert.equal(await control.locator('button:visible').count(), 1);
-    const writeCount = app.requests.length;
-    await button(page, id, 'nikita').click();
-    await page.locator('h1').click();
-    assert.equal(await control.getAttribute('data-expanded'), 'false', 'outside click closes the choice');
-    await button(page, id, 'nikita').click();
-    await page.keyboard.press('Escape');
-    assert.equal(await control.getAttribute('data-expanded'), 'false', 'Escape closes the choice');
-    await button(page, id, 'nikita').click();
-    await button(page, id, 'nikita').click();
-    assert.equal(await control.getAttribute('data-expanded'), 'false', 're-clicking the selected avatar closes the choice');
-    assert.equal(app.requests.length, writeCount, 'cancelling never writes');
-
-    await button(page, id, 'nikita').click();
-    await button(page, 'task-released', 'nikita').click();
-    assert.equal(await control.getAttribute('data-expanded'), 'false');
-    assert.equal(await picker(page, 'task-released').getAttribute('data-expanded'), 'true');
-    assert.equal(await page.locator('.task-assignees[data-expanded="true"]').count(), 1, 'only one assigned picker is expanded');
-    await page.locator('h1').click();
-    assert.equal(app.requests.length, writeCount);
-
+    await control.waitFor();
+    assert.equal(await control.locator('[aria-pressed="true"]').count(), 0);
+    assert.deepEqual(await control.locator('img').evaluateAll(images => images.map(image => {
+      const { filter, opacity } = getComputedStyle(image);
+      return [filter, opacity];
+    })), [['grayscale(1)', '0.45'], ['grayscale(1)', '0.45']]);
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.locator('.task-card[data-task-id="' + id + '"]').scrollIntoViewIfNeeded();
-    await capture(page, 'avatar-assigned-mobile');
     await button(page, id, 'nikita').click();
-    assert.equal(await control.locator('button:visible').count(), 2);
-    assert.equal(await control.evaluate(picker => picker.getBoundingClientRect().right <= picker.closest('.task-card-foot').querySelector('.task-foot-actions').getBoundingClientRect().left), true, 'expanded mobile choices fit beside actions');
-    await capture(page, 'avatar-expanded-mobile');
+    await assigned(page, id, 'nikita');
+    assert.equal(await control.evaluate(picker => picker.getBoundingClientRect().right <= picker.closest('.task-card-foot').querySelector('.task-foot-actions').getBoundingClientRect().left), true, 'both mobile avatars fit beside actions');
     assert.deepEqual(errors, []);
   } finally { await fixture.close(); }
 });

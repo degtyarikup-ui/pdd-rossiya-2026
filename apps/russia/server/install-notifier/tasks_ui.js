@@ -451,7 +451,6 @@ export const TASKS_VIEW_HTML = `
       cursor: pointer;
       touch-action: manipulation;
     }
-    .task-assignee-btn[hidden] { display: none; }
     .task-assignee-btn img {
       display: block;
       width: 26px;
@@ -860,7 +859,6 @@ VIEW_TITLES.tasks = 'Задачи';
   var modalPendingAttachments = [];
   var draggedTaskId = null;
   var pendingAssignments = Object.create(null);
-  var expandedAssigneeTaskId = null;
   var pendingPriorities = Object.create(null);
   var PRIORITIES = [
     { id: 'low', name: 'Низкий' },
@@ -971,7 +969,7 @@ VIEW_TITLES.tasks = 'Задачи';
     function accept(res){
       if(id!==tasksLoadId)return;
       allTasks = (res.tasks || []).map(function(task) {
-        return Object.assign({}, task, pendingAssignments[task.id] ? { assignee: pendingAssignments[task.id] } : {}, pendingPriorities[task.id] ? { priority: pendingPriorities[task.id] } : {});
+        return Object.assign({}, task, task.id in pendingAssignments ? { assignee: pendingAssignments[task.id] } : {}, pendingPriorities[task.id] ? { priority: pendingPriorities[task.id] } : {});
       });
       render();
     }
@@ -1158,12 +1156,10 @@ VIEW_TITLES.tasks = 'Задачи';
   });
 
   function renderAssignees(task) {
-    var assigned = ASSIGNEES.some(function(person) { return person.id === task.assignee; });
-    var expanded = assigned && expandedAssigneeTaskId === task.id && !pendingAssignments[task.id];
-    return '<div class="task-assignees" data-task-id="' + esc(task.id) + '" data-assigned="' + assigned + '" data-expanded="' + expanded + '" role="group" aria-label="Исполнитель" aria-busy="' + Boolean(pendingAssignments[task.id]) + '">' +
+    return '<div class="task-assignees" data-task-id="' + esc(task.id) + '" role="group" aria-label="Исполнитель" aria-busy="' + (task.id in pendingAssignments) + '">' +
       ASSIGNEES.map(function(person) {
         var selected = task.assignee === person.id;
-        return '<button type="button" class="task-assignee-btn" data-assignee="' + person.id + '" aria-label="' + person.name + '" title="' + person.name + '" aria-pressed="' + selected + '"' + (selected ? ' aria-expanded="' + expanded + '"' : '') + ' draggable="false"' + (pendingAssignments[task.id] ? ' disabled' : '') + (assigned && !selected && !expanded ? ' hidden' : '') + '>' +
+        return '<button type="button" class="task-assignee-btn" data-assignee="' + person.id + '" aria-label="' + person.name + '" title="' + person.name + '" aria-pressed="' + selected + '" draggable="false"' + (task.id in pendingAssignments ? ' disabled' : '') + '>' +
           '<img src="' + person.avatar + '" alt="" width="26" height="26" draggable="false">' +
           '<svg class="task-assignee-check" viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="7" fill="var(--primary)" stroke="#fff" stroke-width="1.5"/><path d="M4.8 8.1 7 10.3 11.2 5.9" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
         '</button>';
@@ -1171,41 +1167,24 @@ VIEW_TITLES.tasks = 'Задачи';
   }
 
   function updateAssignees(task) {
-    var assigned = ASSIGNEES.some(function(person) { return person.id === task.assignee; });
-    var expanded = assigned && expandedAssigneeTaskId === task.id && !pendingAssignments[task.id];
     container.querySelectorAll('.task-assignees').forEach(function(picker) {
       if (picker.dataset.taskId !== task.id) return;
-      picker.dataset.assigned = assigned;
-      picker.dataset.expanded = expanded;
-      picker.setAttribute('aria-busy', String(Boolean(pendingAssignments[task.id])));
+      picker.setAttribute('aria-busy', String(task.id in pendingAssignments));
       picker.querySelectorAll('.task-assignee-btn').forEach(function(button) {
         var selected = button.dataset.assignee === task.assignee;
         button.setAttribute('aria-pressed', String(selected));
-        if (selected) button.setAttribute('aria-expanded', String(expanded));
-        else button.removeAttribute('aria-expanded');
-        button.hidden = assigned && !selected && !expanded;
-        button.disabled = Boolean(pendingAssignments[task.id]);
+        button.disabled = task.id in pendingAssignments;
       });
     });
   }
 
-  function expandAssignees(taskId) {
-    var previous = allTasks.find(function(task) { return task.id === expandedAssigneeTaskId; });
-    expandedAssigneeTaskId = taskId || null;
-    if (previous) updateAssignees(previous);
-    var current = allTasks.find(function(task) { return task.id === expandedAssigneeTaskId; });
-    if (current && current !== previous) updateAssignees(current);
-  }
-
   async function assignTask(taskId, assignee) {
     var task = allTasks.find(function(item) { return item.id === taskId; });
-    if (!task || pendingAssignments[taskId] || task.assignee === assignee) return;
+    if (!task || taskId in pendingAssignments || task.assignee === assignee) return;
     var previous = task.assignee || '';
-    var failed = false;
     var focused = document.activeElement;
     var focusedPicker = focused && focused.closest('.task-assignees');
     var restoreFocus = focusedPicker && focusedPicker.dataset.taskId === taskId;
-    expandAssignees(null);
     pendingAssignments[taskId] = assignee;
     task.assignee = assignee;
     ++tasksLoadId;
@@ -1218,26 +1197,16 @@ VIEW_TITLES.tasks = 'Задачи';
         task.updatedAt = res.task.updatedAt;
       }
     } catch (err) {
-      failed = true;
       task = allTasks.find(function(item) { return item.id === taskId; });
       if (task) task.assignee = previous;
-      notify('Не удалось назначить исполнителя: ' + err.message, true);
+      notify('Не удалось изменить исполнителя: ' + err.message, true);
     } finally {
       delete pendingAssignments[taskId];
-      if (failed && task && task.assignee && !expandedAssigneeTaskId) expandedAssigneeTaskId = taskId;
       if (task) updateAssignees(task);
       if (restoreFocus && (!document.activeElement || document.activeElement === document.body)) {
-        focusAssignee(taskId);
+        if (focused.getClientRects().length) focused.focus({ preventScroll: true });
       }
     }
-  }
-
-  function focusAssignee(taskId) {
-    container.querySelectorAll('.task-assignees').forEach(function(picker) {
-      if (picker.dataset.taskId !== taskId) return;
-      var button = picker.querySelector('[aria-pressed="true"]') || picker.querySelector('button:not([hidden])');
-      if (button && button.getClientRects().length) button.focus({ preventScroll: true });
-    });
   }
 
   function bindCardEvents() {
@@ -1298,13 +1267,8 @@ VIEW_TITLES.tasks = 'Задачи';
     var assigneeBtn = e.target.closest('.task-assignee-btn');
     if (assigneeBtn) {
       var assigneeTaskId = assigneeBtn.closest('.task-assignees').dataset.taskId;
-      if (pendingAssignments[assigneeTaskId]) return;
-      var assigneeTask = allTasks.find(function(task) { return task.id === assigneeTaskId; });
-      if (assigneeTask && assigneeTask.assignee === assigneeBtn.dataset.assignee) {
-        expandAssignees(expandedAssigneeTaskId === assigneeTaskId ? null : assigneeTaskId);
-      } else {
-        await assignTask(assigneeTaskId, assigneeBtn.dataset.assignee);
-      }
+      var assignee = assigneeBtn.getAttribute('aria-pressed') === 'true' ? '' : assigneeBtn.dataset.assignee;
+      await assignTask(assigneeTaskId, assignee);
       return;
     }
 
@@ -1366,16 +1330,6 @@ VIEW_TITLES.tasks = 'Задачи';
       lightbox.showModal();
       return;
     }
-  });
-
-  document.addEventListener('click', function(event) {
-    if (!event.target.closest('.task-assignees')) expandAssignees(null);
-  });
-  document.addEventListener('keydown', function(event) {
-    if (event.key !== 'Escape' || !expandedAssigneeTaskId) return;
-    var taskId = expandedAssigneeTaskId;
-    expandAssignees(null);
-    focusAssignee(taskId);
   });
 
   lightbox.addEventListener('click', function() { lightbox.close(); });
@@ -1475,7 +1429,7 @@ VIEW_TITLES.tasks = 'Задачи';
     try {
       var res = await api('/save', 'POST', payload);
       var saved = res.task;
-      if (pendingAssignments[saved.id]) saved.assignee = pendingAssignments[saved.id];
+      if (saved.id in pendingAssignments) saved.assignee = pendingAssignments[saved.id];
       if (pendingPriorities[saved.id]) saved.priority = pendingPriorities[saved.id];
       var existingIdx = allTasks.findIndex(function(t) { return t.id === saved.id; });
       if (existingIdx !== -1) {
