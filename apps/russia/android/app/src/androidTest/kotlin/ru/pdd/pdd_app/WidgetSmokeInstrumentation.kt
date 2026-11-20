@@ -121,7 +121,8 @@ class WidgetSmokeInstrumentation : Instrumentation() {
         }
         check(root.hasOnClickListeners()) { "widget tap listener missing" }
         val fill = (root.background as GradientDrawable).color!!.defaultColor
-        check(fill == root.context.getColor(R.color.streak_widget_active_background))
+        val background = if (state.done) R.color.streak_widget_active_background else R.color.streak_widget_waiting_background
+        check(fill == root.context.getColor(background))
         for ((id, count) in listOf(R.id.streak_current to state.current, R.id.streak_best to state.best)) {
             val text = view.findViewById<TextView>(id)
             check(text.text.toString() == count.toString()) { "stale count" }
@@ -401,6 +402,13 @@ class WidgetSmokeInstrumentation : Instrumentation() {
             layout(large, context, 407, 222)
             capture(large, "flame-large")
             now.add(Calendar.DATE, 1)
+            for ((width, height) in listOf(195 to 105, 300 to 105, 407 to 222)) {
+                val waiting = StreakWidgetRenderer.render(context, state.copy(done = false), data,
+                    width >= 250, now, singleRow = height < 124, dayCount = if (width < 350) 5 else 7)
+                    .apply(context, FrameLayout(context))
+                layout(waiting, context, width, height)
+                capture(waiting, "flame-waiting-${width}x$height")
+            }
             StreakWidgetRenderer.render(context, state.copy(done = false), data, true, now).reapply(context, root)
             assertDays(listOf("пн", "вт", "ср", "чт", "пт", "сб", "вс"), setOf(0, 3, 5))
         }

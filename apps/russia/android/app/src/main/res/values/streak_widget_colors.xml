@@ -1,4 +1,6 @@
 <resources>
     <!-- Same orange used on the in-game streak celebration. -->
     <color name="streak_widget_active_background">#FFA53C</color>
+    <!-- AppThemeColors.dark.gray, with white widget text and symbols. -->
+    <color name="streak_widget_waiting_background">#25272E</color>
 </resources>

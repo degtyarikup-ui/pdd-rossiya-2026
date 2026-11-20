@@ -35,11 +35,16 @@ internal object StreakWidgetRenderer {
             else -> R.layout.streak_widget
         }
         val views = RemoteViews(context.packageName, layout)
+        val background = if (state.done) R.drawable.streak_widget_background else R.drawable.streak_widget_waiting_background
+        views.setInt(R.id.streak_root, "setBackgroundResource", background)
+        views.setFloat(R.id.streak_rays, "setAlpha", if (state.done) 1f else 0.35f)
         views.setTextViewText(R.id.streak_current, state.current.toString())
         views.setTextViewText(R.id.streak_best, state.best.toString())
         views.setFloat(R.id.streak_flame, "setAlpha", if (state.done) 1f else 0.66f)
         if (singleRow && wide) views.setViewVisibility(R.id.streak_week, View.VISIBLE)
         if (!singleRow && wide) {
+            val weekSurface = if (state.done) R.drawable.streak_widget_week_surface else R.drawable.streak_widget_waiting_week_surface
+            views.setInt(R.id.streak_week, "setBackgroundResource", weekSurface)
             views.setViewVisibility(R.id.streak_status_icon, if (state.done) View.VISIBLE else View.GONE)
         }
         if (!wide) {

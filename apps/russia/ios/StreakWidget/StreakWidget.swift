@@ -174,7 +174,7 @@ struct StreakWidgetView: View {
     private func glowingFlame(height: CGFloat, rayDiameter: CGFloat) -> some View {
         flame(height: height)
             .opacity(entry.done || (!small && !large) ? 1 : 0.74)
-            .background { CelebrationBackground(diameter: rayDiameter) }
+            .background { CelebrationBackground(diameter: rayDiameter).opacity(entry.done ? 1 : 0.35) }
     }
 
     private func streak(rayDiameter: CGFloat) -> some View {
@@ -252,18 +252,22 @@ struct StreakWidgetView: View {
             .padding(small ? 10 : large ? 16 : 10)
         }
         .clipped()
-        .modifier(WidgetBackdrop())
+        .modifier(WidgetBackdrop(done: entry.done))
     }
 }
 
 private struct WidgetBackdrop: ViewModifier {
-    private let orange = Color(red: 1, green: 165 / 255, blue: 60 / 255)
+    let done: Bool
+    private var fill: Color {
+        done ? Color(red: 1, green: 165 / 255, blue: 60 / 255)
+             : Color(red: 37 / 255, green: 39 / 255, blue: 46 / 255)
+    }
 
     func body(content: Content) -> some View {
         if #available(iOS 17.0, *) {
-            content.containerBackground(for: .widget) { orange }
+            content.containerBackground(for: .widget) { fill }
         } else {
-            content.background(orange)
+            content.background(fill)
         }
     }
 }

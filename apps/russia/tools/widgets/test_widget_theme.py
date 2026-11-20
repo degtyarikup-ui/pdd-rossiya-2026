@@ -47,6 +47,14 @@ class WidgetThemeTest(unittest.TestCase):
         self.assertTrue((RES / 'drawable-nodpi/streak_widget_rays.png').is_file())
         self.assertIn('CelebrationBackground', SWIFT)
 
+    def test_waiting_background_matches_dark_theme_gray(self):
+        colors = (ROOT.parents[1] / 'packages/pdd_ui/lib/src/app_colors.dart').read_text()
+        dark = colors.split('static const dark = AppThemeColors(', 1)[1]
+        gray = re.search(r'gray: Color\(0xFF([0-9A-Fa-f]{6})\)', dark).group(1)
+        palette = ET.parse(RES / 'values/streak_widget_colors.xml')
+        waiting = palette.find("color[@name='streak_widget_waiting_background']").text
+        self.assertEqual(waiting, '#' + gray)
+
     def test_inactive_day_is_a_solid_white_dot(self):
         marker = ET.parse(RES / 'drawable/streak_widget_day_empty.xml').getroot()
         path = marker.find('path')
