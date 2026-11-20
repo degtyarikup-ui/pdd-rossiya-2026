@@ -130,7 +130,7 @@ test('SBP trial lookup is admin-only, read-only and returns only validated merch
   const probe = t.mock.method(globalThis, 'fetch', async (target, opts) => {
     assert.equal(target, 'https://app.platega.io/subscription/trial-supported');
     assert.equal(opts.method, 'GET');
-    assert.equal(opts.redirect, 'error');
+    assert.equal(opts.redirect, 'manual');
     assert.ok(opts.signal instanceof AbortSignal);
     assert.equal(opts.headers['X-MerchantId'], env.PLATEGA_MERCHANT_ID);
     assert.equal(opts.headers['X-Secret'], env.PLATEGA_SECRET);
@@ -153,20 +153,22 @@ test('SBP trial lookup is admin-only, read-only and returns only validated merch
   assert.equal((await (await get(token)).json()).trialSupported,false);
   provider = () => Response.json({...good,minTrialAmount:1.25});
   assert.equal((await (await get(token)).json()).minTrialAmount,1.25);
-  for (const reply of [
-    () => Response.json({ ...good,trialSupported:'true' }),
-    () => Response.json({ ...good,maxTrialPeriodDays:3.5 }),
-    () => Response.json({ ...good,minTrialAmount:0.001 }),
-    () => Response.json({ ...good,minTrialAmount:-1 }),
-    () => Response.json({ trialSupported:true }),
-    () => new Response('private error', {status:403}),
-    () => new Response('not JSON'),
-    () => { throw new Error('private provider error'); },
+  for (const [reason, providerStatus, reply] of [
+    ['invalid_response', null, () => Response.json({ ...good,trialSupported:'true' })],
+    ['invalid_response', null, () => Response.json({ ...good,maxTrialPeriodDays:3.5 })],
+    ['invalid_response', null, () => Response.json({ ...good,minTrialAmount:0.001 })],
+    ['invalid_response', null, () => Response.json({ ...good,minTrialAmount:-1 })],
+    ['invalid_response', null, () => Response.json({ trialSupported:true })],
+    ['provider_http', 302, () => Response.redirect('https://unrelated.invalid/',302)],
+    ['provider_http', 403, () => new Response('private error', {status:403})],
+    ['provider_http', 502, () => new Response('private error', {status:502})],
+    ['invalid_response', null, () => new Response('not JSON')],
+    ['network', null, () => { throw new Error('private provider error'); }],
   ]) {
     provider = reply;
     const res = await get(token);
     assert.equal(res.status,503);
-    assert.deepEqual(await res.json(),{error:'sbp_trial_unavailable'});
+    assert.deepEqual(await res.json(),{error:'sbp_trial_unavailable',reason,...(providerStatus ? {providerStatus} : {})});
   }
   assert.deepEqual(await (await admin(env)).json(),before);
 });
