@@ -5402,4 +5402,132 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get removeFromFavorites => 'Remove from favorites';
+
+  @override
+  String get onboardingSkip => 'Skip';
+
+  @override
+  String get onboardingContinue => 'Next';
+
+  @override
+  String get onboardingContinueFree => 'Continue without Premium';
+
+  @override
+  String onboardingStepSemantics(int step, int total) {
+    return 'Step $step of $total';
+  }
+
+  @override
+  String onboardingHeroTitle(String office) {
+    return 'Pass your $office theory test\non the first try';
+  }
+
+  @override
+  String onboardingHeroSubtitle(int questions) {
+    return '$questions official 2026 questions with explanations. No ads.';
+  }
+
+  @override
+  String get onboardingSmartTitle => 'See weak spots\nat a glance';
+
+  @override
+  String onboardingSmartSubtitle(int topics) {
+    return '$topics topics, mistake practice, 3D city, and 6 games.';
+  }
+
+  @override
+  String get onboardingProgressExample => 'Sample progress';
+
+  @override
+  String get onboardingTopicCrossroads => 'Intersections';
+
+  @override
+  String get onboardingTopicRegulator => 'Traffic officer';
+
+  @override
+  String get onboardingTopicParking => 'Stopping & parking';
+
+  @override
+  String get onboardingTopicSigns => 'Road signs';
+
+  @override
+  String onboardingTopicScore(int done, int total) {
+    return '$done of $total';
+  }
+
+  @override
+  String get onboardingSetupTitle => 'Category & pace';
+
+  @override
+  String get onboardingSetupPaceOnlyTitle => 'Daily pace';
+
+  @override
+  String get onboardingCategorySection => 'Category';
+
+  @override
+  String get onboardingCategoryAbTitle => 'A, B';
+
+  @override
+  String get onboardingCategoryAbSubtitle => 'Cars & motorbikes';
+
+  @override
+  String get onboardingCategoryCdTitle => 'C, D';
+
+  @override
+  String get onboardingCategoryCdSubtitle => 'Trucks & buses';
+
+  @override
+  String get onboardingPaceSection => 'Time per day';
+
+  @override
+  String onboardingPaceMinutes(int minutes) {
+    return '$minutes min / day';
+  }
+
+  @override
+  String get onboardingPaceCalmSub => '~4 weeks';
+
+  @override
+  String get onboardingPaceOptimalSub => '~18 days';
+
+  @override
+  String get onboardingPaceIntensiveSub => '~10 days';
+
+  @override
+  String onboardingPlanReadyTitle(String date) {
+    return 'Study plan\nthrough $date';
+  }
+
+  @override
+  String onboardingPlanReadySubtitle(String category, int minutes) {
+    return 'Category $category · $minutes min/day';
+  }
+
+  @override
+  String onboardingPlanReadyPaceOnlySubtitle(int minutes) {
+    return '$minutes min/day';
+  }
+
+  @override
+  String onboardingPlanItemTickets(int tickets, int questions) {
+    return '$tickets tickets & $questions questions (2026)';
+  }
+
+  @override
+  String onboardingPlanItemExam(String office, int extra) {
+    return 'Exam simulation ($office): +$extra questions per mistake';
+  }
+
+  @override
+  String get onboardingPlanItemOffline =>
+      'Practice tickets work offline, with no ads';
+
+  @override
+  String get onboardingForecastToday => 'Today';
+
+  @override
+  String get debugSection => 'Debug';
+
+  @override
+  String get debugRestartOnboarding => 'Preview onboarding';
 }

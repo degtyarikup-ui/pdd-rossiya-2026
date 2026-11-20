@@ -1,6 +1,7 @@
 import 'package:pdd_app/data/services/web_checkout_route.dart';
 import 'package:pdd_app/presentation/screens/premium_web_checkout_screen.dart';
 import 'package:pdd_app/data/services/notification_inbox_service.dart';
+import 'package:pdd_app/data/services/onboarding_service.dart';
 import 'package:pdd_app/data/services/referral_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 
@@ -35,6 +36,7 @@ import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/home/home_screen.dart';
 import 'package:pdd_app/presentation/screens/games/games_hub_screen.dart';
+import 'package:pdd_app/presentation/screens/onboarding/onboarding_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/promo_code_sheet.dart';
@@ -172,6 +174,10 @@ Future<Widget> _initializeApplication(
     }
   }
 
+  await OnboardingService.instance
+      .init(isAuthenticated: AuthService.instance.isAuthenticated)
+      .timeout(const Duration(seconds: 2), onTimeout: () {});
+
   // Инициализация облачной синхронизации прогресса
   ProgressSyncService.instance.init(progressDataSource);
   if (AuthService.instance.isAuthenticated) {
@@ -262,10 +268,22 @@ class PddApp extends ConsumerStatefulWidget {
 }
 
 class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
+  static const _initialScreen = kDebugMode
+      ? String.fromEnvironment('SCREEN', defaultValue: 'home')
+      : 'home';
+
   final _navigatorKey = GlobalKey<NavigatorState>();
+  late bool _showOnboarding;
+
   @override
   void initState() {
     super.initState();
+    _showOnboarding =
+        widget.webAuthReturn == null &&
+        _checkout == null &&
+        (_initialScreen == 'onboarding' ||
+            (_initialScreen == 'home' &&
+                OnboardingService.instance.shouldShow));
     WidgetsBinding.instance.addObserver(this);
     // Operator replies while the app is open: a sound and a banner that opens the chat.
     SupportInbox.instance.onSound = () =>
@@ -289,7 +307,16 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     RemoteNotificationsService.instance.onSupportReply =
         SupportInbox.instance.pollNow;
     SupportInbox.instance.start();
-    if (widget.webAuthReturn != null || widget.referralPrompt != null) {
+    if (widget.webAuthReturn != null ||
+        (widget.referralPrompt != null && !_showOnboarding)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showStartupPrompt());
+    }
+  }
+
+  void _completeOnboardingTransition() {
+    if (!mounted || !_showOnboarding) return;
+    setState(() => _showOnboarding = false);
+    if (widget.referralPrompt != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _showStartupPrompt());
     }
   }
@@ -382,9 +409,6 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     // Effective system language can change without replacing AppSettings.
     TtsService.instance.updateLanguage(appSettings.effectiveLanguageCode);
 
-    final String initialScreen = kDebugMode
-        ? const String.fromEnvironment('SCREEN', defaultValue: 'home')
-        : 'home';
     Widget getInitialWidget() {
       final checkout = _checkout;
       if (checkout != null) {
@@ -396,7 +420,13 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
       if (widget.webAuthReturn != null) {
         return const HomeScreen(initialIndex: 3);
       }
-      switch (initialScreen) {
+      if (_showOnboarding) {
+        return OnboardingScreen(
+          preview: _initialScreen == 'onboarding',
+          onCompleted: _completeOnboardingTransition,
+        );
+      }
+      switch (_initialScreen) {
         case 'game':
           return const HomeScreen(initialIndex: 1);
         case 'games':

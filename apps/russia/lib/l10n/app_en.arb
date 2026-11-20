@@ -1848,5 +1848,125 @@
   "homeWidgetRecordName": "Streak · Record",
   "homeWidgetRecordDescription": "Your streak, personal best and progress. Orange after studying today.",
   "addToFavorites": "Add to favorites",
-  "removeFromFavorites": "Remove from favorites"
+  "removeFromFavorites": "Remove from favorites",
+  "onboardingSkip": "Skip",
+  "onboardingContinue": "Next",
+  "onboardingContinueFree": "Continue without Premium",
+  "onboardingStepSemantics": "Step {step} of {total}",
+  "@onboardingStepSemantics": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingHeroTitle": "Pass your {office} theory test\non the first try",
+  "onboardingHeroSubtitle": "{questions} official 2026 questions with explanations. No ads.",
+  "@onboardingHeroSubtitle": {
+    "placeholders": {
+      "questions": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingSmartTitle": "See weak spots\nat a glance",
+  "onboardingSmartSubtitle": "{topics} topics, mistake practice, 3D city, and 6 games.",
+  "@onboardingSmartSubtitle": {
+    "placeholders": {
+      "topics": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingProgressExample": "Sample progress",
+  "onboardingTopicCrossroads": "Intersections",
+  "onboardingTopicRegulator": "Traffic officer",
+  "onboardingTopicParking": "Stopping & parking",
+  "onboardingTopicSigns": "Road signs",
+  "onboardingTopicScore": "{done} of {total}",
+  "@onboardingTopicScore": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingSetupTitle": "Category & pace",
+  "onboardingSetupPaceOnlyTitle": "Daily pace",
+  "onboardingCategorySection": "Category",
+  "onboardingCategoryAbTitle": "A, B",
+  "onboardingCategoryAbSubtitle": "Cars & motorbikes",
+  "onboardingCategoryCdTitle": "C, D",
+  "onboardingCategoryCdSubtitle": "Trucks & buses",
+  "onboardingPaceSection": "Time per day",
+  "onboardingPaceMinutes": "{minutes} min / day",
+  "@onboardingPaceMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPaceCalmSub": "~4 weeks",
+  "onboardingPaceOptimalSub": "~18 days",
+  "onboardingPaceIntensiveSub": "~10 days",
+  "onboardingPlanReadyTitle": "Study plan\nthrough {date}",
+  "@onboardingPlanReadyTitle": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingPlanReadySubtitle": "Category {category} · {minutes} min/day",
+  "@onboardingPlanReadySubtitle": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPlanReadyPaceOnlySubtitle": "{minutes} min/day",
+  "@onboardingPlanReadyPaceOnlySubtitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPlanItemTickets": "{tickets} tickets & {questions} questions (2026)",
+  "@onboardingPlanItemTickets": {
+    "placeholders": {
+      "tickets": {
+        "type": "int"
+      },
+      "questions": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPlanItemExam": "Exam simulation ({office}): +{extra} questions per mistake",
+  "@onboardingPlanItemExam": {
+    "placeholders": {
+      "office": {
+        "type": "String"
+      },
+      "extra": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPlanItemOffline": "Practice tickets work offline, with no ads",
+  "onboardingForecastToday": "Today",
+  "debugSection": "Debug",
+  "debugRestartOnboarding": "Preview onboarding"
 }

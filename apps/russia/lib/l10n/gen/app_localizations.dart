@@ -8973,6 +8973,216 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Убрать из избранного'**
   String get removeFromFavorites;
+
+  /// No description provided for @onboardingSkip.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пропустить'**
+  String get onboardingSkip;
+
+  /// No description provided for @onboardingContinue.
+  ///
+  /// In ru, this message translates to:
+  /// **'Далее'**
+  String get onboardingContinue;
+
+  /// No description provided for @onboardingContinueFree.
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить без Премиума'**
+  String get onboardingContinueFree;
+
+  /// No description provided for @onboardingStepSemantics.
+  ///
+  /// In ru, this message translates to:
+  /// **'Шаг {step} из {total}'**
+  String onboardingStepSemantics(int step, int total);
+
+  /// No description provided for @onboardingHeroTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сдайте теорию {office}\nс первого раза'**
+  String onboardingHeroTitle(String office);
+
+  /// No description provided for @onboardingHeroSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'{questions} вопросов 2026 с разборами, без рекламы'**
+  String onboardingHeroSubtitle(int questions);
+
+  /// No description provided for @onboardingSmartTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сразу видно,\nчто подтянуть'**
+  String get onboardingSmartTitle;
+
+  /// No description provided for @onboardingSmartSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'{topics} тем, разбор ошибок, 3D-город и 6 игр'**
+  String onboardingSmartSubtitle(int topics);
+
+  /// No description provided for @onboardingProgressExample.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пример прогресса'**
+  String get onboardingProgressExample;
+
+  /// No description provided for @onboardingTopicCrossroads.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проезд перекрёстков'**
+  String get onboardingTopicCrossroads;
+
+  /// No description provided for @onboardingTopicRegulator.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сигналы регулировщика'**
+  String get onboardingTopicRegulator;
+
+  /// No description provided for @onboardingTopicParking.
+  ///
+  /// In ru, this message translates to:
+  /// **'Остановка и стоянка'**
+  String get onboardingTopicParking;
+
+  /// No description provided for @onboardingTopicSigns.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дорожные знаки'**
+  String get onboardingTopicSigns;
+
+  /// No description provided for @onboardingTopicScore.
+  ///
+  /// In ru, this message translates to:
+  /// **'{done} из {total}'**
+  String onboardingTopicScore(int done, int total);
+
+  /// No description provided for @onboardingSetupTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Категория и темп'**
+  String get onboardingSetupTitle;
+
+  /// No description provided for @onboardingSetupPaceOnlyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Темп занятий'**
+  String get onboardingSetupPaceOnlyTitle;
+
+  /// No description provided for @onboardingCategorySection.
+  ///
+  /// In ru, this message translates to:
+  /// **'Категория'**
+  String get onboardingCategorySection;
+
+  /// No description provided for @onboardingCategoryAbTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'A, B'**
+  String get onboardingCategoryAbTitle;
+
+  /// No description provided for @onboardingCategoryAbSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Легковые и мото'**
+  String get onboardingCategoryAbSubtitle;
+
+  /// No description provided for @onboardingCategoryCdTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'C, D'**
+  String get onboardingCategoryCdTitle;
+
+  /// No description provided for @onboardingCategoryCdSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Грузовики и автобусы'**
+  String get onboardingCategoryCdSubtitle;
+
+  /// No description provided for @onboardingPaceSection.
+  ///
+  /// In ru, this message translates to:
+  /// **'Время в день'**
+  String get onboardingPaceSection;
+
+  /// No description provided for @onboardingPaceMinutes.
+  ///
+  /// In ru, this message translates to:
+  /// **'{minutes} мин в день'**
+  String onboardingPaceMinutes(int minutes);
+
+  /// No description provided for @onboardingPaceCalmSub.
+  ///
+  /// In ru, this message translates to:
+  /// **'~4 недели'**
+  String get onboardingPaceCalmSub;
+
+  /// No description provided for @onboardingPaceOptimalSub.
+  ///
+  /// In ru, this message translates to:
+  /// **'~18 дней'**
+  String get onboardingPaceOptimalSub;
+
+  /// No description provided for @onboardingPaceIntensiveSub.
+  ///
+  /// In ru, this message translates to:
+  /// **'~10 дней'**
+  String get onboardingPaceIntensiveSub;
+
+  /// No description provided for @onboardingPlanReadyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'План занятий\nдо {date}'**
+  String onboardingPlanReadyTitle(String date);
+
+  /// No description provided for @onboardingPlanReadySubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Категория {category} · {minutes} мин в день'**
+  String onboardingPlanReadySubtitle(String category, int minutes);
+
+  /// No description provided for @onboardingPlanReadyPaceOnlySubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'{minutes} мин в день'**
+  String onboardingPlanReadyPaceOnlySubtitle(int minutes);
+
+  /// No description provided for @onboardingPlanItemTickets.
+  ///
+  /// In ru, this message translates to:
+  /// **'{tickets} билетов и {questions} вопросов 2026'**
+  String onboardingPlanItemTickets(int tickets, int questions);
+
+  /// No description provided for @onboardingPlanItemExam.
+  ///
+  /// In ru, this message translates to:
+  /// **'Экзамен как в {office}: +{extra} вопросов за ошибку'**
+  String onboardingPlanItemExam(String office, int extra);
+
+  /// No description provided for @onboardingPlanItemOffline.
+  ///
+  /// In ru, this message translates to:
+  /// **'Билеты доступны офлайн и без рекламы'**
+  String get onboardingPlanItemOffline;
+
+  /// No description provided for @onboardingForecastToday.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сегодня'**
+  String get onboardingForecastToday;
+
+  /// No description provided for @debugSection.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отладка'**
+  String get debugSection;
+
+  /// No description provided for @debugRestartOnboarding.
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыть предпросмотр онбординга'**
+  String get debugRestartOnboarding;
 }
 
 class _AppLocalizationsDelegate

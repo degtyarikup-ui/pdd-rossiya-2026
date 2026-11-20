@@ -1848,5 +1848,125 @@
   "homeWidgetRecordName": "Серия · Рекорд",
   "homeWidgetRecordDescription": "Серия, рекорд және прогресс. Бүгін оқысаңыз, фон қызғылт сары болады.",
   "addToFavorites": "Таңдаулыларға қосу",
-  "removeFromFavorites": "Таңдаулылардан алып тастау"
+  "removeFromFavorites": "Таңдаулылардан алып тастау",
+  "onboardingSkip": "Өткізу",
+  "onboardingContinue": "Келесі",
+  "onboardingContinueFree": "Премиумсыз жалғастыру",
+  "onboardingStepSemantics": "{total} қадамның {step}-і",
+  "@onboardingStepSemantics": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingHeroTitle": "{office} теория емтиханын\nбірінші реттен тапсырыңыз",
+  "onboardingHeroSubtitle": "Түсіндірмесі бар 2026 жылғы {questions} сұрақ. Жарнамасыз.",
+  "@onboardingHeroSubtitle": {
+    "placeholders": {
+      "questions": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingSmartTitle": "Әлсіз тақырыптар\nбірден көрінеді",
+  "onboardingSmartSubtitle": "{topics} тақырып, қатемен жұмыс, 3D қала және 6 ойын.",
+  "@onboardingSmartSubtitle": {
+    "placeholders": {
+      "topics": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingProgressExample": "Прогресс үлгісі",
+  "onboardingTopicCrossroads": "Жол қиылыстары",
+  "onboardingTopicRegulator": "Реттеуші сигналдары",
+  "onboardingTopicParking": "Тоқтау мен тұрақ",
+  "onboardingTopicSigns": "Жол белгілері",
+  "onboardingTopicScore": "{done} / {total}",
+  "@onboardingTopicScore": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingSetupTitle": "Санат пен қарқын",
+  "onboardingSetupPaceOnlyTitle": "Оқу қарқыны",
+  "onboardingCategorySection": "Санат",
+  "onboardingCategoryAbTitle": "A, B",
+  "onboardingCategoryAbSubtitle": "Жеңіл көлік, мото",
+  "onboardingCategoryCdTitle": "C, D",
+  "onboardingCategoryCdSubtitle": "Жүк көлігі, автобус",
+  "onboardingPaceSection": "Күндік уақыт",
+  "onboardingPaceMinutes": "Күніне {minutes} мин",
+  "@onboardingPaceMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPaceCalmSub": "~4 апта",
+  "onboardingPaceOptimalSub": "~18 күн",
+  "onboardingPaceIntensiveSub": "~10 күн",
+  "onboardingPlanReadyTitle": "{date} дейінгі\nоқу жоспары",
+  "@onboardingPlanReadyTitle": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingPlanReadySubtitle": "{category} санаты · күніне {minutes} мин",
+  "@onboardingPlanReadySubtitle": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPlanReadyPaceOnlySubtitle": "Күніне {minutes} мин",
+  "@onboardingPlanReadyPaceOnlySubtitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPlanItemTickets": "2026 жылғы {tickets} билет пен {questions} сұрақ",
+  "@onboardingPlanItemTickets": {
+    "placeholders": {
+      "tickets": {
+        "type": "int"
+      },
+      "questions": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPlanItemExam": "{office} емтиханының симуляциясы: әр қате үшін +{extra} сұрақ",
+  "@onboardingPlanItemExam": {
+    "placeholders": {
+      "office": {
+        "type": "String"
+      },
+      "extra": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPlanItemOffline": "Билеттер офлайн және жарнамасыз қолжетімді",
+  "onboardingForecastToday": "Бүгін",
+  "debugSection": "Жөндеу",
+  "debugRestartOnboarding": "Онбордингті алдын ала көру"
 }

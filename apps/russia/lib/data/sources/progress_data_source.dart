@@ -378,7 +378,7 @@ class ProgressDataSource {
   }
 
   Future<void> saveAppSettings(AppSettings settings) async {
-    _saveMap(_keySettings, settings.toJson());
+    await _prefs.setString(_keySettings, json.encode(settings.toJson()));
     unawaited(refreshHomeWidget());
     ProgressSyncService.instance.scheduleSync();
   }

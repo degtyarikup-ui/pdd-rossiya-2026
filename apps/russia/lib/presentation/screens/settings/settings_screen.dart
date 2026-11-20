@@ -1,6 +1,7 @@
 import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +15,7 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/notification_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/config/build_info.dart';
+import 'package:pdd_app/presentation/screens/onboarding/onboarding_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -303,6 +305,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     AppToast.show(context, appL10n.statsReset, type: AppToastType.success);
   }
 
+  void _showOnboardingPreview() {
+    if (!kDebugMode) return;
+    HapticFeedbackHelper.tap();
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => OnboardingScreen(
+          preview: true,
+          onCompleted: () => Navigator.of(context).pop(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -486,6 +501,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: AppDimensions.spacingXL),
+
+                    if (kDebugMode) ...[
+                      _buildSectionTitle(appL10n.debugSection),
+                      _buildSectionCard(
+                        children: [
+                          _buildSettingItem(
+                            key: const ValueKey(
+                              'settings-debug-restart-onboarding',
+                            ),
+                            icon: Icons.play_circle_outline_rounded,
+                            title: appL10n.debugRestartOnboarding,
+                            trailing: Icon(
+                              Icons.chevron_right_rounded,
+                              color: colors.secondaryText,
+                            ),
+                            onTap: _showOnboardingPreview,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppDimensions.spacingXL),
+                    ],
 
                     _buildSectionCard(
                       children: [

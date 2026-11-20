@@ -2621,5 +2621,132 @@
   "homeWidgetRecordName": "Серия · Рекорд",
   "homeWidgetRecordDescription": "Серия, рекорд и прогресс. Оранжевый фон за занятие сегодня.",
   "addToFavorites": "Добавить в избранное",
-  "removeFromFavorites": "Убрать из избранного"
+  "removeFromFavorites": "Убрать из избранного",
+  "onboardingSkip": "Пропустить",
+  "onboardingContinue": "Далее",
+  "onboardingContinueFree": "Продолжить без Премиума",
+  "onboardingStepSemantics": "Шаг {step} из {total}",
+  "@onboardingStepSemantics": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingHeroTitle": "Сдайте теорию {office}\nс первого раза",
+  "@onboardingHeroTitle": {
+    "placeholders": {
+      "office": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingHeroSubtitle": "{questions} вопросов 2026 с разборами, без рекламы",
+  "@onboardingHeroSubtitle": {
+    "placeholders": {
+      "questions": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingSmartTitle": "Сразу видно,\nчто подтянуть",
+  "onboardingSmartSubtitle": "{topics} тем, разбор ошибок, 3D-город и 6 игр",
+  "@onboardingSmartSubtitle": {
+    "placeholders": {
+      "topics": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingProgressExample": "Пример прогресса",
+  "onboardingTopicCrossroads": "Проезд перекрёстков",
+  "onboardingTopicRegulator": "Сигналы регулировщика",
+  "onboardingTopicParking": "Остановка и стоянка",
+  "onboardingTopicSigns": "Дорожные знаки",
+  "onboardingTopicScore": "{done} из {total}",
+  "@onboardingTopicScore": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingSetupTitle": "Категория и темп",
+  "onboardingSetupPaceOnlyTitle": "Темп занятий",
+  "onboardingCategorySection": "Категория",
+  "onboardingCategoryAbTitle": "A, B",
+  "onboardingCategoryAbSubtitle": "Легковые и мото",
+  "onboardingCategoryCdTitle": "C, D",
+  "onboardingCategoryCdSubtitle": "Грузовики и автобусы",
+  "onboardingPaceSection": "Время в день",
+  "onboardingPaceMinutes": "{minutes} мин в день",
+  "@onboardingPaceMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPaceCalmSub": "~4 недели",
+  "onboardingPaceOptimalSub": "~18 дней",
+  "onboardingPaceIntensiveSub": "~10 дней",
+  "onboardingPlanReadyTitle": "План занятий\nдо {date}",
+  "@onboardingPlanReadyTitle": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingPlanReadySubtitle": "Категория {category} · {minutes} мин в день",
+  "@onboardingPlanReadySubtitle": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPlanReadyPaceOnlySubtitle": "{minutes} мин в день",
+  "@onboardingPlanReadyPaceOnlySubtitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPlanItemTickets": "{tickets} билетов и {questions} вопросов 2026",
+  "@onboardingPlanItemTickets": {
+    "placeholders": {
+      "tickets": {
+        "type": "int"
+      },
+      "questions": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPlanItemExam": "Экзамен как в {office}: +{extra} вопросов за ошибку",
+  "@onboardingPlanItemExam": {
+    "placeholders": {
+      "office": {
+        "type": "String"
+      },
+      "extra": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingPlanItemOffline": "Билеты доступны офлайн и без рекламы",
+  "onboardingForecastToday": "Сегодня",
+  "debugSection": "Отладка",
+  "debugRestartOnboarding": "Открыть предпросмотр онбординга"
 }
