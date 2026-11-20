@@ -680,9 +680,9 @@ void main() {
       }
       await tester.tap(find.byKey(const ValueKey('premium-show-plans')));
       await tester.pumpAndSettle();
-      Navigator.of(
-        tester.element(find.byType(PremiumPlansSheet)),
-      ).pop(PremiumPlansResult.webPayment);
+      final plans = find.byType(PremiumPlansSheet);
+      expect(tester.widget<PremiumPlansSheet>(plans).fromOnboarding, isTrue);
+      Navigator.of(tester.element(plans)).pop(PremiumPlansResult.webPayment);
       await tester.pumpAndSettle();
 
       expect(find.byType(HomeScreen), findsOneWidget);

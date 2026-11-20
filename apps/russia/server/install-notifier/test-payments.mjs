@@ -302,29 +302,38 @@ test('сбой сохранения после создания СБП не ра
 });
 
 
-test('СБП: отметка онбординга зависит от входа в оплату и возраста аккаунта', async () => {
-  const { buildSbpPurchaseMessage } = await import('./payments.js');
+test('СБП: источник онбординга записывается при создании заказа и сохраняется при повторе', async () => {
+  const { settleOrder } = await import('./payments.js');
   const fake = fakePlatega();
   try {
-    for (const [purchaseEntry, ageMinutes, expected] of [
-      ['onboarding', 1, true],
-      [undefined, 1, false],
-      ['onboarding', 16, false],
+    for (const [purchaseEntry, expected] of [
+      ['onboarding', true],
+      [undefined, false],
+      ['profile', false],
     ]) {
       const env = baseEnv();
       const token = await login(env);
       const profile = {
         id: 'google_1', provider: 'google',
-        createdAt: new Date(Date.now() - ageMinutes * 60_000).toISOString(),
+        createdAt: '2025-01-01T00:00:00.000Z',
       };
       await env.INSTALLS.put('user:' + profile.id, JSON.stringify(profile));
-      const response = await worker.fetch(req('/api/user/pay-intent', {
-        email: 'receipt@example.com', tier: 'weekly', method: 'sbp', client: 'android', purchaseEntry,
-      }, token), env);
+      const body = { email: 'receipt@example.com', tier: 'weekly', method: 'sbp', client: 'android' };
+      const response = await worker.fetch(req('/api/user/pay-intent', { ...body, purchaseEntry }, token), env);
       const { order: orderId } = await response.json();
+      const repeated = await worker.fetch(req('/api/user/pay-intent', {
+        ...body, purchaseEntry: expected ? undefined : 'onboarding',
+      }, token), env);
+      assert.equal((await repeated.json()).order, orderId);
       const order = JSON.parse(await env.INSTALLS.get('pay_order:' + orderId));
-      const message = buildSbpPurchaseMessage(order, null, String);
-      assert.equal(message.includes('Переход к оплате:</b> онбординг'), expected);
+      assert.equal(order.context.purchaseEntry, expected ? 'onboarding' : undefined);
+
+      fake.txs.get(order.txId).status = 'CONFIRMED';
+      env.BOT_TOKEN = 'test'; env.CHAT_ID = 'test';
+      const messages = [];
+      await settleOrder(env, order, { esc: String, sendTelegram: async (_env, message) => messages.push(message) });
+      assert.equal(messages.length, 1);
+      assert.equal(messages[0].includes('Переход к оплате:</b> онбординг'), expected);
     }
   } finally { fake.restore(); }
 });

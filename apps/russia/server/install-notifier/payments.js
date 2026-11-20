@@ -135,9 +135,9 @@ export function buildSbpPurchaseMessage(order, expiresAt, esc, renewal = false) 
     '• <b>Оплата:</b> СБП · Platega', '• <b>Автопродление:</b> нет', '',
     NOTICE_CAMPAIGN_RE.test(order.noticeCampaignId || '')
       ? `• <b>Переход к оплате:</b> из баннера / уведомления · <code>${esc(order.noticeCampaignId)}</code>` : null,
-    ...premiumContextLines({ ...context, platform }, esc),
-    context.onboardingAfterSignup === true
+    context.purchaseEntry === 'onboarding'
       ? '• <b>Переход к оплате:</b> онбординг' : null,
+    ...premiumContextLines({ ...context, platform }, esc),
     context.metadataSource === 'profile' ? '• <b>Данные устройства:</b> из последнего профиля на момент создания заказа' : null,
     `• <b>ID аккаунта:</b> <code>${esc(order.userId)}</code>`,
     `• <b>Действует до (СБП):</b> ${premiumDate(expiresAt)}`, '',
@@ -214,15 +214,7 @@ export async function handlePayIntent(request, env, user, deps) {
   }
 
   const context = paymentContext(body, user);
-  if (body.purchaseEntry === 'onboarding') {
-    // The session has an issuance-time identity. Read the saved registration
-    // date so that signing in again cannot make an old account look new.
-    const profile = await readJson(env, 'user:' + user.id).catch(() => null);
-    const accountAge = now - Date.parse(profile?.createdAt);
-    if (accountAge >= 0 && accountAge <= 15 * 60_000) {
-      context.onboardingAfterSignup = true;
-    }
-  }
+  if (body.purchaseEntry === 'onboarding') context.purchaseEntry = 'onboarding';
 
   const app = typeof body.app === 'string' ? body.app.slice(0, 4) : 'ru';
   const intent = {

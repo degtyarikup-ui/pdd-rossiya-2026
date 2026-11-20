@@ -334,7 +334,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final Widget activeScreen = _step == _setupSteps
         ? PremiumBenefitsScreen(
             key: const ValueKey('onboarding-step-4'),
-            fromOnboarding: true,
+            fromOnboarding: !widget.preview,
             onDismissed: (_) => _finishOnboarding(),
             onBack: _goBack,
             dismissLabel: l10n.onboardingContinueFree,
