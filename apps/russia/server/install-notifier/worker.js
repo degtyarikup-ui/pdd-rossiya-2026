@@ -1,7 +1,7 @@
 export { EconomyPayouts } from './economy_payouts.js';
 import { pollStoreReviews, storeReviewsAdmin } from './store_reviews.js';
 export { StoreReviews } from './store_reviews.js';
-import { adminOffers, readCatalog } from './premium_offers.js';
+import { adminOffers, checkSbpTrial, readCatalog } from './premium_offers.js';
 import { OFFERS_NAV, OFFERS_VIEW, OFFERS_JS } from './premium_offers_ui.js';
 import { PROMOCODES_NAV_HTML, PROMOCODES_VIEW_HTML, PROMOCODES_CLIENT_JS } from './promocodes_ui.js';
 import { secureResponse } from './security_headers.js';
@@ -3553,8 +3553,9 @@ const workerHandlers = {
       for (const [key, value] of Object.entries(CORS_HEADERS)) authResponse.headers.set(key, value);
       return authResponse;
     }
-    if (url.pathname === '/api/admin/premium-offers') {
+    if (['/api/admin/premium-offers', '/api/admin/premium-offers/sbp-trial'].includes(url.pathname)) {
       if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
+      if (url.pathname.endsWith('/sbp-trial')) return checkSbpTrial(request, env);
       return adminOffers(request, env);
     }
     if (url.pathname === '/api/admin/promocodes') {

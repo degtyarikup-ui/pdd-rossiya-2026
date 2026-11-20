@@ -119,3 +119,54 @@ test('lead checks price and a failed catalog read cannot silently charge a diffe
   assert.equal((await lead({})).status, 200);
   assert.equal(JSON.parse(await env.INSTALLS.get('pay_lead:a@example.invalid')).priceRub, 290);
 });
+
+test('SBP trial lookup is admin-only, read-only and returns only validated merchant limits', async t => {
+  const { env } = fixture();
+  const url = '/api/admin/premium-offers/sbp-trial';
+  const get = (token, body) => worker.fetch(request(url, body, token), env);
+  const good = { trialSupported:true, maxTrialPeriodDays:3, minTrialAmount:0 };
+  let provider = () => Response.json({ ...good, privateProviderField:'unused' });
+  env.PLATEGA_API = 'https://unrelated.invalid';
+  const probe = t.mock.method(globalThis, 'fetch', async (target, opts) => {
+    assert.equal(target, 'https://app.platega.io/subscription/trial-supported');
+    assert.equal(opts.method, 'GET');
+    assert.equal(opts.redirect, 'error');
+    assert.ok(opts.signal instanceof AbortSignal);
+    assert.equal(opts.headers['X-MerchantId'], env.PLATEGA_MERCHANT_ID);
+    assert.equal(opts.headers['X-Secret'], env.PLATEGA_SECRET);
+    return provider();
+  });
+  const token = 'fixture-admin';
+  const before = await (await admin(env)).json();
+  assert.equal((await get(null)).status,401);
+  assert.equal((await get(await session(env))).status,401);
+  assert.equal((await get(token, {})).status,405);
+  const secret = env.PLATEGA_SECRET;
+  delete env.PLATEGA_SECRET;
+  assert.equal((await get(token)).status,503);
+  env.PLATEGA_SECRET = secret;
+  assert.equal(probe.mock.callCount(),0);
+  const allowed = await get(token);
+  assert.equal(allowed.headers.get('Cache-Control'),'no-store');
+  assert.deepEqual(await allowed.json(),good);
+  provider = () => Response.json({trialSupported:false, maxTrialPeriodDays:0, minTrialAmount:0});
+  assert.equal((await (await get(token)).json()).trialSupported,false);
+  provider = () => Response.json({...good,minTrialAmount:1.25});
+  assert.equal((await (await get(token)).json()).minTrialAmount,1.25);
+  for (const reply of [
+    () => Response.json({ ...good,trialSupported:'true' }),
+    () => Response.json({ ...good,maxTrialPeriodDays:3.5 }),
+    () => Response.json({ ...good,minTrialAmount:0.001 }),
+    () => Response.json({ ...good,minTrialAmount:-1 }),
+    () => Response.json({ trialSupported:true }),
+    () => new Response('private error', {status:403}),
+    () => new Response('not JSON'),
+    () => { throw new Error('private provider error'); },
+  ]) {
+    provider = reply;
+    const res = await get(token);
+    assert.equal(res.status,503);
+    assert.deepEqual(await res.json(),{error:'sbp_trial_unavailable'});
+  }
+  assert.deepEqual(await (await admin(env)).json(),before);
+});

@@ -73,6 +73,27 @@ export async function adminOffers(request, env) {
   return await rpc(env, body) || json({ error: 'catalog_unavailable' }, 503);
 }
 
+// This merchant-specific check does not create a payment or change the catalog.
+export async function checkSbpTrial(request, env) {
+  if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
+  const unavailable = () => json({ error: 'sbp_trial_unavailable' }, 503);
+  if (!env.PLATEGA_MERCHANT_ID || !env.PLATEGA_SECRET) return unavailable();
+  try {
+    const response = await fetch('https://app.platega.io/subscription/trial-supported', {
+      method: 'GET', redirect: 'error', signal: AbortSignal.timeout(5000),
+      headers: { Accept: 'application/json', 'X-MerchantId': env.PLATEGA_MERCHANT_ID, 'X-Secret': env.PLATEGA_SECRET },
+    });
+    if (response.status !== 200) return unavailable();
+    const { trialSupported, maxTrialPeriodDays, minTrialAmount } = await response.json();
+    const kopecks = Math.round(minTrialAmount * 100);
+    if (typeof trialSupported !== 'boolean' ||
+        !Number.isSafeInteger(maxTrialPeriodDays) || maxTrialPeriodDays < 0 || maxTrialPeriodDays > 2147483647 ||
+        typeof minTrialAmount !== 'number' || minTrialAmount < 0 ||
+        !Number.isSafeInteger(kopecks) || kopecks / 100 !== minTrialAmount) return unavailable();
+    return json({ trialSupported, maxTrialPeriodDays, minTrialAmount });
+  } catch { return unavailable(); }
+}
+
 // Old binaries displayed a fixed amount before they called the Worker. They never
 // consume the rotating catalog, even after an operator activates a new price.
 export async function quotedWebTariff(env, body, jsonResponse) {

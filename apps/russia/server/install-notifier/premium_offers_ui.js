@@ -33,6 +33,8 @@ export const OFFERS_VIEW = `
       <option value="standard">Новая · 370 ₽</option><option value="promotion">Акция</option></select></label>
       <button type="submit" class="btn-action">Применить цену СБП</button></form>
     <p>Старые версии приложения оформляют 90 дней за 290 ₽. Для открытого заказа действует сумма при создании.</p>
+    <button class="btn-action" id="offers-sbp-trial" type="button">Проверить пробный период СБП</button>
+    <p id="offers-sbp-trial-status" role="status"></p>
   </section>
   <section><p>Цены подписок и условия автопродления задаются в магазинах. Пробный период появится при доступном предложении с той же ценой продления, что у выбранного тарифа.</p>
     ${storeForm('appstore','App Store')}${storeForm('googleplay','Google Play')}
@@ -84,6 +86,29 @@ export const OFFERS_JS = `
       refresh.disabled = false;
     }
   }
+  const trialCheck = root.querySelector('#offers-sbp-trial');
+  const trialStatus = root.querySelector('#offers-sbp-trial-status');
+  trialCheck.onclick = async () => {
+    if (trialCheck.disabled) return;
+    trialCheck.disabled = true;
+    trialStatus.textContent = 'Проверяем условия Platega…';
+    try {
+      const terms = await adminFetchJson(endpoint + '/sbp-trial');
+      if (!terms.trialSupported) {
+        trialStatus.textContent = 'Platega не разрешает пробный период для этого магазина.';
+      } else if (terms.minTrialAmount === 0 && terms.maxTrialPeriodDays >= 3) {
+        trialStatus.textContent = 'Platega разрешает 3 дня за 0 ₽. Оформление подписки через СБП пока не подключено.';
+      } else {
+        const amount = terms.minTrialAmount.toLocaleString('ru-RU', { maximumFractionDigits: 2 });
+        trialStatus.textContent = 'Три бесплатных дня недоступны. Минимальная сумма — ' + amount +
+          ' ₽. Максимальный срок — ' + terms.maxTrialPeriodDays + ' дн.';
+      }
+    } catch (_) {
+      trialStatus.textContent = 'Не удалось проверить условия Platega. Попробуйте ещё раз.';
+    } finally {
+      trialCheck.disabled = false;
+    }
+  };
   discount.onsubmit = event => {
     event.preventDefault();
     update({operation:'save_promotion',priceRub:discount.elements.priceRub.valueAsNumber});

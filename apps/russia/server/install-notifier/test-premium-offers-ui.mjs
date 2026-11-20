@@ -28,6 +28,22 @@ test('admin stages a discount, activates a rate and sees stale edits across tabs
     const current = panel.locator('#offers-sbp-current');
     await current.filter({hasText:'290 ₽'}).waitFor();
     assert.equal(await panel.evaluate(el => el.scrollWidth <= el.clientWidth), true);
+    const trialCheck = panel.getByRole('button', { name:'Проверить пробный период СБП' });
+    const trialStatus = panel.locator('#offers-sbp-trial-status');
+    const probe = '**/api/admin/premium-offers/sbp-trial';
+    for (const [trialSupported, maxTrialPeriodDays, minTrialAmount, message] of [
+      [false,0,0,'не разрешает'],
+      [true,30,1.25,'1,25 ₽'],
+      [true,2,0,'2 дн.'],
+      [true,3,0,'разрешает 3 дня за 0 ₽'],
+    ]) {
+      await page.route(probe, route => route.fulfill({json:{trialSupported,maxTrialPeriodDays,minTrialAmount}}), {times:1});
+      await trialCheck.click();
+      await trialStatus.filter({hasText:message}).waitFor();
+    }
+    await page.route(probe, route => route.fulfill({status:503,json:{error:'sbp_trial_unavailable'}}), {times:1});
+    await trialCheck.click();
+    await trialStatus.filter({hasText:'Не удалось проверить'}).waitFor();
     await panel.locator('#offers-discount input').fill('240');
     await panel.getByRole('button', {name:'Сохранить черновик'}).click();
     await panel.locator('#offers-state').filter({hasText:'Сохранено'}).waitFor();
