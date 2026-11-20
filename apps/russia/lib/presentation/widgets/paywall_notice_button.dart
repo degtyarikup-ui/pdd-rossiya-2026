@@ -104,12 +104,13 @@ class PaywallNoticeButton extends StatelessWidget {
         if (notice.imageUrl.isEmpty) return button();
         return Image.network(
           notice.imageUrl,
+          width: label.isEmpty ? null : 24,
           height: 24,
           fit: BoxFit.contain,
           semanticLabel: label.isEmpty ? appL10n.noticeOpen : null,
           excludeFromSemantics: label.isNotEmpty,
           frameBuilder: (context, image, frame, _) =>
-              frame == null ? const SizedBox.shrink() : button(image: image),
+              button(image: frame == null ? null : image),
           errorBuilder: (context, error, stack) => button(),
         );
       },

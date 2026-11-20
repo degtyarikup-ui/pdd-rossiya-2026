@@ -550,7 +550,7 @@ void main() {
     await mount(tester);
     final secondary = find.widgetWithText(ElevatedButton, 'Подробнее');
     expect(secondary, findsNothing);
-    slot.value = AppNotice.parse({
+    final campaign = {
       'id': 'a069e042-5b7b-40a0-b15e-b80c4444ce1d',
       'title': '',
       'body': '',
@@ -560,7 +560,8 @@ void main() {
       'action': 'url',
       'actionUrl': 'https://example.test/offer',
       'accent': '#12AB34',
-    });
+    };
+    slot.value = AppNotice.parse(campaign);
     await tester.pump();
     expect(secondary, findsOneWidget);
     expect(tester.getBottomLeft(secondary).dy, lessThan(tester.getTopLeft(find.byKey(_showPlans)).dy));
@@ -577,6 +578,18 @@ void main() {
     );
     expect(plansButton, findsOneWidget);
     expect(tester.getBottomLeft(plansButton).dy, lessThan(tester.getTopLeft(purchase).dy));
+    slot.value = AppNotice.parse({
+      ...campaign,
+      'imageUrl': 'https://example.test/icon.png',
+    });
+    await tester.pump();
+    expect(plansButton, findsOneWidget);
+    expect(tester.widget<Image>(find.descendant(
+      of: find.byType(PremiumPlansSheet),
+      matching: find.byType(Image),
+    )).width, 24);
+    await tester.pumpAndSettle();
+    expect(plansButton, findsOneWidget);
     slot.value = null;
     await tester.pump();
     expect(secondary, findsNothing);

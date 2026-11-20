@@ -43,7 +43,8 @@ test('Paywall buttons require an opted-in Android or web client and can be turne
  const list = async query => (await (await call('/client?app=ru&inbox=1&'+query)).json()).messages;
  assert.deepEqual(await list('platform=android&paywallButton=1'), []);
  assert.throws(() => validateCampaign({...button,platforms:['ios']}), /Android/);
- assert.throws(() => validateCampaign({...button,buttonText:''}), /картинку/);
+ assert.throws(() => validateCampaign({...button,buttonText:''}), /текст кнопки Paywall/);
+ assert.throws(() => validateCampaign({...button,buttonText:'  ',imageUrl:'https://example.test/icon.png'}), /текст кнопки Paywall/);
  assert.throws(() => validateCampaign({...button,actionUrl:'javascript:void(0)'}), /https/);
  assert.equal((await call('/publish',button)).status,200);
  assert.deepEqual(await list('platform=android'), []);
@@ -52,6 +53,7 @@ test('Paywall buttons require an opted-in Android or web client and can be turne
  assert.equal(message.kind,'paywall');
  assert.equal(message.actionUrl,button.actionUrl);
  assert.equal(message.buttonText,button.buttonText);
+ assert.equal(message.imageUrl,'');
  assert.equal(message.accent,button.accent);
  await call('/toggle',{id:button.id,enabled:false});
  assert.deepEqual(await list('platform=web&paywallButton=1'), []);

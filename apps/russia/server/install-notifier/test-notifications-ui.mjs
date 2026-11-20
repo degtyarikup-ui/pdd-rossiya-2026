@@ -450,7 +450,7 @@ if (!process.argv.includes('--serve')) test('profile banners compose optional pa
   } finally { await browser.close(); await app.close(); }
 });
 
-if (!process.argv.includes('--serve')) test('Paywall editor uploads SVG as PNG and controls the published button', { timeout: 90000 }, async t => {
+if (!process.argv.includes('--serve')) test('Paywall editor requires text and treats an SVG icon as optional', { timeout: 90000 }, async t => {
   let chromium;
   try { ({ chromium } = createRequire(import.meta.url)('playwright')); } catch { t.skip('Playwright не найден (NODE_PATH)'); return; }
   const browser = await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
@@ -472,14 +472,23 @@ if (!process.argv.includes('--serve')) test('Paywall editor uploads SVG as PNG a
     assert.equal(await page.isDisabled('#nt-push'),true);
     assert.equal(await page.isDisabled('input[name="nt-platform"][value="ios"]'),true);
     assert.equal(await page.locator('.paywall-preview-button').count(),1);
+    assert.match(await page.textContent('#nt-drop'), /Иконка кнопки \(необязательно\)/);
+    await page.fill('#nt-url','https://example.test/offer');
     await page.locator('#nt-file').setInputFiles({
       name:'icon.svg',mimeType:'image/svg+xml',
       buffer:Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="24"><rect width="40" height="24" fill="white"/></svg>'),
     });
-    await page.waitForSelector('.paywall-preview-button img');
+    await page.waitForSelector('#nt-drop img');
     assert.equal(uploadType,'image/png');
+    assert.equal(await page.locator('.paywall-preview-button').count(),1);
+    assert.equal(await page.isDisabled('#nt-publish'),true);
+    assert.equal(await page.isDisabled('#nt-test'),true);
     await page.fill('#nt-button','Подробнее');
-    await page.fill('#nt-url','https://example.test/offer');
+    await page.waitForSelector('.paywall-preview-button img');
+    assert.equal(await page.isEnabled('#nt-publish'),true);
+    await page.locator('#nt-drop [data-img="remove"]').click();
+    assert.equal(await page.locator('.paywall-preview-button img').count(),0);
+    assert.equal(await page.isEnabled('#nt-publish'),true);
     await choose(page,'input[name="nt-days"][value="forever"]');
     await page.click('#nt-publish');
     await page.click('#nt-confirm-send');

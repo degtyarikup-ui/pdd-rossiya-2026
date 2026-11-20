@@ -151,9 +151,8 @@ export function validateCampaign(input, now = Date.now()) {
   if (!ACTIONS.includes(value.action)) throw new Error('Некорректное действие');
   value.actionUrl = value.action === 'url' ? httpsUrl(input.actionUrl, 'Ссылка действия') : '';
   if (value.action === 'url' && !value.actionUrl) throw new Error('Укажите ссылку для кнопки');
-  if (paywall && (value.action !== 'url' || (!value.buttonText && !value.imageUrl))) {
-    throw new Error('Для Paywall укажите ссылку и добавьте текст или картинку кнопки');
-  }
+  if (paywall && !value.buttonText) throw new Error('Введите текст кнопки Paywall');
+  if (paywall && value.action !== 'url') throw new Error('Укажите ссылку для кнопки Paywall');
   if (profile && value.button && (!value.buttonText || value.action === 'none')) throw new Error('Для кнопки укажите текст и действие');
   value.buyerTracking = true;
   value.createdAt = now;

@@ -116,7 +116,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .ib-l{padding:0 12px;display:flex;flex-direction:column;gap:8px}.ic{background:#fff;border-radius:14px;padding:12px;display:flex;gap:10px;font-size:12px}.ic.old{opacity:.45}
 .ic .ci{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center}.ic .ci svg{width:16px;height:16px}.ic .cc{flex:1;min-width:0}.ic .ct{display:flex;gap:6px;align-items:flex-start}.ic .ct b{flex:1;font-size:12.5px;line-height:1.3;overflow-wrap:anywhere}.ic .dot{width:7px;height:7px;border-radius:50%;background:#ED4621;flex-shrink:0;margin-top:4px}
 .ic p{margin:3px 0 0;color:rgba(18,18,18,.75);line-height:1.4;overflow-wrap:anywhere}.ic .ci-img{margin-top:7px;border-radius:10px;width:100%;display:block}.ic .cf{display:flex;justify-content:space-between;margin-top:7px;font-size:10.5px;color:#A1A6B7}.ic .cf span{color:#0574F8;font-weight:600;font-size:11.5px}
-.ap-paywall{background:#0574F8;color:#fff}.ap-paywall .ap-title{margin:auto 16px;text-align:center;font-size:24px}.paywall-preview-actions{display:grid;gap:6px;margin:0 12px 16px}.paywall-preview-button{min-height:37px;padding:7px 11px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:5px;text-align:center;font-size:12px;font-weight:600;background:#fff;color:#0574F8;overflow-wrap:anywhere}.paywall-preview-button img{height:16px;min-width:0;max-width:100%;object-fit:contain}
+.ap-paywall{background:#0574F8;color:#fff}.ap-paywall .ap-title{margin:auto 16px;text-align:center;font-size:24px}.paywall-preview-actions{display:grid;gap:6px;margin:0 12px 16px}.paywall-preview-button{min-height:37px;padding:7px 11px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:5px;text-align:center;font-size:12px;font-weight:600;background:#fff;color:#0574F8;overflow-wrap:anywhere}.paywall-preview-button img{width:16px;height:16px;object-fit:contain}
 .nf-hist-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.nf-hist-h h3{margin:0;font-size:16px}
 .nf-msg{display:grid;grid-template-columns:52px minmax(0,1.6fr) minmax(0,1fr) 140px auto;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--nf-line)}.nf-msg:first-of-type{border-top:0}
 .nf-thumb{width:52px;height:52px;flex-shrink:0;border-radius:12px;background:var(--nf-soft) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#A3AAB6}.nf-thumb svg{width:36px;height:26px}
@@ -262,7 +262,7 @@ function problem(d){
  else if(!d.platforms.length)return 'Выберите платформу';
  if(!d.audiences.length)return 'Выберите категорию пользователей';
  if(d.kind!=='push'&&has('android')&&!S.stores.length)return 'Выберите магазин';
- if(d.kind==='paywall'&&!d.buttonText&&!d.imageUrl)return 'Добавьте текст или картинку кнопки';
+ if(d.kind==='paywall'&&!d.buttonText)return 'Введите текст кнопки Paywall';
  if(S.place==='profile'&&d.button&&d.action==='none')return 'Выберите действие для кнопки';
  if(S.place==='profile'&&d.button&&!d.buttonText)return 'Добавьте текст кнопки';
  if(d.kind!=='paywall'&&!d.title&&!d.body&&!d.imageUrl&&!(S.place==='profile'&&d.button&&d.buttonText&&d.action!=='none'))return S.place==='profile'?'Добавьте картинку, текст или кнопку':'Добавьте картинку, заголовок или текст';
@@ -341,7 +341,7 @@ function paywall(d){
  var rgb=color?color.slice(1).match(/../g).map(function(v){var n=parseInt(v,16)/255;return n<=.04045?n/12.92:Math.pow((n+.055)/1.055,2.4);}):[];
  var ink=color?((rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722)>.179?'#000':'#fff'):BLUE;
  var image=https(d.imageUrl)?'<img src="'+esc(d.imageUrl)+'" alt="">':'';
- var extra=image||d.buttonText?'<div class="paywall-preview-button" style="background:'+(color||'#fff')+';color:'+ink+'">'+image+(d.buttonText?'<span>'+esc(d.buttonText)+'</span>':'')+'</div>':'';
+ var extra=d.buttonText?'<div class="paywall-preview-button" style="background:'+(color||'#fff')+';color:'+ink+'">'+image+'<span>'+esc(d.buttonText)+'</span></div>':'';
  return '<div class="ap ap-paywall">'+status(true)+'<div class="ap-title">Готовьтесь без ограничений</div><div class="paywall-preview-actions">'+extra+'<div class="paywall-preview-button">Оформить подписку</div></div></div>';
 }
 function renderPreview(){
@@ -383,13 +383,15 @@ function sync(){
  el('layout-wrap').hidden=!(S.place==='popup'&&S.image&&!imageOnly);
  el('profile-button-wrap').hidden=S.place!=='profile';el('profile-button').checked=S.profileButton;
  el('button-wrap').hidden=!d.button;el('dismiss').hidden=S.place!=='popup';
- el('button').placeholder=onPaywall?'Текст кнопки (если нужен)':S.place==='popup'?(d.action==='none'?'Кнопка: Понятно':'Кнопка: Открыть'):'Кнопка: Подробнее';
+ el('button').required=onPaywall;
+ el('button').placeholder=onPaywall?'Текст кнопки (обязательно)':S.place==='popup'?(d.action==='none'?'Кнопка: Понятно':'Кнопка: Открыть'):'Кнопка: Подробнее';
  el('url').hidden=d.action!=='url';el('swatches').hidden=imageOnly;
  document.querySelectorAll('#nt-swatches .nf-swatch').forEach(function(s){s.classList.toggle('on',s.dataset.color===S.accent);});
  var drop=el('drop');
+ drop.setAttribute('aria-label',onPaywall?'Иконка кнопки (необязательно)':'Картинка');
  var spec=imageSpec(),size=spec.w+' × '+spec.h,fit=imageFit(spec);
- if(S.image){drop.classList.add('has');drop.innerHTML='<img src="'+esc(S.image)+'" alt=""><div class="nf-grow"><b>'+(S.imgW?S.imgW+' × '+S.imgH:'Картинка')+'</b>'+(onPaywall?'':fit?'<small class="'+fit.cls+'">'+esc(fit.text)+'</small>':'<small>'+(spec.flexible?'Любые пропорции · без обрезки':'Нужно '+size)+'</small>')+'</div><button type="button" class="nf-link" data-img="replace">Заменить</button><button type="button" class="nf-link danger" data-img="remove">Убрать</button>';}
- else{drop.classList.remove('has');drop.innerHTML=ratioIcon(spec)+'<div class="nf-grow"><b>'+(onPaywall?'Картинка внутри кнопки · SVG или PNG':spec.flexible?'Картинка любых пропорций':'Картинка '+size)+'</b><small>'+esc(['Перетащите или выберите','до 1 МБ',spec.note].filter(Boolean).join(' · '))+'</small></div><button type="button" class="nf-link" data-img="url">Ссылка</button>';}
+ if(S.image){drop.classList.add('has');drop.innerHTML='<img src="'+esc(S.image)+'" alt=""><div class="nf-grow"><b>'+(onPaywall?'Иконка кнопки':S.imgW?S.imgW+' × '+S.imgH:'Картинка')+'</b>'+(onPaywall?'':fit?'<small class="'+fit.cls+'">'+esc(fit.text)+'</small>':'<small>'+(spec.flexible?'Любые пропорции · без обрезки':'Нужно '+size)+'</small>')+'</div><button type="button" class="nf-link" data-img="replace">Заменить</button><button type="button" class="nf-link danger" data-img="remove">Убрать</button>';}
+ else{drop.classList.remove('has');drop.innerHTML=ratioIcon(spec)+'<div class="nf-grow"><b>'+(onPaywall?'Иконка кнопки (необязательно)':spec.flexible?'Картинка любых пропорций':'Картинка '+size)+'</b><small>'+esc([onPaywall?'SVG или PNG':'Перетащите или выберите','до 1 МБ',spec.note].filter(Boolean).join(' · '))+'</small></div><button type="button" class="nf-link" data-img="url">Ссылка</button>';}
  el('recips').innerHTML=recipients().map(function(r,i){return '<label class="nf-rc" title="'+esc(r.v)+'"><input type="checkbox" data-rc="'+i+'"'+(r.on?' checked':'')+'><span>'+esc(r.v)+'</span><button type="button" data-rc-del="'+i+'" aria-label="Убрать '+esc(r.v)+'">✕</button></label>';}).join('')+'<button type="button" class="nf-rc-add" id="nt-me">+ Аккаунт</button>';
  var n=chosen().length;el('test').lastChild.textContent=n>1?'Отправить на '+n:'Отправить себе';
  var p=problem(d);
@@ -414,7 +416,7 @@ function fill(m){
 function imageSpec(){
  var only=!S.push&&!el('title').value.trim()&&!el('body').value.trim();
  if(S.push)return {w:1024,h:512,note:'главное — по центру',crops:true};
- if(S.place==='paywall')return {w:300,h:72,flexible:true};
+ if(S.place==='paywall')return {w:72,h:72,flexible:true};
  if(S.place==='profile')return {w:1080,h:540,note:'без обрезки · высота по картинке',flexible:true};
  if(S.place==='banner')return only?{w:1920,h:734,note:'правый верхний угол — под крестик'}:{w:512,h:512};
  if(S.place==='popup')return only?{w:1080,h:1350,note:'правый верхний угол — под крестик'}:S.layout==='cover'?{w:1600,h:1200}:S.layout==='compact'?{w:512,h:512}:{w:1600,h:900};
