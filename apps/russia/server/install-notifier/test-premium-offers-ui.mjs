@@ -28,6 +28,25 @@ test('admin stages a discount, activates a rate and sees stale edits across tabs
     const current = panel.locator('#offers-sbp-current');
     await current.filter({hasText:'290 ₽'}).waitFor();
     assert.equal(await panel.evaluate(el => el.scrollWidth <= el.clientWidth), true);
+    const edit = key => panel.locator('[data-edit="' + key + '"]').click();
+    const dialog = panel.getByRole('dialog');
+    const choose = mode => dialog.locator('[name="mode"][value="' + mode + '"]').check();
+    const apply = () => dialog.getByRole('button', {name:'Применить', exact:true}).click();
+    for (const width of [320,390,768,1344]) {
+      await page.setViewportSize({width,height:844});
+      assert.ok(await panel.evaluate(el => el.scrollWidth <= el.clientWidth));
+      for (const key of ['sbp','appstore','googleplay','draft']) {
+        assert.ok(await panel.locator('[data-edit="' + key + '"]').isVisible());
+      }
+    }
+    await page.setViewportSize({width:390,height:844});
+    await edit('sbp');
+    assert.ok(await dialog.getByRole('button', {name:'Применить',exact:true}).isDisabled());
+    await choose('standard');
+    await page.keyboard.press('Escape');
+    assert.ok(await dialog.isHidden());
+    assert.match(await current.textContent(), /290 ₽/);
+    await edit('sbp');
     const trialCheck = panel.getByRole('button', { name:'Проверить пробный период СБП' });
     const trialStatus = panel.locator('#offers-sbp-trial-status');
     const probe = '**/api/admin/premium-offers/sbp-trial';
@@ -44,23 +63,37 @@ test('admin stages a discount, activates a rate and sees stale edits across tabs
     await page.route(probe, route => route.fulfill({status:503,json:{error:'sbp_trial_unavailable'}}), {times:1});
     await trialCheck.click();
     await trialStatus.filter({hasText:'Не удалось проверить'}).waitFor();
-    await panel.locator('#offers-discount input').fill('240');
-    await panel.getByRole('button', {name:'Сохранить черновик'}).click();
-    await panel.locator('#offers-state').filter({hasText:'Сохранено'}).waitFor();
-    assert.ok((await current.textContent()).includes('290 ₽'));
+    await dialog.getByRole('button', {name:'Отмена'}).click();
+    const saveDraft = async price => {
+      await edit('draft');
+      await dialog.getByLabel('Акционная цена, ₽').fill(price);
+      await dialog.getByRole('button', {name:'Сохранить черновик'}).click();
+      await dialog.waitFor({state:'hidden'});
+    };
+    await saveDraft('240');
+    assert.match(await panel.locator('#offers-draft-price').textContent(), /240 ₽/);
+    assert.match(await current.textContent(), /290 ₽/);
     const activate = async mode => {
-      await panel.locator('#offers-sbp select').selectOption(mode);
-      await panel.getByRole('button', {name:'Применить цену СБП'}).click();
+      await edit('sbp');
+      await choose(mode);
+      await apply();
+      await dialog.waitFor({state:'hidden'});
     };
     await activate('standard');
     await current.filter({hasText:'370 ₽'}).waitFor();
     await activate('promotion');
     await current.filter({hasText:'240 ₽ по акции'}).waitFor();
-    const store = panel.locator('[data-store="appstore"]');
-    await store.locator('select').selectOption('standard');
-    await store.locator('input').check();
-    await store.getByRole('button').click();
-    await panel.locator('#offers-state').filter({hasText:'Сохранено'}).waitFor();
+    await saveDraft('250');
+    assert.match(await current.textContent(), /240 ₽ по акции/);
+    await activate('promotion');
+    await current.filter({hasText:'250 ₽ по акции'}).waitFor();
+    await edit('appstore');
+    await choose('standard');
+    await dialog.getByLabel('3 дня бесплатно').check();
+    await apply();
+    await dialog.waitFor({state:'hidden'});
+    await panel.locator('#offers-appstore-trial-value').filter({hasText:'3 дня бесплатно'}).waitFor();
+    assert.match(await panel.locator('#offers-googleplay-trial-value').textContent(), /Выключен/);
     const url = '/api/admin/premium-offers';
     const settings = (await (await worker.fetch(request(url,undefined,'fixture-admin'),env)).json()).settings;
     assert.deepEqual(settings.storeTrials, {appstore:true, googleplay:false});
@@ -68,7 +101,7 @@ test('admin stages a discount, activates a rate and sees stale edits across tabs
     assert.equal(modified.status, 200);
     await activate('standard');
     await panel.locator('#offers-state').filter({hasText:'другой вкладке'}).waitFor();
-    assert.ok(await panel.locator('#offers-sbp select').isDisabled());
+    assert.ok(await panel.getByRole('button',{name:'Изменить тариф СБП',exact:true}).isDisabled());
     await panel.getByRole('button',{name:'Обновить'}).click();
     await current.filter({hasText:'290 ₽'}).waitFor();
     assert.deepEqual(errors, []);
