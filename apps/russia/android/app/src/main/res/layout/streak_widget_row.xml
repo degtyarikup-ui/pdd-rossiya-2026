@@ -90,13 +90,6 @@
                     android:importantForAccessibility="no" />
             </LinearLayout>
         </LinearLayout>
-        <ImageView
-            android:id="@+id/streak_status_icon"
-            android:layout_width="14dp"
-            android:layout_height="17dp"
-            android:src="@drawable/streak_widget_check"
-            android:scaleType="fitCenter"
-            android:importantForAccessibility="no" />
         <LinearLayout
             android:id="@+id/streak_week"
             android:layout_width="0dp"

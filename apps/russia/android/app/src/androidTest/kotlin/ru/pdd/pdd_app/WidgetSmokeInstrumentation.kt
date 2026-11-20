@@ -114,6 +114,11 @@ class WidgetSmokeInstrumentation : Instrumentation() {
 
     private fun assertValues(view: View, state: StreakWidgetState) {
         val root = view.findViewById<View>(R.id.streak_root)
+        val week = root.findViewById<View>(R.id.streak_week)
+        if (week != null && root.findViewById<View>(R.id.streak_row_content) == null) {
+            check(root.findViewById<View>(R.id.streak_status_icon).visibility ==
+                (if (state.done) View.VISIBLE else View.GONE))
+        }
         check(root.hasOnClickListeners()) { "widget tap listener missing" }
         val fill = (root.background as GradientDrawable).color!!.defaultColor
         check(fill == root.context.getColor(R.color.streak_widget_active_background))
@@ -295,6 +300,11 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                 it.provider.packageName == context.packageName
             }
             check(providers.size == 1 && providers.single().provider == ComponentName(context, StreakWidgetProvider::class.java))
+            if (android.os.Build.VERSION.SDK_INT >= 31) {
+                val density = context.resources.displayMetrics.density
+                check(providers.single().maxResizeWidth / density in 394f..396f)
+                check(providers.single().maxResizeHeight / density in 207f..209f)
+            }
             val minimumHeight = providers.single().minResizeHeight / context.resources.displayMetrics.density
             check(minimumHeight in 39f..41f) { "provider advertises minimum resize height $minimumHeight dp" }
             testHost = HostView(context).apply {
@@ -321,7 +331,7 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                 check((row != null) == (height < 124)) { "incorrect height family for ${width}x$height" }
                 val week = host.findViewById<LinearLayout>(R.id.streak_week)
                 check((week?.visibility == View.VISIBLE) == (width >= 250))
-                if (width >= 250) check(week.childCount == 7)
+                if (width >= 250) check(week.childCount == (if (width < 350) 5 else 7))
                 assertTextFits(host)
             }
         }
@@ -370,8 +380,8 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                 .apply(context, FrameLayout(context))
             layout(compact, context, 130, 130)
             capture(compact, "flame-compact")
-            for ((width, height) in listOf(130 to 40, 250 to 40, 130 to 90, 370 to 64, 407 to 105)) {
-                val row = StreakWidgetRenderer.render(context, state, data, width >= 250, now, singleRow = true)
+            for ((width, height) in listOf(130 to 40, 250 to 40, 195 to 105, 300 to 105, 130 to 90, 370 to 64, 407 to 105)) {
+                val row = StreakWidgetRenderer.render(context, state, data, width >= 250, now, singleRow = true, dayCount = if (width < 350) 5 else 7)
                     .apply(context, FrameLayout(context)) as ViewGroup
                 layout(row, context, width, height)
                 assertTextFits(row)
@@ -386,6 +396,10 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                 }
                 capture(row, "flame-row-${width}x$height")
             }
+            val large = StreakWidgetRenderer.render(context, state, data, true, now)
+                .apply(context, FrameLayout(context))
+            layout(large, context, 407, 222)
+            capture(large, "flame-large")
             now.add(Calendar.DATE, 1)
             StreakWidgetRenderer.render(context, state.copy(done = false), data, true, now).reapply(context, root)
             assertDays(listOf("пн", "вт", "ср", "чт", "пт", "сб", "вс"), setOf(0, 3, 5))

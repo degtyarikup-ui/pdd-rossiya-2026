@@ -20,7 +20,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:id="@+id/streak_rays"
-                android:layout_marginStart="-32dp"
+                android:layout_marginStart="-64dp"
                 android:layout_marginTop="-48dp"
                 android:layout_marginBottom="-58dp"
                 android:src="@drawable/streak_widget_rays"
@@ -41,8 +41,8 @@
                     android:layout_height="match_parent">
                     <ImageView
                         android:id="@+id/streak_flame"
-                        android:layout_width="32dp"
-                        android:layout_height="42dp"
+                        android:layout_width="64dp"
+                        android:layout_height="match_parent"
                         android:layout_gravity="end|center_vertical"
                         android:src="@drawable/streak_widget_flame"
                         android:importantForAccessibility="no"
@@ -55,10 +55,10 @@
                     android:id="@+id/streak_current"
                     android:text="7"
                     android:textColor="#FFFFFF"
-                    android:textSize="51sp"
+                    android:textSize="86sp"
                     android:autoSizeTextType="uniform"
                     android:autoSizeMinTextSize="7dp"
-                    android:autoSizeMaxTextSize="51dp"
+                    android:autoSizeMaxTextSize="86dp"
                     android:autoSizeStepGranularity="1dp"
                     android:maxLines="1"
                     android:gravity="start|center_vertical"
@@ -118,4 +118,13 @@
             android:background="@drawable/streak_widget_week_surface">
 </LinearLayout>
     </LinearLayout>
+    <ImageView
+        android:id="@+id/streak_status_icon"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_gravity="top|start"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="10dp"
+        android:src="@drawable/streak_widget_check"
+        android:importantForAccessibility="no" />
 </FrameLayout>

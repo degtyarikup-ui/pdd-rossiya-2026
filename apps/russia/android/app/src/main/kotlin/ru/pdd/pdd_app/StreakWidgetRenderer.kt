@@ -16,6 +16,7 @@ import java.util.Locale
 
 internal object StreakWidgetRenderer {
     private const val WEEK_WIDTH = 250
+    private const val FULL_WIDTH = 350
     private const val TALL_HEIGHT = 124
 
     fun render(
@@ -25,8 +26,10 @@ internal object StreakWidgetRenderer {
         wide: Boolean,
         now: Calendar = Calendar.getInstance(),
         singleRow: Boolean = false,
+        dayCount: Int = 7,
     ): RemoteViews {
         val layout = when {
+            singleRow && !wide -> R.layout.streak_widget_row_small
             singleRow -> R.layout.streak_widget_row
             wide -> R.layout.streak_widget_wide
             else -> R.layout.streak_widget
@@ -35,9 +38,9 @@ internal object StreakWidgetRenderer {
         views.setTextViewText(R.id.streak_current, state.current.toString())
         views.setTextViewText(R.id.streak_best, state.best.toString())
         views.setFloat(R.id.streak_flame, "setAlpha", if (state.done) 1f else 0.66f)
-        if (singleRow) {
-            views.setViewVisibility(R.id.streak_week, if (wide) View.VISIBLE else View.GONE)
-            views.setViewVisibility(R.id.streak_status_icon, if (wide) View.GONE else View.VISIBLE)
+        if (singleRow && wide) views.setViewVisibility(R.id.streak_week, View.VISIBLE)
+        if (!singleRow && wide) {
+            views.setViewVisibility(R.id.streak_status_icon, if (state.done) View.VISIBLE else View.GONE)
         }
         if (!wide) {
             views.setImageViewResource(R.id.streak_status_icon,
@@ -70,16 +73,16 @@ internal object StreakWidgetRenderer {
             val dateKey = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).apply { timeZone = now.timeZone }
             val weekday = SimpleDateFormat("EEE", locale).apply { timeZone = now.timeZone }
             val fullDay = SimpleDateFormat("d MMMM", locale).apply { timeZone = now.timeZone }
-            val cursor = (now.clone() as Calendar).apply { add(Calendar.DATE, -6) }
+            val cursor = (now.clone() as Calendar).apply { add(Calendar.DATE, 1 - dayCount) }
             views.removeAllViews(R.id.streak_week)
             val dayLayout = if (singleRow) R.layout.streak_day_row else R.layout.streak_day
-            repeat(7) { index ->
+            repeat(dayCount) { index ->
                 val day = RemoteViews(context.packageName, dayLayout)
                 val studied = dateKey.format(cursor.time) in active
                 day.setTextViewText(R.id.streak_day_label, weekday.format(cursor.time).trimEnd('.'))
                 day.setImageViewResource(R.id.streak_day_icon,
                     if (studied) R.drawable.streak_widget_flame else R.drawable.streak_widget_day_empty)
-                day.setViewVisibility(R.id.streak_day_today, if (index == 6) View.VISIBLE else View.INVISIBLE)
+                day.setViewVisibility(R.id.streak_day_today, if (index == dayCount - 1) View.VISIBLE else View.INVISIBLE)
                 views.addView(R.id.streak_week, day)
                 if (studied) description.add(fullDay.format(cursor.time))
                 cursor.add(Calendar.DATE, 1)
@@ -106,9 +109,11 @@ internal object StreakWidgetRenderer {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             return RemoteViews(mapOf(
                 SizeF(130f, 40f) to render(context, state, data, false, now, singleRow = true),
-                SizeF(WEEK_WIDTH.toFloat(), 40f) to render(context, state, data, true, now, singleRow = true),
+                SizeF(WEEK_WIDTH.toFloat(), 40f) to render(context, state, data, true, now, singleRow = true, dayCount = 5),
+                SizeF(FULL_WIDTH.toFloat(), 40f) to render(context, state, data, true, now, singleRow = true),
                 SizeF(130f, TALL_HEIGHT.toFloat()) to render(context, state, data, false, now),
-                SizeF(WEEK_WIDTH.toFloat(), TALL_HEIGHT.toFloat()) to render(context, state, data, true, now),
+                SizeF(WEEK_WIDTH.toFloat(), TALL_HEIGHT.toFloat()) to render(context, state, data, true, now, dayCount = 5),
+                SizeF(FULL_WIDTH.toFloat(), TALL_HEIGHT.toFloat()) to render(context, state, data, true, now),
             ))
         }
         // On older launchers minWidth/maxHeight describe portrait, maxWidth/minHeight landscape.
@@ -117,8 +122,10 @@ internal object StreakWidgetRenderer {
         val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 130)
         val maxHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, minHeight)
         return RemoteViews(
-            render(context, state, data, maxWidth >= WEEK_WIDTH, now, singleRow = minHeight < TALL_HEIGHT),
-            render(context, state, data, minWidth >= WEEK_WIDTH, now, singleRow = maxHeight < TALL_HEIGHT),
+            render(context, state, data, maxWidth >= WEEK_WIDTH, now, singleRow = minHeight < TALL_HEIGHT,
+                dayCount = if (maxWidth < FULL_WIDTH) 5 else 7),
+            render(context, state, data, minWidth >= WEEK_WIDTH, now, singleRow = maxHeight < TALL_HEIGHT,
+                dayCount = if (minWidth < FULL_WIDTH) 5 else 7),
         )
     }
 }
