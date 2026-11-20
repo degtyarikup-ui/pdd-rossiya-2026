@@ -332,15 +332,16 @@ if(process.argv.includes('--serve')) {
   const activityToggle=page.locator('[aria-controls="an-body-activity"]');
   await activityToggle.click();
   // Reopening renders persisted aggregates before a slow background refresh.
-  let releaseRefresh;
-  let pendingRefresh;
-  let refreshRequests=0;
+  const pendingRefresh=new Map();
   await page.route('**/api/admin/stats?**',async route=>{
-   pendingRefresh=route;
-   refreshRequests++;
-   await new Promise(resolve=>{releaseRefresh=resolve;});
+   const part=new URL(route.request().url()).searchParams.get('part');
+   await new Promise(resolve=>{pendingRefresh.set(part,resolve);});
    const fresh=structuredClone(oneDay);
-   fresh.users.registered=161;
+   if(part==='accounts'){
+    await route.fulfill({json:{users:{...fresh.users,registered:161}}});
+    return;
+   }
+   delete fresh.users;
    await route.fulfill({json:fresh});
   });
   await page.reload();
@@ -351,14 +352,16 @@ if(process.argv.includes('--serve')) {
   await page.emulateMedia({reducedMotion:'no-preference'});
   assert.equal(await page.locator('#refresh-btn svg').evaluate(el=>getComputedStyle(el).animationName),'adminRefreshSpin');
   await page.evaluate(()=>{checkAuthAndLoad();checkAuthAndLoad();});
-  assert.ok(pendingRefresh);
   assert.equal(await page.locator('#analytics-view > .admin-load-notice').isVisible(),false);
-  assert.equal(refreshRequests,1);
+  assert.deepEqual([...pendingRefresh.keys()].sort(),['accounts','overview']);
   for(const width of [1600,1100,768,390,320]) {
    await page.setViewportSize({width,height:1100});
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'cached status fits '+width);
   }
-  releaseRefresh();
+  pendingRefresh.get('overview')();
+  await page.waitForFunction(()=>document.getElementById('admin-data-state').textContent==='Обновление аккаунтов…');
+  assert.equal(await page.locator('#an-now .an-big').first().innerText(),'160');
+  pendingRefresh.get('accounts')();
   await page.waitForFunction(()=>document.querySelector('#an-now .an-big')?.textContent==='161');
   await page.waitForFunction(()=>document.getElementById('refresh-btn').getAttribute('aria-busy')==='false');
   await page.unroute('**/api/admin/stats?**');

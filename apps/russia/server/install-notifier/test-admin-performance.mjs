@@ -233,7 +233,8 @@ test('a failed summary read does not prevent the next analytics request from ret
 test('admin authentication rejects all optimized routes before any storage reads', async () => {
   const kv = new DelayedKV();
   const env = envFor(kv);
-  for (const path of ['/api/admin/economy/stats', '/api/admin/users', '/api/admin/stats', '/api/admin/ai/stats']) {
+  for (const path of ['/api/admin/economy/stats', '/api/admin/users', '/api/admin/stats',
+    '/api/admin/stats?part=overview', '/api/admin/stats?part=accounts', '/api/admin/ai/stats']) {
     const response = await worker.fetch(new Request('https://admin.example' + path), env, { waitUntil() {} });
     assert.equal(response.status, 401);
   }

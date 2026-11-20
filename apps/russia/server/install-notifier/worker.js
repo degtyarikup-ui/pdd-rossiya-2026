@@ -3167,14 +3167,20 @@ const workerHandlers = {
       const days = parseInt(url.searchParams.get('days') || '7', 10);
       const appFilter = url.searchParams.get('app') || 'all';
       const period = Math.min(Math.max(days, 1), 365);
-      const [stats, users] = await Promise.all([
-        getStatsForPeriod(env, period, appFilter),
-        cachedUserSummaries(env)
-          .then(list => usersSnapshot(list, period, appFilter, mskDayKey))
-          .catch(e => { console.error('users snapshot failed', e); return null; }),
-      ]);
+      const headers = { 'Cache-Control': 'no-store' };
+      const part = url.searchParams.get('part');
+      if (part === 'overview') return jsonResponse(await getStatsForPeriod(env, period, appFilter), 200, headers);
+      const usersJob = cachedUserSummaries(env)
+        .then(list => usersSnapshot(list, period, appFilter, mskDayKey))
+        .catch(e => { console.error('users snapshot failed', e); return null; });
+      if (part === 'accounts') {
+        const users = await usersJob;
+        return users ? jsonResponse({ users }, 200, headers)
+          : jsonResponse({ error: 'Не удалось загрузить сводку аккаунтов' }, 503, headers);
+      }
+      const [stats, users] = await Promise.all([getStatsForPeriod(env, period, appFilter), usersJob]);
       if (users) stats.users = users;
-      return jsonResponse(stats, 200, { 'Cache-Control': 'no-store' });
+      return jsonResponse(stats, 200, headers);
     }
 
     // ────────────────────── Автопостинг (Instagram + YouTube) ──────────────────────

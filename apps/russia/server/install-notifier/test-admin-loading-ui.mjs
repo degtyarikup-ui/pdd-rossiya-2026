@@ -138,8 +138,10 @@ async function capture(page, name) {
   await mkdir(directory, { recursive: true });
   await page.screenshot({ path: fileURLToPath(new URL(name + '.png', directory)), fullPage: true });
 }
+const overviewURL = '/api/admin/stats?days=7&app=ru&part=overview';
+const accountsURL = '/api/admin/stats?days=7&app=ru&part=accounts';
 const sections = [
-  ['analytics', 'analytics-view', ['/api/admin/stats']],
+  ['analytics', 'analytics-view', [overviewURL]],
   ['tasks', 'tasks-view', ['/api/admin/tasks']],
   ['links', 'links-view', ['/api/admin/links', '/api/admin/stats']],
   // The other sources can finish first; a partial first response must not hide
@@ -153,6 +155,29 @@ const sections = [
   ['publications/threads', 'threads-view', ['/api/admin/threads/state']],
   ['publications/videos', 'social-view', ['/api/admin/social/state']],
 ];
+
+test('analytics displays the overview while accounts load and keeps it after an account error', { timeout: 30000 }, async () => {
+  const fixture = await browserFixture();
+  try {
+    const { page, errors } = await fixture.page();
+    const gate = fixture.app.hold(accountsURL);
+    fixture.app.fail(accountsURL);
+    await page.goto(fixture.app.url + '/admin#analytics');
+    await gate.ready;
+    await state(page, 'analytics-view', 'ready');
+    await page.waitForFunction(() => document.getElementById('admin-data-state').textContent === 'Обновление аккаунтов…');
+    assert.equal(await page.locator('.admin-view-skeleton').first().isVisible(), false);
+    assert.equal(await page.locator('#an-now .an-big').first().innerText(), '—');
+    assert.equal(await page.evaluate(() => window.__anData.timeline.length), 7);
+    gate.release();
+    await page.waitForFunction(() => document.getElementById('admin-data-state').textContent === 'Сводка аккаунтов не обновилась');
+    assert.equal(await page.evaluate(() => window.__anData.timeline.length), 7);
+    await page.locator('#refresh-btn').click();
+    await page.waitForFunction(() => document.getElementById('admin-data-state').textContent.startsWith('Обновлено '));
+    assert.equal(await page.locator('#an-now .an-big').first().innerText(), '1');
+    assert.deepEqual(errors, []);
+  } finally { await fixture.close(); }
+});
 
 test('all admin sections show accessible loading skeletons until their first response', { timeout: 180000 }, async t => {
   const fixture = await browserFixture();
