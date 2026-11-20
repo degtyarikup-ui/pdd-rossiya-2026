@@ -93,7 +93,22 @@ export const OFFERS_JS = `
     trialCheck.disabled = true;
     trialStatus.textContent = 'Проверяем условия Platega…';
     try {
-      const terms = await adminFetchJson(endpoint + '/sbp-trial');
+      const response = await fetch(endpoint + '/sbp-trial');
+      const terms = await response.json();
+      if (!response.ok) {
+        const messages = {
+          not_configured: 'Реквизиты Platega не подключены.',
+          network: 'Нет связи с Platega. Попробуйте ещё раз.',
+          invalid_response: 'Ответ Platega не содержит корректных условий.',
+        };
+        if (terms.reason === 'provider_http' && Number.isInteger(terms.providerStatus) &&
+            terms.providerStatus >= 100 && terms.providerStatus <= 599) {
+          trialStatus.textContent = 'Platega вернула HTTP ' + terms.providerStatus + '.';
+        } else {
+          trialStatus.textContent = messages[terms.reason] || 'Не удалось проверить условия Platega. Попробуйте ещё раз.';
+        }
+        return;
+      }
       if (!terms.trialSupported) {
         trialStatus.textContent = 'Platega не разрешает пробный период для этого магазина.';
       } else if (terms.minTrialAmount === 0 && terms.maxTrialPeriodDays >= 3) {
