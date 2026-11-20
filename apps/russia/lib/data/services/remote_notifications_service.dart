@@ -57,7 +57,7 @@ class AppNotice {
   final DateTime? createdAt;
 
   /// `popup` (modal on home), `banner` (card on home), `profile` (card under
-  /// Premium in the profile), or `news` (only in the notification inbox).
+  /// Premium in the profile), `paywall` (above the Premium CTA), or `news` (inbox only).
   final String kind;
   final String imageUrl, emoji, buttonText, dismissText, actionUrl;
 
@@ -103,6 +103,7 @@ class AppNotice {
 
   bool get isBanner => kind == 'banner';
   bool get isProfileBanner => kind == 'profile';
+  bool get isPaywallButton => kind == 'paywall';
   bool get isNews => kind == 'news';
   bool get isImageOnly => layout == 'image';
   bool get isImageBanner => isBanner && isImageOnly;
@@ -141,7 +142,8 @@ class AppNotice {
     final id = value['id'] as String;
     if (!RegExp(r'^[a-f0-9-]{36}$').hasMatch(id)) return null;
     final image = _str(value['imageUrl']);
-    final kind = const ['banner', 'profile', 'news'].contains(value['kind'])
+    final kind =
+        const ['banner', 'profile', 'paywall', 'news'].contains(value['kind'])
         ? value['kind'] as String
         : 'popup';
     if (value['layout'] == 'image' && !image.startsWith('https://')) {
@@ -257,6 +259,9 @@ class RemoteNotificationsService {
   /// Active, not-dismissed banners for the home screen.
   final ValueNotifier<List<AppNotice>> banners = ValueNotifier(const []);
 
+  /// Newest active campaign for the optional CTA on the Premium screens.
+  final ValueNotifier<AppNotice?> paywallButton = ValueNotifier(null);
+
   /// Active, not-dismissed banners below Premium on the profile screen.
   final ValueNotifier<List<AppNotice>> profileBanners = ValueNotifier(const []);
 
@@ -284,7 +289,10 @@ class RemoteNotificationsService {
   /// A window or banner for this message on the home screen. Campaigns also
   /// sent as a push show one only where the push could not arrive.
   bool _showsOnHome(AppNotice m) =>
-      !m.isNews && !m.isProfileBanner && !(m.push && receivesPush);
+      !m.isNews &&
+      !m.isProfileBanner &&
+      !m.isPaywallButton &&
+      !(m.push && receivesPush);
 
   /// Messages already shown as a window, dismissed as a banner or opened
   /// from a push.
@@ -376,7 +384,16 @@ class RemoteNotificationsService {
     final seen = seenIds;
     final now = _now();
     final active = _messages.where((m) => m.isActiveAt(now)).toList();
-    inbox.value = _config['popupEnabled'] == true ? active : const [];
+    inbox.value = _config['popupEnabled'] == true
+        ? active.where((m) => !m.isPaywallButton).toList()
+        : const [];
+    paywallButton.value = _config['popupEnabled'] == true && platform != 'ios'
+        ? active
+              .where(
+                (m) => m.isPaywallButton && m.tap?.action == NoticeAction.url,
+              )
+              .firstOrNull
+        : null;
     banners.value = _config['popupEnabled'] == true
         ? active
               .where((m) => m.isBanner && _showsOnHome(m) && !m.wasSeen(seen))
@@ -429,6 +446,7 @@ class RemoteNotificationsService {
         'imageBanners': '1',
         'imagePopups': '1',
         'profileBanners': '1',
+        if (platform != 'ios') 'paywallButton': '1',
         'inbox': '1',
         if (platform == 'android')
           'store': StoreConfig.current == AppStore.rustore ? 'rustore' : 'play',

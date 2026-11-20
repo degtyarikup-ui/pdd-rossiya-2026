@@ -36,6 +36,26 @@ test('permanent news stay in the inbox without allowing permanent windows, banne
  await call('/delete',{id:message.id});
  assert.equal((await list()).length,0);
 });
+test('Paywall buttons require an opted-in Android or web client and can be turned off', async () => {
+ const { call } = setup();
+ const button = sample({kind:'paywall',platforms:['android','web'],title:'',body:'',buttonText:'Подробнее',
+   accent:'#12AB34',action:'url',actionUrl:'https://example.test/offer?a=1',persistent:true});
+ const list = async query => (await (await call('/client?app=ru&inbox=1&'+query)).json()).messages;
+ assert.deepEqual(await list('platform=android&paywallButton=1'), []);
+ assert.throws(() => validateCampaign({...button,platforms:['ios']}), /Android/);
+ assert.throws(() => validateCampaign({...button,buttonText:''}), /картинку/);
+ assert.throws(() => validateCampaign({...button,actionUrl:'javascript:void(0)'}), /https/);
+ assert.equal((await call('/publish',button)).status,200);
+ assert.deepEqual(await list('platform=android'), []);
+ assert.deepEqual(await list('platform=ios&paywallButton=1'), []);
+ const [message] = await list('platform=web&paywallButton=1');
+ assert.equal(message.kind,'paywall');
+ assert.equal(message.actionUrl,button.actionUrl);
+ assert.equal(message.buttonText,button.buttonText);
+ assert.equal(message.accent,button.accent);
+ await call('/toggle',{id:button.id,enabled:false});
+ assert.deepEqual(await list('platform=web&paywallButton=1'), []);
+});
 test('newer campaigns do not push permanent news out of the inbox after ten entries', async () => {
  const {call} = setup();
  const permanent = sample({kind:'news',persistent:true,expiresAt:null});

@@ -3496,6 +3496,7 @@ const workerHandlers = {
         '&premiumActive=' + (noticePremium ? '1' : '0') +
         '&imageBanners=' + encodeURIComponent(url.searchParams.get('imageBanners') || '') +
         '&imagePopups=' + encodeURIComponent(url.searchParams.get('imagePopups') || '') +
+        '&paywallButton=' + encodeURIComponent(url.searchParams.get('paywallButton') || '') +
         '&profileBanners=' + encodeURIComponent(url.searchParams.get('profileBanners') || '') +
         '&inbox=' + encodeURIComponent(url.searchParams.get('inbox') || '') +
         '&store=' + encodeURIComponent(url.searchParams.get('store') || '')

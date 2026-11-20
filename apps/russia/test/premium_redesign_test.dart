@@ -11,6 +11,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
+import 'package:pdd_app/data/services/remote_notifications_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/premium_benefits_screen.dart';
@@ -538,6 +539,47 @@ void main() {
       star.colorFilter,
       const ColorFilter.mode(Color(0xFFFFEA00), BlendMode.srcIn),
     );
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  _testPremium('remote link is above the primary CTA on both screens', (
+    tester,
+  ) async {
+    final slot = RemoteNotificationsService.instance.paywallButton;
+    addTearDown(() => slot.value = null);
+    await mount(tester);
+    final secondary = find.widgetWithText(ElevatedButton, 'Подробнее');
+    expect(secondary, findsNothing);
+    slot.value = AppNotice.parse({
+      'id': 'a069e042-5b7b-40a0-b15e-b80c4444ce1d',
+      'title': '',
+      'body': '',
+      'expiresAt': DateTime(2099).millisecondsSinceEpoch,
+      'kind': 'paywall',
+      'buttonText': 'Подробнее',
+      'action': 'url',
+      'actionUrl': 'https://example.test/offer',
+      'accent': '#12AB34',
+    });
+    await tester.pump();
+    expect(secondary, findsOneWidget);
+    expect(tester.getBottomLeft(secondary).dy, lessThan(tester.getTopLeft(find.byKey(_showPlans)).dy));
+    final color = tester.widget<ElevatedButton>(secondary).style!.backgroundColor!.resolve({});
+    expect(color, const Color(0xFF12AB34));
+    await tester.tap(find.byKey(_showPlans));
+    await tester.pumpAndSettle();
+    final purchase = find.byKey(const ValueKey('premium-plans-purchase'));
+    await tester.ensureVisible(purchase);
+    await tester.pump();
+    final plansButton = find.descendant(
+      of: find.byType(PremiumPlansSheet),
+      matching: secondary,
+    );
+    expect(plansButton, findsOneWidget);
+    expect(tester.getBottomLeft(plansButton).dy, lessThan(tester.getTopLeft(purchase).dy));
+    slot.value = null;
+    await tester.pump();
+    expect(secondary, findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 

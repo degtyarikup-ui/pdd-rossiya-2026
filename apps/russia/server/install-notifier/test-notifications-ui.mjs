@@ -443,9 +443,50 @@ if (!process.argv.includes('--serve')) test('profile banners compose optional pa
     for (const width of [1440,820,390]) {
       await page.setViewportSize({width,height:1100});
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'profile editor fits at '+width);
-      assert.equal(await page.locator('#nt-places label').count(),4);
+      assert.equal(await page.locator('#nt-places label').count(),5);
       if (process.env.NOTIFICATIONS_UI_SCREENSHOTS) await page.locator('#notifications-view').screenshot({path:fileURLToPath(new URL('../../../output/notification-profile-'+width+'.png',import.meta.url))});
     }
     assert.deepEqual(errors, []);
+  } finally { await browser.close(); await app.close(); }
+});
+
+if (!process.argv.includes('--serve')) test('Paywall editor uploads SVG as PNG and controls the published button', { timeout: 90000 }, async t => {
+  let chromium;
+  try { ({ chromium } = createRequire(import.meta.url)('playwright')); } catch { t.skip('Playwright не найден (NODE_PATH)'); return; }
+  const browser = await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
+  const app = await preview();
+  try {
+    const page = await browser.newPage({viewport:{width:1440,height:1100}});
+    let uploadType, uploadedPng;
+    await page.route('https://example.test/graphic.png', route => route.fulfill({contentType:'image/png',body:uploadedPng}));
+    await page.route('**/api/admin/notifications/image', async route => {
+      uploadType = route.request().headers()['content-type'];
+      const data = route.request().postDataBuffer();
+      assert.equal(data.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+      uploadedPng = data;
+      await route.fulfill({json:{url:'https://example.test/graphic.png'}});
+    });
+    await page.goto(app.url + '/admin');
+    await page.click('[data-feature="notifications"]');
+    await choose(page,'input[name="nt-place"][value="paywall"]');
+    assert.equal(await page.isDisabled('#nt-push'),true);
+    assert.equal(await page.isDisabled('input[name="nt-platform"][value="ios"]'),true);
+    assert.equal(await page.locator('.paywall-preview-button').count(),1);
+    await page.locator('#nt-file').setInputFiles({
+      name:'icon.svg',mimeType:'image/svg+xml',
+      buffer:Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="24"><rect width="40" height="24" fill="white"/></svg>'),
+    });
+    await page.waitForSelector('.paywall-preview-button img');
+    assert.equal(uploadType,'image/png');
+    await page.fill('#nt-button','Подробнее');
+    await page.fill('#nt-url','https://example.test/offer');
+    await choose(page,'input[name="nt-days"][value="forever"]');
+    await page.click('#nt-publish');
+    await page.click('#nt-confirm-send');
+    await page.waitForSelector('.nf-msg:has-text("Подробнее")');
+    const row = page.locator('.nf-msg:has-text("Подробнее")');
+    await row.locator('[data-nt-toggle]').click();
+    await row.getByText('Выключено',{exact:true}).waitFor();
+    assert.equal(await row.locator('.nf-stat').count(),1);
   } finally { await browser.close(); await app.close(); }
 });

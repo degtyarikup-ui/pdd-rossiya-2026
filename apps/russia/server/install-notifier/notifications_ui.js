@@ -5,6 +5,7 @@ const ART = {
   push: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><rect x="19.5" y="9" width="17" height="7" rx="2" fill="currentColor" fill-opacity=".18"/><path d="M22 12h9M22 14h6" stroke-width="1.2"/><path d="M8 13a6 6 0 0 1 3-5M48 13a6 6 0 0 0-3-5" stroke-linecap="round"/></svg>',
   news: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><rect x="19.5" y="8" width="17" height="6" rx="1.6" fill="currentColor" fill-opacity=".18"/><rect x="19.5" y="17" width="17" height="6" rx="1.6"/><rect x="19.5" y="26" width="17" height="6" rx="1.6"/><circle cx="35" cy="9" r="1.8" fill="currentColor" stroke="none"/></svg>',
   popup: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><rect x="16.8" y="2.8" width="22.4" height="34.4" rx="4.2" fill="currentColor" fill-opacity=".08" stroke="none"/><rect x="19" y="11" width="18" height="17" rx="3" fill="currentColor" fill-opacity=".18"/><path d="M22 23h12" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  paywall: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><path d="M21 12h14M23 16h10" stroke-opacity=".45"/><rect x="20" y="22" width="16" height="5" rx="1" fill="currentColor" fill-opacity=".2"/><rect x="20" y="30" width="16" height="4" rx="1"/></svg>',
   profile: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><circle cx="23" cy="9" r="2"/><path d="M28 8h8M20 14h16" stroke-opacity=".45"/><rect x="19.5" y="18" width="17" height="9" rx="2" fill="currentColor" fill-opacity=".18"/><path d="M20 31h16" stroke-opacity=".45"/></svg>',
   banner: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><rect x="19.5" y="7" width="17" height="10" rx="2" fill="currentColor" fill-opacity=".18"/><path d="M20 21h16M20 25h16M20 29h10" stroke-width="1.2" stroke-opacity=".45"/></svg>',
 };
@@ -32,7 +33,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .nf-push{display:flex;align-items:center;gap:14px;padding:12px 16px 12px 12px;border-radius:16px;background:var(--nf-soft);cursor:pointer;position:relative;margin-bottom:10px;color:var(--text-muted)}
 .nf-push svg{width:56px;height:40px;flex-shrink:0}.nf-push span{flex:1;min-width:0}.nf-push b{display:block;font-size:14px;color:var(--text)}.nf-push small{display:block;font-size:12px;margin-top:2px}
 .nf-push:has(input:checked){background:var(--primary-subtle);color:var(--primary)}.nf-push:has(input:disabled){cursor:not-allowed;opacity:.6}
-.nf-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.nf-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px}
 .nf-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px 12px;border-radius:16px;border:1.5px solid var(--nf-line);cursor:pointer;color:#9AA2B1;text-align:center}
 .nf-tile svg{width:56px;height:40px}.nf-tile b{font-size:13px;font-weight:600;color:var(--text)}
 .nf-tile:has(input:checked){border-color:var(--primary);color:var(--primary);background:#F7FAFF}.nf-tile:has(input:focus-visible){outline:2px solid var(--primary);outline-offset:2px}
@@ -115,6 +116,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .ib-l{padding:0 12px;display:flex;flex-direction:column;gap:8px}.ic{background:#fff;border-radius:14px;padding:12px;display:flex;gap:10px;font-size:12px}.ic.old{opacity:.45}
 .ic .ci{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center}.ic .ci svg{width:16px;height:16px}.ic .cc{flex:1;min-width:0}.ic .ct{display:flex;gap:6px;align-items:flex-start}.ic .ct b{flex:1;font-size:12.5px;line-height:1.3;overflow-wrap:anywhere}.ic .dot{width:7px;height:7px;border-radius:50%;background:#ED4621;flex-shrink:0;margin-top:4px}
 .ic p{margin:3px 0 0;color:rgba(18,18,18,.75);line-height:1.4;overflow-wrap:anywhere}.ic .ci-img{margin-top:7px;border-radius:10px;width:100%;display:block}.ic .cf{display:flex;justify-content:space-between;margin-top:7px;font-size:10.5px;color:#A1A6B7}.ic .cf span{color:#0574F8;font-weight:600;font-size:11.5px}
+.ap-paywall{background:#0574F8;color:#fff}.ap-paywall .ap-title{margin:auto 16px;text-align:center;font-size:24px}.paywall-preview-actions{display:grid;gap:6px;margin:0 12px 16px}.paywall-preview-button{min-height:37px;padding:7px 11px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:5px;text-align:center;font-size:12px;font-weight:600;background:#fff;color:#0574F8;overflow-wrap:anywhere}.paywall-preview-button img{height:16px;min-width:0;max-width:100%;object-fit:contain}
 .nf-hist-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.nf-hist-h h3{margin:0;font-size:16px}
 .nf-msg{display:grid;grid-template-columns:52px minmax(0,1.6fr) minmax(0,1fr) 140px auto;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--nf-line)}.nf-msg:first-of-type{border-top:0}
 .nf-thumb{width:52px;height:52px;flex-shrink:0;border-radius:12px;background:var(--nf-soft) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#A3AAB6}.nf-thumb svg{width:36px;height:26px}
@@ -147,7 +149,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 <form id="nt-form" class="nf-card" novalidate>
 <section class="nf-sec"><h4>Где увидят</h4>
 <label class="nf-push" id="nt-push-tile"><input type="checkbox" id="nt-push">${ART.push}<span><b>Пуш на телефон</b><small id="nt-push-state">iOS и Android</small></span><i></i></label>
-<div class="nf-tiles" id="nt-places">${tile('news', 'В списке')}${tile('popup', 'Окно')}${tile('banner', 'Баннер')}${tile('profile', 'В профиле')}</div>
+<div class="nf-tiles" id="nt-places">${tile('news', 'В списке')}${tile('popup', 'Окно')}${tile('banner', 'Баннер')}${tile('profile', 'В профиле')}${tile('paywall', 'Paywall')}</div>
 <p class="nf-note" id="nt-place-note"></p>
 </section>
 <section class="nf-sec"><h4>Содержимое</h4>
@@ -183,7 +185,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 <p class="nf-result" id="nt-result" role="status"></p>
 </form>
 <aside class="nf-card nf-preview" aria-label="Предпросмотр">
-<div class="nf-tabs" id="nt-tabs"><button type="button" data-tab="push">Пуш</button><button type="button" data-tab="home">Главная</button><button type="button" data-tab="profile">Профиль</button><button type="button" data-tab="inbox">Уведомления</button></div>
+<div class="nf-tabs" id="nt-tabs"><button type="button" data-tab="push">Пуш</button><button type="button" data-tab="home">Главная</button><button type="button" data-tab="profile">Профиль</button><button type="button" data-tab="paywall">Paywall</button><button type="button" data-tab="inbox">Уведомления</button></div>
 <div class="nf-os" id="nt-os"><button type="button" data-os="ios">iPhone</button><button type="button" data-os="android">Android</button></div>
 <div class="nf-phone"><div class="nf-screen" id="nt-screen"></div></div>
 </aside>
@@ -204,9 +206,9 @@ var S={push:false,place:'news',layout:'standard',accent:'',platforms:['ios','and
 // Lock-screen budget: about one line of title on both systems, four lines of
 // text on iPhone and one on collapsed Android. FCM rejects more than 4 KB.
 var PUSH={title:50,titleSoft:38,body:300,bodySoft:150};
-var BODY_MAX={popup:1000,news:1000,banner:200,profile:1000,push:300};
+var BODY_MAX={popup:1000,news:1000,banner:200,profile:1000,paywall:0,push:300};
 var ACTIONS={none:'',url:'Ссылка',tickets:'Билеты',topics:'Темы',game:'Игра',feed:'Лента',settings:'Настройки',premium:'Премиум'};
-var PLACES={news:'В списке',popup:'Окно',banner:'Баннер',profile:'В профиле'};
+var PLACES={news:'В списке',popup:'Окно',banner:'Баннер',profile:'В профиле',paywall:'Paywall'};
 var PLATFORMS={ios:'iOS',android:'Android',web:'Веб'},ALL=['ios','android','web'];
 function platformsOf(m){return Array.isArray(m.platforms)?m.platforms:m.platform==='all'?ALL:m.platform==='some'?String(m.platforms||'').split(','):[m.platform];}
 function has(p){return S.platforms.indexOf(p)>=0;}
@@ -245,6 +247,8 @@ function pushAvailable(){return !!(cfg&&ready&&cfg.pushEnabled)&&S.audiences.len
 
 function draft(){
  var push=S.push,place=S.place,title=el('title').value.trim(),body=el('body').value.trim(),action=el('action').value;
+ if(place==='paywall')return {kind:place,app:'ru',platforms:S.platforms.filter(function(p){return p!=='ios';}),store:has('android')&&S.stores.length===1?S.stores[0]:'all',audiences:S.audiences.slice(),
+  title:'',body:'',imageUrl:S.image,layout:'standard',accent:S.accent,button:true,buttonText:el('button').value.trim(),action:'url',actionUrl:el('url').value.trim()};
  var profile=place==='profile',button=profile?S.profileButton:!!(title||body)&&(place==='popup'||action!=='none');
  var imageOnly=!push&&!title&&!body&&!button;
  return {kind:push?'push':place,inAppKind:push?place:'',app:'ru',platforms:push?mobile():S.platforms.slice(),store:!push&&has('android')&&S.stores.length===1?S.stores[0]:'all',audiences:S.audiences.slice(),
@@ -258,9 +262,10 @@ function problem(d){
  else if(!d.platforms.length)return 'Выберите платформу';
  if(!d.audiences.length)return 'Выберите категорию пользователей';
  if(d.kind!=='push'&&has('android')&&!S.stores.length)return 'Выберите магазин';
+ if(d.kind==='paywall'&&!d.buttonText&&!d.imageUrl)return 'Добавьте текст или картинку кнопки';
  if(S.place==='profile'&&d.button&&d.action==='none')return 'Выберите действие для кнопки';
  if(S.place==='profile'&&d.button&&!d.buttonText)return 'Добавьте текст кнопки';
- if(!d.title&&!d.body&&!d.imageUrl&&!(S.place==='profile'&&d.button&&d.buttonText&&d.action!=='none'))return S.place==='profile'?'Добавьте картинку, текст или кнопку':'Добавьте картинку, заголовок или текст';
+ if(d.kind!=='paywall'&&!d.title&&!d.body&&!d.imageUrl&&!(S.place==='profile'&&d.button&&d.buttonText&&d.action!=='none'))return S.place==='profile'?'Добавьте картинку, текст или кнопку':'Добавьте картинку, заголовок или текст';
  if(d.body.length>BODY_MAX[d.kind==='push'&&S.place==='banner'?'banner':d.kind])return 'Сократите текст';
  if(S.place==='banner'&&d.body.length>200)return 'Текст баннера — до 200 символов';
  if(d.imageUrl&&!https(d.imageUrl))return 'Картинка должна открываться по https://';
@@ -271,7 +276,7 @@ function problem(d){
 function startAt(){return S.when==='later'&&el('start').value?new Date(el('start').value).getTime():0;}
 
 // ── Preview: the phone shows the push, the home screen or the inbox.
-function tabs(){var t=[];if(S.push)t.push('push');if(S.days!=='forever'&&(S.place!=='news'||!S.push))t.push(S.place==='profile'?'profile':'home');t.push('inbox');return t;}
+function tabs(){if(S.place==='paywall')return ['paywall'];var t=[];if(S.push)t.push('push');if(S.days!=='forever'&&(S.place!=='news'||!S.push))t.push(S.place==='profile'?'profile':'home');t.push('inbox');return t;}
 function osLabel(){var a=brand('apple'),g=brand('android');el('os').querySelector('[data-os="ios"]').innerHTML=a+'iPhone';el('os').querySelector('[data-os="android"]').innerHTML=g+'Android';}
 function status(dark){return '<div class="ph-st"'+(dark?' style="color:#fff"':'')+'><span>9:41</span><i></i><span>●●●</span></div>';}
 function lockDate(){return new Date().toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'});}
@@ -331,12 +336,21 @@ function inbox(d){
  var old='<div class="ic old"><span class="ci" style="background:#2BC2801f;color:#2BC280">'+SVG.bell+'</span><div class="cc"><div class="sk-l" style="width:80%"></div><div class="sk-l" style="width:55%"></div></div></div>';
  return '<div class="ap">'+status()+'<div class="ib-h"><i>←</i>Уведомления</div><div class="ib-l">'+card+old+old+'</div></div>';
 }
+function paywall(d){
+ var color=/^#[a-f0-9]{6}$/i.test(d.accent)?d.accent:'';
+ var rgb=color?color.slice(1).match(/../g).map(function(v){var n=parseInt(v,16)/255;return n<=.04045?n/12.92:Math.pow((n+.055)/1.055,2.4);}):[];
+ var ink=color?((rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722)>.179?'#000':'#fff'):BLUE;
+ var image=https(d.imageUrl)?'<img src="'+esc(d.imageUrl)+'" alt="">':'';
+ var extra=image||d.buttonText?'<div class="paywall-preview-button" style="background:'+(color||'#fff')+';color:'+ink+'">'+image+(d.buttonText?'<span>'+esc(d.buttonText)+'</span>':'')+'</div>':'';
+ return '<div class="ap ap-paywall">'+status(true)+'<div class="ap-title">Готовьтесь без ограничений</div><div class="paywall-preview-actions">'+extra+'<div class="paywall-preview-button">Оформить подписку</div></div></div>';
+}
 function renderPreview(){
  var d=draft(),t=tabs();if(t.indexOf(S.tab)<0)S.tab=t[0];
  el('tabs').querySelectorAll('button').forEach(function(b){b.hidden=t.indexOf(b.dataset.tab)<0;b.classList.toggle('on',b.dataset.tab===S.tab);});
  el('os').hidden=S.tab!=='push';el('os').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.os===S.os);});
  if(S.tab==='push')el('screen').innerHTML=S.os==='ios'?pushIos(d):pushAndroid(d);
  else if(S.tab==='home')el('screen').innerHTML=home(d);
+ else if(S.tab==='paywall')el('screen').innerHTML=paywall(d);
  else if(S.tab==='profile')el('screen').innerHTML=profile(d);
  else el('screen').innerHTML=inbox(d);
 }
@@ -344,38 +358,44 @@ function renderPreview(){
 // ── Editor state → controls.
 function count(id,n,max,soft){var x=el(id+'-count');x.textContent=n?n+' / '+max:'';x.classList.toggle('warn',!!soft&&n>soft&&n<=max);x.classList.toggle('over',n>max);x.title=soft&&n>soft?'Длиннее — обрежется на экране блокировки':'';}
 function sync(){
- var permanent=S.days==='forever';if(permanent){S.push=false;S.place='news';S.tab='inbox';}
+ var permanent=S.days==='forever',onPaywall=S.place==='paywall';
+ if(onPaywall)S.push=false;
+ else if(permanent){S.push=false;S.place='news';S.tab='inbox';}
  var d=draft(),push=S.push,canPush=pushAvailable(),imageOnly=d.layout==='image';
- el('push').disabled=permanent||(!canPush&&!push);el('push').checked=push;
- document.querySelectorAll('input[name="nt-place"]').forEach(function(x){x.disabled=permanent&&x.value!=='news';});
+ el('push').disabled=onPaywall||permanent||(!canPush&&!push);el('push').checked=push;
+ document.querySelectorAll('input[name="nt-place"]').forEach(function(x){x.disabled=permanent&&x.value!=='news'&&x.value!=='paywall';});
  el('push-state').textContent=!cfg?'…':!ready?'Firebase не подключён':!cfg.pushEnabled?'Пуши выключены на сервере':S.audiences.length!==3?'Для пуша выберите все категории':!mobile().length&&S.platforms.length?'В вебе недоступен':'iOS и Android';
- setRadio('nt-place',S.place);document.querySelectorAll('input[name="nt-platform"]').forEach(function(x){x.checked=has(x.value);});document.querySelectorAll('input[name="nt-store"]').forEach(function(x){x.checked=S.stores.indexOf(x.value)>=0;});document.querySelectorAll('input[name="nt-audience"]').forEach(function(x){x.checked=S.audiences.indexOf(x.value)>=0;x.disabled=push;});setRadio('nt-when',S.when);setRadio('nt-days',S.days);setRadio('nt-layout',S.layout);
+ setRadio('nt-place',S.place);document.querySelectorAll('input[name="nt-platform"]').forEach(function(x){x.checked=has(x.value)&&!(onPaywall&&x.value==='ios');});document.querySelectorAll('input[name="nt-store"]').forEach(function(x){x.checked=S.stores.indexOf(x.value)>=0;});document.querySelectorAll('input[name="nt-audience"]').forEach(function(x){x.checked=S.audiences.indexOf(x.value)>=0;x.disabled=push;});setRadio('nt-when',S.when);setRadio('nt-days',S.days);setRadio('nt-layout',S.layout);
  el('audience-note').textContent=push?'Для выбора категорий отключите пуш.':'Зарегистрированные — без активного Premium.';
  document.querySelector('input[name="nt-platform"][value="web"]').disabled=push;
- el('place-note').textContent=S.place==='profile'?'Под Premium. Высота по содержимому: картинка целиком, разделы ниже сдвигаются.'+(push?' Покажется тем, у кого пуши выключены.':''):push&&S.place!=='news'?'Тем, у кого пуши выключены':'';
+ el('push-state').textContent=onPaywall?'Paywall':el('push-state').textContent;
+ document.querySelector('input[name="nt-platform"][value="ios"]').disabled=onPaywall;
+ el('place-note').textContent=onPaywall?'Над основной кнопкой на Android и в вебе.':S.place==='profile'?'Под Premium. Высота по содержимому: картинка целиком, разделы ниже сдвигаются.'+(push?' Покажется тем, у кого пуши выключены.':''):push&&S.place!=='news'?'Тем, у кого пуши выключены':'';
  el('stores').hidden=push||!has('android');el('when-wrap').hidden=S.when!=='later';
- el('days-label').textContent='Хранить в списке';
- el('lifetime-note').textContent=permanent?'Только в списке, пока вы не выключите или не удалите уведомление.':'По окончании срока исчезнет и из списка. Окно показывается один раз, закрытый баннер не возвращается.';
+ el('days-label').textContent=onPaywall?'Показывать':'Хранить в списке';
+ el('lifetime-note').textContent=onPaywall?'Управление показом и статистика — в истории.':permanent?'Только в списке, пока вы не выключите или не удалите уведомление.':'По окончании срока исчезнет и из списка. Окно показывается один раз, закрытый баннер не возвращается.';
  var titleMax=push?PUSH.title:80,bodyMax=push?(S.place==='banner'?200:PUSH.body):BODY_MAX[S.place];
  el('title').maxLength=titleMax;el('body').maxLength=bodyMax;
  count('title',el('title').value.trim().length,titleMax,push?PUSH.titleSoft:0);count('body',el('body').value.trim().length,bodyMax,push?PUSH.bodySoft:0);
  el('title').placeholder=push?'Заголовок пуша':'Заголовок';
+ el('title').parentElement.hidden=onPaywall;el('body').parentElement.hidden=onPaywall;
+ el('action').hidden=onPaywall;el('file').accept=onPaywall?'image/png,image/svg+xml,.svg':'image/jpeg,image/png,image/webp,image/gif';
  el('layout-wrap').hidden=!(S.place==='popup'&&S.image&&!imageOnly);
  el('profile-button-wrap').hidden=S.place!=='profile';el('profile-button').checked=S.profileButton;
  el('button-wrap').hidden=!d.button;el('dismiss').hidden=S.place!=='popup';
- el('button').placeholder=S.place==='popup'?(d.action==='none'?'Кнопка: Понятно':'Кнопка: Открыть'):'Кнопка: Подробнее';
+ el('button').placeholder=onPaywall?'Текст кнопки (если нужен)':S.place==='popup'?(d.action==='none'?'Кнопка: Понятно':'Кнопка: Открыть'):'Кнопка: Подробнее';
  el('url').hidden=d.action!=='url';el('swatches').hidden=imageOnly;
  document.querySelectorAll('#nt-swatches .nf-swatch').forEach(function(s){s.classList.toggle('on',s.dataset.color===S.accent);});
  var drop=el('drop');
  var spec=imageSpec(),size=spec.w+' × '+spec.h,fit=imageFit(spec);
- if(S.image){drop.classList.add('has');drop.innerHTML='<img src="'+esc(S.image)+'" alt=""><div class="nf-grow"><b>'+(S.imgW?S.imgW+' × '+S.imgH:'Картинка')+'</b>'+(fit?'<small class="'+fit.cls+'">'+esc(fit.text)+'</small>':'<small>'+(spec.flexible?'Любые пропорции · без обрезки':'Нужно '+size)+'</small>')+'</div><button type="button" class="nf-link" data-img="replace">Заменить</button><button type="button" class="nf-link danger" data-img="remove">Убрать</button>';}
- else{drop.classList.remove('has');drop.innerHTML=ratioIcon(spec)+'<div class="nf-grow"><b>'+(spec.flexible?'Картинка любых пропорций':'Картинка '+size)+'</b><small>'+esc(['Перетащите или выберите','до 1 МБ',spec.note].filter(Boolean).join(' · '))+'</small></div><button type="button" class="nf-link" data-img="url">Ссылка</button>';}
+ if(S.image){drop.classList.add('has');drop.innerHTML='<img src="'+esc(S.image)+'" alt=""><div class="nf-grow"><b>'+(S.imgW?S.imgW+' × '+S.imgH:'Картинка')+'</b>'+(onPaywall?'':fit?'<small class="'+fit.cls+'">'+esc(fit.text)+'</small>':'<small>'+(spec.flexible?'Любые пропорции · без обрезки':'Нужно '+size)+'</small>')+'</div><button type="button" class="nf-link" data-img="replace">Заменить</button><button type="button" class="nf-link danger" data-img="remove">Убрать</button>';}
+ else{drop.classList.remove('has');drop.innerHTML=ratioIcon(spec)+'<div class="nf-grow"><b>'+(onPaywall?'Картинка внутри кнопки · SVG или PNG':spec.flexible?'Картинка любых пропорций':'Картинка '+size)+'</b><small>'+esc(['Перетащите или выберите','до 1 МБ',spec.note].filter(Boolean).join(' · '))+'</small></div><button type="button" class="nf-link" data-img="url">Ссылка</button>';}
  el('recips').innerHTML=recipients().map(function(r,i){return '<label class="nf-rc" title="'+esc(r.v)+'"><input type="checkbox" data-rc="'+i+'"'+(r.on?' checked':'')+'><span>'+esc(r.v)+'</span><button type="button" data-rc-del="'+i+'" aria-label="Убрать '+esc(r.v)+'">✕</button></label>';}).join('')+'<button type="button" class="nf-rc-add" id="nt-me">+ Аккаунт</button>';
  var n=chosen().length;el('test').lastChild.textContent=n>1?'Отправить на '+n:'Отправить себе';
  var p=problem(d);
- el('publish').disabled=busy||!!p;el('test').disabled=busy||(!!p&&p!=='Выберите время старта'&&p!=='Время старта уже прошло');
+ el('publish').disabled=busy||uploading||!!p;el('test').disabled=busy||uploading||(!!p&&p!=='Выберите время старта'&&p!=='Время старта уже прошло');
  el('publish').title=el('test').title=p;
- el('publish').textContent=S.when==='later'?'Запланировать':push?'Отправить всем':'Опубликовать';
+ el('publish').textContent=S.when==='later'?'Запланировать':onPaywall?'Включить':push?'Отправить всем':'Опубликовать';
  renderPreview();saveDraft();
 }
 function saveDraft(){try{localStorage.setItem('nt-draft',JSON.stringify({s:{push:S.push,place:S.place,layout:S.layout,accent:S.accent,platforms:S.platforms,stores:S.stores,audiences:S.audiences,days:S.days,image:S.image,profileButton:S.profileButton},title:el('title').value,body:el('body').value,action:el('action').value,url:el('url').value,button:el('button').value,dismiss:el('dismiss').value}));}catch(_){}}
@@ -394,6 +414,7 @@ function fill(m){
 function imageSpec(){
  var only=!S.push&&!el('title').value.trim()&&!el('body').value.trim();
  if(S.push)return {w:1024,h:512,note:'главное — по центру',crops:true};
+ if(S.place==='paywall')return {w:300,h:72,flexible:true};
  if(S.place==='profile')return {w:1080,h:540,note:'без обрезки · высота по картинке',flexible:true};
  if(S.place==='banner')return only?{w:1920,h:734,note:'правый верхний угол — под крестик'}:{w:512,h:512};
  if(S.place==='popup')return only?{w:1080,h:1350,note:'правый верхний угол — под крестик'}:S.layout==='cover'?{w:1600,h:1200}:S.layout==='compact'?{w:512,h:512}:{w:1600,h:900};
@@ -413,13 +434,39 @@ function imageFit(spec){
 function ratioIcon(spec){var k=Math.min(52/spec.w,38/spec.h);return '<span class="nf-ratio"><i style="width:'+Math.round(spec.w*k)+'px;height:'+Math.round(spec.h*k)+'px"></i></span>';}
 
 // ── Image: drop, choose or paste a link.
+var uploading=false;
+// Decode SVG as an image (no scripting) and upload only its PNG pixels.
+async function svgToPng(file){
+ var url=URL.createObjectURL(new Blob([file],{type:'image/svg+xml'}));
+ try{
+  var image=new Image();image.src=url;await image.decode();
+  if(!image.naturalWidth||!image.naturalHeight)throw new Error('Укажите размеры SVG');
+  var scale=Math.min(1,768/Math.max(image.naturalWidth,image.naturalHeight));
+  var canvas=document.createElement('canvas');
+  canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));
+  canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+  canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+  var png=await new Promise(function(resolve){canvas.toBlob(resolve,'image/png');});
+  if(!png)throw new Error('Не удалось обработать SVG');
+  return png;
+ }finally{URL.revokeObjectURL(url);}
+}
 async function upload(f){
+ if(uploading)return;
  el('editor-error').textContent='';
- if(!f||['image/jpeg','image/png','image/webp','image/gif'].indexOf(f.type)<0){el('editor-error').textContent='Нужна картинка JPEG, PNG, WebP или GIF';return;}
+ var onPaywall=S.place==='paywall',svg=onPaywall&&(f.type==='image/svg+xml'||/\.svg$/i.test(f.name));
+ var allowed=onPaywall?['image/png']:['image/jpeg','image/png','image/webp','image/gif'];
+ if(!svg&&allowed.indexOf(f.type)<0){el('editor-error').textContent=onPaywall?'Нужна картинка SVG или PNG':'Нужна картинка JPEG, PNG, WebP или GIF';return;}
  if(f.size>1048576){el('editor-error').textContent='Картинка больше 1 МБ — сожмите её';return;}
+ uploading=true;sync();
  el('drop').innerHTML=SVG.upload+'<div class="nf-grow"><b>Загрузка…</b></div>';
- try{var r=await fetch('/api/admin/notifications/image',{method:'POST',headers:{'content-type':f.type},body:f});var d=await r.json();if(!r.ok)throw new Error(d.error||'Не удалось загрузить');setImage(d.url);}
- catch(e){el('editor-error').textContent=e.message;sync();}
+ try{
+  var image=svg?await svgToPng(f):f;
+  var r=await fetch('/api/admin/notifications/image',{method:'POST',headers:{'content-type':image.type},body:image});
+  var d=await r.json();if(!r.ok)throw new Error(d.error||'Не удалось загрузить');
+  setImage(d.url);
+ }catch(e){el('editor-error').textContent=e.message;}
+ finally{uploading=false;sync();}
 }
 function setImage(url){S.image=url;S.imgW=S.imgH=0;pending=null;sync();if(!url)return;var probe=new Image();probe.onload=function(){if(S.image===url){S.imgW=probe.naturalWidth;S.imgH=probe.naturalHeight;sync();}};probe.src=url;}
 el('drop').addEventListener('click',function(e){var b=e.target.closest('[data-img]');if(b){e.stopPropagation();if(b.dataset.img==='remove')setImage('');else if(b.dataset.img==='replace')el('file').click();else{var u=prompt('Ссылка на картинку (https://)',S.image||'');if(u!==null){u=u.trim();if(u&&!https(u)){el('editor-error').textContent='Картинка должна открываться по https://';return;}setImage(u);}}return;}if(!S.image)el('file').click();});
@@ -500,14 +547,14 @@ function tagsFor(m){
  return t.join('');
 }
 function thumb(m){var place=placeOf(m);return m.imageUrl?'<span class="nf-thumb" style="'+bg(m.imageUrl)+'"></span>':'<span class="nf-thumb">'+ART[m.kind==='push'?'push':place]+'</span>';}
-function heading(m){return m.title||m.body||(placeOf(m)==='profile'&&m.buttonText?m.buttonText:'')||(m.layout==='image'?(placeOf(m)==='banner'?'Баннер-картинка':placeOf(m)==='popup'?'Окно-картинка':'Картинка'):'Сообщение');}
+function heading(m){return m.title||m.body||(['profile','paywall'].includes(placeOf(m))&&m.buttonText?m.buttonText:'')||(m.kind==='paywall'?'Кнопка Paywall':'')||(m.layout==='image'?(placeOf(m)==='banner'?'Баннер-картинка':placeOf(m)==='popup'?'Окно-картинка':'Картинка'):'Сообщение');}
 el('form').addEventListener('submit',function(e){
  e.preventDefault();if(busy||el('publish').disabled)return;
  if(!pending)pending=prepare(false);if(!pending)return;
  var m=pending,start=m.startAt||0;
  el('confirm-sum').innerHTML=thumb(m)+'<div style="min-width:0"><b>'+esc(heading(m))+'</b>'+(m.title&&m.body?'<small>'+esc(m.body)+'</small>':'')+'</div>';
  el('confirm-tags').innerHTML=tagsFor(m)+'<span class="nf-tag wait">'+esc(start?fmt(start):'Сразу')+'</span>'+(m.persistent?'':'<span class="nf-tag">'+esc(S.days)+' дн.</span>')+(m.action!=='none'?'<span class="nf-tag">→ '+esc(ACTIONS[m.action])+'</span>':'');
- el('confirm').querySelector('h3').textContent=start?'Запланировать уведомление?':m.kind==='push'?'Отправить пуш?':'Опубликовать уведомление?';
+ el('confirm').querySelector('h3').textContent=m.kind==='paywall'?(start?'Запланировать показ кнопки?':'Включить кнопку Paywall?'):start?'Запланировать уведомление?':m.kind==='push'?'Отправить пуш?':'Опубликовать уведомление?';
  el('confirm-send').textContent=m.kind==='push'&&!start?'Отправить':'Подтвердить';
  el('confirm').showModal();
 });

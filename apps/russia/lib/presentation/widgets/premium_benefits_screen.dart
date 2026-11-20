@@ -11,6 +11,7 @@ import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/payment_mode.dart';
+import 'package:pdd_app/presentation/widgets/paywall_notice_button.dart';
 import 'package:pdd_app/presentation/widgets/premium_celebration_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_plans_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_motion.dart';
@@ -261,53 +262,50 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
                                   AppDimensions.screenPadding,
                                   12,
                                 ),
-                                child: PremiumReveal(
-                                  key: const ValueKey('premium-reveal-cta'),
-                                  progress: _entrance,
-                                  begin: .42,
-                                  end: .9,
-                                  distance: 8,
-                                  child: PremiumPressFeedback(
-                                    enabled: !_showingPlans,
-                                    child: ElevatedButton(
-                                      key: const ValueKey('premium-show-plans'),
-                                      onPressed: _showingPlans
-                                          ? null
-                                          : _showPlans,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.white,
-                                        foregroundColor: AppColors.accent,
-                                        disabledBackgroundColor:
-                                            AppColors.white,
-                                        disabledForegroundColor:
-                                            AppColors.accent,
-                                        minimumSize: const Size(
-                                          double.infinity,
-                                          56,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 16,
-                                        ),
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            AppDimensions.buttonRadius,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    PaywallNoticeButton(
+                                      enabled: !_showingPlans,
+                                    ),
+                                    PremiumReveal(
+                                      key: const ValueKey('premium-reveal-cta'),
+                                      progress: _entrance,
+                                      begin: .42,
+                                      end: .9,
+                                      distance: 8,
+                                      child: PremiumPressFeedback(
+                                        enabled: !_showingPlans,
+                                        child: ElevatedButton(
+                                          key: const ValueKey(
+                                            'premium-show-plans',
+                                          ),
+                                          onPressed: _showingPlans
+                                              ? null
+                                              : _showPlans,
+                                          style: paywallButtonStyle(
+                                            background: AppColors.white,
+                                            foreground: AppColors.accent,
+                                            disabledBackground: AppColors.white,
+                                            disabledForeground:
+                                                AppColors.accent,
+                                          ),
+                                          child: Text(
+                                            _trialAvailable
+                                                ? l10n.premiumTrialButton
+                                                : l10n.paywallSubscribe,
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              fontSize: 17,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                      child: Text(
-                                        _trialAvailable
-                                            ? l10n.premiumTrialButton
-                                            : l10n.paywallSubscribe,
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 17,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
                               ),
                             ),

@@ -12,7 +12,7 @@ const reply = (value, status = 200) => Response.json(value, { status, headers: {
 //          or, on devices the push did not reach, shown as a window or banner
 //          (`inAppKind`).
 // news   — entry in the app's notification inbox only (no window, no push).
-export const KINDS = ['popup', 'banner', 'push', 'news', 'profile'];
+export const KINDS = ['popup', 'banner', 'push', 'news', 'profile', 'paywall'];
 export const IN_APP_KINDS = ['news', 'popup', 'banner', 'profile'];
 // What a campaign is in the app. Pushes saved before `inAppKind` had `inApp`.
 export const placement = item => item.kind !== 'push' ? item.kind : (IN_APP_KINDS.includes(item.inAppKind) ? item.inAppKind : item.inApp ? 'popup' : 'news');
@@ -90,6 +90,8 @@ export function validateCampaign(input, now = Date.now()) {
   if (value.kind === 'push' && !IN_APP_KINDS.includes(value.inAppKind)) throw new Error('Некорректный вид в приложении');
   value.inApp = value.inAppKind === 'popup';
   const profile = placement(value) === 'profile';
+  const paywall = value.kind === 'paywall';
+  if (paywall && platformsOf(value).includes('ios')) throw new Error('Кнопка Paywall доступна на Android и в вебе');
   if (profile && input.button !== undefined && typeof input.button !== 'boolean') throw new Error('Некорректная кнопка');
   if (value.kind === 'push') {
     // A system notification needs text: a picture alone shows nothing.
@@ -102,8 +104,12 @@ export function validateCampaign(input, now = Date.now()) {
     // text and button. Without any text the message is the picture itself.
     value.title = str(input.title, 80, 'Заголовок');
     value.body = str(input.body, 1000, 'Текст');
-    const hasContent = value.title || value.body || (profile && input.button === true);
+    const hasContent = paywall || value.title || value.body || (profile && input.button === true);
     value.layout = hasContent ? (value.layout === 'image' ? 'standard' : value.layout) : 'image';
+  }
+  if (paywall) {
+    value.title = value.body = '';
+    value.layout = 'standard';
   }
   const imageBanner = value.layout === 'image';
   if (placement(value) === 'banner' && value.body.length > 200) throw new Error('Текст баннера: не более 200 символов');
@@ -115,7 +121,7 @@ export function validateCampaign(input, now = Date.now()) {
   if (value.startAt < now) value.startAt = now;
   if (input.persistent !== undefined && typeof input.persistent !== 'boolean') throw new Error('Некорректный срок показа');
   value.persistent = input.persistent === true;
-  if (value.persistent && value.kind !== 'news') throw new Error('Постоянные уведомления доступны только в списке');
+  if (value.persistent && value.kind !== 'news' && !paywall) throw new Error('Постоянный показ доступен только в списке и на Paywall');
   value.expiresAt = value.persistent ? PERMANENT_EXPIRES_AT : Number(input.expiresAt);
   if (!value.persistent && (!Number.isFinite(value.expiresAt) || value.expiresAt <= value.startAt || value.expiresAt > value.startAt + 30 * DAY)) throw new Error('Срок показа: от времени старта до 30 дней');
   // Personal test account (email or user ID). Empty = broadcast to all users.
@@ -138,13 +144,16 @@ export function validateCampaign(input, now = Date.now()) {
   value.accent = input.accent ? String(input.accent) : '';
   if (value.accent && !/^#[0-9a-fA-F]{6}$/.test(value.accent)) throw new Error('Цвет: формат #RRGGBB');
   // Absent on campaigns saved before buttons became optional: they had one.
-  value.button = !imageBanner && (profile ? input.button === true : input.button !== false);
+  value.button = paywall || !imageBanner && (profile ? input.button === true : input.button !== false);
   value.buttonText = value.button ? str(input.buttonText, 24, 'Текст кнопки') : '';
-  value.dismissText = value.button ? str(input.dismissText, 24, 'Текст второй кнопки') : '';
+  value.dismissText = value.button && !paywall ? str(input.dismissText, 24, 'Текст второй кнопки') : '';
   value.action = input.action || 'none';
   if (!ACTIONS.includes(value.action)) throw new Error('Некорректное действие');
   value.actionUrl = value.action === 'url' ? httpsUrl(input.actionUrl, 'Ссылка действия') : '';
   if (value.action === 'url' && !value.actionUrl) throw new Error('Укажите ссылку для кнопки');
+  if (paywall && (value.action !== 'url' || (!value.buttonText && !value.imageUrl))) {
+    throw new Error('Для Paywall укажите ссылку и добавьте текст или картинку кнопки');
+  }
   if (profile && value.button && (!value.buttonText || value.action === 'none')) throw new Error('Для кнопки укажите текст и действие');
   value.buyerTracking = true;
   value.createdAt = now;
@@ -341,6 +350,7 @@ export class NotificationsState {
       // Unknown kinds become popups in older builds. Never leak profile cards
       // onto their home screen, including profile presentations of a push.
       const profileBanners = url.searchParams.get('profileBanners') === '1';
+      const paywallButton = platform !== 'ios' && url.searchParams.get('paywallButton') === '1';
       // Older clients would show inbox news as a popup window.
       const inbox = url.searchParams.get('inbox') === '1';
       // A sent push also lands in the inbox of builds that have one. Its window
@@ -349,6 +359,7 @@ export class NotificationsState {
       const visible = config.popupEnabled ? [...records.values()].filter(item => {
         const shown = placement(item);
         if (shown === 'profile' && !profileBanners) return false;
+        if (shown === 'paywall' && !paywallButton) return false;
         if (item.kind === 'push' && shown === 'news' && !sent(item)) return false;
         return (shown !== 'news' || inbox) && (item.layout !== 'image' || (shown === 'profile' ? profileBanners : shown === 'banner' ? imageBanners : imagePopups))
           && campaignMatches(item, app, platform, Date.now(), user, url.searchParams.get('store') || '');

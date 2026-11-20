@@ -1,3 +1,4 @@
+import 'package:pdd_app/presentation/widgets/paywall_notice_button.dart';
 import 'package:pdd_app/presentation/widgets/premium_plan_card.dart';
 import 'package:flutter/services.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -553,6 +554,7 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
                         ),
                         const SizedBox(height: AppDimensions.spacingM),
                       ],
+                      PaywallNoticeButton(enabled: !_isLoading),
                       PremiumPressFeedback(
                         enabled:
                             !_isLoading &&
@@ -576,20 +578,9 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
                               : sbpPay
                               ? _handleSbpPayment
                               : () => _handlePurchase(trial),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colors.accent,
-                            foregroundColor: AppColors.white,
-                            elevation: 0,
-                            minimumSize: const Size.fromHeight(56),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppDimensions.spacingL,
-                              vertical: AppDimensions.spacingL,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppDimensions.buttonRadius,
-                              ),
-                            ),
+                          style: paywallButtonStyle(
+                            background: colors.accent,
+                            foreground: AppColors.white,
                           ),
                           child: _isLoading
                               ? const SizedBox(
