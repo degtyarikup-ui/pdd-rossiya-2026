@@ -18,22 +18,34 @@ import 'package:url_launcher/url_launcher.dart';
 /// Возвращает почту и признак [opened]: true — страница оплаты открыта
 /// (в этой вкладке на вебе, в браузере на Android); false — выбор сохранён
 /// в режиме заглушки. null — отмена или ошибка.
-Future<({String email, bool opened})?> showWebPaymentDialog({
+typedef WebPaymentResult = ({String email, bool opened, bool priceChanged});
+
+Future<WebPaymentResult?> showWebPaymentDialog({
   required BuildContext context,
   required PremiumTier tier,
   required bool live,
+  required int expectedPriceRub,
 }) {
-  return showDialog<({String email, bool opened})>(
+  return showDialog<WebPaymentResult>(
     context: context,
-    builder: (_) => _WebPaymentDialog(tier: tier, live: live),
+    builder: (_) => _WebPaymentDialog(
+      tier: tier,
+      live: live,
+      expectedPriceRub: expectedPriceRub,
+    ),
   );
 }
 
 class _WebPaymentDialog extends StatefulWidget {
-  const _WebPaymentDialog({required this.tier, required this.live});
+  const _WebPaymentDialog({
+    required this.tier,
+    required this.live,
+    required this.expectedPriceRub,
+  });
 
   final PremiumTier tier;
   final bool live;
+  final int expectedPriceRub;
 
   @override
   State<_WebPaymentDialog> createState() => _WebPaymentDialogState();
@@ -50,6 +62,8 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
   bool _noConnection = false;
   String? _creationErrorCode;
   String? _creationOrder;
+  String? _existingOrderSummary;
+  Uri? _existingOrderUrl;
 
   @override
   void dispose() {
@@ -71,8 +85,35 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
     final start = await PremiumService.instance.startWebPayment(
       tier: widget.tier,
       email: email,
+      expectedPriceRub: widget.expectedPriceRub,
     );
     if (!mounted) return;
+    if (start?.errorCode == 'price_changed') {
+      Navigator.of(
+        context,
+      ).pop((email: email, opened: false, priceChanged: true));
+      return;
+    }
+    if (start?.errorCode == 'pending_order') {
+      final details = await PremiumService.instance.checkWebPaymentDetails(
+        order: start!.order,
+      );
+      if (!mounted) return;
+      if (details != null &&
+          details.order == start.order &&
+          details.status == 'pending' &&
+          details.tier != null &&
+          details.amount != null &&
+          details.url != null) {
+        _existingOrderSummary = appL10n.premiumExistingOrder(
+          details.tier == PremiumTier.weekly
+              ? appL10n.webWeek
+              : appL10n.webQuarter,
+          '${details.amount} ₽',
+        );
+        _existingOrderUrl = Uri.tryParse(details.url!);
+      }
+    }
     if (start?.errorCode != null) {
       HapticFeedbackHelper.error();
       setState(() {
@@ -87,36 +128,7 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
       // Веб — та же вкладка, после оплаты Platega вернёт на /app/?pay=done.
       // Android — внешний браузер: заказ запоминаем, приложение проверит его
       // при возврате (см. PremiumService.checkPendingPayment).
-      var opened = false;
-      try {
-        opened = await launchUrl(
-          Uri.parse(url),
-          mode: kIsWeb
-              ? LaunchMode.platformDefault
-              : LaunchMode.externalApplication,
-          webOnlyWindowName: '_self',
-        );
-        if (!opened) {
-          ErrorReporter.report(
-            ErrorCategory.purchase,
-            'web_payment.open',
-            code: 'page_not_opened',
-            provider: 'platega',
-          );
-        }
-      } catch (error) {
-        ErrorReporter.report(
-          ErrorCategory.purchase,
-          'web_payment.open',
-          error: error,
-          provider: 'platega',
-        );
-      }
-      if (!mounted) return;
-      if (opened) {
-        Navigator.of(context).pop((email: email, opened: true));
-        return;
-      }
+      if (await _openPayment(Uri.parse(url), email)) return;
       if (!kIsWeb) {
         await PendingPayment.clear(
           ownerId: AuthService.instance.currentUser?.id,
@@ -124,9 +136,12 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
         if (!mounted) return;
       }
     }
+    if (!mounted) return;
     if (start != null && url == null) {
       HapticFeedbackHelper.success();
-      Navigator.of(context).pop((email: email, opened: false));
+      Navigator.of(
+        context,
+      ).pop((email: email, opened: false, priceChanged: false));
     } else {
       HapticFeedbackHelper.error();
       setState(() {
@@ -136,6 +151,42 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
         _noConnection = start == null;
       });
     }
+  }
+
+  Future<bool> _openPayment(Uri url, String email) async {
+    var opened = false;
+    try {
+      opened = await launchUrl(
+        url,
+        mode: kIsWeb
+            ? LaunchMode.platformDefault
+            : LaunchMode.externalApplication,
+        webOnlyWindowName: '_self',
+      );
+      if (!opened) {
+        ErrorReporter.report(
+          ErrorCategory.purchase,
+          'web_payment.open',
+          code: 'page_not_opened',
+          provider: 'platega',
+        );
+      }
+    } catch (error) {
+      ErrorReporter.report(
+        ErrorCategory.purchase,
+        'web_payment.open',
+        error: error,
+        provider: 'platega',
+      );
+    }
+    if (!mounted) return true;
+    if (opened) {
+      Navigator.of(
+        context,
+      ).pop((email: email, opened: true, priceChanged: false));
+      return true;
+    }
+    return false;
   }
 
   @override
@@ -165,6 +216,10 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
               color: colors.secondaryText,
               height: 1.35,
             ),
+          ),
+          const SizedBox(height: AppDimensions.spacingS),
+          Text(
+            '${widget.tier == PremiumTier.weekly ? appL10n.webWeek : appL10n.webQuarter} · ${widget.expectedPriceRub} ₽',
           ),
           const SizedBox(height: AppDimensions.spacingL),
           ValueListenableBuilder<TextEditingValue>(
@@ -205,9 +260,10 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
           if (_creationErrorCode != null) ...[
             const SizedBox(height: AppDimensions.spacingL),
             SelectableText(
-              _creationErrorCode == 'payment_creation_unknown'
-                  ? appL10n.webPayCreationReview(_creationOrder ?? '')
-                  : appL10n.webPayCreationPending(_creationOrder ?? ''),
+              _existingOrderSummary ??
+                  (_creationErrorCode == 'payment_creation_unknown'
+                      ? appL10n.webPayCreationReview(_creationOrder ?? '')
+                      : appL10n.webPayCreationPending(_creationOrder ?? '')),
               style: TextStyle(
                 color: colors.primaryText,
                 fontSize: 13,
@@ -222,29 +278,46 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
           onPressed: _sending ? null : () => Navigator.of(context).pop(),
           child: Text(appL10n.cancel),
         ),
-        ValueListenableBuilder<TextEditingValue>(
-          valueListenable: _controller,
-          builder: (context, value, _) {
-            final canSend =
-                _emailPattern.hasMatch(value.text.trim()) &&
-                !_sending &&
-                _creationErrorCode == null;
-            return TextButton(
-              onPressed: canSend ? _send : null,
-              child: _sending
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      widget.live
-                          ? appL10n.webPayProceed
-                          : appL10n.webPayNotify,
-                    ),
-            );
-          },
-        ),
+        if (_existingOrderUrl case final url?)
+          TextButton(
+            onPressed: _sending
+                ? null
+                : () async {
+                    setState(() => _sending = true);
+                    if (!await _openPayment(url, _controller.text.trim()) &&
+                        mounted) {
+                      setState(() {
+                        _failed = true;
+                        _sending = false;
+                      });
+                    }
+                  },
+            child: Text(appL10n.checkoutContinue),
+          )
+        else
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _controller,
+            builder: (context, value, _) {
+              final canSend =
+                  _emailPattern.hasMatch(value.text.trim()) &&
+                  !_sending &&
+                  _creationErrorCode == null;
+              return TextButton(
+                onPressed: canSend ? _send : null,
+                child: _sending
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        widget.live
+                            ? appL10n.webPayProceed
+                            : appL10n.webPayNotify,
+                      ),
+              );
+            },
+          ),
       ],
     );
   }

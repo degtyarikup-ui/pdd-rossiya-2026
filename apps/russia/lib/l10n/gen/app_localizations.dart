@@ -100,6 +100,30 @@ abstract class AppLocalizations {
     Locale('ru'),
   ];
 
+  /// No description provided for @premiumTrialButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Попробовать 3 дня бесплатно'**
+  String get premiumTrialButton;
+
+  /// No description provided for @premiumTrialTerms.
+  ///
+  /// In ru, this message translates to:
+  /// **'Первые 3 дня бесплатно. Затем {price} каждые 3 месяца с автопродлением. Отмените подписку заранее в {store}, чтобы избежать списания.'**
+  String premiumTrialTerms(String price, String store);
+
+  /// No description provided for @premiumOfferChanged.
+  ///
+  /// In ru, this message translates to:
+  /// **'Условия изменились. Проверьте цену и подтвердите ещё раз.'**
+  String get premiumOfferChanged;
+
+  /// No description provided for @premiumExistingOrder.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ранее созданный заказ: {plan} · {price}'**
+  String premiumExistingOrder(String plan, String price);
+
   /// No description provided for @exam.
   ///
   /// In ru, this message translates to:

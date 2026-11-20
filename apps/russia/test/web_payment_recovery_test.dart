@@ -77,6 +77,7 @@ void main() {
           () => premium.startWebPayment(
             tier: PremiumTier.weekly,
             email: 'receipt@example.invalid',
+            expectedPriceRub: 99,
           ),
           () => MockClient((request) async {
             expect(request.url.path, '/api/user/pay-intent');
@@ -213,6 +214,7 @@ void main() {
                           context: context,
                           tier: PremiumTier.weekly,
                           live: true,
+                          expectedPriceRub: 99,
                         ),
                         child: const Text('Open'),
                       ),

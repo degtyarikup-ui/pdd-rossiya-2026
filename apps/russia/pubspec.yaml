@@ -42,6 +42,7 @@ dependencies:
   webview_flutter_android: ^4.14.0
   in_app_purchase: ^3.2.0
   in_app_purchase_android: ^0.5.2
+  in_app_purchase_storekit: ^0.4.11+1
   flutter_secure_storage: ^11.2.0
   crypto: ^3.0.7
   firebase_core: ^4.15.0

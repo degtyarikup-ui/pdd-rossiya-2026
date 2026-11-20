@@ -38,7 +38,8 @@ Apple — разные аккаунты.
 | `web_landing/ru/tarify/`, `pay-done/` | Тарифы на сайте и возврат после оплаты |
 | `server/install-notifier/account_state.js`, `account_maintenance.js` | Авторитетное хранилище аккаунта, атомарный журнал, сверка |
 | `server/install-notifier/entitlements.js` | Сроки Премиума по источникам |
-| `server/install-notifier/payments.js` | Тарифы `WEB_TARIFFS`, Platega, подтверждение оплаты |
+| `server/install-notifier/payments.js`, `premium_offers.js` | Каталог СБП, условия заказов, Platega и подтверждение оплаты |
+| [Квартальные тарифы и три пробных дня](quarterly-offers.md) | Цены 290/370 ₽, акции из админки, продукты магазинов и порядок включения |
 | `server/install-notifier/store_verification.js`, `purchase_claims.js` | Проверка чеков сторов |
 | `docs/premium/web-payments-launch.md` | Запуск веб-оплаты, секреты, устройство |
 | `docs/premium/account-state-rollout.md` | DO миграция, контракты безопасности и порядок выпуска |

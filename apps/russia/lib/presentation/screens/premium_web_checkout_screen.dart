@@ -55,6 +55,8 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
   String? _status;
   String? _error;
   Uri? _paymentUrl;
+  PremiumCatalog? _catalog;
+  String? _orderSummary;
   bool _available = false;
   bool _loadingAvailability = false;
   bool _creating = false;
@@ -127,6 +129,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
     _poll?.cancel();
     _checks = 0;
     _paymentUrl = null;
+    _orderSummary = null;
     _error = null;
     _status = null;
     _uncertainCreate = false;
@@ -159,10 +162,14 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
   Future<void> _loadAvailability() async {
     if (_loadingAvailability) return;
     setState(() => _loadingAvailability = true);
-    final available = await _premium.webPaymentsAvailable();
+    final (available, catalog) = await (
+      _premium.webPaymentsAvailable(),
+      _premium.loadPremiumCatalog(),
+    ).wait;
     if (!mounted) return;
     setState(() {
-      _available = available;
+      _catalog = catalog;
+      _available = available && catalog != null;
       _loadingAvailability = false;
     });
   }
@@ -178,7 +185,9 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
   }
 
   Future<void> _pay() async {
+    final catalog = _catalog;
     if (_busy ||
+        catalog == null ||
         _restoreFailed ||
         _order != null ||
         !_available ||
@@ -195,6 +204,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
       final result = await _premium.startWebPayment(
         tier: _tier,
         email: _email.text.trim(),
+        expectedPriceRub: catalog.amount(_tier),
         checkout: true,
         campaignId: widget.campaignId,
       );
@@ -209,6 +219,16 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
         return;
       }
       if (result.order == null) {
+        if (result.errorCode == 'price_changed') {
+          setState(() {
+            _available = false;
+            _catalog = null;
+            _uncertainCreate = false;
+            _error = appL10n.premiumOfferChanged;
+          });
+          await _loadAvailability();
+          return;
+        }
         setState(() {
           _available = false;
           _error = appL10n.checkoutUnavailable;
@@ -217,6 +237,14 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
       }
       setState(() {
         _order = result.order;
+        _orderSummary = result.errorCode == 'pending_order'
+            ? null
+            : appL10n.premiumExistingOrder(
+                _tier == PremiumTier.weekly
+                    ? appL10n.webWeek
+                    : appL10n.webQuarter,
+                '${catalog.amount(_tier)} ₽',
+              );
         _status = switch (result.errorCode) {
           'payment_creation_pending' => 'creating',
           'payment_creation_unknown' => 'creation_unknown',
@@ -227,7 +255,12 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
       });
       _showStageStart();
       if (_paymentUrl != null) await _openPayment();
-      _scheduleCheck();
+      if (result.errorCode == 'pending_order') {
+        if (mounted && revision == _revision) setState(() => _creating = false);
+        await _check();
+      } else {
+        _scheduleCheck();
+      }
     } finally {
       if (mounted && revision == _revision) setState(() => _creating = false);
     }
@@ -266,6 +299,14 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
         if (details != null && WebCheckoutRoute.validOrder(details.order)) {
           _order = details.order;
           _paymentUrl = details.url == null ? null : Uri.tryParse(details.url!);
+          if (details.tier != null && details.amount != null) {
+            _orderSummary = appL10n.premiumExistingOrder(
+              details.tier == PremiumTier.weekly
+                  ? appL10n.webWeek
+                  : appL10n.webQuarter,
+              '${details.amount} ₽',
+            );
+          }
         }
         _status = status ?? _status;
         _error = status == null ? appL10n.checkoutCheckFailed : null;
@@ -373,6 +414,8 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
         ),
       ),
       const SizedBox(height: 12),
+      if (_orderSummary case final summary?)
+        Text(summary, textAlign: TextAlign.center),
       SelectableText(
         appL10n.checkoutOrder(_order!),
         textAlign: TextAlign.center,
@@ -405,6 +448,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
               : () => setState(() {
                   _order = null;
                   _status = null;
+                  _orderSummary = null;
                   _error = null;
                 }),
           child: Text(appL10n.checkoutChooseAgain),
@@ -658,9 +702,9 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
                                 title: tier == PremiumTier.weekly
                                     ? appL10n.webWeek
                                     : appL10n.webQuarter,
-                                price: tier == PremiumTier.weekly
-                                    ? '99 ₽'
-                                    : '290 ₽',
+                                price: _catalog == null
+                                    ? null
+                                    : '${_catalog!.amount(tier)} ₽',
                                 period: tier == PremiumTier.weekly
                                     ? appL10n.checkoutDurationWeek
                                     : appL10n.checkoutDurationQuarter,

@@ -34,8 +34,12 @@ from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 ACCOUNT = 'a4eee3dae596a9dd9ea14dc123874f9d'
 NAMESPACE = '2c854aacc0b7483f9cb271c19a79ba5a'
 BUCKET = 'pubsite_prod_8172841311997997566'
-APPLE_PRODUCTS = {'u.pdd.pddApp.premium.week', 'ru.pdd.pddApp.sub.3months'}
+APPLE_PRODUCTS = {'u.pdd.pddApp.premium.week', 'ru.pdd.pddApp.sub.3months',
+                  'ru.pdd.pddApp.sub.3months.v2', 'ru.pdd.pddApp.sub.3months.trial3d',
+                   'ru.pdd.pddApp.sub.3months.trial3d.legacy'}
 GOOGLE_PRODUCTS = {'ru.pdd.pddapp.sub.week', 'ru.pdd.pddapp.sub.3months',
+                   'ru.pdd.pddapp.sub.3months.v2', 'ru.pdd.pddapp.sub.3months.trial3d',
+                   'ru.pdd.pddapp.sub.3months.trial3d.legacy',
                    'ru.pdd.pddapp.premium.week', 'ru.pdd.pddapp.premium.3months'}
 
 

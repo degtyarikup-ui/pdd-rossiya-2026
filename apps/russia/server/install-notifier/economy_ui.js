@@ -476,7 +476,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
   if(!stats)return;var monthly=Number(stats.expenses.monthlyUsd)||0,target=Math.max(0,Number(el('ec-plan-target').value)||0),average=Math.max(0.01,Number(el('ec-plan-average').value)||1),feeFactor=1-stats.config.paymentFeePercent/100;
   var possible=feeFactor>0,required=possible?(monthly+target)/feeFactor:0;
   set('ec-plan-cost',usd(monthly)+' / мес');set('ec-plan-fee','С учётом комиссии Platega '+pct(stats.config.paymentFeePercent));
-  set('ec-be-week',feeFactor>0?num(Math.ceil(monthly/(stats.tariffs.weeklyUsd*feeFactor)))+' продаж':'—');set('ec-be-quarter',feeFactor>0?num(Math.ceil(monthly/(stats.tariffs.quarterlyUsd*feeFactor)))+' продаж':'—');
+  set('ec-be-week',feeFactor>0?num(Math.ceil(monthly/(stats.tariffs.weeklyUsd*feeFactor)))+' продаж':'—');set('ec-be-quarter',feeFactor>0&&stats.tariffs.quarterlyUsd>0?num(Math.ceil(monthly/(stats.tariffs.quarterlyUsd*feeFactor)))+' продаж':'—');
   set('ec-plan-revenue',possible?usd(Math.ceil(required)):'—');set('ec-plan-sales',possible?num(Math.ceil(required/average)):'—');
  }
  function input(name,label,value,options){options=options||{};return '<label class="ec-field '+(options.full?'full':'')+'"><span>'+esc(label)+'</span><input name="'+name+'" type="'+(options.type||'number')+'" value="'+esc(value)+'" '+(options.required===false?'':'required')+' '+(options.type==='text'?'maxlength="160"':(options.type==='date'||options.type==='month')?(options.max?'max="'+esc(options.max)+'"':''):'min="'+(options.min??0)+'" max="'+(options.max??100000000)+'" step="'+(options.step||'0.01')+'"')+'></label>';}

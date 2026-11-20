@@ -23,12 +23,8 @@ import { metadataFields } from './attribution.js';
 import { putUserRecord } from './user_store.js';
 import { entitlementsOf, extendEntitlement, setEntitlement } from './entitlements.js';
 
-// Тарифы сайта — единственный источник цен на сервере; те же цены и сроки
-// на странице /tarify/ лендинга и в веб-пейволе приложения.
-export const WEB_TARIFFS = {
-  weekly: { days: 7, priceRub: 99, title: '1 неделя' },
-  threeMonths: { days: 90, priceRub: 290, title: '3 месяца' },
-};
+import { WEB_TARIFFS, quotedWebTariff } from './premium_offers.js';
+export { WEB_TARIFFS };
 
 const PLATEGA_API = 'https://app.platega.io';
 const PLATEGA_METHODS = { sbp: 2 }; // 2 — СБП (QR и оплата из приложения банка)
@@ -155,15 +151,20 @@ export function buildSbpPurchaseMessage(order, expiresAt, esc, renewal = false) 
  * Всегда записывает выбор; при подключённой платёжке ещё и создаёт платёж:
  * { ok, available: true, url, order } — иначе { ok, available: false }.
  */
-export async function handlePayIntent(request, env, user, { jsonResponse, sendTelegram, esc }) {
+export async function handlePayIntent(request, env, user, deps) {
+  const { jsonResponse, sendTelegram, esc } = deps;
   let body;
   try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
   const email = String(body?.email || '').trim().toLowerCase();
   const tier = body?.tier;
   const method = body?.method;
   if (!EMAIL_RE.test(email)) return jsonResponse({ error: 'invalid email' }, 400);
-  if (!WEB_TARIFFS[tier] || !PLATEGA_METHODS[method]) return jsonResponse({ error: 'invalid tariff' }, 400);
+  if (typeof tier !== 'string' || !Object.hasOwn(WEB_TARIFFS, tier) || method !== 'sbp') return jsonResponse({ error: 'invalid tariff' }, 400);
   if (!env.INSTALLS) return jsonResponse({ error: 'storage unavailable' }, 503);
+
+  const { tariff, error } = await quotedWebTariff(env, body, jsonResponse);
+  if (error) return error;
+  const quoteInfo = body.catalogVersion === 1 ? { catalogVersion: 1 } : {};
 
   // С какого клиента платят: от этого зависит, куда вернуть человека.
   const client = body.client === 'android' ? 'android' : 'web';
@@ -177,7 +178,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
   const previous = await readJson(env, key);
   const now = Date.now();
   const repeat = previous && previous.email === email && previous.tier === tier && previous.method === method &&
-    now - Date.parse(previous.at) < REPEAT_MS;
+    previous.priceRub === tariff.priceRub && now - Date.parse(previous.at) < REPEAT_MS;
   if (repeat && !live) return jsonResponse({ ok: true, available: false });
   if (previous?.lastOrder?.orderId) {
     const reserved = await readJson(env, 'pay_order:' + previous.lastOrder.orderId);
@@ -190,26 +191,31 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
       // 409 commits the unknown marker and asks support to reconcile it.
       return jsonResponse({ error: reserved.status === 'creation_unknown' ? 'payment creation requires review' : 'payment creation pending', code: reserved.status === 'creation_unknown' ? 'payment_creation_unknown' : 'payment_creation_pending', order: reserved.orderId, status: reserved.status }, reserved.status === 'creation_unknown' ? 409 : 503);
     }
-    // Dedicated checkout never creates another charge while this account has
-    // an unresolved payment, including a lost response or another browser tab.
-    if (checkout && live && reserved?.status === 'pending' && reserved.userId === user.id &&
-        typeof reserved.url === 'string' && reserved.url.startsWith('https://')) {
-      return jsonResponse({ ok: true, available: true, url: reserved.url, order: reserved.orderId });
-    }
-  }
-  if (repeat && previous.lastOrder?.url && previous.lastOrder.tier === tier && previous.lastOrder.client === client) {
-    // Только неоплаченный заказ: после оплаты новая покупка — новый платёж.
-    const last = await readJson(env, 'pay_order:' + previous.lastOrder.orderId);
-    if (last?.status === 'pending' && last.userId === user.id) {
-      return jsonResponse({ ok: true, available: true, url: last.url, order: last.orderId });
+    if (live && reserved?.userId === user.id && reserved.status === 'pending') {
+      const versioned = body.catalogVersion === 1 || reserved.catalogVersion === 1;
+      if (versioned && now - Date.parse(reserved.createdAt) >= REPEAT_MS) {
+        // An old Android client cannot resolve a cross-device 409. Verify an aged
+        // reservation so an expired provider form never blocks a fresh legacy order.
+        try { await settleOrder(env, reserved, deps); }
+        catch { return jsonResponse({ error: 'payment status unavailable' }, 503); }
+      }
+      if (versioned && !['failed', 'canceled'].includes(reserved.status) &&
+          (reserved.status !== 'pending' || reserved.tier !== tier || reserved.amount !== tariff.priceRub ||
+           reserved.client !== client || reserved.email !== email)) {
+        return jsonResponse({ error: 'pending_order', code: 'pending_order', order: reserved.orderId,
+          tier: reserved.tier, amount: reserved.amount, status: reserved.status }, 409);
+      }
+      if (reserved.status === 'pending' && typeof reserved.url === 'string' && reserved.url.startsWith('https://') &&
+          (versioned || checkout || (repeat && previous.lastOrder.tier === tier && previous.lastOrder.client === client))) {
+        return jsonResponse({ ok: true, available: true, url: reserved.url, order: reserved.orderId });
+      }
     }
   }
 
-  const tariff = WEB_TARIFFS[tier];
   const app = typeof body.app === 'string' ? body.app.slice(0, 4) : 'ru';
   const intent = {
     userId: user.id, name: user.name || '', accountEmail: user.email || '', email, tier, method, app, client, context,
-    priceRub: tariff.priceRub, at: new Date(now).toISOString(),
+    ...quoteInfo, priceRub: tariff.priceRub, at: new Date(now).toISOString(),
     firstAt: previous?.firstAt || new Date(now).toISOString(), count: (previous?.count || 0) + 1,
   };
 
@@ -225,7 +231,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
     try {
       if (env.__ACCOUNT_CHECKPOINT) {
         order = { orderId, txId: null, userId: user.id, name: user.name || '', accountEmail: user.email || '', provider: user.provider || null,
-          email, tier, days: tariff.days, amount: tariff.priceRub, currency: 'RUB', method, app, client, context, ...attribution, status: 'creating', createdAt: new Date(now).toISOString() };
+          email, tier, days: tariff.days, amount: tariff.priceRub, currency: 'RUB', method, app, client, context, ...quoteInfo, ...attribution, status: 'creating', createdAt: new Date(now).toISOString() };
         intent.lastOrder = { orderId, tier, client };
         await env.INSTALLS.put('pay_order:' + orderId, JSON.stringify(order));
         await env.INSTALLS.put(key, JSON.stringify(intent));
@@ -248,7 +254,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
       order = {
         orderId, txId: tx.transactionId, userId: user.id, name: user.name || '', accountEmail: user.email || '',
         provider: user.provider || null, email, tier, days: tariff.days, amount: tariff.priceRub, currency: 'RUB',
-        method, app, client, context, ...attribution, status: 'pending', url, createdAt: new Date(now).toISOString(),
+        method, app, client, context, ...quoteInfo, ...attribution, status: 'pending', url, createdAt: new Date(now).toISOString(),
       };
       await env.INSTALLS.put('pay_order:' + orderId, JSON.stringify(order));
       await env.INSTALLS.put('pay_tx:' + tx.transactionId, orderId);
@@ -484,8 +490,13 @@ export async function handlePayCheck(request, env, user, deps) {
       await reportPaymentFailure(env, 'payment.check', error, order, user);
     }
   }
+  // A legacy checkout has no way to show a different snapshot price from
+  // another device. It can still check settlement and retrieve the Premium term.
+  const canResume = body.catalogVersion === 1 || order.catalogVersion !== 1 ||
+    order.amount === WEB_TARIFFS[order.tier]?.priceRub;
   return jsonResponse({ ok: true, status: order.status, order: order.orderId,
-    ...(order.status === 'pending' && typeof order.url === 'string' && order.url.startsWith('https://') ? { url: order.url } : {}) });
+    ...(body.catalogVersion === 1 ? { tier: order.tier, amount: order.amount } : {}),
+    ...(canResume && order.status === 'pending' && typeof order.url === 'string' && order.url.startsWith('https://') ? { url: order.url } : {}) });
 }
 
 /**
@@ -502,20 +513,21 @@ export async function handlePayLead(request, env, { jsonResponse, sendTelegram, 
   // Скрытое поле-ловушка: его заполняют только боты.
   if (body?.website) return jsonResponse({ ok: true, available: webPaymentsLive(env) });
   if (!EMAIL_RE.test(email)) return jsonResponse({ error: 'invalid email' }, 400);
-  if (!WEB_TARIFFS[tier]) return jsonResponse({ error: 'invalid tariff' }, 400);
+  if (typeof tier !== 'string' || !Object.hasOwn(WEB_TARIFFS, tier)) return jsonResponse({ error: 'invalid tariff' }, 400);
   if (!env.INSTALLS) return jsonResponse({ error: 'storage unavailable' }, 503);
+  const { tariff, error } = await quotedWebTariff(env, body, jsonResponse);
+  if (error) return error;
   const key = 'pay_lead:' + email.slice(0, 200);
   const previous = await readJson(env, key);
   const now = Date.now();
-  if (!(previous && previous.tier === tier && now - Date.parse(previous.at) < REPEAT_MS)) {
-    const lead = { email, tier, source: 'tarify', priceRub: WEB_TARIFFS[tier].priceRub, at: new Date(now).toISOString(),
+  if (!(previous && previous.tier === tier && previous.priceRub === tariff.priceRub && now - Date.parse(previous.at) < REPEAT_MS)) {
+    const lead = { email, tier, source: 'tarify', priceRub: tariff.priceRub, at: new Date(now).toISOString(),
       firstAt: previous?.firstAt || new Date(now).toISOString(), count: (previous?.count || 0) + 1,
       ipCountry: request.headers.get('cf-ipcountry') || null };
     await env.INSTALLS.put(key, JSON.stringify(lead), {
       metadata: { email: email.slice(0, 120), tier, method: 'sbp', source: 'tarify', at: lead.at, count: lead.count },
     });
     if (!previous && env.BOT_TOKEN && env.CHAT_ID) {
-      const tariff = WEB_TARIFFS[tier];
       try {
         await sendTelegram(env, [
           '💳 <b>Хотят оплатить</b> (страница тарифов, СБП ещё не подключена)',

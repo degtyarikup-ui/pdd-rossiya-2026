@@ -1,4 +1,9 @@
 import 'package:pdd_app/data/services/diagnostic_context.dart';
+import 'package:pdd_app/data/services/iap_offer.dart';
+import 'package:in_app_purchase_storekit/store_kit_2_wrappers.dart'
+    show SK2Product;
+
+export 'package:pdd_app/data/services/iap_offer.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -28,6 +33,7 @@ enum PurchaseResult {
   canceled,
   error,
   productNotFound,
+  offerChanged,
   storeUnavailable,
 }
 
@@ -53,6 +59,8 @@ enum PurchaseFailure {
   paymentPending,
 }
 
+typedef NativeOfferPolicy = ({bool standard, bool trial});
+
 class _StoreProductQuery {
   _StoreProductQuery(this.ids);
 
@@ -65,13 +73,53 @@ class IapService extends ChangeNotifier {
   static final IapService instance = IapService._internal();
   IapService._internal()
     : _onProductDiagnostic = null,
-      _queryPlayPurchases = null;
+      _queryPlayPurchases = null,
+      _readPolicy = _publishedPolicy,
+      _appleEligible = SK2Product.isIntroductoryOfferEligible;
   @visibleForTesting
   IapService.forTesting({
     void Function(String, Map<String, dynamic>)? onProductDiagnostic,
     Future<QueryPurchaseDetailsResponse> Function()? queryPlayPurchases,
+    Future<NativeOfferPolicy> Function(String store)? readPolicy,
+    Future<bool> Function(String productId)? appleEligible,
   }) : _onProductDiagnostic = onProductDiagnostic,
-       _queryPlayPurchases = queryPlayPurchases;
+       _queryPlayPurchases = queryPlayPurchases,
+       _readPolicy = readPolicy,
+       _appleEligible = appleEligible ?? SK2Product.isIntroductoryOfferEligible;
+
+  final Future<NativeOfferPolicy> Function(String)? _readPolicy;
+  final Future<bool> Function(String) _appleEligible;
+  static const _legacyPolicy = (standard: false, trial: false);
+  NativeOfferPolicy _policy = _legacyPolicy;
+  IapOffer? _trialOffer;
+
+  static Future<NativeOfferPolicy> _publishedPolicy(String store) async {
+    final catalog = await PremiumService.instance.loadPremiumCatalog();
+    return (
+      standard: catalog?.nativeQuarterMode(store) == 'standard',
+      trial: catalog?.trialEnabled(store) == true,
+    );
+  }
+
+  Future<NativeOfferPolicy> _loadPolicy() async {
+    if (_readPolicy == null) return _legacyPolicy;
+    try {
+      final policy = await _readPolicy(
+        _store,
+      ).timeout(const Duration(seconds: 3));
+      if (policy.trial && defaultTargetPlatform == TargetPlatform.android) {
+        final country = await DeviceRegion.playCountry();
+        return (
+          standard: policy.standard,
+          trial: country != null && country != 'RU',
+        );
+      }
+      return policy;
+    } catch (_) {
+      return _legacyPolicy;
+    }
+  }
+
   final Future<QueryPurchaseDetailsResponse> Function()? _queryPlayPurchases;
   final void Function(String, Map<String, dynamic>)? _onProductDiagnostic;
 
@@ -155,7 +203,24 @@ class IapService extends ChangeNotifier {
   // Query only the products sold by this storefront and accepted by our
   // verification server. Guessing aliases can display an unpurchasable product.
   // Restored transactions are handled independently from this sales catalogue.
-  static Set<String> get _productIds => {productIdWeek, productId3Months};
+  static String get productIdQuarterStandard => '$productId3Months.v2';
+  static String get productIdQuarterTrial => '$productId3Months.trial3d';
+
+  static String get productIdQuarterLegacyTrial =>
+      '$productIdQuarterTrial.legacy';
+
+  String get _selectedTrialId =>
+      _policy.standard ? productIdQuarterTrial : productIdQuarterLegacyTrial;
+
+  static bool _isTrialProduct(String id) =>
+      id == productIdQuarterTrial || id == productIdQuarterLegacyTrial;
+
+  Set<String> get _productIds => {
+    productIdWeek,
+    productId3Months,
+    if (_policy.standard) productIdQuarterStandard,
+    if (_policy.trial) _selectedTrialId,
+  };
 
   final Map<String, ProductDetails> _products = {};
   bool _isAvailable = false;
@@ -280,7 +345,15 @@ class IapService extends ChangeNotifier {
     return PurchaseResult.error;
   }
 
-  Future<PurchaseResult?> _reconcilePlayOwner(String productId) async {
+  Future<PurchaseResult?> _reconcilePlayOwner(
+    String productId, {
+    bool allPlans = false,
+  }) async {
+    bool matches(String id) =>
+        id == productId ||
+        (allPlans &&
+            (id == productIdWeek ||
+                _isProductForTier(id, PremiumTier.threeMonths)));
     try {
       final response =
           await (_queryPlayPurchases?.call() ??
@@ -295,7 +368,7 @@ class IapService extends ChangeNotifier {
         return PurchaseResult.storeUnavailable;
       }
       final purchases = response.pastPurchases
-          .where((purchase) => purchase.productID == productId)
+          .where((purchase) => matches(purchase.productID))
           .toList();
       if (purchases.isNotEmpty) {
         // Reuse delivery/verification, and return its result instead of opening
@@ -308,7 +381,7 @@ class IapService extends ChangeNotifier {
           if (completer.isCompleted) return await completer.future;
           final owner =
               _playPurchaseOwner(purchases.first) ??
-              _pendingStoreOwners[productId];
+              _pendingStoreOwners[purchases.first.productID];
           if (owner != null &&
               !_ownerMatches(owner, AuthService.instance.currentUser?.id)) {
             return _accountMismatch();
@@ -323,13 +396,15 @@ class IapService extends ChangeNotifier {
       }
       await _purchaseQueue;
       if (_pendingVerification.values.any(
-            (entry) => entry.$1.productID == productId,
+            (entry) => matches(entry.$1.productID),
           ) ||
-          _pendingProducts.contains(productId)) {
+          _pendingProducts.any(matches)) {
         return _accountMismatch();
       }
-      await _clearOwner(productId);
-      debugPrint('IapService: cleared stale Play reservation for $productId');
+      for (final id in _pendingStoreOwners.keys.where(matches).toList()) {
+        await _clearOwner(id);
+        debugPrint('IapService: cleared stale Play reservation for $id');
+      }
       return null;
     } catch (error) {
       _report('iap.owner', error: error);
@@ -425,6 +500,19 @@ class IapService extends ChangeNotifier {
   Future<void> loadProducts({
     ProductLoadPhase phase = ProductLoadPhase.background,
     PremiumTier? purchaseTier,
+  }) => _requestProducts(phase, purchaseTier);
+
+  Future<bool> loadTrialPreview() async {
+    final policy = await _loadPolicy();
+    if (!policy.trial || _disposed) return false;
+    await _requestProducts(ProductLoadPhase.paywall, null, policy: policy);
+    return storeOffer(PremiumTier.threeMonths)?.hasTrial == true;
+  }
+
+  Future<void> _requestProducts(
+    ProductLoadPhase phase,
+    PremiumTier? purchaseTier, {
+    NativeOfferPolicy? policy,
   }) {
     if (_disposed) return Future.value();
     if (_loadingProducts == null) {
@@ -439,8 +527,8 @@ class IapService extends ChangeNotifier {
     if (phase == ProductLoadPhase.purchase && purchaseTier != null) {
       _purchaseProductId = _productIdForTier(purchaseTier);
     }
-    return _loadingProducts ??= Future<void>.microtask(_loadProducts)
-        .whenComplete(() {
+    return _loadingProducts ??=
+        Future<void>.microtask(() => _loadProducts(policy)).whenComplete(() {
           _loadingProducts = null;
           _loadPhase = ProductLoadPhase.background;
           _purchaseProductId = null;
@@ -457,8 +545,10 @@ class IapService extends ChangeNotifier {
     _report('iap.products', code: code, stack: stack, context: context);
   }
 
-  Future<void> _loadProducts() async {
+  Future<void> _loadProducts(NativeOfferPolicy? policy) async {
     if (_disposed || !supportsStoreBilling) return;
+    if (_readPolicy != null) _policy = policy ?? await _loadPolicy();
+    if (_disposed) return;
     for (var attempt = 1; !_isAvailable; attempt++) {
       _productContext = {'stage': 'availability', 'attempt': attempt};
       String? failure;
@@ -528,6 +618,7 @@ class IapService extends ChangeNotifier {
     // offer token. Keep display prices separately, never buy from old details.
     final hadProducts = _products.isNotEmpty;
     _products.clear();
+    _trialOffer = null;
     query.result = _fetchProducts(query);
     if (hadProducts) notifyListeners();
     return query;
@@ -540,9 +631,22 @@ class IapService extends ChangeNotifier {
       final products = response.productDetails
           .where((product) => query.ids.contains(product.id))
           .toList();
-      final missing = query.ids.difference(
-        products.map((product) => product.id).toSet(),
-      );
+      final regular = <String, ProductDetails>{};
+      for (final product in products) {
+        if (!_isTrialProduct(product.id) &&
+            IapOffer.isRegularPlan(
+              product,
+              quarterly: product.id != productIdWeek,
+            )) {
+          regular.putIfAbsent(product.id, () => product);
+        }
+      }
+      final quarter =
+          regular[productIdQuarterStandard] ?? regular[productId3Months];
+      final missing = {
+        if (!regular.containsKey(productIdWeek)) productIdWeek,
+        if (quarter == null) productId3Months,
+      };
       query.context.addAll({
         'returnedCount': products.length,
         'missingCount': missing.length,
@@ -560,19 +664,40 @@ class IapService extends ChangeNotifier {
         });
         return ErrorReporter.sdkCode(error.code);
       }
-      for (final product in products) {
-        _products[product.id] = product;
+      IapOffer? trial;
+      if (quarter != null && _policy.trial) {
+        for (final product in products.where((p) => p.id == _selectedTrialId)) {
+          try {
+            final offer = await IapOffer.trialFor(
+              product,
+              appleEligible: _appleEligible,
+            ).timeout(const Duration(seconds: 2));
+            if (offer != null && offer.sameRenewal(IapOffer.paid(quarter))) {
+              trial = offer;
+              break;
+            }
+          } catch (_) {
+            // Store eligibility is optional; the regular plans remain usable.
+          }
+        }
+      }
+      if (_disposed || !identical(_storeProductQuery, query)) return null;
+      _products.addAll(regular);
+      if (trial != null) {
+        _products[trial.product.id] = trial.product;
+        _trialOffer = trial;
       }
       _lastErrorMessage = '';
-      if (products.isNotEmpty) {
+      if (_products.isNotEmpty) {
         notifyListeners();
         unawaited(_savePriceCache());
       }
       if (_purchaseProductId != null &&
-          _products.containsKey(_purchaseProductId)) {
+          (_products.containsKey(_purchaseProductId) ||
+              (_purchaseProductId == productId3Months && quarter != null))) {
         return null;
       }
-      if (products.isEmpty) return 'products_not_found';
+      if (_products.isEmpty) return 'products_not_found';
       if (missing.isNotEmpty) return 'products_incomplete';
       return null;
     } catch (e, stack) {
@@ -590,11 +715,31 @@ class IapService extends ChangeNotifier {
   }
 
   ProductDetails? _findProductForTier(PremiumTier tier) {
+    if (tier == PremiumTier.threeMonths && _policy.standard) {
+      return _products[productIdQuarterStandard] ?? _products[productId3Months];
+    }
     return _products[_productIdForTier(tier)];
   }
 
   static String _productIdForTier(PremiumTier tier) =>
       tier == PremiumTier.threeMonths ? productId3Months : productIdWeek;
+
+  IapOffer? storeOffer(PremiumTier tier) {
+    final regular = _findProductForTier(tier);
+    if (regular == null) return null;
+    final trial = _trialOffer;
+    if (tier == PremiumTier.threeMonths &&
+        trial != null &&
+        identical(_products[trial.product.id], trial.product)) {
+      return trial;
+    }
+    return IapOffer.paid(regular);
+  }
+
+  bool _isProductForTier(String id, PremiumTier tier) =>
+      id == _productIdForTier(tier) ||
+      (tier == PremiumTier.threeMonths &&
+          (id == productIdQuarterStandard || _isTrialProduct(id)));
 
   static const _priceCacheKey = 'iap_store_prices';
   final Map<String, String> _cachedPrices = {};
@@ -639,7 +784,7 @@ class IapService extends ChangeNotifier {
   bool get hasStoreProducts => _products.isNotEmpty;
 
   /// A partial response must not stop the paywall retry for the missing tier.
-  bool get hasCompleteStoreProducts => _productIds.every(_products.containsKey);
+  bool get hasCompleteStoreProducts => PremiumTier.values.every(hasProductFor);
 
   /// Цена тарифа для показа: из ответа магазина, а пока он не пришёл — та,
   /// что этот же магазин называл на этом устройстве в прошлый раз (строка
@@ -686,7 +831,10 @@ class IapService extends ChangeNotifier {
   }
 
   bool _paymentBusy = false;
-  Future<PurchaseResult> buyProduct(PremiumTier tier) async {
+  Future<PurchaseResult> buyProduct(
+    PremiumTier tier, {
+    IapOffer? expectedOffer,
+  }) async {
     if (_paymentBusy) {
       _report('iap.buy', code: 'purchase_in_progress');
       return PurchaseResult.error;
@@ -696,7 +844,7 @@ class IapService extends ChangeNotifier {
       // A delivered receipt takes priority over a failed availability probe.
       // Otherwise the paywall could offer another payment via SBP.
       if (_retryDeliveredProduct(tier)) return PurchaseResult.error;
-      final result = await _buyNative(tier);
+      final result = await _buyNative(tier, expectedOffer);
       if ((result == PurchaseResult.storeUnavailable ||
               result == PurchaseResult.productNotFound) &&
           _retryDeliveredProduct(tier)) {
@@ -709,13 +857,13 @@ class IapService extends ChangeNotifier {
   }
 
   bool hasDeliveredProduct(PremiumTier tier) => _pendingVerification.values.any(
-    (entry) => entry.$1.productID == _productIdForTier(tier),
+    (entry) => _isProductForTier(entry.$1.productID, tier),
   );
 
   bool _retryDeliveredProduct(PremiumTier tier) {
     if (!hasDeliveredProduct(tier)) return false;
     final purchase = _pendingVerification.values.firstWhere(
-      (entry) => entry.$1.productID == _productIdForTier(tier),
+      (entry) => _isProductForTier(entry.$1.productID, tier),
     );
     if (purchase.$2 != null &&
         !_ownerMatches(purchase.$2, AuthService.instance.currentUser?.id)) {
@@ -728,7 +876,10 @@ class IapService extends ChangeNotifier {
     return true;
   }
 
-  Future<PurchaseResult> _buyNative(PremiumTier tier) async {
+  Future<PurchaseResult> _buyNative(
+    PremiumTier tier,
+    IapOffer? expectedOffer,
+  ) async {
     if (!supportsStoreBilling) {
       return PurchaseResult.storeUnavailable;
     }
@@ -754,17 +905,53 @@ class IapService extends ChangeNotifier {
       }
     }
 
+    // A display query may have started before the user saw these terms.
+    // Checkout must fetch the active policy and eligible offers again.
+    if (expectedOffer != null && _loadingProducts != null) {
+      await _loadingProducts;
+    }
     await loadProducts(phase: ProductLoadPhase.purchase, purchaseTier: tier);
-    final product = _findProductForTier(tier);
-
+    final offer = storeOffer(tier);
+    if (_retryDeliveredProduct(tier)) return PurchaseResult.error;
+    if (expectedOffer != null &&
+        (offer == null || !expectedOffer.sameTerms(offer))) {
+      return PurchaseResult.offerChanged;
+    }
+    if (offer?.hasTrial == true && expectedOffer == null) {
+      return PurchaseResult.offerChanged;
+    }
+    final product = offer?.product;
     if (product == null) {
       debugPrint('IapService: Product for tier $tier not found in Store');
       _report('iap.buy', code: 'product_not_found');
       return PurchaseResult.productNotFound;
     }
 
-    // StoreKit/Play may deliver an existing purchase while loading prices.
-    if (_retryDeliveredProduct(tier)) return PurchaseResult.error;
+    // Google treats different subscription products independently. Look for any
+    // existing Premium purchase before offering a second contract in the
+    // expanded catalog, including after reinstall or a change of PDD account.
+    if (defaultTargetPlatform == TargetPlatform.android &&
+        (expectedOffer != null || _policy.standard || _policy.trial)) {
+      final result = await _reconcilePlayOwner(product.id, allPlans: true);
+      if (result != null) return result;
+      if (_retryDeliveredProduct(tier)) return PurchaseResult.error;
+    }
+
+    // Do not start a second quarterly SKU while the first awaits store approval.
+    final siblingIds = {
+      ..._pendingProducts,
+      ..._pendingStoreOwners.keys,
+    }.where((id) => id != product.id && _isProductForTier(id, tier)).toList();
+    for (final id in siblingIds) {
+      if (!_pendingProducts.contains(id) &&
+          defaultTargetPlatform == TargetPlatform.android) {
+        final result = await _reconcilePlayOwner(id);
+        if (result != null) return result;
+        continue;
+      }
+      _lastFailure = PurchaseFailure.paymentPending;
+      return PurchaseResult.error;
+    }
     if (_currentPurchaseCompleter != null) {
       _report('iap.buy', code: 'purchase_in_progress');
       return PurchaseResult.error;
@@ -977,7 +1164,8 @@ class IapService extends ChangeNotifier {
             await _clearFailedPurchaseOwner(purchaseDetails);
           }
           debugPrint('IapService: purchase error: ${purchaseDetails.error}');
-          _lastErrorMessage = purchaseDetails.error?.message ?? appL10n.payErrorGeneric;
+          _lastErrorMessage =
+              purchaseDetails.error?.message ?? appL10n.payErrorGeneric;
           _lastFailure = PurchaseFailure.storeRefused;
           _safeCompletePurchase(PurchaseResult.error);
           _safeCompleteRestore(false);
@@ -998,10 +1186,11 @@ class IapService extends ChangeNotifier {
             continue;
           }
           final tier = _tierFromProductId(purchaseDetails.productID);
-          final price = getProductPrice(
-            tier,
-            tier == PremiumTier.threeMonths ? '290 ₽' : '99 ₽',
-          );
+          // The receipt may be a restore or renewal. The visible offer is not
+          // evidence of the amount billed for this transaction.
+          final price = _isTrialProduct(purchaseDetails.productID)
+              ? ''
+              : _products[purchaseDetails.productID]?.price ?? '';
           final store = _store;
 
           final verified = await PremiumService.instance.recordPurchase(

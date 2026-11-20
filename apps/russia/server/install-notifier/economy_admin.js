@@ -1,5 +1,7 @@
 // Админский учёт экономики. Платежи и сроки Premium здесь не изменяются.
 // Доход включает продажи магазинов по тарифу; выплаты магазинов — справочные.
+import { isTrialProduct } from './store_products.js';
+import { readCatalog, WEB_TARIFFS } from './premium_offers.js';
 import { getUsdRate } from './economy_fx.js';
 import { economyInUsd } from './economy_usd.js';
 import { monthlyBalances, payoutLedger } from './economy_payouts.js';
@@ -298,7 +300,7 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
   const monthStart = Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), 1);
   const calendarPeriodStart = selectedMonth ? monthStart : period === '30d' ? calendarNow - 29 * DAY : 0;
   const periodStart = period === 'all' ? 0 : calendarPeriodStart - MOSCOW_OFFSET;
-  const [currentConfig, orderKeys, users, cloudflare, fx, entries] = await Promise.all([
+  const [currentConfig, orderKeys, users, cloudflare, fx, entries, quarterPriceRub] = await Promise.all([
     getEconomyConfig(env), listAll(env, 'pay_order:'),
     typeof deps.listUserSummaries === 'function' ? deps.listUserSummaries(env) : [],
     getCloudflareBilling(env, deps), getUsdRate(env, selectedMonth && now < actualNow ? { ...deps, reportDay: reportDay(now) } : deps),
@@ -306,6 +308,9 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
       if (!response.ok) throw new Error('Журнал выплат недоступен');
       return response.json();
     }) : null,
+    env.ACCOUNTS
+      ? readCatalog(env).then(catalog => catalog.tariffs.threeMonths.priceRub).catch(() => null)
+      : WEB_TARIFFS.threeMonths.priceRub,
   ]);
   const config = selectedMonth ? { ...currentConfig, profitShares: undefined, ...schemeForMonth(currentConfig, selectedMonth) } : currentConfig;
   const orders = await mapAdminReads(orderKeys, async key => {
@@ -359,12 +364,15 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
     remember(user.createdAt);
     const source = String(user.premiumSource || '').toLowerCase();
     const expiry = timestamp(user.premiumExpiresAt);
+    const activePurchase = full.verifiedPurchases?.[source] || full.verifiedPurchase || {};
+    const isUnpaidTrial = isTrialProduct(activePurchase.productId) && activePurchase.paid !== true;
     if (user.isPremium && (!expiry || expiry > now)) {
       if (Object.hasOwn(storeCounts, source)) storeCounts[source]++;
-      if (['web', 'appstore', 'googleplay', 'rustore'].includes(source)) activePayingCount++;
+      if (['web', 'appstore', 'googleplay', 'rustore'].includes(source) && (source === 'web' || !isUnpaidTrial)) activePayingCount++;
     }
     if (!['appstore', 'googleplay', 'rustore'].includes(source) && !user.purchasedAt && !user.storeVerifiedAt) continue;
     const purchase = full.verifiedPurchase || {};
+    if (isTrialProduct(purchase.productId) && (purchase.paid !== true || purchase.refunded)) continue;
     const purchaseSource = String(purchase.store || source).toLowerCase();
     if (!['appstore', 'googleplay', 'rustore'].includes(purchaseSource)) continue;
     // Проверка подписки может повторяться: storeVerifiedAt не дата продажи.
@@ -376,11 +384,15 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
     seenTransactions.add(unique);
     const product = String(purchase.productId || '').toLowerCase();
     const duration = expiry && time ? (expiry - time) / DAY : 0;
+    // Only the Russian storefront's new regular price changed. Other storefronts
+    // retain the historical local price and the existing reporting estimate.
+    const newRussianQuarter = ['RU', 'RUS'].includes(purchase.storefront) &&
+      (product.endsWith('.3months.v2') || product.endsWith('.3months.trial3d'));
     const is3m = product.includes('3month') || (!product && duration >= 60);
     const isTest = isTestOrder({ ...full, environment: purchase.environment });
     estimatedReceipts.push({ id: txId, date: new Date(time).toISOString(), customer: user.name || user.email || 'Пользователь',
       email: user.email || '', store: stores[purchaseSource], storeKey: purchaseSource, tier: is3m ? '3 месяца' : '1 неделя',
-      amountRub: is3m ? 290 : 99, txId, isTest, status: 'estimated', type: 'estimate', includedInRevenue: false,
+      amountRub: newRussianQuarter ? 370 : is3m ? 290 : 99, txId, isTest, status: 'estimated', type: 'estimate', includedInRevenue: false,
       dateBasis: full.purchasedAt || user.purchasedAt ? 'purchase' : 'verification' });
   }
   let manualRevenuesRub = 0;
@@ -507,8 +519,8 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
       distributableNetRub: allocation.distributable, marginPercent: grossRevenueRub > 0 ? round(allocation.distributable / grossRevenueRub * 100) : 0 },
     profitShares: allocation.shares.map(({ amount, ...share }) => ({ ...share, payoutRub: amount })),
     partners: Object.fromEntries(Object.entries(allocation.partners).map(([key, { amount, ...partner }]) => [key, { ...partner, payoutRub: amount }])),
-    breakEven: { targetRub: totalExpensesRub, monthlyRub: round(monthlyRub), weeklySubsNeeded: Math.ceil(totalExpensesRub / 99),
-      threeMonthSubsNeeded: Math.ceil(totalExpensesRub / 290), coveragePercent: totalExpensesRub > 0 ? Math.round(grossRevenueRub / totalExpensesRub * 100) : 100,
+    breakEven: { quarterPriceRub, targetRub: totalExpensesRub, monthlyRub: round(monthlyRub), weeklySubsNeeded: Math.ceil(totalExpensesRub / 99),
+      threeMonthSubsNeeded: quarterPriceRub ? Math.ceil(totalExpensesRub / quarterPriceRub) : null, coveragePercent: totalExpensesRub > 0 ? Math.round(grossRevenueRub / totalExpensesRub * 100) : 100,
       isProfitable: grossRevenueRub >= totalExpensesRub },
     unitEconomics: { totalUsersCount: realUsersCount, activePayingCount,
       payingConversionRate: realUsersCount ? round(activePayingCount / realUsersCount * 100) : 0,

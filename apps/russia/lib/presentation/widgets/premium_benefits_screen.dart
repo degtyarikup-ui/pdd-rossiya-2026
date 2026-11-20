@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -8,6 +9,8 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
+import 'package:pdd_app/data/services/iap_service.dart';
+import 'package:pdd_app/data/services/payment_mode.dart';
 import 'package:pdd_app/presentation/widgets/premium_celebration_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_plans_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_motion.dart';
@@ -28,6 +31,7 @@ class PremiumBenefitsScreen extends StatefulWidget {
 class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
     with SingleTickerProviderStateMixin {
   bool _showingPlans = false;
+  bool _trialAvailable = false;
   bool _entranceStarted = false;
   late final AnimationController _timeline = AnimationController(
     vsync: this,
@@ -45,6 +49,27 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
   late final Animation<double> _statistics = _timeline.drive(
     CurveTween(curve: const Interval(.08, 1, curve: Curves.easeOutCubic)),
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTrial();
+  }
+
+  Future<void> _loadTrial() async {
+    if (kIsWeb || PremiumService.instance.isPremium) return;
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      if ((await currentAndroidPaymentModes()).first !=
+          PaymentMode.storeBilling) {
+        return;
+      }
+    } else if (defaultTargetPlatform != TargetPlatform.iOS) {
+      return;
+    }
+    if (!mounted) return;
+    final eligible = await IapService.instance.loadTrialPreview();
+    if (mounted && eligible) setState(() => _trialAvailable = true);
+  }
 
   @override
   void didChangeDependencies() {
@@ -272,7 +297,9 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
                                         ),
                                       ),
                                       child: Text(
-                                        l10n.paywallSubscribe,
+                                        _trialAvailable
+                                            ? l10n.premiumTrialButton
+                                            : l10n.paywallSubscribe,
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
                                           fontSize: 17,

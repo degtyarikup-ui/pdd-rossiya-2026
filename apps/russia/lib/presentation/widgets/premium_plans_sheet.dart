@@ -78,6 +78,8 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
   bool _isLoading = false;
   // Подключена ли оплата СБП на сервере (спрашиваем при открытии).
   bool _sbpLive = false;
+  PremiumCatalog? _catalog;
+  bool _loadingCatalog = false;
   // Android: как платить — СБП или магазин. null — ещё определяем.
   PaymentMode? _androidMode;
   // Способы, между которыми можно выбирать (российское устройство в Play).
@@ -146,11 +148,21 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
     }
   }
 
-  void _loadSbpAvailability() {
-    if (!CountryConfig.current.hasWebPayments) return;
-    PremiumService.instance.webPaymentsAvailable().then((live) {
-      if (mounted && live) setState(() => _sbpLive = true);
-    });
+  Future<void> _loadSbpAvailability() async {
+    if (!CountryConfig.current.hasWebPayments || _loadingCatalog) return;
+    setState(() => _loadingCatalog = true);
+    final premium = PremiumService.instance;
+    final (live, catalog) = await (
+      premium.webPaymentsAvailable(),
+      premium.loadPremiumCatalog(),
+    ).wait;
+    if (mounted) {
+      setState(() {
+        _sbpLive = live;
+        _catalog = catalog;
+        _loadingCatalog = false;
+      });
+    }
   }
 
   /// Android платит через СБП (не через магазин).
@@ -205,7 +217,7 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
     };
   }
 
-  Future<void> _handlePurchase() async {
+  Future<void> _handlePurchase(IapOffer? expected) async {
     if (_isLoading) return;
     HapticFeedbackHelper.select();
     final tier = _selectedTier;
@@ -220,7 +232,15 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
           return;
         }
       }
-      final result = await IapService.instance.buyProduct(tier);
+      if (PremiumService.instance.isPremium &&
+          !IapService.instance.hasDeliveredProduct(tier)) {
+        Navigator.of(context).pop(PremiumPlansResult.purchased);
+        return;
+      }
+      final result = await IapService.instance.buyProduct(
+        tier,
+        expectedOffer: expected,
+      );
       if (mounted) {
         setState(() => _isLoading = false);
         if (result == PurchaseResult.success) {
@@ -228,6 +248,8 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
           Navigator.of(context).pop(PremiumPlansResult.purchased);
         } else if (result == PurchaseResult.canceled) {
           // Пользователь закрыл окно оплаты Apple/Google — ошибку не показываем
+        } else if (result == PurchaseResult.offerChanged) {
+          AppToast.show(context, appL10n.premiumOfferChanged);
         } else if (PremiumPlansSheet.offerSbpAfterStoreFailure(
           modes: _androidModes,
           mode: _androidMode,
@@ -274,7 +296,8 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
   /// привязывается к аккаунту и работает на всех устройствах. Пока платёжка
   /// не подключена — заглушка: почта для письма о запуске оплаты.
   Future<void> _handleSbpPayment() async {
-    if (_isLoading || (!kIsWeb && !_androidSbp)) return;
+    final catalog = _catalog;
+    if (catalog == null || _isLoading || (!kIsWeb && !_androidSbp)) return;
     HapticFeedbackHelper.select();
     final tier = _selectedTier;
     setState(() => _isLoading = true);
@@ -296,8 +319,15 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
         context: context,
         tier: tier,
         live: _sbpLive,
+        expectedPriceRub: catalog.amount(tier),
       );
       if (!mounted || result == null) return;
+      if (result.priceChanged) {
+        setState(() => _catalog = null);
+        await _loadSbpAvailability();
+        if (mounted) AppToast.show(context, appL10n.premiumOfferChanged);
+        return;
+      }
       if (result.opened) {
         // Android checks the pending order when returning from the browser.
         if (!kIsWeb) Navigator.of(context).pop(PremiumPlansResult.webPayment);
@@ -360,7 +390,8 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
     // Через СБП (сайт и Android) — рубли. В магазине — цена магазина
     // (валюта покупателя); пока её нет — заглушка на месте цены (null).
     if (kIsWeb || _androidSbp) {
-      return tier == PremiumTier.threeMonths ? '290 ₽' : '99 ₽';
+      final catalog = _catalog;
+      return catalog == null ? null : '${catalog.amount(tier)} ₽';
     }
     return IapService.instance.storePrice(tier);
   }
@@ -374,13 +405,20 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
         ? appL10n.paywallStoreApple
         : appL10n.paywallStoreGoogle;
     final detailColor = colors.primaryText.withValues(alpha: 0.7);
+    final trial = _storeShown
+        ? IapService.instance.storeOffer(_selectedTier)
+        : null;
+    final trialPrice = trial?.hasTrial == true ? trial!.renewalPrice : null;
     final missingPrice =
         _storeShown &&
         !IapService.instance.hasProductFor(_selectedTier) &&
         !IapService.instance.hasDeliveredProduct(_selectedTier);
     final loadingPrice =
-        missingPrice && (_pricesLoading || IapService.instance.loadingProducts);
-    final reloadPrice = missingPrice && _pricesIncomplete;
+        (sbpPay && _loadingCatalog) ||
+        (missingPrice &&
+            (_pricesLoading || IapService.instance.loadingProducts));
+    final reloadPrice =
+        (sbpPay && _catalog == null) || (missingPrice && _pricesIncomplete);
     final buttonLabel = loadingPrice
         ? appL10n.paywallLoadingPrice
         : reloadPrice
@@ -391,6 +429,8 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
         ? appL10n.webPayButton
         : kIsWeb
         ? appL10n.webPaymentSoon
+        : trialPrice != null
+        ? appL10n.premiumTrialButton
         : appL10n.paywallSubscribe;
 
     final largeText = MediaQuery.textScalerOf(context).scale(16) > 24;
@@ -530,10 +570,12 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
                                   (kIsWeb && !sbpPay)
                               ? null
                               : reloadPrice
-                              ? _loadStorePrices
+                              ? (sbpPay
+                                    ? _loadSbpAvailability
+                                    : _loadStorePrices)
                               : sbpPay
                               ? _handleSbpPayment
-                              : _handlePurchase,
+                              : () => _handlePurchase(trial),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: colors.accent,
                             foregroundColor: AppColors.white,
@@ -573,7 +615,9 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
                       const SizedBox(height: AppDimensions.spacingL),
                       // Renewal or a one-off payment is visible alongside the CTA.
                       Text(
-                        kIsWeb
+                        trialPrice != null
+                            ? appL10n.premiumTrialTerms(trialPrice, store)
+                            : kIsWeb
                             ? (sbpPay
                                   ? appL10n.webPayInfo
                                   : appL10n.webPaymentInfo)

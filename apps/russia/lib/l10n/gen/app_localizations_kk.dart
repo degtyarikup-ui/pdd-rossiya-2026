@@ -9,6 +9,23 @@ class AppLocalizationsKk extends AppLocalizations {
   AppLocalizationsKk([String locale = 'kk']) : super(locale);
 
   @override
+  String get premiumTrialButton => '3 күн тегін пайдалану';
+
+  @override
+  String premiumTrialTerms(String price, String store) {
+    return 'Алғашқы 3 күн тегін. Содан кейін жазылым автоматты түрде ұзартылып, әр 3 ай сайын $price алынады. Ақша алынбауы үшін жазылымнан $store арқылы алдын ала бас тартыңыз.';
+  }
+
+  @override
+  String get premiumOfferChanged =>
+      'Ұсыныс шарттары өзгерді. Бағаны тексеріп, қайта растаңыз.';
+
+  @override
+  String premiumExistingOrder(String plan, String price) {
+    return 'Бұрын жасалған тапсырыс: $plan · $price';
+  }
+
+  @override
   String get exam => 'Емтихан';
 
   @override

@@ -54,3 +54,27 @@ test('historical month-end FX stays separate from the live rate',async()=>{
  assert.equal((await getUsdRate(env,{now:now+86400000,reportDay:'2026-10-31',fxFetch})).rubPerUsd,85);
  assert.equal(requests.length,2);
 });
+
+test('a free quarterly trial grants access without creating revenue, projections use the live SBP price', async () => {
+  const env = environment();
+  env.ACCOUNTS = {
+    idFromName: name => name,
+    get: name => ({ fetch: async () => {
+      assert.equal(name, 'premium-offers');
+      return Response.json({ catalog: { version: 1, tariffs: { threeMonths: { priceRub: 370 } } } });
+    } }),
+  };
+  const profile = { id: 'trial', isPremium: true, premiumSource: 'appstore', premiumExpiresAt: '2026-11-06',
+    storeVerifiedAt: now, verifiedPurchase: { store: 'appstore', productId: 'ru.pdd.pddApp.sub.3months.trial3d', storefront: 'RUS', paid: false } };
+  const deps = { now, fx: { rubPerUsd: 100 }, listUserSummaries: async () => [profile] };
+  const trial = await computeEconomyStats(env, 'month', deps);
+  assert.equal(trial.revenue.storeCounts.appstore, 1);
+  assert.equal(trial.revenue.activePayingCount, 0);
+  assert.equal(trial.revenue.grossRub, 0);
+  assert.equal(trial.estimatedReceipts.length, 0);
+  assert.equal(trial.usd.tariffs.quarterlyUsd, 3.7);
+  profile.verifiedPurchase.paid = true;
+  const converted = await computeEconomyStats(env, 'month', deps);
+  assert.equal(converted.revenue.activePayingCount, 1);
+  assert.equal(converted.estimatedReceipts[0].amountRub, 370);
+});

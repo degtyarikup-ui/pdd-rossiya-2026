@@ -1,6 +1,8 @@
 export { EconomyPayouts } from './economy_payouts.js';
 import { pollStoreReviews, storeReviewsAdmin } from './store_reviews.js';
 export { StoreReviews } from './store_reviews.js';
+import { adminOffers, readCatalog } from './premium_offers.js';
+import { OFFERS_NAV, OFFERS_VIEW, OFFERS_JS } from './premium_offers_ui.js';
 import { PROMOCODES_NAV_HTML, PROMOCODES_VIEW_HTML, PROMOCODES_CLIENT_JS } from './promocodes_ui.js';
 import { secureResponse } from './security_headers.js';
 import { rankedRequest } from './ranked_runs.js';
@@ -10,6 +12,7 @@ import { adminLogin, verifyAdminAuth, adminCookieToken, adminCsrfToken, ADMIN_SE
 import { HttpFailure, boundedJson } from './request_security.js';
 export { SecurityState } from './request_security.js';
 import { acceptNoticeMetrics, noticeMetricsForAdmin } from './notice_metrics.js';
+import { storeProducts, isTrialProduct } from './store_products.js';
 import { serverErrorContext } from './diagnostic_context.js';
 import { reportSourceLabel, reportQuestionDetails } from './report_questions.js';
 import { mergeProgress } from './progress_merge.js';
@@ -785,10 +788,11 @@ async function refreshUserStoreEntitlement(env, user) {
 async function logStorePurchase(env, user, verified, details = {}) {
   const revenueTracked = details.revenueTracked || await trackStoreRevenue(env, user, verified);
   const { store, productId, isTest, paid, refunded } = verified.reference;
-  if (!verified.active || isTest || paid === false || refunded) return;
+  if (!verified.active || isTest || paid === false || refunded || (isTrialProduct(productId) && paid !== true)) return;
   // Restores also reach this path. Grace can preserve access after the paid period ends.
   if (store === 'appstore' && verified.billingPeriodEndsAt <= Date.now()) return;
-  const tier = productId.endsWith('.3months') ? 'threeMonths' : productId.endsWith('.week') ? 'weekly' : details.tier;
+  const plan = storeProducts[store]?.[productId];
+  const tier = plan || details.tier;
   const purchaseId = verified.orderId || `${user.id}_${details.tier || productId}_${(verified.expiresAt || '').slice(0, 10)}`;
   const key = 'notified_purch:' + purchaseId;
   if (await env.INSTALLS.get(key)) return;
@@ -810,8 +814,7 @@ async function logStorePurchase(env, user, verified, details = {}) {
   const event = await premiumPurchaseEvent(env, user, store, platform, ts, verified.reference);
   event.premiumPaid = verified.reference.paid === true;
   event.premiumLedgerTracked = revenueTracked === true;
-  if (productId.endsWith('.3months')) event.premiumPlan = 'threeMonths';
-  else if (productId.endsWith('.week')) event.premiumPlan = 'weekly';
+  if (plan) event.premiumPlan = plan;
   if (verified.money) event.premiumMoney = verified.money;
   const googleOrder = store === 'googleplay' && verified.orderId && !event.premiumReportExcluded
     ? { id: verified.orderId, country: verified.reference.country } : null;
@@ -2885,9 +2888,9 @@ function renderAdminPage() {
 
   const html = enhanceAdminHtml(enhancePublicationsHtml(withAi
     .replace('<button class="nav-item" data-feature="links">', TASKS_NAV_HTML + '\n      <button class="nav-item" data-feature="links">')
-    .replace('</nav>', PROMOCODES_NAV_HTML + ECONOMY_NAV_HTML + '\n      ' + NOTIFICATIONS_NAV_HTML + '    </nav>')
-    .replace('\n\n  </main>', '\n' + PROMOCODES_VIEW_HTML + TASKS_VIEW_HTML + '\n' + ECONOMY_VIEW_HTML + '\n' + NOTIFICATIONS_VIEW_HTML + '\n' + SOCIAL_VIEW_HTML + '\n' + THREADS_VIEW_HTML + '\n' + PUBLICATIONS_VIEW_HTML + '\n  </main>')));
-  return html + ADMIN_THEME_HTML + ADMIN_DATA_STYLES + "<script>" + ADMIN_SECURITY_CLIENT_JS + ADMIN_DATA_CLIENT_JS + BRAND_SVGS_CLIENT_JS + clientJs + ANALYTICS_CLIENT_JS + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + ECONOMY_CLIENT_JS + NOTIFICATIONS_CLIENT_JS + TASKS_CLIENT_JS + BLOG_CLIENT_JS + PUBLICATIONS_CLIENT_JS + PROMOCODES_CLIENT_JS + ADMIN_UI_CLIENT_JS + ADMIN_THEME_CLIENT_JS + "</script></body></html>";
+    .replace('</nav>', OFFERS_NAV + PROMOCODES_NAV_HTML + ECONOMY_NAV_HTML + '\n      ' + NOTIFICATIONS_NAV_HTML + '    </nav>')
+    .replace('\n\n  </main>', '\n' + OFFERS_VIEW + PROMOCODES_VIEW_HTML + TASKS_VIEW_HTML + '\n' + ECONOMY_VIEW_HTML + '\n' + NOTIFICATIONS_VIEW_HTML + '\n' + SOCIAL_VIEW_HTML + '\n' + THREADS_VIEW_HTML + '\n' + PUBLICATIONS_VIEW_HTML + '\n  </main>')));
+  return html + ADMIN_THEME_HTML + ADMIN_DATA_STYLES + "<script>" + ADMIN_SECURITY_CLIENT_JS + ADMIN_DATA_CLIENT_JS + BRAND_SVGS_CLIENT_JS + clientJs + ANALYTICS_CLIENT_JS + USERS_CLIENT_JS + SOCIAL_CLIENT_JS + THREADS_CLIENT_JS + LINKS_CLIENT_JS + ECONOMY_CLIENT_JS + NOTIFICATIONS_CLIENT_JS + TASKS_CLIENT_JS + BLOG_CLIENT_JS + PUBLICATIONS_CLIENT_JS + PROMOCODES_CLIENT_JS + OFFERS_JS + ADMIN_UI_CLIENT_JS + ADMIN_THEME_CLIENT_JS + "</script></body></html>";
 }
 
 
@@ -3550,6 +3553,10 @@ const workerHandlers = {
       for (const [key, value] of Object.entries(CORS_HEADERS)) authResponse.headers.set(key, value);
       return authResponse;
     }
+    if (url.pathname === '/api/admin/premium-offers') {
+      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
+      return adminOffers(request, env);
+    }
     if (url.pathname === '/api/admin/promocodes') {
       if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
       return handlePromoAdmin(request, env);
@@ -3739,7 +3746,7 @@ const workerHandlers = {
     // Оплата на сайте (СБП через Platega, см. payments.js): выбор тарифа
     // и создание платежа; проверка статуса после возврата с формы оплаты.
     if (url.pathname === '/api/user/pay-intent' && request.method === 'POST') {
-      return handlePayIntent(request, env, authenticatedUser, { jsonResponse, sendTelegram, esc });
+      return handlePayIntent(request, env, authenticatedUser, { jsonResponse, sendTelegram, esc, trackStats });
     }
     if (url.pathname === '/api/user/pay-check' && request.method === 'POST') {
       return handlePayCheck(request, env, authenticatedUser, { jsonResponse, sendTelegram, esc, trackStats });
@@ -3817,9 +3824,9 @@ const workerHandlers = {
       user.storeVerifiedAtByStore = { ...(user.storeVerifiedAtByStore || {}), [store]: Date.now() };
       user.autoRenewEnabled = verified.autoRenewEnabled;
       user.storeVerifiedAt = Date.now();
-      if (store !== 'appstore') {
+      if (store !== 'appstore' && (!isTrialProduct(verified.reference.productId) || verified.reference.paid === true)) {
         user.purchasedAt = new Date().toISOString();
-      } else if (!verified.reference.isTest && verified.reference.paid !== false && !verified.reference.refunded &&
+      } else if (store === 'appstore' && !verified.reference.isTest && verified.reference.paid !== false && !verified.reference.refunded &&
           Number.isFinite(verified.purchaseDate) && verified.purchaseDate > (Date.parse(user.purchasedAt) || 0)) {
         user.purchasedAt = new Date(verified.purchaseDate).toISOString();
       }
@@ -3868,6 +3875,11 @@ const workerHandlers = {
       return handleGetReferral(env, authenticatedUser, jsonResponse);
     }
 
+    if (url.pathname === '/api/pay/catalog' && request.method === 'GET') {
+      const headers = { 'Cache-Control': 'no-store' };
+      try { return jsonResponse(await readCatalog(env), 200, headers); }
+      catch { return jsonResponse({ error: 'catalog_unavailable' }, 503, headers); }
+    }
     if (url.pathname === '/api/pay/status' && request.method === 'GET') {
       return jsonResponse({ ok: true, available: webPaymentsLive(env), methods: ['sbp'] }, 200, { 'Cache-Control': 'no-store' });
     }

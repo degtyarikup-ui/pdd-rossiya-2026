@@ -9,6 +9,23 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get premiumTrialButton => 'Try 3 days free';
+
+  @override
+  String premiumTrialTerms(String price, String store) {
+    return 'Free for 3 days, then $price every 3 months with automatic renewal. Cancel in advance in $store to avoid a charge.';
+  }
+
+  @override
+  String get premiumOfferChanged =>
+      'The offer has changed. Review the price and confirm again.';
+
+  @override
+  String premiumExistingOrder(String plan, String price) {
+    return 'Existing order: $plan · $price';
+  }
+
+  @override
   String get exam => 'Exam';
 
   @override

@@ -18,6 +18,60 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 enum PremiumTier { weekly, threeMonths }
 
+/// SBP prices are quoted by the server in whole rubles. Native stores supply
+/// their own localized prices and eligibility.
+class PremiumCatalog {
+  const PremiumCatalog._(
+    this.weeklyRub,
+    this.quarterRub,
+    this._trials,
+    this._nativeQuarter,
+  );
+
+  static const legacy = PremiumCatalog._(99, 290, {}, {});
+  final int weeklyRub;
+  final int quarterRub;
+  final Map<String, dynamic> _trials;
+  final Map<String, dynamic> _nativeQuarter;
+
+  int amount(PremiumTier tier) =>
+      tier == PremiumTier.weekly ? weeklyRub : quarterRub;
+  bool trialEnabled(String store) => _trials[store] == true;
+  String nativeQuarterMode(String store) => switch (_nativeQuarter[store]) {
+    'standard' => 'standard',
+    'promotion' => 'promotion',
+    _ => 'legacy',
+  };
+
+  static PremiumCatalog? parse(Object? json) {
+    if (json is! Map || json['version'] != 1) return null;
+    final tariffs = json['tariffs'];
+    if (tariffs is! Map) return null;
+    final week = tariffs['weekly'], quarter = tariffs['threeMonths'];
+    if (week is! Map ||
+        week['days'] != 7 ||
+        quarter is! Map ||
+        quarter['days'] != 90) {
+      return null;
+    }
+    final weekRub = week['priceRub'], quarterRub = quarter['priceRub'];
+    if (weekRub is! int ||
+        weekRub <= 0 ||
+        quarterRub is! int ||
+        quarterRub <= 0) {
+      return null;
+    }
+    final trials = json['storeTrials'];
+    final nativeQuarter = json['nativeQuarter'];
+    return PremiumCatalog._(
+      weekRub,
+      quarterRub,
+      trials is Map<String, dynamic> ? trials : const {},
+      nativeQuarter is Map<String, dynamic> ? nativeQuarter : const {},
+    );
+  }
+}
+
 enum PurchaseVerificationFailure {
   unavailable,
   rejected,
@@ -634,6 +688,23 @@ class PremiumService extends ChangeNotifier {
     }
   }
 
+  Future<PremiumCatalog?> loadPremiumCatalog() async {
+    if (!BackendConfig.hasNotifier) return null;
+    try {
+      final response = await NotifierApi.get('/api/pay/catalog');
+      // Older Workers return their health text for an unknown GET.
+      if (response.statusCode == 404 ||
+          (response.statusCode == 200 &&
+              response.body.trim() == 'pdd-install-notifier: ok')) {
+        return PremiumCatalog.legacy;
+      }
+      if (response.statusCode != 200) return null;
+      return PremiumCatalog.parse(jsonDecode(response.body));
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Оплата на сайте: сервер записывает выбор (аккаунт, тариф, почта для
   /// чека) и, если платёжка подключена, создаёт платёж. null — ошибка;
   /// `errorCode` preserves an unresolved order for support; otherwise a null
@@ -642,6 +713,7 @@ class PremiumService extends ChangeNotifier {
   Future<({String? url, String? order, String? errorCode})?> startWebPayment({
     required PremiumTier tier,
     required String email,
+    required int expectedPriceRub,
     String method = 'sbp',
     bool checkout = false,
     String? campaignId,
@@ -670,6 +742,8 @@ class PremiumService extends ChangeNotifier {
         body: jsonEncode({
           ...metadata,
           'tier': tier.name,
+          'catalogVersion': 1,
+          'expectedPriceRub': expectedPriceRub,
           'email': email.trim(),
           'method': method,
           if (kIsWeb && checkout) 'checkout': 'sbp',
@@ -683,8 +757,13 @@ class PremiumService extends ChangeNotifier {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final order = data['order'] as String?;
       final code = data['code'];
+      if (revision != auth.accountRevision) return null;
+      if (response.statusCode == 409 && code == 'price_changed') {
+        return (url: null, order: null, errorCode: 'price_changed');
+      }
       if ([409, 503].contains(response.statusCode) &&
           [
+            'pending_order',
             'payment_creation_pending',
             'payment_creation_unknown',
           ].contains(code) &&
@@ -734,7 +813,15 @@ class PremiumService extends ChangeNotifier {
 
   /// Recover the current account's unfinished order even when browser storage
   /// was lost. Only the authenticated server may choose its owner and URL.
-  Future<({String status, String? order, String? url})?>
+  Future<
+    ({
+      String status,
+      String? order,
+      String? url,
+      PremiumTier? tier,
+      int? amount,
+    })?
+  >
   checkWebPaymentDetails({String? order}) async {
     final auth = AuthService.instance;
     if (!auth.hasServerSession || !BackendConfig.hasNotifier) return null;
@@ -744,7 +831,10 @@ class PremiumService extends ChangeNotifier {
         '/api/user/pay-check',
         idempotent: true,
         headers: auth.serverHeaders,
-        body: jsonEncode(order == null ? {'current': true} : {'order': order}),
+        body: jsonEncode({
+          'catalogVersion': 1,
+          if (order == null) 'current': true else 'order': order,
+        }),
       );
       if (response.statusCode != 200 || revision != auth.accountRevision) {
         return null;
@@ -759,6 +849,12 @@ class PremiumService extends ChangeNotifier {
         status: status,
         order: data['order'] as String? ?? order,
         url: url != null && url.startsWith('https://') ? url : null,
+        tier: switch (data['tier']) {
+          'weekly' => PremiumTier.weekly,
+          'threeMonths' => PremiumTier.threeMonths,
+          _ => null,
+        },
+        amount: data['amount'] is int ? data['amount'] as int : null,
       );
     } catch (error) {
       ErrorReporter.report(

@@ -254,3 +254,24 @@ test('a refund of an earlier Apple period updates its revenue while latest renew
   assert.notEqual(observations[0].id, observations[1].id);
   assert.equal(effects.some(effect => effect.kind === 'telegram'), false);
 });
+
+test('unpublished quarterly SKUs verify the store period, including the free trial and its first paid renewal', async () => {
+  const now = Date.now();
+  for (const suffix of ['v2', 'trial3d', 'trial3d.legacy']) {
+    const productId = 'ru.pdd.pddApp.sub.3months.' + suffix;
+    const free = suffix.startsWith('trial3d');
+    const current = transaction({ productId, price: free ? 0 : 370000, expiresDate: now + (free ? 3 : 90) * 86400000 });
+    const renewal = transaction({ productId, transactionId: '124', price: 370000, expiresDate: current.expiresDate + 90 * 86400000 });
+    await withApple(async url => new URL(url).pathname.includes('/subscriptions/')
+      ? statusResponse(renewal) : Response.json({ signedTransactionInfo: await signed(current) }), async () => {
+      const start = await verifyStorePurchase({ ...body, productId }, env, 'apple_test');
+      assert.equal(start.active, true);
+      assert.equal(start.expiresAt, new Date(current.expiresDate).toISOString());
+      assert.equal(start.reference.paid, !free);
+      const paid = await verifyStorePurchase({ ...body, productId }, env, 'apple_test', { refresh: true });
+      assert.equal(paid.key, start.key);
+      assert.equal(paid.expiresAt, new Date(renewal.expiresDate).toISOString());
+      assert.equal(paid.reference.paid, true);
+    });
+  }
+});

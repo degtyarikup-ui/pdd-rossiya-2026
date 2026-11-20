@@ -265,6 +265,10 @@ export class AccountState {
   }
   async handle(request) {
     const path = new URL(request.url).pathname;
+    if (path === '/_offers/catalog') {
+      const { offersState } = await import('./premium_offers.js');
+      return offersState(this.state.storage, await request.json());
+    }
     if (path === '/_promo/catalog') {
       const { promoCatalog } = await import('./promocodes.js');
       return promoCatalog(this.state.storage, this.env, await request.json(), fn => this.serial(fn));

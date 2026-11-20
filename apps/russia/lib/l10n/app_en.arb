@@ -1,5 +1,9 @@
 {
   "@@locale": "en",
+  "premiumTrialButton": "Try 3 days free",
+  "premiumTrialTerms": "Free for 3 days, then {price} every 3 months with automatic renewal. Cancel in advance in {store} to avoid a charge.",
+  "premiumOfferChanged": "The offer has changed. Review the price and confirm again.",
+  "premiumExistingOrder": "Existing order: {plan} · {price}",
   "exam": "Exam",
   "topics": "Topics",
   "tickets": "Tickets",

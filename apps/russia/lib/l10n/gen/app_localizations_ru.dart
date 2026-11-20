@@ -9,6 +9,23 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
+  String get premiumTrialButton => 'Попробовать 3 дня бесплатно';
+
+  @override
+  String premiumTrialTerms(String price, String store) {
+    return 'Первые 3 дня бесплатно. Затем $price каждые 3 месяца с автопродлением. Отмените подписку заранее в $store, чтобы избежать списания.';
+  }
+
+  @override
+  String get premiumOfferChanged =>
+      'Условия изменились. Проверьте цену и подтвердите ещё раз.';
+
+  @override
+  String premiumExistingOrder(String plan, String price) {
+    return 'Ранее созданный заказ: $plan · $price';
+  }
+
+  @override
   String get exam => 'Экзамен';
 
   @override

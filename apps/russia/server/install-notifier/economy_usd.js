@@ -34,6 +34,6 @@ export function economyInUsd(data,fx){
  profitShares:allocation.shares.map(({amount,...share},i)=>({...data.profitShares[i],...share,payoutUsd:amount})),
  partners:Object.fromEntries(Object.entries(allocation.partners).map(([key,partner])=>[key,{...data.partners[key],payoutUsd:partner.amount}])),
  unitEconomics:{...data.unitEconomics,arppu: data.unitEconomics.activePayingCount?round(grossUsd/data.unitEconomics.activePayingCount):0,arpu:data.unitEconomics.totalUsersCount?round(grossUsd/data.unitEconomics.totalUsersCount):0},
- tariffs:{weeklyUsd:convert(99),quarterlyUsd:convert(290)},targetMonthlyProfitUsd:round(data.config.targetMonthlyProfit/data.config.usdRate),
+ tariffs:{weeklyUsd:convert(99),quarterlyUsd:data.breakEven.quarterPriceRub ? convert(data.breakEven.quarterPriceRub) : null},targetMonthlyProfitUsd:round(data.config.targetMonthlyProfit/data.config.usdRate),
  };
 }

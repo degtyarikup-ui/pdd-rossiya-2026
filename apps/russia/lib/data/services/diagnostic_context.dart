@@ -9,8 +9,14 @@ class DiagnosticContext {
   static const productIds = {
     'u.pdd.pddApp.premium.week',
     'ru.pdd.pddApp.sub.3months',
+    'ru.pdd.pddApp.sub.3months.v2',
+    'ru.pdd.pddApp.sub.3months.trial3d',
+    'ru.pdd.pddApp.sub.3months.trial3d.legacy',
     'ru.pdd.pddapp.sub.week',
     'ru.pdd.pddapp.sub.3months',
+    'ru.pdd.pddapp.sub.3months.v2',
+    'ru.pdd.pddapp.sub.3months.trial3d',
+    'ru.pdd.pddapp.sub.3months.trial3d.legacy',
   };
 
   static Map<String, dynamic> sanitize(Map<String, dynamic>? value) {

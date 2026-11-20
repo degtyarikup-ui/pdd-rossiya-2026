@@ -1,5 +1,11 @@
 {
   "@@locale": "ru",
+  "premiumTrialButton": "Попробовать 3 дня бесплатно",
+  "premiumTrialTerms": "Первые 3 дня бесплатно. Затем {price} каждые 3 месяца с автопродлением. Отмените подписку заранее в {store}, чтобы избежать списания.",
+  "@premiumTrialTerms": {"placeholders":{"price":{"type":"String"},"store":{"type":"String"}}},
+  "premiumOfferChanged": "Условия изменились. Проверьте цену и подтвердите ещё раз.",
+  "premiumExistingOrder": "Ранее созданный заказ: {plan} · {price}",
+  "@premiumExistingOrder": {"placeholders":{"plan":{"type":"String"},"price":{"type":"String"}}},
   "exam": "Экзамен",
   "topics": "Темы",
   "tickets": "Билеты",

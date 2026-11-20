@@ -1,3 +1,4 @@
+import { storeProducts } from './store_products.js';
 import { accountTokenForUserId } from './store_account.js';
 import { putUserRecord } from './user_store.js';
 import { entitlementsOf, setEntitlement } from './entitlements.js';
@@ -5,12 +6,6 @@ import { SignJWT, importPKCS8, decodeJwt } from 'jose';
 import { tokenHash } from './user_auth.js';
 
 const packages = { ru: 'ru.pdd.pdd_app', by: 'by.pdd.pdd_app', rs: 'rs.pdd.pdd_app' };
-const defaultProducts = {
-  // Subscriptions (base plans weekly / three-months); the old premium.* are
-  // one-time products and cannot be checked through subscriptionsv2.
-  googleplay: ['ru.pdd.pddapp.sub.week', 'ru.pdd.pddapp.sub.3months'],
-  appstore: ['u.pdd.pddApp.premium.week', 'ru.pdd.pddApp.sub.3months'],
-};
 const activeStates = new Set(['SUBSCRIPTION_STATE_ACTIVE', 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD', 'SUBSCRIPTION_STATE_CANCELED']);
 export class StoreError extends Error {
   constructor(code, status = 503) { super(code); this.status = status; }
@@ -98,11 +93,16 @@ export function googleEntitlement(data, productId, now = Date.now()) {
     autoRenewEnabled: typeof item.autoRenewingPlan?.autoRenewEnabled === 'boolean' ? item.autoRenewingPlan.autoRenewEnabled : item.prepaidPlan ? false : null };
 }
 
+function applePaid(transaction) {
+  if (transaction.offerDiscountType === 'FREE_TRIAL') return false;
+  return transaction.price == null ? null : Number(transaction.price) > 0;
+}
+
 export async function verifyStorePurchase(body, env, userId, { refresh = false } = {}) {
   const { store, productId, country } = body || {};
-  if (!packages[country] || !defaultProducts[store]) throw new StoreError('invalid store', 400);
+  if (!Object.hasOwn(packages, country) || !Object.hasOwn(storeProducts, store)) throw new StoreError('invalid store', 400);
   const products = env[store === 'googleplay' ? 'GOOGLE_PLAY_PRODUCT_IDS' : 'APPLE_PRODUCT_IDS'];
-  const allowed = products ? String(products).split(',').map(s => s.trim()) : defaultProducts[store];
+  const allowed = products ? String(products).split(',').map(s => s.trim()) : Object.keys(storeProducts[store]);
   if (!allowed.includes(productId)) throw new StoreError('unknown product', 422);
   if (store === 'googleplay') {
     const token = body.purchaseToken;
@@ -123,6 +123,7 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
       && (line.offerPhase?.basePrice || line.offerPhase?.introductoryPrice) ? true : null;
     return { ...googleEntitlement(data, productId), key: `googleplay:${country}:${await tokenHash(token)}`,
       reference: { store, country, productId, purchaseToken: token,
+        ...(/^[A-Z]{2}$/.test(data.regionCode) ? { storefront: data.regionCode } : {}),
         evidenceVersion: 1, environment: isTest ? 'Sandbox' : 'Production', isTest, paid,
         orderId: line?.latestSuccessfulOrderId || data.latestOrderId || null,
         // Expiry alone cannot distinguish a normal lapse from revocation.
@@ -207,12 +208,13 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
       orderId: String(transaction.transactionId), purchaseDate: transaction.purchaseDate,
       money: { milliunits: transaction.price, currency: transaction.currency },
       reference: { store, country, productId: transaction.productId, transactionId: String(transaction.transactionId),
-        isTest: transaction.environment !== 'Production', paid: transaction.price == null ? null : Number(transaction.price) > 0,
+        isTest: transaction.environment !== 'Production', paid: applePaid(transaction),
         refunded: Boolean(transaction.revocationDate) },
     })),
     reference: { store, country, productId: data.productId, transactionId: String(data.transactionId),
+      ...(/^[A-Z]{3}$/.test(data.storefront) ? { storefront: data.storefront } : {}),
       evidenceVersion: 1, environment: data.environment, isTest: data.environment !== 'Production',
-      paid: data.price == null ? null : Number(data.price) > 0, refunded: Boolean(data.revocationDate) } };
+      paid: applePaid(data), refunded: Boolean(data.revocationDate) } };
 }
 
 export function legacyAppleClaimsOpen(env, now = Date.now()) {

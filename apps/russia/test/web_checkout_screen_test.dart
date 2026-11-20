@@ -49,6 +49,15 @@ void main() {
       });
     }
     if (path == '/api/pay/status') return response({'available': true});
+    if (path == '/api/pay/catalog') {
+      return response({
+        'version': 1,
+        'tariffs': {
+          'weekly': {'days': 7, 'priceRub': 99},
+          'threeMonths': {'days': 90, 'priceRub': 370},
+        },
+      });
+    }
     if (path == '/api/user/pay-check') return response({'status': 'none'});
     return response({'ok': true, 'isPremium': false});
   }
@@ -112,6 +121,71 @@ void main() {
     home: screen ?? const PremiumWebCheckoutScreen(),
   );
   Finder key(String name) => find.byKey(ValueKey(name));
+
+  testWidgets(
+    'a stale price is shown again before the new amount can be charged',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      var amount = 370;
+      final submitted = <int>[];
+      final opened = <Uri>[];
+      await http.runWithClient(
+        () async {
+          await tester.pumpWidget(
+            page(
+              screen: PremiumWebCheckoutScreen(
+                openPayment: (uri) async {
+                  opened.add(uri);
+                  return true;
+                },
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(find.text('370 ₽'), findsOneWidget);
+          await tester.ensureVisible(key('checkout-pay'));
+          await tester.tap(key('checkout-pay'));
+          await tester.pumpAndSettle();
+          expect(submitted, [370]);
+          expect(opened, isEmpty);
+          expect(find.text('290 ₽'), findsOneWidget);
+          expect(find.text(appL10n.premiumOfferChanged), findsOneWidget);
+          await tester.ensureVisible(key('checkout-pay'));
+          await tester.tap(key('checkout-pay'));
+          await tester.pumpAndSettle();
+          expect(submitted, [370, 290]);
+          expect(opened, [Uri.parse('https://pay.platega.io/test')]);
+          await tester.pumpWidget(const SizedBox());
+        },
+        () => MockClient((request) async {
+          if (request.url.path == '/api/pay/catalog') {
+            return response({
+              'version': 1,
+              'tariffs': {
+                'weekly': {'days': 7, 'priceRub': 99},
+                'threeMonths': {'days': 90, 'priceRub': amount},
+              },
+            });
+          }
+          if (request.url.path == '/api/user/pay-intent') {
+            final data = jsonDecode(request.body);
+            submitted.add(data['expectedPriceRub'] as int);
+            if (submitted.length == 1) {
+              amount = 290;
+              return response({'code': 'price_changed'}, 409);
+            }
+            return response({
+              'available': true,
+              'order': order,
+              'url': 'https://pay.platega.io/test',
+            });
+          }
+          return standard(request);
+        }),
+      );
+      debugDefaultTargetPlatformOverride = null;
+    },
+  );
 
   testWidgets(
     'guests see sign-in only; successful login reveals profile and plans, logout hides them',
@@ -217,6 +291,8 @@ void main() {
             creates++;
             final data = jsonDecode(request.body) as Map<String, dynamic>;
             expect(data['tier'], 'weekly');
+            expect(data['catalogVersion'], 1);
+            expect(data['expectedPriceRub'], 99);
             expect(data['email'], 'A@example.com');
             expect(request.headers['authorization'], 'Bearer session_A');
             return pending.future;
@@ -297,11 +373,16 @@ void main() {
       () => MockClient((request) async {
         if (request.url.path == '/api/user/pay-intent') creates++;
         if (request.url.path == '/api/user/pay-check') {
-          expect(jsonDecode(request.body), {'current': true});
+          expect(jsonDecode(request.body), {
+            'current': true,
+            'catalogVersion': 1,
+          });
           return response({
             'status': 'pending',
             'order': order,
             'url': 'https://pay.platega.io/recovered',
+            'tier': 'weekly',
+            'amount': 99,
           });
         }
         return standard(request);

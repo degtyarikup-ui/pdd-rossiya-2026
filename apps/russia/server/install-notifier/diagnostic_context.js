@@ -1,6 +1,7 @@
 // Only bounded technical enums, counts and app source locations cross the
 // diagnostic boundary. Never retain raw SDK messages, URLs or stack traces.
-const products = new Set(['u.pdd.pddApp.premium.week', 'ru.pdd.pddApp.sub.3months', 'ru.pdd.pddapp.sub.week', 'ru.pdd.pddapp.sub.3months']);
+import { storeProducts } from './store_products.js';
+const products = new Set(Object.values(storeProducts).flatMap(Object.keys));
 export function sanitizeDiagnosticContext(value) {
   const input = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
   const result = {};

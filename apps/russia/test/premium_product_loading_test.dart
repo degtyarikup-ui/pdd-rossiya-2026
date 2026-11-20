@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 // ignore: depend_on_referenced_packages
 import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_interface.dart';
@@ -81,8 +83,18 @@ void main() {
           updateAppLocale(Locale(language));
           await tester.binding.setSurfaceSize(const Size(800, 1600));
           addTearDown(() => tester.binding.setSurfaceSize(null));
-          await tester.pumpWidget(
-            const MaterialApp(home: Scaffold(body: PremiumPlansSheet())),
+          await http.runWithClient(
+            () async {
+              await tester.pumpWidget(
+                const MaterialApp(home: Scaffold(body: PremiumPlansSheet())),
+              );
+              await tester.pumpAndSettle();
+            },
+            () => MockClient(
+              (request) async => request.url.path == '/api/pay/catalog'
+                  ? http.Response('pdd-install-notifier: ok', 200)
+                  : http.Response('{"available":true}', 200),
+            ),
           );
           await tester.pumpAndSettle();
           expect(store.queries, 0);

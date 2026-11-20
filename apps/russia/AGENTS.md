@@ -116,9 +116,10 @@ assets/countries/ru/images/     questions_ab/, questions_cd/, signs/, markup/
   `user.entitlements[appstore|googleplay|web|admin_grant]`, итог
   (`isPremium/premiumExpiresAt/premiumSource`) — самый дальний срок. Писать
   только через `setEntitlement`/`extendEntitlement`, не полями напрямую.
-- Оплата на сайте (РФ, СБП через Platega) — `payments.js`, тарифы
-  `WEB_TARIFFS` (99 ₽/7 дн., 290 ₽/90 дн., разово, без автопродления) = страница
-  `web_landing/ru/tarify/` = веб-пейвол. Включается секретами воркера
+- Оплата на сайте (РФ, СБП через Platega) — `payments.js`, разово. Старые
+  сборки используют 99 ₽/7 дн. и 290 ₽/90 дн. Новые сборки и страница
+  `web_landing/ru/tarify/` получают цену из `/api/pay/catalog` (`premium_offers.js`).
+  Цены и пробные подписки — `docs/premium/quarterly-offers.md`. СБП включается секретами воркера
   `PLATEGA_MERCHANT_ID`/`PLATEGA_SECRET`; без них — заглушка «СБП скоро» (только
   почта, `pay_intent:<id>`, список — `/api/admin/pay-intents`). Срок начисляется
   только по статусу, перечитанному у Platega. Запуск и устройство —
