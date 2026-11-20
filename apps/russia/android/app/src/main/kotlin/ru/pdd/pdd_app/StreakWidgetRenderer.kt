@@ -72,8 +72,9 @@ internal object StreakWidgetRenderer {
             val fullDay = SimpleDateFormat("d MMMM", locale).apply { timeZone = now.timeZone }
             val cursor = (now.clone() as Calendar).apply { add(Calendar.DATE, -6) }
             views.removeAllViews(R.id.streak_week)
+            val dayLayout = if (singleRow) R.layout.streak_day_row else R.layout.streak_day
             repeat(7) { index ->
-                val day = RemoteViews(context.packageName, R.layout.streak_day)
+                val day = RemoteViews(context.packageName, dayLayout)
                 val studied = dateKey.format(cursor.time) in active
                 day.setTextViewText(R.id.streak_day_label, weekday.format(cursor.time).trimEnd('.'))
                 day.setImageViewResource(R.id.streak_day_icon,

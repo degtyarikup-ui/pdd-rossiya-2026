@@ -370,11 +370,21 @@ class WidgetSmokeInstrumentation : Instrumentation() {
                 .apply(context, FrameLayout(context))
             layout(compact, context, 130, 130)
             capture(compact, "flame-compact")
-            for (width in listOf(130, 250, 370)) {
+            for ((width, height) in listOf(130 to 40, 250 to 40, 130 to 90, 370 to 64, 407 to 105)) {
                 val row = StreakWidgetRenderer.render(context, state, data, width >= 250, now, singleRow = true)
                     .apply(context, FrameLayout(context)) as ViewGroup
-                layout(row, context, width, 64)
-                capture(row, "flame-row-$width")
+                layout(row, context, width, height)
+                assertTextFits(row)
+                if (height >= 90) {
+                    val count = row.findViewById<TextView>(R.id.streak_current)
+                    check(count.textSize >= 30 * context.resources.displayMetrics.density)
+                }
+                if (width == 407) {
+                    val label = row.findViewById<TextView>(R.id.streak_day_label)
+                    check(label.textSize >= 12 * context.resources.displayMetrics.density)
+                    check(row.findViewById<View>(R.id.streak_week).background == null)
+                }
+                capture(row, "flame-row-${width}x$height")
             }
             now.add(Calendar.DATE, 1)
             StreakWidgetRenderer.render(context, state.copy(done = false), data, true, now).reapply(context, root)
