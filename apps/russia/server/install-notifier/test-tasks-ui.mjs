@@ -149,9 +149,11 @@ test('the board stays compact and avatars work in every column, after reload, ed
     for (const [index, status] of STATUSES.entries()) {
       const id = 'task-' + status, assignee = status === 'ready' ? 'nikita' : status === 'released' ? 'sergey' : index % 2 ? 'nikita' : 'sergey';
       assert.equal(await picker(page, id).locator('button').count(), 2);
+      const selected = picker(page, id).locator('[aria-pressed="true"]');
+      if (await selected.count()) await selected.click();
       await button(page, id, assignee).click();
       await assigned(page, id, assignee);
-      assert.equal(await picker(page, id).locator('button:visible').count(), 2, 'both avatars remain visible');
+      assert.equal(await picker(page, id).locator('button:visible').count(), 1, 'only the assigned avatar is visible');
       assert.equal((await app.task(id)).assignee, assignee);
       assert.equal(await page.locator('#tasks-edit-modal').isVisible(), false, 'avatar clicks do not open the editor');
     }
@@ -163,6 +165,8 @@ test('the board stays compact and avatars work in every column, after reload, ed
     await page.reload();
     await assigned(page, 'task-planned', 'nikita');
     await page.evaluate(() => { window.adminToast = () => {}; });
+    await button(page, 'task-planned', 'nikita').click();
+    await picker(page, 'task-planned').locator('[data-assignee="sergey"]:enabled').waitFor();
     await button(page, 'task-planned', 'sergey').focus();
     await page.keyboard.press('Enter');
     await assigned(page, 'task-planned', 'sergey');
@@ -239,7 +243,7 @@ test('assignment updates immediately, blocks duplicate clicks and rolls back aft
     await hold.entered.promise;
     assert.equal(await button(page, 'legacy-task', 'sergey').getAttribute('aria-pressed'), 'true');
     assert.equal(await picker(page, 'legacy-task').locator('button:disabled').count(), 2);
-    assert.equal(await picker(page, 'legacy-task').locator('button:visible').count(), 2, 'both avatars remain visible while saving');
+    assert.equal(await picker(page, 'legacy-task').locator('button:visible').count(), 1, 'only the assigned avatar is visible while saving');
     assert.equal((await app.task('legacy-task')).assignee, undefined, 'optimistic rendering happens before persistence');
     hold.release.resolve();
     await assigned(page, 'legacy-task', 'sergey');
@@ -251,12 +255,13 @@ test('assignment updates immediately, blocks duplicate clicks and rolls back aft
     await failure;
     await assigned(page, 'legacy-task', 'sergey');
     assert.equal(await button(page, 'legacy-task', 'nikita').getAttribute('aria-pressed'), 'false');
-    assert.equal(await picker(page, 'legacy-task').locator('button:visible').count(), 2);
+    assert.equal(await picker(page, 'legacy-task').locator('button:visible').count(), 1);
     assert.equal((await app.task('legacy-task')).assignee, 'sergey');
     const notices = await page.evaluate(() => window.taskTestNotices);
     assert.equal(notices.length, 1);
     assert.equal(notices[0].isError, true);
     assert.match(notices[0].message, /Проверка ошибки сохранения/);
+    await button(page, 'legacy-task', 'sergey').click();
     await button(page, 'legacy-task', 'nikita').click();
     await assigned(page, 'legacy-task', 'nikita');
     assert.equal(await page.locator('#tasks-edit-modal').isVisible(), false);
@@ -269,12 +274,13 @@ test('pressing the selected avatar clears the assignment and restores both muted
   try {
     const id = 'task-ready', control = picker(page, id);
     await assigned(page, id, 'sergey');
-    assert.equal(await control.locator('button:visible').count(), 2);
+    assert.equal(await control.locator('button:visible').count(), 1);
 
     const hold = app.holdAssignment();
     await button(page, id, 'sergey').focus();
     await page.keyboard.press('Enter');
     await hold.entered.promise;
+    assert.equal(await control.locator('button:visible').count(), 2);
     assert.equal(await control.locator('[aria-pressed="true"]').count(), 0);
     assert.equal(await control.locator('button:disabled').count(), 2);
     assert.equal((await app.task(id)).assignee, 'sergey');
@@ -285,15 +291,17 @@ test('pressing the selected avatar clears the assignment and restores both muted
 
     await page.reload();
     await control.waitFor();
+    assert.equal(await control.locator('button:visible').count(), 2);
     assert.equal(await control.locator('[aria-pressed="true"]').count(), 0);
     assert.deepEqual(await control.locator('img').evaluateAll(images => images.map(image => {
       const { filter, opacity } = getComputedStyle(image);
       return [filter, opacity];
     })), [['grayscale(1)', '0.45'], ['grayscale(1)', '0.45']]);
     await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await control.evaluate(picker => picker.getBoundingClientRect().right <= picker.closest('.task-card-foot').querySelector('.task-foot-actions').getBoundingClientRect().left), true, 'both mobile avatars fit beside actions');
     await button(page, id, 'nikita').click();
     await assigned(page, id, 'nikita');
-    assert.equal(await control.evaluate(picker => picker.getBoundingClientRect().right <= picker.closest('.task-card-foot').querySelector('.task-foot-actions').getBoundingClientRect().left), true, 'both mobile avatars fit beside actions');
+    assert.equal(await control.locator('button:visible').count(), 1);
     assert.deepEqual(errors, []);
   } finally { await fixture.close(); }
 });

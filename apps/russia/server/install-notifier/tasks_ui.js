@@ -451,6 +451,9 @@ export const TASKS_VIEW_HTML = `
       cursor: pointer;
       touch-action: manipulation;
     }
+    .task-assignees:has(.task-assignee-btn[aria-pressed="true"]) .task-assignee-btn[aria-pressed="false"] {
+      display: none;
+    }
     .task-assignee-btn img {
       display: block;
       width: 26px;
