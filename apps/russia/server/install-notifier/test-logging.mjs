@@ -21,7 +21,7 @@ class Storage {
   async transaction(fn){return fn(this);}
 }
 function setup(){
-  const env={INSTALLS:new Storage(), BOT_TOKEN:'test',CHAT_ID:'test',SHARED_SECRET:'test',SESSION_SECRET:'test'};
+  const env={INSTALLS:new Storage(), TELEGRAM_TOPIC_SUBSCRIPTIONS:'45', BOT_TOKEN:'test',CHAT_ID:'test',SHARED_SECRET:'test',SESSION_SECRET:'test'};
   const state={storage:new Storage()},queue=new TelegramQueue(state,env);
   env.TELEGRAM={idFromName:s=>s,get:()=>({fetch:(u,o)=>queue.fetch(new Request(u,o))})};
   return {env,state,queue};

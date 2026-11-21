@@ -10,6 +10,43 @@ import 'package:pdd_app/data/services/notifier_api.dart';
 
 void main() {
   setUp(NotifierRoute.reset);
+
+  test(
+    'late receipt confirmation finishes the pending fallback check',
+    () async {
+      final primary = Completer<http.Response>();
+      final fallback = Completer<http.Response>();
+      final fallbackStarted = Completer<void>();
+      final bodies = <String>[];
+      await http.runWithClient(
+        () async {
+          final result = NotifierApi.post(
+            '/api/user/purchase',
+            idempotent: true,
+            body: 'same-receipt',
+            attempts: [
+              const Duration(milliseconds: 10),
+              const Duration(seconds: 1),
+            ],
+          );
+          await fallbackStarted.future;
+          primary.complete(http.Response('verified', 200));
+          try {
+            expect((await result).body, 'verified');
+            expect(bodies, ['same-receipt', 'same-receipt']);
+          } finally {
+            fallback.complete(http.Response('retry later', 503));
+          }
+        },
+        () => MockClient((request) {
+          bodies.add(request.body);
+          if (bodies.length == 1) return primary.future;
+          fallbackStarted.complete();
+          return fallback.future;
+        }),
+      );
+    },
+  );
   test(
     'idempotent status and payment check recover via fallback; creation does not replay',
     () async {

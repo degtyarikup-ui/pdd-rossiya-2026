@@ -19,7 +19,7 @@ class Storage {
   async transaction(fn) { return fn(this); }
 }
 function setup() {
-  const env = { ADMIN_PASSWORD: adminCredential, INSTALLS: new Storage(), BOT_TOKEN: 'test', CHAT_ID: 'test', SHARED_SECRET: 'test', SESSION_SECRET: 'test', TELEGRAM_TOPIC_ERRORS: '7', TELEGRAM_TOPIC_PURCHASES: '8', TELEGRAM_TOPIC_REGISTRATIONS: '9' };
+  const env = { ADMIN_PASSWORD: adminCredential, INSTALLS: new Storage(), BOT_TOKEN: 'test', CHAT_ID: 'test', SHARED_SECRET: 'test', SESSION_SECRET: 'test', TELEGRAM_TOPIC_SUBSCRIPTIONS: '45', TELEGRAM_TOPIC_ERRORS: '7', TELEGRAM_TOPIC_PURCHASES: '8', TELEGRAM_TOPIC_REGISTRATIONS: '9' };
   const state = { storage: new Storage() }, queue = new TelegramQueue(state, env);
   env.TELEGRAM = { idFromName: name => name, get: () => ({ fetch: (url, options) => queue.fetch(new Request(url, options)) }) };
   return { env, state };
@@ -34,7 +34,7 @@ const queued = async state => [...(await state.storage.list({ prefix: 'q:' })).v
 
 test('complaints use their own topic and server profile, ignoring forged identity', async () => {
   const { env, state } = setup();
-  await env.INSTALLS.put('telegram_topics', JSON.stringify({ errors: 7, purchases: 8, registrations: 9, reports: 42 }));
+  await env.INSTALLS.put('telegram_topics', JSON.stringify({ errors: 7, purchases: 8, registrations: 9, subscriptions: 45, reports: 42 }));
   const user = { id: 'google_real', name: 'Old name', email: 'old@example.com' };
   await env.INSTALLS.put('user:' + user.id, JSON.stringify({ ...user, name: '<Иван & Анна>', email: 'real@example.com' }));
   const token = await session(env, user);
@@ -114,7 +114,7 @@ test('topic setup reuses existing IDs and creates only the complaint topic once'
     for (let i = 0; i < 2; i++) {
       const response = await worker.fetch(request({}, null, '/api/admin/telegram/setup-topics'), env);
       assert.equal(response.status, 200);
-      assert.deepEqual((await response.json()).topics, { errors: 7, purchases: 8, registrations: 9, reports: 42 });
+      assert.deepEqual((await response.json()).topics, { errors: 7, purchases: 8, registrations: 9, subscriptions: 45, reports: 42 });
     }
     assert.equal(calls.length, 1);
     assert.equal(writes, 1, 'one KV write for setup, none for an unchanged retry');
@@ -204,7 +204,7 @@ test('an immediate partial-setup retry preserves newly created IDs despite the K
     assert.equal(response.status, 200);
     assert.equal(limited, 1);
     assert.equal(creates, 5, 'no duplicate topics after the KV retry');
-    assert.deepEqual(JSON.parse(await env.INSTALLS.get('telegram_topics')), { errors: 11, purchases: 13, registrations: 14, reports: 15 });
+    assert.deepEqual(JSON.parse(await env.INSTALLS.get('telegram_topics')), { errors: 11, purchases: 13, registrations: 14, subscriptions: 45, reports: 15 });
   } finally { globalThis.fetch = original; }
 });
 
@@ -354,4 +354,24 @@ test('report messages put origin near the heading and keep training mode separat
  const training=buildReportMessage({source:'training',mode:'Работа над ошибками',message:'Ошибка'});
  assert.match(training,/📚 <b>Источник:<\/b> Обычное обучение/);
  assert.match(training,/- Работа над ошибками/);
+});
+
+test('subscription topic is created once and used for the first message without admin setup', async () => {
+  const { env, state } = setup(), original = globalThis.fetch;
+  delete env.TELEGRAM_TOPIC_SUBSCRIPTIONS;
+  let created = 0;
+  globalThis.fetch = async (url, options) => {
+    assert.match(String(url), /createForumTopic$/);
+    assert.match(JSON.parse(options.body).name, /Пробные подписки и промокоды/);
+    created++;
+    return Response.json({ ok: true, result: { message_thread_id: 56 } });
+  };
+  try {
+    for (const id of ['a', 'b']) {
+      assert.equal((await sendTelegram(env, 'subscription', id, { topic: 'subscriptions' })).status, 200);
+    }
+    assert.equal(created, 1);
+    assert.equal(JSON.parse(await env.INSTALLS.get('telegram_topics')).subscriptions, 56);
+    assert.deepEqual((await queued(state)).map(item => item.threadId), [56, 56, 56]);
+  } finally { globalThis.fetch = original; }
 });

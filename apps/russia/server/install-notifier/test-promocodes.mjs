@@ -27,11 +27,16 @@ test('promotion admin and public endpoints require their own credentials', async
 });
 
 test('promotion works for old accounts, ignores client rewards and is replay safe',async()=>{
- const {env}=fixture(); const token=await user(env,'google_old',30*DAY);
+ const {env, states}=fixture();
+ env.BOT_TOKEN = 'test'; env.CHAT_ID = 'test';
+ const token=await user(env,'google_old',30*DAY);
  await admin(env,campaign('SALE7'));
  const first=await claim(env,token,'SALE7');assert.equal(first.status,200); const data=await first.json();
  assert.equal(data.kind,'promotion');assert.equal(data.daysAdded,7);
  const repeated=await claim(env,token,'SALE7');assert.equal((await repeated.json()).premiumExpiresAt,data.premiumExpiresAt);
+ const notices = [...(await states.get('google_old').list({prefix:'effect:'})).values()].filter(item => item.kind === 'telegram');
+ assert.equal(notices.length, 1); assert.equal(notices[0].options.topic, 'subscriptions');
+ assert.match(notices[0].text, /SALE7/);
  const profile=JSON.parse(await accountRead(env,'google_old','user:google_old'));
  assert.equal(profile.premiumSource,'promo');assert.equal(profile.referralCodeUsed,undefined);
  assert.equal((await (await admin(env)).json()).codes[0].uses,1);

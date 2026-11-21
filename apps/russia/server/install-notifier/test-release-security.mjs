@@ -156,6 +156,11 @@ test('Google verification ignores supplied expiry and validates account binding'
   try {
     const body = { store: 'googleplay', country: 'ru', productId, purchaseToken: 'receipt', expiresAt: '2099-01-01' };
     assert.equal((await verifyStorePurchase(body, e, 'google_123')).expiresAt, '2030-01-01T00:00:00.000Z');
+    e.INSTALLS = { get: async key => key === 'user:google_123' ? JSON.stringify({ verifiedPurchase: body }) : null };
+    const retry = { ...body, productId: 'obsolete-hint' };
+    assert.equal((await verifyStorePurchase(retry, e, 'google_123')).reference.productId, productId);
+    await assert.rejects(verifyStorePurchase({ ...retry, purchaseToken: 'other' }, e, 'google_123'), /unknown product/);
+    await assert.rejects(verifyStorePurchase(retry, e, 'google_other'), /unknown product/);
     accountId = 'wrong-account'; await assert.rejects(verifyStorePurchase(body, e, 'google_123'), /another account/);
   } finally { globalThis.fetch = original; }
 });
@@ -172,4 +177,47 @@ test('concurrent receipt claims cannot transfer ownership', async () => {
 test('status lookup by email cannot reveal another account', async () => {
   const e = env(), session = await login(e);
   assert.equal((await worker.fetch(request('/api/user/status?email=victim@example.com', undefined, session.token), e)).status, 403);
+});
+
+test('Google free, canceled and paid phases use store evidence even when autoRenewEnabled is omitted', async () => {
+  const { privateKey } = await generateKeyPair('RS256', { extractable: true });
+  const e = { GOOGLE_PLAY_SERVICE_ACCOUNT: JSON.stringify({ client_email: 'trial@test.invalid', private_key: await exportPKCS8(privateKey) }) };
+  const sku = 'ru.pdd.pddapp.sub.3months.trial3d';
+  const body = { store: 'googleplay', country: 'ru', productId: sku, purchaseToken: 'fixture' };
+  const line = { productId: sku, expiryTime: '2030-01-01T00:00:00Z', offerDetails: { offerId: 'trial-3-days' },
+    latestSuccessfulOrderId: 'GPA.123', offerPhase: { freeTrial: {} }, autoRenewingPlan: {} };
+  const data = { subscriptionState: 'SUBSCRIPTION_STATE_CANCELED', canceledStateContext: { userInitiatedCancellation: {} }, lineItems: [line] };
+  const original = globalThis.fetch;
+  globalThis.fetch = async url => Response.json(String(url).includes('oauth2.googleapis.com') ? { access_token: 'test' } : data);
+  try {
+    const verify = () => verifyStorePurchase(body, e, 'google_123');
+    const canceled = await verify();
+    assert.equal(canceled.freeTrial, true); assert.equal(canceled.active, true);
+    assert.equal(canceled.reference.paid, false); assert.equal(canceled.userCanceled, true);
+    assert.equal(canceled.autoRenewEnabled, false);
+    data.canceledStateContext = { systemInitiatedCancellation: {} };
+    assert.equal((await verify()).userCanceled, false);
+    data.subscriptionState = 'SUBSCRIPTION_STATE_ACTIVE';
+    line.offerPhase = { basePrice: {} }; line.latestSuccessfulOrderId += '..0';
+    assert.equal((await verify()).firstChargeAfterTrial, true);
+    delete line.offerDetails.offerId;
+    assert.equal((await verify()).firstChargeAfterTrial, false);
+  } finally { globalThis.fetch = original; }
+});
+
+test('early Google delivery retries quietly, an old missing owner and a failed ownership lookup remain incidents', async () => {
+  const { handleStoreNotification } = await import('./store_notifications.js');
+  let lookup = Response.json({ userId: null });
+  const env = { ACCOUNTS: {}, PURCHASE_CLAIMS: { idFromName: key => key, get: () => ({ fetch: async () => lookup.clone() }) } };
+  const deliver = age => {
+    const data = { packageName: 'ru.pdd.pdd_app', eventTimeMillis: String(Date.now() - age),
+      subscriptionNotification: { notificationType: 4, purchaseToken: 'fixture-token' } };
+    const request = new Request('https://test/api/store/google/notifications', { method: 'POST',
+      body: JSON.stringify({ message: { data: btoa(JSON.stringify(data)) } }) });
+    return handleStoreNotification(request, env, 'googleplay', async () => true);
+  };
+  assert.equal((await deliver(12000)).status, 409);
+  assert.equal((await deliver(360000)).status, 503);
+  lookup = new Response(null, { status: 503 });
+  assert.equal((await deliver(12000)).status, 503);
 });

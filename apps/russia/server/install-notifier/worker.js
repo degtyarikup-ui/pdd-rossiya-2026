@@ -29,6 +29,7 @@ import { getUsdRate } from './economy_fx.js';
 import { getCloudflareBilling } from './economy_cloudflare.js';
 import { handleEconomyAdmin } from './economy_admin.js';
 import { mapAdminReads } from './admin_reads.js';
+import { observeSubscription } from './subscription_events.js';
 import { premiumBanner, premiumContextLines, premiumDate } from './premium_message.js';
 import { metadataFields, acquisitionFields, mergeAcquisition, attributionLines, installSourceLines, deviceLine, attributedDestination, marketingSource, siteSourceKey, SOURCE_LABELS } from './attribution.js';
 import { storeReportSnapshot } from './store_reports.js';
@@ -734,7 +735,8 @@ export function buildPremiumPurchaseMessage(p) {
 
   const lines = [
     premiumBanner(p.tier, p.renewal),
-    p.renewal ? '<b>Автопродление Premium</b>' : '<b>Покупка Premium</b>',
+    p.trialConversion ? '<b>💳 Первая оплата после пробного периода</b>'
+      : p.renewal ? '<b>Автопродление Premium</b>' : '<b>Покупка Premium</b>',
     '',
     `• <b>Тариф:</b> ${tierStr}`,
     `• <b>Пользователь:</b> ${name}`,
@@ -782,7 +784,11 @@ async function trackStoreRevenue(env, user, verified) {
 }
 
 async function refreshUserStoreEntitlement(env, user) {
-  return refreshStoreEntitlement(env, user, { onVerified: verified => trackStoreRevenue(env, user, verified) });
+  return refreshStoreEntitlement(env, user, { onVerified: async verified => {
+    const trialConversion = await observeSubscription(env, user, verified, sendTelegram);
+    if (trialConversion) await logStorePurchase(env, user, verified, { trialConversion });
+    else await trackStoreRevenue(env, user, verified);
+  } });
 }
 
 async function logStorePurchase(env, user, verified, details = {}) {
@@ -819,7 +825,7 @@ async function logStorePurchase(env, user, verified, details = {}) {
   const googleOrder = store === 'googleplay' && verified.orderId && !event.premiumReportExcluded
     ? { id: verified.orderId, country: verified.reference.country } : null;
   await trackStats(env, null, { id: key, kind: 'analytics', ts, event, ...(googleOrder ? { googleOrder } : {}) });
-  await env.INSTALLS.put(key, '1', { expirationTtl: 30 * 86400 });
+  await env.INSTALLS.put(key, '1', details.trialConversion ? {} : { expirationTtl: 30 * 86400 });
 }
 
 export function buildPremiumGrantMessage(user, grant) {
@@ -1120,6 +1126,7 @@ export async function sendTelegram(env, text, dedupKey = null, options = {}) {
   }
   const url = `https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`;
   const resolvedThread = explicitThreadId ? Number(explicitThreadId) : await getTopicThreadId(env, topic);
+  if (topic === 'subscriptions' && !resolvedThread) return new Response('subscription topic unavailable', { status: 503 });
   const payload = {
     chat_id: chatId,
     text,
@@ -3836,7 +3843,8 @@ const workerHandlers = {
       }
 
       try {
-        await logStorePurchase(env, user, verified, { tier, tierName, price });
+        const trialConversion = await observeSubscription(env, user, verified, sendTelegram);
+        await logStorePurchase(env, user, verified, { tier, tierName, price, trialConversion });
       } catch (_) { console.error('Purchase saved; notification unavailable'); }
 
       return jsonResponse({
@@ -4400,6 +4408,12 @@ const workerHandlers = {
         }
       })));
       ctx.waitUntil(cronTask('reconcile', reconcileAccounts(env)));
+      if (env.TELEGRAM && env.BOT_TOKEN && env.CHAT_ID) {
+        const queue = env.TELEGRAM.get(env.TELEGRAM.idFromName(telegramChatId(env)));
+        ctx.waitUntil(cronTask('subscription_topic', queue.fetch('https://telegram/subscription-topic').then(response => {
+          if (!response.ok) throw new Error('subscription topic unavailable');
+        })));
+      }
       let origin = DEFAULT_WORKER_ORIGIN;
       try {
         const settings = JSON.parse(await env.INSTALLS.get('social:settings'));
@@ -4467,10 +4481,11 @@ export async function handleAccountMaintenance(path, request, env) {
     user.storeVerifiedAtByStore = { ...(user.storeVerifiedAtByStore || {}), [reference.store]: Date.now() };
     user.verifiedPurchase = verified.reference; user.storeVerifiedAt = Date.now(); user.autoRenewEnabled = verified.autoRenewEnabled;
     await putUserRecord(env, user);
+    const trialConversion = await observeSubscription(env, user, verified, sendTelegram);
     const revenueTracked = await trackStoreRevenue(env, user, verified);
-    if (renewalEvent && verified.orderId &&
-        (reference.store === 'googleplay' || (verified.renewal && reference.transactionId === verified.orderId))) {
-      await logStorePurchase(env, user, { ...verified, renewal: true }, { revenueTracked });
+    if (trialConversion || (renewalEvent && verified.orderId &&
+        (reference.store === 'googleplay' || (verified.renewal && reference.transactionId === verified.orderId)))) {
+      await logStorePurchase(env, user, { ...verified, renewal: true }, { revenueTracked, trialConversion });
     }
   } else if (path === '/_account/refresh') {
     const raw = await env.INSTALLS.get('user:' + env.__ACCOUNT_ID);
@@ -4518,7 +4533,7 @@ export default {
         let code = 'http_' + response.status;
         try {
           const reason = (await response.clone().json()).error;
-          const allowed = ['store verification unavailable', 'store verification timeout', 'store verification not configured', 'purchase ownership not configured', 'purchase ownership unavailable', 'purchase belongs to another account', 'unknown product', 'wrong product', 'wrong transaction', 'wrong subscription', 'invalid transaction', 'missing purchase token', 'payment provider unavailable', 'payment provider error'];
+          const allowed = ['purchase owner not ready', 'purchase reference not ready', 'store status unavailable', 'store verification unavailable', 'store verification timeout', 'store verification not configured', 'purchase ownership not configured', 'purchase ownership unavailable', 'purchase belongs to another account', 'unknown product', 'wrong product', 'wrong transaction', 'wrong subscription', 'invalid transaction', 'missing purchase token', 'payment provider unavailable', 'payment provider error'];
           if (allowed.includes(reason)) code = reason.replaceAll(' ', '_');
         } catch (_) {}
         await reportFailure(response.status, code);

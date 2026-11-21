@@ -15,7 +15,8 @@ export async function verifyGooglePush(request, env) {
   try{const{payload}=await jwtVerify(token,keys,{algorithms:['RS256'],issuer:['https://accounts.google.com','accounts.google.com'],audience:env.GOOGLE_RTDN_AUDIENCE,requiredClaims:['sub','exp','iat']});return payload.email===env.GOOGLE_RTDN_SERVICE_ACCOUNT_EMAIL&&payload.email_verified===true;}catch{return false;}
 }
 async function receiptOwner(env,key){
- const r=await env.PURCHASE_CLAIMS.get(env.PURCHASE_CLAIMS.idFromName(key)).fetch('https://purchase-claims/owner');return r.ok?(await r.json()).userId:null;
+ const r=await env.PURCHASE_CLAIMS.get(env.PURCHASE_CLAIMS.idFromName(key)).fetch('https://purchase-claims/owner');if (!r.ok) throw new Error('ownership unavailable');
+ return (await r.json()).userId;
 }
 export async function handleStoreNotification(request, env, store, verifyGoogle=verifyGooglePush) {
   if (!env.ACCOUNTS || !env.PURCHASE_CLAIMS) return reply({error:'store notifications unavailable'},503);
@@ -30,7 +31,7 @@ export async function handleStoreNotification(request, env, store, verifyGoogle=
   const bytes=new Uint8Array(length);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length;}
   const raw=new TextDecoder().decode(bytes);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'invalid json'},400);}
-  let key,reference,renewalEvent;
+  let key,reference,renewalEvent,eventTime;
   try {
    if(store==='appstore') {
     // The configured callback has a private MAC token. JWS fields are only
@@ -38,6 +39,7 @@ export async function handleStoreNotification(request, env, store, verifyGoogle=
     // reread in AccountState, including exact originalTransactionId/account UUID.
     const envelope=decodeJwt(body.signedPayload);
     if(envelope.notificationType==='TEST')return reply({ok:true,test:true});
+    eventTime=Number(envelope.signedDate);
     renewalEvent=envelope.notificationType==='DID_RENEW';
     const tx=decodeJwt(envelope.data?.signedTransactionInfo);
     if(!/^\d{1,40}$/.test(tx.transactionId||'')||!/^\d{1,40}$/.test(tx.originalTransactionId||''))throw new Error('invalid transaction');
@@ -46,15 +48,21 @@ export async function handleStoreNotification(request, env, store, verifyGoogle=
     const data=JSON.parse(atob(body.message?.data||''));
     if(data.testNotification)return reply({ok:true,test:true});
     if(data.packageName!=='ru.pdd.pdd_app')return reply({error:'wrong package'},400);
+    eventTime=Number(data.eventTimeMillis);
     renewalEvent=data.subscriptionNotification?.notificationType===2;
     const token=data.subscriptionNotification?.purchaseToken;if(typeof token!=='string'||token.length>8192)throw new Error('invalid transaction');
     key='googleplay:ru:'+await tokenHash(token);reference={store,country:'ru',purchaseToken:token};
    }
-   const userId=await receiptOwner(env,key);if(!userId)return reply({error:'purchase owner not ready'},503);
+   // Both stores retry non-2xx deliveries. A new receipt may arrive before
+   // the phone binds it. Escalate a persistent missing owner after five minutes.
+   const age = Date.now() - eventTime;
+   const pendingStatus = age >= -60000 && age < 300000 ? 409 : 503;
+   const userId=await receiptOwner(env,key);
+   if(!userId)return reply({error:'purchase owner not ready'},pendingStatus);
    if(store==='googleplay') {
     const user=JSON.parse(await accountRead(env,userId,'user:'+userId)||'null');
     const saved=user?.verifiedPurchases?.googleplay||user?.verifiedPurchase;
-    if(!saved||saved.store!=='googleplay')return reply({error:'purchase reference not ready'},503);
+    if(!saved||saved.store!=='googleplay')return reply({error:'purchase reference not ready'},pendingStatus);
     reference.productId=saved.productId;
    }
    const response=await accountRpc(env,userId,'/_account/iap-event',{reference,key,renewalEvent});

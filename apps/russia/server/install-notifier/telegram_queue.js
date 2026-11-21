@@ -5,7 +5,7 @@ import { incidentGuide } from './incident_copy.js';
 import { processTelegramMessageUpdate } from './support_chat.js';
 import { isReportPhotoUrl } from './report_questions.js';
 import { buildIncidentBatchMessage, incidentBatchIdentity, INCIDENT_BATCH_WINDOW_MS, INCIDENT_BATCH_MAX } from './incident_batch.js';
-import { setupTelegramTopics } from './telegram_topics.js';
+import { setupTelegramTopics, TELEGRAM_TOPICS } from './telegram_topics.js';
 import { EXPORT_COMMAND_MAX_AGE_MS, buildErrorCsv, errorLevelLabel, errorLogKey, errorLogRecord, errorLogTime, exportStart, mskStamp, parseExportCommand, ERROR_LOG_PREFIX } from './telegram_export.js';
 
 export function telegramChatId(env) {
@@ -94,12 +94,25 @@ export class TelegramQueue {
       if (new URL(request.url).pathname === '/incident') return this.enqueueIncident(await request.json());
       if (new URL(request.url).pathname === '/export-command') return Response.json({ handled: await this.handleExportUpdate(await request.json()) });
       if (new URL(request.url).pathname === '/poll-commands') return Response.json(await this.pollErrorCommands());
+      if (new URL(request.url).pathname === '/subscription-topic') return Response.json({ threadId: await this.subscriptionTopic() });
       if (new URL(request.url).pathname === '/error-digest') return this.enqueueSignalDigest();
       if (new URL(request.url).pathname === '/setup-topics') {
-        return setupTelegramTopics(request, this.env, (_env, text, dedupKey, options) => this.enqueue({ text, dedupKey, ...options }));
+        const response = await setupTelegramTopics(request, this.env, (_env, text, dedupKey, options) => this.enqueue({ text, dedupKey, ...options }));
+        if (response.ok) this.subscriptionThread = (await response.clone().json()).topics.subscriptions;
+        return response;
       }
       return this.enqueue(await request.json());
     });
+  }
+  async subscriptionTopic() {
+    if (this.subscriptionThread) return this.subscriptionThread;
+    const topic = TELEGRAM_TOPICS.find(item => item.key === 'subscriptions');
+    const response = await setupTelegramTopics(new Request('https://telegram/setup-topics', {
+      method: 'POST', body: '{}',
+    }), this.env, (_env, text, dedupKey, options) => this.enqueue({ text, dedupKey, ...options }), [topic]);
+    if (!response.ok) throw new Error('subscription topic unavailable');
+    this.subscriptionThread = (await response.json()).topics.subscriptions;
+    return this.subscriptionThread;
   }
   async enqueue(body) {
     const { text, dedupKey, photoBase64, messages, topic } = body;
@@ -107,7 +120,8 @@ export class TelegramQueue {
       return Response.json({ ok: true, suppressed: true });
     }
     const explicitThreadId = body.threadId ?? body.message_thread_id;
-    const resolvedThreadId = explicitThreadId ? Number(explicitThreadId) : await getTopicThreadId(this.env, topic);
+    const resolvedThreadId = explicitThreadId ? Number(explicitThreadId)
+      : topic === 'subscriptions' ? await this.subscriptionTopic() : await getTopicThreadId(this.env, topic);
     const items = messages || [{ text, ...(photoBase64 ? { photoBase64 } : {}) }];
     if (!Array.isArray(items) || items.length < 1 || items.length > 2 || items.some(item =>
       typeof item.text !== 'string' || !item.text || item.text.length > (item.photoBase64 || item.photoUrl ? 1024 : 4096) ||
@@ -145,6 +159,7 @@ export class TelegramQueue {
           text: items[i].text,
           ...(items[i].photoBase64 ? { photoBase64: items[i].photoBase64 } : {}),
           ...(items[i].photoUrl ? { photoUrl: items[i].photoUrl } : {}),
+          ...(topic === 'subscriptions' ? { topic } : {}),
           ...(itemThreadId ? { threadId: Number(itemThreadId) } : {})
         });
       }
@@ -414,7 +429,7 @@ export class TelegramQueue {
           delay = Math.max(delay, (Number(result.parameters?.retry_after) || 60) * 1000 + 1000);
           await this.state.storage.put('telegram:retry_at', Date.now() + delay);
         }
-        else if (response.status === 400 && threadId && (result.description?.includes('thread') || result.description?.includes('topic'))) {
+        else if (response.status === 400 && threadId && item.topic !== 'subscriptions' && (result.description?.includes('thread') || result.description?.includes('topic'))) {
           // If the topic was deleted or threadId is invalid in Telegram, retry once without topic so notification is never lost!
           delete item.threadId;
           delete item.message_thread_id;

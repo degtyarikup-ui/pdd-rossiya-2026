@@ -1,4 +1,4 @@
-import { storeProducts } from './store_products.js';
+import { storeProducts, isTrialProduct } from './store_products.js';
 import { accountTokenForUserId } from './store_account.js';
 import { putUserRecord } from './user_store.js';
 import { entitlementsOf, setEntitlement } from './entitlements.js';
@@ -90,20 +90,37 @@ export function googleEntitlement(data, productId, now = Date.now()) {
   const orderId = item.latestSuccessfulOrderId || data.latestOrderId || null;
   return { active, expiresAt: new Date(item.expiryTime).toISOString(), orderId,
     renewal: /\.\.\d+$/.test(orderId || ''),
-    autoRenewEnabled: typeof item.autoRenewingPlan?.autoRenewEnabled === 'boolean' ? item.autoRenewingPlan.autoRenewEnabled : item.prepaidPlan ? false : null };
+    autoRenewEnabled: data.subscriptionState === 'SUBSCRIPTION_STATE_CANCELED' ? false
+      : typeof item.autoRenewingPlan?.autoRenewEnabled === 'boolean' ? item.autoRenewingPlan.autoRenewEnabled : item.prepaidPlan ? false : null };
+}
+
+function appleFreeTrial(transaction) {
+  return transaction.offerDiscountType === 'FREE_TRIAL' ||
+    (transaction.offerType === 1 && transaction.price === 0 && isTrialProduct(transaction.productId));
 }
 
 function applePaid(transaction) {
-  if (transaction.offerDiscountType === 'FREE_TRIAL') return false;
+  if (appleFreeTrial(transaction)) return false;
   return transaction.price == null ? null : Number(transaction.price) > 0;
 }
 
 export async function verifyStorePurchase(body, env, userId, { refresh = false } = {}) {
-  const { store, productId, country } = body || {};
+  const { store, country } = body || {};
+  let productId = body?.productId;
   if (!Object.hasOwn(packages, country) || !Object.hasOwn(storeProducts, store)) throw new StoreError('invalid store', 400);
   const products = env[store === 'googleplay' ? 'GOOGLE_PLAY_PRODUCT_IDS' : 'APPLE_PRODUCT_IDS'];
   const allowed = products ? String(products).split(',').map(s => s.trim()) : Object.keys(storeProducts[store]);
-  if (!allowed.includes(productId)) throw new StoreError('unknown product', 422);
+  // A retry can carry an obsolete client SKU after this account already
+  // bound the exact Play receipt. Recheck the saved SKU against Play below.
+  if (!allowed.includes(productId)) {
+    if (store !== 'googleplay' || Object.hasOwn(storeProducts[store], productId) || typeof body.purchaseToken !== 'string' || !body.purchaseToken ||
+        body.purchaseToken.length > 8192) throw new StoreError('unknown product', 422);
+    const user = JSON.parse(await env.INSTALLS?.get('user:' + userId) || 'null');
+    const saved = user?.verifiedPurchases?.googleplay || user?.verifiedPurchase;
+    if (saved?.store !== store || saved.country !== country || saved.purchaseToken !== body.purchaseToken ||
+        !allowed.includes(saved.productId)) throw new StoreError('unknown product', 422);
+    productId = saved.productId;
+  }
   if (store === 'googleplay') {
     const token = body.purchaseToken;
     if (typeof token !== 'string' || !token || token.length > 8192) throw new StoreError('missing purchase token', 400);
@@ -116,12 +133,22 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
     const line = data.lineItems?.filter(item => item.productId === productId)
       .sort((a, b) => Date.parse(b.expiryTime) - Date.parse(a.expiryTime))[0];
     const isTest = data.testPurchase != null;
-    const free = Boolean(line?.offerPhase?.freeTrial || line?.signupPromotion);
+    const freeTrial = Boolean(line?.offerPhase?.freeTrial);
+    const free = freeTrial || Boolean(line?.signupPromotion && !line.offerPhase);
     // A successful order and an explicit paid phase are needed. An active
     // entitlement on its own also includes free trials and test purchases.
     const paid = isTest || free ? false : line?.latestSuccessfulOrderId
       && (line.offerPhase?.basePrice || line.offerPhase?.introductoryPrice) ? true : null;
-    return { ...googleEntitlement(data, productId), key: `googleplay:${country}:${await tokenHash(token)}`,
+    const userCanceled = data.subscriptionState === 'SUBSCRIPTION_STATE_CANCELED' &&
+      Boolean(data.canceledStateContext?.userInitiatedCancellation);
+    return { ...googleEntitlement(data, productId), freeTrial, userCanceled,
+      // Play keeps the selected acquisition offer on the subscription. ..0
+      // identifies its first recurring order, including for pre-rollout trials.
+      firstChargeAfterTrial: paid === true && isTrialProduct(productId) && line.offerDetails?.offerId === 'trial-3-days' &&
+        /\.\.0$/.test(line.latestSuccessfulOrderId),
+      trialStartedAt: freeTrial ? data.startTime : null,
+      canceledAt: userCanceled ? data.canceledStateContext.userInitiatedCancellation.cancelTime : null,
+      key: `googleplay:${country}:${await tokenHash(token)}`,
       reference: { store, country, productId, purchaseToken: token,
         ...(/^[A-Z]{2}$/.test(data.regionCode) ? { storefront: data.regionCode } : {}),
         evidenceVersion: 1, environment: isTest ? 'Sandbox' : 'Production', isTest, paid,
@@ -200,7 +227,11 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
     }
     active = [1, 4].includes(latest.status) && !data.revocationDate && expiresDate > Date.now();
   }
-  return { active, autoRenewEnabled, accountToken: data.appAccountToken || null, expiresAt: new Date(expiresDate).toISOString(),
+  return { active, autoRenewEnabled, freeTrial: appleFreeTrial(data),
+    firstChargeAfterTrial: initialTransaction.transactionId !== data.transactionId && appleFreeTrial(initialTransaction) &&
+      initialTransaction.expiresDate === data.purchaseDate && data.transactionReason === 'RENEWAL',
+    trialStartedAt: data.purchaseDate, userCanceled: active && autoRenewEnabled === false && !data.revocationDate,
+    accountToken: data.appAccountToken || null, expiresAt: new Date(expiresDate).toISOString(),
     purchaseDate: data.purchaseDate, billingPeriodEndsAt: data.expiresDate,
     renewal: data.transactionReason === 'RENEWAL', orderId: String(data.transactionId), key: `appstore:${data.originalTransactionId}`,
     money: { milliunits: data.price, currency: data.currency },

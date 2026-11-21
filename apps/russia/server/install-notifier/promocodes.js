@@ -1,6 +1,7 @@
 import { accountRead, accountRpc } from './account_state.js';
 import { mapAdminReads } from './admin_reads.js';
 import { sanitizeCode, codeRpc, liveUser, readClaimCode } from './referrals.js';
+import { recordPromoNotice } from './subscription_events.js';
 import { extendEntitlement, applyEntitlements } from './entitlements.js';
 import { putUserRecord } from './user_store.js';
 
@@ -58,6 +59,7 @@ export async function promoAccountStep(request, env) {
   if (!receipt) {
     extendEntitlement(user, 'promo', job.days);
     await putUserRecord(env, user);
+    recordPromoNotice(env, user, job);
     await env.INSTALLS.put(key, JSON.stringify({ days: job.days }));
   } else {
     applyEntitlements(user);

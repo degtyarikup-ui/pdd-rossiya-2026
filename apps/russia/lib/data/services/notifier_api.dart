@@ -84,6 +84,9 @@ class NotifierApi {
           http.post(Uri.parse('$host$path'), headers: headers, body: body),
       hosts: BackendConfig.notifierHosts,
       attempts: attempts,
+      // Both hosts verify the exact same receipt. A late confirmation can
+      // finish the check while the fallback is still waiting for a response.
+      acceptLateSuccess: path == '/api/user/purchase',
       pause: Duration.zero,
     );
   }

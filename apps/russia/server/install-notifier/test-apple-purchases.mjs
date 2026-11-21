@@ -275,3 +275,38 @@ test('unpublished quarterly SKUs verify the store period, including the free tri
     });
   }
 });
+
+test('verified trial, cancellation and first paid order go to their own Telegram topics once', async () => {
+  const id = 'apple_test', productId = 'ru.pdd.pddApp.sub.3months.trial3d';
+  const records = new Map([['user:' + id, JSON.stringify({ id, app: 'ru' })]]);
+  const effects = [];
+  const e = { ...env, __ACCOUNT_ID: id, BOT_TOKEN: 'test', CHAT_ID: 'test', __DURABLE_EFFECTS: effects,
+    INSTALLS: { get: async key => records.get(key), put: async (key, value) => records.set(key, value) },
+    PURCHASE_CLAIMS: { idFromName: key => key, get: () => ({ fetch: async () => Response.json({ userId: id }) }) } };
+  let data = transaction({ productId, price: 0, offerDiscountType: 'FREE_TRIAL' });
+  let autoRenewStatus = 1;
+  const deliver = async renewalEvent => {
+    const request = new Request('https://internal/_account/iap-event', { method: 'POST',
+      body: JSON.stringify({ reference: { ...body, productId, transactionId: data.transactionId },
+        key: 'appstore:100', renewalEvent }) });
+    assert.equal((await handleAccountMaintenance('/_account/iap-event', request, e)).status, 200);
+  };
+  await withApple(async url => new URL(url).pathname.includes('/subscriptions/')
+    ? statusResponse(data, 1, { originalTransactionId: '100', environment: 'Production', autoRenewStatus })
+    : Response.json({ signedTransactionInfo: await signed(data) }), async () => {
+    await deliver(false);
+    autoRenewStatus = 0;
+    await deliver(false); await deliver(false);
+    autoRenewStatus = 1;
+    await deliver(false);
+    data = transaction({ productId, price: 370000, transactionId: '124', transactionReason: 'RENEWAL' });
+    await deliver(true); await deliver(true);
+    data = { ...data, transactionId: '125' };
+    await deliver(true);
+  });
+  const messages = effects.filter(item => item.kind === 'telegram');
+  assert.deepEqual(messages.map(item => item.options.topic), ['subscriptions', 'subscriptions', 'purchases', 'purchases']);
+  for (const [i, pattern] of [/бесплатный пробный период/, /Отключено автопродление/, /Первая оплата после пробного периода/, /Автопродление Premium/].entries()) {
+    assert.match(messages[i].text, pattern);
+  }
+});

@@ -5,6 +5,7 @@ export const TELEGRAM_TOPICS = [
   { key: 'errors', name: '🔴 Ошибки и падения', color: 0xFB6F5F, description: 'Сюда будут приходить падения приложения и серверные сбои.' },
   { key: 'purchases', name: '💳 Покупки и премиум', color: 0xFFD67E, description: 'Сюда будут приходить покупки в сторах, оплата по СБП и выдачи Premium.' },
   { key: 'registrations', name: '👤 Регистрации', color: 0x6FB9F0, description: 'Сюда будут приходить новые пользователи.' },
+  { key: 'subscriptions', name: '🎁 Пробные подписки и промокоды', color: 0x8EEE98, description: 'Здесь появляются старты пробного периода, отключения автопродления и активации промокодов.' },
   { key: 'reports', name: '🚩 Жалобы на вопросы', color: 0xCB86DB, description: 'Сюда будут приходить жалобы на вопросы. Для вошедших пользователей указываются имя и почта из аккаунта.' },
 ];
 
@@ -14,7 +15,7 @@ export async function readTelegramTopics(env) {
 
 // Reuse existing topics and save once, also on partial Telegram failure. KV
 // permits only one write per second to a key, so never write inside the loop.
-export async function setupTelegramTopics(request, env, sendTelegram) {
+export async function setupTelegramTopics(request, env, sendTelegram, topicsToSetup = TELEGRAM_TOPICS) {
   if (!env.BOT_TOKEN || !telegramChatId(env)) return Response.json({ error: 'bot not configured' }, { status: 503 });
   if (!env.INSTALLS) return Response.json({ error: 'storage unavailable' }, { status: 503 });
   let body;
@@ -29,7 +30,9 @@ export async function setupTelegramTopics(request, env, sendTelegram) {
   }
   const raw = await env.INSTALLS.get('telegram_topics');
   const saved = raw ? JSON.parse(raw) : {};
-  const topics = await readTelegramTopics(env);
+  const topics = Object.fromEntries(TELEGRAM_TOPICS.map(({ key }) => [
+    key, resolveTopicThreadId(env, key) || Number(saved[key]) || null,
+  ]));
   const changed = [];
   const persist = async () => {
     const next = { ...saved, ...Object.fromEntries(Object.entries(topics).filter(([, id]) => id !== null)) };
@@ -44,7 +47,7 @@ export async function setupTelegramTopics(request, env, sendTelegram) {
       }
     }
   };
-  for (const topic of TELEGRAM_TOPICS) {
+  for (const topic of topicsToSetup) {
     const old = topics[topic.key];
     if (body[topic.key] !== undefined) topics[topic.key] = Number(body[topic.key]);
     if (!topics[topic.key]) {

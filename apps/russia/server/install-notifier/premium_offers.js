@@ -76,22 +76,28 @@ export async function adminOffers(request, env) {
 // This merchant-specific check does not create a payment or change the catalog.
 export async function checkSbpTrial(request, env) {
   if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
-  const unavailable = () => json({ error: 'sbp_trial_unavailable' }, 503);
-  if (!env.PLATEGA_MERCHANT_ID || !env.PLATEGA_SECRET) return unavailable();
+  const unavailable = (reason, providerStatus) => json({ error: 'sbp_trial_unavailable', reason,
+    ...(providerStatus ? { providerStatus } : {}) }, 503);
+  if (!env.PLATEGA_MERCHANT_ID || !env.PLATEGA_SECRET) return unavailable('not_configured');
+  let response;
   try {
-    const response = await fetch('https://app.platega.io/subscription/trial-supported', {
-      method: 'GET', redirect: 'error', signal: AbortSignal.timeout(5000),
+    response = await fetch('https://app.platega.io/subscription/trial-supported', {
+      // workerd supports manual and follow. Inspect non-200 responses here to
+      // keep merchant credentials on this exact URL when the provider redirects.
+      method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(5000),
       headers: { Accept: 'application/json', 'X-MerchantId': env.PLATEGA_MERCHANT_ID, 'X-Secret': env.PLATEGA_SECRET },
     });
-    if (response.status !== 200) return unavailable();
+  } catch { return unavailable('network'); }
+  if (response.status !== 200) return unavailable('provider_http', response.status);
+  try {
     const { trialSupported, maxTrialPeriodDays, minTrialAmount } = await response.json();
     const kopecks = Math.round(minTrialAmount * 100);
     if (typeof trialSupported !== 'boolean' ||
         !Number.isSafeInteger(maxTrialPeriodDays) || maxTrialPeriodDays < 0 || maxTrialPeriodDays > 2147483647 ||
         typeof minTrialAmount !== 'number' || minTrialAmount < 0 ||
-        !Number.isSafeInteger(kopecks) || kopecks / 100 !== minTrialAmount) return unavailable();
+        !Number.isSafeInteger(kopecks) || kopecks / 100 !== minTrialAmount) return unavailable('invalid_response');
     return json({ trialSupported, maxTrialPeriodDays, minTrialAmount });
-  } catch { return unavailable(); }
+  } catch { return unavailable('invalid_response'); }
 }
 
 // Old binaries displayed a fixed amount before they called the Worker. They never
