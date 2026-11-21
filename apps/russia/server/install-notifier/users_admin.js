@@ -229,7 +229,7 @@ export async function handleUsersAdmin(request, env, url, deps) {
     if (env.BOT_TOKEN && env.CHAT_ID) {
       try {
         const notification = await deps.sendTelegram(env, deps.buildPremiumGrantMessage(user, grant),
-          'admin_grant:' + crypto.randomUUID(), { topic: 'purchases' });
+          'admin_grant:' + crypto.randomUUID(), { topic: 'subscriptions' });
         if (!notification.ok) throw new Error('grant notification queue unavailable');
       } catch (_) { console.error('Manual Premium grant saved; notification unavailable'); }
     }

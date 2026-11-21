@@ -130,7 +130,10 @@ export class TelegramQueue {
       (item.photoBase64 && (typeof item.photoBase64 !== 'string' || item.photoBase64.length > 100000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(item.photoBase64)))
     )) return new Response('invalid message', { status: 400 });
     if (!this.env.BOT_TOKEN || !this.env.CHAT_ID) return new Response('not configured', { status: 503 });
-    if (dedupKey && await this.state.storage.get('seen:' + dedupKey)) return Response.json({ ok: true, duplicate: true });
+    if (dedupKey) {
+      const seen = await this.state.storage.get('seen:' + dedupKey);
+      if (seen) return Response.json({ ok: true, duplicate: true, ...(seen.delivery ? { delivery: seen.delivery } : {}) });
+    }
     // Social errors used to bypass incident grouping entirely. Keep the first
     // notification immediate and retain repeat counts across queue restarts.
     let errorGroups = null, repeated = 0;
@@ -160,6 +163,7 @@ export class TelegramQueue {
           ...(items[i].photoBase64 ? { photoBase64: items[i].photoBase64 } : {}),
           ...(items[i].photoUrl ? { photoUrl: items[i].photoUrl } : {}),
           ...(topic === 'subscriptions' ? { topic } : {}),
+          ...(topic === 'subscriptions' && dedupKey && items.length === 1 ? { dedupKey } : {}),
           ...(itemThreadId ? { threadId: Number(itemThreadId) } : {})
         });
       }
@@ -424,8 +428,15 @@ export class TelegramQueue {
           signal: AbortSignal.timeout(10000),
         });
         const result = await response.json();
-        if (response.ok && result.ok) await this.state.storage.delete(key);
-        else if (response.status === 429) {
+        if (response.ok && result.ok) {
+          if (item.dedupKey && Number.isSafeInteger(result.result?.message_id)) {
+            const delivery = { messageId: result.result.message_id, threadId: result.result.message_thread_id };
+            await this.state.storage.transaction(async txn => {
+              await txn.put('seen:' + item.dedupKey, { delivery });
+              await txn.delete(key);
+            });
+          } else await this.state.storage.delete(key);
+        } else if (response.status === 429) {
           delay = Math.max(delay, (Number(result.parameters?.retry_after) || 60) * 1000 + 1000);
           await this.state.storage.put('telegram:retry_at', Date.now() + delay);
         }

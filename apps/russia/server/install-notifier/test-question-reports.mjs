@@ -375,3 +375,24 @@ test('subscription topic is created once and used for the first message without 
     assert.deepEqual((await queued(state)).map(item => item.threadId), [56, 56, 56]);
   } finally { globalThis.fetch = original; }
 });
+
+test('replaying a subscription notice returns its Telegram link only after delivery', async () => {
+  const { env, state } = setup();
+  const queue = new TelegramQueue(state, env);
+  const notice = { text: 'subscription', dedupKey: 'trial:receipt', topic: 'subscriptions' };
+  const original = globalThis.fetch;
+  let sends = 0;
+  globalThis.fetch = async (_, options) => {
+    sends++;
+    assert.equal(JSON.parse(options.body).message_thread_id, 45);
+    return Response.json({ ok: true, result: { message_id: 51, message_thread_id: 45 } });
+  };
+  try {
+    assert.equal((await (await queue.enqueue(notice)).json()).queued, true);
+    assert.deepEqual(await (await queue.enqueue(notice)).json(), { ok: true, duplicate: true });
+    await queue.alarm();
+    const duplicate = await (await queue.enqueue(notice)).json();
+    assert.deepEqual(duplicate.delivery, { messageId: 51, threadId: 45 });
+    assert.equal(sends, 1);
+  } finally { globalThis.fetch = original; }
+});

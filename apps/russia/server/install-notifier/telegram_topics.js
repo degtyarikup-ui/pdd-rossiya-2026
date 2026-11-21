@@ -3,9 +3,9 @@ import { errorCode } from './diagnostics.js';
 
 export const TELEGRAM_TOPICS = [
   { key: 'errors', name: '🔴 Ошибки и падения', color: 0xFB6F5F, description: 'Сюда будут приходить падения приложения и серверные сбои.' },
-  { key: 'purchases', name: '💳 Покупки и премиум', color: 0xFFD67E, description: 'Сюда будут приходить покупки в сторах, оплата по СБП и выдачи Premium.' },
+  { key: 'purchases', name: '💳 Покупки и премиум', color: 0xFFD67E, description: 'Сюда будут приходить покупки в сторах и оплата по СБП.' },
   { key: 'registrations', name: '👤 Регистрации', color: 0x6FB9F0, description: 'Сюда будут приходить новые пользователи.' },
-  { key: 'subscriptions', name: '🎁 Пробные подписки и промокоды', color: 0x8EEE98, description: 'Здесь появляются старты пробного периода, отключения автопродления и активации промокодов.' },
+  { key: 'subscriptions', name: '🎁 Пробные подписки и промокоды', color: 0x8EEE98, description: 'Здесь появляются старты пробного периода, отключения автопродления, активации промокодов и ручные выдачи Premium.' },
   { key: 'reports', name: '🚩 Жалобы на вопросы', color: 0xCB86DB, description: 'Сюда будут приходить жалобы на вопросы. Для вошедших пользователей указываются имя и почта из аккаунта.' },
 ];
 
