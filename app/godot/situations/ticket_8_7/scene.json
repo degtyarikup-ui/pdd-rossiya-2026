@@ -1,0 +1,856 @@
+{
+ "id": "ticket_8_7",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -19.25,
+ "playerStartX": -5.25,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -5.25,
+     -19.25
+    ],
+    [
+     -5.25,
+     -18.75
+    ],
+    [
+     -5.25,
+     -18
+    ],
+    [
+     -5.25,
+     -16.5
+    ],
+    [
+     -5.25,
+     -15
+    ],
+    [
+     -5.25,
+     -13.5
+    ],
+    [
+     -5.25,
+     -12
+    ],
+    [
+     -5.25,
+     -10.5
+    ],
+    [
+     -5.25,
+     -9
+    ],
+    [
+     -5.25,
+     -7.5
+    ],
+    [
+     -5.25,
+     -6
+    ],
+    [
+     -5.25,
+     -4.5
+    ],
+    [
+     -5.25,
+     -3
+    ],
+    [
+     -5.25,
+     -1.5
+    ],
+    [
+     -5.25,
+     0
+    ],
+    [
+     -5.25,
+     1.5
+    ],
+    [
+     -5.25,
+     3
+    ],
+    [
+     -5.25,
+     4.5
+    ],
+    [
+     -5.25,
+     6
+    ],
+    [
+     -5.25,
+     7.5
+    ],
+    [
+     -5.25,
+     9
+    ],
+    [
+     -5.25,
+     10.5
+    ],
+    [
+     -5.25,
+     12
+    ],
+    [
+     -5.25,
+     13.5
+    ],
+    [
+     -5.25,
+     15
+    ],
+    [
+     -5.25,
+     16.5
+    ],
+    [
+     -5.25,
+     18
+    ],
+    [
+     -5.25,
+     19.5
+    ],
+    [
+     -5.25,
+     21
+    ],
+    [
+     -5.25,
+     22.5
+    ],
+    [
+     -5.25,
+     24
+    ],
+    [
+     -5.25,
+     25.5
+    ],
+    [
+     -5.25,
+     27
+    ],
+    [
+     -5.25,
+     28.5
+    ],
+    [
+     -5.25,
+     30
+    ],
+    [
+     -5.25,
+     31.5
+    ],
+    [
+     -5.25,
+     33
+    ],
+    [
+     -5.25,
+     34.5
+    ],
+    [
+     -5.25,
+     36
+    ],
+    [
+     -5.25,
+     37.5
+    ],
+    [
+     -5.25,
+     39
+    ],
+    [
+     -5.25,
+     40.5
+    ],
+    [
+     -5.25,
+     42
+    ],
+    [
+     -5.25,
+     43.5
+    ],
+    [
+     -5.25,
+     45
+    ],
+    [
+     -5.25,
+     46.5
+    ],
+    [
+     -5.25,
+     48
+    ],
+    [
+     -5.25,
+     49.5
+    ],
+    [
+     -5.25,
+     51
+    ],
+    [
+     -5.25,
+     52.5
+    ],
+    [
+     -5.25,
+     54
+    ],
+    [
+     -5.25,
+     55.5
+    ],
+    [
+     -5.25,
+     57
+    ],
+    [
+     -5.25,
+     58.5
+    ],
+    [
+     -5.25,
+     60
+    ],
+    [
+     -5.25,
+     61.5
+    ],
+    [
+     -5.25,
+     63
+    ],
+    [
+     -5.25,
+     64.5
+    ],
+    [
+     -5.25,
+     66
+    ],
+    [
+     -5.25,
+     67.5
+    ],
+    [
+     -5.25,
+     69
+    ],
+    [
+     -5.25,
+     70.5
+    ],
+    [
+     -5.25,
+     72
+    ],
+    [
+     -5.25,
+     73.5
+    ],
+    [
+     -5.25,
+     75
+    ],
+    [
+     -5.25,
+     76.5
+    ],
+    [
+     -5.25,
+     78
+    ],
+    [
+     -5.25,
+     79.5
+    ],
+    [
+     -5.25,
+     81
+    ],
+    [
+     -5.25,
+     82.5
+    ],
+    [
+     -5.25,
+     84
+    ],
+    [
+     -5.25,
+     85.5
+    ],
+    [
+     -5.25,
+     87
+    ],
+    [
+     -5.25,
+     88.5
+    ],
+    [
+     -5.25,
+     90
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [],
+ "actors": [
+  {
+   "id": "truck",
+   "type": "truck",
+   "name": "Грузовик",
+   "config": {
+    "id": "truck",
+    "type": "truck",
+    "name": "Грузовик",
+    "side": "cross_right",
+    "targetAction": "straight",
+    "color": "#FFA53C",
+    "position": [
+     -5.25,
+     0.0,
+     5
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -5.25,
+      5
+     ],
+     [
+      -5.25,
+      70
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 3.4294117647058826,
+   "halfWidth": 1.2305882352941178,
+   "badge": {
+    "text": {
+     "ru": "Грузовик",
+     "en": "Truck",
+     "kk": "Жүк көлігі"
+    },
+    "color": "#FFA53C",
+    "height": 3.4
+   },
+   "pos": [
+    -5.25,
+    0.0,
+    5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -5.25,
+     0.0,
+     5
+    ],
+    [
+     -5.25,
+     0.0,
+     70
+    ]
+   ],
+   "length": 65.0,
+   "clearDistance": 8,
+   "maxSpeed": 7,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": 0,
+   "holdFor": null,
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#3978AE",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "off",
+   "hazards": false
+  },
+  {
+   "id": "changing_car",
+   "type": "car",
+   "name": "Авто",
+   "config": {
+    "id": "changing_car",
+    "type": "car",
+    "name": "Авто",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     -4.5,
+     0.0,
+     -6.5
+    ],
+    "rotationY": 0.262,
+    "route": [
+     [
+      -4.5,
+      -6.5
+     ],
+     [
+      -3.6687,
+      -4.25
+     ],
+     [
+      -2.5,
+      0
+     ],
+     [
+      -1.7813,
+      6.25
+     ],
+     [
+      -1.75,
+      8
+     ],
+     [
+      -1.75,
+      16
+     ],
+     [
+      -1.75,
+      32
+     ],
+     [
+      -1.75776,
+      41.125
+     ],
+     [
+      -1.92069,
+      43.375
+     ],
+     [
+      -2.1123,
+      44.5
+     ],
+     [
+      -2.71323,
+      46.75
+     ],
+     [
+      -3.9059,
+      50.125
+     ],
+     [
+      -4.61998,
+      52.375
+     ],
+     [
+      -5.07931,
+      54.625
+     ],
+     [
+      -5.24224,
+      56.875
+     ],
+     [
+      -5.25,
+      66
+     ],
+     [
+      -5.25,
+      85
+     ]
+    ],
+    "car_model": "sedan",
+    "hazard": false
+   },
+   "halfLength": 2.1,
+   "halfWidth": 0.9,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    -4.5,
+    0.0,
+    -6.5
+   ],
+   "yaw": 0.262,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -4.5,
+     0.0,
+     -6.5
+    ],
+    [
+     -3.6687,
+     0.0,
+     -4.25
+    ],
+    [
+     -2.5,
+     0.0,
+     0
+    ],
+    [
+     -1.7813,
+     0.0,
+     6.25
+    ],
+    [
+     -1.75,
+     0.0,
+     8
+    ],
+    [
+     -1.75,
+     0.0,
+     16
+    ],
+    [
+     -1.75,
+     0.0,
+     32
+    ],
+    [
+     -1.75776,
+     0.0,
+     41.125
+    ],
+    [
+     -1.92069,
+     0.0,
+     43.375
+    ],
+    [
+     -2.1123,
+     0.0,
+     44.5
+    ],
+    [
+     -2.71323,
+     0.0,
+     46.75
+    ],
+    [
+     -3.9059,
+     0.0,
+     50.125
+    ],
+    [
+     -4.61998,
+     0.0,
+     52.375
+    ],
+    [
+     -5.07931,
+     0.0,
+     54.625
+    ],
+    [
+     -5.24224,
+     0.0,
+     56.875
+    ],
+    [
+     -5.25,
+     0.0,
+     66
+    ],
+    [
+     -5.25,
+     0.0,
+     85
+    ]
+   ],
+   "length": 92.316,
+   "clearDistance": 68.65551190578073,
+   "maxSpeed": 17,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 14.187117707614142,
+     "side": "left"
+    },
+    {
+     "from": 44.18711987721015,
+     "to": 64.6555104593834,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": 0,
+   "holdFor": null,
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#2B55A2",
+   "way": null,
+   "driverSignal": "none",
+   "turnSignal": "auto",
+   "carModel": "sedan",
+   "hazards": false
+  },
+  {
+   "id": "oncoming",
+   "type": "car",
+   "name": "Авто",
+   "config": {
+    "id": "oncoming",
+    "type": "car",
+    "name": "Авто",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     1.75,
+     0.0,
+     24
+    ],
+    "rotationY": 3.141592653589793,
+    "route": [
+     [
+      1.75,
+      24
+     ],
+     [
+      1.75,
+      -41
+     ]
+    ],
+    "car_model": "sedan",
+    "hazard": false
+   },
+   "halfLength": 2.1,
+   "halfWidth": 0.9,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    1.75,
+    0.0,
+    24
+   ],
+   "yaw": 3.141592653589793,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     1.75,
+     0.0,
+     24
+    ],
+    [
+     1.75,
+     0.0,
+     -41
+    ]
+   ],
+   "length": 65.0,
+   "clearDistance": 32,
+   "maxSpeed": 14,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": 0,
+   "holdFor": null,
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#9C3E36",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "off",
+   "carModel": "sedan",
+   "hazards": false
+  }
+ ],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 8 · Вопрос 7",
+   "title": "Водитель легкового автомобиля должен выключить указатели левого поворота:",
+   "options": [
+    "После перестроения на левую полосу",
+    "После опережения грузового автомобиля",
+    "После возвращения на правую полосу"
+   ],
+   "explanation": "Показанная траектория состоит из трёх фаз. Первая фаза - перестроение в параллельный ряд. Как только Вы его закончили, выключите левый сигнал указателя поворота. Вторая фаза – двигаетесь в параллельном ряду – включать сигналы не следует. Третья фаза – перестроение, возвращение на ранее занимаемую полосу. Перед перестроением включаете правый сигнал поворота. Закончив перестроение, выключаете его.(«Техника управления автомобилем», пункт 8.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 8 · Question 7",
+   "title": "The driver of a passenger car must turn off the left turn indicators:",
+   "options": [
+    "After rearranging to the left lane",
+    "After being ahead of the truck",
+    "After returning to the right lane"
+   ],
+   "explanation": "The trajectory shown consists of three phases. The first phase is the rearrangement into a parallel row. Once you have finished it, turn off the left turn signal. The second phase – you move in a parallel row – you should not turn on the signals. The third phase is rebuilding, returning to the previously occupied lane. Turn on the right turn signal before rebuilding. When you have finished rebuilding, turn it off.(\"Vehicle Control Technique\", clause 8.1 of traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "8-билет · 7-сұрақ",
+   "title": "Жеңіл автомобиль жүргізушісі солға бұрылу көрсеткіштерін өшіруі керек:",
+   "options": [
+    "Жолақты сол жақ жолаққа ауыстырғаннан кейін",
+    "Жүк көлігінің алдынан өткеннен кейін",
+    "Оң жақ жолаққа оралғаннан кейін"
+   ],
+   "explanation": "Көрсетілген траектория үш фазадан тұрады. Бірінші кезең параллель қатарға ауысады. Оны аяқтағаннан кейін солға бұрылу сигналын өшіріңіз. Екінші кезең - сіз параллель қатарда қозғаласыз - сигналдарды қоспау керек. Үшінші кезең - жолақтарды ауыстыру, бұрын иеленген жолаққа қайта оралу. Жолақтарды ауыстырар алдында оңға бұрылу сигналын қосыңыз. Жолақтарды өзгертуді аяқтағаннан кейін оны өшіріңіз. («Жүргізу техникасы», Жол қозғалысы ережелерінің 8.1 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 178,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "ddba5acfc28e009636cce621e0b785e4",
+ "sourceCategory": "ab",
+ "sourceImage": "701cfc285d4031d48072f8b0a1b9de52",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ },
+ "playerPlacement": "street",
+ "annotations": [
+  {
+   "points": [
+    [
+     -4.5,
+     -6
+    ],
+    [
+     -3.6687,
+     -4.25
+    ],
+    [
+     -3,
+     -2
+    ],
+    [
+     -2.5,
+     0
+    ],
+    [
+     -2,
+     5
+    ],
+    [
+     -2,
+     9.5
+    ],
+    [
+     -2,
+     18
+    ],
+    [
+     -3,
+     21
+    ],
+    [
+     -5,
+     23.5
+    ],
+    [
+     -5,
+     28
+    ]
+   ],
+   "style": "arrow",
+   "colour": "#F2F3F5",
+   "width": 0.17,
+   "text": "",
+   "textSize": 1,
+   "textAngle": 0
+  }
+ ],
+ "questionView": {
+  "centre": [
+   -2.8,
+   18
+  ],
+  "height": 35,
+  "yaw": 0,
+  "pitch": 0.38,
+  "elevation": 0
+ }
+}

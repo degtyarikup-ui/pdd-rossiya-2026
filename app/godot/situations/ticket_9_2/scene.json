@@ -1,0 +1,190 @@
+{
+ "id": "ticket_9_2",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "right": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "right",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "right": {
+   "points": [
+    [
+     -1.75,
+     -18
+    ],
+    [
+     -1.565,
+     -1.37
+    ],
+    [
+     -1.522,
+     2.543
+    ],
+    [
+     -1.5,
+     4.5
+    ],
+    [
+     -2.132,
+     6.395
+    ],
+    [
+     -5.921,
+     17.763
+    ],
+    [
+     -7.184,
+     21.553
+    ],
+    [
+     -7.5,
+     22.5
+    ],
+    [
+     -8.382,
+     22.941
+    ],
+    [
+     -14.559,
+     26.029
+    ],
+    [
+     -20.735,
+     29.118
+    ],
+    [
+     -22.5,
+     30
+    ],
+    [
+     -23.46,
+     30.12
+    ],
+    [
+     -28.26,
+     30.72
+    ],
+    [
+     -42.66,
+     32.52
+    ],
+    [
+     -46.5,
+     33
+    ],
+    [
+     -49.5,
+     33
+    ],
+    [
+     -70.5,
+     33
+    ],
+    [
+     -86.658,
+     33.329
+    ]
+   ],
+   "exitYaw": -1.595
+  }
+ },
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 9 · Вопрос 2",
+   "title": "Знаки предупреждают Вас о том, что:",
+   "options": [
+    "На протяжении 150 м возможно появление пешеходов на проезжей части",
+    "Через 150 м находится пешеходный переход",
+    "Через 150 м находится пешеходная дорожка"
+   ],
+   "explanation": "Под знаком 1.22 «Пешеходный переход» установлена табличка 8.1.1 «Расстояние до объекта», указывающая расстояние до опасного участка, о котором информирует предупреждающий знак.(«Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 9 · Question 2",
+   "title": "Signs warn you that:",
+   "options": [
+    "Pedestrians may appear on the roadway within 150 m",
+    "After 150 m there is a pedestrian crossing",
+    "After 150 m there is a pedestrian path"
+   ],
+   "explanation": "Under the sign 1.22 \"Pedestrian crossing\", a sign 8.1.1 \"Distance to the object\" is installed, indicating the distance to the dangerous area, about which the warning sign informs.(“Traffic Signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "9-билет · 2-сұрақ",
+   "title": "Белгілер сізді ескертеді:",
+   "options": [
+    "Жаяу жүргіншілер жолдың 150 м қашықтықта пайда болуы мүмкін",
+    "150 м-ден кейін жаяу жүргіншілер өткелі бар",
+    "150 м-ден кейін жаяу жүргіншілер жолы бар"
+   ],
+   "explanation": "1.22 «Жаяу жүргіншілер өткелі» белгісінің астында ескерту белгісі хабарлайтын қауіпті аймаққа дейінгі қашықтықты көрсететін 8.1.1 «Объектіге дейінгі қашықтық» белгісі қойылады. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 181,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "b19ba2cc652a455dca7a9a44381932be",
+ "sourceCategory": "ab",
+ "sourceImage": "ccfaa71247b7717e204220f439c65a8a",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ },
+ "playerPlacement": "free",
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   -0.289,
+   -0.816
+  ],
+  "height": 26.954,
+  "yaw": 0,
+  "pitch": 0.579,
+  "elevation": 0
+ }
+}

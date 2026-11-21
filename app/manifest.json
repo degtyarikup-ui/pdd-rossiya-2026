@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#FFFFFF",
     "theme_color": "#0574F8",
-    "description": "ПДД Россия 2026 — билеты, темы, экзамен. 800 вопросов, 40 билетов, категории A/B и C/D.",
+    "description": "ПДД Россия 2026 — билеты, темы, экзамен. 800 вопросов и 40 билетов, категории A/B и C/D.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

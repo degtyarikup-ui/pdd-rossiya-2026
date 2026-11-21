@@ -309,37 +309,37 @@
     "2.3.2": {
       "number": "2.3.2",
       "title": "Junction of secondary road",
-      "image": "./images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "image": "./images/signs/official_2_3_2.svg",
       "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   "
     },
     "2.3.3": {
       "number": "2.3.3",
       "title": "Junction of secondary road",
-      "image": "./images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "image": "./images/signs/official_2_3_3.svg",
       "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   "
     },
     "2.3.4": {
       "number": "2.3.4",
       "title": "Junction of secondary road",
-      "image": "./images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "image": "./images/signs/official_2_3_4.svg",
       "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   "
     },
     "2.3.5": {
       "number": "2.3.5",
       "title": "Junction of secondary road",
-      "image": "./images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "image": "./images/signs/official_2_3_5.svg",
       "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   "
     },
     "2.3.6": {
       "number": "2.3.6",
       "title": "Junction of secondary road",
-      "image": "./images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "image": "./images/signs/official_2_3_6.svg",
       "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   "
     },
     "2.3.7": {
       "number": "2.3.7",
       "title": "Junction of secondary road",
-      "image": "./images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
+      "image": "./images/signs/official_2_3_7.svg",
       "description": "Installed directly before the intersection. At intersections marked with signs 2.3.2-2.3.7, overtaking is permitted on the road that is the main road in relation to the one being crossed. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.13 Part 2 Failure to comply with the traffic rules requirement to give way to a vehicle enjoying priority right of passage through intersections - a fine of 1000 rubles.   "
     },
     "2.4": {
@@ -1833,13 +1833,13 @@
     "8.20.1": {
       "number": "8.20.1",
       "title": "Vehicle bogie type",
-      "image": "./images/signs/dc4b2b2243c4b3ed51eb412e81774e2c.svg",
+      "image": "./images/signs/4964059b55f06c6c82a53768ce928f66.svg",
       "description": "Used with sign 3.12. Indicate the number of adjacent axles of the vehicle, for each of which the mass indicated on the sign is the maximum permissible."
     },
     "8.20.2": {
       "number": "8.20.2",
       "title": "Vehicle bogie type",
-      "image": "./images/signs/4964059b55f06c6c82a53768ce928f66.svg",
+      "image": "./images/signs/dc4b2b2243c4b3ed51eb412e81774e2c.svg",
       "description": "Used with sign 3.12. Indicate the number of adjacent axles of the vehicle, for each of which the mass indicated on the sign is the maximum permissible."
     },
     "8.21.1": {

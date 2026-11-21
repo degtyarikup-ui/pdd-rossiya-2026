@@ -1,0 +1,122 @@
+{
+ "id": "ticket_23_3",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -18,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.75,
+     -18
+    ],
+    [
+     -1.75,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 23 · Вопрос 3",
+   "title": "Эти знаки обязывают соблюдать дистанцию:",
+   "options": [
+    "Менее 70 м на протяжении 100 м",
+    "Не менее 70 м на протяжении 100 м",
+    "От 70 м до 100 м"
+   ],
+   "explanation": "Знак 3.16 «Ограничение минимальной дистанции» запрещает движение транспортных средств с дистанцией между ними меньше указанной на знаке.Табличка 8.2.1 «Зона действия», установленная под знаком, указывает зону действия знака. В данном случае она равна 100 метрам от места установки знака.(«Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 23 · Question 3",
+   "title": "These signs require you to keep your distance:",
+   "options": [
+    "Less than 70 m over 100 m",
+    "At least 70 m over 100 m",
+    "From 70 m to 100 m"
+   ],
+   "explanation": "Sign 3.16 “Minimum distance limitation” prohibits the movement of vehicles with a distance between them less than that indicated on the sign. Plate 8.2.1 “Validity area” installed under the sign indicates the coverage area of the sign. In this case, it is equal to 100 meters from the location of the sign. (“Road signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "23-билет · 3-сұрақ",
+   "title": "Бұл белгілер қашықтықты сақтауды талап етеді:",
+   "options": [
+    "100 м ішінде 70 м-ден аз",
+    "100 м ішінде кемінде 70 м",
+    "70 м-ден 100 м-ге дейін"
+   ],
+   "explanation": "3.16 «Минималды қашықтық шегі» белгісі олардың арасындағы арақашықтық белгіде көрсетілгеннен аз көлік құралдарының қозғалысына тыйым салады. Белгінің астында орнатылған 8.2.1 «Қамту аймағы» тақтасы белгінің қамту аймағын көрсетеді. Бұл жағдайда белгінің орналасқан жерінен 100 метрге тең. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 119,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "53f2f59003f956e111d79ee5f848761a",
+ "sourceCategory": "ab",
+ "sourceImage": "08ce3d58f673e7f662a6d9c06de7a9c9",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ },
+ "playerPlacement": "free",
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   -3.6,
+   0
+  ],
+  "height": 14,
+  "yaw": 0,
+  "pitch": 0.35,
+  "elevation": 1.8
+ }
+}

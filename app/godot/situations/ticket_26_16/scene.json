@@ -1,0 +1,777 @@
+{
+ "id": "ticket_26_16",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -4.5,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 7,
+ "exitWidths": {
+  "straight": 7
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.75,
+     -4.5
+    ],
+    [
+     -1.75,
+     -3.55
+    ],
+    [
+     -1.75,
+     -2.6
+    ],
+    [
+     -1.75,
+     -1.65
+    ],
+    [
+     -1.75,
+     -0.7
+    ],
+    [
+     -1.75,
+     0.25
+    ],
+    [
+     -1.75,
+     1.2
+    ],
+    [
+     -1.75,
+     2.15
+    ],
+    [
+     -1.75,
+     3.1
+    ],
+    [
+     -1.75,
+     4.05
+    ],
+    [
+     -1.75,
+     5
+    ],
+    [
+     -1.75,
+     5.95
+    ],
+    [
+     -1.75,
+     6.9
+    ],
+    [
+     -1.75,
+     7.85
+    ],
+    [
+     -1.75,
+     8.8
+    ],
+    [
+     -1.75,
+     9.75
+    ],
+    [
+     -1.75,
+     10.7
+    ],
+    [
+     -1.75,
+     11.65
+    ],
+    [
+     -1.75,
+     12.6
+    ],
+    [
+     -1.75,
+     13.55
+    ],
+    [
+     -1.75,
+     14.5
+    ],
+    [
+     -1.75,
+     15.45
+    ],
+    [
+     -1.75,
+     16.4
+    ],
+    [
+     -1.75,
+     17.35
+    ],
+    [
+     -1.75,
+     18.3
+    ],
+    [
+     -1.75,
+     19.25
+    ],
+    [
+     -1.75,
+     20.2
+    ],
+    [
+     -1.75,
+     21.15
+    ],
+    [
+     -1.75,
+     22.1
+    ],
+    [
+     -1.75,
+     23.05
+    ],
+    [
+     -1.75,
+     24
+    ],
+    [
+     -1.75,
+     24.95
+    ],
+    [
+     -1.75,
+     25.9
+    ],
+    [
+     -1.75,
+     26.85
+    ],
+    [
+     -1.75,
+     27.8
+    ],
+    [
+     -1.75,
+     28.75
+    ],
+    [
+     -1.75,
+     29.7
+    ],
+    [
+     -1.75,
+     30.65
+    ],
+    [
+     -1.75,
+     31.6
+    ],
+    [
+     -1.75,
+     32.55
+    ],
+    [
+     -1.75,
+     33.5
+    ],
+    [
+     -1.75,
+     34.45
+    ],
+    [
+     -1.75,
+     35.4
+    ],
+    [
+     -1.75,
+     36.35
+    ],
+    [
+     -1.75,
+     37.3
+    ],
+    [
+     -1.75,
+     38.25
+    ],
+    [
+     -1.75,
+     39.2
+    ],
+    [
+     -1.75,
+     40.15
+    ],
+    [
+     -1.75,
+     41.1
+    ],
+    [
+     -1.75,
+     42.05
+    ],
+    [
+     -1.75,
+     43
+    ],
+    [
+     -1.75,
+     43.95
+    ],
+    [
+     -1.75,
+     44.9
+    ],
+    [
+     -1.75,
+     45.85
+    ],
+    [
+     -1.75,
+     46.8
+    ],
+    [
+     -1.75,
+     47.75
+    ],
+    [
+     -1.75,
+     48.7
+    ],
+    [
+     -1.75,
+     49.65
+    ],
+    [
+     -1.75,
+     50.6
+    ],
+    [
+     -1.75,
+     51.55
+    ],
+    [
+     -1.75,
+     52.5
+    ],
+    [
+     -1.75,
+     53.45
+    ],
+    [
+     -1.75,
+     54.4
+    ],
+    [
+     -1.75,
+     55.35
+    ],
+    [
+     -1.75,
+     56.3
+    ],
+    [
+     -1.75,
+     57.25
+    ],
+    [
+     -1.75,
+     58.2
+    ],
+    [
+     -1.75,
+     59.15
+    ],
+    [
+     -1.75,
+     60.1
+    ],
+    [
+     -1.75,
+     61.05
+    ],
+    [
+     -1.75,
+     62
+    ],
+    [
+     -1.75,
+     62.95
+    ],
+    [
+     -1.75,
+     63.9
+    ],
+    [
+     -1.75,
+     64.85
+    ],
+    [
+     -1.75,
+     65.8
+    ],
+    [
+     -1.75,
+     66.75
+    ],
+    [
+     -1.75,
+     67.7
+    ],
+    [
+     -1.75,
+     68.65
+    ],
+    [
+     -1.75,
+     69.6
+    ],
+    [
+     -1.75,
+     70.55
+    ],
+    [
+     -1.75,
+     71.5
+    ],
+    [
+     -1.75,
+     72.45
+    ],
+    [
+     -1.75,
+     73.4
+    ],
+    [
+     -1.75,
+     74.35
+    ],
+    [
+     -1.75,
+     75.3
+    ],
+    [
+     -1.75,
+     76.25
+    ],
+    [
+     -1.75,
+     77.2
+    ],
+    [
+     -1.75,
+     78.15
+    ],
+    [
+     -1.75,
+     79.1
+    ],
+    [
+     -1.75,
+     80.05
+    ],
+    [
+     -1.75,
+     81
+    ],
+    [
+     -1.75,
+     81.95
+    ],
+    [
+     -1.75,
+     82.9
+    ],
+    [
+     -1.75,
+     83.85
+    ],
+    [
+     -1.75,
+     84.8
+    ],
+    [
+     -1.75,
+     85.75
+    ],
+    [
+     -1.75,
+     86.7
+    ],
+    [
+     -1.75,
+     87.65
+    ],
+    [
+     -1.75,
+     88.6
+    ],
+    [
+     -1.75,
+     89.55
+    ],
+    [
+     -1.75,
+     90.5
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [],
+ "actors": [
+  {
+   "id": "queue0",
+   "type": "car",
+   "name": "Авто",
+   "config": {
+    "id": "queue0",
+    "type": "car",
+    "name": "Авто",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     -1.75,
+     0.0,
+     4.6
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -1.75,
+      4.6
+     ],
+     [
+      -1.75,
+      4.6
+     ]
+    ],
+    "car_model": "sedan",
+    "hazard": false
+   },
+   "halfLength": 2.1,
+   "halfWidth": 0.9,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    -1.75,
+    0.0,
+    4.6
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -1.75,
+     0.0,
+     4.6
+    ],
+    [
+     -1.75,
+     0.0,
+     4.6
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 24.151,
+   "maxSpeed": 0,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "paint": "#A34A40",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "off",
+   "carModel": "sedan",
+   "hazards": false
+  },
+  {
+   "id": "queue1",
+   "type": "car",
+   "name": "Авто",
+   "config": {
+    "id": "queue1",
+    "type": "car",
+    "name": "Авто",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     -1.75,
+     0.0,
+     9.3
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -1.75,
+      9.3
+     ],
+     [
+      -1.75,
+      9.3
+     ]
+    ],
+    "car_model": "hatch",
+    "hazard": false
+   },
+   "halfLength": 1.75,
+   "halfWidth": 0.86,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    -1.75,
+    0.0,
+    9.3
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -1.75,
+     0.0,
+     9.3
+    ],
+    [
+     -1.75,
+     0.0,
+     9.3
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 24.151,
+   "maxSpeed": 0,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "paint": "#526E91",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "off",
+   "carModel": "hatch",
+   "hazards": false
+  },
+  {
+   "id": "queue2",
+   "type": "car",
+   "name": "Авто",
+   "config": {
+    "id": "queue2",
+    "type": "car",
+    "name": "Авто",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     -1.75,
+     0.0,
+     14.0
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -1.75,
+      14.0
+     ],
+     [
+      -1.75,
+      14.0
+     ]
+    ],
+    "car_model": "wagon",
+    "hazard": false
+   },
+   "halfLength": 2.25,
+   "halfWidth": 0.9,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    -1.75,
+    0.0,
+    14.0
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -1.75,
+     0.0,
+     14.0
+    ],
+    [
+     -1.75,
+     0.0,
+     14.0
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 24.151,
+   "maxSpeed": 0,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "paint": "#929B9B",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "off",
+   "carModel": "wagon",
+   "hazards": false
+  }
+ ],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 26 · Вопрос 16",
+   "title": "Где необходимо остановиться, если сразу за пешеходным переходом образовался затор?",
+   "options": [
+    "На пешеходном переходе, если нет пешеходов",
+    "Непосредственно перед пешеходным переходом",
+    "Не ближе 5 м до пешеходного перехода"
+   ],
+   "explanation": "Здесь Вы производите временное прекращение движения, а не преднамеренную остановку. Поэтому останавливаетесь до границы пешеходного перехода, которая обозначается знаками или разметкой. Правильный ответ – непосредственно перед пешеходным переходом.(Пункт 14.4 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 26 · Question 16",
+   "title": "Where should you stop if there is a traffic jam just beyond the pedestrian crossing?",
+   "options": [
+    "At a pedestrian crossing, if there are no pedestrians",
+    "Directly before the pedestrian crossing",
+    "No closer than 5 m to the pedestrian crossing"
+   ],
+   "explanation": "Here you are making a temporary cessation of movement, and not a deliberate stop. Therefore, you stop before the border of the pedestrian crossing, which is indicated by signs or markings. The correct answer is immediately before the pedestrian crossing. (Clause 14.4 of the traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "26-билет · 16-сұрақ",
+   "title": "Жаяу жүргіншілер өткелінің дәл ар жағында кептеліс болса, қайда тоқтау керек?",
+   "options": [
+    "Жаяу жүргіншілер өткелінде, егер жаяу жүргіншілер болмаса",
+    "Тікелей жаяу жүргіншілер өткелінің алдында",
+    "Жаяу жүргіншілер өткеліне 5 м жақын емес"
+   ],
+   "explanation": "Мұнда сіз әдейі тоқтау емес, қозғалысты уақытша тоқтатуды жасайсыз. Сондықтан сіз белгілермен немесе белгілермен көрсетілген жаяу жүргіншілер өткелінің шекарасына дейін тоқтайсыз. Дұрыс жауап жаяу жүргіншілер өткелінің алдында. (Жол қозғалысы ережесінің 14.4 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 202,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "999727ea0a93d5f3e7c17e86c951a790",
+ "sourceCategory": "ab",
+ "sourceImage": null,
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-11-16-fifty-scenes",
+  "status": "pending"
+ },
+ "playerPlacement": "free",
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   -0.4,
+   2
+  ],
+  "height": 34,
+  "yaw": 0,
+  "pitch": 0.85,
+  "elevation": 0
+ }
+}
