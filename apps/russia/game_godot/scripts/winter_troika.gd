@@ -5,13 +5,19 @@ extends RefCounted
 const MODEL := "res://models/seasonal/winter_troika.glb"
 const CHANCE := 0.04
 const SPEED := 6.0
-const FADE_TIME := 0.45
+const ARRIVAL_FADE_TIME := 0.45
+const TAKEOFF_LEAD_TIME := 0.65
+const FLIGHT_FORWARD_ACCEL := 3.8
+const FLIGHT_LIFT_ACCEL := 11.0
+const MIN_FLIGHT_TIME := 1.4
+const FLIGHT_LIMIT := 8.0
+const VISITOR_RADIUS := 4.8
 const HORSES := ["LeftHorse", "MiddleHorse", "RightHorse"]
 
 var _rng := RandomNumberGenerator.new()
 var _delay := -1.0
 var _from := Vector3.ZERO
-var _to := Vector3.ZERO
+var _heading := Vector3.ZERO
 var _duration := 0.0
 var _elapsed := 0.0
 var _visitor: Node3D
@@ -41,7 +47,7 @@ func pending() -> bool:
 func set_route(from: Vector3, to: Vector3) -> void:
 	clear_visitor()
 	_from = from
-	_to = to
+	_heading = from.direction_to(to)
 	_duration = from.distance_to(to) / SPEED
 
 
@@ -54,21 +60,39 @@ func tick(delta: float, stage: Node3D) -> void:
 		return
 	if not is_instance_valid(_visitor): return
 	_elapsed += delta
-	if _elapsed >= _duration:
-		clear_visitor()
-		return
-	_visitor.position = _from.lerp(_to, _elapsed / _duration)
+	var air_time := maxf(0.0, _elapsed - maxf(0.0, _duration - TAKEOFF_LEAD_TIME))
+	var half_air_time_squared := 0.5 * air_time * air_time
+	_visitor.position = (_from + _heading * (SPEED * _elapsed + FLIGHT_FORWARD_ACCEL * half_air_time_squared)
+		+ Vector3.UP * (FLIGHT_LIFT_ACCEL * half_air_time_squared))
+	if air_time > 0.0:
+		var climb := atan2(FLIGHT_LIFT_ACCEL * air_time, SPEED + FLIGHT_FORWARD_ACCEL * air_time)
+		_visitor.rotation.x = minf(climb * 0.6, 0.48)
+		if air_time >= FLIGHT_LIMIT or (air_time >= MIN_FLIGHT_TIME and _has_left_view()):
+			clear_visitor()
+			return
 	var gait := _elapsed * TAU * 2.4
+	var lift := smoothstep(0.0, 0.8, air_time)
 	for i in _horses.size():
 		var phase := gait + i * 1.12
 		_horses[i].position.y = 0.035 + 0.045 * sin(phase * 2.0)
 		for j in 4:
-			# Alternating diagonal pairs move in a trot; the three horses fall out of step.
+			# Alternating diagonal pairs move in a trot, then tuck in during the climb.
 			var swing := phase if j == 0 or j == 3 else phase + PI
-			_legs[i * 4 + j].rotation.x = sin(swing) * 0.42
+			var tuck := -0.24 if j < 2 else 0.18
+			_legs[i * 4 + j].rotation.x = sin(swing) * lerpf(0.42, 0.20, lift) + tuck * lift
 	_rider.rotation.z = sin(gait * 0.5) * 0.045
-	var fade := clampf(minf(_elapsed, _duration - _elapsed) / FADE_TIME, 0.0, 1.0)
-	_set_opacity(smoothstep(0.0, 1.0, fade))
+	if _was_fading:
+		_set_opacity(smoothstep(0.0, 1.0, minf(1.0, _elapsed / ARRIVAL_FADE_TIME)))
+
+
+func _has_left_view() -> bool:
+	var camera := _visitor.get_viewport().get_camera_3d()
+	if camera == null: return false
+	var centre := _visitor.global_position + Vector3.UP
+	# Wait until the whole sleigh and team are outside the view, not just their origin.
+	for plane: Plane in camera.get_frustum():
+		if plane.distance_to(centre) > VISITOR_RADIUS: return true
+	return false
 
 
 func cancel() -> void:
@@ -96,9 +120,8 @@ func _spawn(stage: Node3D) -> void:
 	if model == null: return
 	_visitor = model.instantiate() as Node3D
 	_visitor.name = "WinterTroika"
-	var heading := (_to - _from).normalized()
 	_visitor.position = _from
-	_visitor.rotation.y = atan2(-heading.x, -heading.z)
+	_visitor.rotation.y = atan2(-_heading.x, -_heading.z)
 	_visitor.scale.x = 0.8 # Clear the guardrail and the outer pedestrian path.
 	for horse_name in HORSES:
 		var horse := _visitor.find_child(horse_name, true, false) as Node3D

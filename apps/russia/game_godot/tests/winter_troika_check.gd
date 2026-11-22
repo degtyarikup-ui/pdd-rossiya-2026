@@ -71,6 +71,9 @@ func run() -> void:
 	violator._start_game(false)
 	await process_frame
 	expect(violator.get_node_or_null("WinterTroika") == null, "restarting removes the previous visitor")
+	violator._start_game()
+	violator._winter_troika.tick(1.0, violator)
+	check_departure(violator, violator._winter_troika)
 	await dispose(violator)
 
 	Host.io_args.clear()
@@ -110,6 +113,29 @@ func check_visit(game: Node3D, troika: WinterTroika, label: String) -> void:
 			await RenderingServer.frame_post_draw
 			var frame := root.get_texture().get_image()
 			frame.save_png(arg.trim_prefix("--capture=").path_join(label + "-troika.png"))
+
+	var ground_height := model.position.y
+	troika.tick(1.0, game)
+	expect(is_instance_valid(troika._visitor), label + " stays visible after the ground route")
+	if troika._visitor == null: return
+	expect(model.position.y > ground_height + 2.0 and model.rotation.x > 0.25,
+		label + " climbs and pitches upward")
+	expect(troika._meshes[0].get_active_material(0).transparency == BaseMaterial3D.TRANSPARENCY_DISABLED,
+		label + " takes off without fading")
+
+
+func check_departure(game: Violator, troika: WinterTroika) -> void:
+	var model := troika._visitor
+	expect(is_instance_valid(model), "second round starts another preview")
+	if not is_instance_valid(model): return
+	# Run the real camera's view test even in headless mode.
+	var camera := game.camera
+	for frame in 720:
+		troika.tick(1.0 / 60.0, game)
+		if troika._visitor == null: break
+	expect(troika._visitor == null, "flight cleans up once it leaves the camera view")
+	expect(not camera.is_position_in_frustum(model.global_position), "departure is outside the frame")
+	expect(model.position.y > 5.0, "the team has climbed above the street before it leaves")
 
 
 func wait_for_draw() -> void:
