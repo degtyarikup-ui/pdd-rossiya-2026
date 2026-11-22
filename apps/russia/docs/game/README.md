@@ -569,6 +569,7 @@ godot --path game_godot --script res://tests/ambient_transition_check.gd -- --se
 godot --headless --path game_godot --script res://tests/lighting_check.gd # свет/тени в том же кадре при поворотах мира, все уровни качества
 godot --path game_godot --script res://tests/lighting_render_check.gd # нужен рендер: яркость граней, машина и тени до/после перехода
 godot --headless --path game_godot --script res://tests/winter_season_check.gd # календарь и сезонные настройки игровых сцен
+godot --headless --path game_godot --script res://tests/winter_troika_check.gd # редкий зимний проезд Деда Мороза и отдельная от трафика анимация
 godot --path game_godot --script res://tests/winter_surface_render_check.gd # реальные пиксели снега, тротуара и разметки на high/low, окраска фасадов и кровель
 godot --path game_godot --script res://tests/mini_winter_visibility_check.gd # снег, парковочные места и видимость в мини-играх на high/low
 godot --headless --path game_godot --script res://tests/mesh_clip_check.gd # обрезка геометрии: исходный алгоритм, атрибуты, границы и быстрые повторные проходы

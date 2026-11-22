@@ -25,6 +25,7 @@ var env: WorldEnvironment
 var actors_root: Node3D
 var leaves: Leaves                # autumn only, the main game's falling leaves
 var snow: Snow                    # winter only, falling snowflakes
+var _winter_troika := WinterTroika.new()
 var fx_root: Node3D
 var active_actors: Array[CrossroadsActor] = []
 
@@ -480,6 +481,7 @@ func _start_practice() -> void:
 
 	_load_practice_progress()
 	_rebuild_practice_deck()
+	_winter_troika.arm(season_name, 3.0, 8.0)
 	_load_current_scenario()
 	Host.usage_start("crossroads")
 
@@ -616,11 +618,13 @@ func _start_game() -> void:
 	ui.hide_results()
 	ui.hide_collision_modal()
 	_rebuild_scenario_order()
+	_winter_troika.arm(season_name, 3.0, 8.0)
 	_load_current_scenario()
 	Host.usage_start("crossroads")
 
 
 func _load_current_scenario() -> void:
+	_winter_troika.clear_visitor()
 	Engine.time_scale = 1.0
 	_blinker_timer = 0.0
 	_blinker_lit = false
@@ -703,10 +707,45 @@ func _load_current_scenario() -> void:
 		var can_next := cur_scenario_idx < scenario_order.size() - 1
 		ui.update_practice_status(_category_title(practice_category), cur_scenario_idx + 1, scenario_order.size(), can_prev, can_next, is_cur_solved)
 	fit_camera_to_scenario()
+	if _winter_troika.pending(): _set_troika_route()
 	# Buildings in front of the new junction are see-through from its first frame.
 	_update_occlusion(1.0)
 	_fit_scenario_after_layout(scene_sequence)
 	ui.reveal_scene()
+
+
+## Travel beside an open arm, beyond the stop lines and the question's routes.
+func _set_troika_route() -> void:
+	var sides := ["west", "north", "east", "south"]
+	var area := ui.scene_rect().grow(-12.0)
+	var badges: Array[Rect2] = []
+	var badge_size := Vector2.ONE * CrossroadsActor.BADGE_CARD_SCREEN_DP * Ui.dp(get_viewport())
+	for actor in active_actors:
+		var centre := camera.unproject_position(actor.badge_anchor() + Vector3.UP * actor.badge_lift)
+		badges.append(Rect2(centre - badge_size * 0.5, badge_size))
+	var best_score := -1
+	var best_from := Vector3.ZERO
+	var best_to := Vector3.ZERO
+	for i in sides.size():
+		var side: String = sides[i]
+		if side == junction.closed_side: continue
+		var raised := not (junction._is_rural_junction() or junction._is_highway_junction() or junction._is_dirt_arm(side))
+		var y := CrossroadsJunction.SIDEWALK_Y if raised else 0.01
+		var angle := -i * PI * 0.5
+		var from := Vector3(-48.0, y, 9.15).rotated(Vector3.UP, angle)
+		var to := Vector3(-18.0, y, 9.15).rotated(Vector3.UP, angle)
+		var visibility := 0
+		for sample in range(1, 7):
+			var projected := camera.unproject_position(from.lerp(to, sample / 7.0) + Vector3.UP)
+			if not area.has_point(projected): continue
+			visibility += 1
+			if not badges.any(func(badge: Rect2) -> bool: return badge.has_point(projected)):
+				visibility += 2
+		if visibility > best_score:
+			best_score = visibility
+			best_from = from
+			best_to = to
+	_winter_troika.set_route(best_from, best_to)
 
 
 ## The officer stands near the middle but never on a tram's rails; every other vehicle's
@@ -1449,6 +1488,8 @@ func _process(delta: float) -> void:
 		leaves.step(delta, cam_pivot.global_position)
 	if snow != null and not _suspended:
 		snow.step(delta, cam_pivot.global_position)
+	if not is_game_over and not is_resolving and not _round_completing:
+		_winter_troika.tick(delta, self)
 	var cam_changed := false
 	if absf(cam_yaw - _target_cam_yaw) > 0.0001:
 		cam_yaw = lerp_angle(cam_yaw, _target_cam_yaw, minf(1.0, 16.0 * delta))
@@ -1488,6 +1529,7 @@ func _end_game() -> void:
 	if is_game_over:
 		return
 	is_game_over = true
+	_winter_troika.cancel()
 	_result_camera_mask = camera.cull_mask
 	camera.cull_mask = 0
 	sound.suspended = true
@@ -1529,6 +1571,7 @@ func _on_close_pressed() -> void:
 
 
 func _on_exit_pressed() -> void:
+	_winter_troika.cancel()
 	Engine.time_scale = 1.0
 	if _exiting: return
 	_exiting = true

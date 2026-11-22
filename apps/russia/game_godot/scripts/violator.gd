@@ -370,6 +370,7 @@ var previous_best := 0
 var result_action := ""
 var season_name := Host.game_season()
 var snow: Snow
+var _winter_troika := WinterTroika.new()
 var economy := { "seconds": 180, "lives": 5, "maxScore": 1500, "base": 50, "step": 5, "bonusCap": 5 }
 
 # Scenery pools
@@ -2003,6 +2004,7 @@ func _process(delta: float) -> void:
 
 	# Mode-specific time tracking
 	if not is_classifying and tutorial_step == "":
+		_winter_troika.tick(delta, self)
 		if game_mode == "blitz":
 			seconds_left -= delta
 			if seconds_left <= 0.0:
@@ -5165,7 +5167,13 @@ func _on_difficulty_chosen(level: String) -> void:
 
 func _start_game(track_usage := true) -> void:
 	# Tutorial setup resets the board too, but the round begins only after it.
-	if track_usage: Host.usage_start("violator")
+	_winter_troika.cancel()
+	if track_usage:
+		Host.usage_start("violator")
+		_winter_troika.arm(season_name, 9.0, 20.0)
+		if _winter_troika.pending():
+			# On the outer pavement, between the garden fences and the trees.
+			_winter_troika.set_route(Vector3(-9.25, 0.16, -53.0), Vector3(-9.25, 0.16, -17.2))
 	tutorial_step = ""
 	tutorial_car = null
 	is_game_over = false
@@ -5212,6 +5220,7 @@ func _end_game() -> void:
 	if is_game_over:
 		return
 	is_game_over = true
+	_winter_troika.cancel()
 	is_classifying = false
 	locked_car = null
 	missed_marks.clear()
@@ -5268,6 +5277,7 @@ func _on_restart_pressed() -> void:
 
 
 func _on_exit_pressed() -> void:
+	_winter_troika.cancel()
 	if _exiting: return
 	_exiting = true
 	_set_suspended(false)
