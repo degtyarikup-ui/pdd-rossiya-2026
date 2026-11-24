@@ -94,7 +94,7 @@ export const ECONOMY_VIEW_HTML = String.raw`
 .ec-share-table td{overflow-wrap:anywhere}
 .ec-share-table .ec-share-balance{font-weight:var(--admin-weight-semibold)}
 .ec-share-table .ec-share-na{color:var(--text-muted)}
-.ec-share-negative{color:#B1432D}
+.ec-share-negative{color:#ED4621}
 .ec-share-caption{display:none}
 .ec-shares-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;margin-top:12px}
 @container(max-width:640px){

@@ -554,7 +554,7 @@ if (!process.argv.includes('--serve')) test('share rows show accruals, payouts a
       const negative = balance.locator('.ec-share-negative');
       assert.equal(await balance.innerText(), (remainingUsd<0 ? '-' : '')+usd(remainingUsd), name);
       assert.equal(await negative.count(), remainingUsd<0 ? 1 : 0, name);
-      if (remainingUsd<0) assert.equal(await negative.evaluate(amount => getComputedStyle(amount).color), 'rgb(177, 67, 45)', name);
+      if (remainingUsd<0) assert.equal(await negative.evaluate(amount => getComputedStyle(amount).color), 'rgb(237, 70, 33)', name);
       assert.equal(await row.getByRole('button',{name:/Внести выплату/}).count(), fund ? 0 : 1, name);
       assert.equal(await row.getByRole('button',{name:'Внести расход'}).count(),fund ? 1 : 0);
     }
