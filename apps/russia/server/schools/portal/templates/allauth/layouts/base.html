@@ -1,0 +1,2 @@
+{% extends "portal/base.html" %}{% block title %}{% block head_title %}Вход{% endblock %}{% endblock %}
+{% block return_link %}{% if user.is_authenticated %}<a class="alternative" href="/">В кабинет</a>{% endif %}{% endblock %}

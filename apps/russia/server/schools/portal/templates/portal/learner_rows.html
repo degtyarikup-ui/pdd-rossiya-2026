@@ -1,0 +1,1 @@
+{% load school_ui %}{% for learner in learners %}<div class="person-row"><span class="avatar mint">{{ learner.name|initials }}</span><div><strong>{{ learner.name }}</strong>{% if show_group %}<small>{{ learner.group.name }}</small>{% endif %}</div></div>{% empty %}<div class="empty">{% icon "people" %}<p>Учеников пока нет</p></div>{% endfor %}

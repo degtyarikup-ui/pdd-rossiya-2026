@@ -1,0 +1,2 @@
+{% extends "portal/base.html" %}{% load school_ui %}{% block content %}<header class="page-head"><h1>{{ title }}</h1><a class="btn btn-primary" href="{% url 'new_group' %}">{% icon "plus" %}Создать группу</a></header>
+<section class="panel">{% include "portal/group_rows.html" %}</section>{% endblock %}

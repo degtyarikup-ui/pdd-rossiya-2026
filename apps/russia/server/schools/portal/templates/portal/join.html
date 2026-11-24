@@ -1,0 +1,1 @@
+{% extends "portal/base.html" %}{% load school_ui %}{% block content %}<span class="icon-tile blue">{% icon "groups" %}</span><p class="small-label">{{ group.instructor.school.name }}</p><h1>{{ group.name }}</h1><p>Преподаватель · {{ group.instructor.name }}</p><p class="school-note">Это тестовое приглашение. Вступление через приложение ещё не подключено.</p>{% endblock %}

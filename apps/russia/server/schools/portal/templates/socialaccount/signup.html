@@ -1,0 +1,1 @@
+{% extends "portal/base.html" %}{% block content %}<h1>Завершите регистрацию</h1><p>Эта почта нужна для приглашений и восстановления доступа.</p><form method="post">{% csrf_token %}{{ form.as_p }}{{ redirect_field }}<button class="btn btn-primary">Продолжить</button></form>{% endblock %}

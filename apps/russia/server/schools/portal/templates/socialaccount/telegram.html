@@ -1,0 +1,4 @@
+{% extends "portal/base.html" %}{% block content %}<h1>Вход через Telegram</h1><p>Нажмите «Старт» в боте, затем вернитесь сюда.</p>
+<a class="btn btn-primary" href="{{ bot_url }}" target="_blank" rel="noopener noreferrer">Открыть Telegram</a>
+<form id="telegram-check" method="post" action="{% url 'telegram_check' %}">{% csrf_token %}<button>Я подтвердил вход</button></form>
+{% if pending %}<p role="status">Ждём подтверждение от бота.</p>{% endif %}<a class="alternative" href="{% url 'account_login' %}">Другой способ входа</a>{% endblock %}

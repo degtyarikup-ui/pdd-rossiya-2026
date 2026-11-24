@@ -1,0 +1,3 @@
+{% extends "allauth/layouts/base.html" %}{% block content %}<h1>Способы входа</h1>{% if form.fields.account.choices %}<form method="post">{% csrf_token %}{{ form.non_field_errors }}{{ form.account.errors }}
+{% for item in form.fields.account.choices %}{% with account=item.0.instance %}<p><label><input type="radio" name="account" value="{{ account.pk }}" required> {{ account.get_provider.name }}</label></p>{% endwith %}{% endfor %}<button>Отключить выбранный способ</button></form>{% endif %}
+<h2 class="connect-heading">Подключить аккаунт</h2>{% include "socialaccount/providers.html" with connect=True %}{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "portal/base.html" %}{% load school_ui %}{% block content %}
+<header class="page-head"><h1>Обзор</h1><span class="today">{% now "j E Y" %}</span></header>
+<div class="dashboard-top"><section class="school-hero">
+<div class="school-hero-copy"><h2>{% if group_count %}Пригласите<br>учеников{% else %}Создайте<br>первую группу{% endif %}</h2>
+<a class="btn hero-btn" href="{% if group_count %}{% url 'invitations' %}{% else %}{% url 'new_group' %}{% endif %}">{% if group_count %}{% icon "link" %}Получить ссылку{% else %}{% icon "plus" %}Создать группу{% endif %}</a></div>
+<img class="hero-car" src="{% url 'car' %}" width="520" height="320" alt=""></section>
+<section class="summary" aria-label="Сводка по школе">
+{% url 'groups' as groups_url %}{% url 'learners' as learners_url %}{% url 'team' as team_url %}
+{% include "portal/stat.html" with label="Группы" value=group_count symbol="groups" color="blue" href=groups_url %}
+{% include "portal/stat.html" with label="Ученики" value=learner_count symbol="people" color="mint" href=learners_url %}
+{% include "portal/stat.html" with label="Инструкторы" value=instructor_count symbol="wheel" color="apricot" href=team_url %}</section></div>
+<section class="panel"><header class="panel-head"><h2>Учебные группы</h2><a class="text-action" href="{% url 'new_group' %}">{% icon "plus" %}Создать группу</a></header>
+{% include "portal/group_rows.html" %}{% if group_count > 4 %}<a class="more-link" href="{% url 'groups' %}">Все группы {% icon "arrow" %}</a>{% endif %}</section>
+{% endblock %}

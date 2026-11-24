@@ -1,0 +1,3 @@
+{% extends "allauth/layouts/base.html" %}{% block content %}<h1>Защитите вход</h1><p>Отсканируйте QR-код в приложении-аутентификаторе и введите шесть цифр.</p>
+<img src="{{ totp_svg_data_uri }}" width="184" height="184" alt="QR-код для настройки второго фактора"><details><summary>Ввести ключ вручную</summary><p><code id="authenticator_secret">{{ form.secret }}</code></p></details>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Подтвердить</button></form>{% endblock %}

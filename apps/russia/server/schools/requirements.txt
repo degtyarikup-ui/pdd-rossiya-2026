@@ -1,0 +1,2 @@
+Django==5.2.19
+django-allauth[mfa,socialaccount]==65.22.1

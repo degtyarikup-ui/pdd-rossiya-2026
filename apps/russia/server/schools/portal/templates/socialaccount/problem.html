@@ -1,0 +1,1 @@
+{% extends "portal/base.html" %}{% block content %}<h1>Вход через {{ provider }}</h1><p>{{ message }}</p><a class="btn btn-primary" href="{% url 'account_login' %}">Выбрать способ входа</a>{% endblock %}

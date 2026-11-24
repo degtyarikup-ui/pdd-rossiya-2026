@@ -1,0 +1,4 @@
+{% load static %}<div class="provider-list" aria-label="Войти через сервис">
+{% for key,label in school_providers %}{% with route=key|add:"_login" %}<form method="post" action="{% url route %}">{% csrf_token %}{% if connect %}<input type="hidden" name="process" value="connect">{% elif request.session.pending_staff %}<input type="hidden" name="next" value="{% url 'accept' %}">{% endif %}
+<button class="provider-button" aria-label="Войти через {{ label }}"><img width="22" height="22" src="{% static 'auth-icons/' %}{{ key }}.svg" alt="">{{ label }}</button></form>{% endwith %}{% endfor %}</div>
+{% if not connect %}<p class="or"><span>или по почте</span></p>{% endif %}

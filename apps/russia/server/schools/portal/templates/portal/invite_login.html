@@ -1,0 +1,1 @@
+{% extends "portal/base.html" %}{% block content %}<h1>Вас пригласили в «{{ entry.school.name }}»</h1><p>Войдите с почтой, на которую пришло приглашение.</p><a class="btn btn-primary" href="{% url 'account_login' %}?next={% url 'accept' %}">Войти</a><p><a href="{% url 'account_signup' %}?next={% url 'accept' %}">Создать аккаунт</a></p>{% endblock %}

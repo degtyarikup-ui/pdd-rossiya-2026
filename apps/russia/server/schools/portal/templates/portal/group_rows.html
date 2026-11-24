@@ -1,0 +1,5 @@
+{% load school_ui %}{% if groups %}<div class="group-table" aria-label="Учебные группы">
+<div class="group-row table-head" aria-hidden="true"><span>Группа</span><span>Преподаватель</span><span>Учеников</span><span></span></div>
+{% for group in groups %}<a class="group-row" href="{% url 'group' group.pk %}"><span class="group-name"><span class="icon-tile group-icon {% cycle 'lavender' 'mint' 'apricot' 'blue' %}">{% icon "groups" %}</span><span><strong>{{ group.name }}</strong><small>{{ group.instructor.name }}</small></span></span>
+<span class="teacher">{{ group.instructor.name }}</span><span class="count"><i class="sr-only">Учеников </i>{{ group.size }}</span>{% icon "chevron" %}</a>{% endfor %}</div>
+{% else %}<div class="empty">{% icon "groups" %}<p>Групп пока нет</p></div>{% endif %}

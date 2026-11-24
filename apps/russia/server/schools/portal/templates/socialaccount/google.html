@@ -1,0 +1,5 @@
+{% extends "portal/base.html" %}{% load static %}{% block content %}<h1>Вход с Google</h1>
+<div id="google-button" data-client="{{ client_id }}" data-nonce="{{ nonce }}"></div><p id="google-status" role="status">Загружаем Google…</p>
+<form action="{% url 'school_google_finish' %}" method="post" id="google-result">{% csrf_token %}<input name="credential" type="hidden"></form>
+<a class="alternative" href="{% url 'account_login' %}">Другой способ входа</a>
+<script defer src="{% static 'schools/google.js' %}"></script>{% endblock %}

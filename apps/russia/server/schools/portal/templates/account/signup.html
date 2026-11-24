@@ -1,0 +1,4 @@
+{% extends "portal/base.html" %}{% block content %}<h1>Создать аккаунт</h1>{% include "socialaccount/providers.html" %}<form method="post">{% csrf_token %}{{ form.non_field_errors }}
+<p><label for="{{ form.email.id_for_label }}">Электронная почта</label>{{ form.email }}{{ form.email.errors }}</p>
+<p><label for="{{ form.password1.id_for_label }}">Пароль</label>{{ form.password1 }}<small>От 10 символов</small>{{ form.password1.errors }}</p>{{ redirect_field }}
+<button class="btn btn-primary">Зарегистрироваться</button></form><a class="alternative" href="{{ login_url }}">Уже есть аккаунт? Войти</a>{% endblock %}
