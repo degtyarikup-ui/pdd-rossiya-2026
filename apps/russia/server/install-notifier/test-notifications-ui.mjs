@@ -470,7 +470,15 @@ if (!process.argv.includes('--serve')) test('Paywall editor requires text and tr
     await page.click('[data-feature="notifications"]');
     await choose(page,'input[name="nt-place"][value="paywall"]');
     assert.equal(await page.isDisabled('#nt-push'),true);
-    assert.equal(await page.isDisabled('input[name="nt-platform"][value="ios"]'),true);
+    const ios = 'input[name="nt-platform"][value="ios"]';
+    const android = 'input[name="nt-platform"][value="android"]';
+    const web = 'input[name="nt-platform"][value="web"]';
+    for (const platform of [ios,android,web]) {
+      assert.equal(await page.isEnabled(platform),true);
+      assert.equal(await page.isChecked(platform),true);
+    }
+    await choose(page,ios,false);
+    await choose(page,ios);
     assert.equal(await page.locator('.paywall-preview-button').count(),1);
     assert.match(await page.textContent('#nt-drop'), /Иконка кнопки \(необязательно\)/);
     await page.fill('#nt-url','https://example.test/offer');
@@ -537,6 +545,8 @@ if (!process.argv.includes('--serve')) test('Paywall editor requires text and tr
     await page.waitForSelector('.nf-msg:has-text("Подробнее")');
     const campaign = [...app.data.values()].find(item => item?.kind === 'paywall');
     assert.equal(campaign.accent, '#4A7BC2');
+    assert.equal(campaign.platform, 'all');
+    assert.equal(campaign.actionUrl, 'https://example.test/offer');
     await page.click('[data-nt-copy="'+campaign.id+'"]');
     assert.equal(await hex.inputValue(), campaign.accent);
     assert.equal(await picker.inputValue(), campaign.accent.toLowerCase());

@@ -14,6 +14,7 @@ import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/remote_notifications_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/paywall_notice_button.dart';
 import 'package:pdd_app/presentation/widgets/premium_benefits_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_celebration_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
@@ -539,6 +540,42 @@ void main() {
       star.colorFilter,
       const ColorFilter.mode(Color(0xFFFFEA00), BlendMode.srcIn),
     );
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  _testPremium('iOS Paywall button opens the exact configured link', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    const channel = MethodChannel('plugins.flutter.io/url_launcher');
+    final messenger = tester.binding.defaultBinaryMessenger;
+    final launches = <MethodCall>[];
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      launches.add(call);
+      return true;
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+    const url = 'https://example.test/help?a=one%20two#premium';
+    final slot = RemoteNotificationsService.instance.paywallButton;
+    addTearDown(() => slot.value = null);
+    slot.value = AppNotice.parse({
+      'id': 'a069e042-5b7b-40a0-b15e-b80c4444ce1d',
+      'title': '',
+      'body': '',
+      'expiresAt': DateTime(2099).millisecondsSinceEpoch,
+      'kind': 'paywall',
+      'buttonText': 'Подробнее',
+      'action': 'url',
+      'actionUrl': url,
+    });
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: PaywallNoticeButton())),
+    );
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Подробнее'));
+    await tester.pump();
+    expect(launches.single.method, 'launch');
+    expect(launches.single.arguments['url'], url);
+    expect(launches.single.arguments['useSafariVC'], isFalse);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 

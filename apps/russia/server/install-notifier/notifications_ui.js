@@ -268,7 +268,7 @@ function setAccent(value){
 
 function draft(){
  var push=S.push,place=S.place,title=el('title').value.trim(),body=el('body').value.trim(),action=el('action').value;
- if(place==='paywall')return {kind:place,app:'ru',platforms:S.platforms.filter(function(p){return p!=='ios';}),store:has('android')&&S.stores.length===1?S.stores[0]:'all',audiences:S.audiences.slice(),
+ if(place==='paywall')return {kind:place,app:'ru',platforms:S.platforms.slice(),store:has('android')&&S.stores.length===1?S.stores[0]:'all',audiences:S.audiences.slice(),
   title:'',body:'',imageUrl:S.image,layout:'standard',accent:S.accent,button:true,buttonText:el('button').value.trim(),action:'url',actionUrl:el('url').value.trim()};
  var profile=place==='profile',button=profile?S.profileButton:!!(title||body)&&(place==='popup'||action!=='none');
  var imageOnly=!push&&!title&&!body&&!button;
@@ -394,12 +394,11 @@ function sync(){
  el('push').disabled=onPaywall||permanent||(!canPush&&!push);el('push').checked=push;
  document.querySelectorAll('input[name="nt-place"]').forEach(function(x){x.disabled=permanent&&x.value!=='news'&&x.value!=='paywall';});
  el('push-state').textContent=!cfg?'…':!ready?'Firebase не подключён':!cfg.pushEnabled?'Пуши выключены на сервере':S.audiences.length!==3?'Для пуша выберите все категории':!mobile().length&&S.platforms.length?'В вебе недоступен':'iOS и Android';
- setRadio('nt-place',S.place);document.querySelectorAll('input[name="nt-platform"]').forEach(function(x){x.checked=has(x.value)&&!(onPaywall&&x.value==='ios');});document.querySelectorAll('input[name="nt-store"]').forEach(function(x){x.checked=S.stores.indexOf(x.value)>=0;});document.querySelectorAll('input[name="nt-audience"]').forEach(function(x){x.checked=S.audiences.indexOf(x.value)>=0;x.disabled=push;});setRadio('nt-when',S.when);setRadio('nt-days',S.days);setRadio('nt-layout',S.layout);
+ setRadio('nt-place',S.place);document.querySelectorAll('input[name="nt-platform"]').forEach(function(x){x.checked=has(x.value);});document.querySelectorAll('input[name="nt-store"]').forEach(function(x){x.checked=S.stores.indexOf(x.value)>=0;});document.querySelectorAll('input[name="nt-audience"]').forEach(function(x){x.checked=S.audiences.indexOf(x.value)>=0;x.disabled=push;});setRadio('nt-when',S.when);setRadio('nt-days',S.days);setRadio('nt-layout',S.layout);
  el('audience-note').textContent=push?'Для выбора категорий отключите пуш.':'Зарегистрированные — без активного Premium.';
  document.querySelector('input[name="nt-platform"][value="web"]').disabled=push;
  el('push-state').textContent=onPaywall?'Paywall':el('push-state').textContent;
- document.querySelector('input[name="nt-platform"][value="ios"]').disabled=onPaywall;
- el('place-note').textContent=onPaywall?'Над основной кнопкой на Android и в вебе.':S.place==='profile'?'Под Premium. Высота по содержимому: картинка целиком, разделы ниже сдвигаются.'+(push?' Покажется тем, у кого пуши выключены.':''):push&&S.place!=='news'?'Тем, у кого пуши выключены':'';
+ el('place-note').textContent=onPaywall?'Над основной кнопкой.':S.place==='profile'?'Под Premium. Высота по содержимому: картинка целиком, разделы ниже сдвигаются.'+(push?' Покажется тем, у кого пуши выключены.':''):push&&S.place!=='news'?'Тем, у кого пуши выключены':'';
  el('stores').hidden=push||!has('android');el('when-wrap').hidden=S.when!=='later';
  el('days-label').textContent=onPaywall?'Показывать':'Хранить в списке';
  el('lifetime-note').textContent=onPaywall?'Управление показом и статистика — в истории.':permanent?'Только в списке, пока вы не выключите или не удалите уведомление.':'По окончании срока исчезнет и из списка. Окно показывается один раз, закрытый баннер не возвращается.';

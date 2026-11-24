@@ -387,7 +387,7 @@ class RemoteNotificationsService {
     inbox.value = _config['popupEnabled'] == true
         ? active.where((m) => !m.isPaywallButton).toList()
         : const [];
-    paywallButton.value = _config['popupEnabled'] == true && platform != 'ios'
+    paywallButton.value = _config['popupEnabled'] == true
         ? active
               .where(
                 (m) => m.isPaywallButton && m.tap?.action == NoticeAction.url,
@@ -446,7 +446,7 @@ class RemoteNotificationsService {
         'imageBanners': '1',
         'imagePopups': '1',
         'profileBanners': '1',
-        if (platform != 'ios') 'paywallButton': '1',
+        'paywallButton': '1',
         'inbox': '1',
         if (platform == 'android')
           'store': StoreConfig.current == AppStore.rustore ? 'rustore' : 'play',

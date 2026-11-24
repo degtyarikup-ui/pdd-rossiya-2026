@@ -91,7 +91,6 @@ export function validateCampaign(input, now = Date.now()) {
   value.inApp = value.inAppKind === 'popup';
   const profile = placement(value) === 'profile';
   const paywall = value.kind === 'paywall';
-  if (paywall && platformsOf(value).includes('ios')) throw new Error('Кнопка Paywall доступна на Android и в вебе');
   if (profile && input.button !== undefined && typeof input.button !== 'boolean') throw new Error('Некорректная кнопка');
   if (value.kind === 'push') {
     // A system notification needs text: a picture alone shows nothing.
@@ -349,7 +348,7 @@ export class NotificationsState {
       // Unknown kinds become popups in older builds. Never leak profile cards
       // onto their home screen, including profile presentations of a push.
       const profileBanners = url.searchParams.get('profileBanners') === '1';
-      const paywallButton = platform !== 'ios' && url.searchParams.get('paywallButton') === '1';
+      const paywallButton = url.searchParams.get('paywallButton') === '1';
       // Older clients would show inbox news as a popup window.
       const inbox = url.searchParams.get('inbox') === '1';
       // A sent push also lands in the inbox of builds that have one. Its window

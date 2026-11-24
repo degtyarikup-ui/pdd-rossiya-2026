@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -25,42 +26,53 @@ void main() {
     'gameEnabled': true,
   };
   setUp(() => SharedPreferences.setMockInitialValues({}));
-  test('Paywall campaign is opt-in and appears only in its own slot', () async {
-    var enabled = false;
-    final service = RemoteNotificationsService.forTesting(
-      client: MockClient((request) async {
-        expect(request.url.queryParameters['paywallButton'], '1');
-        return http.Response(
-          jsonEncode({
-            'config': config,
-            'messages': [
-              if (enabled)
-                {
-                  ...notice(),
-                  'kind': 'paywall',
-                  'buttonText': 'More',
-                  'action': 'url',
-                  'actionUrl': 'https://example.test/offer',
-                },
-            ],
-          }),
-          200,
-        );
-      }),
-    );
-    addTearDown(service.dispose);
-    await service.refresh();
-    expect(service.paywallButton.value, isNull);
-    enabled = true;
-    await service.refresh();
-    expect(service.paywallButton.value?.tap?.url, 'https://example.test/offer');
-    expect(service.inbox.value, isEmpty);
-    expect(service.banners.value, isEmpty);
-    expect(service.nextNotice, isNull);
-    enabled = false;
-    await service.refresh();
-    expect(service.paywallButton.value, isNull);
-  });
+  for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+    test('Paywall opts in and stays in its slot on ${platform.name}', () async {
+      debugDefaultTargetPlatformOverride = platform;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      var enabled = false;
+      final service = RemoteNotificationsService.forTesting(
+        client: MockClient((request) async {
+          expect(
+            request.url.queryParameters['platform'],
+            platform.name.toLowerCase(),
+          );
+          expect(request.url.queryParameters['paywallButton'], '1');
+          return http.Response(
+            jsonEncode({
+              'config': config,
+              'messages': [
+                if (enabled)
+                  {
+                    ...notice(),
+                    'kind': 'paywall',
+                    'buttonText': 'More',
+                    'action': 'url',
+                    'actionUrl': 'https://example.test/offer',
+                  },
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+      addTearDown(service.dispose);
+      await service.refresh();
+      expect(service.paywallButton.value, isNull);
+      enabled = true;
+      await service.refresh();
+      expect(
+        service.paywallButton.value?.tap?.url,
+        'https://example.test/offer',
+      );
+      expect(service.inbox.value, isEmpty);
+      expect(service.banners.value, isEmpty);
+      expect(service.nextNotice, isNull);
+      enabled = false;
+      await service.refresh();
+      expect(service.paywallButton.value, isNull);
+    });
+  }
 
   test(
     'concurrent window claims persist only one display across restarts',
