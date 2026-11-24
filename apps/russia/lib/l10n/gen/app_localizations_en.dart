@@ -307,6 +307,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get schoolPortalLogin => 'Driving school sign-in';
+
+  @override
   String get continueButton => 'Continue';
 
   @override

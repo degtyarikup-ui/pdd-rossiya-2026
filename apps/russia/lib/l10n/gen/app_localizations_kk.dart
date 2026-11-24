@@ -307,6 +307,9 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String get schoolPortalLogin => 'Автомектеп кабинетіне кіру';
+
+  @override
   String get continueButton => 'Жалғастыру';
 
   @override

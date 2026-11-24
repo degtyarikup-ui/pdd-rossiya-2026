@@ -1,3 +1,5 @@
+import 'package:pdd_app/data/services/school_login_route.dart';
+import 'package:pdd_app/presentation/screens/school_login_screen.dart';
 import 'package:pdd_app/data/services/web_checkout_route.dart';
 import 'package:pdd_app/presentation/screens/premium_web_checkout_screen.dart';
 import 'package:pdd_app/data/services/notification_inbox_service.dart';
@@ -289,7 +291,8 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     RemoteNotificationsService.instance.onSupportReply =
         SupportInbox.instance.pollNow;
     SupportInbox.instance.start();
-    if (widget.webAuthReturn != null || widget.referralPrompt != null) {
+    if (_schoolLogin == null &&
+        (widget.webAuthReturn != null || widget.referralPrompt != null)) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _showStartupPrompt());
     }
   }
@@ -371,6 +374,9 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     }
   }
 
+  SchoolLoginRoute? get _schoolLogin =>
+      kIsWeb ? SchoolLoginRoute.resolve(Uri.base, widget.webAuthReturn) : null;
+
   WebCheckoutRoute? get _checkout =>
       kIsWeb ? WebCheckoutRoute.resolve(Uri.base, widget.webAuthReturn) : null;
 
@@ -386,6 +392,13 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
         ? const String.fromEnvironment('SCREEN', defaultValue: 'home')
         : 'home';
     Widget getInitialWidget() {
+      final school = _schoolLogin;
+      if (school != null) {
+        return SchoolLoginScreen(
+          route: school,
+          authReturn: widget.webAuthReturn,
+        );
+      }
       final checkout = _checkout;
       if (checkout != null) {
         return PremiumWebCheckoutScreen(

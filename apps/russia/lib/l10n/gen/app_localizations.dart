@@ -574,6 +574,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{день подряд} few{дня подряд} many{дней подряд} other{дней подряд}}'**
   String streakDaysWord(num count);
 
+  /// No description provided for @schoolPortalLogin.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход в кабинет автошколы'**
+  String get schoolPortalLogin;
+
   /// No description provided for @continueButton.
   ///
   /// In ru, this message translates to:

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'school_login_route.dart';
 
 import 'package:pdd_app/data/services/browser_info_web.dart';
 import 'package:web/web.dart' as web;
@@ -28,6 +29,10 @@ Future<Never> startWebOAuth(String provider, Uri authorizationUrl) {
       'state': authorizationUrl.queryParameters['state'],
       'nonce': authorizationUrl.queryParameters['nonce'],
       'startedAt': DateTime.now().millisecondsSinceEpoch,
+      if (SchoolLoginRoute.resolve(Uri.base, null) case final school?) ...{
+        'school_login': school.challenge,
+        'school_state': school.state,
+      },
       if (WebCheckoutRoute.fromUri(Uri.base) case final checkout?) ...{
         'checkoutTier': checkout.tier.name,
         if (checkout.campaignId != null)
@@ -58,7 +63,22 @@ Map<String, String>? takeWebOAuthReturn() {
     final params = Uri.splitQueryString(
       Uri.decodeComponent(fragment.substring(webOAuthFragmentPrefix.length)),
     );
-    return validateWebOAuthReturn(params, pending, DateTime.now());
+    final result = validateWebOAuthReturn(params, pending, DateTime.now());
+    final school = SchoolLoginRoute.parse(
+      result['school_login'],
+      result['school_state'],
+    );
+    if (school != null) {
+      final address = Uri(
+        path: '/app/',
+        queryParameters: {
+          'school_login': school.challenge,
+          'school_state': school.state,
+        },
+      );
+      web.window.history.replaceState(null, '', address.toString());
+    }
+    return result;
   } catch (_) {
     return {'provider': 'unknown', 'error': 'invalid_state'};
   }

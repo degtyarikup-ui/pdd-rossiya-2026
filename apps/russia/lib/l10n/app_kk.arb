@@ -79,6 +79,7 @@
   "streakStart": "Серияны бастаңыз",
   "streakStartHint": "Бүгін жаттығуды немесе ойынды бастаңыз — жалын жанады",
   "streakDaysWord": "{count, plural, one{күн қатарынан} other{күн қатарынан}}",
+  "schoolPortalLogin": "Автомектеп кабинетіне кіру",
   "continueButton": "Жалғастыру",
   "streakBarrierLabel": "Сериялар",
   "personalRecord": "Жеке рекорд",

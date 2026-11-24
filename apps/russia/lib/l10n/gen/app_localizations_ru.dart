@@ -317,6 +317,9 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get schoolPortalLogin => 'Вход в кабинет автошколы';
+
+  @override
   String get continueButton => 'Продолжить';
 
   @override

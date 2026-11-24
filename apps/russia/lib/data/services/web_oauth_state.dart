@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'school_login_route.dart';
 
 const webOAuthStorageKey = 'pdd_web_oauth_pending';
 const webOAuthFragmentPrefix = '#pdd-oauth=';
@@ -41,10 +42,17 @@ Map<String, String> validateWebOAuthReturn(
   }
   return {
     ...({...params}
+      ..remove('school_login')
+      ..remove('school_state')
       ..remove('checkout_tier')
       ..remove('checkout_campaign')),
     // The caller cannot inject a checkout destination through the callback.
     // Restore only the fixed choice saved by this tab before starting OAuth.
+    if (SchoolLoginRoute.parse(pending['school_login'], pending['school_state'])
+        case final school?) ...{
+      'school_login': school.challenge,
+      'school_state': school.state,
+    },
     if (['weekly', 'threeMonths'].contains(pending['checkoutTier']))
       'checkout_tier': pending['checkoutTier'] as String,
     if (pending['checkoutCampaign'] is String)

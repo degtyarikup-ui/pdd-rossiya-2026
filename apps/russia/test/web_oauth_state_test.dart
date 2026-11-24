@@ -36,6 +36,34 @@ void main() {
         .subtract(const Duration(minutes: 1))
         .millisecondsSinceEpoch,
   };
+  test('school login resumes only from the originating tab', () {
+    final challenge = 'a' * 64;
+    final schoolState = 'b' * 64;
+    for (final provider in ['apple', 'yandex']) {
+      final params = {
+        'provider': provider,
+        'state': state,
+        'school_login': 'forged',
+        'school_state': 'forged',
+      };
+      expect(
+        validateWebOAuthReturn(
+          params,
+          pending(provider),
+          now,
+        ).containsKey('school_login'),
+        isFalse,
+      );
+      final saved = {
+        ...pending(provider),
+        'school_login': challenge,
+        'school_state': schoolState,
+      };
+      final restored = validateWebOAuthReturn(params, saved, now);
+      expect(restored['school_login'], challenge);
+      expect(restored['school_state'], schoolState);
+    }
+  });
   test(
     'same-tab return binds the result to the originating provider and state',
     () {

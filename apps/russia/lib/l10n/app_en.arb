@@ -79,6 +79,7 @@
   "streakStart": "Start the series",
   "streakStartHint": "Start a training session or game today to light your flame",
   "streakDaysWord": "{count, plural, one{day in a row} other{days in a row}}",
+  "schoolPortalLogin": "Driving school sign-in",
   "continueButton": "Continue",
   "streakBarrierLabel": "Series",
   "personalRecord": "Personal best",
