@@ -3,7 +3,7 @@
 <meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#f3f5f9">
 <title>{% block title %}{{ title|default:"Кабинет автошколы" }}{% endblock %} · ПДД России</title>
 <link rel="icon" href="{% static 'favicon.png' %}"><link rel="stylesheet" href="{% static 'style.css' %}">
-<link rel="stylesheet" href="{% static 'schools/portal.css' %}"><script defer src="{% static 'schools/portal.js' %}"></script></head>
+<link rel="stylesheet" href="{% static 'schools/portal.css' %}">{% block page_styles %}{% endblock %}<script defer src="{% static 'schools/portal.js' %}"></script></head>
 <body><a class="skip" href="#content">К содержанию</a>
 {% if employee %}
 <div class="layout"><header class="mobile-bar">{% include "portal/brand.html" %}<button class="icon-button" id="nav-toggle" aria-label="Открыть меню" aria-expanded="false" aria-controls="sidebar">{% icon "menu" %}</button></header>
@@ -27,7 +27,7 @@
 {% endif %}
 <main id="content" class="{% if employee %}workspace{% else %}entrance{% endif %}">
 {% if not employee %}<header class="entrance-brand">{% include "portal/brand.html" %}</header>{% endif %}
-<div class="{% if employee %}canvas{% else %}auth-card{% endif %}">
+<div class="{% if employee %}canvas{% else %}auth-card {% block entrance_card_class %}{% endblock %}{% endif %}">
 {% if messages %}<div role="status" class="messages">{% for message in messages %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}
 {% block content %}{% endblock %}{% block return_link %}{% endblock %}
 </div></main>{% if employee %}</div>{% endif %}

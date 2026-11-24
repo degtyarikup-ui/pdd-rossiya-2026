@@ -14,7 +14,7 @@ from django.db import transaction
 from django.shortcuts import redirect
 from django.utils.crypto import salted_hmac
 
-from .models import Employee, Group
+from .models import Group
 
 
 def private_responses(get_response):
@@ -55,11 +55,6 @@ class MFAAdapter(DefaultMFAAdapter):
 
     def decrypt(self, encrypted_text):
         return self._cipher().decrypt(encrypted_text.encode()).decode()
-
-    def can_delete_authenticator(self, authenticator):
-        return not Employee.objects.filter(
-            user=authenticator.user, role=Employee.Role.MANAGER
-        ).exists()
 
 
 def active_roles(user):
@@ -104,9 +99,7 @@ def school_view(view=None, *, manager=False):
                 return redirect("start")
             if manager and not employee.manager:
                 raise PermissionDenied
-            if employee.manager and not has_totp(request.user):
-                return redirect("mfa_activate_totp")
-            if employee.manager:
+            if employee.manager and has_totp(request.user):
                 methods = get_authentication_records(request, request.user)
                 enrolled_here = (
                     request.session.get("totp_enrolled_user") == request.user.pk

@@ -1,0 +1,28 @@
+{% extends "portal/base.html" %}
+{% load static school_ui %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'schools/start.css' %}">{% endblock %}
+{% block entrance_card_class %}school-start{% endblock %}
+{% block content %}
+<header class="start-heading">
+  <h1>Ваша автошкола</h1>
+  <img src="{% url 'car' %}" width="520" height="320" alt="">
+</header>
+<form class="start-form" method="post">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  {% for field in form.visible_fields %}{% if field.name != 'terms' %}
+    <div class="start-field">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}{{ field.errors }}
+    </div>
+  {% endif %}{% endfor %}
+  <div>
+    <label class="start-consent" for="{{ form.terms.id_for_label }}">
+      {{ form.terms }}
+      <span>Принимаю <a href="{% url 'terms' %}" target="_blank" rel="noopener">условия тестового кабинета</a></span>
+    </label>
+    {{ form.terms.errors }}
+  </div>
+  <button type="submit" class="btn btn-primary">Создать кабинет {% icon "arrow" %}</button>
+</form>
+{% endblock %}

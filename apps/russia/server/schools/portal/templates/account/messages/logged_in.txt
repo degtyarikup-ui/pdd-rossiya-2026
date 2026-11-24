@@ -1,0 +1,1 @@
+{# The destination page already confirms successful sign-in. #}

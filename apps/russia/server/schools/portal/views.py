@@ -115,7 +115,10 @@ def start(request):
         return redirect("accept")
     if active_roles(request.user).exists():
         return redirect("home")
-    form = SchoolForm(request.POST if request.method == "POST" else None)
+    form = SchoolForm(
+        request.POST if request.method == "POST" else None,
+        initial={"name": request.user.get_full_name()[:100]},
+    )
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             if not active_roles(request.user).exists():
@@ -130,7 +133,7 @@ def start(request):
                 request.session["school_id"] = school.pk
                 log(employee, "school_created")
         return redirect("home")
-    return form_page(request, form, "Ваша автошкола", "Создать кабинет", terms=True)
+    return page(request, "start", form=form, title="Ваша автошкола")
 
 
 @login_required

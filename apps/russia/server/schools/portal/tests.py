@@ -179,7 +179,20 @@ class CabinetTests(TransactionTestCase):
         StaffInvite.objects.update(expires_at=timezone.now() - timedelta(minutes=1))
         self.assertEqual(self.client.get(late).status_code, 410)
 
-    def test_verified_signup_school_creation_and_mfa(self):
+    def test_school_onboarding_prefills_name_and_requires_consent(self):
+        member = user("onboarding@example.test")
+        member.first_name = "Анна"
+        member.save()
+        self.client.force_login(member)
+        response = self.client.get(reverse("start"))
+        self.assertContains(response, 'value="Анна"')
+        self.assertContains(response, reverse("terms"))
+        self.assertFalse(response.context["form"]["terms"].value())
+        posted = self.client.post(reverse("start"), {"school": "Вираж", "name": "Анна"})
+        self.assertFormError(posted.context["form"], "terms", "Обязательное поле.")
+        self.assertFalse(School.objects.filter(name="Вираж").exists())
+
+    def test_verified_signup_opens_school_then_allows_optional_mfa(self):
         client = self.client
         email = "new@example.test"
         client.post(
@@ -199,7 +212,13 @@ class CabinetTests(TransactionTestCase):
             reverse("start"), {"school": self.a.name, "name": "Мария", "terms": "on"}
         )
         self.assertEqual(School.objects.count(), 3)
-        enroll = client.get(reverse("home"), follow=True)
+        self.assertContains(client.get(reverse("home")), "Учебные группы")
+        client.post(reverse("account_logout"))
+        returning = client.post(
+            reverse("account_login"), {"login": email, "password": self.password}, follow=True
+        )
+        self.assertEqual(returning.resolver_match.url_name, "home")
+        enroll = client.get(reverse("mfa_activate_totp"), follow=True)
         if enroll.resolver_match.url_name == "account_reauthenticate":
             enroll = client.post(
                 reverse("account_reauthenticate"),

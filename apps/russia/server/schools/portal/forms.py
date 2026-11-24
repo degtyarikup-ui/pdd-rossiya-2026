@@ -15,7 +15,13 @@ class TermsForm(forms.Form):
 
 
 class SchoolForm(TermsForm):
-    school = forms.CharField(label="Название школы или кабинета", max_length=100)
+    school = forms.CharField(
+        label="Название автошколы",
+        max_length=100,
+        widget=forms.TextInput(
+            attrs={"autocomplete": "organization", "placeholder": "Например, Зелёный свет"}
+        ),
+    )
     field_order = ["school", "name", "terms"]
 
 
