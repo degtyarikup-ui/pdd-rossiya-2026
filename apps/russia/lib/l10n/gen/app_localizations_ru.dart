@@ -317,7 +317,16 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get schoolPortalLogin => 'Вход в кабинет автошколы';
+  String get schoolPortalLogin => 'Кабинет автошколы';
+
+  @override
+  String get schoolPortalBrand => 'ПДД России';
+
+  @override
+  String get schoolPortalEnter => 'Войти в кабинет';
+
+  @override
+  String get schoolPortalSwitch => 'Сменить аккаунт';
 
   @override
   String get continueButton => 'Продолжить';

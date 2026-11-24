@@ -307,7 +307,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get schoolPortalLogin => 'Driving school sign-in';
+  String get schoolPortalLogin => 'Driving school portal';
+
+  @override
+  String get schoolPortalBrand => 'PDD Russia';
+
+  @override
+  String get schoolPortalEnter => 'Enter school portal';
+
+  @override
+  String get schoolPortalSwitch => 'Switch account';
 
   @override
   String get continueButton => 'Continue';

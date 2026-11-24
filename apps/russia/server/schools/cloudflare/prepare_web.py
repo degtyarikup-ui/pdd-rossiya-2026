@@ -29,7 +29,11 @@ launcher = Path(__file__).with_name("web_entry.js")
 shutil.copy2(launcher, target / "entry.js")
 index = app / "index.html"
 html = index.read_text()
-pattern = r'<script src="(flutter_bootstrap\.js\?release=[a-f0-9]+)" async></script>'
+pattern = (
+    r'<script (?:src="school-login/entry\.js" data-app=|src=)'
+    r'"(flutter_bootstrap\.js\?release=[a-f0-9]+)"'
+    r'(?: data-school="school-login/bootstrap\.[a-f0-9]+\.js")? async></script>'
+)
 tag = (
     r'<script src="school-login/entry.js" data-app="\1" '
     f'data-school="school-login/bootstrap.{digest}.js" async></script>'

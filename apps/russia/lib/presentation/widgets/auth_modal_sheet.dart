@@ -18,10 +18,12 @@ class AuthModalSheet extends StatefulWidget {
     this.initialAction,
     this.authService,
     this.embedded = false,
+    this.embeddedErrorColor,
   });
 
   /// Reuse the same provider buttons and attempt ownership in the web checkout.
   final bool embedded;
+  final Color? embeddedErrorColor;
   final Future<bool> Function()? initialAction;
   @visibleForTesting
   final AuthService? authService;
@@ -211,7 +213,7 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                         _error!,
                         style: TextStyle(
                           color: widget.embedded
-                              ? AppColors.white
+                              ? widget.embeddedErrorColor ?? AppColors.white
                               : Theme.of(context).colorScheme.error,
                         ),
                         textAlign: TextAlign.center,

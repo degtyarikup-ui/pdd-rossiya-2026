@@ -157,7 +157,10 @@
       }
     }
   },
-  "schoolPortalLogin": "Вход в кабинет автошколы",
+  "schoolPortalLogin": "Кабинет автошколы",
+  "schoolPortalBrand": "ПДД России",
+  "schoolPortalEnter": "Войти в кабинет",
+  "schoolPortalSwitch": "Сменить аккаунт",
   "continueButton": "Продолжить",
   "streakBarrierLabel": "Серия",
   "personalRecord": "Личный рекорд",

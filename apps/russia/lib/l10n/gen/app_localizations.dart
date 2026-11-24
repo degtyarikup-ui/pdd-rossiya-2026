@@ -577,8 +577,26 @@ abstract class AppLocalizations {
   /// No description provided for @schoolPortalLogin.
   ///
   /// In ru, this message translates to:
-  /// **'Вход в кабинет автошколы'**
+  /// **'Кабинет автошколы'**
   String get schoolPortalLogin;
+
+  /// No description provided for @schoolPortalBrand.
+  ///
+  /// In ru, this message translates to:
+  /// **'ПДД России'**
+  String get schoolPortalBrand;
+
+  /// No description provided for @schoolPortalEnter.
+  ///
+  /// In ru, this message translates to:
+  /// **'Войти в кабинет'**
+  String get schoolPortalEnter;
+
+  /// No description provided for @schoolPortalSwitch.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сменить аккаунт'**
+  String get schoolPortalSwitch;
 
   /// No description provided for @continueButton.
   ///

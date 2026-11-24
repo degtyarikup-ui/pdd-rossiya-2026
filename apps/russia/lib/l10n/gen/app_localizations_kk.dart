@@ -307,7 +307,16 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String get schoolPortalLogin => 'Автомектеп кабинетіне кіру';
+  String get schoolPortalLogin => 'Автомектеп кабинеті';
+
+  @override
+  String get schoolPortalBrand => 'Ресей ЖҚЕ';
+
+  @override
+  String get schoolPortalEnter => 'Кабинетке кіру';
+
+  @override
+  String get schoolPortalSwitch => 'Аккаунтты ауыстыру';
 
   @override
   String get continueButton => 'Жалғастыру';
