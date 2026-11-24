@@ -15,7 +15,7 @@ shutil.copy2(main, target / f"main.{digest}.js")
 bootstrap = (build / "flutter_bootstrap.js").read_text()
 bootstrap, count = re.subn(
     r'"mainJsPath":"main\.dart\.js\?release=[0-9a-f]+"',
-    f'"mainJsPath":"school-login/main.{digest}.js"',
+    f'"mainJsPath":"school-login/main.{digest}.js?release={digest}"',
     bootstrap,
 )
 if count != 1:
@@ -24,7 +24,8 @@ if count != 1:
 bootstrap = (
     bootstrap[: bootstrap.rindex("_flutter.loader.load(")] + "_flutter.loader.load();\n"
 )
-(target / f"bootstrap.{digest}.js").write_text(bootstrap)
+bootstrap_digest = hashlib.sha256(bootstrap.encode()).hexdigest()[:16]
+(target / f"bootstrap.{bootstrap_digest}.js").write_text(bootstrap)
 launcher = Path(__file__).with_name("web_entry.js")
 shutil.copy2(launcher, target / "entry.js")
 index = app / "index.html"
@@ -36,7 +37,7 @@ pattern = (
 )
 tag = (
     r'<script src="school-login/entry.js" data-app="\1" '
-    f'data-school="school-login/bootstrap.{digest}.js" async></script>'
+    f'data-school="school-login/bootstrap.{bootstrap_digest}.js" async></script>'
 )
 html, count = re.subn(pattern, tag, html)
 if count != 1:
