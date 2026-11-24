@@ -136,6 +136,7 @@ test('оплата: платёж, уведомление, срок один ра
     const status = await (await worker.fetch(req('/api/user/status', undefined, token), env)).json();
     assert.equal(status.isPremium, true);
     assert.equal(status.premiumSource, 'web');
+    assert.equal(status.user.webPayments[start.order].expiresAt, paid.premiumExpiresAt);
 
     // Возврат денег снимает начисленный срок.
     tx.status = 'CHARGEBACKED';

@@ -75,6 +75,7 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
   bool get _locked => _busy || _order != null || _uncertainCreate;
   bool get _paid => _status == 'confirmed';
   bool get _terminal => const [
+    'expired',
     'canceled',
     'failed',
     'create_failed',
@@ -154,6 +155,15 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
       if (!mounted || revision != _revision) return;
       _order ??= pending;
       await _check();
+      // The server omits settled orders from a later "current" lookup. Keep
+      // the ID across a reload while this account is catching up.
+      if (mounted &&
+          revision == _revision &&
+          pending == null &&
+          _status == 'pending' &&
+          _order != null) {
+        await PendingPayment.remember(_order!, ownerId: owner);
+      }
     } finally {
       if (mounted && revision == _revision) setState(() => _restoring = false);
     }
@@ -386,7 +396,9 @@ class _PremiumWebCheckoutScreenState extends State<PremiumWebCheckoutScreen>
   );
 
   Widget _result(AppThemeColors colors) {
-    final message = _terminal
+    final message = _status == 'expired'
+        ? appL10n.inboxPremiumEndedTitle
+        : _terminal
         ? appL10n.checkoutCanceled
         : _review
         ? appL10n.webPayCreationReview(_order!)

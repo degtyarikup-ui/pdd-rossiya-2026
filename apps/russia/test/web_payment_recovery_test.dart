@@ -169,10 +169,7 @@ void main() {
           final staleSync = premium.syncWithServer();
           await staleRequest.future;
           status = 'confirmed';
-          expect(
-            await premium.checkPendingPayment(),
-            PremiumService.pendingPaymentUnreachable,
-          );
+          expect(await premium.checkPendingPayment(), 'pending');
           expect(await PendingPayment.current(ownerId: 'google_A'), order);
           expect(container.read(isPremiumProvider), isFalse);
           premium.applyAiQuota({'limit': 10, 'remaining': 0});
@@ -228,6 +225,60 @@ void main() {
       );
     },
   );
+  test(
+    'renewal waits for its own receipt and an old paid order can finish',
+    () async {
+      final existing = expiry.toUtc().toIso8601String();
+      final renewed = expiry
+          .add(const Duration(days: 90))
+          .toUtc()
+          .toIso8601String();
+      var accountExpiry = existing;
+      final receipts = <String, dynamic>{};
+      await PendingPayment.remember(order, ownerId: 'google_A');
+      await http.runWithClient(
+        () async {
+          final discovered = await premium.checkWebPaymentDetails();
+          expect(discovered?.order, order);
+          expect(discovered?.status, 'pending');
+          expect(discovered?.url, isNull);
+          receipts[order] = {'expiresAt': renewed};
+          expect(await premium.checkPendingPayment(), 'pending');
+          expect(await PendingPayment.current(ownerId: 'google_A'), order);
+          accountExpiry = renewed;
+          expect(await premium.checkPendingPayment(), 'confirmed');
+          expect(await PendingPayment.current(ownerId: 'google_A'), isNull);
+
+          await PendingPayment.remember(
+            order,
+            ownerId: 'google_A',
+            keepUntilResolved: true,
+          );
+          receipts[order] = {'expiresAt': '2020-01-01T00:00:00Z'};
+          expect(await premium.checkPendingPayment(), 'expired');
+          expect(await PendingPayment.current(ownerId: 'google_A'), isNull);
+        },
+        () => MockClient((request) async {
+          if (request.url.path == '/api/user/pay-check') {
+            return http.Response(
+              jsonEncode({'status': 'confirmed', 'order': order}),
+              200,
+            );
+          }
+          expect(request.url.path, '/api/user/status');
+          return http.Response(
+            jsonEncode({
+              'isPremium': true,
+              'premiumExpiresAt': accountExpiry,
+              'user': {'webPayments': receipts},
+            }),
+            200,
+          );
+        }),
+      );
+    },
+  );
+
   testWidgets(
     'unknown creation shows selectable order/support instructions in every locale and disables another payment',
     (tester) async {

@@ -471,11 +471,16 @@ class PremiumService extends ChangeNotifier {
   }
 
   /// Picks up administrative grants and store renewals while the app is open.
-  Future<bool> checkForGrant({bool afterPayment = false}) async {
+  Future<bool> checkForGrant({bool afterPayment = false}) async =>
+      await _refreshAccountStatus(afterPayment: afterPayment) != null;
+
+  Future<Map<String, dynamic>?> _refreshAccountStatus({
+    required bool afterPayment,
+  }) async {
     final user = AuthService.instance.currentUser;
-    if (user == null || !AuthService.instance.hasServerSession) return false;
+    if (user == null || !AuthService.instance.hasServerSession) return null;
     if (!BackendConfig.hasNotifier && !AuthService.instance.isDevSession) {
-      return false;
+      return null;
     }
     final revision = AuthService.instance.accountRevision;
     final entitlementRevision = _entitlementRevision;
@@ -487,10 +492,10 @@ class PremiumService extends ChangeNotifier {
       if (resp.statusCode != 200 ||
           revision != AuthService.instance.accountRevision ||
           entitlementRevision != _entitlementRevision) {
-        return false;
+        return null;
       }
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      if (!_hasValidPremiumState(data)) return false;
+      if (!_hasValidPremiumState(data)) return null;
       final serverIsPremium = data['isPremium'] == true;
       final serverExpiresAt = DateTime.tryParse(
         data['premiumExpiresAt'] as String? ?? '',
@@ -498,7 +503,7 @@ class PremiumService extends ChangeNotifier {
       await _handleGrantNotice(data, user.id, serverIsPremium, serverExpiresAt);
       if (revision != AuthService.instance.accountRevision ||
           entitlementRevision != _entitlementRevision) {
-        return false;
+        return null;
       }
       // Ignore background reads started before this confirmed payment.
       if (afterPayment) _entitlementRevision++;
@@ -511,10 +516,10 @@ class PremiumService extends ChangeNotifier {
         await _saveState();
         notifyListeners();
       }
-      return true;
+      return data;
     } catch (e) {
       debugPrint('PremiumService: checkForGrant error: $e');
-      return false;
+      return null;
     }
   }
 
@@ -849,18 +854,25 @@ class PremiumService extends ChangeNotifier {
         return null;
       }
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final status = data['status'] as String?;
+      var status = data['status'] as String?;
       if (status == null) return null;
-      if (status == 'confirmed' && !await checkForGrant(afterPayment: true)) {
-        // Keep the order recoverable until the account state has been read.
-        return null;
-      }
-      if (revision != auth.accountRevision) return null;
+      final checkedOrder = data['order'] as String? ?? order;
       final url = data['url'] as String?;
+      final paymentLink =
+          status == 'pending' && url != null && url.startsWith('https://')
+          ? url
+          : null;
+      if (status == 'confirmed') {
+        final account = await _refreshAccountStatus(afterPayment: true);
+        if (revision != auth.accountRevision) return null;
+        // Keep the confirmed order ID, even when it was discovered via
+        // "current" and the account status request failed. Poll this same ID.
+        status = _confirmedOrderStatus(account, checkedOrder);
+      }
       return (
         status: status,
-        order: data['order'] as String? ?? order,
-        url: url != null && url.startsWith('https://') ? url : null,
+        order: checkedOrder,
+        url: paymentLink,
         tier: switch (data['tier']) {
           'weekly' => PremiumTier.weekly,
           'threeMonths' => PremiumTier.threeMonths,
@@ -877,6 +889,29 @@ class PremiumService extends ChangeNotifier {
       );
       return null;
     }
+  }
+
+  String _confirmedOrderStatus(Map<String, dynamic>? account, String? order) {
+    if (account == null) return 'pending';
+    final profile = account['user'];
+    final payments = profile is Map ? profile['webPayments'] : null;
+    final receipt = payments is Map ? payments[order] : null;
+    if (receipt is Map &&
+        receipt['reversed'] != null &&
+        receipt['reversed'] != false) {
+      return 'chargebacked';
+    }
+    final rawExpiry = receipt is Map ? receipt['expiresAt'] : null;
+    final until = rawExpiry is String ? DateTime.tryParse(rawExpiry) : null;
+    if (until != null && !until.isAfter(DateTime.now())) return 'expired';
+    // A previous subscription can still be active during renewal. When the
+    // server includes the payment history, wait for this order to appear.
+    if (!isPremium ||
+        (profile is Map && receipt is! Map) ||
+        (until != null && _expiresAt != null && _expiresAt!.isBefore(until))) {
+      return 'pending';
+    }
+    return 'confirmed';
   }
 
   /// [checkPendingPayment] result: an unfinished order exists, but its status
@@ -896,6 +931,7 @@ class PremiumService extends ChangeNotifier {
     if (status == null) return pendingPaymentUnreachable;
     if ([
       'confirmed',
+      'expired',
       'canceled',
       'chargebacked',
       'create_failed',

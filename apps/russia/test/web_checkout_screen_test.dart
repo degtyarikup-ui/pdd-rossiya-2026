@@ -478,6 +478,7 @@ void main() {
   testWidgets('only server confirmation completes the final stage', (
     tester,
   ) async {
+    var accountActive = false;
     await http.runWithClient(
       () async {
         await tester.pumpWidget(
@@ -488,8 +489,16 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        // Package/device metadata may finish on the platform event loop.
-        await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+        expect(key('checkout-success'), findsNothing);
+        expect(find.text(appL10n.webPayPending), findsOneWidget);
+        expect(key('checkout-pay'), findsNothing);
+        expect(await PendingPayment.current(ownerId: 'google_A'), order);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpWidget(page());
+        await tester.pumpAndSettle();
+        expect(key('checkout-success'), findsNothing);
+        accountActive = true;
+        await tester.pump(const Duration(seconds: 5));
         await tester.pumpAndSettle();
         expect(key('checkout-success'), findsOneWidget);
         expect(key('checkout-stage-0'), findsNothing);
@@ -515,12 +524,13 @@ void main() {
       },
       () => MockClient((request) async {
         if (request.url.path == '/api/user/pay-check') {
+          expect(jsonDecode(request.body)['order'], order);
           return response({'status': 'confirmed', 'order': order});
         }
         if (request.url.path == '/api/user/status') {
           return response({
             'ok': true,
-            'isPremium': true,
+            'isPremium': accountActive,
             'premiumExpiresAt': null,
           });
         }

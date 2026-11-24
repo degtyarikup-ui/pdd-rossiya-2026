@@ -38,6 +38,8 @@ Future<void> handleWebPaymentReturn(BuildContext context) async {
         reason: PremiumCelebrationReason.purchased,
         expiresAt: PremiumService.instance.expiresAt,
       );
+    case 'expired':
+      AppToast.show(context, appL10n.inboxPremiumEndedTitle);
     case 'canceled':
       AppToast.show(context, appL10n.webPayCanceled);
     case 'creation_unknown':
