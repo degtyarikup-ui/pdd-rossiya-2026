@@ -170,6 +170,8 @@ void main() {
                         onTickets: () => tickets++,
                         onMistakes: () {},
                         onFavorites: () {},
+                        mistakeCount: 114,
+                        favoriteCount: size.width == 1440 ? 12 : 0,
                         onMarathon: () => marathon++,
                         onRate: () {},
                       ),
@@ -183,6 +185,12 @@ void main() {
             );
             await tester.pumpAndSettle();
             expect(tester.takeException(), isNull);
+            expect(find.widgetWithText(Badge, '114'), findsOneWidget);
+            expect(
+              find.widgetWithText(Badge, '12'),
+              size.width == 1440 ? findsOneWidget : findsNothing,
+            );
+            expect(find.widgetWithText(Badge, '0'), findsNothing);
             if (lang == 'ru' && scale == 1 && size.width == 1440) {
               await capture(tester, key, 'dashboard-dark');
             }

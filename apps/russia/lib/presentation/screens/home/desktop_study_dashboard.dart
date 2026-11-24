@@ -23,6 +23,8 @@ class DesktopStudyDashboard extends StatelessWidget {
     this.resume,
     this.inboxAlert,
     this.marathonBusy = false,
+    this.mistakeCount = 0,
+    this.favoriteCount = 0,
   });
   final Widget progress;
   final Widget? resume, inboxAlert;
@@ -35,6 +37,7 @@ class DesktopStudyDashboard extends StatelessWidget {
       onMarathon,
       onRate;
   final bool marathonBusy;
+  final int mistakeCount, favoriteCount;
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +47,25 @@ class DesktopStudyDashboard extends StatelessWidget {
         final scale = MediaQuery.textScalerOf(context).scale(16) / 16;
         final twoColumns = constraints.maxWidth >= 760 && scale <= 1.35;
         final modes = [
-          (title: appL10n.topics, asset: 'topics', onTap: onTopics),
-          (title: appL10n.tickets, asset: 'tickets', onTap: onTickets),
-          (title: appL10n.mistakes, asset: 'errors', onTap: onMistakes),
-          (title: appL10n.favorites, asset: 'favorites', onTap: onFavorites),
+          (title: appL10n.topics, asset: 'topics', onTap: onTopics, count: 0),
+          (
+            title: appL10n.tickets,
+            asset: 'tickets',
+            onTap: onTickets,
+            count: 0,
+          ),
+          (
+            title: appL10n.mistakes,
+            asset: 'errors',
+            onTap: onMistakes,
+            count: mistakeCount,
+          ),
+          (
+            title: appL10n.favorites,
+            asset: 'favorites',
+            onTap: onFavorites,
+            count: favoriteCount,
+          ),
         ];
         final exam = _DesktopExamCard(category: category, onStart: onExam);
         return SingleChildScrollView(
@@ -91,6 +109,7 @@ class DesktopStudyDashboard extends StatelessWidget {
                             title: mode.title,
                             asset: mode.asset,
                             onTap: mode.onTap,
+                            questionCount: mode.count,
                           ),
                         ),
                     ],
@@ -253,9 +272,11 @@ class _StudyModeCard extends StatelessWidget {
     required this.title,
     required this.asset,
     required this.onTap,
+    required this.questionCount,
   });
   final String title, asset;
   final VoidCallback onTap;
+  final int questionCount;
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -294,6 +315,14 @@ class _StudyModeCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (questionCount > 0) ...[
+                const SizedBox(width: 16),
+                Badge.count(
+                  count: questionCount,
+                  backgroundColor: colors.accent,
+                  textColor: colors.white,
+                ),
+              ],
               const SizedBox(width: 16),
               Icon(
                 Icons.arrow_forward_rounded,

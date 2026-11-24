@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
+import 'package:pdd_app/data/models/question.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -91,6 +92,7 @@ void main() {
       SharedPreferences.setMockInitialValues({
         'notification_prompt_shown': true,
         'home_exam_concept_index': 1,
+        'favorites_ab': config.dark ? '["removed"]' : '["saved","removed"]',
       });
       final source = ProgressDataSource();
       await source.init();
@@ -106,11 +108,21 @@ void main() {
               (_) async => {
                 'correctAnswers': 138,
                 'answeredQuestions': 252,
-                'wrongQuestions': 114,
+                'wrongQuestions': config.dark ? 0 : 114,
                 'passedTickets': 1,
                 'totalQuestions': 800,
                 'totalTickets': 40,
               },
+            ),
+            ticketsProvider.overrideWith(
+              (_) async => [
+                {
+                  'number': 1,
+                  'questions': [
+                    Question(id: 'saved', question: 'Saved', answers: []),
+                  ],
+                },
+              ],
             ),
             unfinishedSessionProvider.overrideWith((_) async => null),
           ],
@@ -147,6 +159,15 @@ void main() {
       }
       final context = tester.element(find.byType(HomeScreen));
       final l10n = AppLocalizations.of(context);
+      expect(
+        find.widgetWithText(Badge, '114'),
+        config.dark ? findsNothing : findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(Badge, '1'),
+        config.dark ? findsNothing : findsOneWidget,
+      );
+      expect(find.widgetWithText(Badge, '0'), findsNothing);
       expect(find.text(l10n.rateUs), findsOneWidget);
       expect(find.text(l10n.marathon), findsOneWidget);
       final ratePosition = tester.getBottomLeft(find.text(l10n.rateUs));

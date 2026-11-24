@@ -23,6 +23,7 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/navigation/route_observer.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
+import 'package:pdd_app/data/models/question.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/notification_inbox_service.dart';
@@ -552,6 +553,19 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final statsAsync = ref.watch(statsProvider);
+    final mistakeCount = statsAsync.asData?.value['wrongQuestions'] ?? 0;
+    final favoriteIds =
+        ref.watch(favoriteQuestionsProvider).asData?.value.toSet() ??
+        const <String>{};
+    final tickets = favoriteIds.isEmpty
+        ? null
+        : ref.watch(ticketsProvider).asData?.value;
+    final favoriteCount =
+        tickets
+            ?.expand((ticket) => (ticket['questions'] as List).cast<Question>())
+            .where((question) => favoriteIds.contains(question.id))
+            .length ??
+        0;
     final unfinishedSession = ref.watch(unfinishedSessionProvider);
     final sessionData = unfinishedSession.valueOrNull;
     final hasContinueCard = sessionData != null;
@@ -699,6 +713,8 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
               onTickets: () => _openSection(const TicketsScreen()),
               onMistakes: () => _openSection(const MistakesScreen()),
               onFavorites: () => _openSection(const FavoritesScreen()),
+              mistakeCount: mistakeCount,
+              favoriteCount: favoriteCount,
               onMarathon: _openMarathon,
               onRate: _rateApp,
               marathonBusy: _openingMarathon,
@@ -769,6 +785,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                     context: context,
                     iconAsset: 'assets/images/home_icon_errors.png',
                     label: appL10n.mistakes,
+                    questionCount: mistakeCount,
                     height: buttonHeight,
                     onTap: () {
                       HapticFeedbackHelper.tap();
@@ -787,6 +804,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                     context: context,
                     iconAsset: 'assets/images/home_icon_favorites.png',
                     label: appL10n.favorites,
+                    questionCount: favoriteCount,
                     height: buttonHeight,
                     onTap: () {
                       HapticFeedbackHelper.tap();
@@ -938,6 +956,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
     Color? foregroundColor,
     Color? surfaceColor,
     required String label,
+    int questionCount = 0,
     required double height,
     required VoidCallback onTap,
   }) {
@@ -958,33 +977,45 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (loading)
-                SizedBox(
-                  width: AppDimensions.iconSize,
-                  height: AppDimensions.iconSize,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: foreground,
-                  ),
-                )
-              else if (iconAsset.endsWith('.svg'))
-                SvgPicture.asset(
-                  iconAsset,
-                  colorFilter: foregroundColor == null
-                      ? null
-                      : ColorFilter.mode(foregroundColor, BlendMode.srcIn),
-                  width: AppDimensions.iconSize,
-                  height: AppDimensions.iconSize,
-                )
-              else
-                Image.asset(
-                  iconAsset,
-                  width: AppDimensions.iconSize,
-                  height: AppDimensions.iconSize,
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.high,
-                  gaplessPlayback: true,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (loading)
+                    SizedBox(
+                      width: AppDimensions.iconSize,
+                      height: AppDimensions.iconSize,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: foreground,
+                      ),
+                    )
+                  else if (iconAsset.endsWith('.svg'))
+                    SvgPicture.asset(
+                      iconAsset,
+                      colorFilter: foregroundColor == null
+                          ? null
+                          : ColorFilter.mode(foregroundColor, BlendMode.srcIn),
+                      width: AppDimensions.iconSize,
+                      height: AppDimensions.iconSize,
+                    )
+                  else
+                    Image.asset(
+                      iconAsset,
+                      width: AppDimensions.iconSize,
+                      height: AppDimensions.iconSize,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
+                      gaplessPlayback: true,
+                    ),
+                  if (questionCount > 0)
+                    Badge.count(
+                      count: questionCount,
+                      backgroundColor: colors.accent,
+                      textColor: colors.white,
+                    ),
+                ],
+              ),
               const Spacer(),
               FittedBox(
                 fit: BoxFit.scaleDown,
