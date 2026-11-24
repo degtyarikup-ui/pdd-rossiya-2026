@@ -517,8 +517,12 @@ void main() {
         if (request.url.path == '/api/user/pay-check') {
           return response({'status': 'confirmed', 'order': order});
         }
-        if (request.url.path == '/api/user/sync') {
-          return response({'ok': true, 'isPremium': true});
+        if (request.url.path == '/api/user/status') {
+          return response({
+            'ok': true,
+            'isPremium': true,
+            'premiumExpiresAt': null,
+          });
         }
         return standard(request);
       }),

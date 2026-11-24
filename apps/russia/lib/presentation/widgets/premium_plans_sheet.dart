@@ -77,6 +77,7 @@ class PremiumPlansSheet extends StatefulWidget {
 class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
   PremiumTier _selectedTier = PremiumTier.threeMonths;
   bool _isLoading = false;
+  int? _awaitingPurchaseRevision;
   // Подключена ли оплата СБП на сервере (спрашиваем при открытии).
   bool _sbpLive = false;
   PremiumCatalog? _catalog;
@@ -90,6 +91,7 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
   void initState() {
     super.initState();
     IapService.instance.addListener(_onIapChanged);
+    PremiumService.instance.addListener(_finishPendingPurchase);
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
       _loadStorePrices();
     }
@@ -182,7 +184,20 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
   void dispose() {
     _priceRetry?.cancel();
     IapService.instance.removeListener(_onIapChanged);
+    PremiumService.instance.removeListener(_finishPendingPurchase);
     super.dispose();
+  }
+
+  bool _finishPendingPurchase() {
+    if (_isLoading ||
+        _awaitingPurchaseRevision != AuthService.instance.accountRevision ||
+        !PremiumService.instance.isPremium ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return false;
+    }
+    _awaitingPurchaseRevision = null;
+    Navigator.of(context).pop(PremiumPlansResult.purchased);
+    return true;
   }
 
   void _onIapChanged() {
@@ -238,12 +253,24 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
         Navigator.of(context).pop(PremiumPlansResult.purchased);
         return;
       }
+      _awaitingPurchaseRevision = null;
+      final revision = AuthService.instance.accountRevision;
+      final wasPremium = PremiumService.instance.isPremium;
       final result = await IapService.instance.buyProduct(
         tier,
         expectedOffer: expected,
       );
       if (mounted) {
         setState(() => _isLoading = false);
+        final failure = IapService.instance.lastFailure;
+        if (result == PurchaseResult.error &&
+            !wasPremium &&
+            (failure == PurchaseFailure.verificationPending ||
+                failure == PurchaseFailure.paymentPending)) {
+          // The receipt retry or account sync can finish after buyProduct.
+          _awaitingPurchaseRevision = revision;
+          if (_finishPendingPurchase()) return;
+        }
         if (result == PurchaseResult.success) {
           // The benefits screen shows the Premium celebration.
           Navigator.of(context).pop(PremiumPlansResult.purchased);

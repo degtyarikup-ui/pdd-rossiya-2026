@@ -68,10 +68,10 @@ class _PendingStore extends InAppPurchasePlatform {
     completed.add(purchase.purchaseID);
   }
 
-  void confirm() {
+  void confirm([String purchaseId = 'busy-plan-purchase']) {
     updates.add([
       PurchaseDetails(
-        purchaseID: 'busy-plan-purchase',
+        purchaseID: purchaseId,
         productID: products.first.id,
         verificationData: PurchaseVerificationData(
           localVerificationData: '',
@@ -124,6 +124,7 @@ void main() {
         }),
       });
       final verification = Completer<http.Response>();
+      final reconciliation = Completer<http.Response>();
       var verificationStarted = false;
       var gateCompleted = false;
       bool? gateResult;
@@ -244,6 +245,35 @@ void main() {
             expect(find.byType(PremiumPlansSheet), findsNothing);
             expect(find.byType(PremiumBenefitsScreen), findsNothing);
             expect(find.byType(PremiumPaywallSheet), findsNothing);
+            // A later purchase can be credited despite a lost verification
+            // response. Leave the sheet open while the account sync recovers.
+            await PremiumService.instance.checkForGrant();
+            expect(PremiumService.instance.isPremium, isFalse);
+            gateCompleted = false;
+            await tester.tap(find.text('Open premium'));
+            await tester.pumpAndSettle();
+            await tester.tap(find.byKey(const ValueKey('premium-show-plans')));
+            await tester.pumpAndSettle();
+            await tester.ensureVisible(purchase);
+            await tester.tap(purchase);
+            await pumpUntil(() => store.purchases.length == 2);
+            store.confirm('late-purchase');
+            await pumpUntil(
+              () => find
+                  .text(appL10n.purchaseVerificationPending)
+                  .evaluate()
+                  .isNotEmpty,
+            );
+            expect(find.byType(PremiumPlansSheet), findsOneWidget);
+            reconciliation.complete(await verification.future);
+            await pumpUntil(
+              () => find.byType(PremiumCelebrationScreen).evaluate().isNotEmpty,
+            );
+            await tester.pump(const Duration(seconds: 2));
+            await tester.tap(find.text(appL10n.premiumCelebrationAction));
+            await pumpUntil(() => gateCompleted);
+            expect(gateResult, isTrue);
+            expect(store.completed, ['busy-plan-purchase']);
             expect(tester.takeException(), isNull);
             await tester.pump(const Duration(seconds: 4));
             await tester.pumpAndSettle();
@@ -257,6 +287,10 @@ void main() {
                   '{"accountToken":"11111111-1111-5111-8111-111111111111"}',
                   200,
                 );
+              case '/api/user/status' when store.purchases.length == 2:
+                return reconciliation.future;
+              case '/api/user/purchase' when store.purchases.length == 2:
+                return http.Response('{}', 503);
               case '/api/user/purchase':
                 verificationStarted = true;
                 return verification.future;

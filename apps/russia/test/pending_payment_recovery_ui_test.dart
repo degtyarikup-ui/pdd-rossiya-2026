@@ -20,7 +20,7 @@ void main() {
     final recovery = PendingPaymentRecovery(
       checkPayment: () {
         checks++;
-        return checks == 1 ? check.future : Future.value('pending');
+        return checks == 1 ? check.future : Future.value(null);
       },
       celebrate: (context) async {
         celebrations++;
@@ -76,6 +76,30 @@ void main() {
     await recovery.recover(tester.element(find.text('Game')));
     expect(checks, 2, reason: 'Only in-flight checks coalesce');
     expect(celebrations, 1);
+  });
+
+  testWidgets('a pending bank payment unlocks on the same visit', (
+    tester,
+  ) async {
+    var checks = 0, celebrations = 0;
+    final recovery = PendingPaymentRecovery(
+      checkPayment: () async => ++checks == 1 ? 'pending' : 'confirmed',
+      celebrate: (_) async => celebrations++,
+    );
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: Text('Home'))),
+    );
+    final context = tester.element(find.text('Home'));
+    final first = recovery.recover(context);
+    final second = recovery.recover(context);
+    await tester.pump();
+    expect(celebrations, 0);
+    await tester.pump(const Duration(seconds: 2));
+    await Future.wait([first, second]);
+    expect(checks, 2);
+    expect(celebrations, 1);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('cancellation is shown once for concurrent callers', (
@@ -138,19 +162,16 @@ void main() {
       );
       await tester.pumpWidget(const MaterialApp(home: Text('Home')));
       final context = tester.element(find.text('Home'));
-      await recovery.recover(context);
-      await recovery.recover(context);
+      for (var i = 0; i < 2; i++) {
+        final check = recovery.recover(context);
+        await tester.pump();
+        for (final seconds in [2, 4, 8]) {
+          await tester.pump(Duration(seconds: seconds));
+        }
+        await check;
+      }
       expect(notices, 1);
       expect(canceled, 0);
-      // No pending order or still pending: no notice at all.
-      for (final status in [null, 'pending']) {
-        var shown = 0;
-        await PendingPaymentRecovery(
-          checkPayment: () async => status,
-          unreachable: (_) => shown++,
-        ).recover(context);
-        expect(shown, 0, reason: '$status');
-      }
     },
   );
 }

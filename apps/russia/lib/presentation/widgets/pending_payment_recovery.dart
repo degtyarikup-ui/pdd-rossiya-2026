@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
@@ -47,22 +48,50 @@ class PendingPaymentRecovery {
   }
 
   Future<void> _recover() async {
-    final status = await _checkPayment();
-    final caller = _callerContext;
-    final context = caller != null && caller.mounted
-        ? caller
-        : _presentationContext;
-    if (context == null || !context.mounted) return;
-    if (status == 'confirmed') {
-      await _celebrate(context);
-    } else if (status == 'canceled') {
-      _canceled(context);
-    } else if (status == PremiumService.pendingPaymentUnreachable &&
-        !_unreachableShown) {
-      // Once per launch: the check repeats on every return to the app.
-      _unreachableShown = true;
-      _unreachable(context);
+    final revision = AuthService.instance.accountRevision;
+    // A bank can confirm just after the payer switches back to the app.
+    // Only poll an outstanding order, and share these checks with the game.
+    for (final delaySeconds in const [0, 2, 4, 8]) {
+      if (delaySeconds > 0) {
+        await Future<void>.delayed(Duration(seconds: delaySeconds));
+        final lifecycle = WidgetsBinding.instance.lifecycleState;
+        if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
+        if (_resultContext?.mounted != true ||
+            revision != AuthService.instance.accountRevision) {
+          return;
+        }
+      }
+      final status = await _checkPayment();
+      final context = _resultContext;
+      if (context == null ||
+          !context.mounted ||
+          revision != AuthService.instance.accountRevision) {
+        return;
+      }
+      switch (status) {
+        case 'confirmed':
+          await _celebrate(context);
+          return;
+        case 'canceled':
+          _canceled(context);
+          return;
+        case 'pending':
+        case 'creating':
+          if (delaySeconds == 0) AppToast.show(context, appL10n.webPayPending);
+        case PremiumService.pendingPaymentUnreachable:
+          if (!_unreachableShown) {
+            _unreachableShown = true;
+            _unreachable(context);
+          }
+        default:
+          return;
+      }
     }
+  }
+
+  BuildContext? get _resultContext {
+    final caller = _callerContext;
+    return caller != null && caller.mounted ? caller : _presentationContext;
   }
 
   static void _showUnreachable(BuildContext context) =>

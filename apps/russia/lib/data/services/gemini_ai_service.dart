@@ -139,6 +139,7 @@ class GeminiAiService {
 
   Future<Map<String, dynamic>> _send(Map<String, dynamic> payload) async {
     final revision = AuthService.instance.accountRevision;
+    final wasPremium = PremiumService.instance.isPremium;
     final installation = await InstallReporter.installationId();
     payload['installationId'] = installation.length > 128
         ? installation.substring(0, 128)
@@ -172,7 +173,9 @@ class GeminiAiService {
     if (data is! Map<String, dynamic>) {
       throw const FormatException('invalid AI response');
     }
-    PremiumService.instance.applyAiQuota(data);
+    if (wasPremium == PremiumService.instance.isPremium) {
+      PremiumService.instance.applyAiQuota(data);
+    }
     if (response.statusCode == 401) {
       throw const AiServiceException(authenticationRequired: true);
     }
@@ -195,6 +198,7 @@ class GeminiAiService {
 
   Future<void> refreshQuota() async {
     final revision = AuthService.instance.accountRevision;
+    final wasPremium = PremiumService.instance.isPremium;
     try {
       final installation = await InstallReporter.installationId();
       final response = await sendWithRetry(
@@ -207,7 +211,8 @@ class GeminiAiService {
         hosts: BackendConfig.notifierHosts,
       );
       if (response.statusCode == 200 &&
-          revision == AuthService.instance.accountRevision) {
+          revision == AuthService.instance.accountRevision &&
+          wasPremium == PremiumService.instance.isPremium) {
         final data = jsonDecode(response.body);
         if (data is Map<String, dynamic>) {
           PremiumService.instance.applyAiQuota(data);

@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -112,6 +115,15 @@ void main() {
         keepUntilResolved: true,
       );
       var status = 'creating', checks = 0;
+      var statusAvailable = false, startStaleSync = false;
+      final staleReply = Completer<http.Response>();
+      final staleRequest = Completer<void>();
+      final container = ProviderContainer(
+        overrides: [
+          progressImportsProvider.overrideWith((_) => const Stream.empty()),
+        ],
+      );
+      addTearDown(container.dispose);
       await http.runWithClient(
         () async {
           for (final value in [
@@ -153,8 +165,24 @@ void main() {
           expect(checks, before);
           await auth.completeSignInForTesting(user('A'), 'credential');
           expect(await PendingPayment.current(ownerId: 'google_A'), order);
+          startStaleSync = true;
+          final staleSync = premium.syncWithServer();
+          await staleRequest.future;
           status = 'confirmed';
+          expect(
+            await premium.checkPendingPayment(),
+            PremiumService.pendingPaymentUnreachable,
+          );
+          expect(await PendingPayment.current(ownerId: 'google_A'), order);
+          expect(container.read(isPremiumProvider), isFalse);
+          premium.applyAiQuota({'limit': 10, 'remaining': 0});
+          expect(container.read(aiMessagesRemainingProvider), 0);
+          statusAvailable = true;
           expect(await premium.checkPendingPayment(), 'confirmed');
+          expect(container.read(isPremiumProvider), isTrue);
+          expect(container.read(aiMessagesRemainingProvider), greaterThan(0));
+          staleReply.complete(http.Response('{"isPremium":false}', 200));
+          await staleSync;
           expect(await PendingPayment.current(ownerId: 'google_A'), isNull);
           expect(premium.isPremium, isTrue);
         },
@@ -169,6 +197,13 @@ void main() {
               }),
               200,
             );
+          }
+          if (request.url.path == '/api/user/sync' && startStaleSync) {
+            staleRequest.complete();
+            return staleReply.future;
+          }
+          if (request.url.path == '/api/user/status' && !statusAvailable) {
+            return http.Response('{}', 503);
           }
           if (request.url.path == '/api/user/pay-check') {
             if (status == 'offline') throw http.ClientException('offline');

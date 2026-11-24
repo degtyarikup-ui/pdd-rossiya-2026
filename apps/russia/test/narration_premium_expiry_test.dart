@@ -27,7 +27,6 @@ void main() {
     overrides: [
       premiumServiceProvider.overrideWithValue(service),
       progressImportsProvider.overrideWith((_) => const Stream.empty()),
-      authAndPremiumStreamProvider.overrideWith((_) => const Stream.empty()),
     ],
   );
 

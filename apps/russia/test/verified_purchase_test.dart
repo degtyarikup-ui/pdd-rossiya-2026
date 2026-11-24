@@ -186,7 +186,7 @@ void main() {
             // The server committed the purchase; the phone lost the answer.
             throw http.ClientException('connection closed');
           }
-          if (request.url.path == '/api/user/sync') {
+          if (request.url.path == '/api/user/status') {
             if (!synced.isCompleted) synced.complete();
             return granted();
           }
@@ -309,7 +309,7 @@ void main() {
               checks++;
               return http.Response('upstream unavailable', status);
             }
-            if (request.url.path == '/api/user/sync') {
+            if (request.url.path == '/api/user/status') {
               syncs++;
               synced.complete();
               return http.Response(

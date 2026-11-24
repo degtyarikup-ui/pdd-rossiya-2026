@@ -109,8 +109,10 @@ class PremiumService extends ChangeNotifier {
   int? _serverAiRemaining;
   int? _serverAiLimit;
   DateTime? _serverAiResetsAt;
+  bool _quotaWasPremium = false;
   bool get _aiQuotaFresh =>
       _serverAiRemaining != null &&
+      _quotaWasPremium == isPremium &&
       (_serverAiResetsAt == null ||
           DateTime.now().isBefore(_serverAiResetsAt!));
   bool get hasServerAiQuota => _aiQuotaFresh;
@@ -119,6 +121,7 @@ class PremiumService extends ChangeNotifier {
       : (isPremium ? 200 : aiFreeLimit);
   void applyAiQuota(Map<String, dynamic> data) {
     if (data['remaining'] is! num) return;
+    _quotaWasPremium = isPremium;
     _serverAiRemaining = math.max(0, (data['remaining'] as num).toInt());
     if (data['limit'] is num) _serverAiLimit = (data['limit'] as num).toInt();
     if (data['resetsAt'] is String) {
@@ -468,11 +471,11 @@ class PremiumService extends ChangeNotifier {
   }
 
   /// Picks up administrative grants and store renewals while the app is open.
-  Future<void> checkForGrant() async {
+  Future<bool> checkForGrant({bool afterPayment = false}) async {
     final user = AuthService.instance.currentUser;
-    if (user == null || !AuthService.instance.hasServerSession) return;
+    if (user == null || !AuthService.instance.hasServerSession) return false;
     if (!BackendConfig.hasNotifier && !AuthService.instance.isDevSession) {
-      return;
+      return false;
     }
     final revision = AuthService.instance.accountRevision;
     final entitlementRevision = _entitlementRevision;
@@ -484,10 +487,10 @@ class PremiumService extends ChangeNotifier {
       if (resp.statusCode != 200 ||
           revision != AuthService.instance.accountRevision ||
           entitlementRevision != _entitlementRevision) {
-        return;
+        return false;
       }
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      if (!_hasValidPremiumState(data)) return;
+      if (!_hasValidPremiumState(data)) return false;
       final serverIsPremium = data['isPremium'] == true;
       final serverExpiresAt = DateTime.tryParse(
         data['premiumExpiresAt'] as String? ?? '',
@@ -495,8 +498,10 @@ class PremiumService extends ChangeNotifier {
       await _handleGrantNotice(data, user.id, serverIsPremium, serverExpiresAt);
       if (revision != AuthService.instance.accountRevision ||
           entitlementRevision != _entitlementRevision) {
-        return;
+        return false;
       }
+      // Ignore background reads started before this confirmed payment.
+      if (afterPayment) _entitlementRevision++;
       if (serverIsPremium != _isPremium ||
           serverExpiresAt != _expiresAt ||
           data['premiumSource'] != _purchaseStore) {
@@ -506,8 +511,10 @@ class PremiumService extends ChangeNotifier {
         await _saveState();
         notifyListeners();
       }
+      return true;
     } catch (e) {
       debugPrint('PremiumService: checkForGrant error: $e');
+      return false;
     }
   }
 
@@ -625,7 +632,7 @@ class PremiumService extends ChangeNotifier {
           // A gateway can time out after the account committed the receipt.
           // Reconcile access now; only a later receipt confirmation may finish
           // the store transaction, so this never permits a second charge.
-          unawaited(syncWithServer());
+          unawaited(checkForGrant(afterPayment: true));
         }
         return false;
       }
@@ -669,7 +676,9 @@ class PremiumService extends ChangeNotifier {
       );
       // The server may finish a check after the phone stopped waiting. Re-read
       // the account so an already granted Premium appears without a retry.
-      if (isRetryableNetworkError(error)) unawaited(syncWithServer());
+      if (revision == auth.accountRevision && isRetryableNetworkError(error)) {
+        unawaited(checkForGrant(afterPayment: true));
+      }
       return false;
     }
   }
@@ -842,7 +851,10 @@ class PremiumService extends ChangeNotifier {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final status = data['status'] as String?;
       if (status == null) return null;
-      if (status == 'confirmed') await syncWithServer();
+      if (status == 'confirmed' && !await checkForGrant(afterPayment: true)) {
+        // Keep the order recoverable until the account state has been read.
+        return null;
+      }
       if (revision != auth.accountRevision) return null;
       final url = data['url'] as String?;
       return (

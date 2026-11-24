@@ -527,37 +527,18 @@ final wrongQuestionIdsProvider = FutureProvider<List<String>>((ref) async {
       .toList();
 });
 
-final authAndPremiumStreamProvider = StreamProvider<int>((ref) async* {
-  var count = 0;
-  yield count;
-  final controller = StreamController<int>();
-  void listener() {
-    if (!controller.isClosed) {
-      count++;
-      controller.add(count);
-    }
-  }
-
-  AuthService.instance.addListener(listener);
-  PremiumService.instance.addListener(listener);
-
-  ref.onDispose(() {
-    AuthService.instance.removeListener(listener);
-    PremiumService.instance.removeListener(listener);
-    controller.close();
-  });
-
-  yield* controller.stream;
-});
-
 final premiumServiceProvider = Provider<PremiumService>((ref) {
-  return PremiumService.instance;
+  final service = PremiumService.instance;
+  // The singleton outlives ProviderScope. Forward changes synchronously so a
+  // paywall caller can read the unlocked feature as soon as the purchase ends.
+  service.addListener(ref.notifyListeners);
+  ref.onDispose(() => service.removeListener(ref.notifyListeners));
+  return service;
 });
 
 final isPremiumProvider = Provider<bool>((ref) {
   ref.watch(appDataRefreshProvider);
   ref.watch(progressImportsProvider);
-  ref.watch(authAndPremiumStreamProvider);
   final service = ref.watch(premiumServiceProvider);
   final premium = service.isPremium;
   final expiresAt = service.expiresAt;
@@ -579,29 +560,25 @@ final isPremiumProvider = Provider<bool>((ref) {
 final dailyCardsRemainingProvider = Provider<int>((ref) {
   ref.watch(appDataRefreshProvider);
   ref.watch(progressImportsProvider);
-  ref.watch(authAndPremiumStreamProvider);
-  return PremiumService.instance.remainingFreeCards;
+  return ref.watch(premiumServiceProvider).remainingFreeCards;
 });
 
 final dailyFreeLimitProvider = Provider<int>((ref) {
   ref.watch(appDataRefreshProvider);
   ref.watch(progressImportsProvider);
-  ref.watch(authAndPremiumStreamProvider);
-  return PremiumService.instance.dailyFreeLimit;
+  return ref.watch(premiumServiceProvider).dailyFreeLimit;
 });
 
 final aiMessagesRemainingProvider = Provider<int>((ref) {
   ref.watch(appDataRefreshProvider);
   ref.watch(progressImportsProvider);
-  ref.watch(authAndPremiumStreamProvider);
-  return PremiumService.instance.remainingAiMessages;
+  return ref.watch(premiumServiceProvider).remainingAiMessages;
 });
 
 final aiMessagesLimitProvider = Provider<int>((ref) {
   ref.watch(appDataRefreshProvider);
   ref.watch(progressImportsProvider);
-  ref.watch(authAndPremiumStreamProvider);
-  return PremiumService.instance.aiFreeLimit;
+  return ref.watch(premiumServiceProvider).aiDailyLimit;
 });
 
 final feedRepositoryProvider = Provider<FeedRepository>((ref) {
