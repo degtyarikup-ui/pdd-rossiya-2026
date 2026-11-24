@@ -11,7 +11,13 @@ test('a grant is bound to its verifier and can be redeemed once', async () => {
       const storage = {get:k=>entries.get(k),put:(k,v)=>entries.set(k,v),delete:k=>entries.delete(k),
         setAlarm() {}, transaction(fn) { return fn(this); }};
       const grant = new SchoolLoginGrant({ storage });
-      objects.set(code, {fetch:(url, init)=>grant.fetch(new Request(url,init))});
+      objects.set(code, {async fetch(url, init) {
+        const response = await grant.fetch(new Request(url, init));
+        // Network responses have immutable headers in workerd.
+        const immutableHeaders = Response.redirect('https://school-grant/').headers;
+        Object.defineProperty(response, 'headers', {value: immutableHeaders});
+        return response;
+      }});
     }
     return objects.get(code);
   }}};
@@ -20,7 +26,10 @@ test('a grant is bound to its verifier and can be redeemed once', async () => {
   const send = (op, body, user=identity) => {
     const path = '/api/auth/schools/' + op;
     const request = new Request('https://api.pdd-drive.app' + path, {method:'POST',headers:{origin:'https://pdd-drive.app'},body:JSON.stringify(body)});
-    return schoolLogin(request, env, path, async () => user ? {user} : null, tokenHash);
+    return schoolLogin(request, env, path, async () => user ? {user} : null, tokenHash).then(response => {
+      response.headers.set('Access-Control-Allow-Origin', '*');
+      return response;
+    });
   };
   const challenge = await tokenHash(verifier);
   assert.equal((await send('authorize',{challenge},null)).status, 401);

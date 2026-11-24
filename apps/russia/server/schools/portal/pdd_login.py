@@ -47,22 +47,21 @@ def redeem(code, verifier):
     endpoint = "https://api.pdd-drive.app/api/auth/schools/redeem"
     data = {"code": code, "verifier": verifier}
     if os.environ.get("PDD_SCHOOLS_CLOUDFLARE"):
-        from pyodide.ffi import run_sync
-        from workers import fetch
+        from pyodide.ffi import JsException, run_sync
+        from workers import import_from_javascript
 
-        async def exchange():
-            response = await fetch(
-                endpoint,
-                method="POST",
-                redirect="error",
-                headers={"Content-Type": "application/json"},
-                body=json.dumps(data),
-            )
-            return await response.json() if response.status == 200 else None
-
-        return run_sync(exchange())
+        service = import_from_javascript("school-identity.mjs")
+        try:
+            raw = run_sync(service.redeemSchoolGrant(endpoint, json.dumps(data)))
+        except JsException as exc:
+            raise OSError("School sign-in unavailable") from exc
+        return json.loads(raw) if raw else None
     response = requests.post(endpoint, json=data, timeout=8, allow_redirects=False)
-    return response.json() if response.status_code == 200 else None
+    if response.status_code == 400:
+        return None
+    if response.status_code != 200:
+        raise OSError("School sign-in unavailable")
+    return response.json()
 
 
 @require_GET

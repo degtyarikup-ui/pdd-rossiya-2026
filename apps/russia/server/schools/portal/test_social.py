@@ -336,3 +336,16 @@ class ProviderTests(TransactionTestCase):
                 1,
             )
         self.assertFalse(Employee.objects.exists())
+
+    @patch("portal.pdd_login.requests.post")
+    def test_app_login_offers_a_fresh_start_when_exchange_fails(self, redeem):
+        for upstream, expected in [(400, 400), (302, 503), (500, 503)]:
+            with self.subTest(upstream=upstream):
+                started = self.client.post(reverse("pdd_login"))
+                state = parse_qs(urlparse(started.url).query)["school_state"][0]
+                redeem.return_value.status_code = upstream
+                result = self.client.get(
+                    reverse("pdd_callback"), {"code": "b" * 64, "state": state}
+                )
+                self.assertContains(result, reverse("account_login"), status_code=expected)
+                self.assertNotIn("_auth_user_id", self.client.session)

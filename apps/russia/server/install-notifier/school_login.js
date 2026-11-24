@@ -57,5 +57,7 @@ export async function schoolLogin(request, env, path, readSession, tokenHash) {
   }
   const store = env.SCHOOL_GRANTS.get(env.SCHOOL_GRANTS.idFromName(code));
   const response = await store.fetch('https://school-grant/', { method: 'POST', body: JSON.stringify(payload) });
-  return issue && response.ok ? reply({ code }) : response;
+  if (issue && response.ok) return reply({ code });
+  // The API adds CORS headers. A Durable Object fetch returns immutable headers.
+  return new Response(response.body, response);
 }

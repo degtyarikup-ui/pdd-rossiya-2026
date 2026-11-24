@@ -12,6 +12,7 @@ target.mkdir(parents=True, exist_ok=True)
 for name in (
     "entry.py",
     "school-mail.mjs",
+    "school-identity.mjs",
     "pyproject.toml",
     "pylock.toml",
     "wrangler.jsonc",

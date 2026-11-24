@@ -1,0 +1,7 @@
+{% extends "portal/base.html" %}
+{% block title %}Кабинет временно недоступен{% endblock %}
+{% block content %}
+<h1>Не удалось открыть кабинет</h1>
+<p>Попробуйте ещё раз через минуту.</p>
+<a class="btn btn-primary" href="{% url 'account_login' %}">Вернуться ко входу</a>
+{% endblock %}

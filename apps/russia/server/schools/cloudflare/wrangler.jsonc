@@ -33,6 +33,9 @@
       ]
     }
   ],
+  "services": [
+    { "binding": "PDD_IDENTITY", "service": "pdd-install-notifier" }
+  ],
   "send_email": [
     {
       "name": "EMAIL"
@@ -53,7 +56,8 @@
     {
       "type": "ESModule",
       "globs": [
-        "school-mail.mjs"
+        "school-mail.mjs",
+        "school-identity.mjs"
       ],
       "fallthrough": true
     }
