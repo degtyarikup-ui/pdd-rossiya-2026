@@ -24,7 +24,7 @@ def private_responses(get_response):
         response["Cache-Control"] = "private, no-store"
         response["Content-Security-Policy"] = (
             "default-src 'self'; img-src 'self' data:; object-src 'none'; "
-            "frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+            "frame-ancestors 'none'; base-uri 'none'; form-action 'self' https://pdd-drive.app"
         )
         if request.path == "/accounts/google/login/" and response.status_code == 200:
             response["Content-Security-Policy"] += (

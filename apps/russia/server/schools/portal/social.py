@@ -119,6 +119,7 @@ def apple_start(request):
 
 def provider_names(request):
     return {
+        "school_shared_login": not settings.LOCAL,
         "school_providers": (
             ("google", "Google"),
             ("yandex", "Яндекс"),

@@ -1,0 +1,66 @@
+{
+  "name": "pdd-schools",
+  "main": "entry.py",
+  "account_id": "a4eee3dae596a9dd9ea14dc123874f9d",
+  "compatibility_date": "2026-11-24",
+  "compatibility_flags": [
+    "python_workers"
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "schools.pdd-drive.app",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": "./public"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "PORTAL",
+        "class_name": "SchoolPortal"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "SchoolPortal"
+      ]
+    }
+  ],
+  "send_email": [
+    {
+      "name": "EMAIL"
+    }
+  ],
+  "limits": {
+    "cpu_ms": 30000
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "invocation_logs": false
+    },
+    "redact_query_string": true
+  },
+  "find_additional_modules": true,
+  "rules": [
+    {
+      "type": "ESModule",
+      "globs": [
+        "school-mail.mjs"
+      ],
+      "fallthrough": true
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "17 * * * *"
+    ]
+  }
+}

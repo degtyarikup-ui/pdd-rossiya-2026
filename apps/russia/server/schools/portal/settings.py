@@ -126,6 +126,10 @@ if LOCAL:
     EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
     EMAIL_FILE_PATH = STATE / "mail"
     DEFAULT_FROM_EMAIL = "schools@pdd.test"
+elif os.environ.get("PDD_SCHOOLS_CLOUDFLARE"):
+    PASSWORD_HASHERS = ["portal.cloud_password.WorkerPasswordHasher"]
+    EMAIL_BACKEND = "portal.cloud_mail.EmailBackend"
+    DEFAULT_FROM_EMAIL = "cabinet@schools.pdd-drive.app"
 else:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = os.environ["PDD_SCHOOLS_SMTP_HOST"]

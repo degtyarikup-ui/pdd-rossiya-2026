@@ -31,6 +31,17 @@ def reply(data):
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class ProviderTests(TransactionTestCase):
+    def test_worker_hashes_are_compatible_with_django(self):
+        from django.contrib.auth.hashers import PBKDF2PasswordHasher
+
+        from .cloud_password import WorkerPasswordHasher
+
+        password, salt = secrets.token_urlsafe(), secrets.token_hex(12)
+        self.assertEqual(
+            WorkerPasswordHasher().encode(password, salt, iterations=2048),
+            PBKDF2PasswordHasher().encode(password, salt, iterations=2048),
+        )
+
     def test_methods_on_login_and_signup(self):
         for route in ("account_login", "account_signup"):
             html = self.client.get(reverse(route))
@@ -289,3 +300,39 @@ class ProviderTests(TransactionTestCase):
         linked = SocialAccount.objects.get(provider="google", uid="same-email")
         self.assertEqual(linked.user_id, existing.pk)
         self.assertEqual(get_user_model().objects.count(), 1)
+
+    @patch("portal.pdd_login.requests.post")
+    def test_app_login_keeps_identity_and_checks_the_initiating_session(self, redeem):
+        for provider in ("google", "yandex", "apple", "telegram"):
+            for _ in range(2):
+                self.client = Client()
+                response = self.client.post(reverse("pdd_login"))
+                query = parse_qs(urlparse(response.url).query)
+                code = "a" * 64
+                self.assertEqual(
+                    self.client.get(
+                        reverse("pdd_callback"), {"code": code, "state": "b" * 64}
+                    ).status_code,
+                    400,
+                )
+                redeem.return_value = reply(
+                    {
+                        "provider": provider,
+                        "uid": "id-with_suffix",
+                        "email": f"{provider}@example.test",
+                        "name": "Сотрудник",
+                    }
+                )
+                callback = {"code": code, "state": query["school_state"][0]}
+                self.client.get(reverse("pdd_callback"), callback)
+                self.assertIn("_auth_user_id", self.client.session)
+                self.assertEqual(
+                    self.client.get(reverse("pdd_callback"), callback).status_code, 400
+                )
+            self.assertEqual(
+                SocialAccount.objects.filter(
+                    provider=provider, uid="id-with_suffix"
+                ).count(),
+                1,
+            )
+        self.assertFalse(Employee.objects.exists())
