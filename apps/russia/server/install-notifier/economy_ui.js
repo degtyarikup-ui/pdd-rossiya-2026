@@ -90,11 +90,11 @@ export const ECONOMY_VIEW_HTML = String.raw`
 .ec-share-table tbody th{color:inherit;text-transform:none;letter-spacing:normal}
 .ec-share-name{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px}
 .ec-share-name h3{margin:0;font-size:var(--admin-type-title);font-weight:var(--admin-weight-semibold);overflow-wrap:anywhere}
-.ec-share-name span,.ec-share-credit{color:var(--text-muted);font-size:var(--admin-type-caption);font-weight:normal}
+.ec-share-name span{color:var(--text-muted);font-size:var(--admin-type-caption);font-weight:normal}
 .ec-share-table td{overflow-wrap:anywhere}
 .ec-share-table .ec-share-balance{font-weight:var(--admin-weight-semibold)}
 .ec-share-table .ec-share-na{color:var(--text-muted)}
-.ec-share-credit{display:block}
+.ec-share-negative{color:#B1432D}
 .ec-share-caption{display:none}
 .ec-shares-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;margin-top:12px}
 @container(max-width:640px){
@@ -340,15 +340,16 @@ export const ECONOMY_CLIENT_JS = String.raw`
    var row='<th scope="row"><div class="ec-share-name"><h3>'+esc(share.name)+'</h3><span>'+pct(share.percent)+'</span></div></th>'+
     '<td><span class="ec-share-caption" aria-hidden="true">Начислено</span>'+usd(share.payoutUsd)+'</td>';
    if(monthly){
-    var overpaid=share.remainingUsd<0;
-    var balance=overpaid?'<span class="ec-share-credit">'+(fund?'Перерасход':'Переплата')+'</span>':'<span class="ec-share-caption" aria-hidden="true">Остаток</span>';
+    var negative=share.remainingUsd<0;
+    var balance=usd(Math.abs(share.remainingUsd));
+    if(negative)balance='<span class="ec-share-negative">-'+balance+'</span>';
     var action='';
     if(activeIds.has(share.id)){
      action=fund?'<button type="button" class="ec-link" data-fund-expense="'+esc(share.id)+'">Внести расход</button>':
       '<button type="button" class="ec-link ec-pay-partner" data-pay-partner="'+esc(share.id)+'" aria-label="'+esc('Внести выплату · '+share.name)+'">Внести выплату</button>';
     }
     row+='<td><span class="ec-share-caption" aria-hidden="true">'+(fund?'Потрачено':'Выплачено')+'</span>'+usd(share.paidUsd)+'</td>'+
-     '<td class="ec-share-balance">'+balance+usd(Math.abs(share.remainingUsd))+'</td><td class="ec-share-action">'+action+'</td>';
+     '<td class="ec-share-balance"><span class="ec-share-caption" aria-hidden="true">Остаток</span>'+balance+'</td><td class="ec-share-action">'+action+'</td>';
    }
    return '<tr class="ec-allocation-item'+(monthly?'':' ec-allocation-only')+'">'+row+'</tr>';
   }).join('');

@@ -550,11 +550,17 @@ if (!process.argv.includes('--serve')) test('share rows show accruals, payouts a
       const fund = id.startsWith('fund-');
       const values = [payoutUsd,paidUsd,remainingUsd];
       assert.deepEqual(displayed.match(/\$[\d   ]+,\d{2}/gu) || [], values.map(usd), name);
-      assert.equal(displayed.includes('Переплата'), !fund && remainingUsd<0, name);
+      const balance = row.locator('.ec-share-balance');
+      const negative = balance.locator('.ec-share-negative');
+      assert.equal(await balance.innerText(), (remainingUsd<0 ? '-' : '')+usd(remainingUsd), name);
+      assert.equal(await negative.count(), remainingUsd<0 ? 1 : 0, name);
+      if (remainingUsd<0) assert.equal(await negative.evaluate(amount => getComputedStyle(amount).color), 'rgb(177, 67, 45)', name);
       assert.equal(await row.getByRole('button',{name:/Внести выплату/}).count(), fund ? 0 : 1, name);
       assert.equal(await row.getByRole('button',{name:'Внести расход'}).count(),fund ? 1 : 0);
     }
     await page.setViewportSize({width:320,height:800});
+    const overpaid = current.settlements.find(share => share.name==='Дарья');
+    assert.equal(await rowFor(overpaid.name).locator('.ec-share-balance').innerText(), 'Остаток\n-'+usd(overpaid.remainingUsd));
     assert.ok(await rows.evaluateAll(items => items.every(row => row.scrollWidth <= row.clientWidth+1)));
     const fundRow = rowFor('В развитие');
     await fundRow.getByRole('button',{name:'Внести расход'}).click();
