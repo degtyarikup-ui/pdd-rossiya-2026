@@ -194,14 +194,23 @@ test('Google free, canceled and paid phases use store evidence even when autoRen
     const canceled = await verify();
     assert.equal(canceled.freeTrial, true); assert.equal(canceled.active, true);
     assert.equal(canceled.reference.paid, false); assert.equal(canceled.userCanceled, true);
+    assert.equal(canceled.paymentNumber, null);
     assert.equal(canceled.autoRenewEnabled, false);
     data.canceledStateContext = { systemInitiatedCancellation: {} };
     assert.equal((await verify()).userCanceled, false);
     data.subscriptionState = 'SUBSCRIPTION_STATE_ACTIVE';
     line.offerPhase = { basePrice: {} }; line.latestSuccessfulOrderId += '..0';
-    assert.equal((await verify()).firstChargeAfterTrial, true);
+    const firstPaid = await verify();
+    assert.equal(firstPaid.firstChargeAfterTrial, true);
+    assert.equal(firstPaid.paymentNumber, 1);
+    line.latestSuccessfulOrderId = 'GPA.123..2';
+    assert.equal((await verify()).paymentNumber, 3);
+    line.offerDetails.offerId = 'unknown-offer';
+    assert.equal((await verify()).paymentNumber, null);
     delete line.offerDetails.offerId;
-    assert.equal((await verify()).firstChargeAfterTrial, false);
+    const standardRenewal = await verify();
+    assert.equal(standardRenewal.firstChargeAfterTrial, false);
+    assert.equal(standardRenewal.paymentNumber, 4);
   } finally { globalThis.fetch = original; }
 });
 

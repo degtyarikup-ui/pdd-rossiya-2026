@@ -23,7 +23,7 @@ export function withStoreDeadline(promise, ms) {
   return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
 }
 async function fetchJson(url, options = {}) {
-  const response = await fetch(url, { ...options, signal: AbortSignal.timeout(10000) });
+  const response = await fetch(url, { ...options, signal: options.signal ?? AbortSignal.timeout(10000) });
   if (!response.ok) throw new StoreError('store verification unavailable', response.status === 404 || response.status === 410 ? 422 : 503);
   return response.json();
 }
@@ -104,6 +104,53 @@ function applePaid(transaction) {
   return transaction.price == null ? null : Number(transaction.price) > 0;
 }
 
+async function applePaymentNumber(host, headers, current) {
+  const { bundleId, environment, originalTransactionId, transactionId, purchaseDate } = current;
+  if (applePaid(current) !== true || !Number.isSafeInteger(purchaseDate) ||
+      current.inAppOwnershipType === 'FAMILY_SHARED') return null;
+
+  // Fetch only for new renewal logs. All pages share a deadline so an
+  // unavailable history endpoint cannot hold up access or suppress the log.
+  const signal = AbortSignal.timeout(3500);
+  const url = new URL(`https://${host}/inApps/v2/history/${transactionId}`);
+  url.searchParams.set('productType', 'AUTO_RENEWABLE');
+  url.searchParams.set('endDate', String(purchaseDate + 1));
+  const transactions = new Map();
+  const revisions = new Set();
+  try {
+    for (;;) {
+      const page = await fetchJson(url, { headers, signal });
+      if (page.bundleId !== bundleId || page.environment !== environment ||
+          !Array.isArray(page.signedTransactions) || typeof page.hasMore !== 'boolean') return null;
+      for (const payload of page.signedTransactions) {
+        const entry = decodeJwt(payload);
+        if (entry.originalTransactionId !== originalTransactionId) continue;
+        if (entry.bundleId !== bundleId || entry.environment !== environment ||
+            !/^\d{1,40}$/.test(entry.transactionId) || !Number.isSafeInteger(entry.purchaseDate)) return null;
+        transactions.set(entry.transactionId, entry);
+      }
+      if (!page.hasMore) break;
+      if (!page.revision || typeof page.revision !== 'string' || revisions.has(page.revision)) return null;
+      revisions.add(page.revision);
+      url.searchParams.set('revision', page.revision);
+    }
+  } catch {
+    return null;
+  }
+
+  if (!transactions.has(originalTransactionId)) return null;
+  let number = 1; // The current charge is already verified by Get Transaction Info or subscription status.
+  for (const entry of transactions.values()) {
+    if (entry.transactionId === transactionId || entry.purchaseDate > purchaseDate ||
+        entry.revocationDate || entry.inAppOwnershipType === 'FAMILY_SHARED') continue;
+    const paid = applePaid(entry);
+    if (paid === false) continue;
+    if (paid === null || entry.purchaseDate === purchaseDate) return null;
+    number++;
+  }
+  return number;
+}
+
 export async function verifyStorePurchase(body, env, userId, { refresh = false } = {}) {
   const { store, country } = body || {};
   let productId = body?.productId;
@@ -141,10 +188,18 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
       && (line.offerPhase?.basePrice || line.offerPhase?.introductoryPrice) ? true : null;
     const userCanceled = data.subscriptionState === 'SUBSCRIPTION_STATE_CANCELED' &&
       Boolean(data.canceledStateContext?.userInitiatedCancellation);
+    const offerId = line?.offerDetails?.offerId;
+    const trialOffer = isTrialProduct(productId) && offerId === 'trial-3-days';
+    // Play numbers recurring orders from ..0. The initial order is paid
+    // except for the known offer whose initial period is a free trial.
+    const renewalIndex = Number(line?.latestSuccessfulOrderId?.match(/^GPA\.[\d-]+\.\.(\d+)$/)?.[1]);
+    const paymentNumber = !isTest && !free && (!offerId || trialOffer)
+      ? renewalIndex + (trialOffer ? 1 : 2) : NaN;
     return { ...googleEntitlement(data, productId), freeTrial, userCanceled,
+      paymentNumber: Number.isSafeInteger(paymentNumber) ? paymentNumber : null,
       // Play keeps the selected acquisition offer on the subscription. ..0
       // identifies its first recurring order, including for pre-rollout trials.
-      firstChargeAfterTrial: paid === true && isTrialProduct(productId) && line.offerDetails?.offerId === 'trial-3-days' &&
+      firstChargeAfterTrial: paid === true && trialOffer &&
         /\.\.0$/.test(line.latestSuccessfulOrderId),
       trialStartedAt: freeTrial ? data.startTime : null,
       canceledAt: userCanceled ? data.canceledStateContext.userInitiatedCancellation.cancelTime : null,
@@ -167,20 +222,23 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
   // Production first; a transaction unknown there is looked up in the
   // sandbox (App Review and TestFlight buy there), as Apple recommends.
   // The environment is decided by Apple's answer, never by the client.
+  const productionHost = 'api.storekit.apple.com', sandboxHost = 'api.storekit-sandbox.apple.com';
   const url = host => `https://${host}/inApps/v1/transactions/${transactionId}`;
+  const headers = { Authorization: `Bearer ${token}` };
   let response;
   let sandbox = env.APPLE_IAP_ENVIRONMENT === 'sandbox';
   if (sandbox) {
-    response = await fetchJson(url('api.storekit-sandbox.apple.com'), { headers: { Authorization: `Bearer ${token}` } });
+    response = await fetchJson(url(sandboxHost), { headers });
   } else {
     try {
-      response = await fetchJson(url('api.storekit.apple.com'), { headers: { Authorization: `Bearer ${token}` } });
+      response = await fetchJson(url(productionHost), { headers });
     } catch (e) {
       if (!(e instanceof StoreError && e.status === 422)) throw e; // 404 from production
-      response = await fetchJson(url('api.storekit-sandbox.apple.com'), { headers: { Authorization: `Bearer ${token}` } });
+      response = await fetchJson(url(sandboxHost), { headers });
       sandbox = true;
     }
   }
+  const host = sandbox ? sandboxHost : productionHost;
   // This JWS comes directly from Apple's authenticated HTTPS API, never the client.
   let data = decodeJwt(response.signedTransactionInfo);
   if (data.bundleId !== bundleId || data.productId !== productId || String(data.transactionId) !== transactionId ||
@@ -197,8 +255,7 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
   // on renewal, so refresh (and restoring an older period) must look up
   // the current subscription instead of repeatedly checking the old receipt.
   if (refresh || (!data.revocationDate && !active)) {
-    const host = sandbox ? 'api.storekit-sandbox.apple.com' : 'api.storekit.apple.com';
-    const statuses = await fetchJson(`https://${host}/inApps/v1/subscriptions/${transactionId}`, { headers: { Authorization: `Bearer ${token}` } });
+    const statuses = await fetchJson(`https://${host}/inApps/v1/subscriptions/${transactionId}`, { headers });
     if (statuses.environment !== data.environment || statuses.bundleId !== bundleId || !Array.isArray(statuses.data)) {
       throw new StoreError('invalid subscription status');
     }
@@ -235,6 +292,7 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
     purchaseDate: data.purchaseDate, billingPeriodEndsAt: data.expiresDate,
     renewal: data.transactionReason === 'RENEWAL', orderId: String(data.transactionId), key: `appstore:${data.originalTransactionId}`,
     money: { milliunits: data.price, currency: data.currency },
+    getPaymentNumber: () => applePaymentNumber(host, headers, data),
     accountingTransactions: (initialTransaction.transactionId === data.transactionId ? [data] : [initialTransaction, data]).map(transaction => ({
       orderId: String(transaction.transactionId), purchaseDate: transaction.purchaseDate,
       money: { milliunits: transaction.price, currency: transaction.currency },

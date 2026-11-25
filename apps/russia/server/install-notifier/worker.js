@@ -737,7 +737,8 @@ export function buildPremiumPurchaseMessage(p) {
   const lines = [
     premiumBanner(p.tier, p.renewal),
     p.trialConversion ? '<b>💳 Первая оплата после пробного периода</b>'
-      : p.renewal ? '<b>Автопродление Premium</b>' : '<b>Покупка Premium</b>',
+      : p.renewal && Number.isSafeInteger(p.paymentNumber) && p.paymentNumber >= 2 ? `<b>${p.paymentNumber} продление Premium</b>`
+      : p.renewal && p.paymentNumber !== 1 ? '<b>Продление Premium</b>' : '<b>Покупка Premium</b>',
     '',
     `• <b>Тариф:</b> ${tierStr}`,
     `• <b>Пользователь:</b> ${name}`,
@@ -812,8 +813,12 @@ async function logStorePurchase(env, user, verified, details = {}) {
         ? new Intl.NumberFormat('ru-RU', { style: 'currency', currency: money.currency }).format(money.milliunits / 1000)
         : null;
     }
+    const paymentNumber = verified.renewal && !details.trialConversion
+      ? verified.paymentNumber ?? await verified.getPaymentNumber?.()
+      : null;
     const msg = buildPremiumPurchaseMessage({ ...user, ...details, tier, store, platform, price, purchaseDate: verified.purchaseDate,
-      expiresAt: verified.expiresAt, orderId: verified.orderId, renewal: verified.renewal, autoRenewEnabled: verified.autoRenewEnabled });
+      expiresAt: verified.expiresAt, orderId: verified.orderId, renewal: verified.renewal, paymentNumber,
+      autoRenewEnabled: verified.autoRenewEnabled });
     const notification = await sendTelegram(env, msg, key, { topic: 'purchases' });
     if (!notification.ok) throw new Error('purchase notification queue unavailable');
   }

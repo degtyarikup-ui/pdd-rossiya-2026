@@ -71,6 +71,10 @@ async function statusResponse(data, status = 1, renewal) {
     data: [{ lastTransactions: [{ originalTransactionId: data.originalTransactionId, status,
       signedTransactionInfo: await signed(data), ...(renewal ? { signedRenewalInfo: await signed(renewal) } : {}) }] }] });
 }
+async function historyResponse(entries, { hasMore = false, revision = 'complete' } = {}) {
+  return Response.json({ environment: 'Production', bundleId: 'ru.pdd.pddApp', hasMore, revision,
+    signedTransactions: await Promise.all(entries.map(signed)) });
+}
 test('one quarterly Apple renewal notification for repeated verified callbacks', async () => {
   const id = 'apple_test', productId = 'ru.pdd.pddApp.sub.3months';
   const records = new Map([['user:' + id, JSON.stringify({ id, app: 'ru' })]]);
@@ -78,17 +82,57 @@ test('one quarterly Apple renewal notification for repeated verified callbacks',
   const e = { ...env, __ACCOUNT_ID: id, BOT_TOKEN: 'test', CHAT_ID: 'test', __DURABLE_EFFECTS: effects,
     INSTALLS: { get: async key => records.get(key), put: async (key, value) => records.set(key, value) },
     PURCHASE_CLAIMS: { idFromName: key => key, get: () => ({ fetch: async () => Response.json({ userId: id }) }) } };
-  const data = transaction({ productId, price: 290000, transactionReason: 'RENEWAL' });
+  const purchaseDate = Date.now() - 60000;
+  const data = transaction({ productId, purchaseDate, price: 290000, transactionReason: 'RENEWAL' });
+  const original = transaction({ transactionId: '100', purchaseDate: purchaseDate - 90 * 86400000, price: 290000 });
+  let historyRequests = 0;
   const event = renewalEvent => new Request('https://internal/_account/iap-event', {
     method: 'POST', body: JSON.stringify({ reference: { ...body, productId }, key: 'appstore:100', renewalEvent }) });
-  await withApple(async url => new URL(url).pathname.includes('/subscriptions/') ? statusResponse(data)
-    : Response.json({ signedTransactionInfo: await signed(data) }), async () => {
+  await withApple(async url => {
+    const endpoint = new URL(url);
+    if (endpoint.pathname.includes('/history/')) {
+      historyRequests++;
+      assert.equal(endpoint.pathname, '/inApps/v2/history/123');
+      assert.equal(endpoint.searchParams.get('productType'), 'AUTO_RENEWABLE');
+      assert.equal(endpoint.searchParams.get('endDate'), String(purchaseDate + 1));
+      return historyResponse([original]);
+    }
+    return endpoint.pathname.includes('/subscriptions/') ? statusResponse(data)
+      : Response.json({ signedTransactionInfo: await signed(data) });
+  }, async () => {
     for (const renewal of [false, true, true]) {
       assert.equal((await handleAccountMaintenance('/_account/iap-event', event(renewal), e)).status, 200);
       assert.equal(effects.filter(effect => effect.kind === 'telegram').length, Number(renewal));
     }
     const [notice] = effects.filter(effect => effect.kind === 'telegram');
-    assert.ok(notice.text.startsWith('⭐⭐⭐⭐⭐⭐\n✅✅✅\n<b>Автопродление Premium</b>'));
+    assert.ok(notice.text.startsWith('⭐⭐⭐⭐⭐⭐\n✅✅✅\n<b>2 продление Premium</b>'));
+    assert.equal(historyRequests, 1);
+  });
+});
+
+test('Apple payment number follows purchase dates across pages and counts each paid period once', async () => {
+  const purchaseDate = Date.now() - 60000;
+  const current = transaction({ purchaseDate, price: 990, transactionReason: 'RENEWAL' });
+  const earlier = (transactionId, changes = {}) => transaction({ transactionId, price: 990,
+    purchaseDate: purchaseDate - 7 * 86400000, ...changes });
+  const originalTrial = earlier('100', { price: 0, offerDiscountType: 'FREE_TRIAL' });
+  const paid = [earlier('121'), earlier('122', { purchaseDate: purchaseDate - 3600000 })];
+  const refunded = earlier('120', { revocationDate: Date.now() });
+  const otherSubscription = earlier('110', { originalTransactionId: '109' });
+  const later = earlier('124', { purchaseDate: purchaseDate + 1 });
+  const revisions = [];
+  await withApple(async url => {
+    const endpoint = new URL(url);
+    if (!endpoint.pathname.includes('/history/')) return Response.json({ signedTransactionInfo: await signed(current) });
+    const revision = endpoint.searchParams.get('revision');
+    revisions.push(revision);
+    return revision
+      ? historyResponse([originalTrial, ...paid, refunded, later, current])
+      : historyResponse([paid[0], refunded, otherSubscription], { hasMore: true, revision: 'next' });
+  }, async () => {
+    const result = await verifyStorePurchase(body, env, 'apple_test');
+    assert.equal(await result.getPaymentNumber(), 3);
+    assert.deepEqual(revisions, [null, 'next']);
   });
 });
 test('restoring an App Store receipt logs only a current paid period and uses Apple price and date', async () => {
@@ -120,8 +164,16 @@ test('restoring an App Store receipt logs only a current paid period and uses Ap
       method: 'POST', headers: { 'x-install-secret': e.SHARED_SECRET, authorization: `Bearer ${token}` },
       body: JSON.stringify({ ...body, price: '99 ₽' }),
     }), e);
-    await withApple(async url => new URL(url).pathname.includes('/subscriptions/') ? statusResponse(data, status, renewal)
-      : Response.json({ signedTransactionInfo: await signed(data) }), async () => {
+    let historyRequests = 0;
+    await withApple(async url => {
+      const path = new URL(url).pathname;
+      if (path.includes('/history/')) {
+        historyRequests++;
+        return new Response('', { status: 503 });
+      }
+      return path.includes('/subscriptions/') ? statusResponse(data, status, renewal)
+        : Response.json({ signedTransactionInfo: await signed(data) });
+    }, async () => {
       for (let attempt = 0; attempt < 2; attempt++) {
         const response = await restore();
         assert.equal(response.status, 200);
@@ -129,6 +181,7 @@ test('restoring an App Store receipt logs only a current paid period and uses Ap
       }
     });
     assert.equal(records.has('notified_purch:123'), shouldLog);
+    assert.equal(historyRequests, Number(shouldLog));
     const profile = JSON.parse(records.get('user:' + id));
     const isPaidProduction = data.environment === 'Production' && data.price > 0 && !data.revocationDate;
     assert.equal(profile.purchasedAt, isPaidProduction ? new Date(purchaseDate).toISOString() : undefined);
@@ -142,7 +195,7 @@ test('restoring an App Store receipt logs only a current paid period and uses Ap
       assert.equal(effect.item.revenue.money?.milliunits || 0, data.price);
     }
     if (shouldLog) {
-      assert.match(purchaseEffects[0].text, /<b>Автопродление Premium<\/b>/);
+      assert.match(purchaseEffects[0].text, /<b>Продление Premium<\/b>/);
       assert.match(purchaseEffects[0].text, /0,99\s*\$/);
       assert.doesNotMatch(purchaseEffects[0].text, /99 ₽/);
       assert.ok(purchaseEffects[0].text.includes('Дата транзакции:</b> ' + premiumDate(purchaseDate)));
@@ -283,7 +336,11 @@ test('verified trial, cancellation and first paid order go to their own Telegram
   const e = { ...env, __ACCOUNT_ID: id, BOT_TOKEN: 'test', CHAT_ID: 'test', __DURABLE_EFFECTS: effects,
     INSTALLS: { get: async key => records.get(key), put: async (key, value) => records.set(key, value) },
     PURCHASE_CLAIMS: { idFromName: key => key, get: () => ({ fetch: async () => Response.json({ userId: id }) }) } };
-  let data = transaction({ productId, price: 0, offerDiscountType: 'FREE_TRIAL' });
+  const purchaseDate = Date.now() - 60000;
+  const originalTrial = transaction({ transactionId: '100', productId, purchaseDate: purchaseDate - 93 * 86400000,
+    price: 0, offerDiscountType: 'FREE_TRIAL' });
+  let data = { ...originalTrial, transactionId: '123' };
+  let firstCharge;
   let autoRenewStatus = 1;
   const deliver = async renewalEvent => {
     const request = new Request('https://internal/_account/iap-event', { method: 'POST',
@@ -291,22 +348,27 @@ test('verified trial, cancellation and first paid order go to their own Telegram
         key: 'appstore:100', renewalEvent }) });
     assert.equal((await handleAccountMaintenance('/_account/iap-event', request, e)).status, 200);
   };
-  await withApple(async url => new URL(url).pathname.includes('/subscriptions/')
-    ? statusResponse(data, 1, { originalTransactionId: '100', environment: 'Production', autoRenewStatus })
-    : Response.json({ signedTransactionInfo: await signed(data) }), async () => {
+  await withApple(async url => {
+    const path = new URL(url).pathname;
+    if (path.includes('/history/')) return historyResponse([originalTrial, firstCharge, data]);
+    return path.includes('/subscriptions/')
+      ? statusResponse(data, 1, { originalTransactionId: '100', environment: 'Production', autoRenewStatus })
+      : Response.json({ signedTransactionInfo: await signed(data) });
+  }, async () => {
     await deliver(false);
     autoRenewStatus = 0;
     await deliver(false); await deliver(false);
     autoRenewStatus = 1;
     await deliver(false);
-    data = transaction({ productId, price: 370000, transactionId: '124', transactionReason: 'RENEWAL' });
+    firstCharge = data = transaction({ productId, price: 370000, transactionId: '124',
+      purchaseDate: purchaseDate - 90 * 86400000, transactionReason: 'RENEWAL' });
     await deliver(true); await deliver(true);
-    data = { ...data, transactionId: '125' };
+    data = { ...data, transactionId: '125', purchaseDate };
     await deliver(true);
   });
   const messages = effects.filter(item => item.kind === 'telegram');
   assert.deepEqual(messages.map(item => item.options.topic), ['subscriptions', 'subscriptions', 'purchases', 'purchases']);
-  for (const [i, pattern] of [/бесплатный пробный период/, /Отключено автопродление/, /Первая оплата после пробного периода/, /Автопродление Premium/].entries()) {
+  for (const [i, pattern] of [/бесплатный пробный период/, /Отключено автопродление/, /Первая оплата после пробного периода/, /2 продление Premium/].entries()) {
     assert.match(messages[i].text, pattern);
   }
 });
