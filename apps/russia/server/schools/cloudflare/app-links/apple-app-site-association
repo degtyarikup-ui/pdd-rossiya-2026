@@ -1,7 +1,7 @@
 {
   "applinks": {
     "details": [
-      { "appIDs": ["6T66V45XC7.ru.pdd.pddApp"], "components": [{ "/": "/join/*" }] }
+      { "appIDs": ["6T66V45XC7.ru.pdd.pddApp"], "components": [{ "/": "/join/*" }, { "/": "/student/" }] }
     ]
   }
 }

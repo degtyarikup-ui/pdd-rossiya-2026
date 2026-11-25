@@ -1,7 +1,9 @@
 from django import template
 from django.utils.html import format_html
+from portal.student_links import student_app_link
 
 register = template.Library()
+register.simple_tag(student_app_link)
 
 
 @register.simple_tag

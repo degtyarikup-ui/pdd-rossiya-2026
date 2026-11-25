@@ -1,5 +1,5 @@
-{% extends "portal/base.html" %}
-{% block entrance_action %}<a class="student-entry" href="{% url 'student' %}">Ввести код группы</a>{% endblock %}
+{% extends "portal/base.html" %}{% load school_ui %}
+{% block entrance_action %}<a class="student-entry" href="{% student_app_link %}">Ввести код группы</a>{% endblock %}
 {% block content %}<h1>Кабинет автошколы</h1>{% include "socialaccount/providers.html" %}<form method="post">{% csrf_token %}{{ form.non_field_errors }}
 <p><label for="{{ form.login.id_for_label }}">Электронная почта</label>{{ form.login }}{{ form.login.errors }}</p>
 <p><label for="{{ form.password.id_for_label }}">Пароль</label>{{ form.password }}{{ form.password.errors }}</p>{{ redirect_field }}

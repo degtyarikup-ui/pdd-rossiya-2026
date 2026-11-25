@@ -45,7 +45,11 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="schools.pdd-drive.app" android:pathPrefix="/join/" />
+                <data android:scheme="https" />
+                <data android:host="schools.pdd-drive.app" />
+                <data android:host="join.pdd-drive.app" />
+                <data android:pathPrefix="/join/" />
+                <data android:path="/student/" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

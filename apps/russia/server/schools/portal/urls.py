@@ -8,6 +8,7 @@ from django.views.generic import RedirectView, TemplateView
 
 from . import pdd_login, social
 from . import views as v
+from .student_links import student_app_link
 
 urlpatterns = [
     path("", v.home, name="home"),
@@ -71,7 +72,7 @@ urlpatterns = [
     path("invitation/leave/", v.leave_invitation, name="leave_invitation"),
     path(
         "student/",
-        RedirectView.as_view(url="https://pdd-drive.app/app/?school_group=my"),
+        RedirectView.as_view(url=student_app_link()),
         name="student",
     ),
     path("join/<str:token>/", v.join, name="join"),

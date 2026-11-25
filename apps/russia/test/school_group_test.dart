@@ -39,6 +39,19 @@ void main() {
       isNull,
     );
     expect(SchoolGroupRoute.parse('ABCDE-FGHJK'), 'ABCDEFGHJK');
+    for (final host in ['schools.pdd-drive.app', 'join.pdd-drive.app']) {
+      expect(SchoolGroupRoute.fromLink(Uri.https(host, '/student/')), 'my');
+      expect(SchoolGroupRoute.fromLink(Uri.https(host, '/join/my/')), 'my');
+      expect(
+        SchoolGroupRoute.fromLink(Uri.https(host, '/join/$token/')),
+        token,
+      );
+    }
+    expect(SchoolGroupRoute.fromLink(Uri.parse('/join/$token/')), token);
+    expect(
+      SchoolGroupRoute.fromLink(Uri.parse('//other.example/join/$token/')),
+      isNull,
+    );
   });
 
   testWidgets('only confirms membership with consent and the version shown', (

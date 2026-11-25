@@ -144,7 +144,7 @@ class CabinetTests(TransactionTestCase):
         self.assertContains(public, self.group.name)
         self.assertNotContains(public, "Ученик один")
         self.assertContains(public, "Вступить в группу")
-        self.assertContains(public, "?school_group=")
+        self.assertContains(public, f'href="https://join.pdd-drive.app{path}"')
         self.assertIn("no-store", public["Cache-Control"])
         self.assertIn("noindex", public["X-Robots-Tag"])
         client.post(endpoint)

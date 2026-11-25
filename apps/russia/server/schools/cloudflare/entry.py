@@ -3,10 +3,12 @@ import json
 import os
 from hashlib import sha256
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import js
 from pyodide.ffi import to_js
 from workers import DurableObject, Response, WorkerEntrypoint, wsgi
+from portal.student_links import LAUNCH_HOST, student_web_fallback
 
 STATE = Path("/tmp/school-portal")
 DATABASE = STATE / "schools.sqlite3"
@@ -158,6 +160,22 @@ class Default(WorkerEntrypoint):
         await self.env.PORTAL.getByName("schools-v1").maintenance()
 
     async def fetch(self, request):
+        url = urlsplit(request.url)
+        if url.hostname == LAUNCH_HOST:
+            if request.method not in ("GET", "HEAD"):
+                return Response("Method not allowed", status=405)
+            fallback = student_web_fallback(url.path)
+            if not fallback:
+                return Response("Not found", status=404)
+            return Response(
+                None,
+                status=302,
+                headers={
+                    "Location": fallback,
+                    "Cache-Control": "no-store",
+                    "Referrer-Policy": "no-referrer",
+                },
+            )
         if request.method not in ("GET", "HEAD", "POST"):
             return Response("Method not allowed", status=405)
         stub = self.env.PORTAL.getByName("schools-v1")

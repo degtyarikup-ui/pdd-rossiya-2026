@@ -12,6 +12,10 @@
     {
       "pattern": "schools.pdd-drive.app",
       "custom_domain": true
+    },
+    {
+      "pattern": "join.pdd-drive.app",
+      "custom_domain": true
     }
   ],
   "assets": {

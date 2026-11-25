@@ -4,10 +4,26 @@ from django.test import TestCase
 
 from .membership import CONSENT_VERSION, student_group
 from .models import Employee, Group, Learner, School, SchoolAttribution
+from .student_links import student_app_link, student_web_fallback
+from urllib.parse import parse_qs, urlsplit
 from django.contrib.auth import get_user_model
 
 
 class StudentMembershipTests(TestCase):
+    def test_links_keep_the_invitation_on_web_fallback(self):
+        token = self.token(self.first)
+        for value in ("my", token, self.first.invite_code):
+            launch = urlsplit(student_app_link(value))
+            self.assertEqual(launch.hostname, "join.pdd-drive.app")
+            target = urlsplit(student_web_fallback(launch.path.replace(":", "%3A")))
+            self.assertEqual((target.hostname, target.path), ("pdd-drive.app", "/app/"))
+            self.assertEqual(parse_qs(target.query), {"school_group": [value]})
+        self.assertEqual(
+            student_web_fallback("/student/"), student_web_fallback("/join/my/")
+        )
+        self.assertIsNone(student_web_fallback("/accounts/login/"))
+        self.assertIsNone(student_web_fallback("/join/not-an-invitation/"))
+
     @classmethod
     def setUpTestData(cls):
         teacher = get_user_model().objects.create_user(username="teacher")

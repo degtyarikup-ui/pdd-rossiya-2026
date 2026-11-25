@@ -13,10 +13,15 @@ class SchoolGroupRoute {
   }
 
   static String? fromLink(Uri uri) {
-    if (uri.hasScheme &&
-        (uri.scheme != 'https' || uri.host != 'schools.pdd-drive.app')) {
+    if ((uri.hasScheme || uri.hasAuthority) &&
+        (uri.scheme != 'https' ||
+            !const {
+              'schools.pdd-drive.app',
+              'join.pdd-drive.app',
+            }.contains(uri.host))) {
       return null;
     }
+    if (uri.path == '/student/') return 'my';
     final parts = uri.pathSegments.where((v) => v.isNotEmpty).toList();
     return parts.length == 2 && parts.first == 'join'
         ? parse(parts.last)

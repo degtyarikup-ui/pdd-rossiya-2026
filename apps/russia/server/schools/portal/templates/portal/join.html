@@ -6,6 +6,6 @@
 <p class="small-label">{{ group.instructor.school.name }}</p>
 <h1>{{ group.name }}</h1>
 <p>Преподаватель · {{ group.instructor.name }}</p>
-<a class="btn btn-primary" href="https://pdd-drive.app/app/?school_group={{ token|urlencode }}">Вступить в группу {% icon "arrow" %}</a>
+<a class="btn btn-primary" href="{% student_app_link token %}">Вступить в группу {% icon "arrow" %}</a>
 <p class="invite-code"><small>Код группы</small> <strong>{{ group.invite_code|slice:":5" }}-{{ group.invite_code|slice:"5:" }}</strong></p>
 {% endblock %}
