@@ -1,15 +1,21 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
+import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/school_group_route.dart';
 import 'package:pdd_app/data/services/web_oauth_state.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/main.dart' show PddApp;
 import 'package:pdd_app/presentation/screens/school_group_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -52,6 +58,67 @@ void main() {
       SchoolGroupRoute.fromLink(Uri.parse('//other.example/join/$token/')),
       isNull,
     );
+  });
+
+  testWidgets('keeps the system link until the main navigator is mounted', (
+    tester,
+  ) async {
+    final pending = StartupSchoolInvite();
+    final warm = <String?>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: const SizedBox(),
+        onGenerateRoute: (settings) {
+          warm.add(settings.name);
+          return MaterialPageRoute<void>(builder: (_) => const SizedBox());
+        },
+      ),
+    );
+    Future<Object?> sendLink(String host) async {
+      final result = Completer<Object?>();
+      final codec = SystemChannels.navigation.codec;
+      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+        SystemChannels.navigation.name,
+        codec.encodeMethodCall(
+          MethodCall('pushRouteInformation', {
+            'location': Uri.https(host, '/join/$token/').toString(),
+          }),
+        ),
+        (data) => result.complete(codec.decodeEnvelope(data!)),
+      );
+      return result.future;
+    }
+
+    expect(await sendLink('join.pdd-drive.app'), true);
+    expect(warm, isEmpty);
+    expect(pending.take(), token);
+    expect(await sendLink('schools.pdd-drive.app'), true);
+    expect(warm, ['/join/$token/']);
+  });
+
+  testWidgets('starts the application on the group and keeps a back route', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final progress = ProgressDataSource();
+    await progress.init();
+    final pending = StartupSchoolInvite();
+    await pending.didPushRouteInformation(
+      RouteInformation(
+        uri: Uri.https('schools.pdd-drive.app', '/join/$token/'),
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [progressDataSourceProvider.overrideWithValue(progress)],
+        child: PddApp(startupInvite: pending),
+      ),
+    );
+    await tester.pump();
+    final screen = find.byType(SchoolGroupScreen);
+    expect(tester.widget<SchoolGroupScreen>(screen).invite, token);
+    expect(Navigator.of(tester.element(screen)).canPop(), isTrue);
+    await tester.pumpWidget(const SizedBox());
   });
 
   testWidgets('only confirms membership with consent and the version shown', (

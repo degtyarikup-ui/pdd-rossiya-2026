@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 /// Only an invitation or the student's own group may be restored after OAuth.
 class SchoolGroupRoute {
   static final _token = RegExp(
@@ -26,5 +28,36 @@ class SchoolGroupRoute {
     return parts.length == 2 && parts.first == 'join'
         ? parse(parts.last)
         : null;
+  }
+}
+
+/// iOS delivers the link after the first frame, which can belong to the
+/// loading screen. Acknowledge it there and hand it to the real navigator.
+class StartupSchoolInvite with WidgetsBindingObserver {
+  StartupSchoolInvite() {
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  String? _invite;
+
+  @override
+  Future<bool> didPushRouteInformation(
+    RouteInformation routeInformation,
+  ) async {
+    final invite = SchoolGroupRoute.fromLink(routeInformation.uri);
+    if (invite == null) return false;
+    _invite = invite;
+    return true;
+  }
+
+  String? take() {
+    WidgetsBinding.instance.removeObserver(this);
+    return _invite ??
+        SchoolGroupRoute.fromLink(
+          Uri.tryParse(
+                WidgetsBinding.instance.platformDispatcher.defaultRouteName,
+              ) ??
+              Uri(),
+        );
   }
 }

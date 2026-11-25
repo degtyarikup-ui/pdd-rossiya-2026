@@ -97,13 +97,17 @@ void main() async {
     debugPrint('SystemChrome config error: $e');
   }
 
+  final startupInvite = kIsWeb ? null : StartupSchoolInvite();
   runApp(
-    AppStartupGate(initialize: () => _initializeApplication(webAuthReturn)),
+    AppStartupGate(
+      initialize: () => _initializeApplication(webAuthReturn, startupInvite),
+    ),
   );
 }
 
 Future<Widget> _initializeApplication(
   Map<String, String>? webAuthReturn,
+  StartupSchoolInvite? startupInvite,
 ) async {
   // До инициализации сервисов: они пишут в настройки, и свежая установка
   // иначе выглядит как обновление.
@@ -221,6 +225,7 @@ Future<Widget> _initializeApplication(
     ],
     child: PddApp(
       webAuthReturn: webAuthReturn,
+      startupInvite: startupInvite,
       referralPrompt: incomingReferral != null || webAuthReturn != null
           ? referralInit.then(
               (_) => ReferralService.instance.pendingCode != null,
@@ -257,9 +262,15 @@ Future<void> _initStreakNotifications(ProgressDataSource ds) async {
 }
 
 class PddApp extends ConsumerStatefulWidget {
-  const PddApp({super.key, this.webAuthReturn, this.referralPrompt});
+  const PddApp({
+    super.key,
+    this.webAuthReturn,
+    this.referralPrompt,
+    this.startupInvite,
+  });
   final Map<String, String>? webAuthReturn;
   final Future<bool>? referralPrompt;
+  final StartupSchoolInvite? startupInvite;
 
   @override
   ConsumerState<PddApp> createState() => _PddAppState();
@@ -267,9 +278,11 @@ class PddApp extends ConsumerStatefulWidget {
 
 class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
   final _navigatorKey = GlobalKey<NavigatorState>();
+  late final String? _launchInvite;
   @override
   void initState() {
     super.initState();
+    _launchInvite = widget.startupInvite?.take();
     WidgetsBinding.instance.addObserver(this);
     // Operator replies while the app is open: a sound and a banner that opens the chat.
     SupportInbox.instance.onSound = () =>
@@ -441,14 +454,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
       }
     }
 
-    final launchInvite = kIsWeb
-        ? null
-        : SchoolGroupRoute.fromLink(
-            Uri.tryParse(
-                  WidgetsBinding.instance.platformDispatcher.defaultRouteName,
-                ) ??
-                Uri(),
-          );
+    final launchInvite = _launchInvite;
     return MaterialApp(
       navigatorKey: _navigatorKey,
       title: appL10n.appName,
@@ -463,13 +469,13 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
       builder: (context, child) => AppMaxWidthFrame(child: child),
       onGenerateInitialRoutes: launchInvite == null
           ? null
-          : (initialRoute) => [
+          : (_) => [
               MaterialPageRoute<void>(
                 settings: const RouteSettings(name: '/'),
                 builder: (_) => getInitialWidget(),
               ),
               MaterialPageRoute<void>(
-                settings: RouteSettings(name: initialRoute),
+                settings: RouteSettings(name: '/join/$launchInvite/'),
                 builder: (_) => SchoolGroupScreen(invite: launchInvite),
               ),
             ],
@@ -483,7 +489,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
           builder: (_) => SchoolGroupScreen(invite: invite),
         );
       },
-      home: getInitialWidget(),
+      routes: {'/': (_) => getInitialWidget()},
     );
   }
 }
