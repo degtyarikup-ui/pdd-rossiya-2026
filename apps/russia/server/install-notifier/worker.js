@@ -734,11 +734,20 @@ export function buildPremiumPurchaseMessage(p) {
     tierStr += ` • <b>${esc(p.price)}</b>`;
   }
 
+  const renewal = p.renewal && !p.trialConversion && p.paymentNumber !== 1;
+  // The first payment starts the subscription. The second payment is its first renewal.
+  const renewalNumber = renewal && Number.isSafeInteger(p.paymentNumber) && p.paymentNumber >= 2
+    ? p.paymentNumber - 1 : 0;
+  // Keep the Telegram message within its size limit even for unusually large order numbers.
+  const checks = Math.min(renewalNumber, 1000);
+  const banner = renewalNumber
+    ? '✅'.repeat(checks) + '⭐'.repeat(Math.max(0, 3 - checks)) + (renewalNumber > checks ? '…' : '')
+    : renewal ? '✅' : premiumBanner(p.tier);
   const lines = [
-    premiumBanner(p.tier, p.renewal),
+    banner,
     p.trialConversion ? '<b>💳 Первая оплата после пробного периода</b>'
-      : p.renewal && Number.isSafeInteger(p.paymentNumber) && p.paymentNumber >= 2 ? `<b>${p.paymentNumber} продление Premium</b>`
-      : p.renewal && p.paymentNumber !== 1 ? '<b>Продление Premium</b>' : '<b>Покупка Premium</b>',
+      : renewalNumber ? `<b>${p.paymentNumber} продление Premium</b>`
+      : renewal ? '<b>Продление Premium</b>' : '<b>Покупка Premium</b>',
     '',
     `• <b>Тариф:</b> ${tierStr}`,
     `• <b>Пользователь:</b> ${name}`,

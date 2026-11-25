@@ -39,6 +39,18 @@ test('marketing attribution is distinct from store, sanitized and HTML-escaped',
   assert.match(buildPremiumPurchaseMessage({...u,tierName:'<b>fake</b>'}),/&lt;b&gt;fake&lt;\/b&gt;/);
   assert.ok(buildReportMessage({message:'<complaint>'}).startsWith('🚩🚩🚩🚩🚩🚩🚩🚩\n'));
 });
+test('store renewal banner shows one check per renewal and fills the first three slots with stars', () => {
+  for (const [paymentNumber, banner] of [[2, '✅⭐⭐'], [3, '✅✅⭐'], [4, '✅✅✅'], [5, '✅✅✅✅'], [6, '✅✅✅✅✅']]) {
+    const message = buildPremiumPurchaseMessage({ store: 'appstore', tier: 'threeMonths', renewal: true, paymentNumber });
+    assert.ok(message.startsWith(banner + '\n<b>' + paymentNumber + ' продление Premium</b>'));
+  }
+  const trial = buildPremiumPurchaseMessage({ tier: 'weekly', renewal: true, trialConversion: true });
+  assert.ok(trial.startsWith('⭐⭐⭐\n<b>💳 Первая оплата после пробного периода</b>'));
+  const purchase = buildPremiumPurchaseMessage({ tier: 'weekly', renewal: true, paymentNumber: 1 });
+  assert.ok(purchase.startsWith('⭐⭐⭐\n<b>Покупка Premium</b>'));
+  const large = buildPremiumPurchaseMessage({ renewal: true, paymentNumber: Number.MAX_SAFE_INTEGER });
+  assert.equal(large.split('\n')[0], '✅'.repeat(1000) + '…');
+});
 test('registration groups account, source and device details in the Telegram message', () => {
   const user = { name: 'Тест', email: 'test@example.com', provider: 'yandex', id: 'yandex_test',
     platform: 'android', appVersion: '2.2.7+70', installStore: 'Google Play',

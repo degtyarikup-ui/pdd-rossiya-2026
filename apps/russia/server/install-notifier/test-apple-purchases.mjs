@@ -105,7 +105,7 @@ test('one quarterly Apple renewal notification for repeated verified callbacks',
       assert.equal(effects.filter(effect => effect.kind === 'telegram').length, Number(renewal));
     }
     const [notice] = effects.filter(effect => effect.kind === 'telegram');
-    assert.ok(notice.text.startsWith('⭐⭐⭐⭐⭐⭐\n✅✅✅\n<b>2 продление Premium</b>'));
+    assert.ok(notice.text.startsWith('✅⭐⭐\n<b>2 продление Premium</b>'));
     assert.equal(historyRequests, 1);
   });
 });
@@ -195,7 +195,7 @@ test('restoring an App Store receipt logs only a current paid period and uses Ap
       assert.equal(effect.item.revenue.money?.milliunits || 0, data.price);
     }
     if (shouldLog) {
-      assert.match(purchaseEffects[0].text, /<b>Продление Premium<\/b>/);
+      assert.ok(purchaseEffects[0].text.startsWith('✅\n<b>Продление Premium</b>'));
       assert.match(purchaseEffects[0].text, /0,99\s*\$/);
       assert.doesNotMatch(purchaseEffects[0].text, /99 ₽/);
       assert.ok(purchaseEffects[0].text.includes('Дата транзакции:</b> ' + premiumDate(purchaseDate)));
