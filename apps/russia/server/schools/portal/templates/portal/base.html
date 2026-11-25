@@ -26,7 +26,7 @@
 <form action="{% url 'account_logout' %}" method="post">{% csrf_token %}<button class="icon-button" title="Выйти" aria-label="Выйти">{% icon "logout" %}</button></form></div></aside>
 {% endif %}
 <main id="content" class="{% if employee %}workspace{% else %}entrance{% endif %}">
-{% if not employee %}<header class="entrance-brand">{% include "portal/brand.html" %}</header>{% endif %}
+{% if not employee %}<header class="entrance-brand">{% include "portal/brand.html" %}{% block entrance_action %}{% endblock %}</header>{% endif %}
 <div class="{% if employee %}canvas{% else %}auth-card {% block entrance_card_class %}{% endblock %}{% endif %}">
 {% if messages %}<div role="status" class="messages">{% for message in messages %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}
 {% block content %}{% endblock %}{% block return_link %}{% endblock %}

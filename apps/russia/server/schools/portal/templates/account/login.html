@@ -1,4 +1,6 @@
-{% extends "portal/base.html" %}{% block content %}<h1>Кабинет автошколы</h1>{% include "socialaccount/providers.html" %}<form method="post">{% csrf_token %}{{ form.non_field_errors }}
+{% extends "portal/base.html" %}
+{% block entrance_action %}<a class="student-entry" href="{% url 'student' %}">Ввести код группы</a>{% endblock %}
+{% block content %}<h1>Кабинет автошколы</h1>{% include "socialaccount/providers.html" %}<form method="post">{% csrf_token %}{{ form.non_field_errors }}
 <p><label for="{{ form.login.id_for_label }}">Электронная почта</label>{{ form.login }}{{ form.login.errors }}</p>
 <p><label for="{{ form.password.id_for_label }}">Пароль</label>{{ form.password }}{{ form.password.errors }}</p>{{ redirect_field }}
 <a class="forgot" href="{% url 'account_reset_password' %}">Забыли пароль?</a><button class="btn btn-primary">Войти</button></form><a class="alternative" href="{{ signup_url }}">Создать аккаунт</a>{% endblock %}
