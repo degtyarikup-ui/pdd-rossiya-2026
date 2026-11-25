@@ -199,15 +199,15 @@ if(process.argv.includes('--serve')) {
   await page.evaluate(()=>anRenderActivity(window.__anData));
 
   assert.equal(await page.locator('#an-auth-table tbody tr').count(),4);
-  assert.equal(await page.locator('#an-versions tbody tr').count(),2);
-  assert.match(await page.locator('#an-updates-summary').innerText(),/12/);
+  assert.equal(await page.locator('#an-updates,#an-versions,#an-updates-summary').count(),0);
+  assert.equal(await page.locator('#analytics-view').getByText('Версии приложения').count(),0);
   for(const label of ['Обзор','Сейчас','Активность и рост','Состав аудитории','Источники привлечения','За выбранный период','Отчёты магазинов · ПДД Россия']){
    assert.equal(await page.locator('#analytics-view').getByText(label,{exact:true}).count(),0);
   }
   assert.equal(await page.locator('#an-now .an-big:visible').count(),4);
   assert.equal(await page.locator('#an-now button').count(),0);
   const cards=page.locator('#analytics-view .an-card:not(.an-kpi)');
-  assert.equal(await cards.count(),14);
+  assert.equal(await cards.count(),13);
   for(const card of await cards.all()){
    const toggle=card.locator('.an-fold'), body=page.locator('#'+await toggle.getAttribute('aria-controls'));
    await toggle.click();
@@ -219,10 +219,10 @@ if(process.argv.includes('--serve')) {
   assert.match(await page.locator('#an-report-googleplay').innerText(), /Обзор Google Play\s+7/);
   assert.match(await page.locator('#an-report-appstore').innerText(), /пока не предоставил/);
   await verifyUsage(page);
-  const desktop=await page.locator('#an-auth').boundingBox(),versions=await page.locator('#an-updates').boundingBox();
-  assert.equal(desktop.y,versions.y,'audience cards share a row');
+  const authBox=await page.locator('#an-auth').boundingBox();
   const geo=await page.locator('.an-geo-card').boundingBox();
-  assert.ok(geo.width>desktop.width*1.9,'geography uses full content width');
+  assert.ok(Math.abs(geo.width-authBox.width)<=1,'auth and geography use full content width');
+  assert.ok(geo.y>=authBox.y+authBox.height,'geography sits below auth');
   const auth=await page.locator('#an-auth-table').innerText();
   assert.equal(await page.locator('[data-chart]').count(),0);
   assert.match(await page.locator('#an-site-summary').innerText(),/Просмотры/);
@@ -256,10 +256,15 @@ if(process.argv.includes('--serve')) {
    await page.locator('#'+id+' rect[data-i="0"]').hover();
    assert.match(await page.locator('#an-tip').innerText(),id==='an-installs-chart'?/Первые запуски/:/Новые аккаунты/);
   }
-  await page.locator('[data-geo="cities"]').click();
-  await page.locator('#an-geo-search').fill('Москва');
-  assert.match(await page.locator('#an-geo').innerText(),/Москва/);
-  await page.locator('#an-geo-reset').click();
+  assert.equal(await page.locator('#an-geo-tabs,[data-geo],#an-geo-search,#an-geo-country,#an-geo-reset,#an-geo-coverage').count(),0);
+  assert.doesNotMatch(await page.locator('.an-geo-card').innerText(),/География известна|Регионы|Города/);
+  assert.deepEqual(await page.locator('#an-geo thead th').allInnerTexts(),['СТРАНА','АККАУНТЫ ↓','ДОЛЯ','АКТИВНЫ','PREMIUM']);
+  assert.equal(await page.locator('#an-geo tbody tr').count(),2);
+  assert.match(await page.locator('#an-geo tbody tr').first().innerText(),/Россия/);
+  await page.locator('#an-geo [data-sort="accounts"]').click();
+  assert.match(await page.locator('#an-geo tbody tr').first().innerText(),/Беларусь/);
+  await page.locator('#an-geo [data-sort="accounts"]').click();
+  assert.match(await page.locator('#an-geo tbody tr').first().innerText(),/Россия/);
   await page.setViewportSize({width:2415,height:900});
   await page.evaluate(()=>window.scrollTo(0,600));
   const sidebar=page.locator('.sidebar');
@@ -318,12 +323,20 @@ if(process.argv.includes('--serve')) {
     await page.screenshot({path:fileURLToPath(new URL(`../../output/analytics-layout/${width}.png`,import.meta.url)),fullPage:true});
    }
   }
-  await page.evaluate(()=>anRenderVersions({users:{versions:{updated:0,rows:Array.from({length:18},(_,i)=>({platform:i%2?'ios':'android',version:i===0?'Неизвестна':'2.2.4+'+i,accounts:1}))}}}));
-  assert.equal(await page.locator('#an-versions tbody tr').count(),18);
-  assert.equal(await page.locator('#an-versions').evaluate(el=>el.scrollHeight>el.clientHeight),true);
-  await page.locator('#an-versions').focus();
-  await page.keyboard.press('End');
-  await page.waitForFunction(()=>document.getElementById('an-versions').scrollTop>0);
+  await page.evaluate(()=>{
+   const countries=['RU','BY','KZ','DE','NL','US','TR','FR','GB','ES'].map((country,i)=>({name:country,country,accounts:100-i,active7:50-i,premium:10-i}));
+   const prev=window.__anData;
+   window.__anData={...prev,users:{...prev.users,geography:{countries,regions:[],cities:[],known:955,unknown:0,total:955}}};
+   anRenderGeo();
+   window.__anPrevGeo=prev;
+  });
+  assert.equal(await page.locator('#an-geo tbody tr').count(),8);
+  assert.match(await page.locator('#an-geo-pages').innerText(),/1–8 из 10/);
+  await page.locator('#an-geo-pages [data-page="1"]').click();
+  assert.equal(await page.locator('#an-geo tbody tr').count(),2);
+  assert.match(await page.locator('#an-geo-pages').innerText(),/9–10 из 10/);
+  await page.locator('#an-geo-pages [data-page="-1"]').click();
+  await page.evaluate(()=>{window.__anData=window.__anPrevGeo;delete window.__anPrevGeo;anRenderGeo();});
   // All-time audience is stable after choosing another graph period.
   const response=await context.request.get(app.url+'/api/admin/stats?days=1&app=ru');
   const oneDay=await response.json();
@@ -351,6 +364,7 @@ if(process.argv.includes('--serve')) {
   assert.equal(await page.locator('#refresh-btn').isDisabled(),true);
   await page.emulateMedia({reducedMotion:'no-preference'});
   assert.equal(await page.locator('#refresh-btn svg').evaluate(el=>getComputedStyle(el).animationName),'adminRefreshSpin');
+  await page.emulateMedia({reducedMotion:'reduce'});
   await page.evaluate(()=>{checkAuthAndLoad();checkAuthAndLoad();});
   assert.equal(await page.locator('#analytics-view > .admin-load-notice').isVisible(),false);
   assert.deepEqual([...pendingRefresh.keys()].sort(),['accounts','overview']);
@@ -380,7 +394,8 @@ if(process.argv.includes('--serve')) {
   assert.equal(await page.locator('#app').isVisible(),false);
   await page.evaluate(()=>renderDashboard({timeline:[],totals:{},sources:[]}));
   assert.match(await page.locator('#an-auth-table').innerText(),/недоступны/);
-  assert.match(await page.locator('#an-versions').innerText(),/Нет данных/);
+  assert.match(await page.locator('#an-geo').innerText(),/Нет данных/);
+  assert.equal(await page.locator('#an-geo-pages').isVisible(),false);
   // A new authenticated session keeps the layout after the auth cache was cleared.
   await page.unroute('**/api/admin/session');
   await page.reload();

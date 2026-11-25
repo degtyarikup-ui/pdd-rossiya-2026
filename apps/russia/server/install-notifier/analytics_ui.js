@@ -55,12 +55,9 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-logo{width:20px;height:20px;background:transparent;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}.an-logo svg{width:18px;height:18px}
 .an-mono{width:20px;height:20px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;font-size:12px;font-weight:600}
 .an-empty{padding:36px 12px;text-align:center;font-size:12px;color:var(--an-muted);line-height:1.7}
-.an-geo-tools{display:flex;gap:8px;align-items:center;margin:18px 0;flex-wrap:nowrap}
-.an-search{border:0;border-radius:10px;padding:10px 12px;font-size:12px;background:#F4F5F7;min-width:0;flex:1;outline-color:var(--an-accent);min-height:38px;color:var(--an-text)}.an-geo-tools select{flex:0 1 160px}.an-geo-tools select[hidden]{display:none}
-.an-clear{border:0;background:#F4F5F7;width:36px;height:38px;border-radius:10px;color:var(--an-muted);font-size:20px;flex-shrink:0;cursor:pointer}.an-clear[hidden]{display:none}
 .an-geo-card .an-table td{padding:12px 0}.an-geo-card .an-table-name{display:flex;align-items:center;gap:8px}.an-flag{font-size:18px;line-height:1;width:22px;flex:0 0 22px;text-align:center}.an-geo-card .an-table td:nth-child(2){font-weight:600}.an-geo-card .an-table td:nth-child(4),.an-geo-card .an-table td:nth-child(5){color:var(--an-muted);font-weight:450}.an-share{display:inline-flex;flex-direction:column;align-items:flex-end;gap:5px}.an-share-track{width:36px;height:3px;background:#F0F2F5;border-radius:3px;overflow:hidden}.an-share-track i{display:block;height:100%;background:var(--an-accent);border-radius:3px}
 .an-sort{font:inherit;letter-spacing:inherit;color:inherit;padding:0;border:0;background:none;cursor:pointer;text-transform:inherit;white-space:nowrap}.an-sort.is-sorted{color:var(--an-text)}
-.an-geo-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:16px;font-size:10px;color:var(--an-muted);min-height:30px}
+.an-geo-footer{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:16px;font-size:10px;color:var(--an-muted);min-height:30px}.an-geo-footer:empty{display:none}
 .an-pagination{display:flex;align-items:center;gap:8px;white-space:nowrap}.an-pagination button{border:0;background:#F4F5F7;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;color:var(--an-text)}.an-pagination button:disabled{opacity:.3;cursor:default}
 .an-audience{display:flex;justify-content:space-between;gap:16px;padding:0 2px 12px;flex-wrap:wrap;font-size:11px;color:var(--an-muted)}.an-audience b{color:var(--an-text);margin-left:6px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
 
@@ -97,14 +94,12 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 @media(max-width:900px){.an-now{grid-template-columns:repeat(2,minmax(0,1fr))}.an-now span{justify-content:flex-start}.an-now b{margin-left:auto}}
 @media(max-width:640px){.an-card{padding:20px;border-radius:18px}.an-grid{gap:10px}.an-kpi{padding:18px}.an-kpi-top{font-size:11px;min-height:28px;line-height:1.4}.an-big{font-size:32px;margin-top:10px}.an-head{gap:8px}.an-title{font-size:15px}.an-tabs button{padding:6px 10px;font-size:10px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-dynamics-summary b{font-size:34px}.an-dynamics-summary>span{font-size:10px}.an-geo-footer{flex-wrap:wrap}.an-now{padding:18px 20px;gap:16px}.an-now span{flex-direction:column;align-items:flex-start;gap:8px}.an-now b{margin:0;font-size:20px}.an-chart-card .an-head{flex-wrap:wrap}.an-caption{font-size:10px}}
 .an-scope{font-size:10px;font-weight:500;line-height:1.4;color:var(--an-muted);white-space:nowrap}.an-heading{display:flex;align-items:center;gap:8px;min-width:0}.an-subtitle{font-size:11px;color:var(--an-muted);margin-top:6px;line-height:1.5}
-.an-audience-grid,.an-acquisition-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:16px;margin-bottom:18px}.an-audience-grid>.an-card,.an-acquisition-grid>.an-card{margin:0}
+.an-acquisition-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:16px;margin-bottom:18px}.an-acquisition-grid>.an-card{margin:0}
 .an-acquisition-card .an-table{min-width:440px}.an-acquisition-card .an-table td:first-child{max-width:360px;overflow-wrap:anywhere}.an-acquisition-card .an-tabs{margin-bottom:18px}.an-acquisition-card .an-table-name{align-items:flex-start}.an-acquisition-card .an-logo{margin-top:1px}.an-acquisition-card .an-source-detail{display:block;font-size:10px;color:var(--an-muted);font-weight:450;margin-top:3px}.an-acquisition-card .an-subtitle{margin-bottom:16px}.an-acquisition-card details.an-day-details>summary{line-height:1.5}
-.an-audience-grid .an-head{margin-bottom:16px}.an-auth-table .an-table td{padding:13px 0}.an-auth-table .an-table td:nth-child(2){color:var(--an-muted);font-weight:450}.an-auth-table .an-table td:last-child{font-size:16px;width:56px}.an-auth-table .an-table-name{display:grid;grid-template-columns:20px minmax(0,1fr);gap:5px 10px}.an-auth-track{grid-column:2;height:3px;background:#F0F2F5;border-radius:3px;overflow:hidden;max-width:240px}.an-auth-track i{display:block;height:100%;border-radius:3px;background:var(--an-provider-color)}
-.an-update-metric{display:flex;align-items:center;gap:14px;padding-bottom:18px;margin-bottom:16px;border-bottom:1px solid #F2F3F5}.an-update-metric b{font-size:32px;font-weight:550;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums}.an-update-metric span{font-size:11px;line-height:1.6;color:var(--an-muted)}.an-update-metric strong{font-weight:500;color:var(--an-text)}
-.an-version-label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;font-weight:500;margin-bottom:14px}.an-versions{max-height:202px;overflow:auto;scrollbar-width:thin}.an-versions .an-table th{position:sticky;top:0;background:white;z-index:1}.an-versions .an-table td{padding:11px 0}.an-version-name{display:flex;align-items:center;gap:8px}.an-version-name svg{width:14px;height:14px;flex-shrink:0}.an-versions .an-share{flex-direction:row;align-items:center;gap:8px}
-.an-geo-card .an-geo-tools{max-width:580px}.an-geo-card .an-table-name{min-width:120px}.an-geo-card .an-table{min-width:0}.an-geo-card .an-table td{padding:13px 0}
+#an-auth .an-head{margin-bottom:16px}.an-auth-table .an-table td{padding:13px 0}.an-auth-table .an-table td:nth-child(2){color:var(--an-muted);font-weight:450}.an-auth-table .an-table td:last-child{font-size:16px;width:56px}.an-auth-table .an-table-name{display:grid;grid-template-columns:20px minmax(0,1fr);gap:5px 10px}.an-auth-track{grid-column:2;height:3px;background:#F0F2F5;border-radius:3px;overflow:hidden;max-width:240px}.an-auth-track i{display:block;height:100%;border-radius:3px;background:var(--an-provider-color)}
+.an-geo-card .an-table-name{min-width:120px}.an-geo-card .an-table{min-width:0}.an-geo-card .an-table td{padding:13px 0}
 @media(max-width:640px){.an-acquisition-card .an-table{min-width:0;table-layout:fixed;font-size:11px}.an-acquisition-card .an-table th{white-space:normal;font-size:9px;overflow-wrap:anywhere}.an-acquisition-card .an-table th:first-child{width:42%}.an-acquisition-card .an-table th:nth-child(2),.an-acquisition-card .an-table th:nth-child(3){width:18%}.an-acquisition-card .an-table th:last-child{width:22%}.an-acquisition-card .an-table td+td,.an-acquisition-card .an-table th+th{padding-left:6px}.an-acquisition-card .an-table-name{gap:6px}.an-acquisition-card .an-table-name>span{min-width:0}.an-acquisition-card .an-logo{width:16px;height:16px}.an-acquisition-card .an-logo svg{width:16px;height:16px}.an-acquisition-card .an-source-detail{font-size:9px}}
-@media(max-width:640px){.an-audience-grid,.an-acquisition-grid{gap:14px;margin-bottom:14px}.an-geo-card .an-table{min-width:360px}.an-scope{font-size:9px}.an-heading{gap:6px}.an-version-name{gap:5px}.an-versions .an-share-track{display:none}.an-update-metric b{font-size:30px}}
+@media(max-width:640px){.an-acquisition-grid{gap:14px;margin-bottom:14px}.an-geo-card .an-table{min-width:360px}.an-scope{font-size:9px}.an-heading{gap:6px}}
 #analytics-view .an-fold{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;padding:2px 0;min-height:28px;color:inherit;font:inherit;letter-spacing:inherit;text-align:left;cursor:pointer}
 .an-fold::before{content:'';width:7px;height:7px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);margin:0 4px 4px 2px;flex-shrink:0}
 .an-fold[aria-expanded=false]::before{transform:rotate(-45deg);margin-bottom:0}
@@ -149,31 +144,19 @@ ${PREMIUM_REVENUE_HTML}
 
   </div>
 </div>
-<div class="an-audience-grid">
- <div class="an-card" id="an-auth">
-  <div class="an-head"><div class="an-heading"><h3 class="an-title">${cardToggle('auth', 'Способы входа')}</h3></div><span class="an-scope">Всё время</span></div>
-  <div id="an-body-auth">
-  <div class="an-table-wrap an-auth-table" id="an-auth-table"></div>
-  </div>
- </div>
- <div class="an-card" id="an-updates">
-  <div class="an-head"><div class="an-heading"><h3 class="an-title">${cardToggle('versions', 'Версии приложения')}</h3></div></div>
-  <div id="an-body-versions">
-  <div class="an-update-metric" id="an-updates-summary"></div>
-  <div class="an-version-label"><span>Версии аккаунтов</span><span class="an-scope">Всё время</span></div>
-  <div class="an-table-wrap an-versions" id="an-versions" tabindex="0" role="region" aria-label="Распределение версий приложения"></div>
-  </div>
+<div class="an-card" id="an-auth">
+ <div class="an-head"><div class="an-heading"><h3 class="an-title">${cardToggle('auth', 'Способы входа')}</h3></div><span class="an-scope">Всё время</span></div>
+ <div id="an-body-auth">
+ <div class="an-table-wrap an-auth-table" id="an-auth-table"></div>
  </div>
 </div>
- <div class="an-card an-geo-card">
-  <div class="an-head"><div><div class="an-title">${cardToggle('geo', 'География новых аккаунтов')}</div></div></div>
-  <div id="an-body-geo">
-  <div class="an-tabs" id="an-geo-tabs"><button type="button" data-geo="countries" class="active" aria-pressed="true">Страны</button><button type="button" data-geo="regions" aria-pressed="false">Регионы</button><button type="button" data-geo="cities" aria-pressed="false">Города</button></div>
-  <div class="an-geo-tools"><input class="an-search" id="an-geo-search" placeholder="Поиск" aria-label="Поиск по географии"><select class="an-search" id="an-geo-country" aria-label="Страна географии"><option value="all">Все страны</option></select><button type="button" class="an-clear" id="an-geo-reset" title="Сбросить поиск и страну" aria-label="Сбросить фильтры">×</button></div>
-  <div class="an-table-wrap" id="an-geo"></div>
-  <div class="an-geo-footer"><span id="an-geo-coverage"></span><div class="an-pagination" id="an-geo-pages"></div></div>
-  </div>
+<div class="an-card an-geo-card">
+ <div class="an-head"><div><div class="an-title">${cardToggle('geo', 'География новых аккаунтов')}</div></div></div>
+ <div id="an-body-geo">
+ <div class="an-table-wrap" id="an-geo"></div>
+ <div class="an-geo-footer an-pagination" id="an-geo-pages"></div>
  </div>
+</div>
 <div class="an-card an-acquisition-card" id="an-acquisition">
   <div class="an-head"><div class="an-title">${cardToggle('acquisition', 'Источники аккаунтов и покупки Premium')}</div></div>
   <div id="an-body-acquisition">
@@ -297,9 +280,7 @@ function anBuckets(tl) {
 }
 function anSum(days, fn) { return days.reduce(function (a, d) { return a + (fn(d) || 0); }, 0); }
 
-var anGeoMode = 'countries', anGeoPage = 0, anGeoSort = 'accounts', anGeoDescending = true;
-var AN_GEO_LABELS = {"regions": {"ru|moscow": "Москва", "ru|moscow oblast": "Московская область", "ru|st.-petersburg": "Санкт-Петербург", "ru|saint petersburg": "Санкт-Петербург", "ru|krasnodar krai": "Краснодарский край", "ru|sverdlovsk oblast": "Свердловская область", "ru|bashkortostan republic": "Башкортостан", "ru|rostov": "Ростовская область", "ru|rostov oblast": "Ростовская область", "ru|mariy-el republic": "Марий Эл", "ru|novosibirsk oblast": "Новосибирская область", "ru|leningradskaya oblast'": "Ленинградская область", "ru|leningrad oblast": "Ленинградская область", "ru|voronezh oblast": "Воронежская область", "ru|stavropol kray": "Ставропольский край", "ru|kaliningrad oblast": "Калининградская область", "ru|belgorod oblast": "Белгородская область", "ru|udmurtiya republic": "Удмуртия", "ru|kostroma oblast": "Костромская область", "ru|penza oblast": "Пензенская область", "ru|orenburg oblast": "Оренбургская область", "ru|ulyanovsk": "Ульяновская область", "ru|samara oblast": "Самарская область", "ru|perm krai": "Пермский край", "ru|tver oblast": "Тверская область", "ru|kursk oblast": "Курская область", "ru|chelyabinsk": "Челябинская область", "ru|vologda oblast": "Вологодская область"}, "cities": {"ru|moscow": "Москва", "ru|saint petersburg": "Санкт-Петербург", "ru|st petersburg": "Санкт-Петербург", "ru|khimki": "Химки", "ru|krasnodar": "Краснодар", "ru|yekaterinburg": "Екатеринбург", "ru|novosibirsk": "Новосибирск", "ru|rostov-on-don": "Ростов-на-Дону", "ru|ufa": "Уфа", "ru|kazan": "Казань", "ru|samara": "Самара", "ru|perm": "Пермь", "ru|chelyabinsk": "Челябинск", "ru|voronezh": "Воронеж", "ru|kaliningrad": "Калининград", "ru|belgorod": "Белгород", "ru|penza": "Пенза", "ru|orenburg": "Оренбург", "ru|ulyanovsk": "Ульяновск", "ru|vologda": "Вологда"}};
-function anGeoName(row) { return (AN_GEO_LABELS[anGeoMode]||{})[(row.country+'|'+row.name).toLowerCase()] || row.name; }
+var anGeoPage = 0, anGeoSort = 'accounts', anGeoDescending = true;
 function anCountryFlag(raw) {
  var code=String(raw||'').toUpperCase();
  if(!/^[A-Z]{2}$/.test(code)||['XX','ZZ','UN'].indexOf(code)!==-1)return '';
@@ -353,25 +334,16 @@ function anGeoHeader(label,key) {
 }
 function anRenderGeo() {
  var u=(window.__anData||{}).users, geo=u&&u.geography;
- var el=document.getElementById('an-geo'), cover=document.getElementById('an-geo-coverage'), pager=document.getElementById('an-geo-pages');
- if(!geo){el.innerHTML='<div class="an-empty">Нет данных</div>';cover.textContent='';pager.innerHTML='';return;}
- var q=document.getElementById('an-geo-search').value.trim(), selector=document.getElementById('an-geo-country');
- selector.hidden=anGeoMode==='countries';
- var country=anGeoMode==='countries'?'all':selector.value;
- var prepared=(geo[anGeoMode]||[]).map(function(r){var label=anGeoMode==='countries'?anCountryName(r.country):anGeoName(r);return Object.assign({},r,{label:label,search:r.name+' '+label+' '+anCountryName(r.country)+' '+r.country});});
- var selected=AN_SELECT_GEO(prepared,{country:country,query:q,sort:anGeoSort,descending:anGeoDescending,page:anGeoPage});
+ var el=document.getElementById('an-geo'), pager=document.getElementById('an-geo-pages');
+ if(!geo){el.innerHTML='<div class="an-empty">Нет данных</div>';pager.innerHTML='';return;}
+ var prepared=(geo.countries||[]).map(function(r){return Object.assign({},r,{label:anCountryName(r.country)});});
+ var selected=AN_SELECT_GEO(prepared,{sort:anGeoSort,descending:anGeoDescending,page:anGeoPage});
  anGeoPage=selected.page;
- var headings=anGeoHeader(anGeoMode==='countries'?'Страна':anGeoMode==='regions'?'Регион':'Город','name')+anGeoHeader('Аккаунты','accounts')+'<th scope="col" title="Среди аккаунтов с известной географией, с учётом выбранной страны">Доля</th>'+anGeoHeader('Активны','active7')+anGeoHeader('Premium','premium');
+ var headings=anGeoHeader('Страна','name')+anGeoHeader('Аккаунты','accounts')+'<th scope="col" title="Среди аккаунтов с известной географией">Доля</th>'+anGeoHeader('Активны','active7')+anGeoHeader('Premium','premium');
  el.innerHTML=selected.rows.length?'<table class="an-table"><thead><tr>'+headings+'</tr></thead><tbody>'+selected.rows.map(function(r){
   return '<tr><td><span class="an-table-name">'+(anCountryFlag(r.country)?'<span class="an-flag" role="img" aria-label="'+anEsc(anCountryName(r.country))+'" title="'+anEsc(anCountryName(r.country))+'">'+anCountryFlag(r.country)+'</span>':'')+'<span>'+anEsc(r.label)+'</span>' +'</span></td>'+anCell(r.accounts)+'<td>'+anShare(r.accounts,selected.baseTotal)+'</td><td title="Аккаунты, обращавшиеся к серверу за последние 7 дней">'+anNum(r.active7)+'</td>'+anCell(r.premium)+'</tr>';
- }).join('')+'</tbody></table>':'<div class="an-empty">'+(q||country!=='all'?'Ничего не найдено':'Нет данных')+'</div>';
- var known=(geo[anGeoMode]||[]).reduce(function(n,r){return n+r.accounts;},0);
- var coverage=geo.total?Math.round(known/geo.total*100):0;
- cover.textContent='География известна: '+coverage+'%';
- cover.title=anNum(known)+' из '+anNum(geo.total)+' новых аккаунтов. По IP, приблизительно. Старые профили дополняются постепенно.';
+ }).join('')+'</tbody></table>':'<div class="an-empty">Нет данных</div>';
  pager.innerHTML=selected.count?'<span>'+anNum(selected.start+1)+'–'+anNum(selected.end)+' из '+anNum(selected.count)+'</span><button type="button" data-page="-1" aria-label="Предыдущая страница"'+(selected.page===0?' disabled':'')+'>‹</button><button type="button" data-page="1" aria-label="Следующая страница"'+(selected.page===selected.pages-1?' disabled':'')+'>›</button>':'';
- document.getElementById('an-geo-reset').hidden=!q&&selector.value==='all';
- document.querySelectorAll('[data-geo]').forEach(function(b){b.classList.toggle('active',b.dataset.geo===anGeoMode);b.setAttribute('aria-pressed',String(b.dataset.geo===anGeoMode));});
 }
 var AN_ACTIVITY_SERIES = [
  {key:'value',label:'Общая',color:AN_C.accent},
@@ -455,12 +427,6 @@ function anRenderAuth(data) {
   return '<tr style="--an-provider-color:'+p[2]+'"><td><span class="an-table-name">'+anLogo({icon:p[0]})+'<span>'+p[1]+'</span><span class="an-auth-track" aria-hidden="true"><i style="width:'+(count/users.registered*100)+'%"></i></span></span></td>'+anCell(count)+'<td>'+anPercent(count,users.registered)+'</td></tr>';
  }));
 }
-function anRenderVersions(data) {
- var versions=data.users&&data.users.versions;
- document.getElementById('an-updates-summary').innerHTML='<b>'+(versions?anNum(versions.updated):'—')+'</b><span><strong>Обновились за период</strong><br>Аккаунты</span>';
- var rows=versions&&versions.rows||[], total=rows.reduce(function(n,r){return n+r.accounts;},0);
- document.getElementById('an-versions').innerHTML=rows.length?anTable(['Версия','Аккаунты','Доля'],rows.map(function(r){return '<tr><td><span class="an-version-name" title="'+(r.platform==='android'?'Android':'iOS')+'">'+anSvgIcon(r.platform==='android'?'android':'apple')+'<span>'+(r.platform==='android'?'Android':'iOS')+' '+anEsc(r.version)+'</span></span></td>'+anCell(r.accounts)+'<td>'+anShare(r.accounts,total)+'</td></tr>'; })): '<div class="an-empty">Нет данных о версиях мобильных аккаунтов</div>';
-}
 var anAcquisitionScope='cohort';
 function anAcquisitionSource(row) {
  var conf=AN_SOURCES[row.source]||AN_SOURCES.unknown;
@@ -510,7 +476,6 @@ function renderDashboard(data) {
  anRenderActivity(data);
  anRenderPremium(data);
  anRenderUsage(data);
- anRenderVersions(data);
  anRenderAuth(data);
  anRenderAcquisition(data);
  anRenderStoreReports(data.storeReports);
@@ -521,9 +486,6 @@ function renderDashboard(data) {
  var names=Object.keys(stores).sort(function(a,b){return stores[b]-stores[a];}),known=names.reduce(function(n,k){return n+stores[k];},0);
  if((t.installs||0)>known){stores['—']=t.installs-known;names.push('—');}
  document.getElementById('an-stores').innerHTML=names.length?anTable(['Магазин / платформа','Запуски','Доля'],names.map(function(k){var conf=AN_STORES[k]||{glyph:'globe'};return '<tr><td><div class="an-table-name">'+anLogo(conf)+anEsc(k)+'</div></td>'+anCell(stores[k])+'<td>'+anShare(stores[k],Math.max(1,t.installs,known))+'</td></tr>';})):'<div class="an-empty">Нет первых запусков</div>';
- var selector=document.getElementById('an-geo-country'),selected=selector.value,geo=u&&u.geography;
- selector.innerHTML='<option value="all">Все страны</option>'+(geo?geo.countries:[]).map(function(r){return '<option value="'+anEsc(r.country)+'">'+anCountryFlag(r.country)+' '+anEsc(anCountryName(r.country))+'</option>';}).join('');
- if(Array.from(selector.options).some(function(o){return o.value===selected;}))selector.value=selected;
  anRenderGeo();
  document.querySelectorAll('#an-now [data-kpi]').forEach(function(value){
    var count=u && u[value.dataset.kpi];
@@ -569,10 +531,6 @@ document.getElementById('analytics-view').addEventListener('click',function(even
  }
 });
 document.getElementById('an-acquisition-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-acquisition]');if(b){anAcquisitionScope=b.dataset.acquisition;if(window.__anData)anRenderAcquisition(window.__anData);}});
-document.getElementById('an-geo-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-geo]');if(b){anGeoMode=b.dataset.geo;anGeoPage=0;anRenderGeo();}});
-document.getElementById('an-geo-search').addEventListener('input',function(){anGeoPage=0;anRenderGeo();});
-document.getElementById('an-geo-country').addEventListener('change',function(){anGeoPage=0;anRenderGeo();});
-document.getElementById('an-geo-reset').addEventListener('click',function(){document.getElementById('an-geo-search').value='';document.getElementById('an-geo-country').value='all';anGeoPage=0;anRenderGeo();});
 document.getElementById('an-geo').addEventListener('click',function(e){var b=e.target.closest('[data-sort]');if(!b)return;var key=b.dataset.sort;if(anGeoSort===key)anGeoDescending=!anGeoDescending;else{anGeoSort=key;anGeoDescending=key!=='name';}anGeoPage=0;anRenderGeo();});
 document.getElementById('an-geo-pages').addEventListener('click',function(e){var b=e.target.closest('[data-page]');if(b&&!b.disabled){anGeoPage+=Number(b.dataset.page);anRenderGeo();}});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')anTipHide();});
