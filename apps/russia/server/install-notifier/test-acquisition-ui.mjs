@@ -27,11 +27,15 @@ test('account acquisition renders cohorts, missing evidence, article/campaign de
     ];
     const snapshot = usersSnapshot(users, 1, 'ru', date => date.toISOString().slice(0, 10), now);
     await page.evaluate(data => { window.__anData = data; anRenderAcquisition(data); }, { users: snapshot });
+    assert.equal(await page.locator('#an-acquisition .an-title').innerText(), 'Источник покупки Premium');
+    assert.equal(await page.locator('#an-acquisition-scope').count(), 0);
+    assert.doesNotMatch(await page.locator('#an-acquisition').innerText(), /подтверждения оплаты в сохранённых данных|Источник аккаунта определяется по метке/);
     assert.equal(await page.locator('#an-acquisition-table tbody tr').count(), 3);
     assert.match(await page.locator('#an-acquisition-table').innerText(), /Google.*1.*1.*100%/s);
     assert.match(await page.locator('#an-acquisition-table').innerText(), /Источник не определён.*≥ 0%.*данные неполные/s);
     assert.match(await page.locator('#an-acquisition-coverage').innerText(), /недостаточно данных о старых покупках/);
     await page.locator('[data-acquisition="allTime"]').click();
+    assert.doesNotMatch(await page.locator('#an-acquisition').innerText(), /подтверждения оплаты в сохранённых данных/);
     assert.equal(await page.locator('#an-acquisition-table tbody tr').count(), 4);
     assert.match(await page.locator('#an-acquisition-table').innerText(), /Google Play · органика/);
     await page.locator('#an-acquisition details.an-day-details').nth(0).locator('summary').click();

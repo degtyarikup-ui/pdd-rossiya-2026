@@ -199,6 +199,12 @@ if(process.argv.includes('--serve')) {
   await page.evaluate(()=>anRenderActivity(window.__anData));
 
   assert.equal(await page.locator('#an-auth-table tbody tr').count(),4);
+  assert.doesNotMatch(await page.locator('#an-auth').innerText(),/Всё время/);
+  assert.equal(await page.locator('#an-acquisition .an-title').innerText(),'Источник покупки Premium');
+  assert.equal(await page.locator('#an-acquisition-scope').count(),0);
+  assert.doesNotMatch(await page.locator('#an-acquisition').innerText(),/подтверждения оплаты в сохранённых данных|Источник аккаунта определяется по метке/);
+  assert.deepEqual(await page.locator('.an-charts-grid .an-title').allInnerTexts(),['Активность','Первые запуски','Новые аккаунты']);
+  assert.equal(await page.locator('.an-charts-grid .an-fold').count(),0);
   assert.equal(await page.locator('#an-updates,#an-versions,#an-updates-summary').count(),0);
   assert.equal(await page.locator('#analytics-view').getByText('Версии приложения').count(),0);
   for(const label of ['Обзор','Сейчас','Активность и рост','Состав аудитории','Источники привлечения','За выбранный период','Отчёты магазинов · ПДД Россия']){
@@ -208,7 +214,9 @@ if(process.argv.includes('--serve')) {
   assert.equal(await page.locator('#an-now button').count(),0);
   const cards=page.locator('#analytics-view .an-card:not(.an-kpi)');
   assert.equal(await cards.count(),13);
-  for(const card of await cards.all()){
+  const foldableCards=page.locator('#analytics-view .an-card:has(.an-fold)');
+  assert.equal(await foldableCards.count(),10);
+  for(const card of await foldableCards.all()){
    const toggle=card.locator('.an-fold'), body=page.locator('#'+await toggle.getAttribute('aria-controls'));
    await toggle.click();
    assert.equal(await body.isVisible(),false);
@@ -342,8 +350,14 @@ if(process.argv.includes('--serve')) {
   const oneDay=await response.json();
   await page.evaluate(data=>renderDashboard(data),oneDay);
   assert.equal(await page.locator('#an-auth-table').innerText(),auth);
-  const activityToggle=page.locator('[aria-controls="an-body-activity"]');
-  await activityToggle.click();
+  const siteToggle=page.locator('[aria-controls="an-body-site"]');
+  const siteChart=page.locator('#an-site-chart');
+  await siteToggle.click();
+  await page.evaluate(()=>{
+   for(const id of ['an-body-activity','an-body-launches','an-body-registrations']){
+    localStorage.setItem('pdd-admin-fold-v1:'+id,'closed');
+   }
+  });
   // Reopening renders persisted aggregates before a slow background refresh.
   const pendingRefresh=new Map();
   await page.route('**/api/admin/stats?**',async route=>{
@@ -359,7 +373,10 @@ if(process.argv.includes('--serve')) {
   });
   await page.reload();
   await page.waitForFunction(()=>document.querySelector('#an-now .an-big')?.textContent==='160');
-  assert.equal(await activityToggle.getAttribute('aria-expanded'),'false');
+  for(const id of ['an-body-activity','an-body-launches','an-body-registrations']){
+   assert.equal(await page.locator('#'+id).isVisible(),true,id+' stays always open');
+  }
+  assert.equal(await siteToggle.getAttribute('aria-expanded'),'false');
   assert.match(await page.locator('#admin-data-state').innerText(),/Данные на.*обновление/);
   assert.equal(await page.locator('#refresh-btn').isDisabled(),true);
   await page.emulateMedia({reducedMotion:'no-preference'});
@@ -400,11 +417,11 @@ if(process.argv.includes('--serve')) {
   await page.unroute('**/api/admin/session');
   await page.reload();
   await page.waitForFunction(()=>document.querySelector('#an-now .an-big')?.textContent==='160');
-  assert.equal(await activityToggle.getAttribute('aria-expanded'),'false');
-  await activityToggle.click();
-  assert.equal(await activityChart.isVisible(),true);
+  assert.equal(await siteToggle.getAttribute('aria-expanded'),'false');
+  await siteToggle.click();
+  assert.equal(await siteChart.isVisible(),true);
   await page.reload();
-  assert.equal(await activityToggle.getAttribute('aria-expanded'),'true');
+  assert.equal(await siteToggle.getAttribute('aria-expanded'),'true');
   assert.deepEqual(errors,[]);
  } finally {await browser.close();await app.close();}
 });

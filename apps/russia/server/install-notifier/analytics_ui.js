@@ -93,22 +93,22 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 @media(max-width:700px){.an-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.an-now{grid-template-columns:repeat(2,minmax(0,1fr))}.an-now span{justify-content:flex-start}.an-now b{margin-left:auto}}
 @media(max-width:640px){.an-card{padding:20px;border-radius:18px}.an-grid{gap:10px}.an-kpi{padding:18px}.an-kpi-top{font-size:11px;min-height:28px;line-height:1.4}.an-big{font-size:32px;margin-top:10px}.an-head{gap:8px}.an-title{font-size:15px}.an-tabs button{padding:6px 10px;font-size:10px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-dynamics-summary b{font-size:34px}.an-dynamics-summary>span{font-size:10px}.an-geo-footer{flex-wrap:wrap}.an-now{padding:18px 20px;gap:16px}.an-now span{flex-direction:column;align-items:flex-start;gap:8px}.an-now b{margin:0;font-size:20px}.an-chart-card .an-head{flex-wrap:wrap}.an-caption{font-size:10px}}
-.an-scope{font-size:10px;font-weight:500;line-height:1.4;color:var(--an-muted);white-space:nowrap}.an-heading{display:flex;align-items:center;gap:8px;min-width:0}.an-subtitle{font-size:11px;color:var(--an-muted);margin-top:6px;line-height:1.5}
+.an-heading{display:flex;align-items:center;gap:8px;min-width:0}
 .an-acquisition-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:16px;margin-bottom:18px}.an-acquisition-grid>.an-card{margin:0}
-.an-acquisition-card .an-table{min-width:440px}.an-acquisition-card .an-table td:first-child{max-width:360px;overflow-wrap:anywhere}.an-acquisition-card .an-tabs{margin-bottom:18px}.an-acquisition-card .an-table-name{align-items:flex-start}.an-acquisition-card .an-logo{margin-top:1px}.an-acquisition-card .an-source-detail{display:block;font-size:10px;color:var(--an-muted);font-weight:450;margin-top:3px}.an-acquisition-card .an-subtitle{margin-bottom:16px}.an-acquisition-card details.an-day-details>summary{line-height:1.5}
+.an-acquisition-card .an-table{min-width:440px}.an-acquisition-card .an-table td:first-child{max-width:360px;overflow-wrap:anywhere}.an-acquisition-card .an-tabs{margin-bottom:18px}.an-acquisition-card .an-table-name{align-items:flex-start}.an-acquisition-card .an-logo{margin-top:1px}.an-acquisition-card .an-source-detail{display:block;font-size:10px;color:var(--an-muted);font-weight:450;margin-top:3px}.an-acquisition-card details.an-day-details>summary{line-height:1.5}
 #an-auth .an-head{margin-bottom:16px}.an-auth-table .an-table td{padding:13px 0}.an-auth-table .an-table td:nth-child(2){color:var(--an-muted);font-weight:450}.an-auth-table .an-table td:last-child{font-size:16px;width:56px}.an-auth-table .an-table-name{display:grid;grid-template-columns:20px minmax(0,1fr);gap:5px 10px}.an-auth-track{grid-column:2;height:3px;background:#F0F2F5;border-radius:3px;overflow:hidden;max-width:240px}.an-auth-track i{display:block;height:100%;border-radius:3px;background:var(--an-provider-color)}
 .an-geo-card .an-table-name{min-width:120px}.an-geo-card .an-table{min-width:0}.an-geo-card .an-table td{padding:13px 0}
 @media(max-width:640px){.an-acquisition-card .an-table{min-width:0;table-layout:fixed;font-size:11px}.an-acquisition-card .an-table th{white-space:normal;font-size:9px;overflow-wrap:anywhere}.an-acquisition-card .an-table th:first-child{width:42%}.an-acquisition-card .an-table th:nth-child(2),.an-acquisition-card .an-table th:nth-child(3){width:18%}.an-acquisition-card .an-table th:last-child{width:22%}.an-acquisition-card .an-table td+td,.an-acquisition-card .an-table th+th{padding-left:6px}.an-acquisition-card .an-table-name{gap:6px}.an-acquisition-card .an-table-name>span{min-width:0}.an-acquisition-card .an-logo{width:16px;height:16px}.an-acquisition-card .an-logo svg{width:16px;height:16px}.an-acquisition-card .an-source-detail{font-size:9px}}
-@media(max-width:640px){.an-acquisition-grid{gap:14px;margin-bottom:14px}.an-geo-card .an-table{min-width:360px}.an-scope{font-size:9px}.an-heading{gap:6px}}
+@media(max-width:640px){.an-acquisition-grid{gap:14px;margin-bottom:14px}.an-geo-card .an-table{min-width:360px}.an-heading{gap:6px}}
 #analytics-view .an-fold{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;padding:2px 0;min-height:28px;color:inherit;font:inherit;letter-spacing:inherit;text-align:left;cursor:pointer}
 .an-fold::before{content:'';width:7px;height:7px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);margin:0 4px 4px 2px;flex-shrink:0}
 .an-fold[aria-expanded=false]::before{transform:rotate(-45deg);margin-bottom:0}
 #analytics-view .an-folded{align-self:start}
 #analytics-view .an-folded .an-head{margin-bottom:0}
-.an-folded .an-head :is(.an-tabs,.an-scope,.an-subtitle,.an-usage-total){display:none}
+.an-folded .an-head :is(.an-tabs,.an-usage-total){display:none}
 #analytics-view [id^="an-body-"][hidden]{display:none}
-.an-growth-grid{display:contents}.an-growth-grid>.an-card{margin:0}.an-growth-grid .an-title{font-size:14px}.an-growth-grid .an-head{min-height:28px}.an-growth-grid .an-chart{min-height:190px}
-@media(max-width:640px){.an-growth-grid{gap:10px}.an-growth-grid .an-card{padding:18px}.an-growth-grid .an-title{font-size:14px;letter-spacing:-.2px}.an-growth-grid .an-fold{gap:4px}.an-growth-grid .an-chart{min-height:150px}}
+.an-charts-grid .an-head{min-height:28px}.an-growth-grid{display:contents}.an-growth-grid>.an-card{margin:0}.an-growth-grid .an-title{font-size:14px}.an-growth-grid .an-chart{min-height:190px}
+@media(max-width:640px){.an-growth-grid{gap:10px}.an-growth-grid .an-card{padding:18px}.an-growth-grid .an-title{font-size:14px;letter-spacing:-.2px}.an-growth-grid .an-chart{min-height:150px}}
 ${PREMIUM_REVENUE_CSS}
 </style>
 <div class="an-grid" id="an-now" aria-label="Текущее состояние аккаунтов">
@@ -117,7 +117,7 @@ ${PREMIUM_REVENUE_CSS}
 <div class="an-period" id="an-period"></div>
 <div class="an-charts-grid">
  <div class="an-card an-activity-card">
-  <div class="an-head"><div class="an-title">${cardToggle('activity', 'Активность по дням')}</div></div>
+  <div class="an-head"><div class="an-title">Активность</div></div>
   <div id="an-body-activity">
   <div class="an-metric-summary" id="an-activity-summary"></div>
   <div class="an-chart" id="an-activity-chart"></div>
@@ -126,11 +126,11 @@ ${PREMIUM_REVENUE_CSS}
  </div>
  <div class="an-growth-grid">
   <div class="an-card an-chart-card" id="an-launches">
-   <div class="an-head"><div class="an-title">${cardToggle('launches', 'Первые запуски')}</div></div>
+   <div class="an-head"><div class="an-title">Первые запуски</div></div>
    <div id="an-body-launches"><div class="an-metric-summary" id="an-launches-summary"></div><div class="an-chart" id="an-installs-chart"></div><div class="an-caption" id="an-installs-caption"></div></div>
   </div>
   <div class="an-card an-chart-card" id="an-registrations">
-   <div class="an-head"><div class="an-title">${cardToggle('registrations', 'Новые аккаунты')}</div></div>
+   <div class="an-head"><div class="an-title">Новые аккаунты</div></div>
    <div id="an-body-registrations"><div class="an-metric-summary" id="an-registrations-summary"></div><div class="an-chart" id="an-registrations-chart"></div></div>
   </div>
  </div>
@@ -145,7 +145,7 @@ ${PREMIUM_REVENUE_HTML}
   </div>
 </div>
 <div class="an-card" id="an-auth">
- <div class="an-head"><div class="an-heading"><h3 class="an-title">${cardToggle('auth', 'Способы входа')}</h3></div><span class="an-scope">Всё время</span></div>
+ <div class="an-head"><div class="an-heading"><h3 class="an-title">${cardToggle('auth', 'Способы входа')}</h3></div></div>
  <div id="an-body-auth">
  <div class="an-table-wrap an-auth-table" id="an-auth-table"></div>
  </div>
@@ -158,15 +158,13 @@ ${PREMIUM_REVENUE_HTML}
  </div>
 </div>
 <div class="an-card an-acquisition-card" id="an-acquisition">
-  <div class="an-head"><div class="an-title">${cardToggle('acquisition', 'Источники аккаунтов и покупки Premium')}</div></div>
+  <div class="an-head"><div class="an-title">${cardToggle('acquisition', 'Источник покупки Premium')}</div></div>
   <div id="an-body-acquisition">
   <div class="an-tabs" id="an-acquisition-tabs"><button type="button" data-acquisition="cohort" class="active" aria-pressed="true">Регистрации за период</button><button type="button" data-acquisition="allTime" aria-pressed="false">Всё время</button></div>
-  <div class="an-subtitle" id="an-acquisition-scope"></div>
   <div class="an-table-wrap" id="an-acquisition-table" tabindex="0" role="region" aria-label="Источники аккаунтов и конверсия в покупку"></div>
   <div class="an-caption" id="an-acquisition-coverage"></div>
   <details class="an-day-details" id="an-details-campaigns"><summary>Кампании</summary><div class="an-table-wrap" id="an-acquisition-campaigns"></div></details>
   <details class="an-day-details" id="an-details-articles"><summary>Статьи, с которых пришли аккаунты</summary><div class="an-table-wrap" id="an-acquisition-articles"></div></details>
-  <div class="an-caption">Источник аккаунта определяется по метке ссылки или переходу с сайта. Для органики Google Play приложение получает общую метку без разбивки на поиск и рекомендации.</div>
   </div>
 </div>
 <div class="an-card an-chart-card" id="an-site-activity">
@@ -440,7 +438,6 @@ function anRenderAcquisition(data) {
  var box=document.getElementById('an-acquisition-table');if(!box)return;
  var report=data.users&&data.users.acquisition,section=report&&report[anAcquisitionScope];
  document.querySelectorAll('#an-acquisition-tabs [data-acquisition]').forEach(function(b){var selected=b.dataset.acquisition===anAcquisitionScope;b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));});
- document.getElementById('an-acquisition-scope').textContent=anAcquisitionScope==='allTime'?'Все зарегистрированные аккаунты · подтверждения оплаты в сохранённых данных':'Аккаунты, зарегистрированные за выбранный период · подтверждения оплаты в сохранённых данных';
  var headers=['Источник','Аккаунты','Купили','Конверсия'];
  box.innerHTML=!section?'<div class="an-empty">Данные об источниках аккаунтов недоступны</div>':!section.accounts?'<div class="an-empty">Нет зарегистрированных аккаунтов за этот период</div>':anTable(headers,section.rows.map(function(r){return '<tr><td>'+anAcquisitionSource(r)+'</td>'+anAcquisitionCounts(r)+'</tr>';}));
  document.getElementById('an-acquisition-coverage').textContent=section?'Источник известен у '+anNum(section.knownSources)+' из '+anNum(section.accounts)+' аккаунтов. Подтверждённых покупателей: '+anNum(section.buyers)+'.'+(section.purchaseUnknown?' У '+anNum(section.purchaseUnknown)+' аккаунтов недостаточно данных о старых покупках; конверсия показывает только подтверждённую долю.':'')+(section.sourcesOmitted?' Показаны 100 крупнейших сочетаний источника и канала.':''):'';
@@ -525,8 +522,7 @@ document.getElementById('analytics-view').addEventListener('click',function(even
  anSetCardOpen(toggle,body,expanding);
  anSaveOpen(body.id,expanding);
  if(expanding && window.__anData){
-   if(['an-body-launches','an-body-registrations','an-body-site'].indexOf(body.id)!==-1)anPlot(window.__anData);
-   if(body.id==='an-body-activity')anRenderActivity(window.__anData);
+   if(body.id==='an-body-site')anPlot(window.__anData);
    if(body.id==='an-body-premium')anRenderPremium(window.__anData);
  }
 });
