@@ -38,3 +38,24 @@ test('a grant is bound to its verifier and can be redeemed once', async () => {
   assert.deepEqual(await (await send('redeem',{code,verifier})).json(), {provider:'google',uid:'123',name:'Test',email:''});
   assert.equal((await send('redeem',{code,verifier})).status,400);
 });
+
+test('group membership uses the account from the verified app session', async () => {
+  const {schoolGroup} = await import('./school_login.js');
+  const body = {name: 'Анна', invite: 'ABCD', version: '0', accountId: 'wrong'};
+  const request = () => new Request('https://api.pdd-drive.app/api/auth/schools/group/join',
+    { method: 'POST', body: JSON.stringify(body) });
+  const received = [];
+  const env = { SCHOOL_PORTAL: {getByName(name) {
+    assert.equal(name, 'schools-v1');
+    return {async studentGroup(...args) {
+      received.push(args);
+      return JSON.stringify({status: 409, body: {error: 'membership_changed'}});
+    }};
+  }}};
+  assert.equal((await schoolGroup(request(), env, 'join', async () => null)).status, 401);
+  const result = await schoolGroup(request(), env, 'join', async () => ({user:{id:'apple_123',provider:'apple'}}));
+  assert.equal(result.status, 409);
+  assert.equal(received.length, 1);
+  assert.deepEqual(received[0].slice(0, 2), ['apple_123', 'join']);
+  assert.equal(JSON.parse(received[0][2]).accountId, undefined);
+});

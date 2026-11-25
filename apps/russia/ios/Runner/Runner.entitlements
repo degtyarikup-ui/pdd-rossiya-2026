@@ -6,6 +6,7 @@
 	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
+		<string>applinks:schools.pdd-drive.app</string>
 		<string>applinks:yx94aa539db4634e44bf0b209d9a2205d2.oauth.yandex.ru</string>
 	</array>
 	<key>com.apple.developer.applesignin</key>

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'school_login_route.dart';
+import 'school_group_route.dart';
 
 import 'package:pdd_app/data/services/browser_info_web.dart';
 import 'package:web/web.dart' as web;
@@ -29,6 +30,9 @@ Future<Never> startWebOAuth(String provider, Uri authorizationUrl) {
       'state': authorizationUrl.queryParameters['state'],
       'nonce': authorizationUrl.queryParameters['nonce'],
       'startedAt': DateTime.now().millisecondsSinceEpoch,
+      if (SchoolGroupRoute.parse(Uri.base.queryParameters['school_group'])
+          case final String group)
+        'school_group': group,
       if (SchoolLoginRoute.resolve(Uri.base, null) case final school?) ...{
         'school_login': school.challenge,
         'school_state': school.state,
@@ -77,6 +81,14 @@ Map<String, String>? takeWebOAuthReturn() {
         },
       );
       web.window.history.replaceState(null, '', address.toString());
+    }
+    if (SchoolGroupRoute.parse(result['school_group'])
+        case final String group) {
+      web.window.history.replaceState(
+        null,
+        '',
+        Uri(path: '/app/', queryParameters: {'school_group': group}).toString(),
+      );
     }
     return result;
   } catch (_) {

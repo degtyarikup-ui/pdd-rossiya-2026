@@ -1,7 +1,9 @@
+import secrets
 import uuid
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class School(models.Model):
@@ -39,6 +41,12 @@ class Employee(models.Model):
         return self.name
 
 
+def new_group_code():
+    return "".join(
+        secrets.choice("23456789ABCDEFGHJKLMNPQRSTUVWXYZ") for _ in range(10)
+    )
+
+
 class Group(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     instructor = models.ForeignKey(
@@ -47,6 +55,9 @@ class Group(models.Model):
     name = models.CharField(max_length=90)
     created_at = models.DateTimeField(auto_now_add=True)
     archived = models.BooleanField(default=False)
+    invite_code = models.CharField(
+        max_length=10, null=True, unique=True, default=new_group_code
+    )
     # Changing this nonce invalidates the signed public link without storing its bearer token.
     invite_nonce = models.UUIDField(
         default=uuid.uuid4, null=True, editable=False, unique=True
@@ -54,11 +65,32 @@ class Group(models.Model):
 
 
 class Learner(models.Model):
-    """School-visible roster. In the first delivery only the local fixture populates it."""
+    """Membership history. Legacy demo rows have no PDD account."""
 
     group = models.ForeignKey(Group, on_delete=models.PROTECT, related_name="learners")
     name = models.CharField(max_length=100)
-    joined_at = models.DateTimeField(auto_now_add=True)
+    joined_at = models.DateTimeField(default=timezone.now)
+    account_id = models.CharField(max_length=190, null=True)
+    ended_at = models.DateTimeField(null=True)
+    join_method = models.CharField(max_length=8, default="")
+    consent_version = models.CharField(max_length=32, default="")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["account_id"],
+                condition=models.Q(ended_at__isnull=True, account_id__isnull=False),
+                name="one_current_learner_group",
+            )
+        ]
+
+
+class SchoolAttribution(models.Model):
+    membership = models.OneToOneField(Learner, on_delete=models.PROTECT)
+    school = models.ForeignKey(School, on_delete=models.PROTECT)
+    started_at = models.DateTimeField()
+    ended_at = models.DateTimeField(null=True)
+    rules_version = models.CharField(max_length=32)
 
 
 class StaffInvite(models.Model):

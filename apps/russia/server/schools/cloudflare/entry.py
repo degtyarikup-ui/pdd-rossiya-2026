@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 from hashlib import sha256
 from pathlib import Path
@@ -91,6 +92,25 @@ class SchoolPortal(DurableObject):
         self.ctx.storage.transactionSync(save)
         self.digests = digests
         self.file_header = header
+
+    async def studentGroup(self, account_id, operation, payload):
+        # RPC is available to the app API's Durable Object binding only.
+        from django.db import connections
+
+        async with self.lock:
+            try:
+                if self.application is None:
+                    self.restore()
+                from portal.membership import student_group
+
+                status, body = student_group(account_id, operation, json.loads(payload))
+                connections.close_all()
+                self.checkpoint()
+                return json.dumps({"status": status, "body": body})
+            except BaseException:
+                connections.close_all()
+                self.application = None
+                raise
 
     async def maintenance(self):
         from django.core.management import call_command

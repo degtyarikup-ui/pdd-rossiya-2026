@@ -1,4 +1,6 @@
 import 'package:pdd_app/data/services/school_login_route.dart';
+import 'package:pdd_app/data/services/school_group_route.dart';
+import 'package:pdd_app/presentation/screens/school_group_screen.dart';
 import 'package:pdd_app/presentation/screens/school_login_screen.dart';
 import 'package:pdd_app/data/services/web_checkout_route.dart';
 import 'package:pdd_app/presentation/screens/premium_web_checkout_screen.dart';
@@ -292,6 +294,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
         SupportInbox.instance.pollNow;
     SupportInbox.instance.start();
     if (_schoolLogin == null &&
+        _schoolGroup == null &&
         (widget.webAuthReturn != null || widget.referralPrompt != null)) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _showStartupPrompt());
     }
@@ -377,6 +380,13 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
   SchoolLoginRoute? get _schoolLogin =>
       kIsWeb ? SchoolLoginRoute.resolve(Uri.base, widget.webAuthReturn) : null;
 
+  String? get _schoolGroup => kIsWeb
+      ? SchoolGroupRoute.parse(
+          Uri.base.queryParameters['school_group'] ??
+              widget.webAuthReturn?['school_group'],
+        )
+      : null;
+
   WebCheckoutRoute? get _checkout =>
       kIsWeb ? WebCheckoutRoute.resolve(Uri.base, widget.webAuthReturn) : null;
 
@@ -396,6 +406,12 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
       if (school != null) {
         return SchoolLoginScreen(
           route: school,
+          authReturn: widget.webAuthReturn,
+        );
+      }
+      if (_schoolGroup case final String invite) {
+        return SchoolGroupScreen(
+          invite: invite,
           authReturn: widget.webAuthReturn,
         );
       }
@@ -425,6 +441,14 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
       }
     }
 
+    final launchInvite = kIsWeb
+        ? null
+        : SchoolGroupRoute.fromLink(
+            Uri.tryParse(
+                  WidgetsBinding.instance.platformDispatcher.defaultRouteName,
+                ) ??
+                Uri(),
+          );
     return MaterialApp(
       navigatorKey: _navigatorKey,
       title: appL10n.appName,
@@ -437,6 +461,28 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => AppMaxWidthFrame(child: child),
+      onGenerateInitialRoutes: launchInvite == null
+          ? null
+          : (initialRoute) => [
+              MaterialPageRoute<void>(
+                settings: const RouteSettings(name: '/'),
+                builder: (_) => getInitialWidget(),
+              ),
+              MaterialPageRoute<void>(
+                settings: RouteSettings(name: initialRoute),
+                builder: (_) => SchoolGroupScreen(invite: launchInvite),
+              ),
+            ],
+      onGenerateRoute: (settings) {
+        if (kIsWeb) return null;
+        final uri = Uri.tryParse(settings.name ?? '');
+        final invite = uri == null ? null : SchoolGroupRoute.fromLink(uri);
+        if (invite == null) return null;
+        return MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => SchoolGroupScreen(invite: invite),
+        );
+      },
       home: getInitialWidget(),
     );
   }

@@ -4,7 +4,7 @@ from allauth.socialaccount.providers.yandex.views import (
 )
 from django.conf import settings
 from django.urls import include, path
-from django.views.generic import TemplateView
+from django.views.generic import RedirectView, TemplateView
 
 from . import pdd_login, social
 from . import views as v
@@ -69,6 +69,11 @@ urlpatterns = [
     path("staff/<str:token>/", v.staff_link, name="staff_link"),
     path("invitation/", v.accept, name="accept"),
     path("invitation/leave/", v.leave_invitation, name="leave_invitation"),
+    path(
+        "student/",
+        RedirectView.as_view(url="https://pdd-drive.app/app/?school_group=my"),
+        name="student",
+    ),
     path("join/<str:token>/", v.join, name="join"),
     path("finance/", v.finance, name="finance"),
     path("settings/", v.preferences, name="settings"),

@@ -307,6 +307,81 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String get studentSchoolTitle => 'Менің автомектебім';
+
+  @override
+  String get studentSchoolJoinTitle => 'Топқа қосылу';
+
+  @override
+  String get studentSchoolTeacher => 'Оқытушы';
+
+  @override
+  String get studentSchoolName => 'Топтағы атыңыз';
+
+  @override
+  String get studentSchoolCode => 'Топ коды';
+
+  @override
+  String get studentSchoolFind => 'Топты табу';
+
+  @override
+  String get studentSchoolCodeHint => 'Шақырудағы код';
+
+  @override
+  String get studentSchoolJoin => 'Топқа қосылу';
+
+  @override
+  String get studentSchoolTransfer => 'Осы топқа ауысу';
+
+  @override
+  String studentSchoolTransferNote(String group) {
+    return '«$group» тобынан шығасыз.';
+  }
+
+  @override
+  String get studentSchoolConsent =>
+      'Мектепке оқу тарихымды, соның ішінде топқа қосылғанға дейінгі жауаптарым мен сынақ емтихандарымды көруге рұқсат беремін.';
+
+  @override
+  String get studentSchoolJoined => 'Топқа қосылдыңыз';
+
+  @override
+  String get studentSchoolStudy => 'Оқуға өту';
+
+  @override
+  String get studentSchoolLeave => 'Топтан шығу';
+
+  @override
+  String studentSchoolLeaveTitle(String group) {
+    return '«$group» тобынан шығасыз ба?';
+  }
+
+  @override
+  String get studentSchoolLeaveNote =>
+      'Мектеп оқу статистикаңызды көре алмайды.';
+
+  @override
+  String get studentSchoolAnother => 'Басқа код енгізу';
+
+  @override
+  String get studentSchoolUnavailable =>
+      'Шақыру жарамсыз. Кодты тексеріңіз немесе оқытушыдан жаңа сілтеме сұраңыз.';
+
+  @override
+  String get studentSchoolConflict =>
+      'Топ өзгерді. Топты тексеріп, қайта растаңыз.';
+
+  @override
+  String get studentSchoolLimit =>
+      'Әрекет тым көп. Бес минуттан кейін қайталаңыз.';
+
+  @override
+  String get studentSchoolAccount => 'Ресей ЖҚЕ аккаунты';
+
+  @override
+  String get studentSchoolNameRequired => 'Топ тізіміне атыңызды енгізіңіз.';
+
+  @override
   String get schoolPortalLogin => 'Автомектеп кабинеті';
 
   @override

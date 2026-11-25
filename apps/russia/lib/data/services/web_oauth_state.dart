@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'school_login_route.dart';
+import 'school_group_route.dart';
 
 const webOAuthStorageKey = 'pdd_web_oauth_pending';
 const webOAuthFragmentPrefix = '#pdd-oauth=';
@@ -42,6 +43,7 @@ Map<String, String> validateWebOAuthReturn(
   }
   return {
     ...({...params}
+      ..remove('school_group')
       ..remove('school_login')
       ..remove('school_state')
       ..remove('checkout_tier')
@@ -53,6 +55,8 @@ Map<String, String> validateWebOAuthReturn(
       'school_login': school.challenge,
       'school_state': school.state,
     },
+    if (SchoolGroupRoute.parse(pending['school_group']) case final String group)
+      'school_group': group,
     if (['weekly', 'threeMonths'].contains(pending['checkoutTier']))
       'checkout_tier': pending['checkoutTier'] as String,
     if (pending['checkoutCampaign'] is String)

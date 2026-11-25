@@ -574,6 +574,138 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{день подряд} few{дня подряд} many{дней подряд} other{дней подряд}}'**
   String streakDaysWord(num count);
 
+  /// No description provided for @studentSchoolTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Моя автошкола'**
+  String get studentSchoolTitle;
+
+  /// No description provided for @studentSchoolJoinTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вступление в группу'**
+  String get studentSchoolJoinTitle;
+
+  /// No description provided for @studentSchoolTeacher.
+  ///
+  /// In ru, this message translates to:
+  /// **'Преподаватель'**
+  String get studentSchoolTeacher;
+
+  /// No description provided for @studentSchoolName.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваше имя в группе'**
+  String get studentSchoolName;
+
+  /// No description provided for @studentSchoolCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код группы'**
+  String get studentSchoolCode;
+
+  /// No description provided for @studentSchoolFind.
+  ///
+  /// In ru, this message translates to:
+  /// **'Найти группу'**
+  String get studentSchoolFind;
+
+  /// No description provided for @studentSchoolCodeHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код из приглашения'**
+  String get studentSchoolCodeHint;
+
+  /// No description provided for @studentSchoolJoin.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вступить в группу'**
+  String get studentSchoolJoin;
+
+  /// No description provided for @studentSchoolTransfer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перейти в эту группу'**
+  String get studentSchoolTransfer;
+
+  /// No description provided for @studentSchoolTransferNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы выйдете из группы «{group}».'**
+  String studentSchoolTransferNote(String group);
+
+  /// No description provided for @studentSchoolConsent.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешаю школе видеть мою историю занятий, включая ответы и пробные экзамены до вступления.'**
+  String get studentSchoolConsent;
+
+  /// No description provided for @studentSchoolJoined.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы в группе'**
+  String get studentSchoolJoined;
+
+  /// No description provided for @studentSchoolStudy.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перейти к занятиям'**
+  String get studentSchoolStudy;
+
+  /// No description provided for @studentSchoolLeave.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выйти из группы'**
+  String get studentSchoolLeave;
+
+  /// No description provided for @studentSchoolLeaveTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выйти из группы «{group}»?'**
+  String studentSchoolLeaveTitle(String group);
+
+  /// No description provided for @studentSchoolLeaveNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Школа потеряет доступ к вашей статистике.'**
+  String get studentSchoolLeaveNote;
+
+  /// No description provided for @studentSchoolAnother.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ввести другой код'**
+  String get studentSchoolAnother;
+
+  /// No description provided for @studentSchoolUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Приглашение недействительно. Проверьте код или попросите у преподавателя новую ссылку.'**
+  String get studentSchoolUnavailable;
+
+  /// No description provided for @studentSchoolConflict.
+  ///
+  /// In ru, this message translates to:
+  /// **'Состав групп изменился. Проверьте группу и подтвердите ещё раз.'**
+  String get studentSchoolConflict;
+
+  /// No description provided for @studentSchoolLimit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Слишком много попыток. Попробуйте через пять минут.'**
+  String get studentSchoolLimit;
+
+  /// No description provided for @studentSchoolAccount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Аккаунт ПДД России'**
+  String get studentSchoolAccount;
+
+  /// No description provided for @studentSchoolNameRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите имя для списка группы.'**
+  String get studentSchoolNameRequired;
+
   /// No description provided for @schoolPortalLogin.
   ///
   /// In ru, this message translates to:

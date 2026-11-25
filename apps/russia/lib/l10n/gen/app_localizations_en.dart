@@ -307,6 +307,81 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get studentSchoolTitle => 'My driving school';
+
+  @override
+  String get studentSchoolJoinTitle => 'Join a group';
+
+  @override
+  String get studentSchoolTeacher => 'Instructor';
+
+  @override
+  String get studentSchoolName => 'Your name in the group';
+
+  @override
+  String get studentSchoolCode => 'Group code';
+
+  @override
+  String get studentSchoolFind => 'Find group';
+
+  @override
+  String get studentSchoolCodeHint => 'Code from your invitation';
+
+  @override
+  String get studentSchoolJoin => 'Join group';
+
+  @override
+  String get studentSchoolTransfer => 'Switch to this group';
+
+  @override
+  String studentSchoolTransferNote(String group) {
+    return 'You will leave “$group”.';
+  }
+
+  @override
+  String get studentSchoolConsent =>
+      'Allow this school to see my study history, including answers and mock exams from before I joined.';
+
+  @override
+  String get studentSchoolJoined => 'You’re in the group';
+
+  @override
+  String get studentSchoolStudy => 'Continue studying';
+
+  @override
+  String get studentSchoolLeave => 'Leave group';
+
+  @override
+  String studentSchoolLeaveTitle(String group) {
+    return 'Leave “$group”?';
+  }
+
+  @override
+  String get studentSchoolLeaveNote =>
+      'The school will lose access to your study history.';
+
+  @override
+  String get studentSchoolAnother => 'Enter another code';
+
+  @override
+  String get studentSchoolUnavailable =>
+      'This invitation is no longer valid. Check the code or ask your instructor for a new link.';
+
+  @override
+  String get studentSchoolConflict =>
+      'Your membership changed. Check the group and confirm again.';
+
+  @override
+  String get studentSchoolLimit =>
+      'Too many attempts. Try again in five minutes.';
+
+  @override
+  String get studentSchoolAccount => 'PDD Russia account';
+
+  @override
+  String get studentSchoolNameRequired => 'Enter a name for the group roster.';
+
+  @override
   String get schoolPortalLogin => 'Driving school portal';
 
   @override

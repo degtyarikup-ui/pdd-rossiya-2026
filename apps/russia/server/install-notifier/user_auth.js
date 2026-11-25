@@ -1,4 +1,4 @@
-import { schoolLogin } from './school_login.js';
+import { schoolLogin, schoolGroup } from './school_login.js';
 import { retainAppleAuthorization } from './apple_account.js';
 import { accountRead, accountReadMany, accountWrite } from './account_state.js';
 import { verifyProviderJwt } from './provider_keys.js';
@@ -192,6 +192,9 @@ export async function revokeUserSessions(env, userId) {
 
 export async function handleAuth(request, env, verify = verifyIdentity, onFailure = () => {}) {
   const path = new URL(request.url).pathname;
+  if (path.startsWith('/api/auth/schools/group/')) {
+    return schoolGroup(request, env, path.slice('/api/auth/schools/group/'.length), readSession);
+  }
   if (path === '/api/auth/schools/authorize' || path === '/api/auth/schools/redeem') {
     return schoolLogin(request, env, path, readSession, tokenHash);
   }

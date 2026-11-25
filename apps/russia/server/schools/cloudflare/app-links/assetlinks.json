@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ru.pdd.pdd_app",
+      "sha256_cert_fingerprints": [
+        "27:A8:4D:17:47:1E:5D:91:B2:4D:93:FA:32:73:1B:CF:FF:0A:81:E7:D8:17:B2:52:F1:55:AD:06:A1:A3:1B:7E",
+        "BF:13:F0:F1:65:B8:40:FE:77:90:F1:F9:BE:1F:FE:9D:84:C3:46:FD:2B:34:BA:D4:4B:4B:F8:4F:3A:42:DF:71"
+      ]
+    }
+  }
+]

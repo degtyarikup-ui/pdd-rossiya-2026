@@ -1,4 +1,5 @@
 import 'package:pdd_app/core/layout/app_content_frame.dart';
+import 'package:pdd_app/presentation/screens/school_group_screen.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -225,6 +226,24 @@ class ProfileScreen extends ConsumerWidget {
               // Премиум-баннер
               const PremiumBannerCard(),
               const ProfileNoticeBanners(),
+              const SizedBox(height: AppDimensions.spacingS),
+              Material(
+                color: colors.cardBackground,
+                borderRadius: BorderRadius.circular(16),
+                child: ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  leading: const Icon(Icons.school_outlined),
+                  title: Text(appL10n.studentSchoolTitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const SchoolGroupScreen(),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: AppDimensions.spacingXL),
 
               // Серия дней — над достижениями: привычка рядом с наградами за неё.

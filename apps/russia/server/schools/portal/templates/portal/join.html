@@ -1,1 +1,11 @@
-{% extends "portal/base.html" %}{% load school_ui %}{% block content %}<span class="icon-tile blue">{% icon "groups" %}</span><p class="small-label">{{ group.instructor.school.name }}</p><h1>{{ group.name }}</h1><p>Преподаватель · {{ group.instructor.name }}</p><p class="school-note">Это тестовое приглашение. Вступление через приложение ещё не подключено.</p>{% endblock %}
+{% extends "portal/base.html" %}{% load static school_ui %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'schools/join.css' %}">{% endblock %}
+{% block entrance_card_class %}group-invite{% endblock %}
+{% block content %}
+<span class="icon-tile blue">{% icon "groups" %}</span>
+<p class="small-label">{{ group.instructor.school.name }}</p>
+<h1>{{ group.name }}</h1>
+<p>Преподаватель · {{ group.instructor.name }}</p>
+<a class="btn btn-primary" href="https://pdd-drive.app/app/?school_group={{ token|urlencode }}">Вступить в группу {% icon "arrow" %}</a>
+<p class="invite-code"><small>Код группы</small> <strong>{{ group.invite_code|slice:":5" }}-{{ group.invite_code|slice:"5:" }}</strong></p>
+{% endblock %}

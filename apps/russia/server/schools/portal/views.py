@@ -15,7 +15,7 @@ from django.core import signing
 from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -32,7 +32,8 @@ from .forms import (
     SchoolForm,
     TermsForm,
 )
-from .models import Employee, Event, Group, Learner, School, StaffInvite
+from .membership import SIGNER_SALT, group_by_invite
+from .models import new_group_code, Employee, Event, Group, Learner, School, StaffInvite
 from .notices import notify
 
 
@@ -71,16 +72,14 @@ def log(employee, action, subject=""):
 def ordered_groups(employee):
     return (
         groups_for(employee)
-        .annotate(size=Count("learners"))
+        .annotate(size=Count("learners", filter=Q(learners__ended_at__isnull=True)))
         .order_by("-created_at", "name")
     )
 
 
 def group_link(request, group):
     if group.invite_nonce:
-        token = signing.Signer(salt="schools.group-invite.v1").sign(
-            str(group.invite_nonce)
-        )
+        token = signing.Signer(salt=SIGNER_SALT).sign(str(group.invite_nonce))
         return request.build_absolute_uri(reverse("join", args=[token]))
     return ""
 
@@ -101,7 +100,9 @@ def home(request):
         section="home",
         groups=qs[:4],
         group_count=qs.count(),
-        learner_count=Learner.objects.filter(group__in=qs).count(),
+        learner_count=Learner.objects.filter(
+            group__in=qs, ended_at__isnull=True
+        ).count(),
         instructor_count=staff.school.staff.filter(
             active=True, role=Employee.Role.INSTRUCTOR
         ).count(),
@@ -208,7 +209,7 @@ def group_detail(request, pk):
         section="groups",
         group=group,
         link=group_link(request, group),
-        learners=group.learners.order_by("name"),
+        learners=group.learners.filter(ended_at__isnull=True).order_by("name"),
     )
 
 
@@ -219,9 +220,11 @@ def group_invite_toggle(request, pk):
     enable = request.POST.get("action") == "enable"
     if enable and group.invite_nonce is None:
         group.invite_nonce = uuid.uuid4()
+        group.invite_code = new_group_code()
     elif not enable:
         group.invite_nonce = None
-    group.save(update_fields=["invite_nonce"])
+        group.invite_code = None
+    group.save(update_fields=["invite_nonce", "invite_code"])
     log(
         request.employee,
         "group_link_enabled" if enable else "group_link_revoked",
@@ -236,7 +239,8 @@ def archive(request, pk):
     group = get_object_or_404(groups_for(request.employee), pk=pk)
     group.archived = True
     group.invite_nonce = None
-    group.save(update_fields=["archived", "invite_nonce"])
+    group.invite_code = None
+    group.save(update_fields=["archived", "invite_nonce", "invite_code"])
     log(request.employee, "group_archived", group.pk)
     return redirect("groups")
 
@@ -253,24 +257,19 @@ def qr(request, pk):
 
 @require_GET
 def join(request, token):
-    try:
-        nonce = uuid.UUID(signing.Signer(salt="schools.group-invite.v1").unsign(token))
-        group = Group.objects.select_related("instructor__school").get(
-            invite_nonce=nonce,
-            archived=False,
-            instructor__active=True,
-            instructor__school__active=True,
-        )
-    except (ValueError, signing.BadSignature, Group.DoesNotExist):
-        return render(request, "portal/expired.html", status=410)
-    return page(request, "join", title=group.name, group=group)
+    group = group_by_invite(token)
+    if group is None:
+        return render(request, "portal/expired.html", {"group_invitation": True}, status=410)
+    return page(request, "join", title=group.name, group=group, token=token)
 
 
 @school_view
 @require_GET
 def learners(request):
     rows = (
-        Learner.objects.filter(group__in=groups_for(request.employee))
+        Learner.objects.filter(
+            group__in=groups_for(request.employee), ended_at__isnull=True
+        )
         .select_related("group")
         .order_by("name")
     )

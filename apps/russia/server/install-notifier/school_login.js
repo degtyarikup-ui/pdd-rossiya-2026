@@ -61,3 +61,21 @@ export async function schoolLogin(request, env, path, readSession, tokenHash) {
   // The API adds CORS headers. A Durable Object fetch returns immutable headers.
   return new Response(response.body, response);
 }
+
+export async function schoolGroup(request, env, action, readSession) {
+  if (request.method !== 'POST') return reply({ error: 'method_not_allowed' }, 405);
+  if (!['mine', 'preview', 'join', 'leave'].includes(action)) return reply({ error: 'not_found' }, 404);
+  const user = (await readSession(request, env))?.user;
+  if (!providers.has(user?.provider) || !user.id?.startsWith(user.provider + '_')) {
+    return reply({ error: 'authentication_required' }, 401);
+  }
+  let input;
+  try { input = await request.json(); } catch { return reply({ error: 'invalid_request' }, 400); }
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return reply({ error: 'invalid_request' }, 400);
+  const {invite, name, version, consentVersion} = input;
+  const payload = JSON.stringify({invite, name, version, consentVersion});
+  if (payload.length > 2048) return reply({ error: 'invalid_request' }, 400);
+  const portal = env.SCHOOL_PORTAL.getByName('schools-v1');
+  const result = JSON.parse(await portal.studentGroup(user.id, action, payload));
+  return reply(result.body, result.status);
+}

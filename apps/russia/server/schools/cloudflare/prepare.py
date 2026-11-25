@@ -48,3 +48,8 @@ shutil.copytree(app / "portal/static/schools", assets / "schools", dirs_exist_ok
 (public / "art").mkdir(exist_ok=True)
 shutil.copy2(product / "assets/images/onboarding_car.png", public / "art/car.png")
 (public / "robots.txt").write_text("User-agent: *\nDisallow: /\n")
+
+shutil.copytree(source / "app-links", public / ".well-known", dirs_exist_ok=True)
+(public / "_headers").write_text(
+    "/.well-known/apple-app-site-association\n  Content-Type: application/json\n"
+)

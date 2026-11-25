@@ -317,6 +317,81 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get studentSchoolTitle => 'Моя автошкола';
+
+  @override
+  String get studentSchoolJoinTitle => 'Вступление в группу';
+
+  @override
+  String get studentSchoolTeacher => 'Преподаватель';
+
+  @override
+  String get studentSchoolName => 'Ваше имя в группе';
+
+  @override
+  String get studentSchoolCode => 'Код группы';
+
+  @override
+  String get studentSchoolFind => 'Найти группу';
+
+  @override
+  String get studentSchoolCodeHint => 'Код из приглашения';
+
+  @override
+  String get studentSchoolJoin => 'Вступить в группу';
+
+  @override
+  String get studentSchoolTransfer => 'Перейти в эту группу';
+
+  @override
+  String studentSchoolTransferNote(String group) {
+    return 'Вы выйдете из группы «$group».';
+  }
+
+  @override
+  String get studentSchoolConsent =>
+      'Разрешаю школе видеть мою историю занятий, включая ответы и пробные экзамены до вступления.';
+
+  @override
+  String get studentSchoolJoined => 'Вы в группе';
+
+  @override
+  String get studentSchoolStudy => 'Перейти к занятиям';
+
+  @override
+  String get studentSchoolLeave => 'Выйти из группы';
+
+  @override
+  String studentSchoolLeaveTitle(String group) {
+    return 'Выйти из группы «$group»?';
+  }
+
+  @override
+  String get studentSchoolLeaveNote =>
+      'Школа потеряет доступ к вашей статистике.';
+
+  @override
+  String get studentSchoolAnother => 'Ввести другой код';
+
+  @override
+  String get studentSchoolUnavailable =>
+      'Приглашение недействительно. Проверьте код или попросите у преподавателя новую ссылку.';
+
+  @override
+  String get studentSchoolConflict =>
+      'Состав групп изменился. Проверьте группу и подтвердите ещё раз.';
+
+  @override
+  String get studentSchoolLimit =>
+      'Слишком много попыток. Попробуйте через пять минут.';
+
+  @override
+  String get studentSchoolAccount => 'Аккаунт ПДД России';
+
+  @override
+  String get studentSchoolNameRequired => 'Укажите имя для списка группы.';
+
+  @override
   String get schoolPortalLogin => 'Кабинет автошколы';
 
   @override
